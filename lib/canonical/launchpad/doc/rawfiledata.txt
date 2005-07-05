@@ -21,13 +21,14 @@ Get hold of a Firefox product release.
 
     >>> from canonical.launchpad.database import ProductRelease
     >>> productrelease = ProductRelease.get(1)
-    >>> productrelease.productseries.product.name
+    >>> productseries = productrelease.productseries
+    >>> productseries.product.name
     u'firefox'
 
 Get a POTemplateSubset for the Firefox release.
 
     >>> from canonical.launchpad.database import POTemplateSubset
-    >>> subset = POTemplateSubset(productrelease=productrelease)
+    >>> subset = POTemplateSubset(productseries=productseries)
 
 Create a new PO template.
 

@@ -35,6 +35,8 @@ class ISourcePackageRelease(Interface):
     # read-only properties
     name = Attribute('The sourcepackagename for this release, as text')
     title = Attribute('The title of this sourcepackage')
+    latest_build = Attribute("The latest build of this source package "
+        "release, or None")
 
     productrelease = Attribute("The best guess we have as to the Launchpad "
                                "ProductRelease associated with this "

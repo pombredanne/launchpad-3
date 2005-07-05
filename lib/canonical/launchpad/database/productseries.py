@@ -19,7 +19,9 @@ from canonical.launchpad.interfaces import \
     IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin, \
     IProductSeriesSet
 from canonical.launchpad.database.packaging import Packaging
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.launchpad.database.potemplate import POTemplate
+from canonical.database.sqlbase import (SQLBase, quote,
+    flush_database_updates, sqlvalues)
 from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import \
     EnumCol, ImportStatus, RevisionControlSystems
@@ -35,8 +37,7 @@ class ProductSeries(SQLBase):
     name = StringCol(notNull=True)
     displayname = StringCol(notNull=True)
     summary = StringCol(notNull=True)
-    datecreated =  UtcDateTimeCol(
-        dbName='datecreated', notNull=True, default=UTC_NOW)
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
                            schema=ImportStatus, default=None)
@@ -68,10 +69,34 @@ class ProductSeries(SQLBase):
 
     releases = MultipleJoin('ProductRelease', joinColumn='productseries',
                              orderBy=['version'])
+    packagings = MultipleJoin('Packaging', joinColumn='productseries',
+                              orderBy=['-id'])
 
+    @property
+    def potemplates(self):
+        result = POTemplate.selectBy(productseriesID=self.id)
+        result = list(result)
+        result.sort(key=lambda x: x.potemplatename.name)
+        return result
+
+    @property
+    def potemplatecount(self):
+        return len(self.potemplates)
+
+    def getPOTemplate(self, name):
+        template = POTemplate.selectOne(
+            "POTemplate.productseries = %s AND "
+            "POTemplate.potemplatename = POTemplateName.id AND "
+            "POTemplateName.name = %s" % sqlvalues(self.id, name),
+            clauseTables=['ProductRelease', 'POTemplateName'])
+
+        if template is None: 
+            raise NotFoundError(name)
+        return template
+
+    @property
     def title(self):
         return self.product.displayname + ' Series: ' + self.displayname
-    title = property(title)
 
     def shortdesc(self):
         warn('ProductSeries.shortdesc should be ProductSeries.summary',
@@ -79,13 +104,16 @@ class ProductSeries(SQLBase):
         return self.summary
     shortdesc = property(shortdesc)
 
+    @property
     def sourcepackages(self):
+        """See IProductSeries"""
         from canonical.launchpad.database.sourcepackage import SourcePackage
         ret = Packaging.selectBy(productseriesID=self.id)
-        return [SourcePackage(sourcepackagename=r.sourcepackagename,
-                              distrorelease=r.distrorelease)
+        ret = [SourcePackage(sourcepackagename=r.sourcepackagename,
+                             distrorelease=r.distrorelease)
                     for r in ret]
-    sourcepackages = property(sourcepackages)
+        ret.sort(key=lambda a: a.distribution.name + a.sourcepackagename.name)
+        return ret
 
     def getRelease(self, version):
         for release in self.releases:
@@ -94,11 +122,42 @@ class ProductSeries(SQLBase):
         raise NotFoundError(version)
 
     def getPackage(self, distrorelease):
+        """See IProductSeries."""
         for pkg in self.sourcepackages:
             if pkg.distrorelease == distrorelease:
                 return pkg
-        else:
-            raise NotFoundError(distrorelease)
+        # XXX sabdfl 23/06/05 this needs to search through the ancestry of
+        # the distrorelease to try to find a relevant packaging record
+        raise NotFoundError(distrorelease)
+
+    def setPackaging(self, distrorelease, sourcepackagename, owner):
+        """See IProductSeries."""
+        for pkg in self.packagings:
+            if pkg.distrorelease == distrorelease:
+                # we have found a matching Packaging record
+                if pkg.sourcepackagename == sourcepackagename:
+                    # and it has the same source package name
+                    return pkg
+                # ok, we need to update this pkging record
+                pkg.sourcepackagename = sourcepackagename
+                pkg.owner = owner
+                pkg.datecreated = UTC_NOW
+                return pkg
+
+        # ok, we didn't find a packaging record that matches, let's go ahead
+        # and create one
+        pkg = Packaging(distrorelease=distrorelease,
+            sourcepackagename=sourcepackagename, productseries=self,
+            owner=owner)
+        return pkg
+
+    def getPackagingInDistribution(self, distribution):
+        """See IProductSeries."""
+        history = []
+        for pkging in self.packagings:
+            if pkging.distrorelease.distribution == distribution:
+                history.append(pkging)
+        return history
 
     def certifyForSync(self):
         """Enable the sync for processing."""

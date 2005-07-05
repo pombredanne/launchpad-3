@@ -63,6 +63,8 @@ class PublishedPackageSetView:
         if self.searchtext:
             self.searchrequested = True
         self.launchbag = getUtility(ILaunchBag)
+        self.distribution = self.launchbag.distribution
+        self.distrorelease = self.launchbag.distrorelease
 
     def searchresults(self):
         if self.searchresultset is not None:

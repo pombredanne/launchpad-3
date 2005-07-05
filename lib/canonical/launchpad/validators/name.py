@@ -4,8 +4,9 @@
 
 __metaclass__ = type
 
+import re
+
 def valid_name(name):
-    import re
     pat = r"^[a-z0-9][a-z0-9\\+\\.\\-]+$"
     if re.match(pat, name):
         return True

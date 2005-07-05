@@ -9,7 +9,7 @@
 
             <b>First reported by:</b><br />
             <ul class="people">
-                <li><a href=""
+                <li><a href="."
                     tal:content="context/owner/browsername"
                     style="text-decoration: underline"
                     tal:attributes="
@@ -21,7 +21,7 @@
 
             <ul class="people" tal:repeat="task bugtasks">
                 <li tal:condition="task/maintainer">
-                <a href=""
+                <a href="."
                    tal:content="task/maintainer/browsername"
                    style="text-decoration: underline"
                    tal:attributes="href string:/people/${task/maintainer/name}" />

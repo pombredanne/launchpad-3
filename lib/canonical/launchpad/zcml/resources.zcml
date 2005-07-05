@@ -47,6 +47,7 @@
     <resource name="user.gif" file="../images/user.gif" />
     <resource name="lock_icon.gif" file="../images/lock_icon.gif" />
     <resource name="link_icon.gif" file="../images/link_icon.gif" />
+    <resource name="cve.ico" file="../images/cve.ico" />
     <resource name="linkTransparent.gif" file="../images/linkTransparent.gif" />
     <resource name="search_icon.gif" file="../images/search_icon.gif" />
     <resource name="product_icon.gif" file="../images/product_icon.gif" />

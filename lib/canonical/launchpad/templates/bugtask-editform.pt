@@ -51,6 +51,12 @@
               i18n:name="num_errors">6</strong> input errors in the form
               below. Please correct them and resubmit the form.
             </p>
+            <p tal:condition="not: context/required:launchpad.Edit"
+               class="portalMessage">
+              You are not the assignee, or the maintainer of
+              <span tal:replace="context/contextname">product</span> so you
+              cannot edit this status page.
+            </p>
           </div>
 
           <p tal:condition="context/bug/summary"
@@ -58,12 +64,6 @@
              Bug summary goes here if it exists.
           </p>
           
-          <h2>
-            Status of Bug #<span tal:replace="context/bug/id">132</span> in
-            <span tal:replace="context/contextname">some distro
-            package/product</span>
-          </h2>
-
           <div class="field">
             <table style="width: 20%">
             <tr>

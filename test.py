@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.3
+#!/usr/bin/env python2.4
 ##############################################################################
 #
 # Copyright (c) 2004 Zope Corporation and Contributors.

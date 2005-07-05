@@ -5,7 +5,10 @@
 
   <div class="portletBody">
     <div class="portletContent">
+    <img src="/++resource++info_icon.gif" alt="info" />
     <tal:block condition="context/distrorelease">
+      This template came from the following source package and
+      distribution:<br />
       <b>Distribution:</b>
       <span tal:replace="context/distrorelease/distribution/displayname">
         Ubuntu
@@ -19,20 +22,22 @@
         Apache
       </span><br />
     </tal:block>
-    <tal:block condition="context/productrelease">
-      <tal:block condition="context/productrelease/product/project">
-      <b>Project:</b>
-      <span tal:replace="context/productrelease/product/project/displayname">
-        Apache
-      </span><br />
+    <tal:block condition="context/productseries">
+      This template is for the following <b>upstream</b> product branch:
+      <br />
+      <tal:block condition="context/productseries/product/project">
+        <b>Project:</b>
+        <span tal:replace="context/productseries/product/project/displayname">
+          Apache
+        </span><br />
       </tal:block>
       <b>Product:</b>
-      <span tal:replace="context/productrelease/product/displayname">
+      <span tal:replace="context/productseries/product/displayname">
         Apache Web Server
       </span><br />
-      <b>Release:</b>
-      <span tal:replace="context/productrelease/version">
-        2.1.3
+      <b>Branch:</b>
+      <span tal:replace="context/productseries/displayname">
+        MAIN
       </span><br />
     </tal:block>
     </div>

@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = ['CVERef', 'CVERefSet', 'CVERefFactory']
 
+import re
 from datetime import datetime
 
 # Zope
@@ -14,11 +15,14 @@ from sqlobject import ForeignKey, StringCol
 
 from canonical.launchpad.interfaces import ICVERef, ICVERefSet
 
-from canonical.database.sqlbase import SQLBase
+from canonical.lp.dbschema import EnumCol, CVEState
+
+from canonical.database.sqlbase import SQLBase, flush_database_updates
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.bugset import BugSetBase
 
+cverefpat = re.compile(r'(CVE|CAN)-((19|20)\d{2}\-\d{4})')
 
 class CVERef(SQLBase):
     """A CVE reference for a bug."""
@@ -28,14 +32,20 @@ class CVERef(SQLBase):
     _table = 'CVERef'
     bug = ForeignKey(foreignKey='Bug', dbName='bug', notNull=True)
     cveref = StringCol(notNull=True)
+    cvestate = EnumCol(dbName='cvestate', schema=CVEState, notNull=True)
     title = StringCol(notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
 
+    @property
     def url(self):
-        """Return the URL for this CVE reference."""
-        return ('http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=%s'
-                % self.cveref)
+        """See ICVERef."""
+        return ('http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=%s-%s'
+                % (self.cvestate.name, self.cveref))
+
+    @property
+    def displayname(self):
+        return '%s-%s' % (self.cvestate.name, self.cveref)
 
 
 class CVERefSet(BugSetBase):
@@ -50,9 +60,52 @@ class CVERefSet(BugSetBase):
         if bug:
             self.title += ' for Malone Bug #' + str(bug)
 
-    def createCVERef(self, bug, cveref, title, owner):
+    def createCVERef(self, bug, cveref, cvestate, title, owner):
         """See canonical.launchpad.interfaces.ICVERefSet."""
-        return CVERef(bug=bug, cveref=cveref, title=title, owner=owner)
+        return CVERef(bug=bug, cveref=cveref, cvestate=cvestate,
+            title=title, owner=owner)
+
+    def fromText(self, text, bug, title, owner):
+        """See ICVERefSet."""
+        # let's look for matching entries
+        matches = cverefpat.findall(text)
+        if len(matches) == 0:
+            return []
+        newcverefs = []
+        for match in matches:
+            # let's get the core CVE data
+            cvestate = match[0]
+            cvenum = match[1]
+            # see if there is already a matching CVE ref on this bug
+            cveref = None
+            for ref in bug.cverefs:
+                if ref.cveref == cvenum:
+                    cveref = ref
+                    break
+            if cveref is None:
+                cveref = CVERef(bug=bug, cveref=cvenum,
+                    cvestate=CVEState.items[cvestate], owner=owner,
+                    title=title)
+                newcverefs.append(cveref)
+                flush_database_updates()
+        return sorted(newcverefs, key=lambda a: a.cveref)
+
+    def fromMessage(self, message, bug):
+        """See ICVERefSet."""
+        cverefs = set()
+        for messagechunk in message:
+            if messagechunk.blob is not None:
+                # we don't process attachments
+                continue
+            elif messagechunk.content is not None:
+                # look for potential BugWatch URL's and create the trackers
+                # and watches as needed
+                cverefs = cverefs.union(self.fromText(messagechunk.content,
+                    bug, message.title, message.owner))
+            else:
+                raise AssertionError('MessageChunk without content or blob.')
+        return sorted(cverefs, key=lambda a: a.cveref)
+
 
 def CVERefFactory(context, **kw):
     bug = context.context.bug

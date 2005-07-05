@@ -39,14 +39,14 @@
                                tal:omit-tag>
 				   <!-- If searching from distribution context -->
 				   <a
-				   tal:condition="not:view/launchbag/distrorelease"
+				   tal:condition="not:view/distrorelease"
                                    tal:content="build/processorfamilyname"
                                    tal:attributes="href
 				   string:../${release/distroreleasename}/${build/distroarchrelease/architecturetag}/${package/name}"
                                    />,
 				   <!-- If searching from distrorelease context -->
                                    <a
-				   tal:condition="view/launchbag/distrorelease"
+				   tal:condition="view/distrorelease"
                                    tal:content="build/processorfamilyname"
                                    tal:attributes="href
 				   string:../${build/distroarchrelease/architecturetag}/${package/name}"

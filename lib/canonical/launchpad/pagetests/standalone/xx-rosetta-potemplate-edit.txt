@@ -1,0 +1,11 @@
+Check to be sure that as an admin, we get all fields needed.
+
+  >>> print http(r"""
+  ... GET /products/netapplet/+series/releases/+pots/netapplet/+edit HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+                  <div><textarea cols="60" id="field.description" name="field.description" rows="15" >...</textarea></div>
+  ...
+

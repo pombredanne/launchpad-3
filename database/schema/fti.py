@@ -38,7 +38,7 @@ ALL_FTI = [
             ]),
 
     ('message', [
-            ('title', B),
+            ('subject', B),
             ]),
 
     ('messagechunk', [

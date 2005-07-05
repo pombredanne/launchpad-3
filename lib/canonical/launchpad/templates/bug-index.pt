@@ -21,19 +21,17 @@
 
 <div metal:fill-slot="main">
 
-    <div tal:condition="context/duplicateof">
-      <p class="portalMessage">
-        This bug is a duplicate of
-        <a href="#"
-           tal:attributes="href context/duplicateof/@@absolute_url"
-           tal:content="string:bug ${context/duplicateof/id}">bug 42</a>
-      </p>
-    </div>
+  <p class="portalMessage" tal:condition="context/duplicateof">
+    This bug is a duplicate of
+    <a href="#"
+       tal:attributes="href context/duplicateof/@@absolute_url"
+       tal:content="string:bug ${context/duplicateof/id}">bug 42</a>
+  </p>
 
   <div class="discreet">
 
     <tal:block condition="context/name">
-      Malone bug "<a href="" tal:content="context/name">$Bug.name</a>",
+      Malone bug "<a href="." tal:content="context/name">$Bug.name</a>",
     </tal:block>
     <tal:block condition="not: context/name">
       Malone bug #<span tal:replace="context/id">33</span>,
@@ -49,21 +47,21 @@
   </div>
 
   <p class="documentDescription"
+     tal:condition="context/summary"
      tal:content="context/summary">
      $bug.summary
   </p>
+
+  <div tal:replace="structure context/@@+portlet-bug-tasks-headline" />
 
   <p class="boardCommentContent" 
      tal:content="structure context/description/fmt:nice_pre">
      $Bug.description
   </p>
 
-  <div tal:replace="structure context/@@+portlet-bug-tasks-headline" />
-
-  <div class="boardComment">
+  <div class="boardComment"> <!-- this is the new comment -->
     <fieldset class="collapsible collapsed">
       <legend>New comment on this bug</legend>
-
       <div class="field">
         <form action="+messages/+new" method="post">
           <label>Comment</label>
@@ -77,12 +75,13 @@
           <input type="submit" name="UPDATE_SUBMIT" value="Add" />
         </form>
       </div>
-
     </fieldset>
   </div>
 
-  <div class="boardComment" tal:repeat="message context/messages">
-
+  <tal:block repeat="message context/messages">
+  <div class="boardComment"
+       tal:condition="python:context.description!=message.contents">
+    
     <div class="boardCommentDetails">
       <strong tal:content="message/title">$Bugmessage.title</strong>
 
@@ -116,9 +115,9 @@
         </form>
       </div>
     </fieldset>
-    <div class="visualClear"></div>
 
   </div>
+  </tal:block> <!-- repeating over message -->
 
 </div>
 </body>

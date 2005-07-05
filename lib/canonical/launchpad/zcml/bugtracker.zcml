@@ -16,20 +16,36 @@
         for="canonical.launchpad.interfaces.IBugTracker"
         name="+index" />
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IBugTracker"
+        path_expression="string:${name}"
+        parent_utility="canonical.launchpad.interfaces.IBugTrackerSet"
+        />
+
     <browser:pages for="canonical.launchpad.interfaces.IBugTracker"
         permission="zope.Public">
-        <browser:page name="+index"
+        <browser:page
+            name="+index"
             template="../templates/bugtracker-index.pt"
             lp:url="malone/bugtrackers/$BugTracker.name/" />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/bugtracker-portlet-details.pt"
+            lp:url="/malone/bugtrackers/$BugTracker.name/+portlet-details" />
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/bugtracker-portlet-actions.pt"
+            lp:url="/malone/bugtrackers/$BugTracker.name/+portlet-actions" />
     </browser:pages>
 
     <browser:pages for="canonical.launchpad.database.BugTracker"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Edit"
         class="canonical.launchpad.browser.BugTrackerView">
         <browser:page name="+edit"
             template="../templates/bugtracker-edit.pt"
             lp:url="malone/bugtrackers/$BugTracker.name/+edit" />
     </browser:pages>
+
 
     <!-- BugTrackerSet -->
     <content class="canonical.launchpad.database.BugTrackerSet">
@@ -49,14 +65,27 @@
     <browser:traverse for="canonical.launchpad.interfaces.IBugTrackerSet"
         getter="__getitem__" />
 
-    <browser:pages for="canonical.launchpad.interfaces.IBugTrackerSet"
+    <browser:url
+        for="canonical.launchpad.interfaces.IBugTrackerSet"
+        path_expression="string:bugtrackers"
+        parent_utility="canonical.launchpad.interfaces.IMaloneApplication"
+        />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBugTrackerSet"
         permission="zope.Public">
-        <browser:page name="+index"
+        <browser:page
+            name="+index"
             template="../templates/bugtrackers-index.pt"
             lp:url="malone/bugtrackers/" />
+        <browser:page
+            name="+portlet-info"
+            template="../templates/bugtrackers-portlet-info.pt"
+            lp:url="malone/bugtrackers/+portlet-info" />
     </browser:pages>
 
-    <browser:pages for="canonical.launchpad.interfaces.IBugTrackerSet"
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBugTrackerSet"
         permission="launchpad.AnyPerson"
         class="canonical.launchpad.browser.BugTrackerSetView">
         <browser:page name="+newbugtracker"

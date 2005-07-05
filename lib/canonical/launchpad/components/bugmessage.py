@@ -17,10 +17,14 @@ class BugMessageToAddMessageAdapter:
     def __init__(self, bugmessage):
         self.bugmessage = bugmessage
 
+    @property
+    def subject(self):
+        return self.bugmessage.message.subject
+
+    @property
     def title(self):
         return self.bugmessage.message.title
-    title = property(title)
 
+    @property
     def content(self):
         return self.bugmessage.message.contents
-    content = property(content)

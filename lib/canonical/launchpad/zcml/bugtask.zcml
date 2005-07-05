@@ -157,7 +157,7 @@
         label="Product Bug Task"
         permission="launchpad.View"
         template="../templates/bugtask-editform.pt"
-        lp:url="malone/tasks/$BugTask.id/+edit">
+        lp:url="malone/tasks/$BugTask.id/+index">
     </browser:schemadisplay>
 
     <browser:defaultView

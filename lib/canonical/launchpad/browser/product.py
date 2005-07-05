@@ -33,7 +33,7 @@ from canonical.launchpad.database import (
     Product, BugFactory, Milestone, Person)
 from canonical.launchpad.interfaces import (
     IPerson, IProduct, IProductSet, IBugTaskSet, IAging, ILaunchBag,
-    IProductRelease, ISourcePackage, IBugTaskSearchListingView, ICountry)
+    IProductSeries, ISourcePackage, IBugTaskSearchListingView, ICountry)
 from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad import helpers
@@ -123,19 +123,19 @@ class ProductView:
                         sourcepackage.name)
                     }
 
-            elif IProductRelease.providedBy(translatable):
-                productrelease = translatable
+            elif IProductSeries.providedBy(translatable):
+                productseries = translatable
 
                 object_translatable = {
-                    'title': productrelease.title,
-                    'potemplates': productrelease.potemplates,
-                    'base_url': '/products/%s/%s' %(
+                    'title': productseries.title,
+                    'potemplates': productseries.potemplates,
+                    'base_url': '/products/%s/+series/%s' %(
                         self.context.name,
-                        productrelease.version)
+                        productseries.name)
                     }
             else:
                 # The translatable object does not implements an
-                # ISourcePackage nor a IProductRelease. As it's not a critical
+                # ISourcePackage nor a IProductSeries. As it's not a critical
                 # failure, we log only it instead of raise an exception.
                 warn("Got an unknown type object as primary translatable",
                      RuntimeWarning)

@@ -110,6 +110,8 @@ bug_index = ContextId('Malone: Bug #%s')
 
 bug_references = ContextId('External References for Malone Bug #%s')
 
+bugwatch_editform = ContextTitle('Edit the Watch on %s')
+
 # bugpackageinfestations_index is a redirect
 
 # bugproductinfestations_index is a redirect
@@ -222,7 +224,7 @@ def distrorelease_edit(context, view):
     return 'Edit %s Details' % context.release.displayname
 
 def distrorelease_index(context, view):
-    return '%s: Releases' % context.distribution.title
+    return '%s: %s' % (context.distribution.title, context.title)
 
 def distrorelease_new(context, view):
     return 'Create New Release of %s' % context.distribution.title
@@ -324,7 +326,7 @@ malone_distro_index = ContextTitle('Malone Distribution Manager: %s')
 
 malone_distros_index = 'File a Bug in a Distribution'
 
-malone_index = 'About Malone'
+malone_index = 'Malone: Collaborative Open Source Bug Management'
 
 # malone_people_index is a redirect
 
@@ -443,7 +445,7 @@ def productrelease_edit(context, view):
 def productrelease_new(context, view):
     return 'Register a new release of %s' % view.product.displayname
 
-productrelease_translations = ContextTitle(
+productseries_translations = ContextTitle(
     'Rosetta Translation Templates for %s')
 
 products_index = 'Products in Launchpad'

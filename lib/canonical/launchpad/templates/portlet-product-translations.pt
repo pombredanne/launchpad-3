@@ -1,33 +1,33 @@
-<div class="portlet"
-     tal:define="translatable view/primary_translatable"
-     tal:condition="translatable">
+<div class="portlet" tal:define="translatable view/primary_translatable">
 
-    <h4>Translation Sets:<br />
-        <span tal:replace="translatable/title" /></h4>
+  <h4>Translations for <span tal:replace="context/displayname" /></h4>
 
-    <div class="portletBody">
+  <div class="portletBody portletContent">
 
-        <div class="portletContent even">
+    <tal:block condition="translatable">
 
-        <table class="rowNavigation" border="0">
+      <ul>
+        <li class="translations"
+            tal:repeat="template translatable/potemplates">
+          <a tal:attributes="href template/fmt:url"
+             tal:content="template/title">template title</a>
+        </li>
+      </ul>
 
-            <tr tal:repeat="template translatable/potemplates"
+  </tal:block>
+  <tal:block condition="not: translatable">
+    No translation templates registered upstream or in Ubuntu
+  </tal:block>
 
-                tal:attributes="onclick
-                string:window.location='${translatable/base_url}/+pots/${template/name}';">
-                <td tal:content="template/title">template title</td>
-            </tr>
-
-        </table>
-
-        <ul><li class="info">
+    <ul>
+      <li class="info">
         <a href="+translations"
-           title="See more translation options for this product">
-            More...
+           title="See more translation options">
+          More about translations...
         </a>
-        </li></ul>
+      </li>
+    </ul>
 
-        </div>
+  </div>
 
-    </div>
 </div>

@@ -133,11 +133,11 @@ def generate_bug_edit_email(bug_delta):
     if bug_delta.cveref is not None:
         body += "    - Changed CVE references:\n"
         body += "        Added: %s [%s]\n" % (
-            bug_delta.cveref['new'].cveref, bug_delta.cveref['new'].title)
+            bug_delta.cveref['new'].displayname, bug_delta.cveref['new'].title)
         old_cveref = bug_delta.cveref.get('old')
         if old_cveref:
             body += "      Removed: %s [%s]\n" % (
-                old_cveref.cveref, old_cveref.title)
+                old_cveref.displayname, old_cveref.title)
 
     if bug_delta.bugtask_deltas is not None:
         bugtask_deltas = bug_delta.bugtask_deltas

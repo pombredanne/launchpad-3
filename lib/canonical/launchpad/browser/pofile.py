@@ -65,27 +65,61 @@ class POFileView:
         self.alerts = []
         potemplate = context.potemplate
         self.is_editor = context.canEditTranslations(self.user)
+        self.second_lang_pofile = None
+        self.second_lang_code = self.form.get('alt', None)
+        if self.second_lang_code:
+            self.second_lang_pofile = potemplate.queryPOFileByLang(self.second_lang_code)
+        self.submitted = False
+        self.errorcount = 0
 
-        if potemplate.productrelease:
-            self.what = '%s %s' % (
-                potemplate.productrelease.product.name,
-                potemplate.productrelease.version)
-        elif potemplate.distrorelease and potemplate.sourcepackagename:
-            self.what = '%s in %s %s' % (
-                potemplate.sourcepackagename.name,
-                potemplate.distrorelease.distribution.name,
-                potemplate.distrorelease.name)
-        else:
-            assert False, ('The context for POFileView needs to have either a'
-                           ' product release or a distrorelease and'
-                           ' sourcepackagename')
 
-    def computeLastOffset(self, length):
+        # Get pagination information.
+        self.offset = 0
+        try:
+            self.offset = int(self.form.get('offset', 0))
+        except (TypeError, ValueError):
+            # The value is not an integer, stick with 0
+            pass
+
+        self.count = self.DEFAULT_COUNT
+        try:
+            self.count = int(self.form.get('count', self.DEFAULT_COUNT))
+        except (TypeError, ValueError):
+            # It's not an integer, stick with DEFAULT_COUNT
+            pass
+
+        # Never show more than self.MAX_COUNT items in a form.
+        if self.count > self.MAX_COUNT:
+            self.count = self.MAX_COUNT
+
+        # Get message display settings.
+        self.show = self.form.get('show')
+
+        if self.show not in ('translated', 'untranslated', 'all'):
+            self.show = self.DEFAULT_SHOW
+
+    def lang_selector(self):
+        second_lang_code = self.second_lang_code
+        all_languages = getUtility(ILanguageSet)
+        html = '<select name="alt" title="Make suggestions from...">\n<option value=""'
+        if self.second_lang_pofile is None:
+            html += ' selected="yes"'
+        html += '></option>\n'
+        for lang in all_languages:
+            html += '<option value="' + lang.code + '"'
+            if second_lang_code == lang.code:
+                html += ' selected=""'
+            html += '>' + lang.englishname + '</option>\n'
+        html += '</select>\n'
+        return html
+
+    def computeLastOffset(self):
         """Return higher integer multiple of self.count and less than length.
 
         It's used to calculate the self.offset to reference last page of the
         translation form.
         """
+        length = len(self.context.potemplate)
         if length % self.count == 0:
             return length - self.count
         else:
@@ -180,15 +214,6 @@ class POFileView:
         #    Number of plural forms.
         #  lacksPluralFormInformation:
         #    If the translation form needs plural form information.
-        #  offset:
-        #    The offset into the template of the first message being
-        #    translated.
-        #  count:
-        #    The number of messages being translated.
-        #  show:
-        #    Which messages to show: 'translated', 'need-review',
-        #    'untranslated', 'errors' or 'all'.
-        #
         assert self.user is not None, 'This view is for logged-in users only.'
 
         form = self.request.form
@@ -227,67 +252,31 @@ class POFileView:
 
             self.lacksPluralFormInformation = self.pluralFormCounts is None
 
-        # Get pagination information.
-        offset = form.get('offset')
-        if offset is None:
-            self.offset = 0
-        else:
-            try:
-                self.offset = int(offset)
-            except ValueError:
-                # The value is not an integer
-                self.offset = 0
-
-        count = form.get('count')
-        if count is None:
-            self.count = self.DEFAULT_COUNT
-        else:
-            try:
-                self.count = int(count)
-            except ValueError:
-                # We didn't get any value or it's not an integer
-                self.count = self.DEFAULT_COUNT
-
-            # Never show more than self.MAX_COUNT items in a form.
-            if self.count > self.MAX_COUNT:
-                self.count = self.MAX_COUNT
-
-        # Get message display settings.
-        self.show = form.get('show')
-
-        if self.show not in ('translated', 'need-review', 'untranslated',
-                             'errors', 'all'):
-            self.show = self.DEFAULT_SHOW
-
         # Get the message sets.
-        self.submitted = submitted
-        self.submitError = False
+        if submitted:
+            self.submitted = True
 
-        for messageSet in submitted.values():
-            if messageSet['error'] is not None:
-                self.submitError = True
-                break
-
-        if self.submitError:
+        if self.errorcount > 0:
+            # there was an error, so we will re-show the existing
+            # messagesets, with error messages for correction.
             self.messageSets = [
                 POMsgSetView(message_set['pot_set'], code,
                              self.pluralFormCounts,
                              message_set['translations'],
                              message_set['fuzzy'],
-                             message_set['error'])
+                             message_set['error'],
+                             self.second_lang_pofile)
                 for message_set in submitted.values()
                 if message_set['error'] is not None]
-
-            # We had an error, so the offset shouldn't change.
-            if self.offset == 0:
-                # The submit was done from the last set of potmsgset so we
-                # need to calculate that last page
-                self.offset = self.computeLastOffset(len(potemplate))
-            else:
-                # We just go back self.count messages
-                self.offset = self.offset - self.count
         else:
-            # There was no errors, get the next set of message sets.
+            # get the next set of message sets
+            # if there were submitted message, and no error, we want to
+            # increase the offset by count first
+            if self.submitted:
+                self.offset = self.getNextOffset()
+
+            # setup the slice so we know which translations we are
+            # interested in
             slice_arg = slice(self.offset, self.offset+self.count)
 
             # The set of message sets we get is based on the selection of kind
@@ -311,13 +300,16 @@ class POFileView:
                 raise AssertionError('show = "%s"' % self.show)
 
             self.messageSets = [
-                POMsgSetView(potmsgset, code, self.pluralFormCounts)
+                POMsgSetView(potmsgset, code, self.pluralFormCounts,
+                    second_lang_pofile=self.second_lang_pofile)
                 for potmsgset in filtered_potmsgsets]
 
-            if 'SUBMIT' in form:
-                # We did a submit without errors, we should redirect to next
-                # page.
-                self.request.response.redirect(self.createURL(offset=self.offset))
+            # commented out in support of the theory that we should be able
+            # to render directly, without resubmission
+            #if 'SUBMIT' in form:
+            #    # We did a submit without errors, we should redirect to next
+            #    # page.
+            #    self.request.response.redirect(self.createURL(offset=self.getNextOffset()))
 
     def makeTabIndex(self):
         """Return the tab index value to navigate the form."""
@@ -345,12 +337,20 @@ class POFileView:
         parameters = {}
 
         # Parameters to copy from args or form.
-        parameters = {'count':count, 'show':show, 'offset':offset}
-        for name, value in parameters.items():
-            if value is None and name in self.request.form:
-                parameters[name] = self.request.form.get(name)
+        parameters = {'count':count, 'show':show, 'offset':offset,
+            'alt':self.second_lang_code}
 
-        # Removed the arguments if are the same as the defaults ones or None
+        # Update with current values from self
+        if parameters['count'] is None:
+            parameters['count'] = self.count
+
+        if parameters['show'] is None:
+            parameters['show'] = self.show
+
+        if parameters['offset'] is None:
+            parameters['offset'] = self.offset
+
+        # Remove the arguments if are the same as the defaults or None
         if (parameters['show'] == self.DEFAULT_SHOW or
             parameters['show'] is None):
             del parameters['show']
@@ -362,6 +362,14 @@ class POFileView:
             parameters['count'] is None):
             del parameters['count']
 
+        if parameters['alt'] is None:
+            del parameters['alt']
+
+        # add the alternative language parameter
+        if self.second_lang_code:
+            parameters['alt'] = self.second_lang_code
+        
+        # now build the query
         if parameters:
             keys = parameters.keys()
             keys.sort()
@@ -376,22 +384,12 @@ class POFileView:
 
     def endURL(self):
         """Return the URL to be at the end of the translation form."""
-        # The largest offset less than the length of the template x that is a
-        # multiple of self.count.
-
-        length = len(self.context.potemplate)
-
-        offset = self.computeLastOffset(length)
-
-        return self.createURL(offset=offset)
+        return self.createURL(offset=self.computeLastOffset())
 
     def previousURL(self):
         """Return the URL to get previous self.count number of message sets.
         """
-        if self.offset - self.count <= 0:
-            return self.createURL(offset=0)
-        else:
-            return self.createURL(offset=(self.offset - self.count))
+        return self.createURL(offset=max(self.offset-self.count, 0))
 
     def nextURL(self):
         """Return the URL to get next self.count number of message sets."""
@@ -399,8 +397,7 @@ class POFileView:
         if self.offset + self.count >= pot_length:
             raise IndexError('Only have %d messages, requested %d' %
                                 (pot_length, self.offset + self.count))
-        else:
-            return self.createURL(offset=(self.offset + self.count))
+        return self.createURL(offset=(self.offset + self.count))
 
     def getFirstMessageShown(self):
         """Return the first POTMsgSet number shown in the form."""
@@ -434,8 +431,6 @@ class POFileView:
 
         # Put the translations in the database.
 
-        number_errors = 0
-
         for messageSet in messageSets.values():
             pot_set = potemplate.getPOTMsgSetByID(messageSet['msgid'])
             if pot_set is None:
@@ -452,6 +447,33 @@ class POFileView:
             messageSet['error'] = None
             new_translations = messageSet['translations']
             fuzzy = messageSet['fuzzy']
+
+            has_translations = False
+            for new_translation_key in new_translations.keys():
+                if new_translations[new_translation_key] != '':
+                    has_translations = True
+                    break
+
+            if has_translations and not fuzzy:
+                # The submit has translations to validate and are not set as
+                # fuzzy.
+
+                msgids_text = [messageid.msgid
+                               for messageid in list(pot_set.messageIDs())]
+
+                # Validate the translation we got from the translation form
+                # to know if gettext is unhappy with the input.
+                try:
+                    helpers.validate_translation(msgids_text,
+                                                 new_translations,
+                                                 pot_set.flags())
+                except gettextpo.error, e:
+                    # Save the error message gettext gave us to show it to the
+                    # user and jump to the next entry so this messageSet is
+                    # not stored into the database.
+                    messageSet['error'] = str(e)
+                    self.errorcount += 1
+                    continue
 
             # Get hold of an appropriate message set in the PO file,
             # creating it if necessary.
@@ -475,13 +497,6 @@ class POFileView:
 
         # update the statistis for this po file
         pofile.updateStatistics()
-
-        if number_errors > 0:
-            # There was at least one error.
-            self.alerts.append(
-                'There were problems with %d of the submitted translations.\n'
-                'Please correct the errors before continuing.' %
-                    number_errors)
 
         return messageSets
 

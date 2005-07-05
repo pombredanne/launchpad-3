@@ -297,16 +297,20 @@ Let's demonstrate with an example:
 Adding a CVE ref will generate a notification that looks as follows:
 
     >>> from canonical.launchpad.interfaces import ICVERef
+    >>> from canonical.lp.dbschema import CVEState
 
     >>> class MockCVERef:
     ...     implements(ICVERef)
-    ...     def __init__(self, bug, cveref, title):
+    ...     def __init__(self, bug, cveref, cvestate, title):
     ...         self.bug = bug
     ...         self.cveref = cveref
+    ...         self.cvestate = cvestate
+    ...         self.displayname = cvestate.name + '-' + cveref
     ...         self.title = title
     >>> mock_cve_ref = MockCVERef(
     ...     bug = edited_bug,
-    ...     cveref = "CAN-2004-0718",
+    ...     cveref = "2004-0718",
+    ...     cvestate = CVEState.CAN,
     ...     title = "a test cve ref")
 
     >>> bug_delta = BugDelta(
@@ -332,7 +336,8 @@ follows:
 
     >>> mock_cve_ref_edited = MockCVERef(
     ...     bug = edited_bug,
-    ...     cveref = "CAN-2004-0719",
+    ...     cveref = "2004-0719",
+    ...     cvestate = CVEState.CAN,
     ...     title = "a test cve ref")
 
     >>> bug_delta = BugDelta(

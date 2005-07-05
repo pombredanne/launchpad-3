@@ -48,12 +48,12 @@ Now, is time to create the new potemplate
     >>> release = ProductRelease.get(3)
     >>> release.productseries.product.name
     u'firefox'
-
+    >>> series = release.productseries
     >>> from canonical.launchpad.database import POTemplateNameSet
     >>> ptn = POTemplateNameSet().new('firefox', 'Whatever')
 
     >>> from canonical.launchpad.database import POTemplateSubset
-    >>> subset = POTemplateSubset(productrelease=release)
+    >>> subset = POTemplateSubset(productseries=series)
 
 Here's the person who'll be doing the import.
 
@@ -233,12 +233,12 @@ Now, is time to check the notification email.
     ['mark@hbd.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
-    'Translation problems - Welsh (cy) - firefox in Mozilla Firefox 0.9'
+    'Translation problems - Welsh (cy) - firefox in Mozilla Firefox\n\tMilestone Releases'
     >>> print msg.get_payload(decode=True)
     Hello Mark Shuttleworth,
     <BLANKLINE>
     On ... (just requested), you uploaded 5
-    Welsh (cy) translations for firefox in Mozilla Firefox 0.9 in Rosetta.
+    Welsh (cy) translations for firefox in Mozilla Firefox Milestone Releases in Rosetta.
     <BLANKLINE>
     There were problems with 1 of these translations.
     <BLANKLINE>

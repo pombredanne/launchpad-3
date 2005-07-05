@@ -7,7 +7,7 @@
     <div metal:fill-slot="main">
       <tal:block define="bn view/searchPeopleBatchNavigator">
         <h1>People and teams in Launchpad</h1>
-        <form name="search" action="" method="GET">
+        <form name="search" action="." method="GET">
           <table style="margin-bottom: 1em;">
             <tr>
               <th><label>Search for:</label></th>

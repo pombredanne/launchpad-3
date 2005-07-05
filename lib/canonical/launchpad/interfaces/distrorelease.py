@@ -54,6 +54,13 @@ class IDistroRelease(IHasOwner):
     datelastlangpack = Attribute(
         "The date of the last base language pack export for this release.")
 
+    # related joins
+    packagings = Attribute("All of the Packaging entries for this "
+        "distrorelease.")
+
+    previous_releases = Attribute("Previous distroreleases from the same "
+        "distribution.")
+
     def getBugSourcePackages():
         """Get SourcePackages in a DistroRelease with BugTask"""
 
@@ -77,6 +84,13 @@ class IDistroRelease(IHasOwner):
         """Given a SourcePackageName, return a list of the currently
         published SourcePackageReleases as SourcePackagePublishing records.
         """
+
+    def publishedBinaryPackages(component=None):
+        """Given an optional component name, return a list of the binary
+        packages that are currently published in this distrorelease in the
+        given component, or in any component if no component name was given.
+        """
+
 
 class IDistroReleaseSet(Interface):
     """The set of distro releases."""

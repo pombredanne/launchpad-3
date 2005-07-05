@@ -15,7 +15,7 @@
       <b tal:content="string:Viewing status of bug #${context/bug/id} in:">
         Viewing status of bug #42 in
       </b><br />
-      <a href=""
+      <a href="."
          style="text-decoration: underline"
          tal:content="context/contextname">
         Mozilla Firefox

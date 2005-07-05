@@ -6,7 +6,7 @@
 <body>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <form method="POST" action="." style="float: right;">
+    <form method="POST" action="" style="float: right;">
         <b>Assigned to:</b><br />
         <div tal:replace="structure view/userSelector" /><br />
         <b>Minimum Severity:</b><br />

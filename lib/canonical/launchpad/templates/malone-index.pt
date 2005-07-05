@@ -4,37 +4,43 @@
     i18n:domain="malone">
 
 <body>
+
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-about" />
+    <div tal:replace="structure context/@@+portlet-stats" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-bugtrackers" />
+</metal:rightportlets>
+
 <div metal:fill-slot="main">
 
-    <h1>Welcome to Malone!</h1>
-    <p class="discreet">
-        Malone is a system for reporting bugs in software. Please choose a link
-        below to get started.
-    </p>
+  <h1>Welcome to Malone!</h1>
+  <p class="discreet">
+    Malone is a system for reporting bugs in software. Please choose a link
+    below to get started.
+  </p>
 
-    <ul>
-        <li tal:replace="nothing">
-            <!-- XXX: Brad Bollenbach, 2004-12-16: Find a place to put this. -->
-            <a href="+about">About Malone</a>
-        </li>
-        <li>
-            <a href="bugs/+package">File a Bug on a Package</a> - report a bug
-            on something that you installed with apt, rpm, emerge or something
-            similar. <b>If you're not sure, start here.</b>
-        </li>
-        <li>
-            <a href="products">File a Bug on a Product</a> - report a bug
-            on something that you installed manually.
-        </li>
-        <li>
-            <a href="distros">View Distribution Bugs</a> - view bugs filed on
-            specific distributions and releases of distributions
-        </li>
-        <li>
-            <a href="assigned">Assigned Bug Reports</a> - retrieve reports on
-            bugs assigned to a specific person
-        </li>
-    </ul>
+  <ul>
+    <li>
+      <a href="bugs/+package">File a Bug on a Package</a> - report a bug
+      on something that you installed with apt, rpm, emerge or something
+      similar. <b>If you're not sure, start here.</b>
+    </li>
+    <li>
+      <a href="products">File a Bug on a Product</a> - report a bug
+      on something that you installed manually.
+    </li>
+    <li>
+      <a href="distros">View Distribution Bugs</a> - view bugs filed on
+      specific distributions and releases of distributions
+    </li>
+    <li>
+      <a href="assigned">Assigned Bug Reports</a> - retrieve reports on
+      bugs assigned to a specific person
+    </li>
+  </ul>
 
 </div>
 </body>

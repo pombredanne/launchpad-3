@@ -4,7 +4,7 @@
     <div class="portletContent odd">
       <ul>
         <li tal:repeat="subscription view/getSubscriptions">
-          <a href="" tal:content="subscription/person/browsername" />
+          <a href="." tal:content="subscription/person/browsername" />
         </li>
       </ul>
       <br />

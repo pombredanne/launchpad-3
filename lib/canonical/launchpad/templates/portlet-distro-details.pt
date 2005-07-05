@@ -41,16 +41,6 @@
       <span tal:replace="context/translationpermission/title">Open</span>
       <br />
 
-      <span tal:condition="context/releases" tal:omit-tag>
-        <b>Releases:</b><br />
-        <span tal:repeat="release context/releases" tal:omit-tag>
-          <img src="/++resource++document_icon.gif" />
-          <a tal:content="release/displayname"
-             tal:attributes="href
-               string:/distros/${context/name}/${release/name}/" /><br />
-        </span>
-      </span>
-           
     </div>
   </div>
 </div>

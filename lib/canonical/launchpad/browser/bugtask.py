@@ -161,7 +161,11 @@ class BugTaskViewBase:
 
 
 class BugTaskEditView(SQLObjectEditView, BugTaskViewBase):
-    pass
+
+    def changed(self):
+        """Redirect the browser to the bug page when we successfully update
+        the bug task."""
+        self.request.response.redirect(canonical_url(self.context.bug))
 
 
 class BugTaskDisplayView(BugTaskViewBase):

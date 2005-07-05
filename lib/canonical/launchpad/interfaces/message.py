@@ -30,8 +30,8 @@ class IMessage(Interface):
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True,
             )
-    title = TextLine(
-            title=_('Title'), required=True, readonly=True,
+    subject = TextLine(
+            title=_('Subject'), required=True, readonly=True,
             )
     owner = Int(
             title=_('Person'), required=False, readonly=True,
@@ -52,16 +52,20 @@ class IMessage(Interface):
     bugs = Attribute(_('Bug List'))
     chunks = Attribute(_('Message pieces'))
     contents = Attribute(_('Full message contents as plain text'))
-    followup_title = Attribute(_("Candidate title for a followup message."))
+    followup_title = Attribute(_('Candidate title for a followup message.'))
+    title = Attribute(_('The message title, usually just the subject.'))
+
+    def __iter__():
+        """Iterate over all the message chunks."""
 
 
 class IMessageSet(Interface):
     """Set of IMessage"""
 
     def get(rfc822msgid):
-        """Return a single IMessage with the given rfc822msgid.
+        """Return a list of IMessage's with the given rfc822msgid.
 
-        If no such messge exists, raise NotFoundError.
+        If no such messages exist, raise NotFoundError.
         """
 
     def fromEmail(email_message, owner=None, filealias=None,

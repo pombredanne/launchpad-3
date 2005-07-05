@@ -24,7 +24,8 @@ from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
-from canonical.database.sqlbase import SQLBase, quote, cursor, sqlvalues
+from canonical.database.sqlbase import (SQLBase, quote, cursor, sqlvalues,
+    )
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
@@ -127,6 +128,7 @@ class Person(SQLBase):
         return val
     get = classmethod(get)
 
+    @property
     def browsername(self):
         """Return a name suitable for display on a web page.
 
@@ -196,7 +198,6 @@ class Person(SQLBase):
             return ' '.join(L)
         else:
             return self.name
-    browsername = property(browsername)
 
     def isTeam(self):
         """See IPerson."""
@@ -392,12 +393,12 @@ class Person(SQLBase):
                     EmailAddress.q.status==status)
         return EmailAddress.select(query)
 
+    @property
     def title(self):
         """See IPerson."""
         return self.browsername
-    title = property(title)
 
-    @property 
+    @property
     def karma(self):
         """See IPerson."""
         total = 0
@@ -405,56 +406,57 @@ class Person(SQLBase):
             total += karma.karma
         return total
 
+    @property 
     def allmembers(self):
         """See IPerson."""
         return _getAllMembers(self)
-    allmembers = property(allmembers)
 
+    @property
     def deactivatedmembers(self):
         """See IPerson."""
         return self._getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
-    deactivatedmembers = property(deactivatedmembers)
 
+    @property
     def expiredmembers(self):
         """See IPerson."""
         return self._getMembersByStatus(TeamMembershipStatus.EXPIRED)
-    expiredmembers = property(expiredmembers)
 
+    @property
     def declinedmembers(self):
         """See IPerson."""
         return self._getMembersByStatus(TeamMembershipStatus.DECLINED)
-    declinedmembers = property(declinedmembers)
 
+    @property
     def proposedmembers(self):
         """See IPerson."""
         return self._getMembersByStatus(TeamMembershipStatus.PROPOSED)
-    proposedmembers = property(proposedmembers)
 
+    @property
     def administrators(self):
         """See IPerson."""
         return self._getMembersByStatus(TeamMembershipStatus.ADMIN)
-    administrators = property(administrators)
 
+    @property
     def approvedmembers(self):
         """See IPerson."""
         return self._getMembersByStatus(TeamMembershipStatus.APPROVED)
-    approvedmembers = property(approvedmembers)
 
+    @property
     def activemembers(self):
         """See IPerson."""
         return self.approvedmembers.union(self.administrators)
-    activemembers = property(activemembers)
 
+    @property
     def inactivemembers(self):
         """See IPerson."""
         return self.expiredmembers.union(self.deactivatedmembers)
-    inactivemembers = property(inactivemembers)
 
+    @property
     def memberships(self):
         """See IPerson."""
         return TeamMembership.selectBy(personID=self.id)
-    memberships = property(memberships)
 
+    @property
     def defaultexpirationdate(self):
         """See IPerson."""
         days = self.defaultmembershipperiod
@@ -462,8 +464,8 @@ class Person(SQLBase):
             return datetime.now(pytz.timezone('UTC')) + timedelta(days)
         else:
             return None
-    defaultexpirationdate = property(defaultexpirationdate)
 
+    @property
     def defaultrenewedexpirationdate(self):
         """See IPerson."""
         days = self.defaultrenewalperiod
@@ -471,7 +473,27 @@ class Person(SQLBase):
             return datetime.now(pytz.timezone('UTC')) + timedelta(days)
         else:
             return None
-    defaultrenewedexpirationdate = property(defaultrenewedexpirationdate)
+
+    def validateAndEnsurePreferredEmail(self, email):
+        """See IPerson."""
+        if not IEmailAddress.providedBy(email):
+            raise TypeError, (
+                "Any person's email address must provide the IEmailAddress "
+                "interface. %s doesn't." % email)
+        # XXX stevea 05/07/05 this is here because of an SQLobject
+        # comparison oddity
+        assert email.person.id == self.id, 'Wrong person! %r, %r' % (
+            email.person, self)
+        assert self.preferredemail != email, 'Wrong prefemail! %r, %r' % (
+            self.preferredemail, email)
+
+        if self.preferredemail is None:
+            # This branch will be executed only in the first time a person
+            # uses Launchpad. Either when creating a new account or when
+            # resetting the password of an automatically created one.
+            self.preferredemail = email
+        else:
+            email.status = EmailAddressStatus.VALIDATED
 
     def validateAndEnsurePreferredEmail(self, email):
         """See IPerson."""
@@ -521,6 +543,7 @@ class Person(SQLBase):
             return None
     preferredemail = property(_getPreferredemail, _setPreferredemail)
 
+    @property
     def preferredemail_sha1(self):
         """See IPerson."""
         preferredemail = self.preferredemail
@@ -528,46 +551,49 @@ class Person(SQLBase):
             return sha.new(preferredemail.email).hexdigest().upper()
         else:
             return None
-    preferredemail_sha1 = property(preferredemail_sha1)
 
+    @property
     def validatedemails(self):
         """See IPerson."""
         return self._getEmailsByStatus(EmailAddressStatus.VALIDATED)
-    validatedemails = property(validatedemails)
 
+    @property
     def unvalidatedemails(self):
         """See IPerson."""
         query = "requester=%d AND email IS NOT NULL" % self.id
         return sets.Set([token.email for token in LoginToken.select(query)])
-    unvalidatedemails = property(unvalidatedemails)
 
+    @property
     def guessedemails(self):
         """See IPerson."""
         return self._getEmailsByStatus(EmailAddressStatus.NEW)
-    guessedemails = property(guessedemails)
 
+    @property
     def reportedbugs(self):
         """See IPerson."""
         return BugTask.selectBy(ownerID=self.id)
-    reportedbugs = property(reportedbugs)
 
+    # XXX sabdfl 13/06/05 this property is almost certainly incorrect.
+    # Carlos? what do you think? It should most likely return pofiles the
+    # person has translated? Or something similar?
+    @property
     def translations(self):
         """See IPerson."""
         return TranslationEffort.selectBy(ownerID=self.id)
-    translations = property(translations)
 
+    @property
     def activities(self):
         """See IPerson."""
         return Karma.selectBy(personID=self.id)
-    activities = property(activities)
 
+    @property
     def wiki(self):
         """See IPerson."""
         # XXX: salgado, 2005-01-14: This method will probably be replaced
         # by a MultipleJoin since we have a good UI to add multiple Wikis.
         return WikiName.selectOneBy(personID=self.id)
-    wiki = property(wiki)
 
+    @property
     def jabber(self):
         """See IPerson."""
         # XXX: salgado, 2005-01-14: This method will probably be replaced
@@ -576,8 +602,8 @@ class Person(SQLBase):
 
         # XXX: Needs system doc test.  SteveAlexander 2005-04-24.
         return JabberID.selectOneBy(personID=self.id)
-    jabber = property(jabber)
 
+    @property
     def archuser(self):
         """See IPerson."""
         # XXX: salgado, 2005-01-14: This method will probably be replaced
@@ -586,8 +612,8 @@ class Person(SQLBase):
 
         # XXX: Needs system doc test.  SteveAlexander 2005-04-24.
         return ArchUserID.selectOneBy(personID=self.id)
-    archuser = property(archuser)
 
+    @property
     def irc(self):
         """See IPerson."""
         # XXX: salgado, 2005-01-14: This method will probably be replaced
@@ -596,20 +622,20 @@ class Person(SQLBase):
 
         # XXX: Needs system doc test.  SteveAlexander 2005-04-24.
         return IrcID.selectOneBy(personID=self.id)
-    irc = property(irc)
 
+    @property
     def maintainerships(self):
         """See IPerson."""
         maintainershipsutil = getUtility(IMaintainershipSet)
         return maintainershipsutil.getByPersonID(self.id)
-    maintainerships = property(maintainerships)
 
+    @property
     def packages(self):
         """See IPerson."""
         sprutil = getUtility(ISourcePackageReleaseSet)
         return sprutil.getByCreatorID(self.id)
-    packages = property(packages)
 
+    @property
     def ubuntite(self):
         """See IPerson."""
         # XXX: cprov 20050226
@@ -623,7 +649,6 @@ class Person(SQLBase):
                     SignedCodeOfConduct.q.ownerID==self.id)
 
         return bool(SignedCodeOfConduct.select(query).count())
-    ubuntite = property(ubuntite)
 
 
 class PersonSet:
@@ -655,6 +680,32 @@ class PersonSet:
         """See IPersonSet."""
         assert not kw.get('teamownerID')
         return Person(**kw)
+
+    def createPerson(self, email, displayname=None, givenname=None,
+        familyname=None, password=None):
+        """See IPersonSet.createPerson"""
+        kw = {}
+        kw['name'] = nickname.generate_nick(email)
+        kw['displayname'] = displayname
+        kw['givenname'] = givenname
+        kw['familyname'] = familyname
+
+        encryptor = getUtility(IPasswordEncryptor)
+        kw['password'] = encryptor.encrypt(password)
+
+        person = self.newPerson(**kw)
+
+        new = EmailAddressStatus.NEW
+        EmailAddress(person=person.id, email=email.lower(), status=new)
+
+        return person
+
+    def ensurePerson(self, email, displayname):
+        email = email.lower().strip()
+        person = self.getByEmail(email)
+        if person:
+            return person
+        return self.createPerson(email, displayname=displayname)
 
     def getByName(self, name, default=None):
         """See IPersonSet."""
@@ -914,9 +965,9 @@ class EmailAddress(SQLBase):
     status = EnumCol(dbName='status', schema=EmailAddressStatus, notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
+    @property
     def statusname(self):
         return self.status.title
-    statusname = property(statusname)
 
 
 class EmailAddressSet:
@@ -969,9 +1020,9 @@ class GPGKey(SQLBase):
 
     revoked = BoolCol(dbName='revoked', notNull=True)
 
+    @property
     def algorithmname(self):
         return self.algorithm.title
-    algorithmname = property(algorithmname)
 
 
 class GPGKeySet:
@@ -1007,10 +1058,11 @@ class SSHKey(SQLBase):
     keytext = StringCol(dbName='keytext', notNull=True)
     comment = StringCol(dbName='comment', notNull=True)
 
+    @property
     def keytypename(self):
         return self.keytype.title
-    keytypename = property(keytypename)
 
+    @property
     def keykind(self):
         # XXX: This seems rather odd, like it is meant for presentation
         #      of the name of a key.
@@ -1021,7 +1073,6 @@ class SSHKey(SQLBase):
             return 'ssh-rsa'
         else:
             return 'Unknown key type'
-    keykind = property(keykind)
 
 
 class SSHKeySet:
@@ -1124,9 +1175,9 @@ class TeamMembership(SQLBase):
     dateexpires = UtcDateTimeCol(dbName='dateexpires', default=None)
     reviewercomment = StringCol(dbName='reviewercomment', default=None)
 
+    @property
     def statusname(self):
         return self.status.title
-    statusname = property(statusname)
 
     def isExpired(self):
         return self.status == TeamMembershipStatus.EXPIRED

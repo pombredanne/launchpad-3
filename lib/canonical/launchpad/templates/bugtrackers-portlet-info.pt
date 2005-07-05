@@ -1,0 +1,17 @@
+
+<div class="portlet">
+
+  <h4>remote bug trackers</h4>
+
+  <div class="portletBody portletContent">
+
+    <img src="/++resource++info_icon.gif" alt="Info">
+    Malone is designed to help track the status of a bug upstream and in
+    lots of different bug trackers. This is a list of the bug trackers that
+    are registered with Malone. You can link a Malone bug to any bug in one
+    of these, and Malone will monitor the status on that bug and report
+    changes to the subscribers of the Malone bug.
+
+  </div>
+
+</div>

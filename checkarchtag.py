@@ -1,8 +1,6 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 """Check source tree against the policy for using arch-tag.
 
-Run with the argument 'create' to create an allowed-tags.txt file.
-
 Run with the argument 'check' to check the tree against allowed-tags.txt
 
 You can also call the is_tree_good() method to run a check in-process from
@@ -28,7 +26,6 @@ def get_actual_tags():
 
 def is_tree_good():
     if not os.path.exists('allowed-tags.txt'):
-        print "There is no allowed-tags.txt file.  Run with 'create' option."
         return False
     allowed_tags = read_allowed_tags()
     actual_tags = get_actual_tags()
@@ -86,6 +83,10 @@ def create_allowed_tags():
 
     sorted by filename.
     """
+    print "Go away. We do not want to add any more tagged files. You should"
+    print "only be deleting tags from files, not adding any new ones. If"
+    print "you have deleted a tag from a file, then you can delete the"
+    print "relevant line from allowed-tags.txt"
     tags = get_actual_tags().items()
 
     # Schwartz transform to sort on filename.

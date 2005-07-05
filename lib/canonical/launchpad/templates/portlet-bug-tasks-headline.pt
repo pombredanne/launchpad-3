@@ -59,12 +59,16 @@
       </td>
 
       <td>
-        <span tal:condition="bugtask/assignee" tal:omit-tag="">
+        <tal:block condition="bugtask/assignee">
           <img src="/++resource++user.gif" alt="" />
           <span tal:replace="bugtask/assignee/browsername">
             assignee.browsername
           </span>
-        </span>
+        </tal:block>
+        <tal:editabletask condition="bugtask/required:launchpad.Edit">
+          [<a tal:attributes="href string:${bugtask/@@absolute_url}/+edit"
+              >assign</a>]
+        </tal:editabletask>
       </td>
 
     </tr>
