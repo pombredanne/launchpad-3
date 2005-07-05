@@ -5,26 +5,24 @@
 
 <body>
 
-<metal:rightportlets fill-slot="portlets_two">
-    <form method="POST" action="." style="float: right;" name="update-view">
-        <b>Assigned to:</b><br />
-        <div tal:replace="structure view/userSelector" /><br />
+<div metal:fill-slot="body">
+
+    <form method="POST" action="." name="update-view" class="portlet">
+        <b>Assigned to:</b>
+        <div tal:replace="structure view/userSelector" />
         <script>
         <!--
             document.forms['update-view'].name.focus();
         //-->
         </script>
-        <b>Minimum Severity:</b><br />
-        <div tal:replace="structure view/severitySelector" /><br />
-        <b>Minimum Priority:</b><br />
-        <div tal:replace="structure view/prioritySelector" /><br />
+        <b>Minimum Severity:</b>
+        <div tal:replace="structure view/severitySelector" />
+        <b>Minimum Priority:</b>
+        <div tal:replace="structure view/prioritySelector" />
         <div tal:replace="structure view/showClosedSelector" />
-        <label for="showclosed"><b>Show Closed Bugs</b></label><br />
+        <label for="showclosed"><b>Show Closed Bugs</b></label>
         <input type="submit" value="Update">
     </form>
-</metal:rightportlets>
-
-<div metal:fill-slot="main">
 
     <div tal:condition="not:view/user">
 
@@ -46,9 +44,8 @@
             <table class="listing rowNavigation" width="100%">
 
                 <tr>
-                    <th>Bug #</th>
+                    <th>Bug</th>
                     <th>Title</th>
-                    <th>Upstream Project</th>
                     <th>Upstream Product</th>
                     <th>Work Status</th>
                     <th>Severity</th>
@@ -59,12 +56,9 @@
                 <tr tal:repeat="bugtask view/maintainedProductBugs"
                     tal:attributes="onclick
                     string:window.location='/malone/bugs/${bugtask/bug/id}'">
-                    <td><span tal:replace="bugtask/bug/id">$Bug.id</span>
-                        <span tal:condition="bugtask/bug/name">(<span
-                        tal:replace="bugtask/bug/name">name</span>)</span></td>
+                    <td>#<span tal:replace="bugtask/bug/id">$Bug.id</span></td>
                     <td tal:attributes="title bugtask/bug/summary">
                         <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
-                    <td tal:content="bugtask/product/project/displayname|nothing">project</td>
                     <td tal:content="bugtask/product/displayname|nothing">product</td>
                     <td tal:content="bugtask/status/title">status</td>
                     <td tal:content="bugtask/severity/title">severity</td>
@@ -84,7 +78,7 @@
             <table class="listing rowNavigation" width="100%">
 
                 <tr>
-                    <th>Bug #</th>
+                    <th>Bug</th>
                     <th>Title</th>
                     <th>Distribution</th>
                     <th>Package</th>
@@ -97,9 +91,7 @@
                 <tr tal:repeat="bugtask view/maintainedPackageBugs"
                     tal:attributes="onclick
                     string:window.location='/malone/bugs/${bugtask/bug/id}'">
-                    <td><span tal:replace="bugtask/bug/id">$Bug.id</span>
-                        <span tal:condition="bugtask/bug/name">(<span
-                        tal:replace="bugtask/bug/name">name</span>)</span></td>
+                    <td>#<span tal:replace="bugtask/bug/id">$Bug.id</span></td>
                     <td tal:attributes="title bugtask/bug/summary">
                         <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
                     <td tal:content="bugtask/distribution/name|string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
@@ -125,22 +117,19 @@
             <table class="listing rowNavigation" width="100%">
 
                 <tr>
-                    <th>Bug #</th>
+                    <th>Bug</th>
                     <th>Title</th>
                     <th>Distro</th>
                     <th>Package</th>
                     <th>Work Status</th>
                     <th>Severity</th>
                     <th>Priority</th>
-                    <th>Work Assigned To...</th>
                 </tr>
 
                 <tr tal:repeat="bugtask view/packageAssigneeBugs"
                     tal:attributes="onclick
                     string:window.location='/malone/bugs/${bugtask/bug/id}'">
-                    <td><span tal:replace="bugtask/bug/id">$Bug.id</span>
-                        <span tal:condition="bugtask/bug/name">(<span
-                        tal:replace="bugtask/bug/name">name</span>)</span></td>
+                    <td>#<span tal:replace="bugtask/bug/id">$Bug.id</span></td>
                     <td tal:attributes="title bugtask/bug/summary">
                         <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
                     <td tal:content="bugtask/distribution/name|string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
@@ -152,7 +141,6 @@
                     <td tal:content="bugtask/status/title">status</td>
                     <td tal:content="bugtask/severity/title">severity</td>
                     <td tal:content="bugtask/priority/title">priority</td>
-                    <td tal:content="bugtask/assignee/browsername|default">-</td>
                 </tr>
 
             </table>
@@ -166,30 +154,24 @@
             <table class="listing rowNavigation" width="100%">
 
                 <tr>
-                    <th>Bug #</th>
+                    <th>Bug</th>
                     <th>Title</th>
-                    <th>Upstream Project</th>
                     <th>Upstream Product</th>
                     <th>Work Status</th>
                     <th>Severity</th>
                     <th>Priority</th>
-                    <th>Work Assigned To...</th>
                 </tr>
 
                 <tr tal:repeat="bugtask view/productAssigneeBugs"
                     tal:attributes="onclick
                     string:window.location='/malone/bugs/${bugtask/bug/id}'">
-                    <td><span tal:replace="bugtask/bug/id">$Bug.id</span>
-                        <span tal:condition="bugtask/bug/name">(<span
-                        tal:replace="bugtask/bug/name">name</span>)</span></td>
+                    <td>#<span tal:replace="bugtask/bug/id">$Bug.id</span></td>
                     <td tal:attributes="title bugtask/bug/summary">
                         <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
-                    <td tal:content="bugtask/product/project/displayname|nothing">project</td>
                     <td tal:content="bugtask/product/displayname|nothing">product</td>
                     <td tal:content="bugtask/status/title">status</td>
                     <td tal:content="bugtask/severity/title">severity</td>
                     <td tal:content="bugtask/priority/title">priority</td>
-                    <td tal:content="bugtask/assignee/browsername|default">-</td>
                 </tr>
 
             </table>
