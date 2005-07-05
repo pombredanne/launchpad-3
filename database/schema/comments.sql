@@ -939,9 +939,9 @@ COMMENT ON COLUMN CalendarSubscription.object IS 'The object of the subscription
 COMMENT ON COLUMN CalendarSubscription.colour IS 'The colour used to display events from calendar \'object\' when in the context of calendar \'subject\'';
 
 COMMENT ON TABLE CalendarEvent IS 'Events belonging to calendars';
-COMMENT ON COLUMN CalendarEvent.unique_id IS 'A globally unique identifier for the event.  This identifier should be preserved through when importing events from a desktop calendar application';
+COMMENT ON COLUMN CalendarEvent.uid IS 'A globally unique identifier for the event.  This identifier should be preserved through when importing events from a desktop calendar application';
 COMMENT ON COLUMN CalendarEvent.calendar IS 'The calendar this event belongs to';
-COMMENT ON COLUMN CalendarEvent.dtstart IS 'The start time for the event in UTC';
+COMMENT ON COLUMN CalendarEvent.startdate IS 'The start time for the event in UTC';
 COMMENT ON COLUMN CalendarEvent.duration IS 'The duration of the event';
 COMMENT ON COLUMN CalendarEvent.title IS 'A one line description of the event';
 COMMENT ON COLUMN CalendarEvent.description IS 'A multiline description of the event';
