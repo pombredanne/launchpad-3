@@ -5,6 +5,9 @@
 
     <ul>
       <li class="edit"><a href="+edit">Edit Details</a></li>
+      <li class="edit" tal:condition="context/required:launchpad.Edit">
+        <a href="+reassign">Change Admin</a>
+      </li>
       <li class="add"><a href="+sources">View Source Packages</a></li>
       <li class="add"><a href="+bugs">View Release Bugs</a></li>
       <li class="add"><a href="+translations">View Translations</a></li>

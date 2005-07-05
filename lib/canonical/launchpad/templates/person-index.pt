@@ -26,30 +26,33 @@
       <h1><span tal:content="context/browsername">browsername</span>
       <i tal:condition="context/ubuntite">(Ubuntite)</i></h1>
 
-      <br/>
-
-        <table>
+        <table cellpadding="3">
           <tr>
-            <td>Name:</td>
-            <td tal:content="string:${context/browsername} 
-                            (${context/name})">NAME(NICK)</td>
+            <th>Name:</th>
+            <td tal:content="context/browsername">NAME</td>
           </tr>
 
+          <tr>
+            <th>Nick:</th>
+            <td tal:content="context/name"></td>
+          </tr>
+
+
           <tr tal:condition="context/teamowner">
-            <td>Owner:</td>
+            <th>Owner:</th>
             <td><a tal:attributes="href string:../${context/teamowner/name}"
                    tal:content="context/teamowner/browsername"></a></td>
           </tr>
 
           <tr tal:condition="context/teamdescription">
-            <td>Description:</td>
+            <th>Description:</th>
             <td tal:content="context/teamdescription">DESCRIPTION</td>
           </tr>
                
           <tal:dummy tal:condition="request/lp:person">
           <tal:dummy tal:condition="context/preferredemail">
           <tr>
-            <td>Email:</td>
+            <th>Email:</th>
             <td><span tal:replace="structure view/htmlEmail"></span></td>
           </tr>
           </tal:dummy>
@@ -57,7 +60,7 @@
           <tal:dummy tal:condition="not: context/preferredemail">
             <tal:dummy tal:condition="not: context/validatedemails">
             <tr>
-              <td>Email:</td>
+              <th>Email:</th>
               <td>0 validated email addresses 
                 [<a href="+emails">Add or validate emails</a>]</td>
             </tr>
@@ -65,7 +68,7 @@
 
             <tal:dummy tal:condition="context/validatedemails">
             <tr>
-              <td>Email:</td>
+              <th>Email:</th>
               <td><span tal:content="context/validatedemails/count:len" />
                   validated email addresses. [<a href="+emails">Add emails or
                     set one of yours as preferred</a>]
@@ -74,66 +77,65 @@
           </tal:dummy>
           </tal:dummy>
 
-          <tr tal:condition="context/wiki">
-            <td>Wiki:</td>
-            <td><a tal:attributes="href string:${context/wiki/wiki}${context/wiki/wikiname}">Wiki</a>
+          <tr>
+            <th>Karma:</th>
+            <td><span tal:replace="context/karma" /> points</td>
+          </tr>
+
+          <tr tal:condition="context/wiki"
+              tal:define="wikilink string:${context/wiki/wiki}${context/wiki/wikiname}"
+          >
+            <th>Wiki:</th>
+            <td><a tal:content="wikilink" 
+                   tal:attributes="href wikilink">Wiki</a>
             </td>
           </tr>
 
           <tr tal:condition="context/irc">
-            <td>IRC:</td>
-            <td><span tal:content="context/irc/nickname"/> at 
-                <span tal:content="context/irc/network"/>
+            <th>IRC:</th>
+            <td><code style="font-size: 120%"
+                      tal:content="context/irc/nickname"/>
+                on network <code style="font-size: 120%"
+                                 tal:content="context/irc/network" />
             </td>
           </tr> 
 
           <tr tal:condition="context/jabber">
-            <td>Jabber:</td>
+            <th>Jabber:</th>
             <td tal:content="context/jabber/jabberid"></td>
           </tr> 
 
           <tr tal:condition="context/archuser">
-            <td>Arch User:</td>
+            <th>Arch User:</th>
             <td tal:content="context/archuser/archuserid"></td>
           </tr>
 
-          <tr tal:condition="context/karma">
-            <td>Karma:</td>
-            <td tal:content="context/karma"></td>
-          </tr>
-
-          <tr>
-            <td>GPG Keys:</td>
+          <tr tal:condition="view/gpgkeysCount">
+            <th>GPG Keys:</th>
             <td>
               <span tal:replace="view/gpgkeysCount">0</span> GPG key(s)
             </td>
           </tr>
 
           <tr tal:condition="context/sshkeys">
-            <td>SSH Keys:</td>
+            <th>SSH Keys:</th>
             <td>
               <a href="+sshkey"><span tal:replace="view/sshkeysCount">0</span> SSH key(s)</a>
             </td>
           </tr>
 
         </table>
-
+       
+        <br />
 
         <!-- Teams which I'm a member of -->
-        <div tal:condition="context/memberships">
-          <fieldset>
-            <legend><span tal:replace="context/browsername"></span> is
-            </legend>
-            <table>
-              <tr tal:repeat="membership context/memberships">
-                <td>
-                  <span tal:replace="membership/statusname"></span> of 
+        <div tal:condition="context/memberships" tal:omit-tag>
+            <h3>Team Memberships</h3>
+              <ul tal:repeat="membership context/memberships">
+                  <li><span tal:replace="membership/statusname"></span> of 
                   <a tal:attributes="href string:../${membership/team/name}"
-                     tal:content="membership/team/browsername">foo</a>
-                </td>
-            </tr>
-            </table>
-          </fieldset>
+                     tal:content="membership/team/browsername">foo</a></li>
+              </ul>
         </div>
 
     </div> 
