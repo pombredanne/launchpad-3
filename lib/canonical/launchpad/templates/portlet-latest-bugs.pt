@@ -1,36 +1,35 @@
 <div class="portlet">
-    <h4>Latest Bugs Reported:</h4>
+  <h4>Latest Bugs Reported:</h4>
+  <div class="portletBody">
+    <div class="portletContent even">
+      <ul> 
+        <li tal:repeat="bugtask view/latestBugTasks">
+          <a href="#"
+             style="text-decoration: underline"
+             tal:attributes="href bugtask/bug/fmt:url" 
+             tal:content="string: Bug #${bugtask/bug/id}" />: 
+             <span tal:replace="bugtask/bug/title">bug
+             title</span>
+        </li>
+        <li tal:condition="not: view/latestBugTasks" class="discreet">
+          No bugs have been reported for this product.
+        </li>
+      </ul>
 
-    <div class="portletBody">
-        <div class="portletContent even">
-
-        <table class="rowNavigation" border="0">
-            <tr tal:repeat="bugtask view/latestBugTasks">
-                <td><a href="#"
-                       style="text-decoration: underline"
-                       tal:attributes="href bugtask/bug/fmt:url" 
-                       tal:content="string: Bug #${bugtask/bug/id}" />: 
-                       <span tal:replace="bugtask/bug/title">bug
-                       title</span></td>
-            </tr>
-        </table>
-
-        <ul>
-          <li class="add"><a href="+filebug"
-            title="File a bug on this product">
-            Report a bug on <span
-            tal:replace="context/displayname">product</span><br />
-          </a></li>
-          <li class="info">
-        <a tal:attributes="href string:/malone/products/${context/name}"
-           tal:condition="view/latestBugTasks"
-           title="See all bugs for this product">
-            More <span tal:replace="context/displayname">product</span> bugs
-        </a>
-          </li>
-        </ul>
-
-        </div>
-
+      <ul>
+        <li class="add"><a href="+filebug"
+          title="File a bug on this product">
+          Report a bug on <span
+          tal:replace="context/displayname">product</span><br />
+        </a></li>
+        <li class="info"
+            tal:condition="view/latestBugTasks">
+          <a tal:attributes="href string:/malone/products/${context/name}"
+             title="See all bugs for this product">
+              More <span tal:replace="context/displayname">product</span> bugs
+          </a>
+        </li>
+      </ul>
     </div>
+  </div>
 </div>
