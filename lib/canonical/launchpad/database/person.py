@@ -49,7 +49,7 @@ from canonical.launchpad.validators.name import valid_name
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
-    TeamMembershipStatus, GPGKeyAlgorithm)
+    TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType)
 
 from canonical.foaf import nickname
 
@@ -560,7 +560,9 @@ class Person(SQLBase):
     @property
     def unvalidatedemails(self):
         """See IPerson."""
-        query = "requester=%d AND email IS NOT NULL" % self.id
+        query = ("requester=%s AND (tokentype=%s OR tokentype=%s)" 
+                 % sqlvalues(self.id, LoginTokenType.VALIDATEEMAIL,
+                             LoginTokenType.VALIDATETEAMEMAIL))
         return sets.Set([token.email for token in LoginToken.select(query)])
 
     @property
