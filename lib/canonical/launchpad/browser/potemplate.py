@@ -28,7 +28,9 @@ from canonical.launchpad import helpers
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     ILaunchBag, IPOTemplateSet, IPOTemplateNameSet, IPersonSet,
-    RawFileAttachFailed, IPOExportRequestSet, ICanonicalUrlData)
+    RawFileAttachFailed, IPOExportRequestSet, ICanonicalUrlData,
+    ILaunchpadCelebrities)
+from canonical.launchpad.components.poexport import POExport
 from canonical.launchpad.browser.pofile import POFileView
 from canonical.launchpad.browser.pofile import BaseExportView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -181,8 +183,26 @@ class POTemplateView:
 class POTemplateEditView(POTemplateView, SQLObjectEditView):
     """View class that lets you edit a POTemplate object."""
     def __init__(self, context, request):
+        # Restrict the info we show to the user depending on the
+        # permissions he has.
+        self.prepareForm()
+
         POTemplateView.__init__(self, context, request)
         SQLObjectEditView.__init__(self, context, request)
+
+    def prepareForm(self):
+        """Removed the widgets the user is not allowed to change."""
+        user = getUtility(ILaunchBag).user
+        if user is not None:
+            # We do this check because this method can be called before we
+            # know which user is getting this view (when we show them the
+            # login form.
+            admins = getUtility(ILaunchpadCelebrities).admin
+            rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+            if not (user.inTeam(admins) or user.inTeam(rosetta_experts)):
+                # The user is just a maintainer, we show only the fields
+                # 'name', 'description' and 'owner'.
+                self.fieldNames = ['name', 'description', 'owner']
 
     def changed(self):
         formatter = self.request.locale.dates.getFormatter(
@@ -191,6 +211,7 @@ class POTemplateEditView(POTemplateView, SQLObjectEditView):
         status.mapping = {'date_time': formatter.format(
             datetime.utcnow())}
         self.update_status = status
+
 
 class POTemplateAdminView(POTemplateEditView):
     """View class that lets you admin a POTemplate object."""

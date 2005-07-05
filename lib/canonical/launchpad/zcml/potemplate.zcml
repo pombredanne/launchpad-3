@@ -10,8 +10,10 @@
         <require
             permission="zope.Public"
             interface="canonical.launchpad.interfaces.IEditPOTemplate"
-            set_attributes="name description iscurrent owner path
-                            filename distrorelease sourcepackagename"
+            set_attributes="potemplatename description header iscurrent
+                            owner productrelease distrorelease
+                            sourcepackagename sourcepackageversion
+                            binarypackagename languagepack path filename"
             />
         <require
             permission="zope.Public"
@@ -78,26 +80,16 @@
         />
 
     <browser:editform
-        name="+admin"
-        schema="canonical.launchpad.interfaces.IPOTemplate"
-        class="canonical.launchpad.browser.POTemplateAdminView"
-        label="Change PO template Information"
-        permission="launchpad.Admin"
-        template="../templates/potemplate-admin.pt"
-        fields="potemplatename description header iscurrent owner
-                productrelease distrorelease sourcepackagename
-                sourcepackageversion binarypackagename languagepack path
-                filename" >
-    </browser:editform>
-
-    <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IPOTemplate"
         class="canonical.launchpad.browser.POTemplateEditView"
         label="Change PO template Information"
         permission="launchpad.Edit"
         template="../templates/potemplate-edit.pt"
-        fields="name description owner path filename" >
+        fields="name potemplatename description header iscurrent owner
+                productrelease distrorelease sourcepackagename
+                sourcepackageversion binarypackagename languagepack path
+                filename" >
         lp:url="Rosetta/products/$Product.name/$POTemplate.name/+edit"
     </browser:editform>
 
