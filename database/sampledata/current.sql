@@ -3873,7 +3873,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=CHARSET
 Content-Transfer-Encoding: 8bit
 ', 2, NULL, 13, true, 'template.pot', 6);
-INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackageversion, header, potemplatename, productrelease, binarypackagename, languagepack, filename, rawfile) VALUES (3, NULL, NULL, NULL, NULL, '2005-05-06 20:06:59.867977', 'po', true, 43, 30, 30, '2005-05-06 20:06:59.867977', 3, NULL, NULL, NULL, 'Project-Id-Version: PACKAGE VERSION
+INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackageversion, header, potemplatename, productrelease, binarypackagename, languagepack, filename, rawfile) VALUES (3, NULL, NULL, NULL, NULL, '2005-05-06 20:06:59.867977', 'po', true, 43, 12, 30, '2005-05-06 20:06:59.867977', 3, NULL, NULL, NULL, 'Project-Id-Version: PACKAGE VERSION
 Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-08-24 16:09-0400
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE

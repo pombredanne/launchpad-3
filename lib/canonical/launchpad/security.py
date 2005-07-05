@@ -295,11 +295,6 @@ class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
         return user.inTeam(admins) or user.inTeam(rosetta_experts)
 
 
-class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = IPOTemplate
-
-
 class EditPOTemplateDetails(EditByOwnersOrAdmins):
     usedfor = IPOTemplate
 
