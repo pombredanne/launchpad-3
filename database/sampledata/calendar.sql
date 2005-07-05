@@ -7,13 +7,13 @@
 INSERT INTO Calendar (title, revision)
     VALUES ('Sample Person\'s Calendar', 0);
 UPDATE Person SET calendar = (SELECT id FROM Calendar WHERE title = 'Sample Person\'s Calendar'),
-                  timezone_name = 'Australia/Perth'
+                  timezone = 'Australia/Perth'
     WHERE id = (SELECT id from Person WHERE displayname = 'Sample Person');
 
 INSERT INTO Calendar (title, revision)
     VALUES ('Foo Bar\'s Calendar', 0);
 UPDATE Person SET calendar = (SELECT id FROM Calendar WHERE title = 'Foo Bar\'s Calendar'),
-                  timezone_name = 'Africa/Johannesburg'
+                  timezone = 'Africa/Johannesburg'
     WHERE id = (SELECT id from Person WHERE displayname = 'Foo Bar');
 
 INSERT INTO Calendar (title, revision)
@@ -48,27 +48,27 @@ INSERT INTO CalendarSubscription (subject, object, colour)
             '#c0d0ff');
 
 -- Add events to "Sample Person's Calendar"
-INSERT INTO CalendarEvent (unique_id, calendar, dtstart, duration,
+INSERT INTO CalendarEvent (uid, calendar, dtstart, duration,
                            title, description, location)
     VALUES ('sample-id-1@launchpad.example.org', (SELECT id FROM Calendar WHERE title = 'Sample Person\'s Calendar'),
             '2005-01-03 08:00:00', '01:00:00', 'Event 1', 'Desc 1', 'Location');
-INSERT INTO CalendarEvent (unique_id, calendar, dtstart, duration,
+INSERT INTO CalendarEvent (uid, calendar, dtstart, duration,
                            title, description, location)
     VALUES ('sample-id-2@launchpad.example.org', (SELECT id FROM Calendar WHERE title = 'Sample Person\'s Calendar'),
             '2005-01-03 10:00:00', '01:00:00', 'Event 2', 'Desc 2', 'Location');
-INSERT INTO CalendarEvent (unique_id, calendar, dtstart, duration,
+INSERT INTO CalendarEvent (uid, calendar, dtstart, duration,
                            title, description, location)
     VALUES ('sample-id-3@launchpad.example.org', (SELECT id FROM Calendar WHERE title = 'Sample Person\'s Calendar'),
             '2005-01-04 08:00:00', '01:00:00', 'Event 1', 'Desc 1', 'Location');
 
 -- Add events to "Foo Bar's Calendar"
-INSERT INTO CalendarEvent (unique_id, calendar, dtstart, duration,
+INSERT INTO CalendarEvent (uid, calendar, dtstart, duration,
                            title, description, location)
     VALUES ('sample-id-4@launchpad.example.org', (SELECT id FROM Calendar WHERE title = 'Foo Bar\'s Calendar'),
             '2005-01-04 08:00:00', '01:00:00', 'Foo Bar 1', 'Desc 1', 'Location');
 
 -- Add events to "Ubuntu Project Calendar"
-INSERT INTO CalendarEvent (unique_id, calendar, dtstart, duration,
+INSERT INTO CalendarEvent (uid, calendar, dtstart, duration,
                            title, description, location)
     VALUES ('sample-id-5@launchpad.example.org', (SELECT id from Calendar WHERE title = 'Ubuntu Project Calendar'),
             '2004-12-06 08:00:00', '11 days 08:30:00', 'The Mataro Sessions', 'The Ubuntu conference in Mataro', 'Mataro, Spain');

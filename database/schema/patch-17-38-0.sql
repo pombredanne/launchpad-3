@@ -22,7 +22,7 @@ CREATE TABLE CalendarEvent (
     uid varchar(255) NOT NULL CONSTRAINT calendarevent_uid_key UNIQUE,
     calendar integer NOT NULL
         CONSTRAINT calendarevent_calendar_fk REFERENCES Calendar,
-    startdate timestamp without time zone NOT NULL,
+    dtstart timestamp without time zone NOT NULL,
     duration interval NOT NULL,
     title text NOT NULL,
     description text,

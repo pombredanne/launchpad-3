@@ -30,6 +30,7 @@ this project\'s translation process. The enum lists different approaches to
 translation, from the very open (anybody can edit any translation in any
 language) to the completely closed (only designated translators can make any
 changes at all).';
+COMMENT ON COLUMN Project.calendar IS 'The calendar associated with this project.';
 
 
 -- ProjectRelationship
@@ -68,6 +69,7 @@ COMMENT ON COLUMN Product.active IS 'Whether or not this product should be consi
 COMMENT ON COLUMN Product.translationgroup IS 'The TranslationGroup that is responsible for translations for this product. Note that the Product may be part of a Project which also has a TranslationGroup, in which case the translators from both the product and project translation group have permission to edit the translations of this product.';
 COMMENT ON COLUMN Product.translationpermission IS 'The level of openness of this product\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
 COMMENT ON COLUMN Product.releaseroot IS 'The URL to the directory which holds upstream releases for this product. This allows us to monitor the upstream site and detect new upstream release tarballs.  This URL is used when the associated ProductSeries does not have a URL to use. It is also used to find files outside of any registered series.';
+COMMENT ON COLUMN Product.calendar IS 'The calendar associated with this product.';
 
 
 
@@ -519,6 +521,8 @@ COMMENT ON COLUMN Person.teamowner IS 'id of the team owner. Team owners will ha
 COMMENT ON COLUMN Person.teamdescription IS 'Informative description of the team. Format and restrictions are as yet undefined.';
 COMMENT ON COLUMN Person.name IS 'Short mneumonic name uniquely identifying this person or team. Useful for url traversal or in places where we need to unambiguously refer to a person or team (as displayname is not unique).';
 COMMENT ON COLUMN Person.language IS 'Preferred language for this person (unset for teams). UI should be displayed in this language wherever possible.';
+COMMENT ON COLUMN Person.calendar IS 'The calendar associated with this person.';
+COMMENT ON COLUMN Person.timezone IS 'The name of the time zone this person prefers (if unset, UTC is used).  UI should display dates and times in this time zone wherever possible.';
 
 -- Karma
 COMMENT ON TABLE Karma IS 'Used to quantify all the ''operations'' a user performs inside the system, which maybe reporting and fixing bugs, uploading packages, end-user support, wiki editting, etc.';
@@ -932,7 +936,10 @@ COMMENT ON COLUMN GPGKey.keysize IS 'Size of the key in bits, as reported by GPG
 -- Calendar
 COMMENT ON TABLE Calendar IS 'A Calendar attached to some other Launchpad object (currently People, Projects or Products)';
 COMMENT ON COLUMN Calendar.title IS 'The title of the Calendar';
+COMMENT ON COLUMN Calendar.revision IS 'An monotonically increasing counter indicating a particular version of the calendar';
 
+
+-- CalendarSubscription
 COMMENT ON TABLE CalendarSubscription IS 'A subscription relationship between two calendars';
 COMMENT ON COLUMN CalendarSubscription.subject IS 'The subject of the subscription relationship';
 COMMENT ON COLUMN CalendarSubscription.object IS 'The object of the subscription relationship';
@@ -941,7 +948,7 @@ COMMENT ON COLUMN CalendarSubscription.colour IS 'The colour used to display eve
 COMMENT ON TABLE CalendarEvent IS 'Events belonging to calendars';
 COMMENT ON COLUMN CalendarEvent.uid IS 'A globally unique identifier for the event.  This identifier should be preserved through when importing events from a desktop calendar application';
 COMMENT ON COLUMN CalendarEvent.calendar IS 'The calendar this event belongs to';
-COMMENT ON COLUMN CalendarEvent.startdate IS 'The start time for the event in UTC';
+COMMENT ON COLUMN CalendarEvent.dtstart IS 'The start time for the event in UTC';
 COMMENT ON COLUMN CalendarEvent.duration IS 'The duration of the event';
 COMMENT ON COLUMN CalendarEvent.title IS 'A one line description of the event';
 COMMENT ON COLUMN CalendarEvent.description IS 'A multiline description of the event';
