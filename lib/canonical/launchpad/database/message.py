@@ -224,10 +224,8 @@ class MessageSet:
                 # autocreate a person
                 sendername = ensure_unicode(from_addrs[0][0].strip())
                 senderemail = from_addrs[0][1].lower().strip()
-                try:
-                    owner = person_set.ensurePerson(senderemail,
-                        sendername)
-                except NicknameGenerationError:
+                owner = person_set.ensurePerson(senderemail, sendername)
+                if owner is None:
                     raise UnknownSender(senderemail)
 
         # get the parent email, if needed and available in the db

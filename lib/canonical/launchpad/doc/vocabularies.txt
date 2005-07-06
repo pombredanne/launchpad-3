@@ -154,8 +154,9 @@ o PersonAccountToMergeVocabulary - all non-merged people. This vocabulary
     ['foo.bar@canonical.com']
 
     Any person without a single email address is not part of the vocabulary.
-    >>> fooperson = getUtility(IPersonSet).newPerson(
-    ...     name='foobaz', displayname='foo baz')
+    >>> fooperson, email = getUtility(IPersonSet).createPersonAndEmail(
+    ...     'foobaz@bar.com', name='foobaz', displayname='foo baz')
+    >>> email.destroySelf()
     >>> fooperson in vocab
     False
 

@@ -669,36 +669,52 @@ class PersonSet:
         team.setMembershipStatus(owner, TeamMembershipStatus.ADMIN)
         return team
 
-    def newPerson(self, **kw):
+    def createPersonAndEmail(self, email, name=None, displayname=None,
+                             givenname=None, familyname=None, password=None,
+                             passwordEncrypted=False):
         """See IPersonSet."""
-        assert not kw.get('teamownerID')
-        return Person(**kw)
+        if name is None:
+            try:
+                name = nickname.generate_nick(email)
+            except nickname.NicknameGenerationError:
+                return None, None
+        else:
+            if self.getByName(name) is not None:
+                return None, None
 
-    def createPerson(self, email, displayname=None, givenname=None,
-        familyname=None, password=None):
-        """See IPersonSet.createPerson"""
-        kw = {}
-        kw['name'] = nickname.generate_nick(email)
-        kw['displayname'] = displayname
-        kw['givenname'] = givenname
-        kw['familyname'] = familyname
+        if not passwordEncrypted and password is not None:
+            password = getUtility(IPasswordEncryptor).encrypt(password)
 
-        encryptor = getUtility(IPasswordEncryptor)
-        kw['password'] = encryptor.encrypt(password)
+        displayname = displayname or name.capitalize()
+        person = self._newPerson(name, displayname, givenname=givenname,
+                                 familyname=familyname, password=password)
 
-        person = self.newPerson(**kw)
+        email = getUtility(IEmailAddressSet).new(email, person.id)
+        return person, email
 
-        new = EmailAddressStatus.NEW
-        EmailAddress(person=person.id, email=email.lower(), status=new)
+    def _newPerson(self, name, displayname, givenname=None, familyname=None,
+                   password=None):
+        """Create a new Person with the given attributes.
 
+        Also generate a wikiname for this person that's not yet used in the
+        Ubuntu wiki.
+        """
+        person = Person(name=name, displayname=displayname, givenname=givenname,
+                        familyname=familyname, password=password)
+        wikinameset = getUtility(IWikiNameSet)
+        wikiname = nickname.generate_wikiname(
+                    person.displayname, wikinameset.exists)
+        wikinameset.new(person.id, UBUNTU_WIKI_URL, wikiname)
         return person
 
     def ensurePerson(self, email, displayname):
-        email = email.lower().strip()
+        """See IPersonSet."""
         person = self.getByEmail(email)
         if person:
             return person
-        return self.createPerson(email, displayname=displayname)
+        person, dummy = self.createPersonAndEmail(
+                            email, displayname=displayname)
+        return person
 
     def getByName(self, name, default=None):
         """See IPersonSet."""
@@ -756,7 +772,7 @@ class PersonSet:
     def getByEmail(self, email, default=None):
         """See IPersonSet."""
         result = EmailAddress.selectOne(
-            "lower(email) = %s" % quote(email.lower()))
+            "lower(email) = %s" % quote(email.strip().lower()))
         if result is None:
             return default
         return result.person
@@ -926,27 +942,6 @@ class PersonSet:
         cur.execute('''
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
             ''' % vars())
-
-    def createPerson(self, email, displayname=None, givenname=None,
-                     familyname=None, password=None):
-        """See IPersonSet."""
-        try:
-            name = nickname.generate_nick(email)
-        except nickname.NicknameGenerationError:
-            return None
-
-        displayname = displayname or name.capitalize()
-        password = getUtility(IPasswordEncryptor).encrypt(password)
-        person = self.newPerson(name=name, displayname=displayname,
-                                givenname=givenname, familyname=familyname,
-                                password=password)
-
-        getUtility(IEmailAddressSet).new(email, person.id)
-
-        wikiname = nickname.generate_wikiname(displayname, WikiNameSet().exists)
-        WikiName(person=person.id, wiki=UBUNTU_WIKI_URL, wikiname=wikiname)
-
-        return person
 
 
 class EmailAddress(SQLBase):

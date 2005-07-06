@@ -348,38 +348,16 @@ class IPersonSet(Interface):
         <name> will be valid if valid_name(name) returns True.
         """
 
-    def newPerson(**kwargs):
-        """Create a new Person with given keyword arguments.
-
-        These keyword arguments will be passed to Person, which is an
-        SQLBase class and will do all the checks needed before inserting
-        anything in the database. Please refer to the Person implementation
-        to see what keyword arguments are allowed.
-
-        If you want an automatic way to create a Person and an EmailAddress
-        based only on an email address, have a look at
-        IPersonSet.createPerson().
-        """
-
-    def createPerson(email, displayname, givenname=None, familyname=None,
-                     password=None):
+    def createPersonAndEmail(email, name=None, displayname=None, givenname=None,
+            familyname=None, password=None, passwordEncrypted=False):
         """Create a new Person and an EmailAddress for that Person.
 
-        Return the newly created Person if everything went fine or None.
+        Return the newly created Person and EmailAddress if everything went
+        fine or a (None, None) tuple otherwise.
 
         Generate a unique nickname from the email address provided, create a
         Person with that nickname and then create an EmailAddress (with status
-        NEW) for the new Person. This feature is provided mainly for nicole,
-        debsync and POFile raw importer, which generally have only the email
-        and displayname to create a new Person.
-        """
-
-    def createPerson(email, displayname=None, givenname=None,
-        familyname=None, password=None):
-        """Create a Person, based on the arguments. This method is more
-        intelligent than IPersonSet.newPerson because it will try to find an
-        appropriate name for the person, based on email address details
-        etc.
+        NEW) for the new Person.
         """
 
     def ensurePerson(email, displayname):

@@ -10,10 +10,7 @@ __all__ = ['ImporterHandler', 'BinaryPackageHandler', 'BinaryPackagePublisher',
 'SourcePackageReleaseHandler', 'SourcePublisher', 'DistroHandler',
 'PersonHandler']
 
-import re
 import os
-from sets import Set
-from pyPgSQL import PgSQL
 from string import split
 
 from sqlobject import SQLObjectNotFound
@@ -25,8 +22,8 @@ from canonical.launchpad.scripts.gina.library import getLibraryAlias
 from canonical.lp import initZopeless
 from canonical.launchpad.database import (Distribution, DistroRelease,
     DistroArchRelease,Processor, SourcePackageName, SourcePackageRelease,
-    Build, BinaryPackage, BinaryPackageName, Person, EmailAddress, GPGKey, 
-    PackagePublishingHistory, Component, Section, SourcePackageReleaseFile,
+    Build, BinaryPackage, BinaryPackageName, PackagePublishingHistory,
+    Component, Section, SourcePackageReleaseFile,
     SourcePackagePublishingHistory, BinaryPackageFile)
 
 from canonical.launchpad.interfaces import IPersonSet
@@ -35,9 +32,8 @@ from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
 
 from canonical.database.sqlbase import quote
 
-from canonical.lp.dbschema import (PackagePublishingStatus, EmailAddressStatus,
-    SourcePackageFormat, BinaryPackagePriority, SourcePackageUrgency,
-    BuildStatus)
+from canonical.lp.dbschema import (PackagePublishingStatus,
+    BinaryPackagePriority, SourcePackageUrgency, BuildStatus)
 
 from canonical.database.constants import nowUTC
 
@@ -687,32 +683,24 @@ class PersonHandler:
 
     def ensurePerson(self, displayname, emailaddress):
         """Return a person by its email.
+
         Create and Return if does not exist.
         """
         person = self.checkPerson(emailaddress)
-        if not person:
+        if person is None:
             return self.createPerson(emailaddress, displayname)
         return person
 
     def checkPerson(self, emailaddress):
         """Check if a person already exists using its email."""
-        clauseTables = ('Person', 'EmailAddress',)
-        query = ('EmailAddress.person = Person.id AND '
-                 'EmailAddress.email = %s'
-                 %quote(emailaddress.lower()))
+        return getUtility(IPersonSet).getByEmail(emailaddress, default=None)
 
-        return Person.selectOne(query, clauseTables=clauseTables)
-    
     def createPerson(self, emailaddress, displayname):
         """Create a new Person"""
-
         displayname = ensure_string_format(displayname)
         givenname = split(displayname)[0]
 
-        return getUtility(IPersonSet).createPerson(email=emailaddress,
-                                                   displayname=displayname,
-                                                   givenname=givenname,
-                                                   familyname=None,
-                                                   password=None)
-
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+            email=emailaddress, displayname=displayname, givenname=givenname)
+        return person
 
