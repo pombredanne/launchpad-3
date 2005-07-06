@@ -2,6 +2,13 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'LocalDateTimeWidget',
+    'LocalDateTimeDisplayWidget',
+    'TimeDurationWidget',
+    'TimeDurationDisplayWidget',
+    ]
+
 import re
 from datetime import datetime, timedelta
 

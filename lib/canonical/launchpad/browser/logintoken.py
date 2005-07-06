@@ -1,4 +1,15 @@
 # Copyright 2004 Canonical Ltd
+
+__metaclass__ = type
+
+__all__ = [
+    'LoginTokenView',
+    'ResetPasswordView',
+    'ValidateEmailView',
+    'NewAccountView',
+    'MergePeopleView',
+    ]
+
 import urllib
 
 from zope.component import getUtility

@@ -2,6 +2,14 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'PkgBuild',
+    'PkgVersion',
+    'DistroReleaseVersions',
+    'BinPackage',
+    'PublishedPackageSetView',
+    ]
+
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import ILaunchBag

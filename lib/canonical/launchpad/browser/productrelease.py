@@ -2,6 +2,11 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'ProductReleaseView',
+    'ProductReleaseRdfView',
+    ]
+
 # zope3
 from zope.component import getUtility
 

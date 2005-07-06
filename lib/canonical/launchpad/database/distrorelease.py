@@ -4,6 +4,11 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'DistroRelease',
+    'DistroReleaseSet',
+    ]
+
 from zope.interface import implements
 from zope.component import getUtility
 

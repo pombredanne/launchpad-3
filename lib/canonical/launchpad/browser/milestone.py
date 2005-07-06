@@ -1,4 +1,12 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Milestone views."""
+
 __metaclass__ = type
+
+__all__ = [
+    'ProductMilestoneAddView',
+    ]
 
 class ProductMilestoneAddView:
     def create(self, *args, **kw):

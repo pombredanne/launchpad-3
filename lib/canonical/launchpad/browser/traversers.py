@@ -4,6 +4,18 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'traverse_malone_application',
+    'traverse_project',
+    'traverse_product',
+    'traverse_distribution',
+    'traverse_distrorelease',
+    'traverse_person',
+    'traverseTeam',
+    'traverse_bug',
+    'traverse_bugs',
+    ]
+
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
 

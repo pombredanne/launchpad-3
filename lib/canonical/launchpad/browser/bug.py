@@ -2,6 +2,16 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'BugView',
+    'BugSetView',
+    'BugAbsoluteURL',
+    'BugEditView',
+    'BugAddView',
+    'BugAddingView',
+    'BugAddForm',
+    ]
+
 from zope.app.publisher.browser import BrowserView
 from zope.interface import implements
 

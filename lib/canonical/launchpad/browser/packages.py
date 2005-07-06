@@ -2,6 +2,14 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'SourcePackageView',
+    'DistroSourcesView',
+    'DistrosReleaseBinariesSearchView',
+    'SourcePackageBugsView',
+    'BinaryPackageView',
+    ]
+
 from apt_pkg import ParseDepends
 
 from urllib import quote as urlquote

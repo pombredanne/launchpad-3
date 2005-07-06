@@ -2,6 +2,17 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'BugTasksReportView',
+    'ViewWithBugTaskContext',
+    'BugTaskViewBase',
+    'BugTaskEditView',
+    'BugTaskDisplayView',
+    'BugTaskSearchListingView',
+    'BugTaskAbsoluteURL',
+    'BugTaskAnorakSearchPageBegoneView',
+    ]
+
 import urllib
 
 from zope.interface import implements

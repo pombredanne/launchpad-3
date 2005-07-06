@@ -2,8 +2,14 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'DistroArchReleaseView',
+    'DistroArchReleaseBinariesView',
+    ]
+
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
+
 BATCH_SIZE = 40
 
 class DistroArchReleaseView:

@@ -2,6 +2,10 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'MessagesView',
+    ]
+
 from zope.interface import implements
 from canonical.launchpad.interfaces import IMessagesView
 

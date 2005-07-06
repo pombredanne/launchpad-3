@@ -4,6 +4,19 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'CodeOfConductView',
+    'CodeOfConductDownloadView',
+    'CodeOfConductSetView',
+    'SignedCodeOfConductAddView',
+    'SignedCodeOfConductAckView',
+    'SignedCodeOfConductView',
+    'SignedCodeOfConductAdminView',
+    'SignedCodeOfConductEditView',
+    'SignedCodeOfConductActiveView',
+    'SignedCodeOfConductDeactiveView',
+    ]
+
 # zope imports
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import SequenceWidget, ObjectWidget

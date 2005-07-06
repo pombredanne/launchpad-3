@@ -2,6 +2,15 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'traverseSourcePackage',
+    'SourcePackageReleasePublishingView',
+    'SourcePackageInDistroSetView',
+    'SourcePackageView',
+    'SourcePackageBugsView',
+    'SourcePackageSetView',
+    ]
+
 # Python standard library imports
 import cgi
 import re

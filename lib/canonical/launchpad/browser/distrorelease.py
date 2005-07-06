@@ -2,6 +2,15 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'DistroReleaseFacets',
+    'DistroReleaseView',
+    'DistroReleaseBugsView',
+    'ReleasesAddView',
+    'ReleaseEditView',
+    'ReleaseSearchView',
+    ]
+
 from zope.interface import implements
 from zope.component import getUtility
 

@@ -2,6 +2,20 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'TeamEditView',
+    'TeamEmailView',
+    'ITeamCreation',
+    'TeamAddView',
+    'TeamView',
+    'TeamJoinView',
+    'TeamLeaveView',
+    'TeamMembersView',
+    'ProposedTeamMembersEditView',
+    'AddTeamMemberView',
+    'TeamMembershipEditView',
+    ]
+
 import pytz
 
 from datetime import datetime

@@ -2,6 +2,11 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'SourcePackageNameSetView',
+    'SourcePackageNameAddView',
+    ]
+
 # zope imports
 from zope.app.form.browser.add import AddView
 from zope.app.form.browser import SequenceWidget, ObjectWidget

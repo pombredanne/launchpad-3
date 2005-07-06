@@ -1,3 +1,5 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 """Launchpad Browser-Interface View classes
 
 This is the module to import for Launchpad View Classes. The classes are not
@@ -36,7 +38,6 @@ from canonical.launchpad.browser.publishedpackage import *
 from canonical.launchpad.browser.rosetta import *
 from canonical.launchpad.browser.sourcepackage import *
 from canonical.launchpad.browser.sourcepackagename import *
-from canonical.launchpad.browser.soyuz import *
 from canonical.launchpad.browser.team import *
 from canonical.launchpad.browser.translationgroup import *
 from canonical.launchpad.browser.translator import *

@@ -2,6 +2,19 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'DistributionFacets',
+    'DistributionView',
+    'DistributionBugsView',
+    'DistributionFileBugView',
+    'DistributionSetView',
+    'DistributionSetAddView',
+    'DistributionSetSearchView',
+    'DistrosSearchView',
+    'DistrosAddView',
+    'DistrosEditView',
+    ]
+
 from zope.interface import implements
 from zope.component import getUtility
 from zope.app.traversing.browser.absoluteurl import absoluteURL

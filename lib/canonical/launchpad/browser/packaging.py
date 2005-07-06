@@ -2,6 +2,10 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'PackagingAddView',
+    ]
+
 from zope.app.form.browser.add import AddView
 from zope.component import getUtility
 
