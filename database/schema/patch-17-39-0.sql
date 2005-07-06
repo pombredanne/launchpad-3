@@ -9,13 +9,11 @@ DROP TABLE BugTrackerType;
 
 ALTER TABLE CVERef ADD COLUMN cvestate integer;
 
--- Need to fix these columns first since they now violate the valid_cve
--- constraint.
-UPDATE CVERef SET cveref=substring(cveref from 5) WHERE cveref LIKE 'CVE-%';
-UPDATE CVERef SET cveref=substring(cveref from 5) WHERE cveref LIKE 'CAN-%';
+UPDATE CVERef SET cveref=substring(cveref from 5), cvestate=1
+    WHERE cveref LIKE 'CAN-%';
+UPDATE CVERef SET cveref=substring(cveref from 5), cvestate=2
+    WHERE cveref LIKE 'CVE-%';
 
-UPDATE CVERef SET cvestate=2 WHERE cveref LIKE 'CVE-%';
-UPDATE CVERef SET cvestate=1 WHERE cvestate IS NULL;
 ALTER TABLE CVERef ALTER COLUMN cvestate SET DEFAULT 1;
 ALTER TABLE CVERef ALTER COLUMN cvestate SET NOT NULL;
 
