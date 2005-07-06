@@ -71,7 +71,7 @@ CREATE OR REPLACE FUNCTION valid_cve(text) RETURNS boolean AS '
 
 COMMENT ON FUNCTION valid_cve(text) IS 'validate a common vulnerability number
 
-    As defined on www.cve.mitre.org';
+    As defined on www.cve.mitre.org, minus the CAN- or CVE- prefix.';
 
 
 CREATE OR REPLACE FUNCTION valid_absolute_url(text) RETURNS boolean AS '
