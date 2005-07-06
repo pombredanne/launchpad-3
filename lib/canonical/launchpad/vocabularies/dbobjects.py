@@ -24,7 +24,8 @@ from canonical.launchpad.database import (
     BinaryPackageName, BugTracker, Language, Milestone, Product,
     Project, ProductRelease, ProductSeries, TranslationGroup, BugTracker,
     POTemplateName, EmailAddress)
-from canonical.launchpad.interfaces import ILaunchBag, ITeam
+from canonical.launchpad.interfaces import (
+    ILaunchBag, ITeam, ITeamMembershipSubset)
 
 class IHugeVocabulary(IVocabulary):
     """Interface for huge vocabularies.
@@ -175,7 +176,8 @@ class ProductVocabulary(SQLObjectVocabularyBase):
             like_query = "'%%' || %s || '%%'" % quote_like(query)
             fti_query = quote(query)
             sql = "fti @@ ftq(%s)" % fti_query
-            return [self._toTerm(r) for r in self._table.select(sql, orderBy=self._orderBy)]
+            return [self._toTerm(r)
+                for r in self._table.select(sql, orderBy=self._orderBy)]
 
         return []
 
@@ -252,10 +254,36 @@ class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
         return SimpleTerm(obj, obj.name, obj.title)
 
 
-class PersonVocabulary(SQLObjectVocabularyBase):
+class BasePersonVocabulary(SQLObjectVocabularyBase):
+    """This is a base class to be used by all different Person Vocabularies.
+
+    This class is not supposed to be exported as a vocabulary. Instead, you
+    should create a new one inheriting from this and redefine its _basequery
+    and _clauseTables attributes to suit your needs.
+    """
     implements(IHugeVocabulary)
     _orderBy = ['familyname','givenname','displayname', 'name']
     _table = Person
+    _basequery = ''
+    _clauseTables = []
+
+    def __iter__(self):
+        for obj in self._select(self._basequery):
+            yield self._toTerm(obj)
+
+    def __contains__(self, obj):
+        extraquery = 'person.id = %d' % obj.id
+        return obj in self._select(extraquery)
+
+    def _select(self, extraquery):
+        if self._basequery:
+            query = '(%s) AND (%s)' % (self._basequery, extraquery)
+        else:
+            query = extraquery
+
+        return self._table.select(query, orderBy=self._orderBy,
+                                  clauseTables=self._clauseTables,
+                                  distinct=True)
 
     def _toTerm(self, obj):
         """Return the term for this object.
@@ -290,32 +318,39 @@ class PersonVocabulary(SQLObjectVocabularyBase):
             person = Person.selectOneBy(name=token)
             return self._toTerm(person)
 
-    def search(self, query):
-        """Return terms where query is a subtring of the name"""
-        if query:
-            kw = {'clauseTables' : ["emailaddress"]}
-            if self._orderBy:
-                kw['orderBy'] = self._orderBy
-            query = query.lower()
-            like_query = "'%%' || %s || '%%'" % quote_like(query)
-            fti_query = quote(query)
-            objs = Person.select("""
-                (name LIKE %s OR fti @@ ftq(%s)) AND
-                person.id = emailaddress.person AND
-                emailaddress.status = %d
-                """ % (like_query, fti_query,
-                       EmailAddressStatus.PREFERRED.value),
-                **kw)
+    def search(self, text):
+        """Return persons where <text> is a subtring of either the name,
+        givenname, familyname or displayname.
+        """
+        if not text:
+            return []
 
-            return [self._toTerm(obj) for obj in objs]
+        text = text.lower()
+        like_query = "'%%' || %s || '%%'" % quote_like(text)
+        fti_query = quote(text)
+        extraquery = 'name LIKE %s OR fti @@ ftq(%s)' % (like_query, fti_query)
+
+        return [self._toTerm(obj) for obj in self._select(extraquery)]
 
 
-class ValidPersonOrTeamVocabulary(PersonVocabulary):
+class PersonAccountToMergeVocabulary(BasePersonVocabulary):
+    """The set of all non-merged people with at least one email address.
+
+    This vocabulary is a very specialized one, meant to be used only to choose
+    accounts to merge. You *don't* want to use it.
+    """
+
+    _basequery = ('Person.teamowner IS NULL AND Person.merged IS NULL AND '
+                  'Person.id = EmailAddress.person')
+    _clauseTables = ['EmailAddress']
+
+
+class ValidPersonOrTeamVocabulary(BasePersonVocabulary):
     """The set of valid Persons/Teams in Launchpad.
 
-    A Person is considered valid if he have at least one validated email
-    address, a password set and Person.merged is None. Teams have no
-    restrictions at all, which means that all teams are considered valid.
+    A Person is considered valid if he has a preferred email address,
+    a password set and Person.merged is None. Teams have no restrictions
+    at all, which means that all teams are considered valid.
 
     This vocabulary is registered as ValidPersonOrTeam, ValidAssignee,
     ValidMaintainer and ValidOwner, because they have exactly the same
@@ -323,46 +358,43 @@ class ValidPersonOrTeamVocabulary(PersonVocabulary):
     """
 
     _validpersons = ("""
-        teamowner IS NULL AND password IS NOT NULL AND merged IS NULL AND
-        emailaddress.person = person.id AND
-        emailaddress.status = %d
-        """ % EmailAddressStatus.PREFERRED.value)
-    _validteams = ("""
-        teamowner IS NOT NULL AND
-        person.id = emailaddress.person AND
-        emailaddress.status = %d
-        """ % EmailAddressStatus.PREFERRED.value)
+        Person.teamowner IS NULL AND 
+        Person.password IS NOT NULL AND 
+        Person.merged IS NULL AND
+        emailaddress.person = Person.id AND
+        emailaddress.status = %s
+        """ % sqlvalues(EmailAddressStatus.PREFERRED))
+    _validteams = ('Person.teamowner IS NOT NULL')
 
     _basequery = '(%s) OR (%s)' % (_validpersons, _validteams)
+    _clauseTables = ['EmailAddress']
 
-    def _select(self, query):
-        return Person.select(
-            query, orderBy=self._orderBy,
-            clauseTables=["emailaddress"],
-            distinct=True)
 
-    def __iter__(self):
-        for obj in self._select(self._basequery):
-            yield self._toTerm(obj)
+class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
+    """The set of valid members of a given team.
 
-    def __contains__(self, obj):
-        # XXX: salgado, 2005-05-09: Soon we'll be able to say: "obj in
-        # self._table.select(self._basequery)" and I'll fix this method.
-        query = '(%s) AND (person.id = %d)' % (self._basequery, obj.id)
-        return bool(self._select(query).count())
+    With the exception of all teams that have this team as a member and the
+    team itself, all valid persons and teams are valid members.
+    """
 
-    def search(self, text):
-        """Return persons where <text> is a subtring of either the name,
-        givenname, familyname or displayname.
-        """
-        if not text:
-            return []
-        text = text.lower()
-        like_query = "'%%' || %s || '%%'" % quote_like(text)
-        fti_query = quote(text)
-        query = ("(%s) AND (name LIKE %s OR fti @@ ftq(%s))" % (
-            self._basequery, like_query, fti_query))
-        return [self._toTerm(obj) for obj in self._select(query)]
+    def __init__(self, context):
+        if not context:
+            raise ValueError('ValidTeamMemberVocabulary needs a context.')
+        if ITeamMembershipSubset.providedBy(context):
+            self.team = context.team
+        elif ITeam.providedBy(context):
+            self.team = context
+        else:
+            raise ValueError(
+                "ValidTeamMemberVocabulary's context must implement ITeam or "
+                "ITeamMembershipSubset. Got %s" % str(context))
+
+        ValidPersonOrTeamVocabulary.__init__(self, context)
+        extraclause = """
+            Person.id not in (SELECT team from TeamParticipation WHERE
+                                  person = %d) AND Person.id != %d
+            """ % (self.team.id, self.team.id)
+        self._basequery = '(%s) AND (%s)' % (self._basequery, extraclause)
 
 
 class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):

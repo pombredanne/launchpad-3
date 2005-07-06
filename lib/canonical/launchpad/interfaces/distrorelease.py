@@ -88,14 +88,27 @@ class IDistroReleaseSet(Interface):
         """Return a set of distroreleases that can be translated in
         rosetta."""
 
-    def findByName(self, name):
+    def findByName(name):
         """Find a DistroRelease by name.
 
         Returns a list of matching distributions, which may be empty.
         """
 
-    def findByVersion(self, version):
+    def findByVersion(version):
         """Find a DistroRelease by version.
 
         Returns a list of matching distributions, which may be empty.
+        """
+
+    def search(distribution=None, released=None, orderBy=None):
+        """Search the set of distro releases.
+
+        released == True will filter results to only include
+        IDistroReleases with releasestatus CURRENT or SUPPORTED.
+
+        released == False will filter results to only include
+        IDistroReleases with releasestatus EXPERIMENTAL, DEVELOPMENT,
+        FROZEN.
+
+        released == None will do no filtering on releasestatus.
         """

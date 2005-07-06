@@ -6,16 +6,16 @@
   <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure view/aboutPortlet" />
-      <div tal:replace="structure view/quickHelpPortlet" />
-      <div tal:replace="structure view/statsPortlet" />
-      <div tal:replace="structure view/contributorsPortlet" />
+      <div tal:replace="structure context/@@+portlet-about" />
+      <div tal:replace="structure context/@@+portlet-quickhelp" />
+      <div tal:replace="structure context/@@+portlet-stats" />
+      <div tal:replace="structure context/@@+portlet-contributors" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-      <div tal:replace="structure view/actionsPortlet" />
-      <div tal:replace="structure view/detailsPortlet" />
-      <div tal:replace="structure view/translatorsPortlet" />
+      <div tal:replace="structure context/@@+portlet-actions" />
+      <div tal:replace="structure context/@@+portlet-details" />
+      <div tal:replace="structure context/@@+portlet-translators" />
 </metal:rightportlets>
 
     <div metal:fill-slot="main">
@@ -79,7 +79,8 @@
             else:
                 return None
 
-            Where 'literalvalue' is 'all', 'untranslated' or 'translated'.
+            Where 'literalvalue' is 'all', 'untranslated' 'need-review' or
+            'translated'.
           </tal:comment>
 
           <select name="show">
@@ -94,6 +95,12 @@
               request/htmlform:show/selected/untranslated"
               >
               untranslated items
+            </option>
+            <option value="need-review"
+              tal:attributes="selected
+              request/htmlform:show/selected/need-review"
+              >
+              need review items
             </option>
             <option value="translated"
               tal:attributes="selected
@@ -278,10 +285,14 @@
 
                           Note that we use a separate tag inside the textarea
                           rather than using tal:content on the textarea
-                          directly so that leading spaces are preserved. This
-                          is a workarou ndfor browser weirdness. Note also
-                          that the lack of indentation is deliberate: the
-                          content must begin directly after the newline.
+                          directly so that leading newlines are preserved.
+                          Note also that the lack of indentation between
+                          'tal:content' and '/textarea' is deliberate or we
+                          would add extra new lines to the textarea, which
+                          causes us to produce extra newlines and potentially
+                          corrupt translations.
+                          For more information, please read:
+                          https://bugzilla.mozilla.org/show_bug.cgi?id=299009
                         </tal:comment>
                         <textarea
                           tal:condition="messageSet/isMultiline"
@@ -289,9 +300,11 @@
                             name string:set_${messageSet/id}_translation_${language_code}_${index};
                             rows messageSet/getMaxLinesCount;
                             tabindex view/makeTabIndex;
-                            "
-                          ><div tal:replace="structure python:messageSet.getTranslation(index)" />
-                        </textarea>
+                            ">
+                          <tal:content
+                            condition="python:messageSet.getTranslation(index)"
+                            replace="structure python:messageSet.getTranslation(index)"
+                          /></textarea>
                         <tal:block condition="not:messageSet/isMultiline">
                           <tal:block define="submissions python:messageSet.getSuggestedSubmissions(index)">
                             <tal:block condition="submissions">

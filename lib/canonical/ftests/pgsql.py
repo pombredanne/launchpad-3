@@ -29,6 +29,7 @@ def _caller_debug(lvl=1):
 class ConnectionWrapper(object):
     real_connection = None
     committed = False
+    last_execute = None
 
     def __init__(self, real_connection):
         self.__dict__['real_connection'] = real_connection
@@ -65,11 +66,43 @@ class ConnectionWrapper(object):
         finally:
             ConnectionWrapper.committed = True
 
+    def cursor(self):
+        return CursorWrapper(self.__dict__['real_connection'].cursor())
+
     def __getattr__(self, key):
         return getattr(self.__dict__['real_connection'], key)
 
     def __setattr__(self, key, val):
         return setattr(self.__dict__['real_connection'], key, val)
+
+
+class CursorWrapper:
+    """A wrapper around cursor objects.
+    
+    Acts like a normal cursor object, except if CursorWrapper.record_sql is set,
+    then queries that pass through CursorWrapper.execute will be appended to
+    CursorWrapper.last_executed_sql.  This is useful for tests that want to
+    ensure that certain SQL is generated.
+    """
+    real_cursor = None
+    last_executed_sql = []
+    record_sql = False
+
+    def __init__(self, real_cursor):
+        self.__dict__['real_cursor'] = real_cursor
+
+    def execute(self, *args, **kwargs):
+        # Record the last query executed.
+        if CursorWrapper.record_sql:
+            CursorWrapper.last_executed_sql.append(args[0])
+        return self.__dict__['real_cursor'].execute(*args, **kwargs)
+
+    def __getattr__(self, key):
+        return getattr(self.__dict__['real_cursor'], key)
+
+    def __setattr__(self, key, val):
+        return setattr(self.__dict__['real_cursor'], key, val)
+
 
 _org_connect = None
 def fake_connect(*args, **kw):

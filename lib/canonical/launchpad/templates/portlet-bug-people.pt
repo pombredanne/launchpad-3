@@ -73,14 +73,12 @@
             </tal:ignore>
 
           </tal:subscriptions>
-        <a  href="#"
-            style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-            title="Add a subscriber to this bug."
+        <ul>
+          <li class="add"><a
+            title="Add a subscriber to this bug"
             tal:attributes="href string:$bug_url/people/+new">
-            <img src="/++resource++add.gif" alt="+" />
             Subscribe
-        </a><br />
-        </div>
-
+          </a></li>
+        </ul>
     </div>
 </div>

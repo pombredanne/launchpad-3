@@ -1,0 +1,23 @@
+<div tal:condition="not:view/logged_in" class="login">
+  <tal:block condition="view/login_shown">
+    Not logged in &#8212;
+    <a tal:attributes="href view/login_url">
+      Log In / Register
+    </a>
+  </tal:block>
+</div>
+<form
+  tal:condition="view/logged_in"
+  action="/+logout"
+  class="login"
+  method="POST"
+>
+  Logged in as
+    <a
+      tal:attributes="href string:/people/${request/lp:person/name}"
+      tal:content="request/lp:person/browsername"
+    >User's browser name
+    </a>
+    &ndash;
+  <input type="submit" value="Log Out" />
+</form>

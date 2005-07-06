@@ -54,6 +54,8 @@ class CanonicalConfig(object):
     >>> os.path.join(config.root, 'lib', 'canonical') == os.path.dirname(
     ...     canonical.__file__)
     True
+    >>> config.name == os.environ.get('LPCONFIG', DEFAULT_SECTION)
+    True
     """
     _cache = zope.thread.local()
     _default_config_section = os.environ.get(
@@ -85,7 +87,8 @@ class CanonicalConfig(object):
         schemafile = os.path.join(os.path.dirname(__file__), 'schema.xml')
         configfile = os.path.join(
                 os.path.dirname(__file__), os.pardir, os.pardir, os.pardir,
-                'configs', os.environ.get('LPCONFIG', DEFAULT_CONFIG),
+                'configs',os.environ.get(
+                    CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG),
                 'launchpad.conf'
                 )
         schema = ZConfig.loadSchema(schemafile)
@@ -105,6 +108,11 @@ class CanonicalConfig(object):
         config.root = os.path.abspath(os.path.join(
             os.path.dirname(__file__), os.pardir, os.pardir, os.pardir
             ))
+
+        # Name of the current configuration, as per LPCONFIG environment
+        # variable
+        config.name = os.environ.get(
+                CONFIG_ENVIRONMENT_VARIABLE, DEFAULT_CONFIG)
 
     def __getattr__(self, name):
         return getattr(self.getConfig(), name)

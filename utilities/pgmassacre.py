@@ -56,7 +56,7 @@ for signal in [SIGTERM, SIGKILL]:
     for (pid,) in pids:
         os.kill(pid, signal)
     if len(pids) > 0:
-	time.sleep(2)
+	time.sleep(5)
 
 # Destroy the database
 

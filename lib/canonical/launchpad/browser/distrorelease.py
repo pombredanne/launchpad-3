@@ -13,37 +13,21 @@ from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import BugTaskStatus
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad import helpers
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, DefaultLink, Link)
 
-from canonical.launchpad.interfaces import IBugTaskSet, ILaunchBag, \
-     IBugTaskSearchListingView
+from canonical.launchpad.interfaces import (
+    IBugTaskSet, ILaunchBag, IBugTaskSearchListingView, IDistroRelease,
+    ICountry)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 
+
+class DistroReleaseFacets(StandardLaunchpadFacets):
+    usedfor = IDistroRelease
+
+
 class DistroReleaseView:
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distrorelease-details.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distrorelease-actions.pt')
-
-    linksPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distrorelease-links.pt')
-
-    translationsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distrorelease-translations.pt')
-
-    statusLegend = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-status-legend.pt')
-
-    prefLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-pref-langs.pt')
-
-    countryPortlet = ViewPageTemplateFile(
-        '../templates/portlet-country-langs.pt')
-
-    browserLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-browser-langs.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -53,7 +37,7 @@ class DistroReleaseView:
         self.languages = helpers.request_languages(self.request)
 
     def requestCountry(self):
-        return helpers.requestCountry(self.request)
+        return ICountry(self.request, None)
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)

@@ -6,6 +6,8 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
+from canonical.lp.dbschema import UpstreamFileType
+
 class IProductReleaseSet(Interface):
     """Auxiliar class for ProductRelease handling.""" 
 
@@ -28,6 +30,8 @@ class IProductRelease(Interface):
     summary = Text(title=_("Summary"), required=False)
     description = Text(title=_("Description"), required=False)
     changelog = Text(title=_('Changelog'), required=False)
+    datecreated = TextLine(title=_('Date Created'), description=_("""The
+        date this productrelease was created in Launchpad."""))
 
     displayname = Attribute(_('Constructed displayname for a productrelease.'))
     manifest = Attribute(_('Manifest Information.'))
@@ -38,3 +42,5 @@ class IProductRelease(Interface):
     potemplatecount = Attribute(_("The number of POTemplates for this "
                         "ProductRelease."))
 
+    def addFileAlias(alias_id, file_type=UpstreamFileType.CODETARBALL):
+        """Add a link between this product and a library file alias."""

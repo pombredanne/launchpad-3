@@ -257,6 +257,36 @@ def resetSequences(cur):
                 )
         cur.execute(sql)
 
+# Regular expression used to parse row count estimate from EXPLAIN output
+_rows_re = re.compile("rows=(\d+)\swidth=")
+
+def estimateRowCount(cur, query):
+    """Ask the PostgreSQL query optimizer for an estimated rowcount.
+
+    Stats will only be acurate if the table has been ANALYZEd recently.
+    With standard Ubuntu installs, the autovacuum daemon does this.
+
+    >>> cur.execute("INSERT INTO A (selfref) VALUES (NULL)")
+    >>> cur.execute("ANALYZE A")
+    >>> estimateRowCount(cur, "SELECT * FROM A")
+    1
+    >>> cur.executemany(
+    ...     "INSERT INTO A (selfref) VALUES (NULL)",
+    ...     [(i,) for i in range(100)]
+    ...     )
+    >>> cur.execute("ANALYZE A")
+    >>> estimateRowCount(cur, "SELECT * FROM A")
+    101
+    """
+    cur.execute("EXPLAIN " + query)
+    first_line = cur.fetchone()[0]
+    match = _rows_re.search(first_line)
+    if match is None:
+        raise RuntimeError("Unexpected EXPLAIN output %s" % repr(first_line))
+    return int(match.group(1))
+
+
+
 if __name__ == '__main__':
     import psycopg
     con = psycopg.connect('dbname=launchpad_dev user=launchpad')

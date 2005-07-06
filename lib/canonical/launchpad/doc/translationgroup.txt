@@ -1,0 +1,82 @@
+
+Translation Groups
+------------------
+
+    >>> from canonical.launchpad.ftests.harness import \
+    ...     LaunchpadFunctionalTestSetup
+    >>> LaunchpadFunctionalTestSetup().setUp()
+
+    >>> from zope.component import getUtility
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login('daf@canonical.com')
+
+Heres various sets of things that we'll need.
+
+    >>> from canonical.launchpad.interfaces import ITranslationGroupSet
+    >>> translation_group_set = getUtility(ITranslationGroupSet)
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> person_set = getUtility(IPersonSet)
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> product_set = getUtility(IProductSet)
+
+    >>> from canonical.launchpad.interfaces import ITranslatorSet
+    >>> translator_set = getUtility(ITranslatorSet)
+
+    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> language_set = getUtility(ILanguageSet)
+
+    >>> from canonical.launchpad.interfaces import IPOTemplateSet
+    >>> potemplate_set = getUtility(IPOTemplateSet)
+
+Here are Carlos and Daf. Carlos manages the translation group for Evolution,
+and Daf is a translator.
+
+    >>> carlos = person_set.getByName('carlos')
+    >>> daf = person_set.getByName('daf')
+
+Here's our translation group.
+
+    >>> group = translation_group_set.new(
+    ...     name='foo-translators',
+    ...     title='Foo Translators',
+    ...     summary='Foo Translators',
+    ...     owner=carlos)
+
+Let's make it the translation group for Evolution.
+
+    >>> evolution = product_set['evolution']
+    >>> evolution.translationgroup = group
+
+Let's only allow translators from that group to translate.
+
+    >>> from canonical.lp.dbschema import TranslationPermission
+    >>> evolution.translationpermission = TranslationPermission.CLOSED
+
+Daf isn't allowed to translate into Welsh.
+
+   >>> release = evolution.getSeries('main').getRelease('2.1.6')
+   >>> subset = potemplate_set.getSubset(productrelease=release)
+   >>> potemplate = subset['evolution-2.2']
+   >>> pofile = potemplate.getOrCreatePOFile('cy')
+   >>> pofile.canEditTranslations(daf)
+   False
+
+Let's add him to the group.
+
+    >>> welsh = language_set['cy']
+
+    >>> daf_translator = translator_set.new(
+    ...     translationgroup=group,
+    ...     language=welsh,
+    ...     translator=daf)
+
+Daf *is* allowed to translate into Welsh.
+
+    >>> pofile.canEditTranslations(daf)
+    True
+
+    >>> LaunchpadFunctionalTestSetup().tearDown()
+

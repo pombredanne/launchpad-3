@@ -3,8 +3,6 @@ specifically Hoary.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/hoary/+bugs HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.7,af;q=0.3
-  ... Cookie: launchpad=H1vIudYGuGZjRj7VSlW7Z7Rqe6MUCmrjeRp5FrHkNWjK7djzx4RzVE
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -16,12 +14,8 @@ this case Ubuntu.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/+bugs HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.7,af;q=0.3
-  ... Cookie: launchpad=H1vIudYGuGZjRj7VSlW7Z7Rqe6MUCmrjeRp5FrHkNWjK7djzx4RzVE
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
       <title>Bugs in Ubuntu Linux</title>
   ...

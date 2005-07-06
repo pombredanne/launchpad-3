@@ -153,7 +153,7 @@ class VPOExport:
     implements(IVPOExport)
 
     def __init__(self, *args):
-        (potemplate,
+        (self.potemplate,
          language,
          self.variant,
          self.potsequence,
@@ -172,6 +172,9 @@ class VPOExport:
          self.filereferences,
          self.flagscomment) = args
 
-        self.potemplate = POTemplate.get(potemplate)
         self.language = Language.get(language)
+        self.pofile = POFile.selectOneBy(
+            potemplateID=self.potemplate,
+            languageID=language,
+            variant=self.variant)
 

@@ -11,14 +11,13 @@
             </tr>
         </table>
 
-        <br />
+        <ul><li class="edit">
 
         <a href="+milestone"
-            style="font-size: 85%; display: inline; clear: both; text-decoration: none;"
             title="Add a milestone for this product">
-            <img src="/++resource++add.gif" alt="+" />
             Add milestone
         </a>
+        </li></ul>
 
         </div>
     </div>

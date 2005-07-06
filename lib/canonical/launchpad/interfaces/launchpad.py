@@ -18,9 +18,11 @@ __all__ = ['ILaunchpadRoot', 'ILaunchpadApplication', 'IMaloneApplication',
            'IHasProductAndAssignee', 'IOpenLaunchBag',
            'IAging', 'IHasDateCreated',
            'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
-           'IBasicLink', 'ILink', 'ISelectionAwareLink',
-           'ITabList', 'IFacetList', 'ICanonicalUrlData',
-           'NoCanonicalUrl']
+           'ILink', 'IDefaultLink', 'IMenu', 'IMenuBase',
+           'IFacetMenu', 'IExtraFacetMenu',
+           'IApplicationMenu', 'IExtraApplicationMenu',
+           'ICanonicalUrlData', 'NoCanonicalUrl'
+           ]
 
 
 class ILaunchpadCelebrities(Interface):
@@ -236,6 +238,7 @@ class ILaunchBag(Interface):
     product = Attribute('Product, or None')
     distribution = Attribute('Distribution, or None')
     distrorelease = Attribute('DistroRelease, or None')
+    distroarchrelease = Attribute('DistroArchRelease, or None')
     sourcepackage = Attribute('Sourcepackage, or None')
     sourcepackagereleasepublishing = Attribute(
         'SourcepackageReleasePublishing, or None')
@@ -255,36 +258,56 @@ class IOpenLaunchBag(ILaunchBag):
         '''Set the login to the given value.'''
 
 
-class IBasicLink(Interface):
-    """A link."""
+class ILink(Interface):
 
-    id = Attribute('id')
-    href = Attribute('the relative href')
-    title = Attribute('text for the link')
-    summary = Attribute('summary for this facet')
+    name = Attribute(
+        'the name of this link, as declared in python for example')
 
+    target = Attribute('the relative path to the target of this link')
 
-class ILink(IBasicLink):
-    """A link, including whether or not it is disabled."""
-    enabled = Attribute('boolean, whether enabled')
+    url = Attribute('canonical url this link points to')
 
+    text = Attribute('the text of the link')
 
-class ISelectionAwareLink(ILink):
-    selected = Attribute('bool; is this facet the selected one?')
+    summary = Attribute('summary of the link, for example for a tooltip')
 
+    selected = Attribute('whether this link is selected or not')
 
-class IFacetList(Interface):
-    """A list of facets in various categories."""
-
-    links = Attribute("List of ILinks that are main links.")
-    overflow = Attribute("List of ILinks that overflow.")
+    linked = Attribute('whether this link should be available to traverse')
 
 
-class ITabList(Interface):
-    """A list of tabs in various categories."""
+class IDefaultLink(ILink):
+    """Link that is selected when other links are not."""
 
-    links = Attribute("List of ILinks that are main links.")
-    overflow = Attribute("List of ILinks that overflow.")
+
+class IMenu(Interface):
+    """Public interface for facets, menus, extra facets and extra menus."""
+
+    def __iter__():
+        """Iterate over the links in this menu."""
+
+
+class IMenuBase(IMenu):
+    """Common interface for facets, menus, extra facets and extra menus."""
+
+    context = Attribute('the object that has this menu')
+    request = Attribute('The web request.  May be None.')
+
+
+class IFacetMenu(IMenuBase):
+    """Main facet menu for an object."""
+
+
+class IExtraFacetMenu(IMenuBase):
+    """Extra facet menu for an object."""
+
+
+class IApplicationMenu(IMenuBase):
+    """Application menu for an object."""
+
+
+class IExtraApplicationMenu(IMenuBase):
+    """Extra application menu for an object."""
 
 
 class ICanonicalUrlData(Interface):

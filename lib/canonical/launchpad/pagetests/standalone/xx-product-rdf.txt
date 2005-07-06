@@ -1,0 +1,14 @@
+Check that the product RDF export works.
+
+  >>> print http(r"""
+  ... GET /projects/mozilla/firefox/+rdf HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Disposition: attachment; filename=firefox.rdf
+  Content-Length: ...
+  Content-Type: application/rdf+xml
+  <BLANKLINE>
+  <?xml version="1.0" encoding="utf-8"?>
+  <rdf:RDF ...
+  ...
+

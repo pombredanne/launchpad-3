@@ -29,8 +29,8 @@ There are three kinds of bug tasks. We need to pass the bug task creation
 methods some other objects to create a task, so lets get the utilities we need
 to access those other objects:
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet, \
-    ...     IProductSet, IDistributionSet, IDistroReleaseSet
+    >>> from canonical.launchpad.interfaces import (IBugSet, IPersonSet,
+    ...     IProductSet, IDistributionSet, IDistroReleaseSet)
     >>> productset = getUtility(IProductSet)
     >>> distroset = getUtility(IDistributionSet)
     >>> distoreleaseset = getUtility(IDistroReleaseSet)
@@ -41,8 +41,8 @@ to access those other objects:
 
 Next, we need to grab some values to provide for priority, severity and status.
 
-    >>> from canonical.lp.dbschema import BugTaskStatus, BugSeverity, \
-    ...     BugPriority
+    >>> from canonical.lp.dbschema import (BugTaskStatus, BugSeverity,
+    ...     BugPriority)
     >>> STATUS_NEW = BugTaskStatus.NEW
     >>> STATUS_ACCEPTED = BugTaskStatus.ACCEPTED
     >>> STATUS_FIXED = BugTaskStatus.FIXED
@@ -262,7 +262,7 @@ To provide null-matching search criteria, use canonical.launchpad.searchbuilder.
     >>> print bugtasks.count()
     2
     >>> print [bugtask.bug.id for bugtask in bugtasks]
-    [6, 4]
+    [4, 6]
 
 There's also support for searching tasks based on a string of text, e.g.:
 
@@ -448,8 +448,8 @@ anyone.
 
     >>> from zope.event import notify
     >>> from zope.publisher.browser import TestRequest
-    >>> from canonical.launchpad.event.sqlobjectevent import SQLObjectToBeModifiedEvent, \
-    ...     SQLObjectModifiedEvent
+    >>> from canonical.launchpad.event.sqlobjectevent import (
+    ...     SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
 
 Let's log in as the user Foo Bar (to be allowed to edit bugs):
 
@@ -486,7 +486,7 @@ searches:
     >>> firefox_bugtasks = bugtaskset.search(
     ...     product=firefox, status=any(STATUS_NEW, STATUS_ACCEPTED))
     >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
-    [6, 5, 4, 1]
+    [1, 4, 5, 6]
 
 Now, if we log in as David Allouche:
 

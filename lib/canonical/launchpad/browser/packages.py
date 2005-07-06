@@ -5,11 +5,12 @@ from apt_pkg import ParseDepends
 from urllib import quote as urlquote
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.component import getUtility
 
 from canonical.lp.dbschema import BugSeverity
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
-from canonical.launchpad.interfaces import IPerson
+from canonical.launchpad.interfaces import IPerson, ILaunchBag
 
 # XXX: Daniel Debonzi
 # Importing stuff from Soyuz directory
@@ -59,70 +60,10 @@ class DistroSourcesView:
             redirect("%s/%s?name=%s" % (request.get('PATH_INFO'), 
                                         release, name))
 
-##XXX: (batch+duplicated) cprov 20041006
-## The two following classes are almost like a duplicated piece
-## of code. We should look for a better way for use Batching Pages
-class DistroReleaseSourcesView:
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def sourcePackagesBatchNavigator(self):
-        name = self.request.get("name", "")
-        showall = self.request.get("showall", "")
-
-        if not (name or showall):
-            return None
-
-        if showall:
-            source_packages = list(self.context)
-        else:
-            source_packages = list(self.context.findPackagesByName(name))
-
-        if not source_packages:
-            return None
-
-        start = int(self.request.get('batch_start', 0))
-        end = int(self.request.get('batch_end', BATCH_SIZE))
-        batch_size = BATCH_SIZE
-
-        batch = Batch(list=source_packages, start=start, size=batch_size)
-        return BatchNavigator(batch=batch, request=self.request)
-
 #
 # Source Package
 #
 
-class DistroReleaseSourceView:
-    translationPortlet = ViewPageTemplateFile(
-        '../templates/portlet-translations-sourcepackage.pt')
-    watchPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distroreleasesource-watch.pt')
-    bugPortlet = ViewPageTemplateFile(
-        '../templates/portlet-sourcepackage-bugcounter.pt')
-
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def productTranslations(self):
-        # XXX: Daniel Debonzi
-        # It must still here until rosetta
-        # merge it (or change) to launchpad/browser
-        from canonical.rosetta.browser import ProductView
-
-        if self.context.sourcepackage.product:
-            return ProductView(self.context.sourcepackage.product,
-                               self.request)
-        return None
-
-    def sourcepackageWatch(self):
-        self.person = IPerson(self.request.principal, None)
-        if self.person is not None:            
-            return True
-
-        return False
 
 class DistrosReleaseBinariesSearchView:
     def __init__(self, context, request):
@@ -165,12 +106,10 @@ class SourcePackageBugsView:
 class BinaryPackageView(object):
     """View class for BinaryPackage"""
 
-    lastversionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-binarypackage-lastversions.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.launchbag = getUtility(ILaunchBag)
 
     def _buildList(self, packages):
         blist = []

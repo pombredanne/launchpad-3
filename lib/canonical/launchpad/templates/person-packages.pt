@@ -6,12 +6,11 @@
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure view/viewsPortlet" />
+    <div tal:replace="structure context/@@+portlet-views" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
-    <div class="sidebar" tal:content="structure view/actionsPortlet" />
-  </metal:rightportlets>
+      <div class="sidebar" tal:replace="structure context/@@+portlet-actions" />  </metal:rightportlets>
 
   <div metal:fill-slot="main">
 

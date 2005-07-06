@@ -19,25 +19,23 @@ from canonical.launchpad.database import Distribution, BugFactory
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import BugTaskStatus
-from canonical.launchpad.interfaces import IDistribution, \
-        IDistributionSet, IPerson, IBugTaskSet, ILaunchBag, \
-        IBugTaskSearchListingView
+from canonical.launchpad.interfaces import (
+    IDistribution, IDistributionSet, IPerson, IBugTaskSet, ILaunchBag,
+    IBugTaskSearchListingView)
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.helpers import is_maintainer
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser import BugTaskSearchListingView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
+from canonical.launchpad.webapp import StandardLaunchpadFacets
+
+
+class DistributionFacets(StandardLaunchpadFacets):
+    usedfor = IDistribution
+
 
 class DistributionView:
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distro-actions.pt')
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distro-details.pt')
-
-    relatedBountiesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-related-bounties.pt')
+    """Default Distribution view class."""
 
 
 class DistributionBugsView(BugTaskSearchListingView):

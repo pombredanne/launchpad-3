@@ -19,42 +19,6 @@ from canonical.launchpad.interfaces import (
     IHasProductAndAssignee, IHasDateCreated)
 from canonical.launchpad.validators.bug import non_duplicate_bug
 
-class IEditableUpstreamBugTask(IHasProductAndAssignee):
-    """A bug assigned to upstream, which is editable by the current
-    user."""
-    title = Attribute('Title')
-
-
-class IReadOnlyUpstreamBugTask(IHasProductAndAssignee):
-    """A bug assigned to upstream, which is read-only by the current
-    user."""
-    title = Attribute('Title')
-
-
-class IEditableDistroBugTask(Interface):
-    """A bug assigned to a distro package, which is editable by
-    the current user."""
-    title = Attribute('Title')
-
-
-class IReadOnlyDistroBugTask(Interface):
-    """A bug assigned to a distro package, which is read-only by the
-    current user."""
-    title = Attribute('Title')
-
-
-class IEditableDistroReleaseBugTask(Interface):
-    """A bug in a distro release package, which is editable by
-    the current user."""
-    title = Attribute('Title')
-
-
-class IReadOnlyDistroReleaseBugTask(Interface):
-    """A bug in a distro release package, which is read-only by the
-    current user."""
-    title = Attribute('Title')
-
-
 class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product
     or package."""
@@ -75,7 +39,7 @@ class IBugTask(IHasDateCreated):
         title=_('Status'), vocabulary='BugStatus',
         default=dbschema.BugTaskStatus.NEW)
     statusexplanation = Text(
-        title=_("Explanation of Status"), required=False)
+        title=_("Status notes (optional)"), required=False)
     priority = Choice(
         title=_('Priority'), vocabulary='BugPriority',
         default=dbschema.BugPriority.MEDIUM)
@@ -115,7 +79,7 @@ class IBugTaskSearch(Interface):
     for status to be a List field on a search form, where more than
     one value can be selected.)
     """
-    searchtext = TextLine(title=_("Bug ID or Text"), required=False)
+    searchtext = TextLine(title=_("Bug ID or Keywords"), required=False)
     status = List(
         title=_('Bug Status'),
         value_type=IBugTask['status'],
@@ -129,7 +93,7 @@ class IBugTaskSearch(Interface):
         title=_('Assignee'), vocabulary='ValidAssignee', required=False)
     unassigned = Bool(title=_('show only unassigned bugs'), required=False)
     statusexplanation = TextLine(
-        title=_("Explanation of Status"), required=False)
+        title=_("Status notes"), required=False)
 
 
 class IUpstreamBugTaskSearch(IBugTaskSearch):
@@ -170,7 +134,7 @@ class IBugTaskSearchListingView(IView):
                                     shown.""")
 
     statusexplanation_widget = Attribute("""The widget for searching in status
-                                     explanations. None if the widget is not to
+                                     notes. None if the widget is not to
                                      be shown.""")
 
     def task_columns():
@@ -212,7 +176,7 @@ class IBugTaskDelta(Interface):
         "A dict containing two keys, 'old' and 'new' or None.")
     assignee = Attribute(
         "A dict containing two keys, 'old' and 'new' or None.")
-    statusexplanation = Attribute("The new value of the status explanation.")
+    statusexplanation = Attribute("The new value of the status notes.")
 
 
 class IUpstreamBugTask(IBugTask):
@@ -291,6 +255,10 @@ class IBugTaskSet(Interface):
           IBugTasks where IBugTask.arg1 == 'foo' and
           IBugTask.arg2 == 'bar'
 
+        The set is always ordered by the bugtasks' id. Meaning that if
+        you set orderby to 'severity', it will first be ordered by severity,
+        then by bugtask id.
+
         For a more thorough treatment, check out:
 
             lib/canonical/launchpad/doc/bugtask.txt
@@ -345,7 +313,7 @@ class IBugTaskSet(Interface):
 
 
 class IBugTaskSubset(Interface):
-    """A subset of bugs.
+    """A subset of IBugTasks.
 
     Generally speaking the 'subset' refers to the bugs reported on a
     specific upstream, distribution, or distrorelease.
@@ -353,7 +321,7 @@ class IBugTaskSubset(Interface):
 
     context = Attribute(
         "The IDistribution, IDistroRelease or IProduct.")
-    context_title = TextLine(title=_("Bugs reported in"))
+    title = TextLine(title=_("Bugs reported in"))
 
     def __getitem__(item):
         """Get an IBugTask.
@@ -368,7 +336,7 @@ class IBugTaskSubset(Interface):
         """Return a set of IBugTasks that satisfy the query arguments.
 
         The search results are filtered to include matches within the
-        current context.
+        current context (i.e. the .context attribute.)
 
         Keyword arguments should always be used. The argument passing
         semantics are as follows:

@@ -95,6 +95,13 @@
 
   <browser:suburl
     for="canonical.publication.RootObject"
+    name="karmaaction"
+    utility="canonical.launchpad.interfaces.IKarmaActionSet"
+    permission="launchpad.Admin"
+    />
+
+  <browser:suburl
+    for="canonical.publication.RootObject"
     name="potemplatenames"
     utility="canonical.launchpad.interfaces.IPOTemplateNameSet"
     permission="launchpad.Edit"
@@ -112,5 +119,17 @@
     template="templates/launchpad-legal.pt"
     permission="zope.Public"
     />
+
+  <!-- RDF downloadable documents -->
+  <browser:page
+    for="canonical.publication.RootObject"
+    name="rdf"
+    template="templates/rdf-index.pt"
+    permission="zope.Public"
+    />
+
+  <browser:resourceDirectory
+    name="rdf"
+    directory="rdfspec" />
 
 </configure>

@@ -1,0 +1,29 @@
+
+Languages
+---------
+
+    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> language_set = getUtility(ILanguageSet)
+
+We can get hold of languages by their language code.
+
+    >>> language = language_set['es']
+    >>> language.englishname
+    u'Spanish'
+
+We can convert language codes to standard form.
+
+    >>> language_set.canonicalise_language_code('pt')
+    'pt'
+    >>> language_set.canonicalise_language_code('pt_BR')
+    'pt_BR'
+    >>> language_set.canonicalise_language_code('pt-br')
+    'pt_BR'
+
+We can even get hold of many at once. Language codes will be converted to
+standard form and unknown codes will be ignored.
+
+    >>> languages = language_set.codes_to_languages(['es', 'pt_BR', 'zz'])
+    >>> [language.englishname for language in languages]
+    [u'Spanish', u'Portuguese (Brazil)']
+

@@ -10,8 +10,10 @@
         <require
             permission="zope.Public"
             interface="canonical.launchpad.interfaces.IEditPOTemplate"
-            set_attributes="name description iscurrent owner path
-                            filename distrorelease sourcepackagename"
+            set_attributes="potemplatename description header iscurrent
+                            owner productrelease distrorelease
+                            sourcepackagename sourcepackageversion
+                            binarypackagename languagepack path filename"
             />
         <require
             permission="zope.Public"
@@ -30,14 +32,43 @@
         name="+index"
         />
 
-    <browser:page
-        name="+index"
+    <browser:pages
         for="canonical.launchpad.interfaces.IPOTemplate"
-        permission="zope.Public"
-        template="../templates/potemplate-index.pt"
         class="canonical.launchpad.browser.POTemplateView"
-        lp:url="Rosetta/products/$Product.name/$POTemplate.name/+index"
+        permission="zope.Public">
+        
+        <browser:page
+            name="+index"
+            template="../templates/potemplate-index.pt"
+            lp:url="Rosetta/products/$Product.name/$POTemplate.name/+index"
         />
+        <browser:page
+            name="+chart"
+            template="../templates/potemplate-chart.pt"
+        />
+        <!-- Potemplate Portlets -->
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/portlet-potemplate-actions.pt"
+        />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/portlet-potemplate-details.pt"
+        />
+        <browser:page
+            name="+portlet-relateds"
+            template="../templates/potemplate-portlet-relateds.pt"
+        />
+        <browser:page
+            name="+portlet-for"
+            template="../templates/portlet-potemplate-for.pt"
+        />
+        <browser:page
+            name="+portlet-status-legend"
+            template="../templates/portlet-rosetta-status-legend.pt"
+        />
+
+    </browser:pages>
 
     <browser:page
         name="+upload"
@@ -49,26 +80,16 @@
         />
 
     <browser:editform
-        name="+admin"
-        schema="canonical.launchpad.interfaces.IPOTemplate"
-        class="canonical.launchpad.browser.POTemplateAdminView"
-        label="Change PO template Information"
-        permission="launchpad.Admin"
-        template="../templates/potemplate-admin.pt"
-        fields="potemplatename description header iscurrent owner
-                productrelease distrorelease sourcepackagename
-                sourcepackageversion binarypackagename languagepack path
-                filename" >
-    </browser:editform>
-
-    <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IPOTemplate"
         class="canonical.launchpad.browser.POTemplateEditView"
         label="Change PO template Information"
         permission="launchpad.Edit"
         template="../templates/potemplate-edit.pt"
-        fields="name description owner path filename" >
+        fields="name potemplatename description header iscurrent owner
+                productrelease distrorelease sourcepackagename
+                sourcepackageversion binarypackagename languagepack path
+                filename" >
         lp:url="Rosetta/products/$Product.name/$POTemplate.name/+edit"
     </browser:editform>
 
@@ -81,27 +102,11 @@
         />
 
     <browser:page
-        name="+chart"
-        for="canonical.launchpad.interfaces.IPOTemplate"
-        permission="zope.Public"
-        template="../templates/potemplate-chart.pt"
-        class="canonical.launchpad.browser.POTemplateView"
-        />
-
-    <browser:page
         name="+export"
         for="canonical.launchpad.interfaces.IPOTemplate"
         permission="launchpad.AnyPerson"
         template="../templates/potemplate-export.pt"
-        class="canonical.launchpad.browser.POTemplateExport"
-        />
-
-    <browser:page
-        name="+tar-export"
-        for="canonical.launchpad.interfaces.IPOTemplate"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.POTemplateTarExport"
-        attribute="__call__"
+        class="canonical.launchpad.browser.POTemplateExportView"
         />
 
     <!-- needed for @@absolute_url to work -->
@@ -123,13 +128,6 @@
     </view>
 
     <!-- POTemplateSet -->
-    <content class="canonical.launchpad.database.POTemplateSet">
-        <require
-            permission="zope.Public"
-            interface="canonical.launchpad.interfaces.IPOTemplateSet"
-            />
-    </content>
-
     <securedutility
         class="canonical.launchpad.database.POTemplateSet"
         provides="canonical.launchpad.interfaces.IPOTemplateSet">
@@ -148,6 +146,14 @@
             set_attributes="sourcepackagename distrorelease"
             />
     </content>
+    <browser:url
+        for="canonical.launchpad.interfaces.IPOTemplateSubset"
+        urldata="canonical.launchpad.browser.POTemplateSubsetURL"
+        />
+    <browser:url
+        for="canonical.launchpad.interfaces.IPOTemplate"
+        urldata="canonical.launchpad.browser.POTemplateURL"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPOTemplateSubset"

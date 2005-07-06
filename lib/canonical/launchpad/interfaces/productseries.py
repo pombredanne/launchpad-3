@@ -23,6 +23,8 @@ class IProductSeries(Interface):
     title = Attribute('Title')
     displayname = TextLine( title=_('Display Name'), required=True)
     summary = Text(title=_("Summary"), required=True)
+    datecreated = TextLine(title=_('Date Created'), description=_("""The
+        date this productseries was created in Launchpad."""))
     # convenient joins
     releases = Attribute("An iterator over the releases in this "
         "Series, sorted with latest release first.")

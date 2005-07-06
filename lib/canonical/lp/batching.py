@@ -2,7 +2,7 @@
 
 __metaclass__ = type
 
-import re
+import cgi, urllib
 
 from zope.interface import implements
 from canonical.lp.z3batching import Batch
@@ -17,9 +17,12 @@ class BatchNavigator:
         self.request = request
 
     def cleanQueryString(self, query_string):
-
-        nav_params = re.compile("[?&]?batch_start=\d+&batch_end=\d+")
-        return nav_params.sub("", query_string)
+        """Removes batch_start and batch_end params from a query string."""
+        query_parts = cgi.parse_qsl(query_string, keep_blank_values=True,
+                                    strict_parsing=False)
+        return urllib.urlencode(
+            [(key, value) for (key, value) in query_parts
+             if key not in ['batch_start', 'batch_end']])
 
     def generateBatchURL(self, batch):
         qs = self.request.environment.get('QUERY_STRING', '')

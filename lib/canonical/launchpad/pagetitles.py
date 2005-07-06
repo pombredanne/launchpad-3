@@ -71,15 +71,14 @@ attachment_index = ContextTitle('Malone Bug Attachment: %s')
 
 attachments_index = 'Malone Bug Attachments'
 
-auth_index = 'Launchpad Password Reminder'
-
 bazaar_index = 'The Launchpad Bazaar'
 
-bazaar_sync_review = 'The Bazaar Upstream-Sync Review'
+bazaar_sync_review = 'Review upstream repositories for Launchpad Bazaar syncing'
 
 binary_index = 'Binary Packages'
 
-binarypackage_index = 'Binary Package Details'
+def binarypackage_index (context, view):
+    return "%s binary package in Launchpad" % context.title
 
 binarypackage_search = 'Search Binary Package Database'
 
@@ -120,8 +119,7 @@ def bugs_assigned(context, view):
 
 bugs_createdby_index = 'Malone Bug Report by Creator'
 
-def bugs_for_context(context, view):
-    return "Bugs in %s" % context.context_title
+bugs_for_context = ContextTitle('Bugs in %s')
 
 bugs_index = 'Malone Master Bug List'
 
@@ -129,13 +127,11 @@ bugsubscription_edit = 'Modify Your Bug Subscription'
 
 def bugtask_display(context, view):
     return 'Bug #%s in %s: %s' % (
-      context.bug.id, context.contextname, context.bug.title
-    )
+      context.bug.id, context.contextname, context.bug.title)
 
 def bugtask_editform(context, view):
     return 'Editing bug #%s in %s: %s' % (
-      context.bug.id, context.contextname, context.bug.title
-    )
+      context.bug.id, context.contextname, context.bug.title)
 
 # bugtask_search_listing contains only macros
 # bugtasks_index is a redirect
@@ -225,15 +221,15 @@ distrorelease_translations = ContextTitle(
 
 distros_index = 'Overview of Distributions in Launchpad'
 
-doap_about = 'About the Launchpad DOAP registry'
+doap_about = 'About the Launchpad Registry'
 
 doap_dashboard = 'Launchpad Project & Product Dashboard'
 
-doap_index = 'The DOAP Network: Project and Product Registration in Launchpad'
+doap_index = 'Project and Product Registration in Launchpad'
 
 doap_listall = 'Launchpad: Complete List'
 
-doap_review = 'DOAP Content Review'
+doap_review = 'Launchpad Content Review'
 
 doap_to_do = 'Launchpad To-Do List'
 

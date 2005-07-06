@@ -107,6 +107,7 @@ class _ZopelessConnectionDescriptor(object):
         self.debug = debug
         self.implicitActivate = implicitActivate
         self.reconnect = reconnect
+        self.alreadyActivated = False
 
     def _reconnect(self):
         first = True
@@ -155,10 +156,11 @@ class _ZopelessConnectionDescriptor(object):
             "Already activated the connection descriptor for this thread.")
 
         # Build a connection (retrying if necessary)
-        if self.reconnect:
+        if self.reconnect and self.alreadyActivated:
             conn = self._reconnect()
         else:
             conn = connectionForURI(self.connectionURI).makeConnection()
+            self.alreadyActivated = True
 
         # Wrap it in SQLOS's loving arms.
         adapted = self.sqlosAdapter(conn)

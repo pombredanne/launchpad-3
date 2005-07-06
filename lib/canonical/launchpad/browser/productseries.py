@@ -24,7 +24,7 @@ from canonical.launchpad.browser.productrelease import newProductRelease
 from urllib import quote as urlquote
 
 __all__ = ['traverseProductSeries', 'ProductSeriesView',
-           'ProductSeriesSourceSetView']
+           'ProductSeriesRdfView', 'ProductSeriesSourceSetView']
 
 def traverseProductSeries(series, request, name):
     return series.getRelease(name)
@@ -105,9 +105,6 @@ def validate_svn_repo(repo):
 # Currently, the pages just return 'System Error' as they trigger database
 # constraints. -- StuartBishop 20050502
 class ProductSeriesView(object):
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-productseries-actions.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -263,6 +260,14 @@ class ProductSeriesView(object):
         form = self.form
         if form.get("Update RCS Details", None) is None:
             return
+        # FTP release details
+        self.releaseroot = form.get("releaseroot", self.releaseroot) or None
+        self.releasefileglob = form.get("releasefileglob",
+                self.releasefileglob) or None
+        if self.releaseroot:
+            if not validate_release_root(self.releaseroot):
+                self.errormsgs.append('Invalid release root URL')
+                return
         # look for admin changes and retrieve those
         self.cvsroot = form.get('cvsroot', self.cvsroot) or None
         self.cvsmodule = form.get('cvsmodule', self.cvsmodule) or None
@@ -299,6 +304,8 @@ class ProductSeriesView(object):
         self.context.targetarchcategory = self.targetarchcategory
         self.context.targetarchbranch = self.targetarchbranch
         self.context.targetarchversion = self.targetarchversion
+        self.context.releaseroot = self.releaseroot
+        self.context.releasefileglob = self.releasefileglob
         # find and handle editing changes
         self.editSource(fromAdmin=True)
         if self.form.get('syncCertified', None):
@@ -323,6 +330,18 @@ class ProductSeriesView(object):
                                series=self.context.id)
         if pr:
             self.request.response.redirect(pr.version)
+
+
+class ProductSeriesRdfView(object):
+    """A view that sets its mime-type to application/rdf+xml"""
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        request.response.setHeader('Content-Type', 'application/rdf+xml')
+        request.response.setHeader('Content-Disposition',
+                                   'attachment; filename=' +
+                                   self.context.product.name + '-' +
+                                   self.context.name + '.rdf')
 
 
 class ProductSeriesSourceSetView:
@@ -391,6 +410,4 @@ class ProductSeriesSourceSetView:
         if self.importstatus == 'STOPPED':
             html += ' selected'
         html += '>Stopped</option>\n'
-
-
 

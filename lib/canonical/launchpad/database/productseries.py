@@ -35,6 +35,8 @@ class ProductSeries(SQLBase):
     name = StringCol(notNull=True)
     displayname = StringCol(notNull=True)
     summary = StringCol(notNull=True)
+    datecreated =  UtcDateTimeCol(
+        dbName='datecreated', notNull=True, default=UTC_NOW)
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
     importstatus = EnumCol(dbName='importstatus', notNull=False,
                            schema=ImportStatus, default=None)

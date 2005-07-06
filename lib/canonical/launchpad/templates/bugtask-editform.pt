@@ -8,12 +8,12 @@
     in the search page instead.
     <div tal:replace="structure view/bugStatsForContext" />
     -->
-    <div tal:replace="structure view/bugPeoplePortlet" />
+    <div tal:replace="structure context/bug/@@+portlet-bug-people" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure view/bugStatusPortlet" />
-    <div tal:replace="structure view/alsoReportedInPortlet" />
+    <div tal:replace="structure context/@@+portlet-status" />
+    <div tal:replace="structure context/@@+portlet-also-reported" />
   </metal:rightportlets>
 
     <div metal:fill-slot="main">
@@ -158,6 +158,12 @@
               i18n:attributes="value submit-button" />
           </div>
         </form>
+        <p tal:condition="context/product">
+          <a href=""
+              tal:attributes="href string:/malone/products/${context/product/name}"
+              tal:content="string:More ${context/product/displayname} bugs"
+          >More Mozilla Firefox bugs</a>
+        </p>
       </div>
     </div>
   </body>

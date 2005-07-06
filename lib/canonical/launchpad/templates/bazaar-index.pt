@@ -6,7 +6,7 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure view/importsPortlet" />
+    <div tal:replace="structure context/@@+portlet-imports" />
 </metal:leftportlets>
 
 <div metal:fill-slot="main">

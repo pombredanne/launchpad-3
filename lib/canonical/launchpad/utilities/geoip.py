@@ -6,7 +6,6 @@ from zope.component import getUtility
 
 from zope.i18n.interfaces import IUserPreferredLanguages
 
-from canonical.launchpad.helpers import canonicalise_code
 from canonical.launchpad.interfaces import IGeoIP, ICountrySet, \
     ILanguageSet, IRequestLocalLanguages, IRequestPreferredLanguages
 
@@ -79,7 +78,7 @@ class RequestPreferredLanguages(object):
         languages = []
 
         for code in codes:
-            code = canonicalise_code(code)
+            code = languageset.canonicalise_language_code(code)
 
             try:
                 languages.append(languageset[code])

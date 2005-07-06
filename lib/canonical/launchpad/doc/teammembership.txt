@@ -1,0 +1,183 @@
+Team Membership/Participation
+=============================
+
+When a person joins a team, we store the relationship in the TeamMembership
+table. In this table we store the membership status, the join date and the
+expiry date. TeamMembership stores only direct members. However, when a 
+member of a team is in fact another team (in the case of Team Y is a member
+of Team X), the membership is transitive (members of Team Y are also a 
+member of team X). For this reason the TeamParticipation table exists: it
+represents all the people who are /effective members/ of the team.
+
+First of all, create some teams:
+
+>>> from canonical.launchpad.database import Person
+>>> from canonical.launchpad.database.person import _getAllMembers
+>>> from canonical.lp.dbschema import TeamSubscriptionPolicy
+>>> from canonical.lp.dbschema import TeamMembershipStatus
+
+>>> from canonical.database.sqlbase import flush_database_updates
+
+>>> defaultOrder = 'displayname'
+>>> o = TeamSubscriptionPolicy.OPEN
+>>> m = TeamSubscriptionPolicy.MODERATED
+
+>>> p = Person.byName('name16')
+>>> t1 = Person(subscriptionpolicy=o, name='t1', displayname='t1', teamowner=p)
+>>> t2 = Person(subscriptionpolicy=o, name='t2', displayname='t2', teamowner=p)
+>>> t3 = Person(subscriptionpolicy=m, name='t3', displayname='t3', teamowner=p)
+>>> t4 = Person(subscriptionpolicy=o, name='t4', displayname='t4', teamowner=p)
+>>> t5 = Person(subscriptionpolicy=o, name='t5', displayname='t5', teamowner=p)
+
+
+One of your users want to join the t3 and t4 teams.
+
+    >>> p.join(t3)
+    True
+    >>> p.join(t4)
+    True
+    >>> [m.displayname for m in _getAllMembers(t3, orderBy=defaultOrder)]
+    []
+
+But these are MODERATED teams, somebody has to approve 'name16' as a member:
+
+    >>> t4.setMembershipStatus(p, TeamMembershipStatus.APPROVED)
+    >>> [m.displayname for m in _getAllMembers(t4, orderBy=defaultOrder)]
+    [u'Foo Bar']
+
+    >>> t3.setMembershipStatus(p, TeamMembershipStatus.APPROVED)
+    >>> [m.displayname for m in _getAllMembers(t3, orderBy=defaultOrder)]
+    [u'Foo Bar']
+
+
+Now we add t3 as a member of t2. But t3 is a team, and because teams take no
+actions, it can't actually "join" t2. Instead, an administrator of t2 have 
+to addMember() it.
+
+    >>> t3.join(t2)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Teams take no actions in Launchpad...
+
+    >>> t2.addMember(t3)
+
+By making t3 a member of t2, that means that all members of t3 will also be
+added as a member of t2.
+
+    >>> [m.displayname for m in _getAllMembers(t2, orderBy=defaultOrder)]
+    [u'Foo Bar', u't3']
+
+Can we add t2 as a member of t3? No, we prevent this kind of loop, and users
+can't do this because our vocabularies won't allow members that would cause
+loops.
+
+    >>> t3.addMember(t2)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Team 't3' is a member of 't2'. As a consequence, 't2' can't be added as a member of 't3'
+
+Adding t2 as a member of t1 will add all t2 members as t1 members too.
+
+    >>> t1.addMember(t2)
+    >>> [m.displayname for m in _getAllMembers(t1, orderBy=defaultOrder)]
+    [u'Foo Bar', u't2', u't3']
+
+Adding t2 as a member of t5 will add all t2 members as t5 members too.
+
+    >>> t5.addMember(t2)
+    >>> [m.displayname for m in _getAllMembers(t5, orderBy=defaultOrder)]
+    [u'Foo Bar', u't2', u't3']
+
+Adding t5 and t1 as members of t4 will add all t5 and t1 members as t4 
+members too.
+
+    >>> t4.addMember(t5)
+    >>> t4.addMember(t1)
+    >>> [m.displayname for m in _getAllMembers(t4, orderBy=defaultOrder)]
+    [u'Foo Bar', u't1', u't2', u't3', u't5']
+
+After adding all this mess, this is what we have:
+
+=============================================================
+||  Team      ||  Members          ||  Indirect Members    ||
+=============================================================
+||   T1       ||  T2               ||  T3, 'Foo Bar'       ||
+||   T2       ||  T3               ||  'Foo Bar'           ||
+||   T3       ||  'Foo Bar'        ||                      ||
+||   T4       ||  T5, T1, 'Foo Bar'||  T2, T3, 'Foo Bar'   ||
+||   T5       ||  T2               ||  T3, 'Foo Bar'       ||
+
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+
+t2 can't use its leave() method to leave t5 because it's a team and teams
+take no actions. One of t5 administrators have to go and remove t2 from t5
+if t2 shouldn't be a member of t5 anymore.
+
+    >>> t5.setMembershipStatus(t2, TeamMembershipStatus.DEACTIVATED)
+
+Removing t2 from t5 will have implications in all teams that have t5 as a
+(direct or indirect) member.
+
+t5 had only one member and two other indirect members. Now that t2 is not its
+member anymore, it doesn't have any indirect members either.
+    >>> [m.displayname for m in _getAllMembers(t5, orderBy=defaultOrder)]
+    []
+
+Removing t2 from t5 won't remove it from t4, because t2 is also a member of
+t1, which is a member of t4.
+    >>> [m.displayname for m in _getAllMembers(t4, orderBy=defaultOrder)]
+    [u'Foo Bar', u't1', u't2', u't3', u't5']
+
+Nothing changes in t1, because t5 wasn't one of its members.
+    >>> [m.displayname for m in _getAllMembers(t1, orderBy=defaultOrder)]
+    [u'Foo Bar', u't2', u't3']
+
+If 'Foo Bar' decides to leave t3, he'll also be removed from t1, t2, but not
+from t4, because he's a direct member of t4.
+    >>> p.leave(t3)
+    >>> p in t1.allmembers
+    False
+    >>> p in t2.allmembers 
+    False
+    >>> p in t4.allmembers
+    True
+
+
+This is what we have now, after removing t2 from t5:
+
+=============================================================
+||  Team      ||  Members          ||  Indirect Members    ||
+=============================================================
+||   T1       ||  T2               ||  T3, 'Foo Bar'       ||
+||   T2       ||  T3               ||  'Foo Bar'           ||
+||   T3       ||  'Foo Bar'        ||                      ||
+||   T4       ||  T5, T1, 'Foo Bar'||  T2, T3, 'Foo Bar'   ||
+||   T5       ||                   ||                      ||
+
+
+Now, if I add a new member to t3, will it be added to t2, t1 and t4 as well?
+Let's see...
+
+    >>> t3.addMember(Person.byName('salgado'))
+    >>> [m.displayname for m in _getAllMembers(t3, orderBy=defaultOrder)]
+    [u'Guilherme Salgado']
+
+    >>> [m.displayname for m in _getAllMembers(t2, orderBy=defaultOrder)]
+    [u'Guilherme Salgado', u't3']
+
+    >>> [m.displayname for m in _getAllMembers(t1, orderBy=defaultOrder)]
+    [u'Guilherme Salgado', u't2', u't3']
+
+    >>> [m.displayname for m in _getAllMembers(t4, orderBy=defaultOrder)]
+    [u'Foo Bar', u'Guilherme Salgado', u't1', u't2', u't3', u't5']
+
+
+It's important to note that even if p is not a member of t5, he still retains
+his rights over the team because he's the team's owner:
+
+    >>> flush_database_updates()
+    >>> p.inTeam(t5)
+    True
+

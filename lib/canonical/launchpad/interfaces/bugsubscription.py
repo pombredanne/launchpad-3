@@ -29,6 +29,7 @@ class IBugSubscriptionSet(Interface):
     """A set for IBugSubscription objects."""
 
     title = Attribute('Title')
+    bug = Attribute('the bug')
 
     def __getitem__(key):
         """Get a BugSubscription object."""

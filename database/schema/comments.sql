@@ -67,6 +67,7 @@ COMMENT ON COLUMN Product.reviewed IS 'Whether or not someone at Canonical has r
 COMMENT ON COLUMN Product.active IS 'Whether or not this product should be considered active.';
 COMMENT ON COLUMN Product.translationgroup IS 'The TranslationGroup that is responsible for translations for this product. Note that the Product may be part of a Project which also has a TranslationGroup, in which case the translators from both the product and project translation group have permission to edit the translations of this product.';
 COMMENT ON COLUMN Product.translationpermission IS 'The level of openness of this product\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
+COMMENT ON COLUMN Product.releaseroot IS 'The URL to the directory which holds upstream releases for this product. This allows us to monitor the upstream site and detect new upstream release tarballs.  This URL is used when the associated ProductSeries does not have a URL to use. It is also used to find files outside of any registered series.';
 
 
 
@@ -244,6 +245,7 @@ COMMENT ON COLUMN POSubmission.origin IS 'The source of this
 translation. This indicates whether the translation was in a pofile that we
 parsed (probably one published in a package or branch or tarball), or was
 submitted through the web.';
+COMMENT ON COLUMN POSubmission.validationstatus IS 'Says whether or not we have validated this translation. Its value is specified by dbschema.TranslationValidationStatus, with 0 the value that says this row has not been validated yet.';
 
 -- POMsgSet
 COMMENT ON COLUMN POMsgSet.publishedfuzzy IS 'This indicates that this
@@ -515,17 +517,26 @@ COMMENT ON COLUMN Person.familyname IS 'Component of a person''s full name used 
 COMMENT ON COLUMN Person.password IS 'SSHA digest encrypted password.';
 COMMENT ON COLUMN Person.teamowner IS 'id of the team owner. Team owners will have authority to add or remove people from the team.';
 COMMENT ON COLUMN Person.teamdescription IS 'Informative description of the team. Format and restrictions are as yet undefined.';
-COMMENT ON COLUMN Person.karma IS 'Numeric score attempting to indicate how useful, helpful or generally cool a person is. It is currently unknown if teams have karma.';
-COMMENT ON COLUMN Person.karmatimestamp IS 'Last time this person''s karma scrore was calculated and updated.';
 COMMENT ON COLUMN Person.name IS 'Short mneumonic name uniquely identifying this person or team. Useful for url traversal or in places where we need to unambiguously refer to a person or team (as displayname is not unique).';
 COMMENT ON COLUMN Person.language IS 'Preferred language for this person (unset for teams). UI should be displayed in this language wherever possible.';
 
 -- Karma
 COMMENT ON TABLE Karma IS 'Used to quantify all the ''operations'' a user performs inside the system, which maybe reporting and fixing bugs, uploading packages, end-user support, wiki editting, etc.';
-COMMENT ON COLUMN Karma.KarmaType IS 'Type of the performed ''operation''. Possible values are in dbschema.KarmaType.';
+COMMENT ON COLUMN Karma.action IS 'A foreign key to the KarmaAction table.';
 COMMENT ON COLUMN Karma.datecreated IS 'A timestamp for the assignment of this Karma.';
 COMMENT ON COLUMN Karma.Person IS 'The Person for wich this Karma was assigned.';
-COMMENT ON COLUMN Karma.Points IS 'The ''weight'' of this Karma. Two Karmas of the same KarmaType may have different Points, meaning that we may give higher weights for hard-to-fix bugs, for example.';
+
+-- KarmaAction
+COMMENT ON TABLE KarmaAction IS 'Stores all the actions that would give karma to the user which performed it.';
+COMMENT ON COLUMN KarmaAction.name IS 'The unique name of this action.';
+COMMENT ON COLUMN KarmaAction.category IS 'A dbschema value used to group actions together.';
+COMMENT ON COLUMN KarmaAction.points IS 'The number of points this action is worth of.';
+
+-- KarmaCache
+COMMENT ON TABLE KarmaCache IS 'Stores a cached value of a person\'s karma points, grouped by the action category.';
+COMMENT ON COLUMN KarmaCache.Person IS 'The person which performed the actions of this category, and thus got the karma.';
+COMMENT ON COLUMN KarmaCache.Category IS 'The category of the actions.';
+COMMENT ON COLUMN KarmaCache.KarmaValue IS 'The karma points of all actions of this category performed by this person.';
 
 -- Bounty
 COMMENT ON TABLE Bounty IS 'A set of bounties for work to be done by the open source community. These bounties will initially be offered only by Canonical, but later we will create the ability for people to offer the bounties themselves, using us as a clearing house.';
@@ -545,18 +556,6 @@ COMMENT ON TABLE ProductBounty IS 'This table records a simple link between a bo
 COMMENT ON TABLE DistroBounty IS 'This table records a simple link between a bounty and a distribution. This bounty will be listed on the distribution web page, and the distribution will be mentioned on the bounty web page.';
 
 COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bounty and a project. This bounty will be listed on the project web page, and the project will be mentioned on the bounty web page.';
-
--- SourceSource
-COMMENT ON TABLE SourceSourceBackup IS 'The SourceSource table identifies
-upstream revision control systems that can be imported and re-published as
-bazaar (baz) archives. So, for example, there is an entry in this table for
-each upstream CVS or SVN branch that we want to sync-and-publish as a baz
-branch.';
-
-COMMENT ON COLUMN SourceSourceBackup.branchpoint IS 'The source specification for an import job to branch from.';
-COMMENT ON COLUMN SourceSourceBackup.datestarted IS 'The timestamp of the last time an import or sync was started on this sourcesource.';
-COMMENT ON COLUMN SourceSourceBackup.datefinished IS 'The timestamp of the last time an import or sync finished on this sourcesource.';
-
 
 -- Maintainership
 
@@ -919,6 +918,8 @@ COMMENT ON COLUMN POExportRequest.potemplate IS
 'The PO template being requested.';
 COMMENT ON COLUMN POExportRequest.pofile IS
 'The PO file being requested, or NULL.';
+COMMENT ON COLUMN POExportRequest.format IS
+'The format the user would like the export to be in. See the RosettaFileFormat DB schema for possible values.';
 
 -- GPGKey
 COMMENT ON TABLE GPGKey IS 'A GPG key belonging to a Person';

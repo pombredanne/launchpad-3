@@ -34,8 +34,9 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProject"
+        permission="zope.Public"
         class="canonical.launchpad.browser.ProjectView"
-        permission="zope.Public" >
+        lp:url="Rosetta/projects/$Project.name">
         <browser:page
             name="+index"
             template="../templates/project.pt"
@@ -51,7 +52,42 @@
             name="+bounties"
             template="../templates/related-bounties.pt"
             lp:url="/projects/$Project.name/+bounties/" />
+        <browser:page
+            name="+rosetta-index"
+            template="../templates/project-rosetta-index.pt"
+            lp:url="Rosetta/projects/$Project.name/+index" />
+
+       <!-- Projects portlets -->
+       <browser:page
+            name="+portlet-languages"
+            template="../templates/portlet-project-languages.pt"
+            lp:url="Rosetta/projects/$Project.name/+portlet-languages" />
+       <browser:page
+            name="+portlet-related-bounties"
+            template="../templates/portlet-related-bounties.pt"
+            lp:url="Rosetta/projects/$Project.name/+portlet-related-bounties" />
+       <browser:page
+            name="+portlet-trackers"
+            template="../templates/portlet-project-trackers.pt"
+            lp:url="Rosetta/projects/$Project.name/+portlet-trackers" />
+       <browser:page
+            name="+portlet-details"
+            template="../templates/portlet-project-details.pt"
+            lp:url="Rosetta/projects/$Project.name/+portlet-details" />
+       <browser:page
+            name="+portlet-actions"
+            template="../templates/portlet-project-actions.pt"
+            lp:url="Rosetta/projects/$Project.name/+portlet-actions" />
+
     </browser:pages>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.ProjectRdfView"
+        permission="zope.Public"
+        name="+rdf"
+        lp:url="/projects/$Project.name/+rdf"
+        template="../templates/project-rdf.pt" />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProject"
@@ -61,17 +97,6 @@
               name="+reassign"
               template="../templates/object-reassignment.pt"
               lp:url="/project/$project.id/+reassign" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProject"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.ProjectView"
-        lp:url="Rosetta/projects/$Project.name">
-        <browser:page
-            name="+rosetta-index"
-            template="../templates/project-rosetta-index.pt"
-            lp:url="Rosetta/projects/$Project.name/+index" />
     </browser:pages>
 
     <browser:pages

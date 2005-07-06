@@ -11,14 +11,10 @@
     templates exist for this release which can be translated in
     Rosetta.</div>
 
-      <a href="+translations"
-         style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+      <ul class="add"><li><a href="+translations"
          title="See more translation options for this product">
-        <img src="/++resource++add.gif" alt="+" />
         More...
-      </a><br />
-
+      </a></li></ul>
     </div>
-        
   </div>
 </div>

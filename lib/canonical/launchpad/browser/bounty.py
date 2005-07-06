@@ -20,9 +20,6 @@ __all__ = ['BountyView', 'BountySetAddView']
 
 class BountySubscriberPortletMixin:
 
-    subscribersPortlet = ViewPageTemplateFile(
-        '../templates/portlet-bounty-subscribers.pt')
-
     def getWatches(self):
         return [s for s in self.context.subscriptions
                 if s.subscription == BountySubscription.WATCH]
@@ -41,9 +38,6 @@ class BountySubscriberPortletMixin:
 class BountyView(BountySubscriberPortletMixin):
 
     __used_for__ = IBounty
-
-    relatedsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-bounty-relateds.pt')
 
     def __init__(self, context, request):
         self.context = context

@@ -1,34 +1,143 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
-from zope.schema import Int, Datetime
-from zope.interface import Interface
+from zope.app.form.browser.interfaces import IAddFormCustomization
+from zope.schema import Int, Datetime, Choice, TextLine
+from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
+from canonical.lp.dbschema import KarmaActionCategory
+
 
 class IKarma(Interface):
-    """The Karma of a Person"""
+    """The Karma of a Person."""
+
+    title = Attribute('Title')
+
     id = Int(title=_("Database ID"), required=True, readonly=True)
-    person = Int(title=_("The person which this karma is assigned to"),
-                 required=True, readonly=True)
-    points = Int(title=_("Number of points"), required=True)
-    karmatype = Int(title=_("Type of this Karma"), required=True)
-    datecreated = Datetime(title=_("Date Created"), required=True,
-                           readonly=True)
+
+    person = Int(
+        title=_("Person"), required=True, readonly=True,
+        description=_("The user which this karma is assigned to."))
+
+    action = Int(
+        title=_("Action"), required=True,
+        description=_("The action which gives the karma to the user."))
+
+    datecreated = Datetime(
+        title=_("Date Created"), required=True, readonly=True,
+        description=_("The date this karma was assigned to the user."))
 
 
-class IKarmaPointsManager(Interface):
-    """An utility which knows how much points to give for each karma type."""
+class IKarmaSet(Interface):
+    """The set of Karma objects."""
 
-    def getPoints(karmatype):
-        """Return the number of points for this karmatype.
+    def selectByPersonAndAction(person, action):
+        """Return all Karma objects for the given person and action."""
 
-        Raise KeyError if the karma type is not matched.
+    def getSumByPerson(person):
+        """Return the sum of all karma points of <person>.
+
+        This sum is obtained through the following equation:
+        s = s1 + (s2 * 0.5) + (s3 * 0.2)
+        Where, 
+        s1: Sum of all karma assigned during the last 30 days
+        s2: Sum of all karma assigned between 90 days ago and 30 days ago
+        s3: Sum of all karma assigned prior to 90 days ago
         """
 
-    def queryPoints(karmatype, default=None):
-        """Return the number of points for this karmatype.
+    def getSumByPersonAndCategory(person, category):
+        """Return the sum of karma points given to <person> for actions of the
+        given category that s(he) performed.
 
-        Return the default value if the karma type is not matched.
+        This sum is obtained through the following equation:
+        s = s1 + (s2 * 0.5) + (s3 * 0.2)
+        Where, 
+        s1: Sum of all karma assigned during the last 30 days
+        s2: Sum of all karma assigned between 90 days ago and 30 days ago
+        s3: Sum of all karma assigned prior to 90 days ago
+        """
+
+
+class IKarmaAction(Interface):
+    """The Action that gives karma to a Person."""
+
+    title = Attribute('Title')
+
+    id = Int(title=_("Database ID"), required=True, readonly=True)
+
+    name = Int(
+        title=_("Name"), required=True, readonly=True, 
+        description=_("The name of this KarmaAction. A dbschema value."))
+
+    category = Choice(
+        title=_("Category"), required=True, readonly=False,
+        vocabulary='KarmaActionCategory', default=KarmaActionCategory.MISC,
+        description=_("The category of this action."))
+
+    points = Int(
+        title=_("Points"), required=True, readonly=False,
+        description=_("The number of points we give to a user which performs "
+                      "this action."))
+
+
+class IKarmaActionSet(IAddFormCustomization):
+    """The set of actions that gives karma to a Person."""
+
+    title = Attribute('Title')
+
+    def getByName(name, default=None):
+        """Return the KarmaAction with the given name.
+
+        Return the default value if there's no such KarmaAction.
+        """
+
+    def selectByCategory(category):
+        """Return all KarmaAction objects of the given category."""
+
+    def selectByCategoryAndPerson(category, person):
+        """Return all KarmaAction objects of the given category if <person>
+        performed these actions at least once."""
+
+
+class IKarmaCache(Interface):
+    """A cached value of a person's karma."""
+
+    title = Attribute('Title')
+
+    id = Int(title=_("Database ID"), required=True, readonly=True)
+
+    person = Int(
+        title=_("Person"), required=True, readonly=True,
+        description=_("The person which performed the actions of this "
+                      "category, and thus got the karma."))
+
+    category = Choice(
+        title=_("Category"), required=True, readonly=True,
+        vocabulary='KarmaActionCategory', default=KarmaActionCategory.MISC,
+        description=_("The category of the actions."))
+
+    karmavalue = Int(
+        title=_("Karma"), required=True, readonly=False,
+        description=_("The karma points of all actions of this category "
+                      "performed by this person."))
+
+
+class IKarmaCacheSet(Interface):
+    """The set of KarmaCache."""
+
+    title = Attribute('Title')
+
+    def getByPersonAndCategory(person, category, default=None):
+        """Return the KarmaCache for <person> of the given category.
+
+        Return the default value if there's no KarmaCache for <person> and
+        <category>.
+        """
+
+    def new(person, category, karmavalue):
+        """Create a KarmaCache for <person> with <category> and <karmavalue>.
+
+        Return the newly created KarmaCache.
         """
 

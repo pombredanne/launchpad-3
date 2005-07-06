@@ -12,6 +12,12 @@
                 set_schema="canonical.launchpad.interfaces.IBugExternalRef" />
     </content>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IBugExternalRef"
+        path_expression="string:references"
+        attribute_to_parent="bug"
+        />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugExternalRef"
         name="+index" />

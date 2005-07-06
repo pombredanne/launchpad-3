@@ -13,8 +13,14 @@
     -->
     <include files="package-includes/*-configure.zcml" />
     <include files="package-includes/*-configure-normal.zcml" />
-    <includeOverrides file="override-configure-normal.zcml" />
 
-    <!-- Provide local overrides of standard configurations-->
-    <includeOverrides file="override-configure-normal.zcml" />
+    <!--
+        Overrides are currently disabled. Currently, nothing we
+        need to override is required for scripts, and enabling it
+        could cause issues with the Zope mail delivery system. In
+        particular, scripts would fire up a QueueProcessorThread
+        handing the same mail queue as the Z3 instance or other
+        scripts which would be bad
+    -->
+    <!-- <includeOverrides file="override-configure-normal.zcml" /> -->
 </configure>

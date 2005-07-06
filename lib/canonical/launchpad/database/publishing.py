@@ -70,7 +70,7 @@ class SourcePackageFilePublishing(SQLBase):
                           notNull=True)
 
     sourcepackagepublishing = ForeignKey(dbName='sourcepackagepublishing',
-                                         foreignKey='SourcePackagePublishing')
+                                         foreignKey='SourcePackagePublishingHistory')
 
     libraryfilealias = IntCol(dbName='libraryfilealias', unique=False,
                               default=None, notNull=True)
@@ -92,9 +92,14 @@ class SourcePackageFilePublishing(SQLBase):
                                default=None, notNull=True,
                                schema=PackagePublishingStatus)
 
+    pocket = EnumCol(dbName='pocket', unique=False,
+                     default=None, notNull=True,
+                     schema=PackagePublishingPocket)
 
 class BinaryPackageFilePublishing(SQLBase):
     """A binary package file which needs publishing"""
+
+    _idType = str
 
     implements(IBinaryPackageFilePublishing)
 
@@ -102,7 +107,7 @@ class BinaryPackageFilePublishing(SQLBase):
                           notNull=True, immutable=True)
 
     packagepublishing = ForeignKey(dbName='packagepublishing',
-                                   foreignKey='PackagePublishing',
+                                   foreignKey='PackagePublishingHistory',
                                    immutable=True)
 
     libraryfilealias = IntCol(dbName='libraryfilealias', unique=False,
@@ -127,6 +132,10 @@ class BinaryPackageFilePublishing(SQLBase):
 
     architecturetag = StringCol(dbName='architecturetag', unique=False,
                                 default=None, notNull=True, immutable=True)
+
+    pocket = EnumCol(dbName='pocket', unique=False,
+                     default=None, notNull=True,
+                     schema=PackagePublishingPocket)
 
 
 class SourcePackagePublishingView(SQLBase):
@@ -197,7 +206,20 @@ class SourcePackagePublishingHistory(SQLBase):
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
     embargo = BoolCol(dbName='embargo', default=False)
     embargolifted = UtcDateTimeCol(default=None)
-    
+
+    @classmethod
+    def selectBy(cls, *args, **kwargs):
+        """Prevent selecting embargo packages by default"""
+        kwargs['embargo'] = False
+        return super(SourcePackagePublishingHistory,
+                     cls).selectBy(*args, **kwargs)
+
+    @classmethod
+    def fullSelectBy(cls, *args, **kwargs):
+        return super(SourcePackagePublishingHistory,
+                     cls).selectBy(*args, **kwargs)
+
+
 class PackagePublishingHistory(SQLBase):
     """A binary package publishing record."""
 
@@ -223,3 +245,15 @@ class PackagePublishingHistory(SQLBase):
     embargo = BoolCol(dbName='embargo', default=False)
     embargolifted = UtcDateTimeCol(default=None)
 
+    @classmethod
+    def selectBy(cls, *args, **kwargs):
+        """Prevent selecting embargo packages by default"""
+        kwargs['embargo'] = False
+        return super(PackagePublishingHistory,
+                     cls).selectBy(*args, **kwargs)
+
+    @classmethod
+    def fullSelectBy(cls, *args, **kwargs):
+        return super(PackagePublishingHistory,
+                     cls).selectBy(*args, **kwargs)
+    

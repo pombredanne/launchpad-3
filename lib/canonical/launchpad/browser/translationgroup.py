@@ -1,12 +1,14 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
+"""Browser code for translation groups."""
+
 __metaclass__ = type
 
 import operator
 
 from zope.event import notify
 from zope.exceptions import NotFoundError
-from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
+from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import SequenceWidget, ObjectWidget
@@ -14,22 +16,15 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 import zope.security.interfaces
 
-from canonical.launchpad.interfaces import ITranslationGroup, \
-    ITranslationGroupSet, IPerson, ILanguageSet, IPersonSet
-
-from canonical.launchpad.database import TranslationGroup
-
-ow = CustomWidgetFactory(ObjectWidget, TranslationGroup)
-sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
+from canonical.launchpad.interfaces import (
+    ITranslationGroup, ITranslationGroupSet, ILanguageSet,
+    IPersonSet, ILaunchBag)
 
 __all__ = ['TranslationGroupView',
            'TranslationGroupAddTranslatorView',
            'TranslationGroupSetAddView']
 
 class TranslationGroupView:
-
-    relatedsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-translationgroup-relateds.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -43,11 +38,11 @@ class TranslationGroupView:
 
         # Check if we have the 'removed' key as an argument. This argument is
         # used by the +rm form to tell us 'who' was removed from 'where'.
-        if (self.request.form.has_key('removed') and
-            '-' in self.request.form['removed']):
+        form_removed = self.request.form.get('removed', '')
+        if '-' in form_removed:
             # The key exists and follows the format we expect:
             # languagecode-personame
-            code, name = self.request.form['removed'].split('-', 1)
+            code, name = form_removed.split('-', 1)
 
             try:
                 language = getUtility(ILanguageSet)[code]
@@ -66,7 +61,7 @@ class TranslationGroupView:
 
     def removals(self):
         """Remove a translator/team for a concrete language."""
-        if self.request.form.has_key('remove'):
+        if 'remove' in self.request.form:
             code = self.request.form['remove']
             try:
                 translator = self.context[code]
@@ -98,8 +93,6 @@ class TranslationGroupAddTranslatorView(AddView):
 
     __used_for__ = ITranslationGroup
 
-    options_widget = sw
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -114,8 +107,6 @@ class TranslationGroupSetAddView(AddView):
 
     __used_for__ = ITranslationGroupSet
 
-    options_widget = sw
-
     def __init__(self, context, request):
         self.request = request
         self.context = context
@@ -123,17 +114,19 @@ class TranslationGroupSetAddView(AddView):
         AddView.__init__(self, context, request)
 
     def createAndAdd(self, data):
-        # add the owner information for the bounty
-        owner = IPerson(self.request.principal, None)
+        # Add the owner information for the new translation group.
+        owner = getUtility(ILaunchBag).user
         if not owner:
-            raise zope.security.interfaces.Unauthorized, "Need an authenticated group owner"
-        kw = {}
-        for item in data.items():
-            kw[str(item[0])] = item[1]
-        kw['ownerID'] = owner.id
-        group = TranslationGroup(**kw)
+            raise AssertionError(
+                "User must be authenticated to create a translation group")
+
+        group = getUtility(ITranslationGroupSet).new(
+            name=data['name'],
+            title=data['title'],
+            summary=data['summary'],
+            owner=owner)
         notify(ObjectCreatedEvent(group))
-        self._nextURL = kw['name']
+        self._nextURL = group.name
         return group
 
     def nextURL(self):

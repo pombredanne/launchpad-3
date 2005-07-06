@@ -7,57 +7,57 @@ SET search_path = public, pg_catalog;
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'person'::pg_catalog.regclass;
 
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (1, 'Mark Shuttleworth', 'Mark', 'Shuttleworth', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'sabdfl', NULL, '''mark'':1,3 ''shuttleworth'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.591618');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (2, 'Robert Collins', 'Robert', 'Collins', 'ID1adsprLaTBox18F6dpSdtSdqCiOdpgUXBo4oG17qhg73jSDTVe3g==', NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'lifeless', NULL, '''collin'':2,4 ''robert'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.598107');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (3, 'Dave Miller', 'Dave', 'Miller', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'justdave', NULL, '''dave'':1,3 ''miller'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.610048');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (4, 'Colin Watson', 'Colin', 'Watson', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'kamion', NULL, '''colin'':1,3 ''watson'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.611185');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (5, 'Scott James Remnant', 'Scott James', 'Remnant', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'keybuk', NULL, '''jame'':2,5 ''scott'':1,4 ''remnant'':3,6', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.608802');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (6, 'Jeff Waugh', 'Jeff', 'Waugh', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'jdub', NULL, '''jeff'':1,3 ''waugh'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.600523');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (7, 'Andrew Bennetts', 'Andrew', 'Bennetts', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'spiv', NULL, '''andrew'':1,3 ''bennett'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.551196');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (8, 'James Blackwell', 'James', 'Blackwell', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'jblack', NULL, '''jame'':1,3 ''blackwel'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.601584');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (9, 'Christian Reis', 'Christian', 'Reis', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'kiko', NULL, '''rei'':2,4 ''christian'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.594941');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (10, 'Alexander Limi', 'Alexander', 'Limi', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'limi', NULL, '''limi'':2,4 ''alexand'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.619713');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (11, 'Steve Alexander', 'Steve', 'Alexander', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'stevea', NULL, '''steve'':1,3 ''alexand'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.599234');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (12, 'Sample Person', 'Sample', 'Person', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 30, '2004-10-12 06:57:28.753737', 'name12', NULL, '''sampl'':1,3 ''person'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.612277');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (13, 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U', NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'carlos', NULL, '''carlo'':1,4 ''marín'':3,6 ''perelló'':2,5', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.615543');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (14, 'Dafydd Harries', 'Dafydd', 'Harries', 'EvSuSe4k4tkRHSp6p+g91vyQIwL5VJ3iTbRZ', NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'daf', NULL, '''harri'':2,4 ''dafydd'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.616666');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (16, 'Foo Bar', 'Foo', 'Bar', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'name16', NULL, '''bar'':2,4 ''foo'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (17, 'Ubuntu Team', NULL, NULL, NULL, 1, 'This Team is responsible for the Ubuntu Distribution', 0, '2004-10-12 06:57:28.753737', 'name17', NULL, '''team'':2 ''ubuntu'':1', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.60576');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (18, 'Ubuntu Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for the GNOME releases Issues on whole Ubuntu Distribution', 0, '2004-10-12 06:57:28.753737', 'name18', NULL, '''team'':3 ''gnome'':2 ''ubuntu'':1', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.607744');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (19, 'Warty Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for GNOME release Issues on Warty Distribution Release', 0, '2004-10-12 06:57:28.753737', 'name19', NULL, '''team'':3 ''gnome'':2 ''warti'':1', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.602661');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (20, 'Warty Security Team', NULL, NULL, NULL, 1, 'This Team is responsible for Security Issues on Warty Distribution Release', 0, '2004-10-12 06:57:28.753737', 'name20', NULL, '''team'':3 ''secur'':2 ''warti'':1', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.614468');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (21, 'Hoary Gnome Team', NULL, NULL, NULL, 1, 'This team is responsible for Security Issues on Hoary Distribution Release', 0, '2004-10-12 06:57:28.753737', 'name21', NULL, '''team'':3 ''gnome'':2 ''hoari'':1', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.603691');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (22, 'Stuart Bishop', 'Stuart', 'Bishop', 'I+lQozEFEr+uBuxQZuKGpL4jkiy6lE1dQsZx', NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'stub', NULL, '''bishop'':2,4 ''stuart'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.59276');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (23, 'David Allouche', 'David', 'Allouche', NULL, NULL, NULL, 0, '2004-12-09 17:59:07.717254', 'ddaa', NULL, '''david'':1,3 ''allouch'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.620823');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (24, 'Buttress Source Administrators', NULL, NULL, NULL, 2, 'Ultimate control of the Buttress systems', 666, '2004-12-09 17:59:38.607384', 'buttsource', NULL, '''sourc'':2 ''buttress'':1 ''administr'':3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.604746');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (25, 'Launchpad Administrators', NULL, NULL, NULL, 1, 'Launchpad Administrators', 0, '2004-12-13 18:08:27.2609', 'admins', NULL, '''administr'':2 ''launchpad'':1', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (26, 'Daniel Silverstone', 'Daniel', 'Silverstone', NULL, NULL, NULL, 0, '2004-12-13 18:10:17.294019', 'kinnison', NULL, '''daniel'':1,3 ''silverston'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.618722');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (27, 'Daniel Henrique Debonzi', 'Daniel', 'Henrique', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 0, '2005-01-10 13:08:28.753737', 'debonzi', NULL, '''daniel'':1,3 ''debonzi'':5 ''henriqu'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.557224');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (28, 'Celso Providelo', 'Celso', 'Providelo', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 0, '2005-01-10 13:08:28.753737', 'cprov', NULL, '''celso'':1,3 ''providelo'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.59705');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (29, 'Guilherme Salgado', 'Guilherme', 'Salgado', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 0, '2005-01-10 13:08:28.753737', 'salgado', NULL, '''salgado'':2,4 ''guilherm'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.596025');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (30, 'Rosetta Administrators', NULL, NULL, NULL, 25, 'Rosetta Administrators', 0, '2005-03-07 13:05:56.480934', 'rosetta-admins', NULL, '''rosetta'':1 ''administr'':2', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.613368');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (31, 'Ubuntu Translators', NULL, NULL, NULL, 30, 'Ubuntu Translators', 0, '2005-03-07 13:05:57.563047', 'ubuntu-translators', NULL, '''ubuntu'':1 ''translat'':2', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.617651');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (32, 'GuadaMen', NULL, NULL, NULL, 16, 'The guadalinex maintainers team', 0, '2005-04-16 04:37:00.815842', 'guadamen', NULL, '''guadamen'':1', 700, 300, 1, NULL, '2005-06-06 08:59:51.606755');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (33, 'Edgar Bursic', 'Edgar', 'Bursic', '3JiiJZWCSnGbu71a+Qw1Dik7QAsrS4soxQTy1qzErmIA4F7zfmca8Q==', NULL, NULL, 0, '2005-05-06 20:09:31.825695', 'edgar', NULL, '''edgar'':1,3 ''bursic'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.621892');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (34, 'Jordi Vilalta', 'Jordi', 'Vilalta', 'gsTz0TyTUL7xrkoAH4Yz2WE6/w6WoYG5LjaO8p/xA1FDdSM6qkWiYA==', NULL, NULL, 0, '2005-05-06 20:09:51.386766', 'jvprat', NULL, '''jordi'':1,3 ''vilalta'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.622908');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (35, 'Sigurd Gartmann', 'Sigurd', 'Gartmann', 'FvPq9d4L5onnmcRA9wCzQ5lnPPYIzvW5rJA7GGnnsJuQqz8M8naZkQ==', NULL, NULL, 0, '2005-05-06 20:10:18.431259', 'sigurd-ubuntu', NULL, '''sigurd'':1,3 ''gartmann'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.623962');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (36, 'Vlastimil Skacel', 'Vlastimil', 'Skacel', 'lyA9CgUH9lHmTiaiWGP2vzkmytufiHBAnc9c8WCX1g5pYyBd6QgL3A==', NULL, NULL, 0, '2005-05-06 20:10:41.732277', 'skacel', NULL, '''skacel'':2,4 ''vlastimil'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.5244');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (37, 'Daniel Aguayo', 'Daniel', 'Aguayo', 'bpLapC1tQHUedQBP447krtcmaRPd3hrncPusTlNUKXh5ymfO5yVhhQ==', NULL, NULL, 0, '2005-05-06 20:11:16.591589', 'danner', NULL, '''aguayo'':2,4 ''daniel'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.549651');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (38, 'Martin Pitt', 'Martin', 'Pitt', 'iNbxn63pi1VFuZ0byz76vhFtdMXQAj2L+Cn/1UpsbmOhjUZs+Z6Naw==', NULL, NULL, 0, '2005-05-06 20:11:41.773683', 'martin-pitt', NULL, '''pitt'':2,4 ''martin'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.555051');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (39, 'Nicolas Velin', 'Nicolas', 'Velin', 'U2QzusrIFlQZKb3hWzcLpfhFcB3WZ0fa0E+OwcV8q/WOtsQCjarzzA==', NULL, NULL, 0, '2005-05-06 20:12:08.283113', 'nsv', NULL, '''velin'':2,4 ''nicola'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.556132');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (40, 'Francesco Accattapà', 'Francesco', 'Accattapà', 'mSKDc1EKoi8a5L0zd+oueU33nuSEuFWy+JHIHxOukBVJt9LPW47RVg==', NULL, NULL, 0, '2005-05-06 20:12:35.976807', 'callipeo', NULL, '''francesco'':1,3 ''accattapà'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.558429');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (41, 'Aloriel', 'Aloriel', '', '94y1dy33Evut2/bLsGG8Pzguyuip9wHeRtFWp0cSItzHdD1tK3gmcQ==', NULL, NULL, 0, '2005-05-06 20:13:10.405056', 'jorge-gonzalez-gonzalez', NULL, '''aloriel'':1,2', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.559519');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (42, 'Denis Barbier', 'Denis', 'Barbier', 'vI/vIVB2qsx1NvuaMy+q4l8rWUNMFINWzCSLOK1D5qi97/VmXvIrEw==', NULL, NULL, 0, '2005-05-06 21:12:18.833057', 'barbier', NULL, '''deni'':1,3 ''barbier'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.560604');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (43, 'André Luís Lopes', 'André', 'Luís Lopes', 'HG6qWB8PwzfIr3z+Tu+m3lQv7r1dsaWY6rxCxRuNypGomTPTzBh9iA==', NULL, NULL, 0, '2005-05-06 21:12:20.874654', 'andrelop', NULL, '''lope'':3,6 ''luís'':2,5 ''andré'':1,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.561685');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (44, 'Carlos Valdivia Yagüe', 'Carlos', 'Valdivia Yagüe', 'xrXafuC+VBaIz3m2+0UMjxms+2KhGhj6qnQdoo2V/f4iNFHJgSDzzw==', NULL, NULL, 0, '2005-05-06 21:12:25.930403', 'valyag', NULL, '''carlo'':1,4 ''yagüe'':3,6 ''valdivia'':2,5', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.562857');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (45, 'Luk Claes', 'Luk', 'Claes', 'w+f2krWWyQIIm76PIUEIsMCNQLhWLjObLcDONJNjjXcRaiKzKXeMAw==', NULL, NULL, 0, '2005-05-06 21:12:27.602384', 'luk-claes', NULL, '''luk'':1,3 ''clae'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.563952');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (46, 'Miroslav Kure', 'Miroslav', 'Kure', '1u05okOZJIa069F8COZ2vmxRq11c+4rolNUVRp539TI5ihnHwk9+Sw==', NULL, NULL, 0, '2005-05-06 21:12:29.45271', 'kurem', NULL, '''kure'':2,4 ''miroslav'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.565033');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (47, 'Morten Brix Pedersen', 'Morten', 'Brix Pedersen', 'n+KIa3PoihBN8ljj9Hjg9H3Im2LWnrn2yprgY4u/MnxOQx3dOh3bDw==', NULL, NULL, 0, '2005-05-06 21:12:31.382429', 'morten', NULL, '''brix'':2,5 ''morten'':1,4 ''pedersen'':3,6', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.56614');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (48, 'Matti Pöllä', 'Matti', 'Pöllä', 'U4KMnp73AYdriB7QH2NpEYhlH+fBWJKziDPcDAt25OxItZMYh0QV4Q==', NULL, NULL, 0, '2005-05-06 21:12:33.238579', 'mpo', NULL, '''matti'':1,3 ''pöllä'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.567224');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (49, 'Kęstutis Biliūnas', 'Kęstutis', 'Biliūnas', 'YbUJ4nzlxjYtaLLFMqUFL3LplUpS3FxcYwiCAS0WaAcnXS8Sst9BgA==', NULL, NULL, 0, '2005-05-06 21:12:37.221421', 'kebil', NULL, '''biliūnas'':2,4 ''kęstutis'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.568323');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (50, 'Valentina Commissari', 'Valentina', 'Commissari', 'fgwbt51c6ajsTet6DTbQBqAzQ7Q9S1G7S0APNvMX7YN2qpdbNbEn3Q==', NULL, NULL, 0, '2005-05-06 21:12:39.082421', 'tsukimi', NULL, '''valentina'':1,3 ''commissari'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.569518');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (51, 'Helge Kreutzmann', 'Helge', 'Kreutzmann', 'sYVFKi2dWAfkFkWekcW296s2dZ0ihYcxAXtwumI1FQJes4PWD8xvqQ==', NULL, NULL, 0, '2005-05-06 21:12:42.747648', 'kreutzm', NULL, '''helg'':1,3 ''kreutzmann'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.570701');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (52, 'No Privileges Person', 'No', 'Privileges', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'no-priv', NULL, '''no'':2,4 ''priv'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (1, 'Mark Shuttleworth', 'Mark', 'Shuttleworth', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'sabdfl', NULL, '''mark'':1,3 ''shuttleworth'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.591618');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (2, 'Robert Collins', 'Robert', 'Collins', 'ID1adsprLaTBox18F6dpSdtSdqCiOdpgUXBo4oG17qhg73jSDTVe3g==', NULL, NULL, 'lifeless', NULL, '''collin'':2,4 ''robert'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.598107');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (3, 'Dave Miller', 'Dave', 'Miller', NULL, NULL, NULL, 'justdave', NULL, '''dave'':1,3 ''miller'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.610048');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (4, 'Colin Watson', 'Colin', 'Watson', NULL, NULL, NULL, 'kamion', NULL, '''colin'':1,3 ''watson'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.611185');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (5, 'Scott James Remnant', 'Scott James', 'Remnant', NULL, NULL, NULL, 'keybuk', NULL, '''jame'':2,5 ''scott'':1,4 ''remnant'':3,6', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.608802');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (6, 'Jeff Waugh', 'Jeff', 'Waugh', NULL, NULL, NULL, 'jdub', NULL, '''jeff'':1,3 ''waugh'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.600523');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (7, 'Andrew Bennetts', 'Andrew', 'Bennetts', NULL, NULL, NULL, 'spiv', NULL, '''andrew'':1,3 ''bennett'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.551196');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (8, 'James Blackwell', 'James', 'Blackwell', NULL, NULL, NULL, 'jblack', NULL, '''jame'':1,3 ''blackwel'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.601584');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (9, 'Christian Reis', 'Christian', 'Reis', NULL, NULL, NULL, 'kiko', NULL, '''rei'':2,4 ''christian'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.594941');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (10, 'Alexander Limi', 'Alexander', 'Limi', NULL, NULL, NULL, 'limi', NULL, '''limi'':2,4 ''alexand'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.619713');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (11, 'Steve Alexander', 'Steve', 'Alexander', NULL, NULL, NULL, 'stevea', NULL, '''steve'':1,3 ''alexand'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.599234');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (12, 'Sample Person', 'Sample', 'Person', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name12', NULL, '''sampl'':1,3 ''person'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.612277');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (13, 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U', NULL, NULL, 'carlos', NULL, '''carlo'':1,4 ''marín'':3,6 ''perelló'':2,5', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.615543');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (14, 'Dafydd Harries', 'Dafydd', 'Harries', 'EvSuSe4k4tkRHSp6p+g91vyQIwL5VJ3iTbRZ', NULL, NULL, 'daf', NULL, '''harri'':2,4 ''dafydd'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.616666');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (16, 'Foo Bar', 'Foo', 'Bar', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name16', NULL, '''bar'':2,4 ''foo'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (17, 'Ubuntu Team', NULL, NULL, NULL, 1, 'This Team is responsible for the Ubuntu Distribution', 'name17', NULL, '''team'':2 ''ubuntu'':1', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.60576');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (18, 'Ubuntu Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for the GNOME releases Issues on whole Ubuntu Distribution', 'name18', NULL, '''team'':3 ''gnome'':2 ''ubuntu'':1', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.607744');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (19, 'Warty Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for GNOME release Issues on Warty Distribution Release', 'name19', NULL, '''team'':3 ''gnome'':2 ''warti'':1', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.602661');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (20, 'Warty Security Team', NULL, NULL, NULL, 1, 'This Team is responsible for Security Issues on Warty Distribution Release', 'name20', NULL, '''team'':3 ''secur'':2 ''warti'':1', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.614468');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (21, 'Hoary Gnome Team', NULL, NULL, NULL, 1, 'This team is responsible for Security Issues on Hoary Distribution Release', 'name21', NULL, '''team'':3 ''gnome'':2 ''hoari'':1', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.603691');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (22, 'Stuart Bishop', 'Stuart', 'Bishop', 'I+lQozEFEr+uBuxQZuKGpL4jkiy6lE1dQsZx', NULL, NULL, 'stub', NULL, '''bishop'':2,4 ''stuart'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.59276');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (23, 'David Allouche', 'David', 'Allouche', NULL, NULL, NULL, 'ddaa', NULL, '''david'':1,3 ''allouch'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.620823');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (24, 'Buttress Source Administrators', NULL, NULL, NULL, 2, 'Ultimate control of the Buttress systems', 'buttsource', NULL, '''sourc'':2 ''buttress'':1 ''administr'':3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.604746');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (25, 'Launchpad Administrators', NULL, NULL, NULL, 1, 'Launchpad Administrators', 'admins', NULL, '''administr'':2 ''launchpad'':1', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (26, 'Daniel Silverstone', 'Daniel', 'Silverstone', NULL, NULL, NULL, 'kinnison', NULL, '''daniel'':1,3 ''silverston'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.618722');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (27, 'Daniel Henrique Debonzi', 'Daniel', 'Henrique', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 'debonzi', NULL, '''daniel'':1,3 ''debonzi'':5 ''henriqu'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.557224');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (28, 'Celso Providelo', 'Celso', 'Providelo', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 'cprov', NULL, '''celso'':1,3 ''providelo'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.59705');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (29, 'Guilherme Salgado', 'Guilherme', 'Salgado', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 'salgado', NULL, '''salgado'':2,4 ''guilherm'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.596025');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (30, 'Rosetta Administrators', NULL, NULL, NULL, 25, 'Rosetta Administrators', 'rosetta-admins', NULL, '''rosetta'':1 ''administr'':2', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.613368');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (31, 'Ubuntu Translators', NULL, NULL, NULL, 30, 'Ubuntu Translators', 'ubuntu-translators', NULL, '''ubuntu'':1 ''translat'':2', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.617651');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (32, 'GuadaMen', NULL, NULL, NULL, 16, 'The guadalinex maintainers team', 'guadamen', NULL, '''guadamen'':1', 700, 300, 1, NULL, '2005-06-06 08:59:51.606755');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (33, 'Edgar Bursic', 'Edgar', 'Bursic', '3JiiJZWCSnGbu71a+Qw1Dik7QAsrS4soxQTy1qzErmIA4F7zfmca8Q==', NULL, NULL, 'edgar', NULL, '''edgar'':1,3 ''bursic'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.621892');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (34, 'Jordi Vilalta', 'Jordi', 'Vilalta', 'gsTz0TyTUL7xrkoAH4Yz2WE6/w6WoYG5LjaO8p/xA1FDdSM6qkWiYA==', NULL, NULL, 'jvprat', NULL, '''jordi'':1,3 ''vilalta'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.622908');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (35, 'Sigurd Gartmann', 'Sigurd', 'Gartmann', 'FvPq9d4L5onnmcRA9wCzQ5lnPPYIzvW5rJA7GGnnsJuQqz8M8naZkQ==', NULL, NULL, 'sigurd-ubuntu', NULL, '''sigurd'':1,3 ''gartmann'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.623962');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (36, 'Vlastimil Skacel', 'Vlastimil', 'Skacel', 'lyA9CgUH9lHmTiaiWGP2vzkmytufiHBAnc9c8WCX1g5pYyBd6QgL3A==', NULL, NULL, 'skacel', NULL, '''skacel'':2,4 ''vlastimil'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.5244');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (37, 'Daniel Aguayo', 'Daniel', 'Aguayo', 'bpLapC1tQHUedQBP447krtcmaRPd3hrncPusTlNUKXh5ymfO5yVhhQ==', NULL, NULL, 'danner', NULL, '''aguayo'':2,4 ''daniel'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.549651');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (38, 'Martin Pitt', 'Martin', 'Pitt', 'iNbxn63pi1VFuZ0byz76vhFtdMXQAj2L+Cn/1UpsbmOhjUZs+Z6Naw==', NULL, NULL, 'martin-pitt', NULL, '''pitt'':2,4 ''martin'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.555051');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (39, 'Nicolas Velin', 'Nicolas', 'Velin', 'U2QzusrIFlQZKb3hWzcLpfhFcB3WZ0fa0E+OwcV8q/WOtsQCjarzzA==', NULL, NULL, 'nsv', NULL, '''velin'':2,4 ''nicola'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.556132');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (40, 'Francesco Accattapà', 'Francesco', 'Accattapà', 'mSKDc1EKoi8a5L0zd+oueU33nuSEuFWy+JHIHxOukBVJt9LPW47RVg==', NULL, NULL, 'callipeo', NULL, '''francesco'':1,3 ''accattapà'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.558429');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (41, 'Aloriel', 'Aloriel', '', '94y1dy33Evut2/bLsGG8Pzguyuip9wHeRtFWp0cSItzHdD1tK3gmcQ==', NULL, NULL, 'jorge-gonzalez-gonzalez', NULL, '''aloriel'':1,2', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.559519');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (42, 'Denis Barbier', 'Denis', 'Barbier', 'vI/vIVB2qsx1NvuaMy+q4l8rWUNMFINWzCSLOK1D5qi97/VmXvIrEw==', NULL, NULL, 'barbier', NULL, '''deni'':1,3 ''barbier'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.560604');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (43, 'André Luís Lopes', 'André', 'Luís Lopes', 'HG6qWB8PwzfIr3z+Tu+m3lQv7r1dsaWY6rxCxRuNypGomTPTzBh9iA==', NULL, NULL, 'andrelop', NULL, '''lope'':3,6 ''luís'':2,5 ''andré'':1,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.561685');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (44, 'Carlos Valdivia Yagüe', 'Carlos', 'Valdivia Yagüe', 'xrXafuC+VBaIz3m2+0UMjxms+2KhGhj6qnQdoo2V/f4iNFHJgSDzzw==', NULL, NULL, 'valyag', NULL, '''carlo'':1,4 ''yagüe'':3,6 ''valdivia'':2,5', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.562857');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (45, 'Luk Claes', 'Luk', 'Claes', 'w+f2krWWyQIIm76PIUEIsMCNQLhWLjObLcDONJNjjXcRaiKzKXeMAw==', NULL, NULL, 'luk-claes', NULL, '''luk'':1,3 ''clae'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.563952');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (46, 'Miroslav Kure', 'Miroslav', 'Kure', '1u05okOZJIa069F8COZ2vmxRq11c+4rolNUVRp539TI5ihnHwk9+Sw==', NULL, NULL, 'kurem', NULL, '''kure'':2,4 ''miroslav'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.565033');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (47, 'Morten Brix Pedersen', 'Morten', 'Brix Pedersen', 'n+KIa3PoihBN8ljj9Hjg9H3Im2LWnrn2yprgY4u/MnxOQx3dOh3bDw==', NULL, NULL, 'morten', NULL, '''brix'':2,5 ''morten'':1,4 ''pedersen'':3,6', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.56614');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (48, 'Matti Pöllä', 'Matti', 'Pöllä', 'U4KMnp73AYdriB7QH2NpEYhlH+fBWJKziDPcDAt25OxItZMYh0QV4Q==', NULL, NULL, 'mpo', NULL, '''matti'':1,3 ''pöllä'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.567224');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (49, 'Kęstutis Biliūnas', 'Kęstutis', 'Biliūnas', 'YbUJ4nzlxjYtaLLFMqUFL3LplUpS3FxcYwiCAS0WaAcnXS8Sst9BgA==', NULL, NULL, 'kebil', NULL, '''biliūnas'':2,4 ''kęstutis'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.568323');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (50, 'Valentina Commissari', 'Valentina', 'Commissari', 'fgwbt51c6ajsTet6DTbQBqAzQ7Q9S1G7S0APNvMX7YN2qpdbNbEn3Q==', NULL, NULL, 'tsukimi', NULL, '''valentina'':1,3 ''commissari'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.569518');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (51, 'Helge Kreutzmann', 'Helge', 'Kreutzmann', 'sYVFKi2dWAfkFkWekcW296s2dZ0ihYcxAXtwumI1FQJes4PWD8xvqQ==', NULL, NULL, 'kreutzm', NULL, '''helg'':1,3 ''kreutzmann'':2,4', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.570701');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated) VALUES (52, 'No Privileges Person', 'No', 'Privileges', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'no-priv', NULL, '''no'':2,4 ''priv'':1,3', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'person'::pg_catalog.regclass;
@@ -151,6 +151,47 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (7, 5, 'http://www.ubun
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (8, 7, 'http://www.ubuntulinux.com/wiki/', 'AndrewBennetts');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (9, 3, 'http://www.ubuntulinux.com/wiki/', 'DaveMiller');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (10, 6, 'http://www.ubuntulinux.com/wiki/', 'JeffWaugh');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (11, 2, 'http://www.ubuntulinux.com/wiki/', 'RobertCollins');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (12, 12, 'http://www.ubuntulinux.com/wiki/', 'SamplePerson');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (13, 13, 'http://www.ubuntulinux.com/wiki/', 'CarlosPerellóMarín');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (14, 14, 'http://www.ubuntulinux.com/wiki/', 'DafyddHarries');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (15, 16, 'http://www.ubuntulinux.com/wiki/', 'FooBar');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (16, 17, 'http://www.ubuntulinux.com/wiki/', 'UbuntuTeam');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (17, 18, 'http://www.ubuntulinux.com/wiki/', 'UbuntuGnomeTeam');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (18, 19, 'http://www.ubuntulinux.com/wiki/', 'WartyGnomeTeam');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (19, 20, 'http://www.ubuntulinux.com/wiki/', 'WartySecurityTeam');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (20, 21, 'http://www.ubuntulinux.com/wiki/', 'HoaryGnomeTeam');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (21, 22, 'http://www.ubuntulinux.com/wiki/', 'StuartBishop');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (22, 23, 'http://www.ubuntulinux.com/wiki/', 'DavidAllouche');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (23, 24, 'http://www.ubuntulinux.com/wiki/', 'ButtressSourceAdministrators');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (24, 25, 'http://www.ubuntulinux.com/wiki/', 'LaunchpadAdministrators');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (25, 26, 'http://www.ubuntulinux.com/wiki/', 'DanielSilverstone');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (26, 27, 'http://www.ubuntulinux.com/wiki/', 'DanielHenriqueDebonzi');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (27, 28, 'http://www.ubuntulinux.com/wiki/', 'CelsoProvidelo');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (28, 29, 'http://www.ubuntulinux.com/wiki/', 'GuilhermeSalgado');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (29, 30, 'http://www.ubuntulinux.com/wiki/', 'RosettaAdministrators');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (30, 31, 'http://www.ubuntulinux.com/wiki/', 'UbuntuTranslators');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (31, 32, 'http://www.ubuntulinux.com/wiki/', 'Guadamen');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (32, 33, 'http://www.ubuntulinux.com/wiki/', 'EdgarBursic');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (33, 34, 'http://www.ubuntulinux.com/wiki/', 'JordiVilalta');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (34, 35, 'http://www.ubuntulinux.com/wiki/', 'SigurdGartmann');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (35, 36, 'http://www.ubuntulinux.com/wiki/', 'VlastimilSkacel');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (36, 37, 'http://www.ubuntulinux.com/wiki/', 'DanielAguayo');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (37, 38, 'http://www.ubuntulinux.com/wiki/', 'MartinPitt');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (38, 39, 'http://www.ubuntulinux.com/wiki/', 'NicolasVelin');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (39, 40, 'http://www.ubuntulinux.com/wiki/', 'FrancescoAccattapà');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (40, 41, 'http://www.ubuntulinux.com/wiki/', 'Aloriel');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (41, 42, 'http://www.ubuntulinux.com/wiki/', 'DenisBarbier');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (42, 43, 'http://www.ubuntulinux.com/wiki/', 'AndréLuísLopes');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (43, 44, 'http://www.ubuntulinux.com/wiki/', 'CarlosValdiviaYagüe');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (44, 45, 'http://www.ubuntulinux.com/wiki/', 'LukClaes');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (45, 46, 'http://www.ubuntulinux.com/wiki/', 'MiroslavKure');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (46, 47, 'http://www.ubuntulinux.com/wiki/', 'MortenBrixPedersen');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (47, 48, 'http://www.ubuntulinux.com/wiki/', 'MattiPöllä');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (48, 49, 'http://www.ubuntulinux.com/wiki/', 'KęstutisBiliūnas');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (49, 50, 'http://www.ubuntulinux.com/wiki/', 'ValentinaCommissari');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (50, 51, 'http://www.ubuntulinux.com/wiki/', 'HelgeKreutzmann');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (51, 52, 'http://www.ubuntulinux.com/wiki/', 'NoPrivilegesPerson');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'wikiname'::pg_catalog.regclass;
@@ -228,8 +269,8 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (35, 13, 30, 3, '2005-03-07 13:05:57.610314', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (36, 16, 24, 2, '2005-04-14 00:00:00', NULL, 16, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (37, 13, 31, 2, '2005-05-07 00:00:00', NULL, 13, NULL);
-INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires,
-reviewer, reviewercomment) VALUES (38, 1, 25, 3, '2005-03-03 10:02:53.830191', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (38, 1, 25, 3, '2005-03-03 10:02:53.830191', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (39, 17, 32, 3, '2005-03-03 10:02:53.830191', NULL, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'teammembership'::pg_catalog.regclass;
@@ -308,6 +349,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (77, 50, 50);
 INSERT INTO teamparticipation (id, team, person) VALUES (78, 51, 51);
 INSERT INTO teamparticipation (id, team, person) VALUES (79, 31, 13);
 INSERT INTO teamparticipation (id, team, person) VALUES (80, 25, 1);
+INSERT INTO teamparticipation (id, team, person) VALUES (81, 32, 17);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'teamparticipation'::pg_catalog.regclass;
@@ -853,25 +895,25 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distrorelease'::pg_catalog.regclass;
 
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname) VALUES (1, 1, 'warty', 'The Warty Warthog
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack) VALUES (1, 1, 'warty', 'The Warty Warthog
 Release', 'Warty was the first stable release of Ubuntu. Key feature goals
 included releasing on time, with the latest version of the Gnome Desktop
 Environment, and the creation of all the infrastructure required to manage
 Ubuntu itself. Warty includes excellent support for Python, with most of the
 widely used Python libraries installed by default.', '4.10', 1, 1, 4, '2004-08-20 00:00:00', NULL, 17, NULL, 'Warty is the first release of Ubuntu,
-with a planned release date of October 2004.', 'warty');
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname) VALUES (2, 2, 'six', 'Six Six Six', 'some text to describe the whole 666 release of RH', '6.0.1', 1, 1, 4, '2004-03-21 00:00:00', NULL, 8, NULL, 'some text to describe the whole 666 release of RH', 'six');
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname) VALUES (3, 1, 'hoary', 'The Hoary Hedgehog Release', 'Hoary is the second release of Ubuntu. Key feature goals include the integration of Hoary with the Launchpad for bugs and translation information, as well as Gnome 2.10 and the X.org window system.', '5.04', 1, 1, 2, '2004-08-25 00:00:00', 1, 1, NULL, 'Hoary is the second released of Ubuntu, with release planned for April 2005.', 'hoary');
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname) VALUES (4, 2, '7.0', 'Seven', 'The release that we would not expect', '7.0.1', 1, 1, 3, '2004-04-01 00:00:00', 2, 7, NULL, 'The release that we would not expect', '7.0');
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname) VALUES (5, 1, 'grumpy', 'The Grumpy
+with a planned release date of October 2004.', 'warty', NULL);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack) VALUES (2, 2, 'six', 'Six Six Six', 'some text to describe the whole 666 release of RH', '6.0.1', 1, 1, 4, '2004-03-21 00:00:00', NULL, 8, NULL, 'some text to describe the whole 666 release of RH', 'six', NULL);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack) VALUES (3, 1, 'hoary', 'The Hoary Hedgehog Release', 'Hoary is the second release of Ubuntu. Key feature goals include the integration of Hoary with the Launchpad for bugs and translation information, as well as Gnome 2.10 and the X.org window system.', '5.04', 1, 1, 2, '2004-08-25 00:00:00', 1, 1, NULL, 'Hoary is the second released of Ubuntu, with release planned for April 2005.', 'hoary', NULL);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack) VALUES (4, 2, '7.0', 'Seven', 'The release that we would not expect', '7.0.1', 1, 1, 3, '2004-04-01 00:00:00', 2, 7, NULL, 'The release that we would not expect', '7.0', NULL);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack) VALUES (5, 1, 'grumpy', 'The Grumpy
 Groundhog Release', 'Grumpy, the third release of Ubuntu Linux, is not yet
 in active development. This information is purely a placeholder.', '5.10', 1, 1, 1, '2004-08-29 00:00:00', 1, 1, NULL, 'Grumpy is the third release of
-Ubuntu, planned for October 2005.', 'grumpy');
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname) VALUES (6, 3, 'woody', 'WOODY', 'WOODY is the current stable verison of Debian GNU/Linux', '3.0', 1, 1, 4, '2003-01-01 00:00:00', NULL, 2, NULL, 'WOODY is the current stable verison of Debian GNU/Linux', 'woody');
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname) VALUES (7, 3, 'sarge', 'Sarge', 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', '3.1', 1, 1, 3, '2004-09-29 00:00:00', 6, 5, NULL, 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', 'sarge');
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname) VALUES (8, 3, 'sid', 'Sid', 'Sid is the CRAZY unstable version of Debian GNU/Linux.', '3.2', 1, 1, 1, '2004-12-29 00:00:00', 6, 6, NULL, 'Sid is the CRAZY unstable version of Debian GNU/Linux.', 'sid');
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname) VALUES (9, 7, '2k5', 'Guada 2005', 'This release places extra emphasis on usability and installability. The installer is adapted from Ubuntu to assume your country, language, keyboard and time zone preference, thus ensuring that installs ask the minimum number of questions possible.', '2005', 1, 1, 2, NULL, 3, 4, NULL, 'Guada 2005 is a rapid-install version of
-Ubuntu Hoary for the Andalucian marketplace.', 'Guada2005');
+Ubuntu, planned for October 2005.', 'grumpy', NULL);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack) VALUES (6, 3, 'woody', 'WOODY', 'WOODY is the current stable verison of Debian GNU/Linux', '3.0', 1, 1, 4, '2003-01-01 00:00:00', NULL, 2, NULL, 'WOODY is the current stable verison of Debian GNU/Linux', 'woody', NULL);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack) VALUES (7, 3, 'sarge', 'Sarge', 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', '3.1', 1, 1, 3, '2004-09-29 00:00:00', 6, 5, NULL, 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', 'sarge', NULL);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack) VALUES (8, 3, 'sid', 'Sid', 'Sid is the CRAZY unstable version of Debian GNU/Linux.', '3.2', 1, 1, 1, '2004-12-29 00:00:00', 6, 6, NULL, 'Sid is the CRAZY unstable version of Debian GNU/Linux.', 'sid', NULL);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack) VALUES (9, 7, '2k5', 'Guada 2005', 'This release places extra emphasis on usability and installability. The installer is adapted from Ubuntu to assume your country, language, keyboard and time zone preference, thus ensuring that installs ask the minimum number of questions possible.', '2005', 1, 1, 2, NULL, 3, 4, NULL, 'Guada 2005 is a rapid-install version of
+Ubuntu Hoary for the Andalucian marketplace.', 'Guada2005', NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distrorelease'::pg_catalog.regclass;
@@ -997,6 +1039,7 @@ INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, products
 INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries) VALUES (1, 4, 9, 1, 3);
 INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries) VALUES (1, 6, 10, 3, 5);
 INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries) VALUES (1, 7, 15, 1, 6);
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries) VALUES (1, 9, 1, 1, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'packaging'::pg_catalog.regclass;
@@ -1043,8 +1086,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'binarypackage'::pg_catalog.regclass;
 
-INSERT INTO binarypackage (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 1, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', NULL, NULL, NULL, 'mozilla-firefox', NULL, NULL, NULL, NULL, true, '''web'':3,7 ''browser'':4,8 ''firefox'':2,6 ''mozilla'':1,5');
-INSERT INTO binarypackage (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''pmount'':1,3 ''descript'':4 ''shortdesc'':2');
+INSERT INTO binarypackage (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', NULL, NULL, NULL, 'mozilla-firefox', NULL, NULL, NULL, NULL, true, '''web'':3,7 ''browser'':4,8 ''firefox'':2,6 ''mozilla'':1,5');
+INSERT INTO binarypackage (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''pmount'':1,3 ''descript'':4 ''shortdesc'':2');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'binarypackage'::pg_catalog.regclass;
@@ -3830,7 +3873,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=CHARSET
 Content-Transfer-Encoding: 8bit
 ', 2, NULL, 13, true, 'template.pot', 6);
-INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackageversion, header, potemplatename, productrelease, binarypackagename, languagepack, filename, rawfile) VALUES (3, NULL, NULL, NULL, NULL, '2005-05-06 20:06:59.867977', 'po', true, 43, 30, 30, '2005-05-06 20:06:59.867977', 3, NULL, NULL, NULL, 'Project-Id-Version: PACKAGE VERSION
+INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackageversion, header, potemplatename, productrelease, binarypackagename, languagepack, filename, rawfile) VALUES (3, NULL, NULL, NULL, NULL, '2005-05-06 20:06:59.867977', 'po', true, 43, 12, 30, '2005-05-06 20:06:59.867977', 3, NULL, NULL, NULL, 'Project-Id-Version: PACKAGE VERSION
 Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-08-24 16:09-0400
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
@@ -5311,696 +5354,6 @@ INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'pomsgidsighting'::pg_catalog.regclass;
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'potranslationsightingbackup'::pg_catalog.regclass;
-
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (1, 1, 1, NULL, '2005-04-07 13:19:17.601068', '2005-04-07 13:19:17.601068', true, 0, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (2, 2, 2, NULL, '2005-04-07 13:19:17.601068', '2005-04-07 13:19:17.601068', true, 0, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (3, 3, 3, NULL, '2005-04-07 13:19:17.601068', '2005-04-07 13:19:17.601068', true, 0, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (4, 5, 4, NULL, '2005-04-07 13:19:17.601068', '2005-04-07 13:19:17.601068', true, 0, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (5, 14, 5, NULL, '2005-04-07 13:19:17.601068', '2005-04-07 13:19:17.601068', true, 0, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (6, 15, 6, NULL, '2005-04-07 13:19:17.601068', '2005-04-07 13:19:17.601068', true, 0, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (7, 15, 7, NULL, '2005-04-07 13:19:17.601068', '2005-04-07 13:19:17.601068', true, 1, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (8, 16, 8, NULL, '2005-04-07 13:19:17.601068', '2005-04-07 13:19:17.601068', true, 0, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (9, 16, 9, NULL, '2005-04-07 13:19:17.601068', '2005-04-07 13:19:17.601068', true, 1, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (10, 17, 10, NULL, '2005-04-07 13:19:17.601068', '2005-04-07 13:19:17.601068', true, 0, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (11, 18, 11, NULL, '2005-04-07 13:19:17.601068', '2005-04-07 13:19:17.601068', true, 0, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (12, 22, 12, NULL, '2005-04-07 13:19:17.601068', '2005-04-07 13:19:17.601068', true, 0, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (13, 23, 13, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (14, 24, 14, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (15, 25, 15, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (16, 26, 16, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (17, 27, 17, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (18, 28, 18, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (19, 29, 19, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (20, 30, 20, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (21, 31, 21, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (22, 32, 22, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (23, 33, 23, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (24, 34, 24, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (25, 35, 25, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (26, 36, 26, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (27, 37, 27, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (28, 38, 28, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (29, 39, 29, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (30, 40, 30, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (31, 41, 31, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (32, 42, 32, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (33, 43, 33, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (34, 44, 34, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (35, 45, 35, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (36, 46, 36, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (37, 47, 37, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (38, 48, 38, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (39, 49, 39, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (40, 50, 40, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (41, 51, 41, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (42, 52, 42, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (43, 53, 43, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (44, 54, 44, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (45, 55, 45, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (46, 56, 46, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (47, 57, 47, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (48, 58, 48, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (49, 59, 49, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (50, 60, 50, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (51, 61, 51, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (52, 62, 52, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (53, 63, 53, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (54, 64, 54, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (55, 65, 55, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (56, 66, 56, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (57, 67, 57, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (58, 68, 58, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (59, 69, 59, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (60, 70, 60, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (61, 71, 61, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (62, 72, 62, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (63, 73, 63, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (64, 74, 64, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (65, 75, 65, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (66, 76, 66, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (67, 77, 67, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (68, 78, 68, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (69, 79, 69, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (70, 80, 70, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (71, 81, 71, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (72, 82, 72, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (73, 83, 73, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (74, 84, 74, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (75, 85, 75, NULL, '2005-05-06 20:09:31.825695', '2005-05-06 20:09:31.825695', true, 0, true, 1, 33);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (76, 86, 76, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (77, 87, 77, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (78, 88, 78, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (79, 89, 79, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (80, 90, 80, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (81, 91, 81, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (82, 92, 82, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (83, 93, 83, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (84, 94, 84, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (85, 95, 85, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (86, 96, 86, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (87, 97, 87, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (88, 98, 88, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (89, 99, 89, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (90, 100, 90, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (91, 101, 91, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (92, 102, 92, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (93, 103, 93, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (94, 104, 94, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (95, 105, 95, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (96, 106, 96, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (97, 107, 97, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (98, 108, 98, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (99, 109, 99, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (100, 110, 100, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (101, 111, 101, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (102, 112, 102, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (103, 113, 103, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (104, 114, 104, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (105, 115, 105, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (106, 116, 106, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (107, 117, 107, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (108, 118, 108, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (109, 119, 109, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (110, 120, 110, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (111, 121, 111, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (112, 122, 112, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (113, 123, 113, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (114, 124, 114, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (115, 125, 115, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (116, 126, 116, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (117, 127, 117, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (118, 128, 118, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (119, 129, 119, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (120, 130, 120, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (121, 131, 121, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (122, 132, 122, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (123, 133, 123, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (124, 134, 124, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (125, 135, 125, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (126, 136, 126, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (127, 137, 127, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (128, 138, 128, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (129, 139, 129, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (130, 140, 130, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (131, 141, 131, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (132, 142, 105, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (133, 143, 132, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (134, 144, 133, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (135, 145, 134, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (136, 146, 135, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (137, 147, 136, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (138, 148, 137, NULL, '2005-05-06 20:09:51.386766', '2005-05-06 20:09:51.386766', true, 0, true, 1, 34);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (139, 149, 138, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (140, 150, 139, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (141, 151, 140, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (142, 152, 141, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (143, 153, 142, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (144, 154, 143, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (145, 155, 144, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (146, 156, 145, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (147, 157, 146, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (148, 158, 147, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (149, 159, 148, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (150, 160, 149, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (151, 161, 150, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (152, 162, 151, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (153, 163, 152, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (154, 164, 153, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (155, 165, 154, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (156, 166, 155, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (157, 167, 156, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (158, 168, 157, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (159, 169, 158, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (160, 170, 159, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (161, 171, 160, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (162, 172, 161, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (163, 173, 162, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (164, 174, 163, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (165, 175, 164, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (166, 176, 165, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (167, 177, 166, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (168, 178, 167, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (169, 179, 168, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (170, 180, 169, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (171, 181, 170, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (172, 182, 171, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (173, 183, 172, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (174, 184, 173, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (175, 185, 174, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (176, 186, 175, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (177, 187, 176, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (178, 188, 177, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (179, 189, 178, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (180, 190, 179, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (181, 191, 180, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (182, 192, 181, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (183, 193, 182, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (184, 194, 183, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (185, 195, 184, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (186, 196, 185, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (187, 197, 186, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (188, 198, 187, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (189, 199, 188, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (190, 200, 189, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (191, 201, 190, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (192, 202, 191, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (193, 203, 192, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (194, 204, 193, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (195, 205, 194, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (196, 206, 195, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (197, 207, 196, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (198, 208, 197, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (199, 209, 198, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (200, 210, 199, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (201, 211, 200, NULL, '2005-05-06 20:10:18.431259', '2005-05-06 20:10:18.431259', true, 0, true, 1, 35);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (202, 212, 201, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (203, 213, 202, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (204, 214, 203, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (205, 215, 204, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (206, 216, 205, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (207, 217, 206, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (208, 218, 207, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (209, 219, 208, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (210, 220, 209, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (211, 221, 210, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (212, 222, 211, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (213, 223, 212, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (214, 224, 213, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (215, 225, 214, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (216, 226, 215, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (217, 227, 216, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (218, 228, 217, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (219, 229, 218, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (220, 230, 219, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (221, 231, 220, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (222, 232, 221, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (223, 233, 222, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (224, 234, 223, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (225, 235, 224, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (226, 236, 225, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (227, 237, 226, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (228, 238, 227, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (229, 239, 228, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (230, 240, 229, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (231, 241, 230, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (232, 242, 231, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (233, 243, 232, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (234, 244, 233, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (235, 245, 234, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (236, 246, 235, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (237, 247, 236, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (238, 248, 237, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (239, 249, 238, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (240, 250, 239, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (241, 251, 240, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (242, 252, 241, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (243, 253, 242, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (244, 254, 243, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (245, 255, 244, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (246, 256, 245, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (247, 257, 246, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (248, 258, 247, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (249, 259, 248, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (250, 260, 249, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (251, 261, 250, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (252, 262, 251, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (253, 263, 252, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (254, 264, 253, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (255, 265, 254, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (256, 266, 255, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (257, 267, 256, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (258, 268, 257, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (259, 269, 258, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (260, 270, 259, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (261, 271, 260, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (262, 272, 261, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (263, 273, 262, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (264, 274, 263, NULL, '2005-05-06 20:10:41.732277', '2005-05-06 20:10:41.732277', true, 0, true, 1, 36);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (265, 275, 264, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (266, 276, 265, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (267, 277, 266, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (268, 278, 267, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (269, 279, 268, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (270, 280, 269, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (271, 281, 270, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (272, 282, 271, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (273, 283, 272, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (274, 284, 273, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (275, 285, 274, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (276, 286, 275, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (277, 287, 276, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (278, 288, 277, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (279, 289, 278, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (280, 290, 279, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (281, 291, 280, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (282, 292, 281, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (283, 293, 282, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (284, 294, 283, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (285, 295, 284, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (286, 296, 285, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (287, 297, 286, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (288, 298, 287, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (289, 299, 288, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (290, 300, 289, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (291, 301, 290, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (292, 302, 291, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (293, 303, 292, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (294, 304, 293, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (295, 305, 294, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (296, 306, 295, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (297, 307, 296, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (298, 308, 297, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (299, 309, 298, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (300, 310, 299, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (301, 311, 300, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (302, 312, 301, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (303, 313, 302, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (304, 314, 303, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (305, 315, 304, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (306, 316, 305, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (307, 317, 306, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (308, 318, 307, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (309, 319, 308, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (310, 320, 309, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (311, 321, 310, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (312, 322, 311, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (313, 323, 312, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (314, 324, 313, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (315, 325, 314, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (316, 326, 315, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (317, 327, 316, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (318, 328, 317, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (319, 329, 318, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (320, 330, 319, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (321, 331, 320, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (322, 332, 321, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (323, 333, 322, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (324, 334, 323, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (325, 335, 324, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (326, 336, 325, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (327, 337, 326, NULL, '2005-05-06 20:11:16.591589', '2005-05-06 20:11:16.591589', true, 0, true, 1, 37);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (328, 338, 327, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (329, 339, 328, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (330, 340, 329, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (331, 341, 330, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (332, 342, 331, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (333, 343, 332, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (334, 344, 333, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (335, 345, 334, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (336, 346, 335, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (337, 347, 336, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (338, 348, 337, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (339, 349, 338, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (340, 350, 339, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (341, 351, 340, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (342, 352, 341, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (343, 353, 342, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (344, 354, 343, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (345, 355, 344, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (346, 356, 345, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (347, 357, 346, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (348, 358, 347, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (349, 359, 348, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (350, 360, 349, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (351, 361, 350, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (352, 362, 351, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (353, 363, 352, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (354, 364, 353, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (355, 365, 354, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (356, 366, 355, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (357, 367, 356, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (358, 368, 357, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (359, 369, 358, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (360, 370, 359, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (361, 371, 360, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (362, 372, 361, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (363, 373, 362, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (364, 374, 363, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (365, 375, 364, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (366, 376, 365, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (367, 377, 366, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (368, 378, 367, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (369, 379, 368, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (370, 380, 369, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (371, 381, 370, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (372, 382, 371, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (373, 383, 372, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (374, 384, 373, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (375, 385, 374, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (376, 386, 375, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (377, 387, 376, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (378, 388, 377, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (379, 389, 378, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (380, 390, 379, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (381, 391, 380, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (382, 392, 381, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (383, 393, 382, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (384, 394, 383, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (385, 395, 384, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (386, 396, 385, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (387, 397, 386, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (388, 398, 387, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (389, 399, 388, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (390, 400, 389, NULL, '2005-05-06 20:11:41.773683', '2005-05-06 20:11:41.773683', true, 0, true, 1, 38);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (391, 401, 390, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (392, 402, 391, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (393, 403, 392, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (394, 404, 393, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (395, 405, 394, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (396, 406, 395, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (397, 407, 396, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (398, 408, 397, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (399, 409, 398, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (400, 410, 399, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (401, 411, 400, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (402, 412, 401, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (403, 413, 402, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (404, 414, 403, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (405, 415, 404, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (406, 416, 405, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (407, 417, 406, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (408, 418, 407, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (409, 419, 408, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (410, 420, 409, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (411, 421, 410, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (412, 422, 411, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (413, 423, 412, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (414, 424, 413, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (415, 425, 414, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (416, 426, 415, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (417, 427, 416, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (418, 428, 417, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (419, 429, 418, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (420, 430, 419, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (421, 431, 420, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (422, 432, 421, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (423, 433, 422, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (424, 434, 423, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (425, 435, 424, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (426, 436, 425, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (427, 437, 426, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (428, 438, 427, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (429, 439, 428, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (430, 440, 429, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (431, 441, 430, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (432, 442, 431, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (433, 443, 432, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (434, 444, 433, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (435, 445, 434, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (436, 446, 435, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (437, 447, 436, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (438, 448, 437, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (439, 449, 438, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (440, 450, 439, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (441, 451, 440, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (442, 452, 441, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (443, 453, 442, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (444, 454, 443, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (445, 455, 444, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (446, 456, 445, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (447, 457, 446, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (448, 458, 447, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (449, 459, 448, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (450, 460, 449, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (451, 461, 450, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (452, 462, 451, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (453, 463, 452, NULL, '2005-05-06 20:12:08.283113', '2005-05-06 20:12:08.283113', true, 0, true, 1, 39);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (454, 464, 453, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (455, 465, 454, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (456, 466, 455, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (457, 467, 456, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (458, 468, 457, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (459, 469, 458, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (460, 470, 459, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (461, 471, 460, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (462, 472, 461, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (463, 474, 462, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (464, 475, 463, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (465, 476, 464, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (466, 477, 465, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (467, 480, 466, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (468, 484, 467, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (469, 485, 468, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (470, 486, 469, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (471, 487, 470, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (472, 488, 471, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (473, 489, 472, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (474, 491, 473, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (475, 492, 474, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (476, 493, 475, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (477, 494, 476, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (478, 495, 477, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (479, 496, 478, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (480, 497, 479, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (481, 498, 480, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (482, 499, 481, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (483, 500, 482, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (484, 501, 483, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (485, 503, 484, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (486, 504, 485, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (487, 505, 486, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (488, 506, 487, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (489, 507, 488, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (490, 508, 489, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (491, 509, 490, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (492, 510, 491, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (493, 511, 492, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (494, 512, 493, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (495, 513, 494, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (496, 515, 495, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (497, 516, 496, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (498, 517, 497, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (499, 519, 498, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (500, 520, 499, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (501, 521, 500, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (502, 522, 501, NULL, '2005-05-06 20:12:35.976807', '2005-05-06 20:12:35.976807', true, 0, true, 1, 40);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (503, 527, 264, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (504, 528, 265, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (505, 529, 266, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (506, 530, 267, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (507, 531, 268, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (508, 532, 269, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (509, 533, 270, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (510, 534, 271, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (511, 535, 272, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (512, 536, 273, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (513, 537, 274, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (514, 538, 275, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (515, 539, 276, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (516, 540, 502, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (517, 541, 278, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (518, 542, 279, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (519, 543, 280, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (520, 544, 281, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (521, 545, 282, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (522, 546, 283, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (523, 547, 284, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (524, 548, 503, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (525, 549, 504, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (526, 550, 505, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (527, 551, 506, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (528, 552, 507, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (529, 553, 508, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (530, 555, 292, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (531, 556, 509, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (532, 557, 294, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (533, 558, 295, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (534, 559, 510, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (535, 560, 511, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (536, 561, 512, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (537, 562, 513, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (538, 563, 514, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (539, 564, 515, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (540, 565, 516, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (541, 566, 517, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (542, 567, 304, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (543, 568, 518, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (544, 569, 519, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (545, 570, 307, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (546, 571, 520, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (547, 572, 521, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (548, 573, 522, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (549, 574, 523, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (550, 575, 524, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (551, 576, 525, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (552, 577, 526, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (553, 578, 527, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (554, 579, 528, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (555, 580, 529, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (556, 581, 530, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (557, 582, 319, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (558, 583, 531, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (559, 584, 321, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (560, 585, 322, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (561, 586, 532, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (562, 587, 533, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (563, 588, 534, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (564, 589, 535, NULL, '2005-05-06 20:13:10.405056', '2005-05-06 20:13:10.405056', true, 0, true, 1, 41);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (565, 590, 1, NULL, '2005-05-06 21:12:13.908028', '2005-05-06 21:12:13.908028', true, 0, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (566, 591, 2, NULL, '2005-05-06 21:12:13.908028', '2005-05-06 21:12:13.908028', true, 0, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (567, 592, 3, NULL, '2005-05-06 21:12:13.908028', '2005-05-06 21:12:13.908028', true, 0, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (568, 594, 4, NULL, '2005-05-06 21:12:13.908028', '2005-05-06 21:12:13.908028', true, 0, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (569, 603, 5, NULL, '2005-05-06 21:12:13.908028', '2005-05-06 21:12:13.908028', true, 0, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (570, 604, 6, NULL, '2005-05-06 21:12:13.908028', '2005-05-06 21:12:13.908028', true, 0, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (571, 604, 7, NULL, '2005-05-06 21:12:13.908028', '2005-05-06 21:12:13.908028', true, 1, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (572, 605, 8, NULL, '2005-05-06 21:12:13.908028', '2005-05-06 21:12:13.908028', true, 0, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (573, 605, 9, NULL, '2005-05-06 21:12:13.908028', '2005-05-06 21:12:13.908028', true, 1, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (574, 606, 10, NULL, '2005-05-06 21:12:13.908028', '2005-05-06 21:12:13.908028', true, 0, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (575, 607, 11, NULL, '2005-05-06 21:12:13.908028', '2005-05-06 21:12:13.908028', true, 0, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (576, 611, 12, NULL, '2005-05-06 21:12:13.908028', '2005-05-06 21:12:13.908028', true, 0, true, 1, 13);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (577, 612, 536, NULL, '2005-05-06 21:12:18.833057', '2005-05-06 21:12:18.833057', true, 0, true, 1, 42);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (578, 613, 537, NULL, '2005-05-06 21:12:18.833057', '2005-05-06 21:12:18.833057', true, 0, true, 1, 42);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (579, 614, 538, NULL, '2005-05-06 21:12:18.833057', '2005-05-06 21:12:18.833057', true, 0, true, 1, 42);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (580, 615, 539, NULL, '2005-05-06 21:12:18.833057', '2005-05-06 21:12:18.833057', true, 0, true, 1, 42);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (581, 616, 540, NULL, '2005-05-06 21:12:18.833057', '2005-05-06 21:12:18.833057', true, 0, true, 1, 42);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (582, 617, 541, NULL, '2005-05-06 21:12:18.833057', '2005-05-06 21:12:18.833057', true, 0, true, 1, 42);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (583, 618, 542, NULL, '2005-05-06 21:12:18.833057', '2005-05-06 21:12:18.833057', true, 0, true, 1, 42);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (584, 619, 543, NULL, '2005-05-06 21:12:18.833057', '2005-05-06 21:12:18.833057', true, 0, true, 1, 42);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (585, 620, 544, NULL, '2005-05-06 21:12:18.833057', '2005-05-06 21:12:18.833057', true, 0, true, 1, 42);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (586, 621, 545, NULL, '2005-05-06 21:12:20.874654', '2005-05-06 21:12:20.874654', true, 0, true, 1, 43);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (587, 622, 546, NULL, '2005-05-06 21:12:20.874654', '2005-05-06 21:12:20.874654', true, 0, true, 1, 43);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (588, 623, 547, NULL, '2005-05-06 21:12:20.874654', '2005-05-06 21:12:20.874654', true, 0, true, 1, 43);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (589, 624, 548, NULL, '2005-05-06 21:12:20.874654', '2005-05-06 21:12:20.874654', true, 0, true, 1, 43);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (590, 625, 549, NULL, '2005-05-06 21:12:20.874654', '2005-05-06 21:12:20.874654', true, 0, true, 1, 43);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (591, 626, 550, NULL, '2005-05-06 21:12:20.874654', '2005-05-06 21:12:20.874654', true, 0, true, 1, 43);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (592, 627, 551, NULL, '2005-05-06 21:12:20.874654', '2005-05-06 21:12:20.874654', true, 0, true, 1, 43);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (593, 628, 552, NULL, '2005-05-06 21:12:20.874654', '2005-05-06 21:12:20.874654', true, 0, true, 1, 43);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (594, 629, 553, NULL, '2005-05-06 21:12:20.874654', '2005-05-06 21:12:20.874654', true, 0, true, 1, 43);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (595, 630, 554, NULL, '2005-05-06 21:12:23.441015', '2005-05-06 21:12:23.441015', true, 0, true, 1, 30);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (596, 631, 555, NULL, '2005-05-06 21:12:23.441015', '2005-05-06 21:12:23.441015', true, 0, true, 1, 30);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (597, 632, 556, NULL, '2005-05-06 21:12:23.441015', '2005-05-06 21:12:23.441015', true, 0, true, 1, 30);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (598, 633, 557, NULL, '2005-05-06 21:12:23.441015', '2005-05-06 21:12:23.441015', true, 0, true, 1, 30);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (599, 634, 558, NULL, '2005-05-06 21:12:23.441015', '2005-05-06 21:12:23.441015', true, 0, true, 1, 30);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (600, 635, 559, NULL, '2005-05-06 21:12:23.441015', '2005-05-06 21:12:23.441015', true, 0, true, 1, 30);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (601, 636, 560, NULL, '2005-05-06 21:12:23.441015', '2005-05-06 21:12:23.441015', true, 0, true, 1, 30);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (602, 637, 561, NULL, '2005-05-06 21:12:23.441015', '2005-05-06 21:12:23.441015', true, 0, true, 1, 30);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (603, 638, 562, NULL, '2005-05-06 21:12:23.441015', '2005-05-06 21:12:23.441015', true, 0, true, 1, 30);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (604, 639, 563, NULL, '2005-05-06 21:12:25.930403', '2005-05-06 21:12:25.930403', true, 0, true, 1, 44);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (605, 640, 564, NULL, '2005-05-06 21:12:25.930403', '2005-05-06 21:12:25.930403', true, 0, true, 1, 44);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (606, 641, 565, NULL, '2005-05-06 21:12:25.930403', '2005-05-06 21:12:25.930403', true, 0, true, 1, 44);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (607, 642, 566, NULL, '2005-05-06 21:12:25.930403', '2005-05-06 21:12:25.930403', true, 0, true, 1, 44);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (608, 643, 567, NULL, '2005-05-06 21:12:25.930403', '2005-05-06 21:12:25.930403', true, 0, true, 1, 44);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (609, 644, 568, NULL, '2005-05-06 21:12:25.930403', '2005-05-06 21:12:25.930403', true, 0, true, 1, 44);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (610, 648, 569, NULL, '2005-05-06 21:12:27.602384', '2005-05-06 21:12:27.602384', true, 0, true, 1, 45);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (611, 649, 570, NULL, '2005-05-06 21:12:27.602384', '2005-05-06 21:12:27.602384', true, 0, true, 1, 45);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (612, 650, 571, NULL, '2005-05-06 21:12:27.602384', '2005-05-06 21:12:27.602384', true, 0, true, 1, 45);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (613, 651, 572, NULL, '2005-05-06 21:12:27.602384', '2005-05-06 21:12:27.602384', true, 0, true, 1, 45);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (614, 652, 573, NULL, '2005-05-06 21:12:27.602384', '2005-05-06 21:12:27.602384', true, 0, true, 1, 45);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (615, 653, 574, NULL, '2005-05-06 21:12:27.602384', '2005-05-06 21:12:27.602384', true, 0, true, 1, 45);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (616, 654, 575, NULL, '2005-05-06 21:12:27.602384', '2005-05-06 21:12:27.602384', true, 0, true, 1, 45);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (617, 655, 576, NULL, '2005-05-06 21:12:27.602384', '2005-05-06 21:12:27.602384', true, 0, true, 1, 45);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (618, 656, 577, NULL, '2005-05-06 21:12:27.602384', '2005-05-06 21:12:27.602384', true, 0, true, 1, 45);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (619, 657, 578, NULL, '2005-05-06 21:12:29.45271', '2005-05-06 21:12:29.45271', true, 0, true, 1, 46);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (620, 658, 579, NULL, '2005-05-06 21:12:29.45271', '2005-05-06 21:12:29.45271', true, 0, true, 1, 46);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (621, 659, 580, NULL, '2005-05-06 21:12:29.45271', '2005-05-06 21:12:29.45271', true, 0, true, 1, 46);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (622, 660, 581, NULL, '2005-05-06 21:12:29.45271', '2005-05-06 21:12:29.45271', true, 0, true, 1, 46);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (623, 661, 582, NULL, '2005-05-06 21:12:29.45271', '2005-05-06 21:12:29.45271', true, 0, true, 1, 46);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (624, 662, 583, NULL, '2005-05-06 21:12:29.45271', '2005-05-06 21:12:29.45271', true, 0, true, 1, 46);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (625, 663, 584, NULL, '2005-05-06 21:12:29.45271', '2005-05-06 21:12:29.45271', true, 0, true, 1, 46);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (626, 664, 585, NULL, '2005-05-06 21:12:29.45271', '2005-05-06 21:12:29.45271', true, 0, true, 1, 46);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (627, 665, 586, NULL, '2005-05-06 21:12:29.45271', '2005-05-06 21:12:29.45271', true, 0, true, 1, 46);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (628, 666, 587, NULL, '2005-05-06 21:12:31.382429', '2005-05-06 21:12:31.382429', true, 0, true, 1, 47);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (629, 667, 588, NULL, '2005-05-06 21:12:31.382429', '2005-05-06 21:12:31.382429', true, 0, true, 1, 47);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (630, 668, 589, NULL, '2005-05-06 21:12:31.382429', '2005-05-06 21:12:31.382429', true, 0, true, 1, 47);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (631, 669, 590, NULL, '2005-05-06 21:12:31.382429', '2005-05-06 21:12:31.382429', true, 0, true, 1, 47);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (632, 670, 591, NULL, '2005-05-06 21:12:31.382429', '2005-05-06 21:12:31.382429', true, 0, true, 1, 47);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (633, 671, 592, NULL, '2005-05-06 21:12:31.382429', '2005-05-06 21:12:31.382429', true, 0, true, 1, 47);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (634, 672, 593, NULL, '2005-05-06 21:12:31.382429', '2005-05-06 21:12:31.382429', true, 0, true, 1, 47);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (635, 673, 594, NULL, '2005-05-06 21:12:31.382429', '2005-05-06 21:12:31.382429', true, 0, true, 1, 47);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (636, 674, 595, NULL, '2005-05-06 21:12:31.382429', '2005-05-06 21:12:31.382429', true, 0, true, 1, 47);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (637, 675, 596, NULL, '2005-05-06 21:12:33.238579', '2005-05-06 21:12:33.238579', true, 0, true, 1, 48);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (638, 676, 597, NULL, '2005-05-06 21:12:33.238579', '2005-05-06 21:12:33.238579', true, 0, true, 1, 48);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (639, 677, 598, NULL, '2005-05-06 21:12:33.238579', '2005-05-06 21:12:33.238579', true, 0, true, 1, 48);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (640, 678, 599, NULL, '2005-05-06 21:12:33.238579', '2005-05-06 21:12:33.238579', true, 0, true, 1, 48);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (641, 679, 600, NULL, '2005-05-06 21:12:33.238579', '2005-05-06 21:12:33.238579', true, 0, true, 1, 48);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (642, 680, 601, NULL, '2005-05-06 21:12:33.238579', '2005-05-06 21:12:33.238579', true, 0, true, 1, 48);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (643, 681, 602, NULL, '2005-05-06 21:12:33.238579', '2005-05-06 21:12:33.238579', true, 0, true, 1, 48);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (644, 682, 603, NULL, '2005-05-06 21:12:33.238579', '2005-05-06 21:12:33.238579', true, 0, true, 1, 48);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (645, 683, 604, NULL, '2005-05-06 21:12:33.238579', '2005-05-06 21:12:33.238579', true, 0, true, 1, 48);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (646, 684, 605, NULL, '2005-05-06 21:12:33.238579', '2005-05-06 21:12:33.238579', true, 0, true, 1, 48);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (647, 685, 606, NULL, '2005-05-06 21:12:33.238579', '2005-05-06 21:12:33.238579', true, 0, true, 1, 48);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (648, 686, 607, NULL, '2005-05-06 21:12:33.238579', '2005-05-06 21:12:33.238579', true, 0, true, 1, 48);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (649, 687, 608, NULL, '2005-05-06 21:12:35.766036', '2005-05-06 21:12:35.766036', true, 0, true, 1, 30);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (650, 688, 609, NULL, '2005-05-06 21:12:35.766036', '2005-05-06 21:12:35.766036', true, 0, true, 1, 30);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (651, 689, 610, NULL, '2005-05-06 21:12:35.766036', '2005-05-06 21:12:35.766036', true, 0, true, 1, 30);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (652, 696, 611, NULL, '2005-05-06 21:12:37.221421', '2005-05-06 21:12:37.221421', true, 0, true, 1, 49);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (653, 697, 612, NULL, '2005-05-06 21:12:37.221421', '2005-05-06 21:12:37.221421', true, 0, true, 1, 49);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (654, 698, 613, NULL, '2005-05-06 21:12:37.221421', '2005-05-06 21:12:37.221421', true, 0, true, 1, 49);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (655, 699, 614, NULL, '2005-05-06 21:12:37.221421', '2005-05-06 21:12:37.221421', true, 0, true, 1, 49);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (656, 700, 615, NULL, '2005-05-06 21:12:37.221421', '2005-05-06 21:12:37.221421', true, 0, true, 1, 49);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (657, 701, 616, NULL, '2005-05-06 21:12:37.221421', '2005-05-06 21:12:37.221421', true, 0, true, 1, 49);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (658, 702, 617, NULL, '2005-05-06 21:12:37.221421', '2005-05-06 21:12:37.221421', true, 0, true, 1, 49);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (659, 703, 618, NULL, '2005-05-06 21:12:37.221421', '2005-05-06 21:12:37.221421', true, 0, true, 1, 49);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (660, 704, 619, NULL, '2005-05-06 21:12:37.221421', '2005-05-06 21:12:37.221421', true, 0, true, 1, 49);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (661, 705, 620, NULL, '2005-05-06 21:12:39.082421', '2005-05-06 21:12:39.082421', true, 0, true, 1, 50);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (662, 706, 621, NULL, '2005-05-06 21:12:39.082421', '2005-05-06 21:12:39.082421', true, 0, true, 1, 50);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (663, 707, 622, NULL, '2005-05-06 21:12:39.082421', '2005-05-06 21:12:39.082421', true, 0, true, 1, 50);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (664, 708, 623, NULL, '2005-05-06 21:12:39.082421', '2005-05-06 21:12:39.082421', true, 0, true, 1, 50);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (665, 709, 624, NULL, '2005-05-06 21:12:39.082421', '2005-05-06 21:12:39.082421', true, 0, true, 1, 50);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (666, 710, 625, NULL, '2005-05-06 21:12:39.082421', '2005-05-06 21:12:39.082421', true, 0, true, 1, 50);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (667, 711, 626, NULL, '2005-05-06 21:12:39.082421', '2005-05-06 21:12:39.082421', true, 0, true, 1, 50);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (668, 712, 627, NULL, '2005-05-06 21:12:39.082421', '2005-05-06 21:12:39.082421', true, 0, true, 1, 50);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (669, 713, 628, NULL, '2005-05-06 21:12:39.082421', '2005-05-06 21:12:39.082421', true, 0, true, 1, 50);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (670, 714, 629, NULL, '2005-05-06 21:12:40.937835', '2005-05-06 21:12:40.937835', true, 0, true, 1, 30);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (671, 715, 630, NULL, '2005-05-06 21:12:40.937835', '2005-05-06 21:12:40.937835', true, 0, true, 1, 30);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (672, 716, 631, NULL, '2005-05-06 21:12:40.937835', '2005-05-06 21:12:40.937835', true, 0, true, 1, 30);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (673, 717, 632, NULL, '2005-05-06 21:12:40.937835', '2005-05-06 21:12:40.937835', true, 0, true, 1, 30);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (674, 718, 633, NULL, '2005-05-06 21:12:40.937835', '2005-05-06 21:12:40.937835', true, 0, true, 1, 30);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (675, 719, 634, NULL, '2005-05-06 21:12:40.937835', '2005-05-06 21:12:40.937835', true, 0, true, 1, 30);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (676, 723, 635, NULL, '2005-05-06 21:12:42.747648', '2005-05-06 21:12:42.747648', true, 0, true, 1, 51);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (677, 724, 636, NULL, '2005-05-06 21:12:42.747648', '2005-05-06 21:12:42.747648', true, 0, true, 1, 51);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (678, 725, 637, NULL, '2005-05-06 21:12:42.747648', '2005-05-06 21:12:42.747648', true, 0, true, 1, 51);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (679, 726, 638, NULL, '2005-05-06 21:12:42.747648', '2005-05-06 21:12:42.747648', true, 0, true, 1, 51);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (680, 727, 639, NULL, '2005-05-06 21:12:42.747648', '2005-05-06 21:12:42.747648', true, 0, true, 1, 51);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (681, 728, 640, NULL, '2005-05-06 21:12:42.747648', '2005-05-06 21:12:42.747648', true, 0, true, 1, 51);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (682, 729, 641, NULL, '2005-05-06 21:12:42.747648', '2005-05-06 21:12:42.747648', true, 0, true, 1, 51);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (683, 730, 642, NULL, '2005-05-06 21:12:42.747648', '2005-05-06 21:12:42.747648', true, 0, true, 1, 51);
-INSERT INTO potranslationsightingbackup (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (684, 731, 643, NULL, '2005-05-06 21:12:42.747648', '2005-05-06 21:12:42.747648', true, 0, true, 1, 51);
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'potranslationsightingbackup'::pg_catalog.regclass;
-
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'pocomment'::pg_catalog.regclass;
 
@@ -6437,12 +5790,32 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'karma'::pg_catalog.regclass;
 
-INSERT INTO karma (id, karmatype, datecreated, person, points) VALUES (1, 4, '2005-01-14 12:20:12.820778', 12, 10);
-INSERT INTO karma (id, karmatype, datecreated, person, points) VALUES (2, 4, '2005-01-14 12:27:03.702622', 12, 10);
-INSERT INTO karma (id, karmatype, datecreated, person, points) VALUES (3, 4, '2005-01-14 12:35:39.548665', 12, 10);
-
+INSERT INTO KarmaAction (id, name, category, points) VALUES (1, 1, 2, 10);
+INSERT INTO KarmaAction (id, name, category, points) VALUES (2, 2, 2, 1);
+INSERT INTO KarmaAction (id, name, category, points) VALUES (3, 3, 2, 1);
+INSERT INTO KarmaAction (id, name, category, points) VALUES (4, 4, 2, 2);
+INSERT INTO KarmaAction (id, name, category, points) VALUES (5, 5, 2, 3);
+INSERT INTO KarmaAction (id, name, category, points) VALUES (6, 6, 2, 10);
+INSERT INTO KarmaAction (id, name, category, points) VALUES (7, 7, 2, 15);
+INSERT INTO KarmaAction (id, name, category, points) VALUES (8, 8, 2, 10);
+INSERT INTO KarmaAction (id, name, category, points) VALUES (9, 9, 2, 10);
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'karma'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'karmaaction'::pg_catalog.regclass;
+
+INSERT INTO karma (id, action, person) VALUES (1, 1, 12);
+INSERT INTO karma (id, action, person) VALUES (2, 2, 12);
+INSERT INTO karma (id, action, person) VALUES (3, 3, 12);
+INSERT INTO karma (id, action, person) VALUES (4, 4, 12);
+INSERT INTO karma (id, action, person) VALUES (5, 5, 12);
+INSERT INTO karma (id, action, person) VALUES (6, 6, 12);
+INSERT INTO karma (id, action, person) VALUES (7, 7, 12);
+INSERT INTO karma (id, action, person) VALUES (8, 8, 12);
+INSERT INTO karma (id, action, person) VALUES (9, 9, 12);
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'karmaaction'::pg_catalog.regclass;
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sshkey'::pg_catalog.regclass;
@@ -6455,15 +5828,15 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'bugtask'::pg_catalog.regclass;
 
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, statusexplanation) VALUES (1, 1, 1, NULL, NULL, NULL, NULL, 10, 30, 20, 5, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.910183', 12, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, statusexplanation) VALUES (2, 1, 4, NULL, NULL, NULL, NULL, 10, 10, 20, 1, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.910878', 12, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, statusexplanation) VALUES (3, 2, 1, NULL, NULL, NULL, NULL, 10, 20, 20, NULL, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.908491', 12, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, statusexplanation) VALUES (4, 1, NULL, 3, NULL, 1, NULL, 20, 40, 20, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.79024', 12, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, statusexplanation) VALUES (5, 2, NULL, 3, NULL, 1, NULL, 20, 40, 20, 12, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.824591', 12, NULL, 'Upstream said that they won''t bother fixing it.');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, statusexplanation) VALUES (6, 3, NULL, 3, NULL, 1, NULL, 10, 20, 30, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.825533', 16, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, statusexplanation) VALUES (13, 4, 4, NULL, NULL, NULL, NULL, 10, 30, 30, NULL, '2005-01-14 17:20:12.820778', '2005-01-14 17:20:12.820778', 12, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, statusexplanation) VALUES (14, 5, 4, NULL, NULL, NULL, NULL, 10, 30, 30, 12, '2005-01-14 17:27:03.702622', '2005-01-14 17:27:03.702622', 12, NULL, NULL);
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, statusexplanation) VALUES (15, 6, 4, NULL, NULL, NULL, NULL, 10, 30, 50, NULL, '2005-01-14 17:35:39.548665', '2005-01-14 17:35:39.548665', 12, NULL, 'The status explanation is useful to provide task specific information.');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (1, 1, 1, NULL, NULL, NULL, NULL, 10, 30, 20, 5, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.910183', 12, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (2, 1, 4, NULL, NULL, NULL, NULL, 10, 10, 20, 1, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.910878', 12, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (3, 2, 1, NULL, NULL, NULL, NULL, 10, 20, 20, NULL, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.908491', 12, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (4, 1, NULL, 3, NULL, 1, NULL, 20, 40, 20, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.79024', 12, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (5, 2, NULL, 3, NULL, 1, NULL, 20, 40, 20, 12, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.824591', 12, NULL, NULL, 'Upstream said that they won''t bother fixing it.', '''fix'':8 ''won'':5 ''said'':2 ''bother'':7 ''upstream'':1');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (6, 3, NULL, 3, NULL, 1, NULL, 10, 20, 30, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.825533', 16, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (13, 4, 4, NULL, NULL, NULL, NULL, 10, 30, 30, NULL, '2005-01-14 17:20:12.820778', '2005-01-14 17:20:12.820778', 12, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (14, 5, 4, NULL, NULL, NULL, NULL, 10, 30, 30, 12, '2005-01-14 17:27:03.702622', '2005-01-14 17:27:03.702622', 12, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (15, 6, 4, NULL, NULL, NULL, NULL, 10, 30, 50, NULL, '2005-01-14 17:35:39.548665', '2005-01-14 17:35:39.548665', 12, NULL, NULL, 'The status explanation is useful to provide task specific information.', '''use'':5 ''task'':8 ''explan'':3 ''inform'':10 ''provid'':7 ''specif'':9 ''status'':2');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugtask'::pg_catalog.regclass;
@@ -6627,19 +6000,10 @@ INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distrorele
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackagepublishinghistory'::pg_catalog.regclass;
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sourcesourcebackup'::pg_catalog.regclass;
-
-INSERT INTO sourcesourcebackup (id, name, title, description, product, cvsroot, cvsmodule, cvstarfile, cvstarfileurl, cvsbranch, svnrepository, releaseroot, releaseverstyle, releasefileglob, releaseparentbranch, branch, lastsynced, syncinterval, rcstype, hosted, upstreamname, processingapproved, syncingapproved, newarchive, newbranchcategory, newbranchbranch, newbranchversion, packagedistro, packagefiles_collapsed, "owner", currentgpgkey, fileidreference, branchpoint, autotested, datestarted, datefinished, sourcepackagename, distrorelease) VALUES (1, 'evolution', 'evolution-warty', 'Package job for Warty Evolution', 5, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4, NULL, 'evolution', '2005-01-14 17:35:39.548665', NULL, 'evolution@arch.ubuntu.com', NULL, NULL, NULL, 'warty', NULL, 2, NULL, NULL, NULL, 0, NULL, NULL, 9, 3);
-INSERT INTO sourcesourcebackup (id, name, title, description, product, cvsroot, cvsmodule, cvstarfile, cvstarfileurl, cvsbranch, svnrepository, releaseroot, releaseverstyle, releasefileglob, releaseparentbranch, branch, lastsynced, syncinterval, rcstype, hosted, upstreamname, processingapproved, syncingapproved, newarchive, newbranchcategory, newbranchbranch, newbranchversion, packagedistro, packagefiles_collapsed, "owner", currentgpgkey, fileidreference, branchpoint, autotested, datestarted, datefinished, sourcepackagename, distrorelease) VALUES (2, 'evolution-head', 'Evolution CVS HEAD', 'CVS import job for Evolution HEAD', 5, ':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome', 'evolution', NULL, '', 'MAIN', '', '', NULL, '', NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, 'gnome@arch.ubuntu.com', 'evolution', 'MAIN', '0', NULL, NULL, 16, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL);
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcesourcebackup'::pg_catalog.regclass;
-
-
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'packagepublishinghistory'::pg_catalog.regclass;
 
-INSERT INTO packagepublishinghistory (id, binarypackage, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (9, 12, 1, 2, 1, 1, 1, '2005-05-05 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
-INSERT INTO packagepublishinghistory (id, binarypackage, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (11, 15, 6, 2, 1, 1, 4, '2005-05-05 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO packagepublishinghistory (id, binarypackage, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (9, 12, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO packagepublishinghistory (id, binarypackage, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (11, 15, 6, 2, 1, 1, 40, '2005-05-05 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'packagepublishinghistory'::pg_catalog.regclass;
@@ -8056,5 +7420,366 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'poexportrequest'::pg_catalog.regclass;
 
 
+
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'poexportrequest'::pg_catalog.regclass;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

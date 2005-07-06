@@ -26,6 +26,10 @@
             template="../templates/codeofconduct-index.pt"
             name="+index"
             lp:url="codeofconduct/$CoC.version/+index" />
+        <browser:page
+            template="../templates/portlet-codeofconduct-actions.pt"
+            name="+portlet-actions"
+            lp:url="codeofconduct/$CoC.version/+portlet-actions" />
     </browser:pages>
 
     <browser:page 
@@ -91,6 +95,10 @@
             template="../templates/codeofconduct-list.pt"
             name="+index"
             lp:url="codeofconduct/+index" />
+        <browser:page
+            template="../templates/portlet-codeofconductset-actions.pt"
+            name="+portlet-actions"
+            lp:url="codeofconduct/+portlet-actions" />
     </browser:pages>
 
 
@@ -114,6 +122,10 @@
             template="../templates/signedcodeofconduct-index.pt"
             name="+index"
             lp:url="codeofconduct/console/$signed.id/+index" />
+        <browser:page
+            template="../templates/portlet-signedcodeofconduct-actions.pt"
+            name="+portlet-actions"
+            lp:url="codeofconduct/console/$signed.id/+portlet-actions" />
     </browser:pages>
 
     <browser:editform

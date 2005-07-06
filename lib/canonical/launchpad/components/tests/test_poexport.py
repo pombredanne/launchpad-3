@@ -1,5 +1,10 @@
+# Copyright 2004-2005 Canonical Ltd. All rights reserved.
 
+__metaclass__ = type
+
+import pytz
 import unittest
+from datetime import datetime
 
 from canonical.launchpad.components.poexport import export_rows
 from canonical.launchpad.helpers import test_diff
@@ -9,6 +14,7 @@ class TestRow:
 
     def __init__(self, **kw):
         self.columns = {
+            'pofile': None,
             'variant': None,
             'isfuzzy': False,
             'poheader': 'Content-Type: text/plain; charset=UTF-8\n',
@@ -287,12 +293,72 @@ class InactiveTranslationTest(ExportTest):
 
         self.test_export(rows, expected_pofiles)
 
+class HeaderUpdateTest(ExportTest):
+    """Test that headers get updated properly."""
+
+    def runTest(self):
+        # Create a mock PO file with a mock last submission with a mock person
+        # with a mock email address.
+
+        class Mock:
+            def __init__(self, **kw):
+                self.__dict__.update(kw)
+
+        mock_email = Mock(
+            email='kk@pleasure-dome.com')
+        mock_person = Mock(
+            browsername='Kubla Kahn',
+            preferredemail=mock_email,
+            isTeam=lambda: False)
+        mock_submission = Mock(
+            person=mock_person,
+            datecreated = datetime.fromtimestamp(
+                1000000000, pytz.timezone('UTC')))
+        mock_pofile = Mock(
+            latest_submission=mock_submission)
+
+        # The existing header has both fields that should be preserved and
+        # fields that need updating.
+
+        test_row = TestRow(
+            potemplate=1,
+            potsequence=1,
+            posequence=1,
+            language='es',
+            msgid='foo',
+            translation='bar',
+            msgidpluralform=0,
+            translationpluralform=0,
+            pofile=mock_pofile,
+            poheader=(
+                'Project-Id-Version: foo\n'
+                'Content-Type: text/plain; charset=UTF-8\n'
+                'Last-Translator: Aleister Crowley <crowley@golden-dawn.org>\n'
+                'PO-Revision-Date: 1947-12-01 20:21+0100\n'
+                'Language-Team: Spanish <es@li.org>\n'))
+
+        expected_pofiles = [[
+            'msgid ""',
+            'msgstr ""',
+            '"Project-Id-Version: foo\\n"',
+            '"Content-Type: text/plain; charset=UTF-8\\n"',
+            '"Last-Translator: Kubla Kahn <kk@pleasure-dome.com>\\n"',
+            '"PO-Revision-Date: 2001-09-09 01:46+0000\\n"',
+            '"Language-Team: Spanish <es@li.org>\\n"',
+            '',
+            'msgid "foo"',
+            'msgstr "bar"',
+        ]]
+
+        self.test_export([test_row], expected_pofiles)
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(BasicExportTest())
     suite.addTest(EncodingExportTest())
     suite.addTest(IncompletePluralMessageTest())
     suite.addTest(InactiveTranslationTest())
+    suite.addTest(HeaderUpdateTest())
     return suite
 
 if __name__ == '__main__':

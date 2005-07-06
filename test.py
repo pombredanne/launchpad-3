@@ -24,6 +24,43 @@ sys.path.insert(0, os.path.join(here, 'lib'))
 # Set PYTHONPATH environment variable for spawned processes
 os.environ['PYTHONPATH'] = ':'.join(sys.path)
 
+# Import fascist.  We set this up early to try to intercept as many imports as
+# possible.
+import __builtin__
+import atexit
+
+original_import = __builtin__.__import__
+database_root = 'canonical.launchpad.database'
+browser_root = 'canonical.launchpad.browser'
+naughty_imports = set()
+
+class JackbootError(ImportError):
+    """Import Fascist says you can't make this import."""
+
+def import_fascist(name, globals={}, locals={}, fromlist=[]):
+    import_into = globals.get('__name__', '')
+    if name.startswith(database_root) and import_into.startswith(browser_root):
+        # We'll eventually disallow these imports altogether.  For now we just
+        # warn about it.
+        naughty_imports.add((name, import_into))
+        #raise JackbootError("ImportFascist says you cannot import %s into %s"
+        #                    % (name, import_into))
+    return original_import(name, globals, locals, fromlist)
+
+__builtin__.__import__ = import_fascist
+
+def report_naughty_imports():
+    if naughty_imports:
+        print
+        print '** %d import policy violations **' % len(naughty_imports)
+        current_name = None
+        for name, import_into in sorted(naughty_imports):
+            if name != current_name:
+                print "You should not import %s into:" % name
+                current_name = name
+            print "    %s" % import_into
+atexit.register(report_naughty_imports)
+
 # Tell canonical.config to use the test config file, not launchpad.conf
 from canonical.config import config
 config.setDefaultSection('testrunner')

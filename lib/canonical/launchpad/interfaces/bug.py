@@ -177,7 +177,7 @@ class IBugAddForm(IBug):
             title=_("Binary Package"), required=False,
             vocabulary="BinaryPackage")
     owner = Int(title=_("Owner"), required=True)
-    comment = Text(title=_('Comment'), required=True,
+    comment = Text(title=_('Description'), required=True,
             description=_("""A detailed description of the problem you are
             seeing."""))
     private = Bool(

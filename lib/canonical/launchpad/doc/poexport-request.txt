@@ -11,6 +11,28 @@ serve those requests properly.
   >>> LaunchpadFunctionalTestSetup().setUp()
   >>> LibrarianTestSetup().setUp()
 
+This is a dummy logger class to capture the export's log messages.
+
+    >>> import sys
+    >>> import traceback
+
+    >>> class MockLogger:
+    ...     messages = []
+    ...
+    ...     def log(self, *stuff, **kw):
+    ...         print 'log>', ' '.join(stuff)
+    ...
+    ...         if 'exc_info' in kw:
+    ...             exception = traceback.format_exception(*sys.exc_info())
+    ...             for thing in exception:
+    ...                 for line in thing.splitlines():
+    ...                     self.log(line)
+    ...
+    ...     debug = info = warn = error = log
+    ...
+    ...     def exception(self, *stuff):
+    ...         self.log(*stuff, **{'exc_info': True})
+
 Here's somebody to make a request.
 
   >>> from canonical.launchpad.database import Person
@@ -31,8 +53,13 @@ And here's them making the request.
 
 Now we request that the queue be processed.
 
+  >>> class MockTransactionManager:
+  ...     def commit(self):
+  ...         pass
+
   >>> from canonical.launchpad.scripts.po_export_queue import process_queue
-  >>> process_queue()
+  >>> process_queue(MockTransactionManager(), MockLogger())
+  log> Exporting objects for person 1, PO template 2
 
 We need to make sure the Librarian data has settled into place.
 
@@ -40,6 +67,11 @@ We need to make sure the Librarian data has settled into place.
   >>> transaction.commit()
 
 Let's read our mail.
+
+  >>> def print_mail_body(body):
+  ...     lines = body[body.index('\n\n')+2:].split('\n')
+  ...     for line in lines:
+  ...         print ">", line
 
   >>> from canonical.launchpad.mail.stub import test_emails
   >>> len(test_emails)
@@ -49,9 +81,7 @@ Let's read our mail.
   'rosetta@canonical.com'
   >>> to_addrs
   ['mark@hbd.com']
-  >>> lines = body[body.index('\n\n')+2:].split('\n')
-  >>> for line in lines:
-  ...     print ">", line
+  >>> print_mail_body(body)
   > 
   > Hello Mark Shuttleworth,
   > 
@@ -60,13 +90,16 @@ Let's read our mail.
   > 
   >     http://localhost:58000/.../rosetta-pmount.tar.gz
   > 
-  > 
 
 The mail has a URL in it.
 
   >>> import re
-  >>> urls = re.compile(r'^ *(http://.*)$', re.M).findall(body)
-  >>> url = urls[0]
+
+  >>> def extract_url(text):
+  ...     urls = re.compile(r'^ *(http://.*)$', re.M).findall(text)
+  ...     return urls[0]
+
+  >>> url = extract_url(body)
 
 Let's download it and make sure the contents look ok.
 
@@ -78,6 +111,99 @@ Let's download it and make sure the contents look ok.
   rosetta-pmount/
   rosetta-pmount/ca.po
   rosetta-pmount/cs.po
+
+Now let's see what happens if one of the PO files is broken.
+
+  >>> hr = potemplate.getPOFileByLang('hr')
+  >>> hr.header = 'Content-Type: text/plain; charset=broken\n'
+  >>> hr.sync()
+  >>> hr.export()
+  Traceback (most recent call last):
+  ...
+  LookupError: unknown encoding: broken
+
+  >>> test_emails[:] = []
+  >>> request_set.addRequest(person, None, [hr, ca])
+  >>> process_queue(MockTransactionManager(), MockLogger())
+  log> Exporting objects for person 1, PO template 2
+  log> PO export failed for pmount/hr.po
+  log> Traceback (most recent call last):
+  ...
+  log> LookupError: unknown encoding: broken
+
+  >>> transaction.commit()
+
+We should have two extra emails, one to the error reports mailing list and
+another to the person who made the request.
+
+  >>> len(test_emails)
+  2
+  >>> from_addr, to_addrs1, body = test_emails[0]
+  >>> from_addr, to_addrs2, body = test_emails[1]
+  >>> sorted(to_addrs1 + to_addrs2)
+  ['launchpad-error-reports@lists.canonical.com', 'mark@hbd.com']
+  >>> print_mail_body(body)
+  > 
+  > Hello Mark Shuttleworth,
+  > 
+  > Rosetta has finished exporting your requested files.
+  > However, problems were encountered exporting the
+  > following files:
+  > 
+  >  * hr.po
+  > 
+  > The Rosetta team has been notified of this problem. Please
+  > reply to this email for further assistance. Of the 2 files
+  > you requested, Rosetta successfully exported 1, which can
+  > be downloaded from the following location:
+  > 
+  >     http://localhost:58000/.../rosetta-pmount.tar.gz
+  > 
+
+We should get a slightly different email if we didn't manage to export any
+files:
+
+  >>> test_emails[:] = []
+  >>> request_set.addRequest(person, None, [hr])
+  >>> process_queue(MockTransactionManager(), MockLogger())
+  log> Exporting objects for person 1, PO template 2
+  log> PO export failed for pmount/hr.po
+  log> Traceback (most recent call last):
+  ...
+  log> LookupError: unknown encoding: broken
+
+  >>> transaction.commit()
+
+  >>> len(test_emails)
+  2
+  >>> from_addr, to_addrs, body = test_emails[0]
+  >>> print_mail_body(body)
+  > 
+  > Hello Mark Shuttleworth,
+  > 
+  > Rosetta encountered problems exporting the files you
+  > requested. The Rosetta team has been notified of this
+  > problem. Please reply to this email for further assistance.
+  > 
+
+Let's try requesting an export in MO format:
+
+  >>> from canonical.lp.dbschema import RosettaFileFormat
+  >>> test_emails[:] = []
+  >>> request_set.addRequest(person, None, [ca], RosettaFileFormat.MO)
+  >>> process_queue(MockTransactionManager(), MockLogger())
+  log> Exporting objects for person 1, PO template 2
+
+  >>> transaction.commit()
+
+  >>> len(test_emails)
+  1
+  >>> from_addr, to_addrs, body = test_emails[0]
+  >>> url = extract_url(body)
+  >>> from canonical.launchpad.components.ftests.test_mo_compiler import (
+  ...     is_valid_mofile)
+  >>> is_valid_mofile(urllib2.urlopen(url).read())
+  True
 
   >>> LibrarianTestSetup().tearDown()
   >>> LaunchpadFunctionalTestSetup().tearDown()

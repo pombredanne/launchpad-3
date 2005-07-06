@@ -22,7 +22,8 @@ from canonical.lp.dbschema import (
     BugTaskStatus, BugPriority, BugSeverity, BugInfestationStatus,
     BugExternalReferenceType, BugSubscription)
 from canonical.launchpad.vocabularies import BugTrackerVocabulary
-from canonical.launchpad.helpers import contactEmailAddresses, canonical_url
+from canonical.launchpad.helpers import contactEmailAddresses
+from canonical.launchpad.webapp import canonical_url
 
 GLOBAL_NOTIFICATION_EMAIL_ADDRS = ("dilys@muse.19inch.net",)
 CC = "CC"
@@ -224,7 +225,7 @@ def generate_bug_edit_email(bug_delta):
             if bugtask_delta.statusexplanation is not None:
                 if not body.endswith("\n\n"):
                     body += "\n"
-                body += "      Changed explanation of status to:\n"
+                body += "      Changed status notes to:\n"
                 body += "\n".join(wrap(
                     bugtask_delta.statusexplanation, width = 72,
                     initial_indent = u"          ",
@@ -831,14 +832,7 @@ def notify_bug_cveref_edited(edited_cveref, event):
 
 def notify_join_request(event):
     """Notify team administrators that a new membership is pending approval."""
-    # XXX: salgado, 2005-05-06: I have an implementation of __contains__ for
-    # SelectResults, and as soon as it's merged we'll be able to replace this
-    # uggly for/else block by an
-    # "if not event.user in event.team.proposedmembers: return".
-    for member in event.team.proposedmembers:
-        if member == event.user:
-            break
-    else:
+    if not event.user in event.team.proposedmembers:
         return
 
     user = event.user

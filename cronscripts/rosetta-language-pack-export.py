@@ -9,9 +9,8 @@ import optparse
 import sys
 
 from canonical.lp import initZopeless
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.launchpad.scripts.rosetta import create_logger, \
-    calculate_loglevel
+from canonical.launchpad.scripts import (execute_zcml_for_scripts, logger,
+    logger_options)
 from canonical.launchpad.scripts.language_pack import export_language_pack
 
 def parse_options(args):
@@ -39,27 +38,14 @@ def parse_options(args):
              ' Libraran.'
         )
     parser.add_option(
-        '-v',
-        '--verbose',
-        dest='verbose',
-        default=0,
-        action='count',
-        help='Log more information.'
-        )
-    parser.add_option(
-        '-q',
-        '--quiet',
-        dest='quiet',
-        default=0,
-        action='count',
-        help='Log less information.'
-        )
-    parser.add_option(
         '--update',
         dest='update',
         default=False,
         action='store_true'
         )
+
+    # Add the verbose/quiet options.
+    logger_options(parser)
 
     options, args = parser.parse_args(args)
 
@@ -74,9 +60,8 @@ def main(argv):
 
     options, distribution_name, release_name = parse_options(argv[1:])
 
-    loglevel = calculate_loglevel(options.quiet, options.verbose)
-    logger = create_logger('rosetta-language-pack-export', loglevel)
-    logger.info('Exporting translations for release %s of distribution %s',
+    logger_object = logger(options, 'rosetta-language-pack-export')
+    logger_object.info('Exporting translations for release %s of distribution %s',
         distribution_name, release_name)
 
     success = export_language_pack(
@@ -85,7 +70,7 @@ def main(argv):
         update=options.update,
         output_file=options.output,
         email_addresses=options.email_addresses,
-        logger=logger)
+        logger=logger_object)
 
     if success:
         return 0

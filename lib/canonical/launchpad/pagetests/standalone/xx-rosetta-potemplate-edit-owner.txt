@@ -1,0 +1,150 @@
+Check to be sure that as the owner of a POTemplate, we get all fields needed.
+
+  >>> response = http(r"""
+  ... GET /products/netapplet/1.0/+pots/netapplet/+edit HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  >>> 'field.potemplatename' not in response.getBody()
+  True
+  >>> 'field.header' not in response.getBody()
+  True
+  >>> 'field.iscurrent' not in response.getBody()
+  True
+  >>> 'field.productrelease' not in response.getBody()
+  True
+  >>> 'field.distrorelease' not in response.getBody()
+  True
+  >>> 'field.sourcepackagename' not in response.getBody()
+  True
+  >>> 'field.sourcepackageversion' not in response.getBody()
+  True
+  >>> 'field.binarpackagename' not in response.getBody()
+  True
+  >>> 'field.languagepack' not in response.getBody()
+  True
+  >>> 'field.path' not in response.getBody()
+  True
+  >>> 'field.filename' not in response.getBody()
+  True
+  >>> print response
+  HTTP/1.1 200 Ok
+  ...
+            <h3>Change PO template Information</h3>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+        <div class="row">
+  <BLANKLINE>
+  <BLANKLINE>
+            <div class="field">
+  <BLANKLINE>
+              <label>Template name</label>
+  <BLANKLINE>
+              <span class="fieldRequired" title="Required">(Required)</span>
+  <BLANKLINE>
+  <BLANKLINE>
+                  <div>netapplet</div>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  ...
+        <div class="row">
+  <BLANKLINE>
+  <BLANKLINE>
+            <div class="field">
+  <BLANKLINE>
+              <label>Description</label>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+                  <div><textarea cols="60" id="field.description" name="field.description" rows="15" >...</textarea></div>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  ...
+        <div class="row">
+  <BLANKLINE>
+  <BLANKLINE>
+            <div class="field">
+  <BLANKLINE>
+              <label>Owner</label>
+  <BLANKLINE>
+              <span class="fieldRequired" title="Required">(Required)</span>
+  <BLANKLINE>
+  <BLANKLINE>
+                  <div>
+  <input type="text" name="field.owner"
+         value="test@canonical.com" cssclass=""
+  ...
+  <BLANKLINE>
+              <p class="formHelp">The owner can change all these fields, and upload new versions of the template.</p>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+            </div>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+        </div>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+            <div class="separator"></div>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+          </div>
+  <BLANKLINE>
+          <div class="form actions">
+            <input type="submit" name="UPDATE_SUBMIT"
+                   value="Change" />
+  ...
+
+Now, we submit the form so we are sure that the submit works.
+
+  >>> print http(r"""
+  ... POST /products/netapplet/1.0/+pots/netapplet/+edit HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 446
+  ... Content-Type: multipart/form-data; boundary=---------------------------64860423517025525842029868696
+  ... Referer: http://localhost:9000/products/netapplet/1.0/+pots/netapplet/+edit
+  ... 
+  ... -----------------------------64860423517025525842029868696
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... foos
+  ... -----------------------------64860423517025525842029868696
+  ... Content-Disposition: form-data; name="field.owner"
+  ... 
+  ... test@canonical.com
+  ... -----------------------------64860423517025525842029868696
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------64860423517025525842029868696--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+                  <div><textarea cols="60" id="field.description" name="field.description" rows="15" >foos</textarea></div>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  ...

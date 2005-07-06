@@ -13,7 +13,7 @@
   ...
 
 
-  Now we're logged in as mark@hbd.com and he's the owner of the admins team,
+  Now we're logged in as mark@hbd.com and he's a member of launchpad admins,
   so he can do everything.
 
   >>> print http(r"""

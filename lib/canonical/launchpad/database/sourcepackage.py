@@ -350,7 +350,8 @@ class SourcePackageSet(object):
     def _querystr(self, text=None):
         querystr = ''
         if self.distrorelease:
-            querystr += 'distrorelease = %d' %  self.distrorelease 
+            querystr += ('distrorelease = %s'
+                         %  sqlvalues(self.distrorelease.id))
         if text:
             if len(querystr):
                 querystr += ' AND '
@@ -366,8 +367,8 @@ class SourcePackageSet(object):
     def withBugs(self):
         pkgset = sets.Set()
         results = BugTask.select(
-            "distribution = %d AND sourcepackagename IS NOT NULL" % sqlvalues(
-                self.distribution))
+            "distribution = %s AND sourcepackagename IS NOT NULL" % sqlvalues(
+            self.distribution.id))
         for task in results:
             pkgset.add(task.sourcepackagename)
 

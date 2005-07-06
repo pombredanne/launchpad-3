@@ -151,8 +151,22 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         Return the message sets using 'slice' or all of them if slice is None.
         """
 
+    def getPOTMsgSetFuzzy(slice=None):
+        """Get pot message sets that have POMsgSet.fuzzy set in this PO file.
+
+        'slice' is a slice object that selects a subset of POTMsgSets.
+        Return the message sets using 'slice' or all of them if slice is None.
+        """
+
     def getPOTMsgSetUntranslated(slice=None):
         """Get pot message sets that are untranslated in this PO file.
+
+        'slice' is a slice object that selects a subset of POTMsgSets.
+        Return the message sets using 'slice' or all of them if slice is None.
+        """
+
+    def getPOTMsgSetWithErrors(slice=None):
+        """Get pot message sets that have translations published with errors.
 
         'slice' is a slice object that selects a subset of POTMsgSets.
         Return the message sets using 'slice' or all of them if slice is None.
@@ -173,6 +187,9 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 
     def export():
         """Export this PO file as a string."""
+
+    def invalidateCache():
+        """Invalidate the cached export."""
 
 
 class IEditPOFile(IPOFile):
@@ -206,4 +223,10 @@ class IEditPOFile(IPOFile):
         (unicode or string) rather than a POT message Set.
 
         Returns the newly created message set.
+        """
+
+    def updateHeader(new_header):
+        """Update the header information.
+
+        new_header is a POHeader object.
         """

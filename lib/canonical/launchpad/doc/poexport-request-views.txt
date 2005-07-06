@@ -30,22 +30,26 @@ Here's the request from the user.
   >>> request = DummyRequest()
   >>> request.method = 'POST'
   >>> request.form = {
-  ...      'what': 'some',
-  ...      'potemplate': True,
-  ...      'es': True
+  ...     'what': 'some',
+  ...     'potemplate': True,
+  ...     'es': True,
+  ...     'format': 'PO',
   ... }
 
 And here's the view processing that request.
 
-  >>> from canonical.launchpad.browser.potemplate import POTemplateExport
-  >>> class DummyView(POTemplateExport):
+  >>> from canonical.launchpad.browser.potemplate import POTemplateExportView
+  >>> class DummyView(POTemplateExportView):
   ...     def __init__(self):
   ...         self.context = context
   ...         self.request = request
   ...         self.user = person
+  ...         self.formProcessed = False
 
   >>> view = DummyView()
   >>> view.processForm()
+  >>> view.formProcessed
+  True
 
 Check that the request has been added to the DB.
 
@@ -78,11 +82,12 @@ Here's our new request.
 
   >>> request = DummyRequest()
   >>> request.method = 'POST'
+  >>> request.form = {'format': 'PO'}
 
 Here's that request getting processed.
 
-  >>> from canonical.launchpad.browser.pofile import ViewPOExport
-  >>> class DummyView(ViewPOExport):
+  >>> from canonical.launchpad.browser.pofile import POExportView
+  >>> class DummyView(POExportView):
   ...     def __init__(self):
   ...         self.context = context
   ...         self.request = request
@@ -90,6 +95,8 @@ Here's that request getting processed.
 
   >>> view = DummyView()
   >>> view.processForm()
+  >>> view.formProcessed
+  True
 
 And there it is.
 

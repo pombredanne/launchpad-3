@@ -1,4 +1,4 @@
-  Foo Bar can't edit the bug:
+Foo Bar can't edit the bug:
 
   >>> print http(r"""
   ... GET /products/firefox/+bugs/4/+edit HTTP/1.1
@@ -6,14 +6,10 @@
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Referer: http://localhost:9000/malone/bugs/
   ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-            <h2>...in Mozilla Firefox...</h2>
+  HTTP/1.1 403 Forbidden
   ...
 
-  Sample Person may edit the bug task:
+Sample Person may edit the bug task:
 
   >>> print http(r"""
   ... GET /products/firefox/+bugs/4/+edit HTTP/1.1
@@ -37,10 +33,6 @@ Edit the target:
   ... Content-Type: multipart/form-data; boundary=---------------------------9725916581164147154144110168
   ... Referer: http://localhost:9000/malone/tasks/13/+edit
   ...
-  ... -----------------------------9725916581164147154144110168
-  ... Content-Disposition: form-data; name="field.product"
-  ...
-  ... firefox
   ... -----------------------------9725916581164147154144110168
   ... Content-Disposition: form-data; name="field.milestone"
   ...
@@ -91,7 +83,7 @@ Edit the target:
   ...
 
 
-  Assign the task to the Ubuntu Team, of which Foo Bar is a member:
+Assign the task to the Ubuntu Team, of which Foo Bar is a member:
 
   >>> print http(r"""
   ... POST /products/firefox/+bugs/4/+edit HTTP/1.1
@@ -101,10 +93,6 @@ Edit the target:
   ... Content-Type: multipart/form-data; boundary=---------------------------9725916581164147154144110168
   ... Referer: http://localhost:9000/malone/tasks/13/+edit
   ...
-  ... -----------------------------9725916581164147154144110168
-  ... Content-Disposition: form-data; name="field.product"
-  ...
-  ... firefox
   ... -----------------------------9725916581164147154144110168
   ... Content-Disposition: form-data; name="field.milestone"
   ...
@@ -152,7 +140,7 @@ Edit the target:
             <p class="portalMessage">Updated on ...</p>
   ...
 
-  Now Foo Bar may edit the bug, since he's part of the maintainer team:
+Now Foo Bar may edit the bug, since he's part of the maintainer team:
 
   >>> print http(r"""
   ... GET /products/firefox/+bugs/4/+edit HTTP/1.1
@@ -173,10 +161,6 @@ Edit the target:
   ... Content-Type: multipart/form-data; boundary=---------------------------19501511362039229377247635061
   ... Referer: http://localhost:9000/malone/tasks/13/+edit
   ...
-  ... -----------------------------19501511362039229377247635061
-  ... Content-Disposition: form-data; name="field.product"
-  ...
-  ... firefox
   ... -----------------------------19501511362039229377247635061
   ... Content-Disposition: form-data; name="field.milestone"
   ...
@@ -224,8 +208,7 @@ Edit the target:
             <h2>...in Mozilla Firefox...</h2>
   ...
 
-
-  Un-assign the bug task:
+Un-assign the bug task:
 
   >>> print http(r"""
   ... POST /products/firefox/+bugs/4/+edit HTTP/1.1
@@ -235,10 +218,6 @@ Edit the target:
   ... Content-Type: multipart/form-data; boundary=---------------------------9725916581164147154144110168
   ... Referer: http://localhost:9000/malone/tasks/13/+edit
   ...
-  ... -----------------------------9725916581164147154144110168
-  ... Content-Disposition: form-data; name="field.product"
-  ...
-  ... firefox
   ... -----------------------------9725916581164147154144110168
   ... Content-Disposition: form-data; name="field.milestone"
   ...
@@ -285,4 +264,3 @@ Edit the target:
   ...
             <p class="portalMessage">Updated on ...</p>
   ...
-

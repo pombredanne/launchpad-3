@@ -8,7 +8,7 @@ publisher.  We'll do that later.  For now, we'll just check that the URLs
 are what we expect them to be for various example objects.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.helpers import canonical_url
+    >>> from canonical.launchpad.webapp import canonical_url
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> celebs = getUtility(ILaunchpadCelebrities)
 
@@ -85,15 +85,32 @@ The IDistributionSet.
     >>> canonical_url(getUtility(IDistributionSet))
     u'http://localhost:8086/distros'
 
-A IDistribution.
+An IDistribution.
 
     >>> canonical_url(celebs.ubuntu)
     u'http://localhost:8086/distros/ubuntu'
 
-A IDistroRelease.
+An IDistroRelease.
 
-    >>> canonical_url(celebs.ubuntu.getRelease('hoary'))
+    >>> hoary = celebs.ubuntu.getRelease('hoary')
+    >>> canonical_url(hoary)
     u'http://localhost:8086/distros/ubuntu/hoary'
+
+An ISourcePackageSet.
+
+Note, this should be renamed ISourcePackageSubset for when we're not talking
+about the utility that is all sourcepackages.  Also, note that it requires
+using a database class in browser code, as below.
+
+    >>> from canonical.launchpad.database import SourcePackageSet
+    >>> hoary_sourcepackages = SourcePackageSet(distrorelease=hoary)
+    >>> canonical_url(hoary_sourcepackages)
+    u'http://localhost:8086/distros/ubuntu/hoary/+sources'
+
+An ISourcePackage.
+
+    >>> canonical_url(hoary_sourcepackages['evolution'])
+    u'http://localhost:8086/distros/ubuntu/hoary/+sources/evolution'
 
 
 == Projects and products ==
@@ -112,33 +129,163 @@ An IProject.
 
 The IProductSet.
 
-    >>> canonical_url(getUtility(IProductSet))
+    >>> productset = getUtility(IProductSet)
+    >>> canonical_url(productset)
     u'http://localhost:8086/products'
 
 An IProduct.
 
-    >>> canonical_url(getUtility(IProductSet)['firefox'])
-    u'http://localhost:8086/products/firefox'
+    >>> evolution_product = productset['evolution']
+    >>> canonical_url(evolution_product)
+    u'http://localhost:8086/products/evolution'
+
+An IProductSeries.
+
+    >>> evolution_main_series = evolution_product.getSeries('main')
+    >>> # canonical_url(evolution_main_series)
+
+An IProductRelease.
+
+    >>> evolution_release = evolution_main_series.getRelease('2.1.6')
+    >>> # canonical_url(evolution_release)
 
 
 == Bugs and bugtasks ==
 
-    >>> from canonical.launchpad.interfaces import IBug, IBugSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBug, IBugSet, IBugTaskSet, IUpstreamBugTask, IDistroBugTask,
+    ...     IDistroReleaseBugTask, IBugWatchSet, IBugSubscriptionSet,
+    ...     ICVERefSet, IBugExternalRefSet)
+    >>> from canonical.launchpad.database import (
+    ...     BugWatchSet, BugSubscriptionSet, CVERefSet, BugExternalRefSet)
 
 The IBugSet.
-   
-    >>> canonical_url(getUtility(IBugSet)) 
+
+    >>> canonical_url(getUtility(IBugSet))
     u'http://localhost:8086/malone/bugs'
 
 An IBug.
 
-    >>> canonical_url(getUtility(IBugSet).get(1)) 
+    >>> canonical_url(getUtility(IBugSet).get(1))
     u'http://localhost:8086/malone/bugs/1'
 
-To be done.
+An IUpstreamBugTask.
+
+    >>> canonical_url(getUtility(IBugTaskSet).get(2))
+    u'http://localhost:8086/products/firefox/+bugs/2'
+
+An IDistroBugTask.
+
+    >>> canonical_url(getUtility(IBugTaskSet).get(4))
+    u'http://localhost:8086/distros/debian/+bugs/4'
+
+An IDistroReleaseBugTask.
+
+    XXX: Brad Bollenbach, 2005-06-17: needs sample data (which could
+    cause test breakage, thus might take a bit of time, etc.)
+    XXX canonical_url(getUtility(IBugTaskSet).get())
+
+An IBugSubset.
+
+    XXX: Brad Bollenbach, 2005-06-17: IBugSubset is currently just an
+    iface that a context is adapted to. There is no BugSubset content
+    object. Might need code changes to make a canonical URL for this
+    workable.
+
+    An IBugSubset lives at a URL like:
+
+        http://localhost:8086/products/firefox/+bugs OR
+        http://localhost:8086/distros/ubuntu/+bugs OR
+        http://localhost:8086/distros/ubuntu/hoary/+bugs
+
+An IBugWatchSet.
+
+    This doesn't work, because BugWatchSet.bug is an int, not an IBug object.
+
+    xxx bug_one_watches = BugWatchSet(bug=1)
+    xxx canonical_url(bug_one_watches)
+    u'http://localhost:8086/malone/bugs/1/watches'
+
+An IBugSubscriptionSet.
+
+    This doesn't work, because BugSubscriptionSet.bug is an int, not an IBug
+    object.
+
+    xxx bug_one_subscriptions = BugSubscriptionSet(bug=1)
+    xxx canonical_url(bug_one_subscriptions)
+    u'http://localhost:8086/malone/bugs/1/people'
+
+An ICVERefSet.
+
+    This doesn't work, because CVERefSet.bug is an int, not an IBug object.
+
+    xxx bug_one_cverefs = CVERefSet(bug=1)
+    xxx canonical_url(bug_one_cverefs)
+    u'http://localhost:8086/malone/bugs/1/cverefs'
+
+An IBugExternalRefSet.
+
+    This doesn't work, because BugExternalRefSet.bug is an int, not an
+    IBug object.
+
+    xxx bug_one_extrefs = BugExternalRefSet(bug=1)
+    xxx canonical_url(bug_one_extrefs)
+    u'http://localhost:8086/malone/bugs/1/references'
 
 
 == POTemplates and so on ==
 
-To be done.
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPOTemplateSet, ISourcePackageNameSet, ITranslationGroupSet)
+
+Most Rosetta pages hang off IPOTemplateSubset objects, of which there are two
+varieties: distribution and upstream.
+
+First, the distribution kind.  We'll need the source package name.
+
+    >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
+    >>> sourcepackagename = sourcepackagenameset['evolution']
+
+And here's our subset.
+
+    >>> potemplateset = getUtility(IPOTemplateSet)
+    >>> potemplatesubset = potemplateset.getSubset(
+    ...     distrorelease=hoary, sourcepackagename=sourcepackagename)
+
+    >>> canonical_url(potemplatesubset)
+    u'http://localhost:8086/distros/ubuntu/hoary/+sources/evolution/+pots'
+
+We can get a particular PO template for this source package by its PO template
+name.
+
+    >>> potemplate = potemplatesubset['evolution-2.2']
+    >>> canonical_url(potemplate)
+    u'http://localhost:8086/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2'
+
+And we can get a particular PO file for this PO template by its language code.
+
+    >>> pofile = potemplate.getPOFileByLang('es')
+    >>> canonical_url(pofile)
+    u'http://localhost:8086/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es'
+
+Upstream POTemplateSubsets work in much the same way, except they hang off a
+product release.  Let's get a product release.
+
+Now we can get an upstream subset and do the same sorts of thing as we did
+with the distro subset.
+
+    >>> potemplatesubset = potemplateset.getSubset(
+    ...     productrelease=evolution_release)
+    >>> potemplate = potemplatesubset['evolution-2.2']
+    >>> canonical_url(potemplate)
+    u'http://localhost:8086/products/evolution/2.1.6/+pots/evolution-2.2'
+
+    >>> pofile = potemplate.getPOFileByLang('es')
+    >>> canonical_url(pofile)
+    u'http://localhost:8086/products/evolution/2.1.6/+pots/evolution-2.2/es'
+
+Rosetta also has translation groups.
+
+    >>> canonical_url(getUtility(ITranslationGroupSet))
+    u'http://localhost:8086/rosetta/groups'
 
