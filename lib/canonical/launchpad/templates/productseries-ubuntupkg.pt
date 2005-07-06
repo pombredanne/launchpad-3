@@ -100,7 +100,7 @@
         </thead>
         <tbody>
           <tr tal:repeat="packaging view/ubuntu_history">
-            <td tal:content="packaging/datecreated">13-05-2004</td>
+            <td tal:content="packaging/datecreated/fmt:date">13-05-2004</td>
             <td tal:content="packaging/distrorelease/name">hoary</td>
             <td tal:content="packaging/sourcepackagename/name">evolution</td>
             <td><span tal:condition="packaging/owner"

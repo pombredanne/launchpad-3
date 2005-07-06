@@ -186,7 +186,7 @@ quite happily.
 >>> msg = msgset.fromEmail('''\
 ... From: foo.bar@canonical.com
 ... Subject: Test
-... Date: Fri Jun 17 10:45:13 BST 2005
+... Date: Fri, 17 Jun 2005 10:45:13 +0100
 ... Message-Id: <fnord>
 ... 
 ... Foo Bar
@@ -206,7 +206,7 @@ explicitly told to do so:
 
 >>> msg = msgset.fromEmail('''\
 ... From: invalid@example.com
-... Date: Fri Jun 17 10:45:13 BST 2005
+... Date: Fri, 17 Jun 2005 10:45:13 +0100
 ... Message-Id: <fnord3>
 ... Subject: Foo
 ...
@@ -218,7 +218,7 @@ UnknownSender: u'invalid@example.com'
 
 >>> msg = msgset.fromEmail('''\
 ... From: invalid@example.com
-... Date: Fri Jun 17 10:45:13 BST 2005
+... Date: Fri, 17 Jun 2005 10:45:13 +0100
 ... Message-Id: <fnord3>
 ... Subject: Foo Bar Bazarooney!
 ...
@@ -234,7 +234,7 @@ passed through a broken MTA and we have no choice but to bounce them.
 
 >>> msg = msgset.fromEmail('''\
 ... From: foo.bar@canonical.com
-... Date: Thu Jun 16 14:12:54 BST 2005
+... Date: Thu, 16 Jun 2005 14:12:54 +0100
 ... Subject: Dud
 ...
 ... Moo
@@ -244,7 +244,7 @@ Traceback (most recent call last):
 InvalidEmailMessage: Missing Message-Id
 
 >>> msg = msgset.fromEmail('''\
-... Date: Fri Jun 17 10:45:13 BST 2005
+... Date: Fri, 17 Jun 2005 10:45:13 +0100
 ... Subject: Re: Dud
 ... Message-Id: <fnord6>
 ...
@@ -274,7 +274,7 @@ futuristic:
 >>> import pytz
 >>> msg = msgset.fromEmail('''\
 ... From: foo.bar@canonical.com
-... Date: Fri Jun 17 10:45:13 BST 2016
+... Date: Fri, 17 Jun 2016 10:45:13 +0100
 ... Subject: Re: Back to the future
 ... Message-Id: <fnord19>
 ...
@@ -288,7 +288,7 @@ And similarly, we will consider any message that claims to be older than
 
 >>> msg = msgset.fromEmail('''\
 ... From: foo.bar@canonical.com
-... Date: Fri Jun 17 10:45:13 BST 1986
+... Date: Tue, 17 Jun 1986 10:45:13 +0100
 ... Subject: Re: Back to the future, again
 ... Message-Id: <fnord221>
 ...
@@ -302,7 +302,7 @@ Finally, let's test the goldilocks message, where the date is just right:
 
 >>> msg = msgset.fromEmail('''\
 ... From: foo.bar@canonical.com
-... Date: Fri Jun 17 10:45:13 BST 2005
+... Date: Fri, 17 Jun 2005 10:45:13 +0100
 ... Subject: Re: Smells like the present to me
 ... Message-Id: <fnord1221>
 ...

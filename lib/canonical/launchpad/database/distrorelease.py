@@ -24,6 +24,7 @@ from canonical.launchpad.database.publishing import (
     PackagePublishing, SourcePackagePublishing)
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.binarypackage import BinaryPackage
 
@@ -82,7 +83,7 @@ class DistroRelease(SQLBase):
 
     @property
     def parent(self):
-        """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
+        """See IDistroRelease."""
         if self.parentrelease:
             return self.parentrelease.title
         return ''
@@ -100,7 +101,7 @@ class DistroRelease(SQLBase):
 
     @property
     def binarycount(self):
-        """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
+        """See IDistroRelease."""
         clauseTables = ['DistroArchRelease']
         query = ('PackagePublishing.status = %s '
                  'AND PackagePublishing.distroarchrelease = '
@@ -112,7 +113,7 @@ class DistroRelease(SQLBase):
 
     @property
     def architecturecount(self):
-        """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
+        """See IDistroRelease."""
         return len(list(self.architectures))
 
     @property
@@ -127,7 +128,7 @@ class DistroRelease(SQLBase):
         return len(self.potemplates)
 
     def getBugSourcePackages(self):
-        """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
+        """See IDistroRelease."""
         clauseTables=["BugTask",]
         query = ("VSourcePackageInDistro.distrorelease = %i AND "
                  "VSourcePackageInDistro.distro = BugTask.distribution AND "
@@ -139,10 +140,17 @@ class DistroRelease(SQLBase):
         return SourcePackageInDistro.select(
             query, clauseTables=clauseTables, distinct=True)
 
-    def findSourcesByName(self, pattern):
-        """Get SourcePackages in a DistroRelease with BugTask"""
-        srcset = getUtility(ISourcePackageSet)
-        return srcset.findByNameInDistroRelease(self.id, pattern)
+    def getSourcePackageByName(self, name):
+        """See IDistroRelease."""
+        if not ISourcePackageName.providedBy(name):
+            name_set = SourcePackageNameSet()
+
+            try:
+                name = name_set[name]
+            except IndexError:
+                raise ValueError('No such source package name %r' % name)
+
+        return SourcePackage(sourcepackagename=name, distrorelease=self)
 
     def __getitem__(self, arch):
         """Get SourcePackages in a DistroRelease with BugTask"""
@@ -183,25 +191,25 @@ class DistroReleaseSet:
     implements(IDistroReleaseSet)
 
     def get(self, distroreleaseid):
-        """See canonical.launchpad.interfaces.IDistroReleaseSet."""
+        """See IDistroReleaseSet."""
         return DistroRelease.get(distroreleaseid)
 
     def translatables(self):
-        """See canonical.launchpad.interfaces.IDistroReleaseSet."""
+        """See IDistroReleaseSet."""
         return DistroRelease.select(
             "POTemplate.distrorelease=DistroRelease.id",
             clauseTables=['POTemplate'], distinct=True)
 
     def findByName(self, name):
-        """See canonical.launchpad.interfaces.IDistroReleaseSet."""
+        """See IDistroReleaseSet."""
         return DistroRelease.selectBy(name=name)
 
     def findByVersion(self, version):
-        """See canonical.launchpad.interfaces.IDistroReleaseSet."""
+        """See IDistroReleaseSet."""
         return DistroRelease.selectBy(version=version)
 
     def search(self, distribution=None, isreleased=None, orderBy=None):
-        """See canonical.launchpad.interfaces.IDistroReleaseSet."""
+        """See IDistroReleaseSet."""
         where_clause = ""
         order_by_param = None
         if distribution is not None:

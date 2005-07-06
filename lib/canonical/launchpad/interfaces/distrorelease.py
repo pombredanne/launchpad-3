@@ -72,9 +72,12 @@ class IDistroRelease(IHasOwner):
     def __getitem__(arch):
         """Return a Set of Binary Packages in this distroarchrelease."""
 
-    def findSourcesByName(name):
-        """Return an iterator over source packages with a name that matches
-        this one."""
+    def getSourcePackageByName(name):
+        """Return a source package in this distro release by name.
+
+        The name given may be a string or an ISourcePackageName-providing
+        object.
+        """
 
     def findBinariesByName(name):
         """Return an iterator over binary packages with a name that matches
