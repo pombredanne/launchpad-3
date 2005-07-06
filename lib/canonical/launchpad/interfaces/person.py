@@ -355,6 +355,26 @@ class IPersonSet(Interface):
         and displayname to create a new Person.
         """
 
+    def createPerson(email, displayname=None, givenname=None,
+        familyname=None, password=None):
+        """Create a Person, based on the arguments. This method is more
+        intelligent than IPersonSet.newPerson because it will try to find an
+        appropriate name for the person, based on email address details
+        etc.
+        """
+
+    def ensurePerson(email, displayname):
+        """Make sure that there is a person in the database with the given
+        email address. If necessary, create the person, using the
+        displayname given.
+
+        XXX sabdfl 14/06/05 this should be extended to be similar or
+        identical to the other person creation argument lists, so we can
+        call it and create a full person if needed. Email would remain the
+        deciding factor, we would not try and guess if someone existed based
+        on the displayname or other arguments.
+        """
+
     def newTeam(**kwargs):
         """Create a new Team with given keyword arguments.
 

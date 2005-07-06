@@ -17,11 +17,12 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import \
     EnumCol, SourcePackageUrgency, SourcePackageFormat
 
-from canonical.launchpad.interfaces import \
-        ISourcePackageRelease, ISourcePackageReleaseSet
+from canonical.launchpad.interfaces import (ISourcePackageRelease,
+    ISourcePackageReleaseSet)
 
-from canonical.launchpad.database.binarypackage import \
-    BinaryPackage, DownloadURL
+from canonical.launchpad.database.binarypackage import (BinaryPackage,
+    DownloadURL)
+from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import \
      SourcePackagePublishing
 
@@ -62,10 +63,21 @@ class SourcePackageRelease(SQLBase):
     files = MultipleJoin('SourcePackageReleaseFile',
                          joinColumn='sourcepackagerelease')
 
+    @property
+    def builds(self):
+        return Build.selectBy(sourcepackagereleaseID=self.id,
+            orderBy=['-datecreated'])
 
+    @property
+    def latest_build(self):
+        builds = self.builds
+        if len(builds) > 0:
+            return builds[0]
+        return None
+
+    @property
     def name(self):
         return self.sourcepackagename.name
-    name = property(name)
 
     @property
     def productrelease(self):
@@ -107,14 +119,15 @@ class SourcePackageRelease(SQLBase):
         else:
             return None
 
+    @property
     def binaries(self):
         clauseTables = ['SourcePackageRelease', 'BinaryPackage', 'Build']
         query = ('SourcePackageRelease.id = Build.sourcepackagerelease'
                  ' AND BinaryPackage.build = Build.id '
                  ' AND Build.sourcepackagerelease = %i' % self.id)
         return BinaryPackage.select(query, clauseTables=clauseTables)
-    binaries = property(binaries)
 
+    @property
     def files_url(self):
         downloader = getUtility(ILibrarianClient)
 
@@ -131,7 +144,6 @@ class SourcePackageRelease(SQLBase):
                 urls.append(DownloadURL(name, url))
 
         return urls
-    files_url = property(files_url)
 
     def architecturesReleased(self, distroRelease):
         # The import is here to avoid a circular import. See top of module.

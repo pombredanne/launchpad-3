@@ -21,10 +21,9 @@
     <div metal:fill-slot="main">
 
       <p>This is a Rosetta translation page. The template you are translating
-        is for <span tal:replace="view/what" /> and has the title
-        <strong tal:content="context/title">template title here</strong>.
+        is the <strong tal:content="context/title">spanish for foo bar</strong>.
         This page allows you to translate that template into
-        <strong tal:content="context/language/englishname">Portugese</strong>.
+        <span tal:replace="context/language/englishname">Portugese</span>.
         Use the forms below to provide good translations of the strings listed
         there, taking care to understand the context within which each string
         is being used.
@@ -57,22 +56,43 @@
 
     </div>
 
-    <!-- No errors. -->
 
-      <div tal:condition="not: view/lacksPluralFormInformation">
+    <!-- Make sure we have plural form details. -->
+    <div tal:condition="not: view/lacksPluralFormInformation">
+
+      <!-- If we have errors, say so -->
+      <p class="portalMessage" tal:condition="view/errorcount">
+        There are <span tal:replace="view/errorcount">4</span> errors in the
+        translations you provided. Please correct them below and then
+        continue translating.
+      </p>
 
     <!-- Display settings. -->
 
-        <form method="post"
-          style="text-align: right;"
-          tal:condition="view/is_editor"
-          tal:attributes="action view/createURL"
+      <p tal:condition="view/is_editor"><form method="post"
+              style="text-align: right;"
+              action="./+translate"
         >
+          <input type="hidden" name="offset" value=""
+                 tal:attributes="value view/offset" />
+          <input type="hidden" name="count" value=""
+                 tal:attributes="value view/count" />
+          <label>Alt:</label>
+          <tal:comment replace="nothing">
+            Suggestions from this alternative language will be displayed as
+            well as suggestions from the translation language. In the case
+            where two languages are very similar it will often be useful to
+            show the second language as a source of suggestions when
+            translating into the first.
+          </tal:comment>
+          
+          <tal:block replace="structure view/lang_selector" />
+
           <label>Show:</label>
 
           <tal:comment tal:replace="nothing">
-            The 'selected' attribute value in next select means basically the
-            following:
+            The 'selected' attribute value in next select means basically
+            the following:
 
             if request.form['show'] == literalvalue:
                 return 'selected'
@@ -83,38 +103,50 @@
             'translated'.
           </tal:comment>
 
-          <select name="show">
+          <select name="show" title="Choose which items to show">
             <option value="all"
               tal:attributes="selected
               request/htmlform:show/selected/all"
               >
-              all items
+              all
             </option>
             <option value="untranslated"
               tal:attributes="selected
               request/htmlform:show/selected/untranslated"
               >
-              untranslated items
+              untranslated
             </option>
             <option value="need-review"
               tal:attributes="selected
               request/htmlform:show/selected/need-review"
               >
-              need review items
+              need review
             </option>
             <option value="translated"
               tal:attributes="selected
               request/htmlform:show/selected/translated"
               >
-              translated items
+              translated
             </option>
           </select>
           <input type="submit" value="Change" />
-        </form>
-
+        </form></p>
 
         <!-- The translation form. -->
-        <form method="post" tal:attributes="action view/createURL">
+        <form method="post"
+              action="./+translate">
+          <!-- the hidden elements -->
+          <input type="hidden" name="count"
+                 tal:attributes="value view/count" />
+          <input type="hidden" name="alt"
+                 tal:condition="view/second_lang_code"
+                 tal:attributes="value view/second_lang_code" />
+          <input type="hidden" name="offset"
+                 tal:condition="not: view/atEnd"
+                 tal:attributes="value view/offset" />
+          <input type="hidden" name="show"
+                 tal:condition="view/show"
+                 tal:attributes="value view/show" />
           <p tal:repeat="alert view/alerts"
              class="error alert"
              tal:content="alert">
@@ -146,7 +178,8 @@
                   <div style="width: 50%; float: right; text-align: right;">
 
                     <tal:comment tal:replace="nothing">
-                      Link to previous page and beginning, if this is not the beginning page.
+                      Link to previous page and beginning, if this is not
+                      the beginning page.
                     </tal:comment>
 
                     <span class="previous" tal:condition="not:view/atBeginning">
@@ -279,32 +312,53 @@
                             value python:messageSet.getTranslation(index);
                             tabindex view/makeTabIndex;
                             " />
+                        <tal:block condition="messageSet/isMultiline">
                         <tal:comment tal:replace="nothing">
                           XXX: Carlos Perello Marin 2005-05-05
                           This 'python:' expression should be fixed by SteveA.
-
+                        </tal:comment>
+                        <tal:with-content
+                          condition="python:messageSet.getTranslation(index)">
+                        <tal:comment tal:replace="nothing">
                           Note that we use a separate tag inside the textarea
                           rather than using tal:content on the textarea
                           directly so that leading newlines are preserved.
-                          Note also that the lack of indentation between
-                          'tal:content' and '/textarea' is deliberate or we
-                          would add extra new lines to the textarea, which
-                          causes us to produce extra newlines and potentially
-                          corrupt translations.
+                          Note also that the lack of indentation for
+                          tal:content is deliberate or we would add extra
+                          whitespaces to the textarea, which causes us to
+                          potentially corrupt translations.
                           For more information, please read:
                           https://bugzilla.mozilla.org/show_bug.cgi?id=299009
                         </tal:comment>
                         <textarea
-                          tal:condition="messageSet/isMultiline"
                           tal:attributes="
                             name string:set_${messageSet/id}_translation_${language_code}_${index};
                             rows messageSet/getMaxLinesCount;
                             tabindex view/makeTabIndex;
                             ">
-                          <tal:content
-                            condition="python:messageSet.getTranslation(index)"
-                            replace="structure python:messageSet.getTranslation(index)"
-                          /></textarea>
+<tal:content replace="structure python:messageSet.getTranslation(index)" />
+                        </textarea>
+                        </tal:with-content>
+                        <tal:without-content>
+                        <tal:comment tal:replace="nothing">
+                          XXX: Carlos Perello Marin 2005-05-05
+                          This 'python:' expression should be fixed by SteveA.
+
+                          We are using a separated case in case we don't have
+                          any content for this textarea because tal
+                          expressions leaved empty lines behind so we get new
+                          lines added to the textarea for free adding
+                          erroneous translations.
+                        </tal:comment>
+                        <textarea
+                          tal:attributes="
+                            name string:set_${messageSet/id}_translation_${language_code}_${index};
+                            rows messageSet/getMaxLinesCount;
+                            tabindex view/makeTabIndex;
+                            ">
+                        </textarea>
+                        </tal:without-content>
+                        </tal:block>
                         <tal:block condition="not:messageSet/isMultiline">
                           <tal:block define="submissions python:messageSet.getSuggestedSubmissions(index)">
                             <tal:block condition="submissions">
@@ -329,6 +383,15 @@ tal:replace="submission/person/browsername">person name</span>)
                               <pre><b>From the Global Translation Wiki:</b><br />
 <tal:block repeat="submission submissions"><span
 tal:replace="submission/potranslation/translation">suggestion</span> (<span
+tal:replace="submission/person/browsername">person name</span>)
+</tal:block></pre>
+                            </tal:block>
+                          </tal:block>
+                          <tal:block define="submissions python:messageSet.getAlternateLanguageSubmissions(index)">
+                            <tal:block condition="submissions">
+                              <pre><b><span tal:replace="view/alternate_pofile/language/englishname" /> (Alternate Language):</b><br />
+<tal:block repeat="submission submissions"><span
+tal:replace="submission/potranslation/translation">submission</span> (<span
 tal:replace="submission/person/browsername">person name</span>)
 </tal:block></pre>
                             </tal:block>
@@ -381,12 +444,6 @@ tal:replace="submission/person/browsername">person name</span>)
             <tfoot>
               <tr>
                 <th colspan="0">
-                  <input type="hidden" name="offset"
-                      tal:condition="not: view/atEnd"
-                      tal:attributes="value view/getNextOffset" />
-                  <input type="hidden" name="show"
-                      tal:condition="view/show"
-                      tal:attributes="value view/show" />
                   <input type="submit" name="SUBMIT" value="Save &amp; Continue" style="text-align: right;"
                       tal:attributes="tabindex: view/makeTabIndex" />
                 </th>

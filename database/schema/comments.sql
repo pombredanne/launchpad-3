@@ -195,7 +195,7 @@ COMMENT ON COLUMN POTemplate.distrorelease IS 'A reference to the distribution f
 COMMENT ON COLUMN POTemplate.sourcepackageversion IS 'The sourcepackage version string from where this potemplate was imported last time with our buildd <-> Rosetta gateway.';
 COMMENT ON COLUMN POTemplate.header IS 'The header of a .pot file when we import it. Most important info from it is POT-Creation-Date and custom headers.';
 COMMENT ON COLUMN POTemplate.potemplatename IS 'A reference to a POTemplateName row that tells us the name/domain for this POTemplate.';
-COMMENT ON COLUMN POTemplate.productrelease IS 'A reference to a ProductRelease from where this POTemplate comes.';
+COMMENT ON COLUMN POTemplate.productseries IS 'A reference to a ProductSeries from where this POTemplate comes.';
 
 -- POTemplateName
 COMMENT ON TABLE POTemplateName IS 'POTemplate Name. This table stores the domains/names of a set of POTemplate rows.';
@@ -317,6 +317,7 @@ the remote bug watch.';
 -- CVERef
 COMMENT ON TABLE CVERef IS 'This table stores CVE references for bugs. CVE is a way of tracking security problems across multiple vendor products.';
 COMMENT ON COLUMN CVERef.cveref IS 'This is the actual CVE number assigned to this specific problem.';
+COMMENT ON COLUMN CVERef.cvestate IS 'This is a dbschema enum which tells us the state (CVE or CAN) of the CVE problem report. It is defined in dbschema.CVEState';
 COMMENT ON COLUMN CVERef.owner IS 'This refers to the person who created the entry.';
 
 -- BugExternalRef
@@ -578,7 +579,7 @@ a maintainer.';
 COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other words, it shows that a particular message is associated with a particular bug.';
 COMMENT ON TABLE Message IS 'This table stores a single RFC822-style message. Messages can be threaded (using the parent field). These messages can then be referenced from elsewhere in the system, such as the BugMessage table, integrating messageboard facilities with the rest of The Launchpad.';
 COMMENT ON COLUMN Message.parent IS 'A "parent message". This allows for some level of threading in Messages.';
-COMMENT ON COLUMN Message.title IS 'The title text of the message, or the subject if it was an email.';
+COMMENT ON COLUMN Message.subject IS 'The title text of the message, or the subject if it was an email.';
 COMMENT ON COLUMN Message.distribution IS 'The distribution in which this message originated, if we know it.';
 COMMENT ON COLUMN Message.raw IS 'The original unadulterated message if it arrived via email. This is required to provide access to the original, undecoded message.';
 
@@ -897,6 +898,11 @@ This allows us to say that a given Source Package INCLUDES libneon but is a
 PRIME package of tla, for example. By INCLUDES we mean that the code is
 actually lumped into the package as ancilliary support material, rather
 than simply depending on a separate packaging of that code.';
+COMMENT ON COLUMN Packaging.owner IS 'This is not the "owner" in the sense
+of giving the person any special privileges to edit the Packaging record,
+it is simply a record of who told us about this packaging relationship. Note
+that we do not keep a history of these, so if someone sets it correctly,
+then someone else sets it incorrectly, we lose the first setting.';
 
 -- Translator / TranslationGroup
 

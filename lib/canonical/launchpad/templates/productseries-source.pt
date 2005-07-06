@@ -23,6 +23,40 @@
 
   <form method="post" name="mf">
   
+    <fieldset>
+
+      <legend>Package in Ubuntu,
+        <span tal:replace="view/curr_ubuntu_release/title">
+          The Hoary Hedgehog Release
+        </span></legend>
+
+      <div class="field">
+
+        <label>Source Package</label>
+
+        <span class="fieldRequired" title="Required">(Required)</span>
+
+          <div class="formHelp">
+            The name of the SOURCE package in the current release of
+            Ubuntu (Version <span
+            tal:replace="view/curr_ubuntu_release/version">4.10</span>,
+            <span tal:replace="view/curr_ubuntu_release/title">
+              The Hoary Hedgehog Release
+            </span>). it is very important to link exactly the right
+            branch to the relevant Ubuntu package, to ensure that bugs,
+            patches and translations are correctly shared. Please do not
+            link the "HEAD" or "MAIN" or "TRUNK" branch to an Ubuntu
+            package unless you are absolutely certain that the package is
+            actually based on HEAD.
+          </div>
+
+        <input type="text" name="ubuntupkg" size="30"
+               value="" tal:attributes="value view/curr_ubuntu_pkgname" />
+        
+      </div>
+
+    </fieldset>
+
   <fieldset>
 
     <legend>Source Import Details</legend>

@@ -45,7 +45,7 @@ from canonical.librarian.interfaces import (
 from canonical.launchpad.interfaces import (
     ILaunchBag, IOpenLaunchBag, IHasOwner, IGeoIP, IRequestPreferredLanguages,
     ILanguageSet, IRequestLocalLanguages, RawFileAttachFailed, ITeam,
-    RawFileFetchFailed, ILoginTokenSet
+    RawFileFetchFailed, ILoginTokenSet, IPOFile
     )
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POInvalidInputError, POParser
@@ -1028,6 +1028,7 @@ class DummyPOFile(RosettaStats):
     Represents a POFile where we do not yet actually HAVE a POFile for that
     language for this template.
     """
+    implements(IPOFile)
     def __init__(self, potemplate, language):
         self.potemplate = potemplate
         self.language = language

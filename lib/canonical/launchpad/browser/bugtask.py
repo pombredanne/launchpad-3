@@ -8,19 +8,20 @@ from xml.sax.saxutils import escape
 
 from zope.interface import implements
 from zope.component import getUtility
+from zope.exceptions import NotFoundError
 from zope.app.publisher.browser import BrowserView
 from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from canonical.lp import dbschema
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
     IPersonSet, ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch,
     IBugSet, IProduct, IDistribution, IDistroRelease, IUpstreamBugTask,
-    IDistroBugTask, IBugTask, IBugTaskSet, IDistroReleaseSet)
-from canonical.lp import dbschema
+    IBugTask, IBugTaskSet, IDistroReleaseSet)
 from canonical.launchpad.interfaces import IBugTaskSearchListingView
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
@@ -69,9 +70,11 @@ class BugTasksReportView:
 
     # TODO: replace this with a smart vocabulary and widget
     def userSelector(self):
-        return '<input type="text" name="name" value="%s"/>\n' % (
-                self.user.name,
-                )
+        if self.user:
+            name = self.user.name
+        else:
+            name = ""
+        return '<input type="text" name="name" value="%s"/>\n' % name
         # Don't do this - when you have 60000+ people it tends to kill
         # the production server.
         # html = '<select name="name">\n'
@@ -161,7 +164,11 @@ class BugTaskViewBase:
 
 
 class BugTaskEditView(SQLObjectEditView, BugTaskViewBase):
-    pass
+
+    def changed(self):
+        """Redirect the browser to the bug page when we successfully update
+        the bug task."""
+        self.request.response.redirect(canonical_url(self.context.bug))
 
 
 class BugTaskDisplayView(BugTaskViewBase):
@@ -197,8 +204,12 @@ class BugTaskSearchListingView:
         if searchtext:
             if searchtext.isdigit():
                 # The user wants to jump to a bug with a specific id.
-                bug = getUtility(IBugSet).get(int(searchtext))
-                self.request.response.redirect(canonical_url(bug))
+                try:
+                    bug = getUtility(IBugSet).get(int(searchtext))
+                except NotFoundError:
+                    pass
+                else:
+                    self.request.response.redirect(canonical_url(bug))
             else:
                 # The user wants to filter on certain text.
                 search_params["searchtext"] = searchtext

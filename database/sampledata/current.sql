@@ -1033,13 +1033,13 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'packaging'::pg_catalog.regclass;
 
-INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries) VALUES (1, 1, 1, 3, 2);
-INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries) VALUES (1, 2, 9, 3, 3);
-INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries) VALUES (1, 3, 10, 1, 5);
-INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries) VALUES (1, 4, 9, 1, 3);
-INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries) VALUES (1, 6, 10, 3, 5);
-INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries) VALUES (1, 7, 15, 1, 6);
-INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries) VALUES (1, 9, 1, 1, 1);
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 1, 1, 3, 2, '2005-07-05 14:20:26.577312', NULL);
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 2, 9, 3, 3, '2005-07-05 14:20:26.577312', NULL);
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 3, 10, 1, 5, '2005-07-05 14:20:26.577312', NULL);
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 4, 9, 1, 3, '2005-07-05 14:20:26.577312', NULL);
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 6, 10, 3, 5, '2005-07-05 14:20:26.577312', NULL);
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 7, 15, 1, 6, '2005-07-05 14:20:26.577312', NULL);
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 9, 1, 1, 1, '2005-07-05 14:20:26.577312', NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'packaging'::pg_catalog.regclass;
@@ -3853,7 +3853,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'potemplate'::pg_catalog.regclass;
 
-INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackageversion, header, potemplatename, productrelease, binarypackagename, languagepack, filename, rawfile) VALUES (1, NULL, 'Template for evolution in hoary', NULL, NULL, '2005-03-18 18:20:12.273149', 'po', true, 22, 30, 13, '2005-04-07 13:12:39.892924', 3, NULL, NULL, NULL, 'Project-Id-Version: PACKAGE VERSION
+INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackageversion, header, potemplatename, binarypackagename, languagepack, filename, rawfile, productseries) VALUES (1, NULL, 'Template for evolution in hoary', NULL, NULL, '2005-03-18 18:20:12.273149', 'po', true, 22, 30, 13, '2005-04-07 13:12:39.892924', 3, NULL, NULL, NULL, 'Project-Id-Version: PACKAGE VERSION
 Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2005-04-07 14:10+0200
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
@@ -3862,8 +3862,8 @@ Language-Team: LANGUAGE <LL@li.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ASCII
 Content-Transfer-Encoding: 8bit
-', 1, 6, NULL, false, NULL, 7);
-INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackageversion, header, potemplatename, productrelease, binarypackagename, languagepack, filename, rawfile) VALUES (2, NULL, NULL, NULL, NULL, '2005-03-24 19:59:31.439579', 'po', true, 63, 30, 30, '2005-05-06 20:07:24.255804', 3, 14, 3, '0.7.2-0ubuntu1', 'Project-Id-Version: PACKAGE VERSION
+', 1, NULL, false, NULL, 7, 3);
+INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackageversion, header, potemplatename, binarypackagename, languagepack, filename, rawfile, productseries) VALUES (2, NULL, NULL, NULL, NULL, '2005-03-24 19:59:31.439579', 'po', true, 63, 30, 30, '2005-05-06 20:07:24.255804', 3, 14, 3, '0.7.2-0ubuntu1', 'Project-Id-Version: PACKAGE VERSION
 Report-Msgid-Bugs-To: martin.pitt@canonical.com
 POT-Creation-Date: 2005-04-04 17:43+0200
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
@@ -3872,8 +3872,8 @@ Language-Team: LANGUAGE <LL@li.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=CHARSET
 Content-Transfer-Encoding: 8bit
-', 2, NULL, 13, true, 'template.pot', 6);
-INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackageversion, header, potemplatename, productrelease, binarypackagename, languagepack, filename, rawfile) VALUES (3, NULL, NULL, NULL, NULL, '2005-05-06 20:06:59.867977', 'po', true, 43, 12, 30, '2005-05-06 20:06:59.867977', 3, NULL, NULL, NULL, 'Project-Id-Version: PACKAGE VERSION
+', 2, 13, true, 'template.pot', 6, NULL);
+INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackageversion, header, potemplatename, binarypackagename, languagepack, filename, rawfile, productseries) VALUES (3, NULL, NULL, NULL, NULL, '2005-05-06 20:06:59.867977', 'po', true, 43, 12, 30, '2005-05-06 20:06:59.867977', 3, NULL, NULL, NULL, 'Project-Id-Version: PACKAGE VERSION
 Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-08-24 16:09-0400
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
@@ -3882,8 +3882,8 @@ Language-Team: LANGUAGE <LL@li.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=CHARSET
 Content-Transfer-Encoding: 8bit
-', 3, 7, NULL, false, 'netapplet.pot', 5);
-INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackageversion, header, potemplatename, productrelease, binarypackagename, languagepack, filename, rawfile) VALUES (4, NULL, NULL, NULL, NULL, '2005-05-06 20:39:27.778946', 'po', true, 22, 30, 13, '2005-05-06 20:40:52.942183', 3, 9, 3, NULL, 'Project-Id-Version: PACKAGE VERSION
+', 3, NULL, false, 'netapplet.pot', 5, 5);
+INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackageversion, header, potemplatename, binarypackagename, languagepack, filename, rawfile, productseries) VALUES (4, NULL, NULL, NULL, NULL, '2005-05-06 20:39:27.778946', 'po', true, 22, 30, 13, '2005-05-06 20:40:52.942183', 3, 9, 3, NULL, 'Project-Id-Version: PACKAGE VERSION
 Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2005-04-07 14:10+0200
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
@@ -3892,8 +3892,8 @@ Language-Team: LANGUAGE <LL@li.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ASCII
 Content-Transfer-Encoding: 8bit
-', 1, NULL, NULL, true, 'evolution-2.2.pot', 8);
-INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackageversion, header, potemplatename, productrelease, binarypackagename, languagepack, filename, rawfile) VALUES (5, NULL, NULL, NULL, NULL, '2005-05-06 21:10:17.367605', 'debian/po', true, 9, 30, 30, '2005-05-06 21:10:39.821363', 3, 16, 3, '2:1.7.6-1ubuntu2', 'Project-Id-Version: PACKAGE VERSION
+', 1, NULL, true, 'evolution-2.2.pot', 8, NULL);
+INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackageversion, header, potemplatename, binarypackagename, languagepack, filename, rawfile, productseries) VALUES (5, NULL, NULL, NULL, NULL, '2005-05-06 21:10:17.367605', 'debian/po', true, 9, 30, 30, '2005-05-06 21:10:39.821363', 3, 16, 3, '2:1.7.6-1ubuntu2', 'Project-Id-Version: PACKAGE VERSION
 Report-Msgid-Bugs-To: 
 POT-Creation-Date: 2004-07-11 16:16+0900
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
@@ -3902,7 +3902,7 @@ Language-Team: LANGUAGE <LL@li.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=CHARSET
 Content-Transfer-Encoding: 8bit
-', 4, NULL, NULL, false, 'templates.pot', 9);
+', 4, NULL, false, 'templates.pot', 9, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'potemplate'::pg_catalog.regclass;
@@ -5430,15 +5430,6 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'bugexternalref'::pg_
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugexternalref'::pg_catalog.regclass;
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'bugtrackertype'::pg_catalog.regclass;
-
-INSERT INTO bugtrackertype (id, name, title, description, homepage, "owner") VALUES (1, 'bugzilla', 'BugZilla', 'Dave Miller''s Labour of Love, the Godfather of Open Source project issue tracking.', 'http://www.bugzilla.org/', 12);
-INSERT INTO bugtrackertype (id, name, title, description, homepage, "owner") VALUES (2, 'debbugs', 'Debbugs System', 'Debbugs Bug Tracking System', 'http://bugs.debian.org/', 1);
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugtrackertype'::pg_catalog.regclass;
-
-
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'bugtracker'::pg_catalog.regclass;
 
 INSERT INTO bugtracker (id, bugtrackertype, name, title, summary, baseurl, "owner", contactdetails) VALUES (1, 1, 'mozilla.org', 'The Mozilla.org Bug Tracker', 'The Mozilla.org bug tracker is the grand-daddy of bugzillas. This is where Bugzilla was conceived, born and raised. This bugzilla instance covers all Mozilla products such as Firefox, Thunderbird and Bugzilla itself.', 'http://bugzilla.mozilla.org/', 12, 'Carrier pigeon only');
@@ -5484,14 +5475,14 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'message'::pg_catalog.regclass;
 
-INSERT INTO message (id, datecreated, title, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (1, '2004-09-24 20:58:04.684057', 'PEBCAK', NULL, NULL, NULL, 'foo@example.com-332342--1231', '''pebcak'':1B', NULL);
-INSERT INTO message (id, datecreated, title, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (3, '2004-09-24 21:17:17.153792', 'Reproduced on AIX', 12, NULL, NULL, 'sdsdfsfd', '''aix'':3B ''reproduc'':1B', NULL);
-INSERT INTO message (id, datecreated, title, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (4, '2004-09-24 21:24:03.922564', 'Re: Reproduced on AIX', 12, NULL, NULL, 'sdfssfdfsd', '''re'':1B ''aix'':4B ''reproduc'':2B', NULL);
-INSERT INTO message (id, datecreated, title, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (5, '2004-09-24 21:29:27.407354', 'Fantastic idea, I''d really like to see this', 12, NULL, NULL, 'dxssdfsdgf', '''d'':4B ''see'':8B ''idea'':2B ''like'':6B ''realli'':5B ''fantast'':1B', NULL);
-INSERT INTO message (id, datecreated, title, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (6, '2004-09-24 21:35:20.125564', 'Strange bug with duplicate messages.', 12, NULL, NULL, 'sdfsfwew', '''bug'':2B ''duplic'':4B ''messag'':5B ''strang'':1B', NULL);
-INSERT INTO message (id, datecreated, title, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (7, '2005-01-14 17:20:12.820778', 'Reflow problems with complex page layouts', 12, NULL, NULL, '<20050114172012.6687.51124.malonedeb@localhost.localdomain>', '''page'':5B ''layout'':6B ''reflow'':1B ''complex'':4B ''problem'':2B', NULL);
-INSERT INTO message (id, datecreated, title, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (8, '2005-01-14 17:27:03.702622', 'Firefox install instructions should be complete', 12, NULL, NULL, '<20050114172703.6687.71983.malonedeb@localhost.localdomain>', '''instal'':2B ''complet'':6B ''firefox'':1B ''instruct'':3B', NULL);
-INSERT INTO message (id, datecreated, title, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (9, '2005-01-14 17:35:39.548665', 'Firefox crashes when Save As dialog for a nonexistent window is closed', 12, NULL, NULL, '<20050114173539.6687.81610.malonedeb@localhost.localdomain>', '''save'':4B ''close'':12B ''crash'':2B ''dialog'':6B ''window'':10B ''firefox'':1B ''nonexist'':9B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (1, '2004-09-24 20:58:04.684057', 'PEBCAK', NULL, NULL, NULL, 'foo@example.com-332342--1231', '''pebcak'':1B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (3, '2004-09-24 21:17:17.153792', 'Reproduced on AIX', 12, NULL, NULL, 'sdsdfsfd', '''aix'':3B ''reproduc'':1B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (4, '2004-09-24 21:24:03.922564', 'Re: Reproduced on AIX', 12, NULL, NULL, 'sdfssfdfsd', '''re'':1B ''aix'':4B ''reproduc'':2B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (5, '2004-09-24 21:29:27.407354', 'Fantastic idea, I''d really like to see this', 12, NULL, NULL, 'dxssdfsdgf', '''d'':4B ''see'':8B ''idea'':2B ''like'':6B ''realli'':5B ''fantast'':1B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (6, '2004-09-24 21:35:20.125564', 'Strange bug with duplicate messages.', 12, NULL, NULL, 'sdfsfwew', '''bug'':2B ''duplic'':4B ''messag'':5B ''strang'':1B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (7, '2005-01-14 17:20:12.820778', 'Reflow problems with complex page layouts', 12, NULL, NULL, '<20050114172012.6687.51124.malonedeb@localhost.localdomain>', '''page'':5B ''layout'':6B ''reflow'':1B ''complex'':4B ''problem'':2B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (8, '2005-01-14 17:27:03.702622', 'Firefox install instructions should be complete', 12, NULL, NULL, '<20050114172703.6687.71983.malonedeb@localhost.localdomain>', '''instal'':2B ''complet'':6B ''firefox'':1B ''instruct'':3B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (9, '2005-01-14 17:35:39.548665', 'Firefox crashes when Save As dialog for a nonexistent window is closed', 12, NULL, NULL, '<20050114173539.6687.81610.malonedeb@localhost.localdomain>', '''save'':4B ''close'':12B ''crash'':2B ''dialog'':6B ''window'':10B ''firefox'':1B ''nonexist'':9B', NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'message'::pg_catalog.regclass;
@@ -7464,9 +7455,6 @@ INSERT INTO calendarevent (id, uid, calendar, dtstart, duration, title, descript
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'calendarevent'::pg_catalog.regclass;
-
-
-
 
 
 

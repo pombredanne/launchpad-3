@@ -17,7 +17,7 @@
 
     <!-- PublishedPackageSet -->
     <content class="canonical.launchpad.database.PublishedPackageSet">
-        <allow interface="canonical.launchpad.interfaces.IPublishedPackageSet" />
+        <allow interface="canonical.launchpad.interfaces.IPublishedPackageSet"/>
         <require
             permission="zope.Public"
             set_schema="canonical.launchpad.interfaces.IPublishedPackageSet"
@@ -40,7 +40,7 @@
         <browser:page
             name="+index"
             template="../templates/package-search.pt"
-            lp:url="soyuz/distros/ubuntu/+packages/+index" />
+            lp:url="distros/ubuntu/+packages/+index" />
 
     </browser:pages>
 

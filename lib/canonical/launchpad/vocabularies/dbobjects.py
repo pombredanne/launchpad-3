@@ -518,13 +518,15 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
         except ValueError:
             raise LookupError, token
 
-        objs = ProductSeries.select(AND(Product.q.name == productname,
-                ProductSeries.q.name == productseriesname
-                ))
-        try:
-            return self._toTerm(objs[0])
-        except IndexError:
-            raise LookupError, token
+        result = ProductSeries.selectOne('''
+                    Product.id = ProductSeries.product AND
+                    Product.name = %s AND
+                    ProductSeries.name = %s
+                    ''' % sqlvalues(productname, productseriesname),
+                    clauseTables=['Product'])
+        if result is not None:
+            return self._toTerm(result)
+        raise LookupError, token
 
     def search(self, query):
         """Return terms where query is a substring of the name"""

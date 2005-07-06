@@ -9,16 +9,6 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad import helpers
 
-from canonical.launchpad.browser.potemplate import POTemplateView
-
-
-def traverseProductRelease(productrelease, request, name):
-    if name == '+pots':
-        potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(productrelease=productrelease)
-    else:
-        return None
-
 
 def newProductRelease(form, product, owner, series=None):
     """Process a form to create a new Product Release object."""
@@ -60,8 +50,6 @@ class ProductReleaseView:
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(self.request)
         self.status_message = None
-        # Whether there is more than one PO template.
-        self.has_multiple_templates = len(self.context.potemplates) > 1
 
     def edit(self):
         # check that we are processing the correct form, and that
@@ -77,10 +65,6 @@ class ProductReleaseView:
         self.context.changelog = self.form['changelog']
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
-
-    def templateviews(self):
-        return [POTemplateView(template, self.request)
-                for template in self.context.potemplates]
 
     def requestCountry(self):
         return ICountry(self.request, None)

@@ -77,7 +77,7 @@ class BugEmailCommand(EmailCommand):
         bugid = self.string_args[0] 
 
         if bugid == 'new':
-            bug = BugFactory(rfc822msgid=message.rfc822msgid,
+            bug = BugFactory(msg=message,
                              title=message.title,
                              owner=getUtility(ILaunchBag).user)
             return bug, SQLObjectCreatedEvent(bug)

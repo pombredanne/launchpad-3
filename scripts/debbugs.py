@@ -67,7 +67,8 @@ class Bug:
         return [self.package]
 
     def emails(self):
-        if self._emails: return self._emails
+        if self._emails:
+            return self._emails
         for comment in self.comments:
             message = email.message_from_string(comment)
             self._emails.append(message)
@@ -90,7 +91,7 @@ class Database:
         self.root = root
 
     class bug_iterator:
-        index_record = re.compile(r'^(?P<package>\S+) (?P<id>\d+) (?P<date>\d+) (?P<status>\w+) \[(?P<originator>.*)\] (?P<severity>\w+) (?P<tags>.*)$')
+        index_record = re.compile(r'^(?P<package>\S+) (?P<bugid>\d+) (?P<date>\d+) (?P<status>\w+) \[(?P<originator>.*)\] (?P<severity>\w+)(?: (?P<tags>.*))?$')
 
         def __init__(self, db, filter=None):
             self.db = db
@@ -107,7 +108,7 @@ class Database:
                 raise IndexParseError(line)
 
             return Bug(self.db,
-                       int(match.group('id')),
+                       int(match.group('bugid')),
                        match.group('package'),
                        datetime.fromtimestamp(int(match.group('date'))),
                        match.group('status'),
@@ -123,6 +124,12 @@ class Database:
             self.load_report(bug)
         elif name in ('comments',):
             self.load_log(bug)
+        elif name == 'status':
+            if bug.done is not None:
+                bug.status = 'done'
+            if bug.forwarded is not None:
+                bug.status = 'forwarded'
+            bug.status = 'open'
         else:
             return False
 

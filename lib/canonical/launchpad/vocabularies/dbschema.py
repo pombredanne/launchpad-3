@@ -37,4 +37,5 @@ KarmaActionCategoryVocabulary = vocab_factory(dbschema.KarmaActionCategory)
 TeamSubscriptionPolicyVocabulary = vocab_factory(
         dbschema.TeamSubscriptionPolicy)
 GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
+CVEStateVocabulary = vocab_factory(dbschema.CVEState)
 

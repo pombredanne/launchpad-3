@@ -4,7 +4,6 @@ Foo Bar can't edit the bug:
   ... GET /products/firefox/+bugs/4/+edit HTTP/1.1
   ... Accept-Language: en-us,en;q=0.5
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Referer: http://localhost:9000/malone/bugs/
   ... """)
   HTTP/1.1 403 Forbidden
   ...
@@ -31,7 +30,6 @@ Edit the target:
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1442
   ... Content-Type: multipart/form-data; boundary=---------------------------9725916581164147154144110168
-  ... Referer: http://localhost:9000/malone/tasks/13/+edit
   ...
   ... -----------------------------9725916581164147154144110168
   ... Content-Disposition: form-data; name="field.milestone"
@@ -75,7 +73,7 @@ Edit the target:
   ... Change
   ... -----------------------------9725916581164147154144110168--
   ... """)
-  HTTP/1.1 200 Ok
+  HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
@@ -91,7 +89,6 @@ Assign the task to the Ubuntu Team, of which Foo Bar is a member:
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1445
   ... Content-Type: multipart/form-data; boundary=---------------------------9725916581164147154144110168
-  ... Referer: http://localhost:9000/malone/tasks/13/+edit
   ...
   ... -----------------------------9725916581164147154144110168
   ... Content-Disposition: form-data; name="field.milestone"
@@ -135,9 +132,11 @@ Assign the task to the Ubuntu Team, of which Foo Bar is a member:
   ... Change
   ... -----------------------------9725916581164147154144110168--
   ... """)
-  HTTP/1.1 200 Ok
-  ...
-            <p class="portalMessage">Updated on ...</p>
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: http://.../malone/bugs/4
+  <BLANKLINE>
   ...
 
 Now Foo Bar may edit the bug, since he's part of the maintainer team:
@@ -159,7 +158,6 @@ Now Foo Bar may edit the bug, since he's part of the maintainer team:
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1459
   ... Content-Type: multipart/form-data; boundary=---------------------------19501511362039229377247635061
-  ... Referer: http://localhost:9000/malone/tasks/13/+edit
   ...
   ... -----------------------------19501511362039229377247635061
   ... Content-Disposition: form-data; name="field.milestone"
@@ -203,9 +201,11 @@ Now Foo Bar may edit the bug, since he's part of the maintainer team:
   ... Change
   ... -----------------------------19501511362039229377247635061--
   ... """)
-  HTTP/1.1 200 Ok
-  ...
-            <h2>...in Mozilla Firefox...</h2>
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: http://.../malone/bugs/4
+  <BLANKLINE>
   ...
 
 Un-assign the bug task:
@@ -216,7 +216,6 @@ Un-assign the bug task:
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1439
   ... Content-Type: multipart/form-data; boundary=---------------------------9725916581164147154144110168
-  ... Referer: http://localhost:9000/malone/tasks/13/+edit
   ...
   ... -----------------------------9725916581164147154144110168
   ... Content-Disposition: form-data; name="field.milestone"
@@ -260,7 +259,10 @@ Un-assign the bug task:
   ... Change
   ... -----------------------------9725916581164147154144110168--
   ... """)
-  HTTP/1.1 200 Ok
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: http://.../malone/bugs/4
+  <BLANKLINE>
   ...
-            <p class="portalMessage">Updated on ...</p>
-  ...
+

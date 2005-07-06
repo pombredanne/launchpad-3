@@ -2,43 +2,35 @@
 
   <h4>Translatable Distro Packages:</h4>
 
-  <div class="portletBody">
+  <div class="portletBody portletContent ">
 
-    <div class="portletContent even">
-
-    <table class="rowNavigation" border="0">
-      <tr tal:repeat="pkg context/translatable_packages">
-        <td><a tal:content="pkg/title"
+    <ul>
+      <li class="translations"
+          tal:repeat="pkg context/translatable_packages">
+        <a tal:content="pkg/title"
                tal:attributes="href string:/distros/${pkg/distribution/name}/${pkg/distrorelease/name}/+sources/${pkg/name}/+translations">
           package title</a>
-        </td>
-      </tr>
-    </table>
-
-    </div>
+      </li>
+    </ul>
 
   </div>
 
 </div>
 
-<div class="portlet" tal:condition="context/translatable_releases">
+<div class="portlet" tal:condition="context/translatable_series">
 
-  <h4>Translatable Releases:</h4>
+  <h4>Translatable Branches:</h4>
 
-  <div class="portletBody">
+  <div class="portletBody portletContent">
 
-    <div class="portletContent even">
-
-    <table class="rowNavigation" border="0">
-      <tr tal:repeat="release context/translatable_releases">
-        <td><a tal:content="release/title"
-               tal:attributes="href string:/products/${release/product/name}/${release/version}/+translations">
-          release title</a>
-        </td>
-      </tr>
-    </table>
-
-    </div>
+    <ul>
+      <li class="translations"
+          tal:repeat="series context/translatable_series">
+        <a tal:content="series/title"
+               tal:attributes="href string:${series/fmt:url}/+translations">
+          series title</a>
+      </li>
+    </ul>
 
   </div>
 </div>

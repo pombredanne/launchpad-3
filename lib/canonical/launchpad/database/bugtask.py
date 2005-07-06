@@ -13,9 +13,9 @@ from zope.exceptions import NotFoundError
 from zope.component import getUtility, getAdapter
 from zope.interface import implements, directlyProvides, directlyProvidedBy
 
-from canonical.lp import dbschema, Passthrough
-from canonical.lp.dbschema import EnumCol, BugPriority
-from canonical.lp.dbschema import BugTaskStatus
+from canonical.lp.dbschema import (EnumCol, BugPriority, BugTaskStatus,
+    BugSeverity, BugSubscription)
+
 from canonical.launchpad.interfaces import IBugTask, IBugTaskDelta
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import nowUTC
@@ -27,6 +27,19 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     IBugTasksReport, IBugTaskSet, IUpstreamBugTask, IDistroBugTask,
     IDistroReleaseBugTask, ILaunchBag, IAuthorization)
+
+debbugsstatusmap = {'open': BugTaskStatus.NEW,
+                    'forwarded': BugTaskStatus.ACCEPTED,
+                    'done': BugTaskStatus.FIXED}
+
+debbugsseveritymap = {'wishlist': BugSeverity.WISHLIST,
+                      'minor': BugSeverity.MINOR,
+                      'normal': BugSeverity.NORMAL,
+                      None: BugSeverity.NORMAL,
+                      'important': BugSeverity.MAJOR,
+                      'serious': BugSeverity.MAJOR,
+                      'grave': BugSeverity.MAJOR,
+                      'critical': BugSeverity.CRITICAL}
 
 class BugTask(SQLBase):
     implements(IBugTask)
@@ -51,17 +64,17 @@ class BugTask(SQLBase):
         notNull=False, default=None)
     status = EnumCol(
         dbName='status', notNull=True,
-        schema=dbschema.BugTaskStatus,
-        default=dbschema.BugTaskStatus.NEW)
+        schema=BugTaskStatus,
+        default=BugTaskStatus.NEW)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
     priority = EnumCol(
         dbName='priority', notNull=True,
-        schema=dbschema.BugPriority,
-        default=dbschema.BugPriority.MEDIUM)
+        schema=BugPriority,
+        default=BugPriority.MEDIUM)
     severity = EnumCol(
         dbName='severity', notNull=True,
-        schema=dbschema.BugSeverity,
-        default=dbschema.BugSeverity.NORMAL)
+        schema=BugSeverity,
+        default=BugSeverity.NORMAL)
     binarypackagename = ForeignKey(
         dbName='binarypackagename', foreignKey='BinaryPackageName',
         notNull=False, default=None)
@@ -94,6 +107,31 @@ class BugTask(SQLBase):
         else:
             return None
 
+    # XXX 2005-06-25 kiko: rename context and contextname to target or
+    # location or whatever. context is overloaded.
+    @property
+    def context(self):
+        distro = self.distribution
+        distrorelease = self.distrorelease
+        if distro or distrorelease:
+            parent = distrorelease or distro
+            # XXX 2005-06-25 kiko: This needs API and fixages in Soyuz,
+            # but I don't want to leave us with broken links meanwhile.
+            # Filed bugs 1146 and 1147. 
+            return parent
+            # if self.sourcepackagename:
+            #     return parent.getSourcePackage(self.sourcepackagename)
+            # elif self.binarypackagename:
+            #     return parent.getBinaryPackageByName(self.binarypackagename)
+            # else:
+            #     return parent
+        elif self.product:
+            return self.product
+        else:
+            raise AssertionError
+
+    # XXX 2005-06-25 kiko: if context actually works, we can probably
+    # nuke this or simplify it significantly.
     @property
     def contextname(self):
         """See canonical.launchpad.interfaces.IBugTask.
@@ -104,9 +142,11 @@ class BugTask(SQLBase):
         * distribution.displayname
         * distribution.displayname sourcepackagename.name
         * distribution.displayname sourcepackagename.name binarypackagename.name
-        * distrorelease.displayname
-        * distrorelease.displayname sourcepackagename.name
-        * distrorelease.displayname sourcepackagename.name binarypackagename.name
+        * distribution.displayname distrorelease.displayname
+        * distribution.displayname distrorelease.displayname 
+          sourcepackagename.name
+        * distribution.displayname distrorelease.displayname 
+          sourcepackagename.name binarypackagename.name
         * product.name
         """
         if self.distribution or self.distrorelease:
@@ -122,11 +162,12 @@ class BugTask(SQLBase):
             if self.distribution:
                 L.append(self.distribution.displayname)
             elif self.distrorelease:
+                L.append(self.distrorelease.distribution.displayname)
                 L.append(self.distrorelease.displayname)
             if self.sourcepackagename:
                 L.append(self.sourcepackagename.name)
             if (binarypackagename_name and
-            binarypackagename_name != sourcepackagename_name):
+                binarypackagename_name != sourcepackagename_name):
                 L.append(binarypackagename_name)
             return ' '.join(L)
         elif self.product:
@@ -159,6 +200,19 @@ class BugTask(SQLBase):
             # This is a distro task.
             mark_task(self, IDistroBugTask)
 
+    def setStatusFromDebbugs(self, status):
+        try:
+            self.status = debbugsstatusmap[status]
+        except KeyError:
+            raise ValueError('Unknown debbugs status "%s"' % status)
+        return self.status
+
+    def setSeverityFromDebbugs(self, severity):
+        try:
+            self.severity = debbugsseveritymap[severity]
+        except KeyError:
+            raise ValueError('Unknown debbugs severity "%s"' % severity)
+        return self.severity
 
 class BugTaskSet:
 
@@ -202,7 +256,8 @@ class BugTaskSet:
     def search(self, bug=None, searchtext=None, status=None, priority=None,
                severity=None, product=None, distribution=None,
                distrorelease=None, milestone=None, assignee=None,
-               submitter=None, statusexplanation=None, orderby=None):
+               submitter=None, orderby=None, sourcepackagename=None,
+               binarypackagename=None, statusexplanation=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
         def build_where_condition_fragment(arg_name, arg_val, cb_arg_id):
             fragment = ""
@@ -223,7 +278,8 @@ class BugTaskSet:
         query = ""
         # build the part of the query for FK columns
         for arg_name in ('bug', 'product', 'distribution', 'distrorelease',
-                         'milestone', 'assignee', 'submitter'):
+                         'milestone', 'assignee', 'submitter',
+                         'sourcepackagename', 'binarypackagename'):
             query_arg = eval(arg_name)
             if query_arg is not None:
                 where_cond = build_where_condition_fragment(
@@ -285,8 +341,8 @@ class BugTaskSet:
                               (BugSubscription.subscription IN
                                   (%(cc)s, %(watch)s))))))""" %
                 sqlvalues(personid=user.id,
-                          cc=dbschema.BugSubscription.CC,
-                          watch=dbschema.BugSubscription.WATCH))
+                          cc=BugSubscription.CC,
+                          watch=BugSubscription.WATCH))
 
         if orderby is None:
             orderby = []
@@ -361,8 +417,8 @@ class BugTaskSet:
                            (BugSubscription.subscription IN
                                (%(cc)s, %(watch)s))))))'''
                 % sqlvalues(personid=user.id,
-                            cc=dbschema.BugSubscription.CC,
-                            watch=dbschema.BugSubscription.WATCH))
+                            cc=BugSubscription.CC,
+                            watch=BugSubscription.WATCH))
         else:
             privatenessFilter += 'BugTask.bug = Bug.id AND Bug.private = FALSE'
 

@@ -6,47 +6,47 @@
     i18n_domain="launchpad">
 
     <content class="canonical.launchpad.database.DistroRelease">
-        <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
-        <require
-            permission="launchpad.Edit"
-            set_attributes="displayname title summary description version
-                            owner datelastlangpack"
-            />
+    <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
+    <require
+        permission="launchpad.Edit"
+        set_attributes="displayname title summary description version
+                owner datelastlangpack"
+        />
     </content>
 
     <securedutility
-        class="canonical.launchpad.database.DistroReleaseSet"
-        provides="canonical.launchpad.interfaces.IDistroReleaseSet">
-        <allow interface="canonical.launchpad.interfaces.IDistroReleaseSet" />
+      class="canonical.launchpad.database.DistroReleaseSet"
+      provides="canonical.launchpad.interfaces.IDistroReleaseSet">
+      <allow interface="canonical.launchpad.interfaces.IDistroReleaseSet" />
     </securedutility>
 
     <adapter
-        for="canonical.launchpad.interfaces.IDistroRelease"
-        provides="canonical.launchpad.interfaces.IBugTaskSubset"
-        factory="canonical.launchpad.components.distrorelease.DistroReleaseToBugTaskSubsetAdapter"
-        permission="zope.Public" />
+      for="canonical.launchpad.interfaces.IDistroRelease"
+      provides="canonical.launchpad.interfaces.IBugTaskSubset"
+      factory="canonical.launchpad.components.distrorelease.DistroReleaseToBugTaskSubsetAdapter"
+      permission="zope.Public" />
 
     <browser:traverse
-        for="canonical.launchpad.interfaces.IDistroRelease"
-        function="canonical.launchpad.browser.traversers.traverse_distrorelease" />
+      for="canonical.launchpad.interfaces.IDistroRelease"
+      function="canonical.launchpad.browser.traversers.traverse_distrorelease" />
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IDistroRelease"
-        name="+index" />
+      for="canonical.launchpad.interfaces.IDistroRelease"
+      name="+index" />
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IDistroRelease"
-        layer="canonical.launchpad.layers.MaloneLayer"
-        name="+bugs" />
+      for="canonical.launchpad.interfaces.IDistroRelease"
+      layer="canonical.launchpad.layers.MaloneLayer"
+      name="+bugs" />
 
     <browser:editform
-        for="canonical.launchpad.interfaces.IDistroRelease"
-        permission="launchpad.Edit"
-        name="+edit"
-        schema="canonical.launchpad.interfaces.IDistroRelease"
-        fields="displayname title summary description version"
-        template="../templates/launchpad-editform.pt"
-        lp:url="/distros/$Distribution.name/$DistroRelease.name/+edit"/>
+      for="canonical.launchpad.interfaces.IDistroRelease"
+      permission="launchpad.Edit"
+      name="+edit"
+      schema="canonical.launchpad.interfaces.IDistroRelease"
+      fields="displayname title summary description version"
+      template="../templates/launchpad-editform.pt"
+      lp:url="/distros/$Distribution.name/$DistroRelease.name/+edit"/>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistroRelease"
@@ -55,71 +55,75 @@
 
         <browser:page
             name="+index"
-                template="../templates/distrorelease-index.pt"
+            template="../templates/distrorelease-index.pt"
             lp:url="/distros/$Distribution.name/$Release.name/+index"
             />
         <browser:page
-                name="+translations"
-                template="../templates/distrorelease-translations.pt"
+            name="+translations"
+            template="../templates/distrorelease-translations.pt"
             lp:url="/distros/ubuntu/hoary/+translations"
             />
         <browser:page
-                name="+potlist"
-                template="../templates/object-pots.pt"
+            name="+packaging"
+            template="../templates/distrorelease-packaging.pt"
+            lp:url="/distros/ubuntu/hoary/+packaging"
+            />
+        <browser:page
+            name="+potlist"
+            template="../templates/object-pots.pt"
             lp:url="/distros/ubuntu/hoary/+potlist"
             />
-
         <browser:page
-                name="+portlet-details"
-                template="../templates/portlet-distrorelease-details.pt"
+            name="+portlet-details"
+            template="../templates/portlet-distrorelease-details.pt"
             lp:url="/distros/ubuntu/hoary/+portlet-details"
             />
         <browser:page
-                name="+portlet-actions"
-                template="../templates/portlet-distrorelease-actions.pt"
+            name="+portlet-actions"
+            template="../templates/portlet-distrorelease-actions.pt"
             lp:url="/distros/ubuntu/hoary/+portlet-actions"
             />
         <browser:page
-                name="+portlet-translations"
-                template="../templates/portlet-distrorelease-translations.pt"
+            name="+portlet-translations"
+            template="../templates/portlet-distrorelease-translations.pt"
             lp:url="/distros/ubuntu/hoary/+portlet-translations"
             />
-            <browser:page
-                name="+portlet-status-legend"
-                template="../templates/portlet-rosetta-status-legend.pt"
-                lp:url="/distros/ubuntu/hoary/+portlet-status-legend"
-                />
-            <browser:page
-                name="+portlet-pref-langs"
-                template="../templates/portlet-pref-langs.pt"
-                lp:url="/distros/ubuntu/hoary/+portlet-pref-langs"
-                />
-            <browser:page
-                name="+portlet-country-langs"
-                template="../templates/portlet-country-langs.pt"
-                lp:url="/distros/ubuntu/hoary/+portlet-country-langs"
-                />
-            <browser:page
-                name="+portlet-browser-langs"
-                template="../templates/portlet-browser-langs.pt"
-                lp:url="/distros/ubuntu/hoary/+portlet-browser-langs"
-                />
+        <browser:page
+            name="+portlet-status-legend"
+            template="../templates/portlet-rosetta-status-legend.pt"
+            lp:url="/distros/ubuntu/hoary/+portlet-status-legend"
+            />
+        <browser:page
+            name="+portlet-pref-langs"
+            template="../templates/portlet-pref-langs.pt"
+            lp:url="/distros/ubuntu/hoary/+portlet-pref-langs"
+            />
+        <browser:page
+            name="+portlet-country-langs"
+            template="../templates/portlet-country-langs.pt"
+            lp:url="/distros/ubuntu/hoary/+portlet-country-langs"
+            />
+        <browser:page
+            name="+portlet-browser-langs"
+            template="../templates/portlet-browser-langs.pt"
+            lp:url="/distros/ubuntu/hoary/+portlet-browser-langs"
+            />
     </browser:pages>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistroRelease"
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.ObjectReassignmentView">
-          <browser:page
-              name="+reassign"
-              template="../templates/object-reassignment.pt"
-              lp:url="/distros/$distro.id/$release.id/+reassign" />
+    <browser:page
+        name="+reassign"
+        template="../templates/object-reassignment.pt"
+        lp:url="/distros/$distro.id/$release.id/+reassign" />
     </browser:pages>
 
     <browser:page
         for="canonical.launchpad.interfaces.IDistroRelease"
-        permission="zope.Public"
         class="canonical.launchpad.browser.ReleaseSearchView"
+        permission="zope.Public"
         name="+search"
         template="../templates/distrorelease-search.pt"
         lp:url="distros/$Distribution.name/$Release.name/+search"

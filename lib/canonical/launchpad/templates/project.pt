@@ -47,10 +47,10 @@
 
     <div>
 	<ul tal:repeat="product context/products">
-		<li><b><a href="" tal:attributes="href product/name" 
+		<li><b><a href="." tal:attributes="href product/name" 
                 tal:content="product/title">Product title</a></b>
             <span tal:condition="exists:product/homepageurl"> [
-            <a href=""
+            <a href="."
                tal:content="product/homepageurl"
                tal:attributes="href product/homepageurl">homepage</a>
             ] </span>

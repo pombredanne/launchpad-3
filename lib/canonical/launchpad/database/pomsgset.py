@@ -413,15 +413,15 @@ class POMsgSet(SQLBase):
         """See IPOMsgSet."""
         submissions = self.potmsgset.getWikiSubmissions(self.pofile.language,
             pluralform)
-        active = self.activeSubmission(pluralform).potranslation
+        active = self.activeSubmission(pluralform)
+        if active and active.potranslation:
+            active = active.potranslation
         return [submission
                 for submission in submissions
                 if submission.potranslation != active]
 
     def getSuggestedSubmissions(self, pluralform):
         """See IPOMsgSet."""
-        # XXX sabdfl 02/06/05 this is Malone bug #906
-        fudgefactor = datetime.timedelta(0,1,0)
         selection = self.selection(pluralform)
         active = None
         if selection is not None and selection.activesubmission:
@@ -430,14 +430,16 @@ class POMsgSet(SQLBase):
                    pluralform = %s''' % sqlvalues(self.id, pluralform)
         if active:
             query += ''' AND datecreated > %s
-                    ''' % sqlvalues(active.datecreated + fudgefactor)
+                    ''' % sqlvalues(active.datecreated)
         return POSubmission.select(query, orderBy=['-datecreated'])
 
     def getCurrentSubmissions(self, pluralform):
         """See IPOMsgSet."""
         submissions = self.potmsgset.getCurrentSubmissions(self.pofile.language,
             pluralform)
-        active = self.activeSubmission(pluralform).potranslation
+        active = self.activeSubmission(pluralform)
+        if active and active.potranslation:
+            active = active.potranslation
         return [submission
                 for submission in submissions
                 if submission.potranslation != active]

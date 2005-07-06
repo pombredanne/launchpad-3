@@ -11,6 +11,10 @@
           </li>
           <li class="edit"
               tal:condition="context/required:launchpad.Edit">
+            <a href="+reassign">Change Admin</a>
+          </li>
+          <li class="edit"
+              tal:condition="context/required:launchpad.Edit">
             <a href="+selectmemberteam">Change Members</a>
           </li>
           <li class="edit"

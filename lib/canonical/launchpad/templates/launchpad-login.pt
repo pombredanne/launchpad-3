@@ -87,6 +87,11 @@
                       size="30"
                       tal:attributes="value request/email | nothing"
                     />
+                    <script>
+                    <!--
+                        document.forms['login'].loginpage_email.focus();
+                    //-->
+                    </script>
                   </td>
                 </tr>
                 <tr>

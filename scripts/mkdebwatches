@@ -1,0 +1,265 @@
+#!/usr/bin/env python
+
+# Copyright 2005 Canonical Ltd.  All rights reserved.
+
+# This script aims to ensure that there is a Malone watch on Debian bugs
+# that meet certain criteria. The Malone watch will be linked to a BugTask
+# on Debian for that bug. The business of syncing is handled separately.
+
+__metaclass__ = type
+
+import sys
+import datetime
+import logging
+from optparse import OptionParser
+
+# zope bits
+from zope.component import getUtility
+from zope.exceptions import NotFoundError
+
+# canonical launchpad modules
+from canonical.lp import initZopeless
+from canonical.database.sqlbase import sqlvalues, flush_database_updates
+from canonical.launchpad.scripts import (execute_zcml_for_scripts,
+    logger_options, logger as logger_from_options)
+from canonical.launchpad.scripts.lockfile import LockFile
+from canonical.lp.dbschema import BugTaskStatus
+from canonical.launchpad.interfaces import (IBugSet,
+    IMessageSet, ILaunchpadCelebrities, UnknownSender, MissingSubject,
+    DuplicateMessageId, InvalidEmailMessage, IBugTaskSet, IBugWatchSet,
+    ISourcePackageSet, ICVERefSet)
+from canonical.lp.encoding import guess as ensure_unicode
+
+# debsync-specific modules
+import debbugs
+
+# setup core values and defaults
+debbugs_db = debbugs.Database('/srv/bugs-mirror.debian.org/')
+
+# the minimum age, in days, of a debbugs bug before we will import it
+MIN_AGE = 7
+
+target_bugs = set()
+target_package_set = set()
+previousimportset = set()
+
+def bug_filter(bug):
+    """Function to choose which debian bugs will get processed by the sync
+    script.
+    """
+    # don't re-import one that exists already
+    if str(bug.id) in previousimportset:
+        return False
+    # if we've been given a list, import only those
+    if target_bugs:
+        if bug.id in target_bugs:
+            return True
+        return False
+    # we only want bugs in Sid
+    if not bug.affects_unstable():
+        return False
+    # and we only want RC bugs
+    #if not bug.is_release_critical():
+    #    return False
+    # and we only want bugs that affect the packages we care about:
+    if not bug.affects_package(target_package_set):
+        return False
+    # we will not import any dup bugs (any reason to?)
+    if len(bug.mergedwith) > 0:
+        return False
+    # and we won't import any bug that is newer than one week, to give
+    # debian some time to find dups
+    if bug.date > datetime.datetime.now() - datetime.timedelta(MIN_AGE):
+        return False
+    return True
+
+def do_import(logger, max_imports):
+
+    # figure out which bugs have been imported previously
+    debbugs_tracker = getUtility(ILaunchpadCelebrities).debbugs
+    for b in debbugs_tracker.watches:
+        previousimportset.add(b.remotebug)
+    logger.info('%d debian bugs previously imported.' % len(previousimportset))
+
+    # find the new bugs to import
+    logger.info('Selecting new debian bugs...')
+    debian_bugs = filter(bug_filter, debbugs_db)
+    logger.info('%d debian bugs ready to import.' % len(debian_bugs))
+
+    # put them in ascending order
+    logger.info('Sorting bugs...')
+    debian_bugs.sort(lambda a, b: cmp(a.id, b.id))
+
+    logger.info('Importing bugs...')
+    newbugs = 0
+    for debian_bug in debian_bugs:
+        newbug = import_bug(debian_bug, logger)
+        if newbug is True:
+            newbugs += 1
+        if max_imports:
+            if newbugs >= max_imports:
+                logger.info('Imported %d new bugs!' % newbugs)
+                break
+
+
+def import_bug(debian_bug, logger):
+    """Consider importing a debian bug, return True if you did."""
+    packagelist = debian_bug.packagelist()
+    bugset = getUtility(IBugSet)
+    debbugs_tracker = getUtility(ILaunchpadCelebrities).debbugs
+    malone_bug = bugset.queryByRemoteBug(debbugs_tracker, debian_bug.id)
+    if malone_bug is not None:
+        logger.info('Debian #%d was previously imported.' % debian_bug.id)
+        return False
+    # get the email which started it all
+    try:
+        email_txt = debian_bug.comments[0]
+    except IndexError:
+        loggerr.error('No initial mail for debian #%d' % debian_bug.id)
+        return False
+    except debbugs.LogParseFailed, e:
+        logger.warning(e)
+        return False
+    msg = None
+    messageset = getUtility(IMessageSet)
+    debian = getUtility(ILaunchpadCelebrities).debian
+    try:
+        msg = messageset.fromEmail(email_txt, distribution=debian,
+            create_missing_persons=True)
+    except UnknownSender:
+        logger.error('Cannot create person for %s' % sys.exc_value)
+    except InvalidEmailMessage:
+        logger.error('Invalid email: %s' % sys.exc_value)
+    if msg is None:
+        logger.error('Failed to import debian #%d' % debian_bug.id)
+        return False
+
+    # get the bug details
+    title = debian_bug.subject
+    if not title:
+        title = 'Debbugs #%d with no title' % debian_bug.id
+    title = ensure_unicode(title)
+    # debian_bug.package may have ,-separated package names, but
+    # debian_bug.packagelist[0] is going to be a single package name for
+    # sure. we work through the package list, try to find one we can
+    # work with, otherwise give up
+    srcpkgset = getUtility(ISourcePackageSet)
+    srcpkg = binpkg = pkgname = None
+    for pkgname in debian_bug.packagelist():
+        try:
+            srcpkg, binpkg = srcpkgset.getPackageNames(pkgname)
+        except ValueError:
+            logger.error(sys.exc_value)
+    if srcpkg is None:
+        # none of the package names gave us a source package we can use
+        # XXX sabdfl maybe this should just be connected to the distro,
+        # and allowed to wait for re-assignment to a specific package?
+        logger.error('Unable to find package details for %s' % (
+            debian_bug.package))
+        return False
+    # sometimes debbugs has initial emails that contain the package name, we
+    # can remove that
+    if title.startswith(pkgname+':'):
+        title = title[len(pkgname)+2:].strip()
+    malone_bug = bugset.createBug(distribution=debian,
+        sourcepackagename=srcpkg, binarypackagename=binpkg,
+        title=title, msg=msg, owner=msg.owner,
+        datecreated=msg.datecreated)
+    # create a debwatch for this bug
+    thewatch = malone_bug.addWatch(debbugs_tracker, str(debian_bug.id),
+        malone_bug.owner)
+    thewatch.remotestatus = debian_bug.status
+
+    # link the relevant task to this watch
+    assert len(malone_bug.bugtasks) == 1, 'New bug should have only one task'
+    task = malone_bug.bugtasks[0]
+    task.bugwatch = thewatch
+    task.setStatusFromDebbugs(debian_bug.status)
+    task.setSeverityFromDebbugs(debian_bug.severity)
+
+    # Let the world know about it!
+    logger.info('%d/%s: %s: %s' % (
+        debian_bug.id, malone_bug.id, debian_bug.package, title))
+
+    # now we need to analyse the message for bugwatch clues
+    bugwatchset = getUtility(IBugWatchSet)
+    watches = bugwatchset.fromMessage(msg, malone_bug)
+    for watch in watches:
+        logger.info('New watch for %s on %s' % (watch.bug.id, watch.url))
+
+    # and also for CVE ref clues
+    cverefset = getUtility(ICVERefSet)
+    cverefs = cverefset.fromMessage(msg, malone_bug)
+    for cveref in cverefs:
+        logger.info('%s-%s found for Malone #%s' % (cveref.cvestate.name,
+            cve.cveref, cveref.bug.id))
+
+    flush_database_updates()
+    return True
+
+
+def main(args):
+    parser = OptionParser(description=("This script syncs debbugs from "
+        "http://bugs.debian.org/ into Malone. It selects interesting "
+        "bugs in debian and makes sure that there is a Malone bug for "
+        "each of them. See debwatchsync for a tool that syncronises "
+        "the bugs in Malone and debbugs, too."))
+    logger_options(parser, logging.WARNING)
+    parser.set_defaults(max=None)
+    parser.add_option('--max', action='store', type='int', dest='max',
+        help="The maximum number of bugs to create.")
+    parser.add_option('--package', action='append', type='string',
+        help="A list of packages for which we should import bugs.",
+        dest="packages", default=[])
+    options, args = parser.parse_args()
+
+    # setup the logger
+    logger = logger_from_options(options)
+
+    # Make sure we import any Debian bugs specified on the command line
+    for arg in args:
+        try:
+            target_bug = int(arg)
+        except ValueError:
+            parser.error('%s is not a valid debian bug number.' % arg)
+        target_bugs.add(target_bug)
+
+    logger.info('Setting up utilities...')
+    execute_zcml_for_scripts()
+
+    logger.info('Calculating target package set...')
+    # first find all the published ubuntu packages
+    ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    for p in ubuntu.currentrelease.publishedBinaryPackages(
+        component='main'):
+        target_package_set.add(p.binarypackagename.name)
+    # then add packages passed on the command line
+    for package in options.packages:
+        target_package_set.add(package)
+    logger.info('%d binary packages targeted.' % len(target_package_set))
+
+    lockfile_path = '/var/lock/launchpad-debbugs-watch.lock'
+    lockfile = LockFile(lockfile_path)
+    try:
+        lockfile.acquire()
+    except OSError:
+        logger.info('Lockfile %s already exists, exiting.' % lockfile_path)
+        return 0
+
+    try:
+        ztm = initZopeless()
+        ztm.begin()
+        do_import(logger, options.max)
+        ztm.commit()
+    except:
+        logger.exception('Uncaught exception!')
+        lockfile.release()
+        return 1
+
+    logger.info('Done!')
+    lockfile.release()
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
+

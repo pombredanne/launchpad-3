@@ -21,8 +21,8 @@
          class="portalMessage">
         This bug is a duplicate of
         <a href="#"
-           tal:attributes="href context/bug/duplicateof/@@absolute_url"
-           tal:content="context/bug/duplicateof/id">42</a>
+           tal:attributes="href context/bug/duplicateof/@@absolute_url">bug
+             #<span tal:replace="context/bug/duplicateof/id">42</span></a>
       </p>
 
       <div metal:define-macro="editform">
@@ -51,21 +51,35 @@
               i18n:name="num_errors">6</strong> input errors in the form
               below. Please correct them and resubmit the form.
             </p>
+            <p tal:condition="not: context/required:launchpad.Edit"
+               class="portalMessage">
+              You are not the assignee, or the maintainer of
+              <span tal:replace="context/contextname">product</span> so you
+              cannot edit this status page.
+            </p>
           </div>
+
+          <h2>
+            <a href="#" tal:attributes="href context/bug/fmt:url">Bug 
+              #<span tal:replace="context/bug/id">132</span></a>
+            in
+            <a href="#" tal:attributes="href context/context/fmt:url">
+              <span tal:replace="context/contextname">some 
+                package/product</span></a>
+          </h2>
 
           <p tal:condition="context/bug/summary"
              tal:content="context/bug/summary">
              Bug summary goes here if it exists.
           </p>
           
-          <h2>
-            Status of Bug #<span tal:replace="context/bug/id">132</span> in
-            <span tal:replace="context/contextname">some distro
-            package/product</span>
-          </h2>
+          <p class="boardCommentContent" 
+             tal:content="structure context/bug/description/fmt:nice_pre">
+             $Bug.description
+          </p>
 
           <div class="field">
-            <table style="width: 20%">
+            <table>
             <tr>
               <td>
                 <label tal:attributes="for view/status_widget/name"
@@ -99,7 +113,8 @@
               <td tal:condition="context/product"
                   tal:content="structure view/milestone_widget" />
             </tr>
-            <tr tal:condition="python:context.distribution or context.distrorelease">
+            <tr tal:condition="python:context.distribution or 
+                                      context.distrorelease">
               <td colspan="0">
                 <label tal:attributes="for view/sourcepackagename_widget/name"
                        tal:content="view/sourcepackagename_widget/label">
@@ -107,7 +122,8 @@
                 </label>
               </td>
             </tr>
-            <tr tal:condition="python:context.distribution or context.distrorelease">
+            <tr tal:condition="python:context.distribution or 
+                                      context.distrorelease">
               <td colspan="0"
                   tal:content="structure view/sourcepackagename_widget" nowrap />
             </tr>
@@ -120,7 +136,8 @@
               </td>
               <td colspan="2">
                 <label tal:attributes="for view/bugwatch_widget/name"
-                       tal:content="view/bugwatch_widget/label">
+                       tal:content="view/bugwatch_widget/label"
+                       style="white-space: nowrap">
                   Remote Watch
                 </label>
               </td>
@@ -143,12 +160,6 @@
               <tal:block replace="structure view/statusexplanation_widget" />
             </div>
           </div>
-
-          <p class="boardCommentContent" 
-             tal:content="structure context/bug/description/fmt:nice_pre">
-             $Bug.description
-          </p>
-
 
           <div class="actions" tal:condition="context/required:launchpad.Edit">
             <input

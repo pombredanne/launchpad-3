@@ -209,6 +209,13 @@ table.rowNavigation>thead>tr:hover {
   cursor: default;
 }
 
+/* highlight specific table entry */
+
+tr.highlight {
+    border: 1px solid #ffa500;
+    background-color: #ffce7b;
+}
+
 /* Display links as blocks, so we can make the whole row clickable */
 
 tr.rowLinkified a {
@@ -372,6 +379,12 @@ ul.mail>li, li.mail {
 ul.person>li, li.person, ul.people>li, li.people {
   list-style-image: url(/++resource++user.gif);
 }
+ul.webref>li, li.webref {
+    list-style-image: url(/++resource++link_icon.gif);
+}
+ul.cveref>li, li.cveref {
+    list-style-image: url(/++resource++cve.ico);
+}
 ul.packages>li, li.packages, ul.products>li, li.products {
   list-style-image: url(/++resource++product_icon.gif);
 }
@@ -478,6 +491,9 @@ input.searchButton {
 .link-irc, .link-comment {
   background-image: url(http://plone.org/discussionitem_icon.gif);
 }
+.link-document {
+  background-image: url(http://plone.org/document_icon.gif);
+}
 .link-callto {
   background-image: url(http://plone.org/phone_icon.gif);
 }
@@ -542,6 +558,7 @@ table.listing th {
 table.listing>tr>td, table.listing>tbody>tr>td {
   border: dotted #8cacbb;
   border-width: 1px 0;
+  font-size: 90%;
 }
 table.listing>thead>tr>th, table.listing>thead>tr>td {
   border: 1px solid #8cacbb;

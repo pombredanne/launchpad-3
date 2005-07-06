@@ -49,13 +49,13 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
-        path_expression="string:+bugs/${id}"
+        path_expression="string:+bugs/${bug/id}"
         attribute_to_parent="product"
         />
 
     <browser:url
         for="canonical.launchpad.interfaces.IDistroBugTask"
-        path_expression="string:+bugs/${id}"
+        path_expression="string:+bugs/${bug/id}"
         attribute_to_parent="distribution"
         />
 
@@ -157,7 +157,7 @@
         label="Product Bug Task"
         permission="launchpad.View"
         template="../templates/bugtask-editform.pt"
-        lp:url="malone/tasks/$BugTask.id/+edit">
+        lp:url="malone/tasks/$BugTask.id/+index">
     </browser:schemadisplay>
 
     <browser:defaultView

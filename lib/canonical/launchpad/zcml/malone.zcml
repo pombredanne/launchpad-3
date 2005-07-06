@@ -10,6 +10,7 @@
         utility="canonical.launchpad.interfaces.IMaloneApplication"
         newlayer="canonical.launchpad.layers.MaloneLayer"
         name="malone" />
+
     <browser:url
         for="canonical.launchpad.interfaces.IMaloneApplication"
         path_expression="string:malone"
@@ -51,8 +52,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IMaloneApplication"
         permission="zope.Public"
-        class="canonical.malone.browser.MaloneApplicationView"
-        lp:url="malone">
+        class="canonical.malone.browser.MaloneApplicationView" >
         <browser:page
             name="+index"
             template="../templates/malone-index.pt"
@@ -71,4 +71,20 @@
             lp:url="malone/+todo" />
     </browser:pages>
 
+    <browser:pages
+        for="canonical.launchpad.interfaces.IMaloneApplication"
+        permission="zope.Public" >
+        <browser:page
+            name="+portlet-about"
+            template="../templates/malone-portlet-about.pt"
+            lp:url="malone/+portlet-about" />
+        <browser:page
+            name="+portlet-stats"
+            template="../templates/malone-portlet-stats.pt"
+            lp:url="malone/+portlet-stats" />
+        <browser:page
+            name="+portlet-bugtrackers"
+            template="../templates/malone-portlet-bugtrackers.pt"
+            lp:url="malone/+portlet-stats" />
+    </browser:pages>
 </configure>

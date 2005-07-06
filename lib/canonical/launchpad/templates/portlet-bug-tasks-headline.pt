@@ -3,7 +3,7 @@
      tal:define="bug_url string:/malone/bugs/${context/id}">
 
 <table class="listing"
-       style="width: 100%; margin-top: 2px;">
+       style="width: 100%; margin-bottom: 1px; margin-top: 2px; font-size: 90%;">
 
   <caption>Needs fixing in...</caption>
 
@@ -14,7 +14,7 @@
       <th>Status</th>
       <th>Severity</th>
       <th>Priority</th>
-      <th>Assigned to</th>
+      <th colspan="2">Assigned to</th>
     </tr>
 
   </thead>
@@ -59,12 +59,20 @@
       </td>
 
       <td>
-        <span tal:condition="bugtask/assignee" tal:omit-tag="">
+        <tal:block condition="bugtask/assignee">
           <img src="/++resource++user.gif" alt="" />
           <span tal:replace="bugtask/assignee/browsername">
             assignee.browsername
           </span>
-        </span>
+        </tal:block>
+      </td>
+
+      <td style="text-align: center">
+        <tal:editabletask condition="bugtask/required:launchpad.Edit">
+          [<a tal:attributes="href string:${bugtask/@@absolute_url}/+edit"
+              ><span tal:condition="bugtask/assignee" 
+                     tal:omit-tag>re</span>assign</a>]
+        </tal:editabletask>
       </td>
 
     </tr>
@@ -75,24 +83,31 @@
 
 </div>
 
-<div style="font-size: 75%; text-align: right; clear: both; text-decoration: none;">
-  Indicate bug also exists:
-  <img src="/++resource++add.gif" alt="+" />
-  <a href="+upstreamtask"
-     title="Mark this bug as occurring upstream">
-    Upstream...
-  </a>
+<div style="font-size: 80%; text-align: right; clear: both; 
+            margin-bottom:1em; text-decoration: none;">
 
-  <img src="/++resource++add.gif" alt="+" />
-  <a href="+distrotask"
-     title="Mark this bug as occurring in a distro package">
-    In Distro...
-  </a>
+  Indicate bug also exists: 
+  <span style="white-space: nowrap">
+      <img src="/++resource++add.gif" alt="+" />
+      <a href="+upstreamtask"
+         title="Mark this bug as occurring upstream">
+        Upstream
+      </a>
+  </span>
 
-  <img src="/++resource++add.gif" alt="+" />
-  <a href="+distroreleasetask"
-     title="Target the fixing of this bug to a specific distro release">
-    In Distro Release...
-  </a>
+  <span style="white-space: nowrap">
+      <img src="/++resource++add.gif" alt="+" />
+      <a href="+distrotask"
+         title="Mark this bug as occurring in a distro package">
+        In Distro
+      </a>
+  </span>
+  <span style="white-space: nowrap">
+      <img src="/++resource++add.gif" alt="+" />
+      <a href="+distroreleasetask"
+         title="Target the fixing of this bug to a specific distro release">
+        In Distro Release
+      </a>
+  </span>
 
 </div>

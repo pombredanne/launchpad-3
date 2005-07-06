@@ -86,12 +86,21 @@
         label="Change PO template Information"
         permission="launchpad.Edit"
         template="../templates/potemplate-edit.pt"
+        fields="potemplatename description" 
+        />
+
+    <browser:editform
+        name="+admin"
+        schema="canonical.launchpad.interfaces.IPOTemplate"
+        class="canonical.launchpad.browser.POTemplateEditView"
+        label="Administer PO Template"
+        permission="launchpad.Admin"
+        template="../templates/potemplate-edit.pt"
         fields="name potemplatename description header iscurrent owner
-                productrelease distrorelease sourcepackagename
+                productseries distrorelease sourcepackagename
                 sourcepackageversion binarypackagename languagepack path
-                filename" >
-        lp:url="Rosetta/products/$Product.name/$POTemplate.name/+edit"
-    </browser:editform>
+                filename" 
+        />
 
     <browser:page
         name="+translate"
@@ -108,24 +117,6 @@
         template="../templates/potemplate-export.pt"
         class="canonical.launchpad.browser.POTemplateExportView"
         />
-
-    <!-- needed for @@absolute_url to work -->
-    <view
-        for="canonical.launchpad.interfaces.IPOTemplate"
-        factory="canonical.launchpad.browser.potemplate.POTemplateAbsoluteURL"
-        type="zope.publisher.interfaces.http.IHTTPRequest"
-        permission="zope.Public"
-        provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
-    </view>
-
-    <view
-        name="absolute_url"
-        for="canonical.launchpad.interfaces.IPOTemplate"
-        factory="canonical.launchpad.browser.potemplate.POTemplateAbsoluteURL"
-        type="zope.publisher.interfaces.http.IHTTPRequest"
-        permission="zope.Public"
-        provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
-    </view>
 
     <!-- POTemplateSet -->
     <securedutility

@@ -8,7 +8,7 @@ from zope.interface import implements
 from sqlobject import ForeignKey, IntCol, StringCol, MultipleJoin
 
 from canonical.database.sqlbase import SQLBase
-from canonical.database.constants import nowUTC, UTC_NOW
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import IProductRelease
@@ -22,7 +22,8 @@ class ProductRelease(SQLBase):
     implements(IProductRelease)
     _table = 'ProductRelease'
 
-    datereleased = UtcDateTimeCol(notNull=True, default=nowUTC)
+    datereleased = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     version = StringCol(notNull=True)
     # XXX: Carlos Perello Marin 2005-05-22:
     # The DB field should be renamed to something better than title.
@@ -49,13 +50,6 @@ class ProductRelease(SQLBase):
 
     # properties
     @property
-    def potemplates(self):
-        result = POTemplate.selectBy(productreleaseID=self.id)
-        result = list(result)
-        result.sort(key=lambda x: x.potemplatename.name)
-        return result
-
-    @property
     def product(self):
         return self.productseries.product
 
@@ -74,21 +68,6 @@ class ProductRelease(SQLBase):
     def set_title(self, title):
         self._title = title
     title = property(title, set_title)
-
-    @property
-    def potemplatecount(self):
-        return len(self.potemplates)
-
-    def poTemplate(self, name):
-        template = POTemplate.selectOne(
-            "POTemplate.productrelease = %d AND "
-            "POTemplate.potemplatename = POTemplateName.id AND "
-            "POTemplateName.name = %s" % (self.id, quote(name)),
-            clauseTables=['ProductRelease', 'POTemplateName'])
-
-        if template is None: 
-            raise KeyError, name
-        return template
 
     def messageCount(self):
         count = 0
