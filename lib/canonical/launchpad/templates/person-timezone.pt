@@ -18,9 +18,13 @@
 
     <div metal:use-macro="context/@@launchpad_editform/editform">
 
-      <h3 metal:fill-slot="heading">
-        Edit Time Zone
-      </h3>
+      <h1 metal:fill-slot="heading">Edit Time Zone</h1>
+
+      <div metal:fill-slot="extra_info" class="documentDescription">
+        <p>Please select your time zone.  Launchpad uses this
+        information to display dates and times in your local time
+        zone, and to interpret entered dates.</p>
+      </div>
 
     </div>
   </div>
