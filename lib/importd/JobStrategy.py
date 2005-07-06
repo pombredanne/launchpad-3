@@ -557,19 +557,17 @@ class SVNStrategy(CSCVSStrategy):
             repository=self.svnrepository
         
             path=self.getSVNDirPath(self.aJob,self.dir)
-            if os.access(path, os.F_OK):
-                pass
-                #argv=["-SBu"]
-            else:      
-                #argv=["-SBb"]
-                try:
+            try:
+                if os.access(path, os.F_OK):
+                    SCM.tree(path).update()
+                else:      
                     self.logger.debug("getting from SVN: %s %s" % (repository, self.aJob.module))
                     client=pysvn.Client()
                     client.checkout(repository, path)
-                except Exception, foo: #don't leave partial checkouts around
-                    if os.access(path, os.F_OK):
-                        shutil.rmtree(path)
-                    raise foo
+            except Exception, foo: #don't leave partial checkouts around
+                if os.access(path, os.F_OK):
+                    shutil.rmtree(path)
+                raise foo
         
             self.sourceDirectory = path
         return self.sourceDirectory
