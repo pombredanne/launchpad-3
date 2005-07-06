@@ -1,3 +1,5 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 __metaclass__ = type
 
 # Python standard library imports
@@ -7,10 +9,7 @@ import sets
 from apt_pkg import ParseSrcDepends
 
 from zope.component import getUtility
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.app.form.interfaces import (IInputWidget, IDisplayWidget, 
-    InputErrors)
-from zope.app.form.utility import setUpWidget
+from zope.app.form.interfaces import IInputWidget
 from zope.app import zapi
 
 from canonical.lp.z3batching import Batch

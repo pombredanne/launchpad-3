@@ -1,24 +1,27 @@
-__metaclass__ = object
-__all__ = ['BugCreationConstraintsError',
-           'IBug',
-           'IBugSet',
-           'IBugDelta',
-           'IBugAddForm']
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""Interfaces related to bugs."""
+
+__metaclass__ = type
+
+__all__ = [
+    'BugCreationConstraintsError',
+    'IBug',
+    'IBugSet',
+    'IBugDelta',
+    'IBugAddForm',
+    ]
 
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
-
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
-from zope.schema.interfaces import IText, ITextLine
+from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
-from canonical.lp import dbschema
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.bug import non_duplicate_bug
 from canonical.launchpad.fields import Title, Summary
 
+_ = MessageIDFactory('launchpad')
 
 class BugCreationConstraintsError(Exception):
     """Raised when a bug is created with not all constraints satisfied.

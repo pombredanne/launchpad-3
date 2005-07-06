@@ -1,8 +1,9 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
 # zope imports
-from zope.component import getUtility
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form.browser.add import AddView
-from zope.app.form.interfaces import WidgetsError
 from zope.app.form.browser import SequenceWidget, ObjectWidget
 from zope.app.form import CustomWidgetFactory
 

@@ -2,19 +2,25 @@
 
 __metaclass__ = type
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
-
-from zope.interface import Interface, Attribute
-from zope.exceptions import NotFoundError
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
-from zope.app.form.browser.interfaces import IAddFormCustomization
-
 __all__ = [
-    'IMessagesView', 'IMessage', 'IMessageSet', 'IMessageChunk',
-    'IAddMessage', 'UnknownSender', 'MissingSubject', 'DuplicateMessageId',
+    'IMessagesView',
+    'IMessage',
+    'IMessageSet',
+    'IMessageChunk',
+    'IAddMessage',
+    'UnknownSender',
+    'MissingSubject',
+    'DuplicateMessageId',
     'InvalidEmailMessage',
     ]
+
+from zope.i18nmessageid import MessageIDFactory
+from zope.interface import Interface, Attribute
+from zope.exceptions import NotFoundError
+from zope.schema import Datetime, Int, Text, TextLine
+from zope.app.form.browser.interfaces import IAddFormCustomization
+
+_ = MessageIDFactory('launchpad')
 
 class IMessagesView(IAddFormCustomization):
     """Message views"""

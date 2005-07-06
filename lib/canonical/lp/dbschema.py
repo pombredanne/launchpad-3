@@ -73,6 +73,7 @@ __all__ = (
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
 'MirrorFreshness',
+'RosettaFileFormat',
 )
 
 from zope.interface.advice import addClassAdvisor

@@ -4,6 +4,14 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'POTemplateNameSetView',
+    'POTemplateNameView',
+    'POTemplateNameEditView',
+    'POTemplateNameAddView',
+    'traversePOTemplateNames',
+    ]
+
 from datetime import datetime
 
 from zope.app.i18n import ZopeMessageIDFactory as _

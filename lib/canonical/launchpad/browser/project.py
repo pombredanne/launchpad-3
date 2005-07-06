@@ -1,10 +1,12 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 """Project-related View Classes"""
+
+__metaclass__ = type
 
 from urllib import quote as urlquote
 
-from canonical.launchpad.database import Project, Product, \
-        ProjectBugTracker
-from canonical.database.constants import nowUTC
+from canonical.launchpad.database import Product, ProjectBugTracker
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -14,11 +16,9 @@ from zope.app.form.browser import SequenceWidget, ObjectWidget
 from zope.app.form import CustomWidgetFactory
 
 from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
+from zope.app.event.objectevent import ObjectCreatedEvent
 
 from zope.component import getUtility
-from zope.i18n.interfaces import IUserPreferredLanguages
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import IPerson, IProject
 from canonical.launchpad import helpers
@@ -260,14 +260,14 @@ class ProjectSetView(object):
         # get the launchpad person who is creating this product
         owner = IPerson(self.request.principal)
         # Now create a new project in the db
-        project = Project(name=name,
-                          displayname=displayname,
+        project = getUtility(IProject).new(
+                          name=name,
                           title=title,
+                          displayname=displayname,
                           summary=summary,
                           description=description,
                           owner=owner,
-                          homepageurl=homepageurl,
-                          datecreated=nowUTC)
+                          homepageurl=homepageurl)
         # now redirect to the page to view it
         self.request.response.redirect(name)
 

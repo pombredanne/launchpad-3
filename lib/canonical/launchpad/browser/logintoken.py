@@ -4,7 +4,6 @@ import urllib
 from zope.component import getUtility
 from zope.event import notify
 from zope.app.form.browser.add import AddView
-from zope.app.form.interfaces import WidgetsError
 from zope.app.event.objectevent import ObjectCreatedEvent
 
 from canonical.database.sqlbase import flush_database_updates
@@ -17,9 +16,9 @@ from canonical.foaf.nickname import generate_nick, generate_wikiname
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logInPerson
 
-from canonical.launchpad.interfaces import (IPersonSet, IEmailAddressSet,
-    IPasswordEncryptor, IEmailAddressSet, ILoginTokenSet, IGPGKeySet,
-    IGpgHandler, IWikiNameSet, UBUNTU_WIKI_URL)
+from canonical.launchpad.interfaces import (
+    IPersonSet, IEmailAddressSet, IPasswordEncryptor, ILoginTokenSet,
+    IGPGKeySet, IGpgHandler, IWikiNameSet, UBUNTU_WIKI_URL)
 
 
 class LoginTokenView(object):

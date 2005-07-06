@@ -1,23 +1,37 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-"""Interfaces for things related to bug tasks."""
+"""Bug task interfaces."""
 
 __metaclass__ = type
 
+__all__ = [
+    'IBugTask',
+    'IBugTaskSearch',
+    'IUpstreamBugTaskSearch',
+    'IDistroBugTaskSearch',
+    'IBugTaskSearchListingView',
+    'IBugTaskDelta',
+    'IUpstreamBugTask',
+    'IDistroBugTask',
+    'IDistroReleaseBugTask',
+    'ISelectResultsSlicable',
+    'IBugTaskSet',
+    'IBugTaskSubset',
+    'IBugTasksReport',
+    ]
+
 from zope.component.interfaces import IView
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, Text, TextLine, List)
-from zope.app.form.browser.interfaces import IAddFormCustomization
+    Bool, Choice, Datetime, Int, Text, TextLine, List)
 
 from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
-from canonical.launchpad.interfaces import (
-    IHasProductAndAssignee, IHasDateCreated)
-from canonical.launchpad.validators.bug import non_duplicate_bug
+from canonical.launchpad.interfaces import IHasDateCreated
+
+_ = MessageIDFactory('launchpad')
 
 class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product

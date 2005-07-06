@@ -1,5 +1,6 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+__metaclass__ = type
 
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
@@ -13,7 +14,7 @@ class DistroArchReleaseView:
 
 
 class DistroArchReleaseBinariesView:
-    
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -22,11 +23,10 @@ class DistroArchReleaseBinariesView:
         #     MarkShuttleworth 10-03-2005
         self.fti = self.request.get("fti", "")
         self.fti = True
-        
 
     def binaryPackagesBatchNavigator(self):
         name = self.request.get("name", "")
-        
+
         if not name:
             binary_packages = []
         else:

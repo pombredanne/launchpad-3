@@ -1,6 +1,17 @@
-from zope.interface import Interface, Attribute
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Bug message interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IBugMessage',
+    ]
+
+from zope.interface import Interface
 from zope.schema import Int
 from zope.i18nmessageid import MessageIDFactory
+
 _ = MessageIDFactory('launchpad')
 
 class IBugMessage(Interface):
@@ -8,3 +19,4 @@ class IBugMessage(Interface):
 
     bug = Int(title = _('Bug ID'), required = True, readonly = True)
     message = Int(title = _('Message ID'), required = True, readonly = True)
+

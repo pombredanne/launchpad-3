@@ -1,17 +1,21 @@
-# Imports from zope
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Interfaces related to publishing of source package releases."""
+
+__metaclass__ = type
+
+__all__ = [
+    'ISourcePackageReleasePublishing',
+    ]
+
 from zope.schema import Int
-from zope.schema import Password
 from zope.interface import Attribute
 from zope.i18nmessageid import MessageIDFactory
+
+from canonical.launchpad.interfaces.sourcepackagerelease import (
+     ISourcePackageRelease)
+
 _ = MessageIDFactory('launchpad')
-
-# launchpad imports
-from canonical.launchpad.interfaces.sourcepackagerelease import \
-     ISourcePackageRelease
-
-#
-#
-#
 
 class ISourcePackageReleasePublishing(ISourcePackageRelease):
     """
@@ -22,7 +26,8 @@ class ISourcePackageReleasePublishing(ISourcePackageRelease):
     id = Int(title=_("ID"), required=True)
     publishingstatus = Attribute("The status of this publishing record")
     datepublished = Attribute("The date on which this record was published")
-    publisheddistrorelease = Attribute("The distro release into which this sourcepackage is published.")
+    publisheddistrorelease = Attribute(
+        "The distro release into which this sourcepackage is published.")
     name = Attribute("The SourcePackage name")
     componentname = Attribute("The Component name")
     maintainer = Attribute("The maintainer of this package")

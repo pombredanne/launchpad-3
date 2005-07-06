@@ -1,11 +1,21 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-# Zope schema imports
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
-from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces import IHasOwner
+"""Distribution release interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IDistroRelease',
+    'IDistroReleaseSet',
+    ]
+
+from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
+
+from canonical.launchpad.fields import Title, Summary, Description
+from canonical.launchpad.interfaces import IHasOwner
+
 _ = MessageIDFactory('launchpad')
 
 

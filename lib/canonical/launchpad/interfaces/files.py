@@ -1,8 +1,18 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
-from zope.interface import Interface, Attribute
+"""Package file interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IBinaryPackageFile',
+    'ISourcePackageReleaseFile',
+    ]
+
+from zope.schema import Int
+from zope.interface import Interface
 from zope.i18nmessageid import MessageIDFactory
+
 _ = MessageIDFactory('launchpad')
 
 class IBinaryPackageFile(Interface):

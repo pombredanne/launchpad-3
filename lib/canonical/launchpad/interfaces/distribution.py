@@ -1,11 +1,22 @@
-# Zope schema imports
-from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, Text, TextLine, Password)
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Distribution-related interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IDistribution',
+    'IDistributionSet',
+    'IDistroPackageFinder',
+    ]
+
+from zope.schema import Choice, Int, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import IHasOwner
+
 _ = MessageIDFactory('launchpad')
 
 class IDistribution(IHasOwner):

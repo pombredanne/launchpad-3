@@ -1,3 +1,15 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Schema interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'ISchemaSet',
+    'ISchema',
+    'ILabel',
+    ]
+
 from zope.interface import Interface, Attribute
 
 class ISchemaSet(Interface):

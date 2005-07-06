@@ -4,15 +4,12 @@ __metaclass__ = type
 
 import urllib
 
-from xml.sax.saxutils import escape
-
 from zope.interface import implements
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
 from zope.app.publisher.browser import BrowserView
 from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import canonical_url
@@ -20,8 +17,8 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
     IPersonSet, ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch,
-    IBugSet, IProduct, IDistribution, IDistroRelease, IUpstreamBugTask,
-    IBugTask, IBugTaskSet, IDistroReleaseSet)
+    IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask, IBugTaskSet,
+    IDistroReleaseSet)
 from canonical.launchpad.interfaces import IBugTaskSearchListingView
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers

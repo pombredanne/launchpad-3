@@ -10,14 +10,11 @@ __all__ = [
     'POTemplateExportView', 'POTemplateTranslateView',
     'POTemplateSubsetURL', 'POTemplateURL']
 
-import tarfile
 from sets import Set
-from StringIO import StringIO
 from datetime import datetime
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.publisher.browser import FileUpload
 from zope.app.form.browser.add import AddView
@@ -26,7 +23,6 @@ from zope.app.publisher.browser import BrowserView
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import canonical_url
-from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     ILaunchBag, IPOTemplateSet, IPOTemplateNameSet, IPersonSet,
     RawFileAttachFailed, IPOExportRequestSet, ICanonicalUrlData,

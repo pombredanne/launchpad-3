@@ -1,37 +1,23 @@
-"""
-Zope View Classes to handle Signed Code of Conducts.
-Copyright 2004 Canonical Ltd.  All rights reserved.
-"""
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""View classes to handle signed Codes of Conduct."""
 
 __metaclass__ = type
 
 # zope imports
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import SequenceWidget, ObjectWidget
 from zope.app.form.browser.add import AddView, EditView
-from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
 import zope.security.interfaces
 
 from canonical.database.constants import UTC_NOW
 
-# lp imports
-from canonical.lp import dbschema                       
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
-
 # interface import
-from canonical.launchpad.interfaces import IPerson, ILaunchBag,\
-                                           ICodeOfConduct,\
-                                           ISignedCodeOfConduct,\
-                                           ISignedCodeOfConductSet
-
-
-# python
-from datetime import datetime
+from canonical.launchpad.interfaces import (
+    IPerson, ILaunchBag, ICodeOfConduct, ISignedCodeOfConduct,
+    ISignedCodeOfConductSet)
 
 # XXX: cprov 20050224
 # Avoid the use of Content classes here !

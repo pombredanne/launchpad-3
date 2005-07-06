@@ -1,14 +1,19 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
+"""IRC interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IIrcID',
+    'IIrcIDSet',
+    ]
+
 from zope.schema import Int, TextLine
 from zope.interface import Interface
 from zope.i18nmessageid import MessageIDFactory
+
 _ = MessageIDFactory('launchpad')
-
-
-#
-# IRC Interfaces
-#
 
 class IIrcID(Interface):
     """Wiki for Users"""

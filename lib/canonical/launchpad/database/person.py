@@ -38,7 +38,6 @@ from canonical.launchpad.interfaces import (
     IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
     ICalendarOwner, UBUNTU_WIKI_URL)
 
-from canonical.launchpad.database.translation_effort import TranslationEffort
 from canonical.launchpad.database.bug import BugTask
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -574,14 +573,6 @@ class Person(SQLBase):
     def reportedbugs(self):
         """See IPerson."""
         return BugTask.selectBy(ownerID=self.id)
-
-    # XXX sabdfl 13/06/05 this property is almost certainly incorrect.
-    # Carlos? what do you think? It should most likely return pofiles the
-    # person has translated? Or something similar?
-    @property
-    def translations(self):
-        """See IPerson."""
-        return TranslationEffort.selectBy(ownerID=self.id)
 
     @property
     def activities(self):

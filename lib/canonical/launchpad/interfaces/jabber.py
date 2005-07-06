@@ -1,13 +1,19 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Jabber interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IJabberID',
+    'IJabberIDSet',
+    ]
 
 from zope.schema import Int, TextLine
 from zope.interface import Interface
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
-#
-# Jabber Interfaces
-#
+_ = MessageIDFactory('launchpad')
 
 class IJabberID(Interface):
     """Jabber specific user ID """
