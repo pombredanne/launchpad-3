@@ -43,3 +43,25 @@ answer should have exactly those strings.
   <BLANKLINE>
                             </textarea>
   ...
+
+And finally, a line that does not start with a new line so we are sure we don't get extra whitespaces
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?count=1&offset=19 HTTP/1.1
+  ... Content-Length: 87
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=19&count=1
+  ... 
+  ... set_149_msgid=&set_149_translation_es_0=foo&offset=20&show=all&SUBMIT=Save+%26+Continue""")
+  HTTP/1.1 200 Ok
+  ...
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+                          <textarea rows="5"
+      name="set_149_translation_es_0" tabindex="1">
+  foo
+                            </textarea>
+  ...

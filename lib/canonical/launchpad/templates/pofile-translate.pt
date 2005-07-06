@@ -312,32 +312,53 @@
                             value python:messageSet.getTranslation(index);
                             tabindex view/makeTabIndex;
                             " />
+                        <tal:block condition="messageSet/isMultiline">
                         <tal:comment tal:replace="nothing">
                           XXX: Carlos Perello Marin 2005-05-05
                           This 'python:' expression should be fixed by SteveA.
-
+                        </tal:comment>
+                        <tal:with-content
+                          condition="python:messageSet.getTranslation(index)">
+                        <tal:comment tal:replace="nothing">
                           Note that we use a separate tag inside the textarea
                           rather than using tal:content on the textarea
                           directly so that leading newlines are preserved.
-                          Note also that the lack of indentation between
-                          'tal:content' and '/textarea' is deliberate or we
-                          would add extra new lines to the textarea, which
-                          causes us to produce extra newlines and potentially
-                          corrupt translations.
+                          Note also that the lack of indentation for
+                          tal:content is deliberate or we would add extra
+                          whitespaces to the textarea, which causes us to
+                          potentially corrupt translations.
                           For more information, please read:
                           https://bugzilla.mozilla.org/show_bug.cgi?id=299009
                         </tal:comment>
                         <textarea
-                          tal:condition="messageSet/isMultiline"
                           tal:attributes="
                             name string:set_${messageSet/id}_translation_${language_code}_${index};
                             rows messageSet/getMaxLinesCount;
                             tabindex view/makeTabIndex;
                             ">
-                          <tal:content
-                            condition="python:messageSet.getTranslation(index)"
-                            replace="structure python:messageSet.getTranslation(index)"
-                          /></textarea>
+<tal:content replace="structure python:messageSet.getTranslation(index)" />
+                        </textarea>
+                        </tal:with-content>
+                        <tal:without-content>
+                        <tal:comment tal:replace="nothing">
+                          XXX: Carlos Perello Marin 2005-05-05
+                          This 'python:' expression should be fixed by SteveA.
+
+                          We are using a separated case in case we don't have
+                          any content for this textarea because tal
+                          expressions leaved empty lines behind so we get new
+                          lines added to the textarea for free adding
+                          erroneous translations.
+                        </tal:comment>
+                        <textarea
+                          tal:attributes="
+                            name string:set_${messageSet/id}_translation_${language_code}_${index};
+                            rows messageSet/getMaxLinesCount;
+                            tabindex view/makeTabIndex;
+                            ">
+                        </textarea>
+                        </tal:without-content>
+                        </tal:block>
                         <tal:block condition="not:messageSet/isMultiline">
                           <tal:block define="submissions python:messageSet.getSuggestedSubmissions(index)">
                             <tal:block condition="submissions">
