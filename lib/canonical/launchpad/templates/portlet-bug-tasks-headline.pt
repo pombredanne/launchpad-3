@@ -61,9 +61,11 @@
       <td>
         <tal:block condition="bugtask/assignee">
           <img src="/++resource++user.gif" alt="" />
-          <span tal:replace="bugtask/assignee/browsername">
+          <a href="#"
+             tal:attributes="href bugtask/assignee/fmt:url"
+             tal:content="bugtask/assignee/browsername">
             assignee.browsername
-          </span>
+          </a>
         </tal:block>
       </td>
 
