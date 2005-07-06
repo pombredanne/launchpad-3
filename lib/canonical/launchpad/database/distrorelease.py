@@ -15,11 +15,10 @@ from canonical.lp.dbschema import (
     PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus)
 
 from canonical.launchpad.interfaces import (
-    IDistroRelease, IDistroReleaseSet, ISourcePackageName)
+    IDistroRelease, IDistroReleaseSet, ISourcePackageName, ISourcePackageSet)
 
 from canonical.launchpad.database.sourcepackageindistro import (
     SourcePackageInDistro)
-from canonical.launchpad.database.publishedpackage import PublishedPackageSet
 from canonical.launchpad.database.publishing import (
     PackagePublishing, SourcePackagePublishing)
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
@@ -126,6 +125,11 @@ class DistroRelease(SQLBase):
     @property
     def potemplatecount(self):
         return len(self.potemplates)
+
+    @property
+    def fullreleasename(self):
+        return "%s %s" % (
+            self.distribution.name.capitalize(), self.name.capitalize())
 
     def getBugSourcePackages(self):
         """See IDistroRelease."""

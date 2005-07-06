@@ -94,8 +94,8 @@ class IBug(Interface):
     duplicates = Attribute('MultiJoin of the bugs which are dups of this '
         'one')
 
-    def followup_title():
-        """Return a candidate title for a followup message."""
+    def followup_subject():
+        """Return a candidate subject for a followup message."""
 
     def subscribe(person, subscription):
         """Subscribe person to the bug, with the provided subscription type.
@@ -170,8 +170,10 @@ class IBugDelta(Interface):
     cveref = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
         "ICVERef's.")
+    added_bugtasks = Attribute(
+        "A list or tuple of IBugTasks, one IBugTask, or None.")
     bugtask_deltas = Attribute(
-        "A tuple of IBugTaskDelta, one IBugTaskDelta or None.")
+        "A sequence of IBugTaskDeltas, one IBugTaskDelta or None.")
 
 
 class IBugAddForm(IBug):

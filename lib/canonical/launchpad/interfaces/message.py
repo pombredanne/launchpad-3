@@ -113,7 +113,7 @@ class IMessageChunk(Interface):
 
 class IAddMessage(Interface):
     """This schema is used to generate the add comment form"""
-    title = TextLine(title=_("Subject"), required=True)
+    subject = TextLine(title=_("Subject"), required=True)
     content = Text(title=_("Body"), required=True)
 
 

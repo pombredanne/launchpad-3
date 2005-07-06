@@ -22,11 +22,17 @@ _ = MessageIDFactory('launchpad')
 class IDistroRelease(IHasOwner):
     """A Release Object"""
     id = Attribute("The distrorelease's unique number.")
-    name = TextLine(title=_("Name"), required=True,
+    name = TextLine(
+        title=_("Name"), required=True,
         description=_("The name of this distribution release."))
-    displayname = TextLine(title=_("Display name"), required=True,
+    displayname = TextLine(
+        title=_("Display name"), required=True,
         description=_("The release's displayname."))
-    title = Title(title=_("Title"), required=True,
+    fullreleasename = TextLine(
+        title=_("Release name"), required=False,
+        description=_("The release's full name, e.g. Ubuntu Warty"))
+    title = Title(
+        title=_("Title"), required=True,
         description=_("""The title of this release. It should be distinctive 
                       and designed to look good at the top of a page."""))
     summary = Summary(title=_("Summary"), required=True,

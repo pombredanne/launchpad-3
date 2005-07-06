@@ -5,15 +5,15 @@ The Message table is a central message spool that can be used by
 various parts of launchpad. Currently, it is used by Malone for comments
 on bugs. Bugs are linked to Messages via the BugMessage table.
 
-The BugMessageFactory determines the Bug using the LaunchBag
-
->>> from canonical.launchpad.database import Bug
->>> from canonical.launchpad.database.bugmessage import BugMessageFactory
->>> from canonical.launchpad.interfaces import IOpenLaunchBag
+>>> from canonical.launchpad.interfaces import (
+...     IBugMessageSet, IBugSet, IOpenLaunchBag)
 >>> login('foo.bar@canonical.com')
->>> launchbag = getUtility(IOpenLaunchBag)
->>> launchbag.add(Bug.get(1))
->>> bmsg = BugMessageFactory(title='The Title', content='The Content')
+>>> bugmessageset = getUtility(IBugMessageSet)
+>>> bug_one = getUtility(IBugSet).get(1)
+>>> current_user = getUtility(IOpenLaunchBag).user
+>>> bmsg = bugmessageset.createMessage(
+...     subject='The Title', content='The Content', bug=bug_one,
+...     owner=current_user)
 >>> msg = bmsg.message
 >>> msg.subject
 u'The Title'
@@ -68,13 +68,13 @@ unadulterated, email into the Librarian and builds all the MessageChunks.
 ... Message-Id: <20050405054002.22134.71562@localhost.localdomain>
 ... Date: Thu Jun 16 14:12:54 BST 2005
 ... To: cabal@ubuntu.com
-... 
+...
 ... The preamble is included, including Unicode\N{COPYRIGHT SIGN}
 ... --===============0294339828==
 ... Content-Type: text/plain; charset="us-ascii"
 ... MIME-Version: 1.0
 ... Content-Transfer-Encoding: 7bit
-... 
+...
 ... Plain text
 ... --===============0294339828==
 ... Content-Type: executable/virus
@@ -86,16 +86,16 @@ unadulterated, email into the Librarian and builds all the MessageChunks.
 ... X-Comment: Note we store all attachment types - filtering should
 ... X-Comment: be done *before* launchpad is reached. Launchpad is not
 ... X-Comment: a virus checker.
-... 
+...
 ... AAECAw==
 ... --===============0294339828==
 ... Content-Type: text/plain; charset="utf8"
 ... MIME-Version: 1.0
 ... Content-Transfer-Encoding: base64
 ... X-Comment: bas64 encoded text saying 'Unicode(tm)'
-... 
+...
 ... VW5pY29kZeKEoiB0ZXh0
-... 
+...
 ... --===============0294339828==
 ... Content-Type: application/xml; charset="utf16"
 ... MIME-Version: 1.0
@@ -113,7 +113,7 @@ unadulterated, email into the Librarian and builds all the MessageChunks.
 ... """.encode('latin1')
 >>> msg = msgset.fromEmail(raw_msg)
 
-Once the email is stuffed into the Message and MessageChunk tables and 
+Once the email is stuffed into the Message and MessageChunk tables and
 relevant bits stuffed into the Librarian, you can deal with them as
 normal.
 
@@ -180,7 +180,7 @@ SQLObject doesn't necessarily give us the same intance back)
 >>> msg == msg2
 True
 
-The fromEmail method handles non-multipart and minimalist messages 
+The fromEmail method handles non-multipart and minimalist messages
 quite happily.
 
 >>> msg = msgset.fromEmail('''\
@@ -188,7 +188,7 @@ quite happily.
 ... Subject: Test
 ... Date: Fri, 17 Jun 2005 10:45:13 +0100
 ... Message-Id: <fnord>
-... 
+...
 ... Foo Bar
 ... ''')
 >>> msg.title
