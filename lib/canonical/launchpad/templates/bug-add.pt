@@ -3,8 +3,6 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="launchpad">
 
-  <body>
-
   <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
@@ -39,7 +37,6 @@
   </div>
 
   </div>
-  </body>
 
 </html>
 
