@@ -2,10 +2,11 @@
 
 __metaclass__ = type
 
+__all__ = ['GpgHandler', 'PymeSignature', 'PymeKey']
+
 # standard
 import os
 import shutil
-import tempfile
 import urllib
 import urllib2
 import re
@@ -23,25 +24,24 @@ from zope.interface import implements
 from zope.component import getUtility
 
 # interface
-from canonical.launchpad.interfaces import IGpgHandler
-from canonical.launchpad.interfaces import IPymeSignature
-from canonical.launchpad.interfaces import IPymeKey
+from canonical.launchpad.interfaces import (
+    IGpgHandler, IPymeSignature, IPymeKey)
 
-# pyme 
-from pyme import core
+# pyme
+import pyme.core
 
 
-class GpgHandler(object):
+class GpgHandler:
     """See IGpgHandler."""
 
     implements(IGpgHandler)
 
     def __init__(self):
         """Initialize environment variable."""
-        self.home = config.gpghandler.home        
+        self.home = config.gpghandler.home
         self._setHome()
         os.environ['GNUPGHOME'] = self.home
-        
+
     # XXX cprov 20050516
     # Is not thread safe ... should it be ?
     def _setHome(self):
@@ -59,12 +59,12 @@ class GpgHandler(object):
         conf.close()
 
     # XXX cprov 20050414
-    # Instanciate a core.Context() per method, in that way  
-    # we can perform action in parallel (thread safe)    
+    # Instantiate a pyme.core.Context() per method, in that way
+    # we can perform action in parallel (thread safe)
     def verifySignature(self, content, signature=None, key=None):
         """See IGpgHandler."""
 
-        c = core.Context()
+        c = pyme.core.Context()
 
         # from `info gpgme` about gpgme_op_verify(SIG, SIGNED_TEXT, PLAIN):
         #
@@ -77,19 +77,19 @@ class GpgHandler(object):
 
         if signature:
             # store detach-sig
-            sig = core.Data(signature.encode('ascii'))
+            sig = pyme.core.Data(signature.encode('ascii'))
             # store the content
-            plain = core.Data(content.encode('ascii'))        
+            plain = pyme.core.Data(content.encode('ascii'))
             # process it
             c.op_verify(sig, plain, None)
         else:
             # store clearsigned signature
-            sig = core.Data(content.encode('ascii'))
+            sig = pyme.core.Data(content.encode('ascii'))
             # writeable content
-            plain = core.Data()
+            plain = pyme.core.Data()
             # process it
             c.op_verify(sig, None, plain)
-        
+
         result = c.op_verify_result()
 
         # XXX cprov 20050328
@@ -100,9 +100,9 @@ class GpgHandler(object):
         if signature.status != 0:
             # return an empty signature object
             return PymeSignature()
-        
+
         fingerprint = signature.fpr
-        plain.seek(0,0)
+        plain.seek(0, 0)
         plain_data = plain.read()
 
         # return the signature container
@@ -110,11 +110,11 @@ class GpgHandler(object):
 
 
     def importPubKey(self, pubkey):
-        """See IGpgHandler."""        
-        c = core.Context()
+        """See IGpgHandler."""
+        c = pyme.core.Context()
         c.set_armor(1)
 
-        newkey = core.Data(pubkey)
+        newkey = pyme.core.Data(pubkey)
         c.op_import(newkey)
         result = c.op_import_result()
 
@@ -128,10 +128,10 @@ class GpgHandler(object):
 
         # pubkey not recognized
         if key == None:
-            return 
+            return
 
         return key
-        
+
     def getKeyIndex(self, fingerprint):
         """See IGpgHandler for further information."""
         # Grab Page from keyserver
@@ -143,11 +143,11 @@ class GpgHandler(object):
         # regexps to extract information
         htmltag_re = re.compile('<[^>]+>')
         keyinfo_re = re.compile('([\d]*)([RgDG])\/([\dABCDEF]*)')
-        emailaddresses_re = re.compile('[^;]+@[^&]*')            
+        emailaddresses_re = re.compile('[^;]+@[^&]*')
 
         # clean html tags from page
         page = htmltag_re.sub('', page)
-        
+
         # extract key info as [(size, type, id)]
         keyinfo = keyinfo_re.findall(page)
         # extract UIDs as sorted list
@@ -155,13 +155,13 @@ class GpgHandler(object):
 
         # sort the UID list
         uids.sort()
-        
+
         return keyinfo, uids
 
     def getPubKey(self, fingerprint):
         """See IGpgHandler for further information."""
         return self._grabPage('get', fingerprint)
-        
+
     def _grabPage(self, action, fingerprint):
         """Wrapper to collect KeyServer Pages."""
         # XXX cprov 20050516
@@ -171,7 +171,7 @@ class GpgHandler(object):
         # 3 - Server Error (solved with urllib2.HTTPError exception)
         # it needs more love
         keyid = fingerprint[-8:]
-        
+
         params = urllib.urlencode({'op': action,
                                    'search': '0x%s' % keyid})
 
@@ -182,10 +182,10 @@ class GpgHandler(object):
         try:
             f = urllib2.urlopen(url)
         except urllib2.URLError, e:
-            return False, 'URLError: %s at %s' % (e.reason, url) 
+            return False, 'URLError: %s at %s' % (e.reason, url)
         except urllib2.HTTPError, e:
             return False, 'HTTPError: %s at %s' % (e.msg, url)
-            
+
         page = f.read()
         f.close()
 
@@ -195,26 +195,26 @@ class GpgHandler(object):
 class PymeSignature(object):
     """See IPymeSignature."""
     implements(IPymeSignature)
-    
+
     def __init__(self, fingerprint=None, plain_data=None):
         """Initialized a signature container."""
         self.fingerprint = fingerprint
         self.plain_data = plain_data
 
 
-class PymeKey(object):
-    """See IPymeKey.""" 
+class PymeKey:
+    """See IPymeKey."""
     implements(IPymeKey)
-    
+
     def __init__(self, fingerprint):
         """Inititalize a key container."""
         if not fingerprint:
             return
         self._buildKey(fingerprint)
-        
-    def _buildKey(self, fingerprint):        
+
+    def _buildKey(self, fingerprint):
         # create a new particular context
-        c = core.Context()
+        c = pyme.core.Context()
         # retrive additional key information
         key = c.get_key(fingerprint.encode('ascii'), 0)
 
@@ -222,7 +222,7 @@ class PymeKey(object):
             self.fingerprint = key.subkeys.fpr
         else:
             self.fingerprint = None
-        self.algorithm = key.subkeys.pubkey_algo           
+        self.algorithm = key.subkeys.pubkey_algo
         self.revoked = key.subkeys.revoked
         self.keysize = key.subkeys.length
 

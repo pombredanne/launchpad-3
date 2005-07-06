@@ -46,6 +46,7 @@ __all__ = (
 'HashAlgorithm',
 'ImportTestStatus',
 'KarmaActionCategory',
+'KarmaActionName',
 'LoginTokenType',
 'ManifestEntryType',
 'PackagePublishingPriority',
