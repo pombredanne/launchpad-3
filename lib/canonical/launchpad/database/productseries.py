@@ -23,8 +23,8 @@ from canonical.launchpad.database.potemplate import POTemplate
 from canonical.database.sqlbase import (SQLBase, quote,
     flush_database_updates, sqlvalues)
 from canonical.database.constants import UTC_NOW
-from canonical.lp.dbschema import \
-    EnumCol, ImportStatus, RevisionControlSystems
+from canonical.lp.dbschema import (
+    EnumCol, ImportStatus, PackagingType, RevisionControlSystems)
 
 
 
@@ -142,13 +142,16 @@ class ProductSeries(SQLBase):
                 pkg.sourcepackagename = sourcepackagename
                 pkg.owner = owner
                 pkg.datecreated = UTC_NOW
+                pkg.sync()  # convert UTC_NOW to actual datetime
                 return pkg
 
         # ok, we didn't find a packaging record that matches, let's go ahead
         # and create one
         pkg = Packaging(distrorelease=distrorelease,
             sourcepackagename=sourcepackagename, productseries=self,
+            packaging=PackagingType.PRIME,
             owner=owner)
+        pkg.sync()  # convert UTC_NOW to actual datetime
         return pkg
 
     def getPackagingInDistribution(self, distribution):
