@@ -267,6 +267,15 @@ COMMENT ON COLUMN POMsgSet.iscomplete IS 'This indicates if we believe that
 Rosetta has an active translation for every expected plural form of this
 message set.';
 
+-- DistroReleaseLanguage
+
+COMMENT ON TABLE DistroReleaseLanguage IS 'A cache of the current translation status of that language across an entire distrorelease.';
+COMMENT ON COLUMN DistroReleaseLanguage.dateupdated IS 'The date these statistucs were last updated.';
+COMMENT ON COLUMN DistroReleaseLanguage.currentcount IS 'As per IRosettaStats.';
+COMMENT ON COLUMN DistroReleaseLanguage.updatescount IS 'As per IRosettaStats.';
+COMMENT ON COLUMN DistroReleaseLanguage.rosettacount IS 'As per IRosettaStats.';
+COMMENT ON COLUMN DistroReleaseLanguage.contributorcount IS 'The total number of contributors to the translation of this distrorelease into this language.';
+
 
 /*
   Bazaar
@@ -407,6 +416,7 @@ COMMENT ON COLUMN DistroRelease.datelastlangpack IS
 'The date we last generated a base language pack for this release. Language
 update packs for this release will only include translations added after that
 date.';
+COMMENT ON COLUMN DistroRelease.messagecount IS 'This is a cached value and may be a few hours out of sync with reality. It should, however, be in sync with the values in DistroReleaseLanguage, and should never be updated separately. The total number of translation messages in this distro release, as per IRosettaStats.';
 
 /* ArchArchive */
 

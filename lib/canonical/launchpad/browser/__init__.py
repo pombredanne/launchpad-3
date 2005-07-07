@@ -19,6 +19,7 @@ from canonical.launchpad.browser.codeofconduct import *
 from canonical.launchpad.browser.distribution import *
 from canonical.launchpad.browser.distroarchrelease import *
 from canonical.launchpad.browser.distrorelease import *
+from canonical.launchpad.browser.distroreleaselanguage import *
 from canonical.launchpad.browser.karma import *
 from canonical.launchpad.browser.launchpad import *
 from canonical.launchpad.browser.logintoken import *

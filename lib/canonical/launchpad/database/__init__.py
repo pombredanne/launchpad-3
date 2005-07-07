@@ -43,6 +43,7 @@ from canonical.launchpad.database.binarypackagename import *
 from canonical.launchpad.database.publishedpackage import *
 from canonical.launchpad.database.distribution import *
 from canonical.launchpad.database.distrorelease import *
+from canonical.launchpad.database.distroreleaselanguage import *
 from canonical.launchpad.database.distroarchrelease import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.schema import *

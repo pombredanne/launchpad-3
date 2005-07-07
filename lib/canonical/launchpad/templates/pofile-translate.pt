@@ -30,8 +30,8 @@
       </p>
 
       <p class="portalMessage" tal:condition="not: view/is_editor">
-        You are not an official translator for this file. You can make
-        suggestions, but your translations will be stored and reviewed for
+        You are not an official translator for this file. You can still make
+        suggestions, and your translations will be stored and reviewed for
         acceptance later by the designated translators.
       </p>
 

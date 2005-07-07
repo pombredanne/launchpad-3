@@ -20,7 +20,10 @@ from canonical.launchpad.webapp import StandardLaunchpadFacets
 from canonical.launchpad.interfaces import (
     IBugTaskSearchListingView, IDistroRelease, ICountry)
 from canonical.launchpad.browser.potemplate import POTemplateView
+from canonical.launchpad.browser.pofile import POFileView
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
+from canonical.launchpad.browser.distroreleaselanguage import \
+    DummyDistroReleaseLanguage
 
 
 class DistroReleaseFacets(StandardLaunchpadFacets):
@@ -45,6 +48,30 @@ class DistroReleaseView:
     def templateviews(self):
         return [POTemplateView(template, self.request)
                 for template in self.context.potemplates]
+
+    def distroreleaselanguages(self):
+        """Yields a DistroReleaseLanguage object for each language this
+        distro has been translated into, and for each of the user's
+        preferred languages. Where the release has no DistroReleaseLanguage
+        for that language, we use a DummyDistroReleaseLanguage.
+        """
+
+        # find the existing DRLanguages
+        drlangs = list(self.context.distroreleaselanguages)
+
+        # make a set of the existing languages
+        existing_languages = set([drl.language for drl in drlangs])
+
+        # find all the preferred languages which are not in the set of
+        # existing languages, and add a dummydistroreleaselanguage for each
+        # of them
+        for lang in self.languages:
+            if lang not in existing_languages:
+                drlangs.append(DummyDistroReleaseLanguage(
+                    self.context, lang))
+        drlangs.sort(key=lambda a: a.language.englishname)
+        
+        return drlangs
 
 
 class DistroReleaseBugsView(BugTaskSearchListingView):

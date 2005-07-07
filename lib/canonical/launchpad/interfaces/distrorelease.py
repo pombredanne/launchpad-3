@@ -67,6 +67,10 @@ class IDistroRelease(IHasOwner):
     architecturecount = Attribute("The number of architectures in this "
         "release.")
     architectures = Attribute("The Architecture-specific Releases")
+    messagecount = Attribute("The total number of translatable items in "
+        "this distribution release.")
+    distroreleaselanguages = Attribute("The set of dr-languages in this "
+        "release.")
     datelastlangpack = Attribute(
         "The date of the last base language pack export for this release.")
 
@@ -88,6 +92,13 @@ class IDistroRelease(IHasOwner):
     def __getitem__(arch):
         """Return a Set of Binary Packages in this distroarchrelease."""
 
+    def updateStatistics(self):
+        """Update all the Rosetta stats for this distro release."""
+
+    def findSourcesByName(name):
+        """Return an iterator over source packages with a name that matches
+        this one."""
+
     def getSourcePackageByName(name):
         """Return a source package in this distro release by name.
 
@@ -108,6 +119,12 @@ class IDistroRelease(IHasOwner):
         """Given an optional component name, return a list of the binary
         packages that are currently published in this distrorelease in the
         given component, or in any component if no component name was given.
+        """
+
+    def getDistroReleaseLanguage(language):
+        """Return the DistroReleaseLanguage for this distrorelease and the
+        given language, or None if there's no DistroReleaseLanguage for this
+        distribution and the given language.
         """
 
 

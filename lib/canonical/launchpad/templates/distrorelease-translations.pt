@@ -6,12 +6,13 @@
 
 <body>
 
-<tal:comment tal:replace="nothing">
-  The content of this page will change based on the number of potemplate
-  objects we have. We do the same with the portlets.
-</tal:comment>
-<metal:rightportlets fill-slot="portlets_two"
-    tal:condition="python:context.potemplatecount <= 5">
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/distribution/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-aboutlangs" />
+    <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-pref-langs" />
     <div tal:replace="structure context/@@+portlet-country-langs" />
     <div tal:replace="structure context/@@+portlet-browser-langs" />
@@ -19,11 +20,44 @@
 
 <div metal:fill-slot="main">
 
-  <h1 i18n:translate="">Translation Templates</h1>
+  <h1 i18n:translate="">Translation Status</h1>
 
-  <div tal:replace="structure context/@@+potlist" />
+  <p class="documentDescription">The translation status of
+    <span tal:replace="context/distribution/displayname">Ubuntu</span>
+    <span tal:replace="context/displayname">Hoary</span> is shown below, by
+    language.
+  </p>
 
+  <table class="listing" width="100%">
+    <thead>
+      <th>Language</th>
+      <th>Status</th>
+      <th>Contributors</th>
+      <th>Todo</th>
+    </thead>
+
+    <tbody>
+      <tr tal:repeat="drlang view/distroreleaselanguages">
+        <td>
+          <a tal:attributes="href string:${drlang/fmt:url}"
+             tal:content="drlang/language/englishname">
+             Language Name
+          </a>
+        </td>
+        <td>
+          <div tal:replace="structure drlang/@@+barchart" />
+        </td>
+        <td tal:content="drlang/contributor_count">16</td>
+        <td tal:content="drlang/untranslatedCount">42344</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    Select languages that you specifically want to be shown
+    <a href="/rosetta/prefs/">here</a>.
+  </p>
 </div>
-
 </body>
 </html>
+
