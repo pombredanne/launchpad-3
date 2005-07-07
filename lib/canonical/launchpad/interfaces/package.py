@@ -1,11 +1,15 @@
-# Imports from zope
-from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-#
-#
-#
+"""Package interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IPackages',
+    'IPackageSet',
+    ]
+
+from zope.interface import Interface, Attribute
 
 class IPackages(Interface):
     """Root object for web app."""

@@ -26,6 +26,8 @@ To retrieve a specific release of a distribution, use IDistroReleaseSet.get:
     >>> warty = distroreleaseset.get(1)
     >>> print warty.name
     warty
+    >>> print warty.fullreleasename
+    Ubuntu Warty
 
 Or IDistroReleaseSet.findByName:
 

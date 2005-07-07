@@ -1,13 +1,19 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-# Zope schema imports
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
+"""Packaging interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IPackaging',
+    'IPackagingUtil',
+    ]
+
+from zope.schema import Choice, Datetime, Int
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
+
 _ = MessageIDFactory('launchpad')
-
-from canonical.launchpad.fields import Title, Summary, Description
-
 
 class IPackaging(Interface):
     """
@@ -17,7 +23,7 @@ class IPackaging(Interface):
     primary packaging of firefox 1.0 series releases.
     """
     id = Int(title=_('Packaging ID'))
- 
+
     productseries = Choice(title=_('Product Series'), required=True,
         vocabulary='ProductSeries', description=_('The branch or '
         '"product series" that this is a packaging of. We expressly '
@@ -42,10 +48,10 @@ class IPackaging(Interface):
 
     sourcepackage = Attribute("A source package that is constructed from "
         "the distrorelease and sourcepackagename of this packaging record.")
-    
+
 class IPackagingUtil(Interface):
     """Utilities to handle Packaging."""
-    
+
     def createPackaging(productseries, sourcepackagename,
                         distrorelease, packaging):
         """Create Packaging entry."""

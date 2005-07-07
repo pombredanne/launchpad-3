@@ -1,3 +1,13 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Bug tracker views."""
+
+__metaclass__ = type
+
+__all__ = [
+    'BugTrackerSetView',
+    'BugTrackerView',
+    ]
 
 from zope.app.publisher.browser import BrowserView
 from zope.component import getUtility

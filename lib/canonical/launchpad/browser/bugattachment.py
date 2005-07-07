@@ -1,4 +1,13 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""Bug attachment views."""
+
+__metaclass__ = type
+
+__all__ = [
+    'traverseBugAttachment',
+    'BugAttachmentContentView',
+    ]
 
 def traverseBugAttachment(bugattachment, request, name):
     # TODO: Find out how to make SQLObject only retrieve the

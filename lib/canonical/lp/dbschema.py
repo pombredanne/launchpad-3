@@ -46,6 +46,7 @@ __all__ = (
 'HashAlgorithm',
 'ImportTestStatus',
 'KarmaActionCategory',
+'KarmaActionName',
 'LoginTokenType',
 'ManifestEntryType',
 'PackagePublishingPriority',
@@ -73,6 +74,7 @@ __all__ = (
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
 'MirrorFreshness',
+'RosettaFileFormat',
 )
 
 from zope.interface.advice import addClassAdvisor

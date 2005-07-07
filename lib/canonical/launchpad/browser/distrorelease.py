@@ -2,25 +2,28 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
+__all__ = [
+    'DistroReleaseFacets',
+    'DistroReleaseView',
+    'DistroReleaseBugsView',
+    'ReleasesAddView',
+    'ReleaseEditView',
+    'ReleaseSearchView',
+    ]
+
 from zope.interface import implements
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.component import getUtility
 
-from sqlobject import LIKE, AND
-
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
-from canonical.lp.dbschema import BugTaskStatus
-from canonical.launchpad.searchbuilder import any
 from canonical.launchpad import helpers
-from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, DefaultLink, Link)
+from canonical.launchpad.webapp import StandardLaunchpadFacets
 
 from canonical.launchpad.interfaces import (
-    IBugTaskSet, ILaunchBag, IBugTaskSearchListingView, IDistroRelease,
-    ICountry)
+    IBugTaskSearchListingView, IDistroRelease, ICountry)
 from canonical.launchpad.browser.potemplate import POTemplateView
+from canonical.launchpad.browser.pofile import POFileView
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
+from canonical.launchpad.browser.distroreleaselanguage import \
+    DummyDistroReleaseLanguage
 
 
 class DistroReleaseFacets(StandardLaunchpadFacets):
@@ -45,6 +48,30 @@ class DistroReleaseView:
     def templateviews(self):
         return [POTemplateView(template, self.request)
                 for template in self.context.potemplates]
+
+    def distroreleaselanguages(self):
+        """Yields a DistroReleaseLanguage object for each language this
+        distro has been translated into, and for each of the user's
+        preferred languages. Where the release has no DistroReleaseLanguage
+        for that language, we use a DummyDistroReleaseLanguage.
+        """
+
+        # find the existing DRLanguages
+        drlangs = list(self.context.distroreleaselanguages)
+
+        # make a set of the existing languages
+        existing_languages = set([drl.language for drl in drlangs])
+
+        # find all the preferred languages which are not in the set of
+        # existing languages, and add a dummydistroreleaselanguage for each
+        # of them
+        for lang in self.languages:
+            if lang not in existing_languages:
+                drlangs.append(DummyDistroReleaseLanguage(
+                    self.context, lang))
+        drlangs.sort(key=lambda a: a.language.englishname)
+        
+        return drlangs
 
 
 class DistroReleaseBugsView(BugTaskSearchListingView):

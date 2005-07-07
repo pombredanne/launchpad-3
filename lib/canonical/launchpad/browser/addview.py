@@ -2,6 +2,10 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'SQLObjectAddView',
+    ]
+
 from zope.app.form.browser.add import AddView
 from zope.app.form.interfaces import WidgetsError
 from zope.schema.interfaces import ValidationError

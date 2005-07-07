@@ -1,18 +1,21 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['IProduct', 'IProductSet']
 
-# Zope schema imports
-from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, Text, TextLine, Password)
+__all__ = [
+    'IProduct',
+    'IProductSet',
+    ]
+
+from zope.schema import Bool, Choice, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
 from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces.launchpad import IHasOwner, IHasAssignee
+from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad.validators.name import valid_name
+
+_ = MessageIDFactory('launchpad')
 
 class IProduct(IHasOwner):
     """

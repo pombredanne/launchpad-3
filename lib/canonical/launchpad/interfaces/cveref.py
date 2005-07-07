@@ -1,13 +1,24 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""CVE reference interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'ICVERefsView',
+    'ICVERef',
+    'ICVERefSet',
+    ]
 
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
-
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
+from zope.schema import Choice, Datetime, Int, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad.validators.cve import valid_cve
 from canonical.lp.dbschema import CVEState
+
+_ = MessageIDFactory('launchpad')
 
 class ICVERefsView(IAddFormCustomization):
     """Bug Web Link views"""

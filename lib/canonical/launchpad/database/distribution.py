@@ -10,7 +10,7 @@ from sqlobject import (RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey,
     MultipleJoin)
 
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.launchpad.database.bug import BugTask
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.lp.dbschema import (EnumCol, BugTaskStatus,

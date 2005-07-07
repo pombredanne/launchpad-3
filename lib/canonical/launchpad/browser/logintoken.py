@@ -1,10 +1,20 @@
 # Copyright 2004 Canonical Ltd
+
+__metaclass__ = type
+
+__all__ = [
+    'LoginTokenView',
+    'ResetPasswordView',
+    'ValidateEmailView',
+    'NewAccountView',
+    'MergePeopleView',
+    ]
+
 import urllib
 
 from zope.component import getUtility
 from zope.event import notify
 from zope.app.form.browser.add import AddView
-from zope.app.form.interfaces import WidgetsError
 from zope.app.event.objectevent import ObjectCreatedEvent
 
 from canonical.database.sqlbase import flush_database_updates
@@ -12,14 +22,13 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.lp.dbschema import EmailAddressStatus, LoginTokenType
 from canonical.lp.dbschema import GPGKeyAlgorithm
 
-from canonical.foaf.nickname import generate_nick, generate_wikiname
-
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logInPerson
+from canonical.launchpad.webapp import canonical_url
 
-from canonical.launchpad.interfaces import (IPersonSet, IEmailAddressSet,
-    IPasswordEncryptor, IEmailAddressSet, ILoginTokenSet, IGPGKeySet,
-    IGpgHandler, IWikiNameSet, UBUNTU_WIKI_URL)
+from canonical.launchpad.interfaces import (
+    IPersonSet, IEmailAddressSet, IPasswordEncryptor, ILoginTokenSet,
+    IGPGKeySet, IGpgHandler)
 
 
 class LoginTokenView(object):
@@ -278,24 +287,16 @@ class NewAccountView(AddView):
         for key, value in data.items():
             kw[str(key)] = value
 
-        kw['name'] = generate_nick(self.context.email)
-        person = getUtility(IPersonSet).newPerson(**kw)
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+                self.context.email, displayname=kw['displayname'], 
+                givenname=kw['givenname'], familyname=kw['familyname'],
+                password=kw['password'], passwordEncrypted=True)
+
         notify(ObjectCreatedEvent(person))
-
-        # XXX: duplication of canonical.launchpad.database.person.createPerson!
-        #       -- Andrew Bennetts, 2005-06-14
-        emailset = getUtility(IEmailAddressSet)
-        email = emailset.new(self.context.email, person.id)
         notify(ObjectCreatedEvent(email))
+
         person.validateAndEnsurePreferredEmail(email)
-
-        # XXX: duplication of canonical.launchpad.database.person.createPerson!
-        #       -- Andrew Bennetts, 2005-06-14
-        wikinameset = getUtility(IWikiNameSet)
-        wikiname = generate_wikiname(kw['displayname'], wikinameset.exists)
-        wikinameset.new(person.id, UBUNTU_WIKI_URL, wikiname)
-
-        self._nextURL = '/people/%s' % person.name
+        self._nextURL = canonical_url(person)
         self.context.destroySelf()
 
         loginsource = getUtility(IPlacelessLoginSource)

@@ -1,0 +1,13 @@
+
+<div class="portlet">
+  <h4>Translating a Distribution Release</h4>
+  <div class="portletBody portletContent">
+    <img src="/++resource++info_icon.gif" />
+    This page shows you all of the translations of the
+    "<span tal:replace="context/name">hoary</span>" release of
+    <span tal:replace="context/distribution/displayname">Ubuntu</span>. Pick
+    a language to see the actual application translation statuses in that
+    language.
+  </div>
+</div>
+

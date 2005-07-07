@@ -14,8 +14,10 @@ import time
 
 from canonical.config import config
 
-__all__ = ['SQLBase', 'quote', 'quote_like', 'sqlvalues',
-           'ZopelessTransactionManager', 'ConflictingTransactionManagerError']
+__all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
+           'ZopelessTransactionManager', 'ConflictingTransactionManagerError',
+           'flush_database_updates', 'cursor', 'begin', 'commit', 'rollback',
+           'alreadyInstalledMsg']
 
 
 # First, let's monkey-patch SQLObject a little, to stop its getID function from

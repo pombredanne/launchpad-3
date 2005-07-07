@@ -1,14 +1,21 @@
-# Imports from zope
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Build interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IBuild',
+    'IBuilder',
+    'IBuildSet',
+    'IBuildQueue',
+    ]
+
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
+
 _ = MessageIDFactory('launchpad')
 
-
-#
-# Build Interfaces
-#
 
 class IBuild(Interface):
     """A Build interface"""
@@ -41,7 +48,7 @@ class IBuildSet(Interface):
     """Interface for BuildSet"""
     def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
         """return a build for a SourcePackageRelease and an ArchTag"""
-        
+
 class IBuildQueue(Interface):
     """A build queue entry"""
     build = Attribute("The build in question")

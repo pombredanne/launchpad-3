@@ -5,34 +5,34 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <content class="canonical.launchpad.database.DistroRelease">
+  <content class="canonical.launchpad.database.DistroRelease">
     <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
     <require
         permission="launchpad.Edit"
         set_attributes="displayname title summary description version
                 owner datelastlangpack"
         />
-    </content>
+  </content>
 
-    <securedutility
-      class="canonical.launchpad.database.DistroReleaseSet"
-      provides="canonical.launchpad.interfaces.IDistroReleaseSet">
-      <allow interface="canonical.launchpad.interfaces.IDistroReleaseSet" />
-    </securedutility>
+  <securedutility
+    class="canonical.launchpad.database.DistroReleaseSet"
+    provides="canonical.launchpad.interfaces.IDistroReleaseSet">
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseSet" />
+  </securedutility>
 
-    <adapter
-      for="canonical.launchpad.interfaces.IDistroRelease"
-      provides="canonical.launchpad.interfaces.IBugTaskSubset"
-      factory="canonical.launchpad.components.distrorelease.DistroReleaseToBugTaskSubsetAdapter"
-      permission="zope.Public" />
+  <adapter
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    provides="canonical.launchpad.interfaces.IBugTaskSubset"
+    factory="canonical.launchpad.components.distrorelease.DistroReleaseToBugTaskSubsetAdapter"
+    permission="zope.Public" />
 
-    <browser:traverse
-      for="canonical.launchpad.interfaces.IDistroRelease"
-      function="canonical.launchpad.browser.traversers.traverse_distrorelease" />
+  <browser:traverse
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    function="canonical.launchpad.browser.traversers.traverse_distrorelease" />
 
-    <browser:defaultView
-      for="canonical.launchpad.interfaces.IDistroRelease"
-      name="+index" />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    name="+index" />
 
     <browser:defaultView
       for="canonical.launchpad.interfaces.IDistroRelease"
@@ -87,6 +87,11 @@
             name="+portlet-translations"
             template="../templates/portlet-distrorelease-translations.pt"
             lp:url="/distros/ubuntu/hoary/+portlet-translations"
+            />
+        <browser:page
+            name="+portlet-aboutlangs"
+            template="../templates/distrorelease-portlet-aboutlangs.pt"
+            lp:url="/distros/ubuntu/hoary/+portlet-aboutlangs"
             />
         <browser:page
             name="+portlet-status-legend"

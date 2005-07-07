@@ -1,7 +1,28 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 """
 You probably don't want to import stuff from here. See __init__.py
 for details
 """
+
+__metaclass__ = type
+
+__all__ = [
+    'vocab_factory',
+    'SubscriptionVocabulary',
+    'BugStatusVocabulary',
+    'BugPriorityVocabulary',
+    'BugSeverityVocabulary',
+    'BugRefVocabulary',
+    'InfestationStatusVocabulary',
+    'PackagingTypeVocabulary',
+    'TranslationPermissionVocabulary',
+    'KarmaActionCategoryVocabulary',
+    'TeamSubscriptionPolicyVocabulary',
+    'GPGKeyAlgorithmVocabulary',
+    'CVEStateVocabulary',
+    ]
+
 from canonical.lp import dbschema
 from zope.schema.vocabulary import SimpleVocabulary
 

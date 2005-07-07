@@ -1,17 +1,23 @@
-"""Project-related Interfaces for Launchpad
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-(c) Canonical Ltd 2004
-"""
+"""Project-related interfaces for Launchpad."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IProject',
+    'IProjectSet',
+    'IProjectBugTracker',
+    ]
 
 from canonical.launchpad.fields import Title, Summary
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
+from zope.schema import Bool, Choice, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
+
 _ = MessageIDFactory('launchpad')
 
 
@@ -23,9 +29,9 @@ class IProject(IHasOwner):
     owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
                    description=_("""Project owner, it can either a valid
                    Person or Team inside Launchpad context."""))
-    
+
     name = TextLine(
-            title=_('Name'), required=True, 
+            title=_('Name'), required=True,
             description=_("""The short
             name of this project, which must be unique among all the products.
             It should be at least one lowercase letters or number followed by

@@ -8,6 +8,34 @@ docstring in __init__.py for details.
 
 __metaclass__ = type
 
+__all__ = [
+    'IHugeVocabulary',
+    'SQLObjectVocabularyBase',
+    'NamedSQLObjectVocabulary',
+    'BinaryPackageNameVocabulary',
+    'ProductVocabulary',
+    'ProjectVocabulary',
+    'BinaryPackageVocabulary',
+    'BugTrackerVocabulary',
+    'LanguageVocabulary',
+    'TranslationGroupVocabulary',
+    'BasePersonVocabulary',
+    'PersonAccountToMergeVocabulary',
+    'ValidPersonOrTeamVocabulary',
+    'ValidTeamMemberVocabulary',
+    'ValidTeamOwnerVocabulary',
+    'ProductReleaseVocabulary',
+    'ProductSeriesVocabulary',
+    'FilteredProductSeriesVocabulary',
+    'MilestoneVocabulary',
+    'BugWatchVocabulary',
+    'PackageReleaseVocabulary',
+    'SourcePackageNameVocabulary',
+    'DistributionVocabulary',
+    'DistroReleaseVocabulary',
+    'POTemplateNameVocabulary',
+    ]
+
 from zope.component import getUtility
 from zope.interface import implements, Interface
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized

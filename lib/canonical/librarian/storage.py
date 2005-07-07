@@ -12,7 +12,8 @@ import tempfile
 from canonical.librarian import db
 from canonical.database.sqlbase import begin, commit, rollback
 
-__all__ = ['DigestMismatchError', 'LibrarianStorage', 'LibraryFileUpload']
+__all__ = ['DigestMismatchError', 'LibrarianStorage', 'LibraryFileUpload',
+           'DuplicateFileIDError']
 
 class DigestMismatchError(Exception):
     """The given digest doesn't match the SHA-1 digest of the file"""
