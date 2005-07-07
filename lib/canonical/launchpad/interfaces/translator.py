@@ -2,18 +2,15 @@
 
 __metaclass__ = type
 
+__all__ = ['ITranslator', 'ITranslatorSet']
+
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-from zope.interface import Interface, Attribute, classImplements
+from zope.interface import Interface, Attribute
 
-from zope.schema import Choice, Datetime, Int, Text, TextLine, Float
-from zope.schema.interfaces import IText, ITextLine
+from zope.schema import Choice, Datetime, Int
 from zope.app.form.browser.interfaces import IAddFormCustomization
-
-from canonical.launchpad.fields import Summary, Title
-from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.interfaces import IHasOwner
 
 
 class ITranslator(Interface):
@@ -37,7 +34,6 @@ class ITranslator(Interface):
                       "language in this group."))
 
 
-# Interfaces for containers
 class ITranslatorSet(IAddFormCustomization):
     """A container for translators."""
 
@@ -45,3 +41,4 @@ class ITranslatorSet(IAddFormCustomization):
 
     def new(translationgroup, language, translator):
         """Create a new translator for a group."""
+

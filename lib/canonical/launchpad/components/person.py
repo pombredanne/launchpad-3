@@ -4,7 +4,8 @@
 
 __metaclass__ = type
 
-from zope.component import ComponentLookupError, getUtility
+from zope.component.interfaces import ComponentLookupError
+from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 

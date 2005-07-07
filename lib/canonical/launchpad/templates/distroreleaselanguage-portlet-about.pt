@@ -1,0 +1,14 @@
+
+<div class="portlet">
+  <h4>What&#8217;s this all about?</h4>
+  <div class="portletBody portletContent">
+    <img src="/++resource++info_icon.gif" />
+    This page shows each of the translation templates in each of the source
+    packages in the
+    <span tal:replace="context/distrorelease/displayname">hoary</span>
+    release of
+    <span tal:replace="context/distrorelease/distribution/displayname">Ubuntu
+    </span>. Select a template and start translating!
+  </div>
+</div>
+

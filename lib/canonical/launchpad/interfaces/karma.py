@@ -1,13 +1,26 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
+"""Karma interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IKarma',
+    'IKarmaSet',
+    'IKarmaAction',
+    'IKarmaActionSet',
+    'IKarmaCache',
+    'IKarmaCacheSet',
+    ]
+
 from zope.app.form.browser.interfaces import IAddFormCustomization
-from zope.schema import Int, Datetime, Choice, TextLine
+from zope.schema import Int, Datetime, Choice
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
 from canonical.lp.dbschema import KarmaActionCategory
 
+_ = MessageIDFactory('launchpad')
 
 class IKarma(Interface):
     """The Karma of a Person."""

@@ -1,12 +1,22 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""Product series interfaces."""
 
-# Zope schema imports
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
+__metaclass__ = type
+
+__all__ = [
+    'IProductSeries',
+    'IProductSeriesSource',
+    'IProductSeriesSourceAdmin',
+    'IProductSeriesSet',
+    ]
+
+from zope.schema import  Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.validators.name import valid_name
+
 _ = MessageIDFactory('launchpad')
 
 class IProductSeries(Interface):

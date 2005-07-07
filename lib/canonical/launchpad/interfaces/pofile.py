@@ -78,17 +78,6 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         "is used for this pofile. This is inherited from the product, "
         "project and/or distro in which the pofile is found.")
 
-    translators = Attribute("A list of Translators that have been "
-        "designated as having permission to edit these files in this "
-        "language.")
-
-    contributors = Attribute("A list of all the people who have made "
-        "some sort of contribution to this PO file.")
-
-    translationpermission = Attribute("The permission system which "
-        "is used for this pofile. This is inherited from the product, "
-        "project and/or distro in which the pofile is found.")
-
     def __len__():
         """Returns the number of current IPOMessageSets in this PO file."""
 

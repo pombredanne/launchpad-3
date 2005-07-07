@@ -42,6 +42,8 @@
             tal:replace="view/user/browsername">person</span> maintains:</h2>
 
             <table class="listing rowNavigation" width="100%">
+                
+              <thead>
 
                 <tr>
                     <th>Bug</th>
@@ -52,6 +54,9 @@
                     <th>Priority</th>
                     <th>Work Assigned To...</th>
                 </tr>
+
+              </thead>
+              <tbody>
 
                 <tr tal:repeat="bugtask view/maintainedProductBugs"
                     tal:attributes="onclick
@@ -66,6 +71,8 @@
                     <td tal:content="bugtask/assignee/browsername|default">-</td>
                 </tr>
 
+              </tbody>
+
             </table>
 
         </div>
@@ -77,6 +84,8 @@
 
             <table class="listing rowNavigation" width="100%">
 
+              <thead>
+
                 <tr>
                     <th>Bug</th>
                     <th>Title</th>
@@ -87,6 +96,10 @@
                     <th>Priority</th>
                     <th>Work Assigned To...</th>
                 </tr>
+              
+              </thead>
+
+              <tbody>
 
                 <tr tal:repeat="bugtask view/maintainedPackageBugs"
                     tal:attributes="onclick
@@ -105,6 +118,8 @@
                     <td tal:content="bugtask/priority/title">priority</td>
                     <td tal:content="bugtask/assignee/browsername|default">-</td>
                 </tr>
+              
+              </tbody>
 
             </table>
 
@@ -116,6 +131,8 @@
 
             <table class="listing rowNavigation" width="100%">
 
+              <thead>
+
                 <tr>
                     <th>Bug</th>
                     <th>Title</th>
@@ -125,6 +142,10 @@
                     <th>Severity</th>
                     <th>Priority</th>
                 </tr>
+              
+              </thead>
+
+              <tbody>
 
                 <tr tal:repeat="bugtask view/packageAssigneeBugs"
                     tal:attributes="onclick
@@ -142,6 +163,8 @@
                     <td tal:content="bugtask/severity/title">severity</td>
                     <td tal:content="bugtask/priority/title">priority</td>
                 </tr>
+              
+              </tbody>
 
             </table>
 
@@ -153,6 +176,8 @@
 
             <table class="listing rowNavigation" width="100%">
 
+              <thead>
+
                 <tr>
                     <th>Bug</th>
                     <th>Title</th>
@@ -161,6 +186,9 @@
                     <th>Severity</th>
                     <th>Priority</th>
                 </tr>
+
+              </thead>
+              <tbody>
 
                 <tr tal:repeat="bugtask view/productAssigneeBugs"
                     tal:attributes="onclick
@@ -173,6 +201,8 @@
                     <td tal:content="bugtask/severity/title">severity</td>
                     <td tal:content="bugtask/priority/title">priority</td>
                 </tr>
+
+              </tbody>
 
             </table>
 

@@ -139,7 +139,7 @@
                 severity assignee bugwatch statusexplanation"
         label="Edit Product Bug Task"
         permission="launchpad.Edit"
-        template="../templates/bugtask-editform.pt"
+        template="../templates/bugtask-edit.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
         <browser:widget
           field="statusexplanation"
@@ -156,7 +156,7 @@
                 assignee bugwatch statusexplanation"
         label="Product Bug Task"
         permission="launchpad.View"
-        template="../templates/bugtask-editform.pt"
+        template="../templates/bugtask-view.pt"
         lp:url="malone/tasks/$BugTask.id/+index">
     </browser:schemadisplay>
 
@@ -191,7 +191,7 @@
                 status priority severity assignee bugwatch statusexplanation"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
-        template="../templates/bugtask-editform.pt"
+        template="../templates/bugtask-edit.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
         <browser:widget
           field="statusexplanation"
@@ -208,7 +208,7 @@
                 status priority severity assignee bugwatch statusexplanation"
         label="Source Package Bug Task"
         permission="zope.Public"
-        template="../templates/bugtask-editform.pt"
+        template="../templates/bugtask-view.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:schemadisplay>
 
@@ -241,7 +241,7 @@
                 status priority severity assignee bugwatch statusexplanation"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
-        template="../templates/bugtask-editform.pt"
+        template="../templates/bugtask-edit.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
         <browser:widget
           field="statusexplanation"
@@ -258,7 +258,7 @@
                 assignee bugwatch statusexplanation"
         label="Source Package Bug Task"
         permission="zope.Public"
-        template="../templates/bugtask-editform.pt"
+        template="../templates/bugtask-view.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:schemadisplay>
 

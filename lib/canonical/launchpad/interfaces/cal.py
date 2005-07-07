@@ -1,13 +1,32 @@
-# Copyright 2005 Canonical Ltd
+# Copyright 2005 Canonical Ltd. All rights reserved.
+
+"""Calendar-related interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'ILaunchpadCalendar',
+    'ILaunchpadMergedCalendar',
+    'ICalendarOwner',
+    'ICalendarSet',
+    'ICalendarEventSet',
+    'ICalendarSubscriptionSet',
+    'ICalendarDay',
+    'ICalendarWeek',
+    'ICalendarMonth',
+    'ICalendarYear',
+    ]
 
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
-
 from zope.interface import Interface, Attribute
-from zope.schema import Int, Bool, Object, TextLine, Date, Datetime
-from canonical.launchpad.fields import Title, TimeInterval
-from schoolbell.interfaces import IEditCalendar, ICalendarEvent
+from zope.schema import Int, Object, TextLine
+
+from schoolbell.interfaces import IEditCalendar
+
+from canonical.launchpad.fields import Title
 from canonical.launchpad.interfaces.launchpad import IHasOwner
+
+_ = MessageIDFactory('launchpad')
 
 class ILaunchpadCalendar(IEditCalendar, IHasOwner):
     """Launchpad specific calendar.

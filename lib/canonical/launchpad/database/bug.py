@@ -5,19 +5,17 @@ __metaclass__ = type
 __all__ = ['Bug', 'BugDelta', 'BugFactory', 'BugSet']
 
 from sets import Set
-from datetime import datetime
 from email.Utils import make_msgid
 
 from zope.interface import implements
 from zope.exceptions import NotFoundError
-from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    IBug, IBugAddForm, IBugSet, IBugDelta)
+    IBug, IBugSet, IBugDelta)
 from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
@@ -82,7 +80,7 @@ class Bug(SQLBase):
             'BugSubscription', joinColumn='bug', orderBy='id')
     duplicates = MultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
 
-    def followup_title(self):
+    def followup_subject(self):
         return 'Re: '+ self.title
 
     def subscribe(self, person, subscription):
@@ -182,7 +180,7 @@ class BugDelta:
     def __init__(self, bug, bugurl, user, title=None, summary=None,
                  description=None, name=None, private=None, duplicateof=None,
                  external_reference=None, bugwatch=None, cveref=None,
-                 bugtask_deltas=None):
+                 added_bugtasks=None, bugtask_deltas=None):
         self.bug = bug
         self.bugurl = bugurl
         self.user = user
@@ -195,7 +193,9 @@ class BugDelta:
         self.external_reference = external_reference
         self.bugwatch = bugwatch
         self.cveref = cveref
+        self.added_bugtasks = added_bugtasks
         self.bugtask_deltas = bugtask_deltas
+
 
 def BugFactory(addview=None, distribution=None, sourcepackagename=None,
         binarypackagename=None, product=None, comment=None,

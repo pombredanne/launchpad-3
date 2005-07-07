@@ -18,8 +18,8 @@ from canonical.launchpad.interfaces import (
         IProduct, IDistribution, IPersonSet, ISourcePackage, IBugEmailCommand,
         IBugEditEmailCommand, IEmailCommand, IBugSet, ILaunchBag, IBugTaskSet)
 from canonical.launchpad.event import (
-    SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent,
-    ISQLObjectCreatedEvent)
+    SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
+from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
 
 from canonical.lp import decorates
 from canonical.lp.dbschema import (

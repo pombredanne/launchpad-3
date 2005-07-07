@@ -1,11 +1,14 @@
-# Zope schema imports
-from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-#
-#
-#
+"""Section interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'ISection',
+    ]
+
+from zope.interface import Interface, Attribute
 
 class ISection(Interface):
     name = Attribute("The Section Name")

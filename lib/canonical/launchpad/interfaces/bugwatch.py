@@ -1,11 +1,19 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""Bug watch interfaces."""
+
 __metaclass__ = type
 
+__all__ = [
+    'IBugWatch',
+    'IBugWatchSet',
+    ]
+
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
+from zope.schema import Choice, Datetime, Int, TextLine
+
+_ = MessageIDFactory('launchpad')
 
 class IBugWatch(Interface):
     """A bug on a remote system."""

@@ -1,15 +1,19 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-from zope.schema import Bool, Int, Text, TextLine, Choice
+"""GPG key interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IGPGKey',
+    'IGPGKeySet',
+    ]
+
+from zope.schema import Bool, Int, TextLine, Choice
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 from canonical.launchpad import _
 
 from canonical.launchpad.validators.gpg import valid_fingerprint, valid_keyid
-
-#
-# GPG Interfaces
-#
 
 class IGPGKey(Interface):
     """GPG support"""

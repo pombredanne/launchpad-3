@@ -67,8 +67,8 @@
       <div class="field">
         <form action="+messages/+new" method="post">
           <b>Subject:</b>
-          <input name="field.title" type="text" size="50" 
-                 tal:attributes="value context/followup_title" /><br />
+          <input name="field.subject" type="text" size="50" 
+                 tal:attributes="value context/followup_subject" /><br />
           <b>Comment:</b> <textarea name="field.content" rows="10"></textarea>
           <input type="submit" name="UPDATE_SUBMIT" value="Add" />
         </form>

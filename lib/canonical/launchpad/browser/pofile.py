@@ -6,8 +6,6 @@ __metaclass__ = type
 
 __all__ = ['POFileView', 'ExportCompatibilityView', 'POExportView']
 
-import popen2
-import os
 import gettextpo
 import urllib
 from datetime import datetime

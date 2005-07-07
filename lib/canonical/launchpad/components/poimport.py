@@ -39,7 +39,8 @@ def getLastTranslator(parser):
 
         if person is None:
             # We create a new user without a password.
-            person = personset.createPerson(email, displayname=name)
+            person, dummy = personset.createPersonAndEmail(
+                                email, displayname=name)
 
         return person
 

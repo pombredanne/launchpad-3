@@ -56,7 +56,6 @@ from canonical.launchpad.mail.ftests import testmails_path
 
 from canonical.launchpad.validators.gpg import valid_fingerprint
 
-
 def text_replaced(text, replacements, _cache={}):
     """Return a new string with text replaced according to the dict provided.
 

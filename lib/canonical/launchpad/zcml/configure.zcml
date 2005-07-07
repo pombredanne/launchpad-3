@@ -31,6 +31,7 @@
     <include file="datetime.zcml" />
     <include file="distribution.zcml" />
     <include file="distrorelease.zcml" />
+    <include file="distroreleaselanguage.zcml" />
     <include file="distroarchrelease.zcml" />
     <include file="doap.zcml" />
     <include file="emailaddress.zcml" />

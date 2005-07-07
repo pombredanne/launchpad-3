@@ -5,8 +5,8 @@ This module also has an API for use by the application.
 """
 
 __all__ = ['Link', 'DefaultLink', 'FacetMenu', 'ExtraFacetMenu',
-           'ExtraApplicationMenu', 'nearest_menu', 'canonical_url', 'nearest',
-           'StandardLaunchpadFacets']
+           'ApplicationMenu', 'ExtraApplicationMenu', 'nearest_menu',
+           'canonical_url', 'nearest', 'StandardLaunchpadFacets']
 
 from canonical.launchpad.webapp.menu import (
     Link, DefaultLink, FacetMenu, ExtraFacetMenu,

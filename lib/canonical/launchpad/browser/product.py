@@ -1,6 +1,6 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
-"""Browser views and traversal functions for products."""
+"""Browser views for products."""
 
 __metaclass__ = type
 
@@ -9,8 +9,7 @@ from warnings import warn
 from urllib import quote as urlquote
 
 import zope.security.interfaces
-from zope.interface import implements
-from zope.component import getUtility, getAdapter
+from zope.component import getUtility
 from zope.event import notify
 from zope.exceptions import NotFoundError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -19,24 +18,11 @@ from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 from zope.app.traversing.browser.absoluteurl import absoluteURL
 
-from sqlobject.sqlbuilder import AND, IN, ISNULL
-
-from canonical.lp import dbschema
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
-from canonical.database.sqlbase import quote
-
-from canonical.launchpad.searchbuilder import any, NULL
-from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary, \
-     MilestoneVocabulary
-
-from canonical.launchpad.database import (
-    Product, BugFactory, Milestone, Person)
+from canonical.launchpad.database import BugFactory
 from canonical.launchpad.interfaces import (
-    IPerson, IProduct, IProductSet, IBugTaskSet, IAging, ILaunchBag,
-    IProductSeries, ISourcePackage, IBugTaskSearchListingView, ICountry)
+    IPerson, IProduct, IProductSet, IBugTaskSet, IProductSeries,
+    ISourcePackage, ICountry)
 from canonical.launchpad.browser.productrelease import newProductRelease
-from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView

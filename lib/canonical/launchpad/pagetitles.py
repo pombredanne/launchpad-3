@@ -243,6 +243,8 @@ def distrorelease_sources(context, view):
 distrorelease_translations = ContextTitle(
     'Rosetta Translation Templates for %s')
 
+distroreleaselanguage = ContextTitle('%s')
+
 distros_index = 'Overview of Distributions in Launchpad'
 
 doap_about = 'About the Launchpad Registry'

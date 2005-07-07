@@ -93,12 +93,13 @@
         label="Report Bug in a Linux Distribution"
         fields="sourcepackagename title comment private owner"
         class="canonical.launchpad.browser.DistributionFileBugView"
-        arguments=""
         keyword_arguments="sourcepackagename title comment private owner"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="/distros/$Distribution.name/+filebug">
-        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget
+           field="owner"
+           class="canonical.widgets.OwnerWidget" />
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"

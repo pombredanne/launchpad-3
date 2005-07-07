@@ -1,18 +1,19 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""Manifest interfaces."""
+
 __metaclass__ = type
 
-# Imports from zope
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
+__all__ = [
+    'IManifest',
+    ]
+
+from zope.schema import Datetime, Int, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
+
 _ = MessageIDFactory('launchpad')
 
-
-#
-# Manifest Related Interfaces
-#
 
 class IManifest(Interface):
     """A Manifest. Manifests are like Arch Configs, they tell us about the

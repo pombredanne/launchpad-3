@@ -2,6 +2,26 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'traverseCalendar',
+    'CalendarDay',
+    'CalendarWeek',
+    'CalendarMonth',
+    'CalendarYear',
+    'CalendarViewBase',
+    'MonthInfo',
+    'DayInfo',
+    'CalendarDayView',
+    'CalendarWeekView',
+    'CalendarMonthView',
+    'CalendarYearView',
+    'CalendarEventAddView',
+    'ViewCreateCalendar',
+    'ViewCalendarSubscriptions',
+    'ViewCalendarSubscribe',
+    'CalendarInfoPortletView',
+    ]
+
 import re
 import calendar
 from datetime import datetime, date, timedelta, tzinfo

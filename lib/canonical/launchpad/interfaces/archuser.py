@@ -1,14 +1,20 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
+"""Interfaces related to users of Arch."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IArchUserID',
+    'IArchUserIDSet',
+    ]
+
 from zope.schema import Int, TextLine
 from zope.interface import Interface
 from zope.i18nmessageid import MessageIDFactory
+
 _ = MessageIDFactory('launchpad')
 
-
-#
-# Arch users Interfaces
-#
 
 class IArchUserID(Interface):
     """ARCH specific user ID """

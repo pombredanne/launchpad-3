@@ -75,13 +75,9 @@ notification:
     '[Bug 2] Blackhole Trash folder'
 
     >>> print msg.get_payload(decode = True) #doctest: -NORMALIZE_WHITESPACE
-    Foo Bar <foo.bar@canonical.com> made changes to:
-    <BLANKLINE>
-        http://.../malone/bugs/2
-    <BLANKLINE>
-    *** This bug has been marked a duplicate of 1 ***
-    <BLANKLINE>
-    <BLANKLINE>
+    Public bug report changed:
+    http://.../malone/bugs/2
+    ...
 
   2. To the subscribers of the dup-target bug.
 

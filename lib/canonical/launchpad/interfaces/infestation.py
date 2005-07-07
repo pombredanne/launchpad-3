@@ -1,15 +1,22 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Infestation interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IBugProductInfestationSet',
+    'IBugPackageInfestationSet',
+    'IBugProductInfestation',
+    'IBugPackageInfestation',
+    ]
+
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
 
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
-from zope.app.form.browser.interfaces import IAddFormCustomization
+from zope.schema import Bool, Choice, Datetime, Int
 
-
-__all__ = ['IBugProductInfestationSet',
-           'IBugPackageInfestationSet',
-           'IBugProductInfestation',
-           'IBugPackageInfestation']
+_ = MessageIDFactory('launchpad')
 
 
 class IBugProductInfestation(Interface):

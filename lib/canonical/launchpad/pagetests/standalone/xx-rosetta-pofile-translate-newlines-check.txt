@@ -13,8 +13,7 @@ First, we check that the textarea is empty by default.
   <BLANKLINE>
   <BLANKLINE>
                           <textarea rows="5"
-      name="set_149_translation_es_0" tabindex="1">
-                            </textarea>
+      name="set_149_translation_es_0" tabindex="1"></textarea>
   <BLANKLINE>
   <BLANKLINE>
   ...
@@ -36,12 +35,15 @@ answer should have exactly those strings.
   <BLANKLINE>
   <BLANKLINE>
   <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
                           <textarea rows="5"
       name="set_149_translation_es_0" tabindex="1">
   <BLANKLINE>
   foo
   <BLANKLINE>
-                            </textarea>
+  </textarea>
   ...
 
 And finally, a line that does not start with a new line so we are sure we don't get extra whitespaces
@@ -53,15 +55,24 @@ And finally, a line that does not start with a new line so we are sure we don't 
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Referer: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=19&count=1
   ... 
-  ... set_149_msgid=&set_149_translation_es_0=foo&offset=20&show=all&SUBMIT=Save+%26+Continue""")
+  ... set_149_msgid=&set_149_translation_es_0=foo&offset=20&show=all&SUBMIT=Save+%26+Continue""") #doctest: -NORMALIZE_WHITESPACE
   HTTP/1.1 200 Ok
   ...
+                          </div>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
   <BLANKLINE>
   <BLANKLINE>
   <BLANKLINE>
   <BLANKLINE>
                           <textarea rows="5"
       name="set_149_translation_es_0" tabindex="1">
-  foo
-                            </textarea>
+  foo</textarea>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+                          <div>
   ...

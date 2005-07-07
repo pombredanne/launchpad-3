@@ -1,0 +1,42 @@
+Bug Messages
+============
+
+Bug messages are messages associated with bugs. A bug message is
+described by the IBugMessage interface.
+
+One IMessage can be associated with many IBugs, but one IBugMessage is
+always associated with exactly one bug.
+
+Retrieving bug messages
+-----------------------
+
+IBugMessageSet represents the set of all IBugMessages in the
+system.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IBugMessageSet
+    >>> bugmessageset = getUtility(IBugMessageSet)
+
+An individual IBugMessage can be retrieved with
+IBugMessageSet.get:
+
+    >>> bugmessage_four = bugmessageset.get(4)
+    >>> bugmessage_four.message.subject
+    u"Fantastic idea, I'd really like to see this"
+
+Creating bug messages
+---------------------
+
+To create a bug message, use IBugMessageSet.createMessage:
+
+    >>> from canonical.launchpad.interfaces import IPersonSet, IBugSet
+
+    >>> sample_person = getUtility(IPersonSet).get(12)
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> test_message = bugmessageset.createMessage(
+    ...     subject="test message subject",
+    ...     content="text message content",
+    ...     owner=sample_person,
+    ...     bug=bug_one)
+    >>> test_message.message.subject
+    u'test message subject'

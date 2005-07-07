@@ -2,60 +2,103 @@ Bug Notification Email
 ======================
 
 This document describes the internal workings of how bug notification
-emails are generated. Currently, we differentiate between "add"
-notification emails and "edit" notification emails.
+emails are generated and how said emails are formatted. It does not
+cover the various rules and semantics surrounding the notifications
+themselves; for that, see bugnotifications.txt.
 
-Add Notification Emails
------------------------
+The reference spec associated with this document is available on the
+Launchpad wiki:
 
-XXX: Brad Bollenbach, 2005-04-08: Not yet spec'd. Will return to this
-once we've hammered out the format of various add emails.
-
-Edit Notification Emails
-------------------------
-
-When something is changed about an existing bug, a notification email
-is sent to the bug notification recipients detailing what changes were
-made.
-
-We're not going to discuss the various rules and semantics surrounding
-the notifications themselves; for that, see bugnotifications.txt.
-
-Here we'll focus on the bits of the framework that actually generate
-the content of the email itself. The spec for what the body of the
-edit email should look like can be found here:
-
-    https://wiki.launchpad.canonical.com/BugEditNotifications
+    https://wiki.launchpad.canonical.com/FormattingBugNotifications
 
 You need to be logged in to edit bugs in Malone, so let's get started:
 
     >>> from canonical.launchpad.ftests import login
     >>> login("test@canonical.com")
 
-All the magic happens in
-canonical.launchpad.mailnotification.generate_bug_edit_email:
+To avoid having one gargantuan super function that formats any kind of
+object it gets passed, the formatting logic has been cut into three
+pieces: generate_bug_edit_email, generate_bug_add_email and
+generate_bug_comment_email:
 
-    >>> from canonical.launchpad.mailnotification import generate_bug_edit_email
+    >>> from canonical.launchpad.mailnotification import (
+    ...     generate_bug_add_email, generate_bug_edit_email,
+    ...     generate_bug_comment_email)
 
-generate_bug_edit_email accepts an object that provides IBugDelta, and
-returns the subject and body of the email, as a tuple. Let's
-demonstrate what the edit notification emails will look like, by going
-through each kind of edit that can happen to a bug that would cause a
-notification to be sent:
-
-1. Editing a bug -- an edit notification is sent when the fields of
-   the bug itself are edited.
+Let's demonstrate what the bugmails will look like, by going through
+the various events that can happen that would cause a notification to
+be sent. We'll start by importing some things we'll need for the
+examples that follow:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugDelta, IBugSet, IPersonSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugDelta, IBugSet, IPersonSet, IBugMessageSet, IBugTaskSet)
     >>> from canonical.launchpad.database.bug import BugDelta
 
-    >>> sample_person = getUtility(IPersonSet).get(12)
-    >>> edited_bug = getUtility(IBugSet).get(2)
+Filing a bug
+------------
+
+generate_bug_add_email accepts one argument: the IBug that was just
+added. With that, it generates an appropriately-formatted notification
+message, and returns it as a (subject, body) tuple.
+
+So, let's pretend that we filed bug 4 just now:
+
+    >>> bug_four = getUtility(IBugSet).get(4)
+
+Let's take a look at what the notification email looks like:
+
+    >>> subject, body = generate_bug_add_email(bug_four)
+    >>> subject
+    u'[Bug 4] Reflow problems with complex page layouts'
+    >>> print body
+    Public bug reported:
+    http://.../malone/bugs/4
+    <BLANKLINE>
+    Affects: Mozilla Firefox
+           Severity: Normal
+           Priority: Medium
+             Status: New
+    <BLANKLINE>
+    Description:
+    Malone pages that use more complex layouts with portlets and fancy CSS are
+    sometimes not getting properly reflowed after rendering.
+
+Adding a bug comment
+--------------------
+
+generate_bug_comment_email accepts an object that provides
+IBugMessage. Let's borrow the first comment on bug four, just to
+demonstrate how the comment notification is formatted:
+
+   >>> bugmessage = getUtility(IBugMessageSet).get(4)
+   >>> subject, body = generate_bug_comment_email(bugmessage)
+   >>> subject
+   u'[Bug 2] Blackhole Trash folder'
+   >>> print body
+   Public bug report changed:
+   http://.../malone/bugs/2
+   <BLANKLINE>
+   Comment:
+   This would be a real killer feature. If there is already code to
+   make it possible, why aren't there tons of press announcements
+   about the secuirty possibilities. Imagine - no more embarrassing
+   emails for Mr Gates... everything they delete would actually
+   disappear! I'm sure Redmond will switch over as soon as they hear
+   about this. It's not a bug, it's a feature!
+
+Editing a bug
+-------------
+
+generate_bug_edit_email accepts an object that provides IBugDelta, and
+returns the subject and body of the email, as a tuple.
+
+   >>> sample_person = getUtility(IPersonSet).get(12)
+   >>> edited_bug = getUtility(IBugSet).get(2)
 
     >>> edited_bug.title = "the new title"
     >>> edited_bug.description = """\
-    ... a new description that is quite long. but the nice thing is that the edit notification email generator knows how to indent and wrap descriptions, so this will appear quite nice in the actual email that gets sent"""
+    ... a new description that is quite long. but the nice thing is that the edit notification email generator knows how to indent and wrap descriptions, so this will appear quite nice in the actual email that gets sent.\n\nit's also smart enough to preserve whitespace, finally!"""
 
     >>> bug_delta = BugDelta(
     ...     bug = edited_bug,
@@ -70,17 +113,17 @@ notification to be sent:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Sample Person <test@canonical.com> made changes to:
+    Public bug report changed:
+    http://.../bugs/2
     <BLANKLINE>
-        http://www.example.com/bugs/2
+    Title changed to:
+        the new title
+    Description changed to:
+        a new description that is quite long. but the nice thing is that the edit
+        notification email generator knows how to indent and wrap descriptions, so
+        this will appear quite nice in the actual email that gets sent.
     <BLANKLINE>
-        - Changed title to:
-            the new title
-        - Changed description to:
-            a new description that is quite long. but the nice thing is that
-            the edit notification email generator knows how to indent and
-            wrap descriptions, so this will appear quite nice in the actual
-            email that gets sent
+        it's also smart enough to preserve whitespace, finally!
     <BLANKLINE>
 
 Another edit, this time the summary:
@@ -96,13 +139,12 @@ Another edit, this time the summary:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Sample Person <test@canonical.com> made changes to:
+    Public bug report changed:
+    http://www.example.com/bugs/2
     <BLANKLINE>
-        http://www.example.com/bugs/2
-    <BLANKLINE>
-        - Changed summary to:
-            this summary isn't particularly short is it? after all, what
-            kind of summary is so long that it needs to be wrapped?
+    Summary changed to:
+        this summary isn't particularly short is it? after all, what kind of summary
+        is so long that it needs to be wrapped?
     <BLANKLINE>
 
 Let's set the bug private (for demo purposes, we need to switch logins
@@ -120,19 +162,46 @@ to a user that is explicitly subscribed to this bug):
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Sample Person <test@canonical.com> made changes to:
+    Private bug report changed:
+    http://.../bugs/2
     <BLANKLINE>
-        http://www.example.com/bugs/2
-    <BLANKLINE>
-        - Changed private:
-            False => True
+    Visibility changed to:
+        Private
     <BLANKLINE>
 
-2. Editing a bug task.
+Adding a new bug task
+---------------------
 
-XXX: Brad Bollenbach, 2005-04-08: Should probably include discussion
-of adding bug tasks here too, but at the time of this writing I'm not
-100% clear on how that would be laid out.
+Because adding a new task is sort of like "editing" a bug,
+generate_bug_edit_email handles generating the email when a new task
+is added to a bug. To demonstrate what this email looks like, let's
+pretend we had just added task five:
+
+   >>> task_five = getUtility(IBugTaskSet).get(5)
+
+   >>> bug_delta = BugDelta(
+   ...     bug = edited_bug,
+   ...     bugurl = "http://www.example.com/bugs/2",
+   ...     user = sample_person,
+   ...     added_bugtasks = task_five)
+   >>> subject, body = generate_bug_edit_email(bug_delta)
+   >>> subject
+   u'[Bug 2] the new title'
+   >>> print body
+   Private bug report changed:
+   http://.../bugs/2
+   <BLANKLINE>
+   Also affects: mozilla-firefox (Debian)
+          Severity: Minor
+          Priority: High
+          Assignee: name12 <test@canonical.com>
+            Status: Accepted
+
+Editing a bug task
+------------------
+
+As you might expect, generate_bug_edit_email handles generating the
+bugmail when a bug task is edited.
 
     >>> from canonical.launchpad.interfaces import IBugTaskDelta, IBugTaskSet
     >>> from canonical.launchpad.database.bugtask import BugTaskDelta
@@ -141,10 +210,12 @@ of adding bug tasks here too, but at the time of this writing I'm not
     >>> edited_bugtask = getUtility(IBugTaskSet).get(3)
     >>> edited_bugtask.status = BugTaskStatus.ACCEPTED
     >>> edited_bugtask.assignee = sample_person.id
+    >>> edited_bugtask.statusexplanation = "i'm just babbling here to ensure line wrapping works in the explanation."
     >>> bugtask_delta = BugTaskDelta(
-    ...     bugtask = edited_bugtask,
-    ...     status = {'old' : BugTaskStatus.NEW, 'new' : BugTaskStatus.ACCEPTED},
-    ...     assignee = {'old' : None, 'new' : sample_person})
+    ...     bugtask=edited_bugtask,
+    ...     status={'old' : BugTaskStatus.NEW, 'new' : edited_bugtask.status},
+    ...     assignee={'old' : None, 'new' : edited_bugtask.assignee},
+    ...     statusexplanation=edited_bugtask.statusexplanation)
     >>> bug_delta = BugDelta(
     ...     bug = edited_bug,
     ...     bugurl = "http://www.example.com/bugs/2",
@@ -154,16 +225,18 @@ of adding bug tasks here too, but at the time of this writing I'm not
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Sample Person <test@canonical.com> made changes to:
+    Private bug report changed:
+    http://.../bugs/2
     <BLANKLINE>
-        http://www.example.com/bugs/2
-    <BLANKLINE>
-    Task: Upstream Ubuntu
-           Status: New => Accepted
-         Assignee: (unassigned) => Sample Person
+    Changed in: Ubuntu (upstream)
+           Assignee: (unassigned) => Sample Person
+             Status: New => Accepted
+        Explanation: i'm just babbling here to ensure line wrapping works in the
+                     explanation.
     <BLANKLINE>
 
-3. Adding and editing web links.
+Adding and editing web links
+----------------------------
 
 Adding a web link can be seen as "editing" a bug.
 
@@ -191,12 +264,11 @@ Adding a web link can be seen as "editing" a bug.
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Sample Person <test@canonical.com> made changes to:
+    Private bug report changed:
+    http://www.example.com/bugs/2
     <BLANKLINE>
-        http://www.example.com/bugs/2
-    <BLANKLINE>
-        - Changed web links:
-            Added: http://www.example.com/foo/bar (some title)
+    Web links changed:
+        + http://www.example.com/foo/bar (some title)
     <BLANKLINE>
 
 Editing a web link shows the previous link as "Removed" and the newly
@@ -219,16 +291,16 @@ modified link as having been "Added" (though no actual "adding" or
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Sample Person <test@canonical.com> made changes to:
+    Private bug report changed:
+    http://www.example.com/bugs/2
     <BLANKLINE>
-        http://www.example.com/bugs/2
-    <BLANKLINE>
-        - Changed web links:
-            Added: http://www.example.com/foo/bar (some better title)
-          Removed: http://www.example.com/foo/bar (some title)
+    Web links changed:
+        + http://www.example.com/foo/bar (some better title)
+        - http://www.example.com/foo/bar (some title)
     <BLANKLINE>
 
-4. Adding and editing bug watches.
+Adding and editing bug watches
+------------------------------
 
 Here's an example that demonstrates the notification email that gets
 generated when a bug watch is added:
@@ -256,12 +328,11 @@ generated when a bug watch is added:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Sample Person <test@canonical.com> made changes to:
+    Private bug report changed:
+    http://www.example.com/bugs/2
     <BLANKLINE>
-        http://www.example.com/bugs/2
-    <BLANKLINE>
-        - Changed bug watches:
-            Added: Bug 123 [The Mozilla.org Bug Tracker]
+    Bug watches changed:
+        + Bug 123 [The Mozilla.org Bug Tracker]
     <BLANKLINE>
 
 When edited, we display the change to a bug watch as though the
@@ -283,16 +354,16 @@ Let's demonstrate with an example:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Sample Person <test@canonical.com> made changes to:
+    Private bug report changed:
+    http://www.example.com/bugs/2
     <BLANKLINE>
-        http://www.example.com/bugs/2
-    <BLANKLINE>
-        - Changed bug watches:
-            Added: Bug 12 [The Mozilla.org Bug Tracker]
-          Removed: Bug 123 [The Mozilla.org Bug Tracker]
+    Bug watches changed:
+        + Bug 12 [The Mozilla.org Bug Tracker]
+        - Bug 123 [The Mozilla.org Bug Tracker]
     <BLANKLINE>
 
-5. Adding and editing CVE refs.
+Adding and editing CVE refs
+---------------------------
 
 Adding a CVE ref will generate a notification that looks as follows:
 
@@ -322,12 +393,11 @@ Adding a CVE ref will generate a notification that looks as follows:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Sample Person <test@canonical.com> made changes to:
+    Private bug report changed:
+    http://www.example.com/bugs/2
     <BLANKLINE>
-        http://www.example.com/bugs/2
-    <BLANKLINE>
-        - Changed CVE references:
-            Added: CAN-2004-0718 [a test cve ref]
+    CVE references changed:
+        + CAN-2004-0718 [a test cve ref]
     <BLANKLINE>
 
 Editing a CVE ref generates an email that refers to the previous CVE
@@ -349,16 +419,16 @@ follows:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Sample Person <test@canonical.com> made changes to:
+    Private bug report changed:
+    http://www.example.com/bugs/2
     <BLANKLINE>
-        http://www.example.com/bugs/2
-    <BLANKLINE>
-        - Changed CVE references:
-            Added: CAN-2004-0719 [a test cve ref]
-          Removed: CAN-2004-0718 [a test cve ref]
+    CVE references changed:
+        + CAN-2004-0719 [a test cve ref]
+        - CAN-2004-0718 [a test cve ref]
     <BLANKLINE>
 
-6. Adding an infestation.
+Adding an infestation
+---------------------
 
    XXX: Brad Bollenbach, 2005-04-11: I'm not going to touch anything
    infestation-related for the moment, until we have these things

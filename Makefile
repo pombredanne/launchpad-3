@@ -4,15 +4,16 @@
 PYTHON_VERSION=2.4
 PYTHON=python${PYTHON_VERSION}
 PYTHONPATH:=$(shell pwd)/lib:${PYTHONPATH}
-STARTSCRIPT=runlaunchpad.py
+
 TESTFLAGS=-p -v
 TESTOPTS=
-SETUPFLAGS=
+
+SHHH=${PYTHON} utilities/shhh.py
+STARTSCRIPT=runlaunchpad.py
 Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
 HERE:=$(shell pwd)
-SHHH=${PYTHON} utilities/shhh.py
-LPCONFIG=default
 
+LPCONFIG=default
 CONFFILE=configs/${LPCONFIG}/launchpad.conf
 
 # DO NOT ALTER : this should just build by default
@@ -47,17 +48,6 @@ check: build
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) ${PYTHON} test.py test_pages
 	
-.PHONY: check
-
-# XXX What should the default be?
-all: inplace runners
-
-# Build in-place
-##inplace:
-##	$(PYTHON) setup.py $(SETUPFLAGS) build_ext -i
-##
-##build:
-##	$(PYTHON) setup.py $(SETUPFLAGS) build
 inplace: build
 
 build:
@@ -87,12 +77,6 @@ ftest_build: build
 ftest_inplace: inplace
 	env PYTHONPATH=$(PYTHONPATH) \
 	    $(PYTHON) test.py -f $(TESTFLAGS) $(TESTOPTS)
-
-### SteveA says these should be ripped
-#test: 
-#test_inplace
-
-#ftest: ftest_inplace
 
 run: inplace stop
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) \
@@ -146,4 +130,7 @@ TAGS:
 tags:
 	ctags -R
 
+.PHONY: check tags TAGS zcmldocs realclean clean debug stop start run \
+		ftest_build ftest_inplace test_build test_inplace pagetests \
+		check importdcheck check_merge schema default
 

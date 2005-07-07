@@ -10,11 +10,7 @@ from zope.event import notify
 from zope.exceptions import NotFoundError
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser import SequenceWidget, ObjectWidget
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
-import zope.security.interfaces
 
 from canonical.launchpad.interfaces import (
     ITranslationGroup, ITranslationGroupSet, ILanguageSet,

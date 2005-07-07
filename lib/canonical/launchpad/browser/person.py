@@ -2,6 +2,23 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'BaseListView',
+    'PeopleListView',
+    'TeamListView',
+    'UbuntiteListView',
+    'FOAFSearchView',
+    'PersonRdfView',
+    'BasePersonView',
+    'PersonView',
+    'PersonEditView',
+    'RequestPeopleMergeView',
+    'FinishedPeopleMergeRequestView',
+    'RequestPeopleMergeMultipleEmailsView',
+    'ObjectReassignmentView',
+    'TeamReassignmentView',
+    ]
+
 import cgi
 import sets
 
