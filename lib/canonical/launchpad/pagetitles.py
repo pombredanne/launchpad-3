@@ -176,11 +176,11 @@ calendar_view_week = calendar_view
 calendar_view_month = calendar_view
 calendar_view_year = calendar_view
 
-codeofconduct_admin = 'Code of Conduct Admin Console'
+codeofconduct_admin = 'Administer codes of conduct in Launchpad'
 
-codeofconduct_index = 'Code of Conduct Release'
+codeofconduct_index = ContextTitle('%s')
 
-codeofconduct_list = 'Launchpad Code of Conduct'
+codeofconduct_list = 'Codes of conduct in Launchpad'
 
 def cvereference_index(context, view):
     return 'Malone Bug #%s CVE Reference' % context.bug.id

@@ -11,15 +11,14 @@
 
 <div metal:fill-slot="main">
 
-      <h1>Code of Conduct</h1>
+      <h1>Codes of conduct</h1>
 
-      <div class="documentDescription">
-        Fill in the CoC details here.
-      </div>
+      <p>
+        Select a code of conduct to sign or download it.
+      </p>
 
-      <ul>
+      <ul class="document">
          <li tal:repeat="code context"> 
-            <img tal:condition="code/current" src="/++resource++user.gif"/>
             <a tal:content="code/title" tal:attributes="href string:${code/version}"/> 
          </li>
       </ul>

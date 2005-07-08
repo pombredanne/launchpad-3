@@ -10,12 +10,13 @@
 
 <div metal:fill-slot="main">
 
-      <h1>Code of Conduct Release</h1>
+      <h1 tal:content="context/title">
+        Foopy Code
+      </h1>
 
-      <div class="documentDescription">
-        <span tal:content="context/title">TITLE</span>
-        <span tal:condition="context/current">(Current Release)</span>
-      </div>
+      <p tal:condition="context/current">
+        This is the current version of this code of conduct.
+      </p>
 
       <pre tal:content="context/content">CONTENT</pre>
 

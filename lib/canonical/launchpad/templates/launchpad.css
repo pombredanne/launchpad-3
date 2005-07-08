@@ -358,6 +358,9 @@ tr.rowLinkified a {
 ul.add>li, li.add {
   list-style-image: url(/++resource++add.gif);
 }
+ul.document>li, li.document {
+  list-style-image: url(/++resource++document_icon.gif);
+}
 ul.download>li, li.download {
   list-style-image: url(/++resource++download.png);
 }
