@@ -23,7 +23,7 @@
     <div tal:replace="structure context/@@+portlet-calendar" />
 </metal:rightportlets>
 
-<div metal:fill-slot="main" class="documentContent">
+<div metal:fill-slot="main">
 
   <h1>Product Overview</h1>
 
