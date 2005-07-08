@@ -60,13 +60,11 @@ def test_dbschemaapi():
     ...
     TraversalError: 'NotADBSchema'
 
-    We should also test names that are in the dbschema module, but not in
-    __all__.
+    We should also test names that are in the dbschema module, but are
+    not DBSchemas.
 
     >>> import canonical.lp.dbschema
     >>> from canonical.lp.dbschema import Item
-    >>> 'Item' not in canonical.lp.dbschema.__all__
-    True
     >>> DBSchemaAPI(1).traverse('Item', [])
     Traceback (most recent call last):
     ...

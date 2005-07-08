@@ -71,9 +71,9 @@ from canonical.launchpad.database import (
      Product, ProductSeries, ProductRelease,
      Distribution, DistroRelease, DistroReleaseSet,
      SourcePackageName, SourcePackage, SourcePackageRelease,
-     Manifest, ManifestEntry, Archive, ArchNamespace, Branch, Changeset
+     Manifest, ManifestEntry, Archive, ArchNamespace, Branch, Changeset,
+     VersionMapper
      )
-from canonical.launchpad.database.archbranch import VersionMapper
 from hct.url import register_backend, UrlError
 
 

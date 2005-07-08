@@ -199,8 +199,13 @@ class DBSchemaAPI:
     DBSchemas.
     """
     implements(ITraversable)
-    _all = dict([(name, getattr(canonical.lp.dbschema, name))
-                 for name in canonical.lp.dbschema.__all__])
+
+    _all = {}
+    for name in canonical.lp.dbschema.__all__:
+        schema = getattr(canonical.lp.dbschema, name)
+        if (schema is not canonical.lp.dbschema.DBSchema and
+            issubclass(schema, canonical.lp.dbschema.DBSchema)):
+            _all[name] = schema
 
     def __init__(self, number):
         self._number = number
@@ -209,7 +214,7 @@ class DBSchemaAPI:
         if name in self._all:
             return self._all[name].items[self._number].title
         else:
-            raise TraversalError, name
+            raise TraversalError(name)
 
 
 class NoneFormatter:
