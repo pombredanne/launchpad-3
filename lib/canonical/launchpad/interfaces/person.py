@@ -323,6 +323,26 @@ class IPerson(Interface):
     def subscriptionPolicyDesc():
         """Return a long description of this team's subscription policy."""
 
+    # XXX
+    # What does this do if the language is already present?
+    # -- Dafydd Harries, 2005/07/08
+
+    def addLanguage(language):
+        """Add a language to this person's preferences.
+
+        :language: An object providing ILanguage.
+        """
+
+    # XXX
+    # What does this do if the language is not present?
+    # -- Dafydd Harries, 2005/07/08
+
+    def removeLanguage(language):
+        """Remove a language from this person's preferences.
+
+        :language: An object providing ILanguage.
+        """
+
 
 class ITeam(IPerson):
     """ITeam extends IPerson.

@@ -1,0 +1,64 @@
+
+The Rosetta Preferences Page
+----------------------------
+
+Carlos is a translator who translates things into Spanish with Rosetta.
+Accordingly, Spanish is selected in his preferences. However, Welsh is not.
+
+  >>> print http(r"""
+  ... GET /rosetta/prefs HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Referer: http://localhost:9000/rosetta/prefs/+login
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+      <h2>My Languages</h2>
+  ...
+      <form action="prefs" method="post">
+          <div class="multi_select" style="margin: 1em 0">
+  ...
+              <div>
+                  <label>
+                      <input type="checkbox" checked="checked"
+                             name="es" />
+                      Spanish
+                  </label>
+              </div>
+  ...
+              <div>
+                  <label>
+                      <input type="checkbox" name="cy" />
+                      Welsh
+                  </label>
+              </div>
+  ...
+
+Now let's suppose that Carlos decides that he doesn't like Spanish after all,
+and that Welsh is a much nicer language. When he adjusts his preferences,
+Spanish will no longer be selected, and Welsh will.
+
+  >>> print http(r"""
+  ... POST /rosetta/prefs HTTP/1.1
+  ... Content-Length: 21
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... 
+  ... cy=on&SAVE-LANGS=Save""")
+  HTTP/1.1 200 Ok
+  ...
+              <div>
+                  <label>
+                      <input type="checkbox" name="es" />
+                      Spanish
+                  </label>
+              </div>
+  ...
+              <div>
+                  <label>
+                      <input type="checkbox" checked="checked"
+                             name="cy" />
+                      Welsh
+                  </label>
+              </div>
+  ...
+
