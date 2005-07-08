@@ -11,7 +11,6 @@ __all__ = [
     'DistributionSetAddView',
     'DistributionSetSearchView',
     'DistrosSearchView',
-    'DistrosAddView',
     'DistrosEditView',
     ]
 
@@ -129,26 +128,6 @@ class DistributionSetAddView(AddView):
     def nextURL(self):
         return self._nextURL
 
-
-    def add_action(self):
-        title = self.request.get("title", "")
-        description = self.request.get("description", "")
-        domain = self.request.get("domain", "")
-        person = IPerson(self.request.principal, None)
-
-
-        if not person:
-            return False
-
-        if not title:
-            return False
-
-        dt = getUtility(IDistroTools)
-        res = dt.createDistro(person.id, name, displayname,
-            title, summary, description, domain)
-        self.results = res
-        return res
-
 class DistributionSetSearchView:
 
     def __init__(self, context, request):
@@ -181,34 +160,6 @@ class DistrosSearchView:
 
     def search_action(self):
         raise NotImplementedError
-
-class DistrosAddView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def add_action(self):
-        name = self.request.get("name", "")
-        displayname = self.request.get("displayname", "")
-        title = self.request.get("title", "")
-        summary = self.request.get("summary", "")
-        description = self.request.get("description", "")
-        domain = self.request.get("domain", "")
-        person = IPerson(self.request.principal, None)
-
-
-        if not person:
-            return False
-
-        if not title:
-            return False
-
-        dt = getUtility(IDistroTools)
-        res = dt.createDistro(person.id, name, displayname,
-            title, summary, description, domain)
-        self.results = res
-        return res
 
 class DistrosEditView:
 
