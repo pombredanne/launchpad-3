@@ -13,6 +13,10 @@
                     tal:condition="context/required:launchpad.Admin">
                   <a href="+review">Review</a>
                 </li>
+                <li class="edit"
+                    tal:condition="context/required:launchpad.Edit">
+                    <a href="+reassign">Change Maintainer</a>
+                </li>
                 <li class="add"
                     tal:condition="context/required:launchpad.Edit">
                   <a href="+addpackage">Link To Package</a>

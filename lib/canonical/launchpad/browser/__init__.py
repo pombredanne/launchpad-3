@@ -1,3 +1,5 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 """Launchpad Browser-Interface View classes
 
 This is the module to import for Launchpad View Classes. The classes are not
@@ -12,10 +14,12 @@ from canonical.launchpad.browser.bugextref import *
 from canonical.launchpad.browser.bug import *
 from canonical.launchpad.browser.bugtask import *
 from canonical.launchpad.browser.bugtracker import *
+from canonical.launchpad.browser.cal import *
 from canonical.launchpad.browser.codeofconduct import *
 from canonical.launchpad.browser.distribution import *
 from canonical.launchpad.browser.distroarchrelease import *
 from canonical.launchpad.browser.distrorelease import *
+from canonical.launchpad.browser.distroreleaselanguage import *
 from canonical.launchpad.browser.karma import *
 from canonical.launchpad.browser.launchpad import *
 from canonical.launchpad.browser.logintoken import *
@@ -35,11 +39,9 @@ from canonical.launchpad.browser.publishedpackage import *
 from canonical.launchpad.browser.rosetta import *
 from canonical.launchpad.browser.sourcepackage import *
 from canonical.launchpad.browser.sourcepackagename import *
-from canonical.launchpad.browser.soyuz import *
-from canonical.launchpad.browser.sshkey import *
 from canonical.launchpad.browser.team import *
 from canonical.launchpad.browser.translationgroup import *
 from canonical.launchpad.browser.translator import *
 from canonical.launchpad.browser.traversers import *
 from canonical.launchpad.browser.widgets import *
-
+from canonical.launchpad.browser.calendarwidgets import *

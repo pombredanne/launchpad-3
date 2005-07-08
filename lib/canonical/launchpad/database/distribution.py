@@ -10,7 +10,7 @@ from sqlobject import (RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey,
     MultipleJoin)
 
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.launchpad.database.bug import BugTask
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.lp.dbschema import (EnumCol, BugTaskStatus,
@@ -44,7 +44,7 @@ class Distribution(SQLBase):
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistroBounty')
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
-    lucilleconfig = StringCol()
+    lucilleconfig = StringCol(notNull=True, default=None)
 
     def currentrelease(self):
         # if we have a frozen one, return that

@@ -1,0 +1,14 @@
+<div class="portlet">
+
+  <h4>actions:</h4>
+
+  <div class="portletBody">
+    <div class="portletContent odd">
+
+      <img src="/++resource++edit.gif" alt="Edit">
+      <a href="+edit">Edit BugTracker Details</a><br />
+
+    </div>
+  </div>
+
+</div>

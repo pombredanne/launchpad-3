@@ -12,10 +12,12 @@
             <a href="#" tal:attributes="href string:$bug_url/people/+new">Subscriber</a><br />
             <img src="/++resource++add.gif" alt="Add">
             <a href="#" tal:attributes="href string:$bug_url/+duplicate">Mark as Duplicate</a><br />
+            <!-- we can do without these till the implementation is ready
             <img src="/++resource++add.gif" alt="Add">
             <a href="#" tal:attributes="href string:$bug_url/productinfestations/+new">Product Infestation</a><br />
             <img src="/++resource++add.gif" alt="Add">
             <a href="#" tal:attributes="href string:$bug_url/packageinfestations/+new">Package Infestation</a><br />
+            -->
             <img src="/++resource++add.gif" alt="Add">
             <a href="#" tal:attributes="href string:$bug_url/cverefs/+new"><abbr title="Common Vulnerabilities and Exposures index">CVE</abbr> reference</a><br />
             <img src="/++resource++add.gif" alt="Add">

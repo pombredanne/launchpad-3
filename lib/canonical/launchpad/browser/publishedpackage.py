@@ -1,21 +1,18 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-from zope.interface import implements
-from zope.schema import TextLine, Int, Choice
 __metaclass__ = type
 
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+__all__ = [
+    'PkgBuild',
+    'PkgVersion',
+    'DistroReleaseVersions',
+    'BinPackage',
+    'PublishedPackageSetView',
+    ]
 
 from zope.component import getUtility
-from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 
-from canonical.launchpad.database import PublishedPackage
-
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
-
-from canonical.launchpad.interfaces import IPublishedPackage, \
-        ILaunchBag
+from canonical.launchpad.interfaces import ILaunchBag
 
 class PkgBuild:
 
@@ -24,7 +21,7 @@ class PkgBuild:
         self.id = id
         self.processorfamilyname = processorfamilyname
         self.distroarchrelease = distroarchrelease
-        
+
     def html(self):
         return '<a href="/soyuz/packages/'+str(self.id)+'">'+self.processorfamilyname+'</a>'
 
@@ -63,6 +60,8 @@ class PublishedPackageSetView:
         if self.searchtext:
             self.searchrequested = True
         self.launchbag = getUtility(ILaunchBag)
+        self.distribution = self.launchbag.distribution
+        self.distrorelease = self.launchbag.distrorelease
 
     def searchresults(self):
         if self.searchresultset is not None:

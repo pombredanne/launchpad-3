@@ -20,13 +20,19 @@
 
     <h1>Translation Template</h1>
 
-    <p tal:content="context/description">A brief paragraph describing the
-    potemplate would go here.</p>
+    <p tal:condition="context/description">
+      <span tal:content="context/description">A brief paragraph describing
+      the potemplate would go here.</span> [<a href="+edit">Edit</a>]
+    </p>
+    <p tal:condition="not: context/description">
+      This template has no description, you can <a href="+edit">create
+      one</a> now.
+    </p>
 
     <div tal:replace="structure context/@@+chart" />
 
     <div align="right">
-      [ <a href="/rosetta/prefs">Choose Languages</a> ]
+      [<a href="/rosetta/prefs">Choose Preferred Languages</a>]
     </div>
 
     <div tal:replace="structure context/@@+portlet-status-legend" />

@@ -4,18 +4,32 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'traverse_malone_application',
+    'traverse_project',
+    'traverse_product',
+    'traverse_distribution',
+    'traverse_distrorelease',
+    'traverse_person',
+    'traverseTeam',
+    'traverse_bug',
+    'traverse_bugs',
+    ]
+
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
 
 from canonical.launchpad.interfaces import (
     IBugSet, IBugTaskSet, IBugTaskSubset, IBugTasksReport, IDistributionSet,
     IProjectSet, IProductSet, ISourcePackageSet, IBugTrackerSet, ILaunchBag,
-    ITeamMembershipSubset)
+    ITeamMembershipSubset, ICalendarOwner, ILanguageSet)
 from canonical.launchpad.database import (
     BugAttachmentSet, BugExternalRefSet, BugSubscriptionSet,
     BugWatchSet, BugTasksReport, CVERefSet, BugProductInfestationSet,
     BugPackageInfestationSet, ProductSeriesSet, ProductMilestoneSet,
     PublishedPackageSet, SourcePackageSet)
+from canonical.launchpad.browser.distroreleaselanguage import \
+    DummyDistroReleaseLanguage
 
 def traverse_malone_application(malone_application, request, name):
     """Traverse the Malone application object."""
@@ -37,6 +51,14 @@ def traverse_malone_application(malone_application, request, name):
     return None
 
 
+def traverse_project(project, request, name):
+    """Traverse an IProject."""
+    if name == '+calendar':
+        return ICalendarOwner(project).calendar
+    else:
+        return project.getProduct(name)
+
+
 def traverse_product(product, request, name):
     """Traverse an IProduct."""
     if name == '+series':
@@ -45,6 +67,8 @@ def traverse_product(product, request, name):
         return ProductMilestoneSet(product=product)
     elif name == '+bugs':
         return IBugTaskSubset(product)
+    elif name == '+calendar':
+        return ICalendarOwner(product).calendar
     else:
         return product.getRelease(name)
 
@@ -69,13 +93,39 @@ def traverse_distrorelease(distrorelease, request, name):
         return PublishedPackageSet()
     elif name == '+bugs':
         return IBugTaskSubset(distrorelease)
+    elif name == '+lang':
+        travstack = request.getTraversalStack()
+        if len(travstack) == 0:
+            # no lang code passed, we return None for a not found error
+            return None
+        langset = getUtility(ILanguageSet)
+        langcode = travstack[0]
+        try:
+            lang = langset[langcode]
+        except IndexError:
+            # Unknown language code. Return None for a not found error
+            return None
+        drlang = distrorelease.getDistroReleaseLanguage(lang)
+        request.setTraversalStack(travstack[1:])
+        if drlang is not None:
+            return drlang
+        else:
+            return DummyDistroReleaseLanguage(distrorelease, lang)
     else:
         return distrorelease[name]
 
+def traverse_person(person, request, name):
+    """Traverse an IPerson."""
+    if name == '+calendar':
+        return ICalendarOwner(person).calendar
+
+    return None
 
 def traverseTeam(team, request, name):
     if name == '+members':
         return ITeamMembershipSubset(team)
+    elif name == '+calendar':
+        return ICalendarOwner(team).calendar
     
     return None
 
@@ -121,9 +171,3 @@ def traverse_bugs(bugcontainer, request, name):
         except (NotFoundError, ValueError):
             return None
 
-
-def traverseTeam(team, request, name):
-    if name == '+members':
-        return ITeamMembershipSubset(team)
-
-    return None

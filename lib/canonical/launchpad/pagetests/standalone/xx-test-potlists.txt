@@ -17,7 +17,7 @@ Check that we can get a potlist for a source pacakge that has potemplates:
 Check that we can get a potlist for a product release:
 
   >>> print http(r"""
-  ... GET /products/evolution/2.1.6/+potlist HTTP/1.1
+  ... GET /products/evolution/+series/main/+potlist HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...

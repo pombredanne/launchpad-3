@@ -23,6 +23,7 @@
     <include file="bugwatch.zcml" />
     <include file="bug.zcml" />
     <include file="build.zcml" />
+    <include file="calendar.zcml" />
     <include file="codeofconduct.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
@@ -30,9 +31,12 @@
     <include file="datetime.zcml" />
     <include file="distribution.zcml" />
     <include file="distrorelease.zcml" />
+    <include file="distroreleaselanguage.zcml" />
     <include file="distroarchrelease.zcml" />
+    <include file="doap.zcml" />
     <include file="emailaddress.zcml" />
     <include file="files.zcml" />
+    <include file="foaf.zcml" />
     <include file="gpgkey.zcml" />
     <include file="ircid.zcml" />
     <include file="jabberid.zcml" />

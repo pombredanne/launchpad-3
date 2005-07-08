@@ -51,7 +51,7 @@ class PublishedPackageSet:
         return iter(PublishedPackage.select())
 
     def query(self, name=None, text=None, distribution=None,
-              distrorelease=None, distroarchrelease=None):
+              distrorelease=None, distroarchrelease=None, component=None):
         querytxt = '1=1'
         if name:
             name = name.lower().strip().split()[0]
@@ -63,6 +63,8 @@ class PublishedPackageSet:
             querytxt += " AND distrorelease = %d" % distrorelease
         if distroarchrelease:
             querytxt += " AND distroarchrelease = %d" % distroarchrelease
+        if component:
+            querytxt += " AND component = %s" % quote(component)
         if text:
             text = text.lower().strip()
             querytxt += " AND binarypackagefti @@ ftq(%s)" % quote(text)

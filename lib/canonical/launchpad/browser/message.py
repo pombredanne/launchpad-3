@@ -2,17 +2,12 @@
 
 __metaclass__ = type
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+__all__ = [
+    'MessagesView',
+    ]
 
-from zope.interface import implements, Interface
-from zope.schema import Text, TextLine
-from zope.app import zapi
-
+from zope.interface import implements
 from canonical.launchpad.interfaces import IMessagesView
-from canonical.launchpad.database \
-        import LibraryFileAlias, Message, MessageChunk
-from canonical.launchpad.database import bugmessage
 
 class MessagesView(object):
     implements(IMessagesView)

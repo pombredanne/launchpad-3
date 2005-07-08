@@ -8,7 +8,7 @@
       <ul>
         <li tal:repeat="dup context/duplicates">
           <a tal:attributes="href dup/@@absolute_url">
-             #<span tal:replace="dup/id">3445</span>
+             Bug #<span tal:replace="dup/id">3445</span>
           </a>
           <tal:block condition="dup/name">
             (<span tal:replace="dup/name" tal:omit-tag="">foobar</span>)

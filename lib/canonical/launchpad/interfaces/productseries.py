@@ -1,12 +1,22 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""Product series interfaces."""
 
-# Zope schema imports
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
+__metaclass__ = type
+
+__all__ = [
+    'IProductSeries',
+    'IProductSeriesSource',
+    'IProductSeriesSourceAdmin',
+    'IProductSeriesSet',
+    ]
+
+from zope.schema import  Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.validators.name import valid_name
+
 _ = MessageIDFactory('launchpad')
 
 class IProductSeries(Interface):
@@ -18,18 +28,24 @@ class IProductSeries(Interface):
     # field names
     product = Choice( title=_('Product'), required=True,
                       vocabulary='Product')
-    name = Text(title=_('Name'), required=True, constraint=valid_name)
-    name = TextLine(title=_('Name'), required=True)
+    name = TextLine(title=_('Name'), required=True, constraint=valid_name)
+    datecreated = Datetime(title=_('Date Registered'), required=True,
+                            readonly=True)
     title = Attribute('Title')
     displayname = TextLine( title=_('Display Name'), required=True)
     summary = Text(title=_("Summary"), required=True)
     datecreated = TextLine(title=_('Date Created'), description=_("""The
         date this productseries was created in Launchpad."""))
-    # convenient joins
+
     releases = Attribute("An iterator over the releases in this "
         "Series, sorted with latest release first.")
+    potemplates = Attribute(
+        _("Return an iterator over this productrelease's PO templates."))
+    potemplatecount = Attribute(_("The number of POTemplates for this "
+        "Product Series."))
+    packagings = Attribute("An iterator over the Packaging entries "
+        "for this product series.")
 
-    # properties
     sourcepackages = Attribute(_("List of distribution packages for this \
         product series"))
 
@@ -38,8 +54,24 @@ class IProductSeries(Interface):
 
     def getPackage(distrorelease):
         """Return the SourcePackage for this productseries in the supplied
-        distrorelease."""
+        distrorelease. This will use a Packaging record if one exists, but
+        it will also work through the ancestry of the distrorelease to try
+        to find a Packaging entry that may be relevant."""
 
+    def setPackaging(distrorelease, sourcepackagename, owner):
+        """Create or update a Packaging record for this product series,
+        connecting it to the given distrorelease and source package name.
+        """
+
+    def getPackagingInDistribution(distribution):
+        """Return all the Packaging entries for this product series for the
+        given distribution. Note that this only returns EXPLICT packaging
+        entries, it does not look at distro release ancestry in the same way
+        that IProductSeries.getPackage() does.
+        """
+
+    def getPOTemplate(name):
+        """Return the POTemplate with this name for the series."""
 
 class IProductSeriesSource(Interface):
     # revision control items

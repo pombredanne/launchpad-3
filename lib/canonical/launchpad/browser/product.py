@@ -1,6 +1,6 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
-"""Browser views and traversal functions for products."""
+"""Browser views for products."""
 
 __metaclass__ = type
 
@@ -9,33 +9,20 @@ from warnings import warn
 from urllib import quote as urlquote
 
 import zope.security.interfaces
-from zope.interface import implements
-from zope.component import getUtility, getAdapter
+from zope.component import getUtility
 from zope.event import notify
+from zope.exceptions import NotFoundError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 from zope.app.traversing.browser.absoluteurl import absoluteURL
 
-from sqlobject.sqlbuilder import AND, IN, ISNULL
-
-from canonical.lp import dbschema
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
-from canonical.database.sqlbase import quote
-
-from canonical.launchpad.searchbuilder import any, NULL
-from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary, \
-     MilestoneVocabulary
-
-from canonical.launchpad.database import (
-    Product, BugFactory, Milestone, Person)
+from canonical.launchpad.database import BugFactory
 from canonical.launchpad.interfaces import (
-    IPerson, IProduct, IProductSet, IBugTaskSet, IAging, ILaunchBag,
-    IProductRelease, ISourcePackage, IBugTaskSearchListingView, ICountry)
+    IPerson, IProduct, IProductSet, IBugTaskSet, IProductSeries,
+    ISourcePackage, ICountry)
 from canonical.launchpad.browser.productrelease import newProductRelease
-from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -44,6 +31,10 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, DefaultLink)
+
+__all__ = ['ProductFacets', 'ProductView', 'ProductEditView', 
+           'ProductFileBugView', 'ProductRdfView', 'ProductSetView',
+           'ProductSetAddView']
 
 class ProductFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for
@@ -119,19 +110,19 @@ class ProductView:
                         sourcepackage.name)
                     }
 
-            elif IProductRelease.providedBy(translatable):
-                productrelease = translatable
+            elif IProductSeries.providedBy(translatable):
+                productseries = translatable
 
                 object_translatable = {
-                    'title': productrelease.title,
-                    'potemplates': productrelease.potemplates,
-                    'base_url': '/products/%s/%s' %(
+                    'title': productseries.title,
+                    'potemplates': productseries.potemplates,
+                    'base_url': '/products/%s/+series/%s' %(
                         self.context.name,
-                        productrelease.version)
+                        productseries.name)
                     }
             else:
                 # The translatable object does not implements an
-                # ISourcePackage nor a IProductRelease. As it's not a critical
+                # ISourcePackage nor a IProductSeries. As it's not a critical
                 # failure, we log only it instead of raise an exception.
                 warn("Got an unknown type object as primary translatable",
                      RuntimeWarning)
@@ -305,6 +296,9 @@ class ProductSetView:
         self.malone = form.get('malone')
         self.bazaar = form.get('bazaar')
         self.text = form.get('text')
+        self.matches = 0
+        self.results = None
+
         self.searchrequested = False
         if (self.text is not None or
             self.bazaar is not None or
@@ -312,8 +306,17 @@ class ProductSetView:
             self.rosetta is not None or
             self.soyuz is not None):
             self.searchrequested = True
-        self.results = None
-        self.matches = 0
+
+        if form.get('exact_name'):
+            # If exact_name is supplied, we try and locate this name in
+            # the ProductSet -- if we find it, bingo, redirect. This
+            # argument can be optionally supplied by callers.
+            try:
+                product = self.context[self.text]
+            except NotFoundError:
+                product = None
+            if product is not None:
+                self.request.response.redirect(product.name)
 
     def searchresults(self):
         """Use searchtext to find the list of Products that match
@@ -321,9 +324,9 @@ class ProductSetView:
         time the method is called, otherwise return previous results.
         """
         if self.results is None:
-            self.results = self.context.search(text=self.text,
+            self.results = self.context.search(text=self.text, 
                                                bazaar=self.bazaar,
-                                               malone=self.malone,
+                                               malone=self.malone, 
                                                rosetta=self.rosetta,
                                                soyuz=self.soyuz)
         self.matches = self.results.count()

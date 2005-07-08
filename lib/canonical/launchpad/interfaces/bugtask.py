@@ -1,23 +1,37 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-"""Interfaces for things related to bug tasks."""
+"""Bug task interfaces."""
 
 __metaclass__ = type
 
+__all__ = [
+    'IBugTask',
+    'IBugTaskSearch',
+    'IUpstreamBugTaskSearch',
+    'IDistroBugTaskSearch',
+    'IBugTaskSearchListingView',
+    'IBugTaskDelta',
+    'IUpstreamBugTask',
+    'IDistroBugTask',
+    'IDistroReleaseBugTask',
+    'ISelectResultsSlicable',
+    'IBugTaskSet',
+    'IBugTaskSubset',
+    'IBugTasksReport',
+    ]
+
 from zope.component.interfaces import IView
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, Text, TextLine, List)
-from zope.app.form.browser.interfaces import IAddFormCustomization
+    Bool, Choice, Datetime, Int, Text, TextLine, List)
 
 from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
-from canonical.launchpad.interfaces import (
-    IHasProductAndAssignee, IHasDateCreated)
-from canonical.launchpad.validators.bug import non_duplicate_bug
+from canonical.launchpad.interfaces import IHasDateCreated
+
+_ = MessageIDFactory('launchpad')
 
 class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product
@@ -66,8 +80,24 @@ class IBugTask(IHasDateCreated):
     maintainer_displayname = TextLine(
         title=_("Maintainer"), required=True, readonly=True)
 
+    context = Attribute("What the task's location is")
     contextname = Attribute("Description of the task's location.")
     title = Attribute("The title used for a task's Web page.")
+
+    def setStatusFromDebbugs(status):
+        """Set the Malone BugTask status on the basis of a debbugs status.
+        This maps from the debbugs status values ('done', 'open',
+        'forwarded') to the Malone status values, and returns the relevant
+        Malone status.
+        """
+
+    def setSeverityFromDebbugs(severity):
+        """Set the Malone BugTask severity on the basis of a debbugs
+        severity.  This maps from the debbugs severity values ('normal',
+        'important', 'critical', 'serious', 'minor', 'wishlist', 'grave') to
+        the Malone severity values, and returns the relevant Malone
+        severity.
+        """
 
 
 class IBugTaskSearch(Interface):
@@ -155,27 +185,63 @@ class IBugTaskDelta(Interface):
     If product is not None, both sourcepackagename and binarypackagename must
     be None.
 
-    Likewise, if sourcepackagename and/or binarypackagename is not None,
-    product must be None.
-
-    XXX 20050512 Brad/Bjorn: Fix the Attribute descriptions. -- mpt
+    Likewise, if sourcepackagename and/or binarypackagename is not
+    None, product must be None.
     """
     bugtask = Attribute("The modified IBugTask.")
-    product = Attribute("A dict containing two keys, 'old' and 'new' or None.")
+    product = Attribute(
+        """The change made to the IProduct of this task.
+
+        The value is a dict like {'old' : IProduct, 'new' : IProduct},
+        or None, if no product change was made.
+        """)
     sourcepackagename = Attribute(
-        "A dict containing two keys, 'old' and 'new' or None.")
+        """The change made to the ISourcePackageName of this task.
+
+        The value is a dict with the keys
+        {'old' : ISourcePackageName, 'new' : ISourcePackageName},
+        or None, if no change was made to the sourcepackagename.
+        """)
     binarypackagename = Attribute(
-        "A dict containing two keys, 'old' and 'new' or None.")
+        """The change made to the IBinaryPackageName of this task.
+
+        The value is a dict like
+        {'old' : IBinaryPackageName, 'new' : IBinaryPackageName},
+        or None, if no change was made to the binarypackagename.
+        """)
     target = Attribute(
-        "A dict containing two keys, 'old' and 'new' or None.")
+        """The change made to the IMilestone for this task.
+
+        The value is a dict like {'old' : IMilestone, 'new' : IMilestone},
+        or None, if no change was made to the target.
+        """)
     status = Attribute(
-        "A dict containing two keys, 'old' and 'new' or None.")
+        """The change made to the status for this task.
+
+        The value is a dict like
+        {'old' : BugTaskStatus.FOO, 'new' : BugTaskStatus.BAR}, or None,
+        if no change was made to the status.
+        """)
     priority = Attribute(
-        "A dict containing two keys, 'old' and 'new' or None.")
+        """The change made to the priority for this task.
+
+        The value is a dict like
+        {'old' : BugPriority.FOO, 'new' : BugPriority.BAR}, or None,
+        if no change was made to the priority.
+        """)
     severity = Attribute(
-        "A dict containing two keys, 'old' and 'new' or None.")
+        """The change made to the severity of this task.
+
+        The value is a dict like
+        {'old' : BugSeverity.FOO, 'new' : BugSeverity.BAR}, or None,
+        if no change was made to the severity.
+        """)
     assignee = Attribute(
-        "A dict containing two keys, 'old' and 'new' or None.")
+        """The change made to the assignee of this task.
+
+        The value is a dict like {'old' : IPerson, 'new' : IPerson}, or None,
+        if no change was made to the assignee.
+        """)
     statusexplanation = Attribute("The new value of the status notes.")
 
 
@@ -238,8 +304,10 @@ class IBugTaskSet(Interface):
         """
 
     def search(bug=None, searchtext=None, status=None, priority=None,
-               severity=None, product=None, distribution=None, distrorelease=None,
-               milestone=None, assignee=None, submitter=None, orderby=None):
+               severity=None, product=None, distribution=None,
+               distrorelease=None, milestone=None, assignee=None,
+               submitter=None, orderby=None, sourcepackagename=None,
+               binarypackagename=None):
         """Return a set of IBugTasks that satisfy the query arguments.
 
         Keyword arguments should always be used. The argument passing
@@ -254,6 +322,10 @@ class IBugTaskSet(Interface):
         * BugTaskSet.search(arg1 = 'foo', arg2 = 'bar'): Match all
           IBugTasks where IBugTask.arg1 == 'foo' and
           IBugTask.arg2 == 'bar'
+
+        The set is always ordered by the bugtasks' id. Meaning that if
+        you set orderby to 'severity', it will first be ordered by severity,
+        then by bugtask id.
 
         For a more thorough treatment, check out:
 

@@ -8,9 +8,10 @@
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-translations" />
-    <div tal:condition="python:request.principal and request.principal.id == context.owner.id"
+    <div tal:condition="context/required:launchpad.Edit"
          tal:replace="structure context/@@+portlet-milestones" />
-    <div tal:replace="structure context/@@+portlet-project" />
+    <div tal:condition="context/project"
+         tal:replace="structure context/project/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
@@ -18,11 +19,13 @@
     <div tal:replace="structure context/@@+portlet-latest-bugs" />
     <div tal:replace="structure context/@@+portlet-related-bounties" />
     <div tal:replace="structure context/@@+portlet-packages" />
+    <div tal:replace="structure context/@@+portlet-branches" />
+    <div tal:replace="structure context/@@+portlet-calendar" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main" class="documentContent">
 
-  <h1><span tal:replace="context/title">$Product.title</span></h1>
+  <h1>Product Overview</h1>
 
   <div class="documentDescription" tal:content="context/summary">
     $Product.summary goes here. This should be quite short,
@@ -41,54 +44,51 @@
 
   <tal:block condition="context/serieslist">
 
-    <h2>Branches and Releases</h2>
+    <p>We list below each of the registered "product series" or
+    branches of <span tal:replace="context/displayname">displayname</span>,
+    and the releases made from them:</p>
 
-    <p>We list below each of the known
-    branches of <span tal:replace="context/displayname">displayname</span>
-    and its releases:</p>
+    <tal:block repeat="series context/serieslist">
 
-    <div tal:repeat="series context/serieslist">
-
-      <p><strong>Branch:
-      <span tal:replace="series/name">seriesname</span></strong><br />
-      <span tal:replace="series/summary">A summary of the series
-      details and status.</span>
-      [&nbsp;<a tal:attributes="href
-      string:+series/${series/name}">Branch&nbsp;Details...</a>&nbsp;]
+      <h3><span tal:replace="series/name">seriesname</span>
+        (<span tal:replace="series/datecreated/fmt:date">4-12-45</span>)
+      </h3>
+      
+      <p><span tal:replace="series/summary">A summary of the series
+        details and status.</span>
+        [<a tal:attributes="href
+        string:+series/${series/name}">Details...</a>]
       </p>
             
-      <ul>
-        
-        <li tal:repeat="release series/releases">
-          <b><span tal:content="release/version">version</span></b>: 
-          "<span tal:content="release/title">title</span>"
-          [&nbsp;<a tal:attributes="href release/version">View</a>&nbsp;]<br />
-          <span tal:replace="release/summary">feature summary</span></li>
-        <li tal:condition="not: series/releases">No releases on this branch
-        registered yet.</li>
+      <div style="margin-left: 15px;" tal:condition="series/releases">
 
-      </ul>
+        <table class="listing">
+          <thead>
+            <tr>
+              <th>Version</th>
+              <th>Date</th>
+              <th>Codename</th>
+              <th>By</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="release series/releases">
+              <td tal:content="release/version">version</td> 
+              <td tal:content="release/datereleased/fmt:date">date</td>
+              <td>"<span tal:replace="release/title">title</span>"</td>
+              <td tal:content="release/owner/browsername">foo bar</td>
+            </tr>
+            <tr tal:condition="not: series/releases">
+              <td colspan="4">No releases registered on this branch</td>
+            </tr>
+          </tbody>
+        </table>
 
-    </div>
+      </div>
 
-  </tal:block>
-
-  <tal:block condition="context/branches">
-
-    <h2>Bazaar Branches</h2>
-
-    <p>Bazaar is the distributed revision control system that allows many
-    groups to collaborate more effectively on open source projects. The
-    following branches exist in the Bazaar which are thought to be related
-    to <span tal:replace="context/displayname">Mozilla</span>.</p>
-
-    <ul>
-      <li tal:repeat="branch context/branches"
-          tal:content="branch/title">Branch Title Goes Here</li>
-    </ul>
+    </tal:block>
 
   </tal:block>
-
 
 </div>
 

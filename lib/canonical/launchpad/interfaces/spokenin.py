@@ -1,14 +1,18 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Interfaces for information on which languages are spoken in which
+countries..
+"""
+
+__metaclass__ = type
+
+__all__ = ['ISpokenIn']
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-from zope.interface import Interface, Attribute, classImplements
-
-from zope.schema import Choice, Datetime, Int, Text, TextLine, Float
-from zope.schema.interfaces import IText, ITextLine
-
-from canonical.launchpad.fields import Summary, Title, TimeInterval
-from canonical.launchpad.validators.name import valid_name
+from zope.interface import Interface
+from zope.schema import Int
 
 
 class ISpokenIn(Interface):

@@ -30,6 +30,7 @@ this project\'s translation process. The enum lists different approaches to
 translation, from the very open (anybody can edit any translation in any
 language) to the completely closed (only designated translators can make any
 changes at all).';
+COMMENT ON COLUMN Project.calendar IS 'The calendar associated with this project.';
 
 
 -- ProjectRelationship
@@ -68,6 +69,7 @@ COMMENT ON COLUMN Product.active IS 'Whether or not this product should be consi
 COMMENT ON COLUMN Product.translationgroup IS 'The TranslationGroup that is responsible for translations for this product. Note that the Product may be part of a Project which also has a TranslationGroup, in which case the translators from both the product and project translation group have permission to edit the translations of this product.';
 COMMENT ON COLUMN Product.translationpermission IS 'The level of openness of this product\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
 COMMENT ON COLUMN Product.releaseroot IS 'The URL to the directory which holds upstream releases for this product. This allows us to monitor the upstream site and detect new upstream release tarballs.  This URL is used when the associated ProductSeries does not have a URL to use. It is also used to find files outside of any registered series.';
+COMMENT ON COLUMN Product.calendar IS 'The calendar associated with this product.';
 
 
 
@@ -193,7 +195,7 @@ COMMENT ON COLUMN POTemplate.distrorelease IS 'A reference to the distribution f
 COMMENT ON COLUMN POTemplate.sourcepackageversion IS 'The sourcepackage version string from where this potemplate was imported last time with our buildd <-> Rosetta gateway.';
 COMMENT ON COLUMN POTemplate.header IS 'The header of a .pot file when we import it. Most important info from it is POT-Creation-Date and custom headers.';
 COMMENT ON COLUMN POTemplate.potemplatename IS 'A reference to a POTemplateName row that tells us the name/domain for this POTemplate.';
-COMMENT ON COLUMN POTemplate.productrelease IS 'A reference to a ProductRelease from where this POTemplate comes.';
+COMMENT ON COLUMN POTemplate.productseries IS 'A reference to a ProductSeries from where this POTemplate comes.';
 
 -- POTemplateName
 COMMENT ON TABLE POTemplateName IS 'POTemplate Name. This table stores the domains/names of a set of POTemplate rows.';
@@ -265,6 +267,15 @@ COMMENT ON COLUMN POMsgSet.iscomplete IS 'This indicates if we believe that
 Rosetta has an active translation for every expected plural form of this
 message set.';
 
+-- DistroReleaseLanguage
+
+COMMENT ON TABLE DistroReleaseLanguage IS 'A cache of the current translation status of that language across an entire distrorelease.';
+COMMENT ON COLUMN DistroReleaseLanguage.dateupdated IS 'The date these statistucs were last updated.';
+COMMENT ON COLUMN DistroReleaseLanguage.currentcount IS 'As per IRosettaStats.';
+COMMENT ON COLUMN DistroReleaseLanguage.updatescount IS 'As per IRosettaStats.';
+COMMENT ON COLUMN DistroReleaseLanguage.rosettacount IS 'As per IRosettaStats.';
+COMMENT ON COLUMN DistroReleaseLanguage.contributorcount IS 'The total number of contributors to the translation of this distrorelease into this language.';
+
 
 /*
   Bazaar
@@ -315,6 +326,7 @@ the remote bug watch.';
 -- CVERef
 COMMENT ON TABLE CVERef IS 'This table stores CVE references for bugs. CVE is a way of tracking security problems across multiple vendor products.';
 COMMENT ON COLUMN CVERef.cveref IS 'This is the actual CVE number assigned to this specific problem.';
+COMMENT ON COLUMN CVERef.cvestate IS 'This is a dbschema enum which tells us the state (CVE or CAN) of the CVE problem report. It is defined in dbschema.CVEState';
 COMMENT ON COLUMN CVERef.owner IS 'This refers to the person who created the entry.';
 
 -- BugExternalRef
@@ -404,6 +416,7 @@ COMMENT ON COLUMN DistroRelease.datelastlangpack IS
 'The date we last generated a base language pack for this release. Language
 update packs for this release will only include translations added after that
 date.';
+COMMENT ON COLUMN DistroRelease.messagecount IS 'This is a cached value and may be a few hours out of sync with reality. It should, however, be in sync with the values in DistroReleaseLanguage, and should never be updated separately. The total number of translation messages in this distro release, as per IRosettaStats.';
 
 /* ArchArchive */
 
@@ -519,6 +532,8 @@ COMMENT ON COLUMN Person.teamowner IS 'id of the team owner. Team owners will ha
 COMMENT ON COLUMN Person.teamdescription IS 'Informative description of the team. Format and restrictions are as yet undefined.';
 COMMENT ON COLUMN Person.name IS 'Short mneumonic name uniquely identifying this person or team. Useful for url traversal or in places where we need to unambiguously refer to a person or team (as displayname is not unique).';
 COMMENT ON COLUMN Person.language IS 'Preferred language for this person (unset for teams). UI should be displayed in this language wherever possible.';
+COMMENT ON COLUMN Person.calendar IS 'The calendar associated with this person.';
+COMMENT ON COLUMN Person.timezone IS 'The name of the time zone this person prefers (if unset, UTC is used).  UI should display dates and times in this time zone wherever possible.';
 
 -- Karma
 COMMENT ON TABLE Karma IS 'Used to quantify all the ''operations'' a user performs inside the system, which maybe reporting and fixing bugs, uploading packages, end-user support, wiki editting, etc.';
@@ -574,7 +589,7 @@ a maintainer.';
 COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other words, it shows that a particular message is associated with a particular bug.';
 COMMENT ON TABLE Message IS 'This table stores a single RFC822-style message. Messages can be threaded (using the parent field). These messages can then be referenced from elsewhere in the system, such as the BugMessage table, integrating messageboard facilities with the rest of The Launchpad.';
 COMMENT ON COLUMN Message.parent IS 'A "parent message". This allows for some level of threading in Messages.';
-COMMENT ON COLUMN Message.title IS 'The title text of the message, or the subject if it was an email.';
+COMMENT ON COLUMN Message.subject IS 'The title text of the message, or the subject if it was an email.';
 COMMENT ON COLUMN Message.distribution IS 'The distribution in which this message originated, if we know it.';
 COMMENT ON COLUMN Message.raw IS 'The original unadulterated message if it arrived via email. This is required to provide access to the original, undecoded message.';
 
@@ -893,6 +908,11 @@ This allows us to say that a given Source Package INCLUDES libneon but is a
 PRIME package of tla, for example. By INCLUDES we mean that the code is
 actually lumped into the package as ancilliary support material, rather
 than simply depending on a separate packaging of that code.';
+COMMENT ON COLUMN Packaging.owner IS 'This is not the "owner" in the sense
+of giving the person any special privileges to edit the Packaging record,
+it is simply a record of who told us about this packaging relationship. Note
+that we do not keep a history of these, so if someone sets it correctly,
+then someone else sets it incorrectly, we lose the first setting.';
 
 -- Translator / TranslationGroup
 
@@ -929,3 +949,23 @@ COMMENT ON COLUMN GPGKey.revoked IS 'True if this key has been revoked';
 COMMENT ON COLUMN GPGKey.algorithm IS 'The algorithm used to generate this key. Valid values defined in dbschema.GPGKeyAlgorithms';
 COMMENT ON COLUMN GPGKey.keysize IS 'Size of the key in bits, as reported by GPG. We may refuse to deal with keysizes < 768 bits in the future.';
 
+-- Calendar
+COMMENT ON TABLE Calendar IS 'A Calendar attached to some other Launchpad object (currently People, Projects or Products)';
+COMMENT ON COLUMN Calendar.title IS 'The title of the Calendar';
+COMMENT ON COLUMN Calendar.revision IS 'An monotonically increasing counter indicating a particular version of the calendar';
+
+
+-- CalendarSubscription
+COMMENT ON TABLE CalendarSubscription IS 'A subscription relationship between two calendars';
+COMMENT ON COLUMN CalendarSubscription.subject IS 'The subject of the subscription relationship';
+COMMENT ON COLUMN CalendarSubscription.object IS 'The object of the subscription relationship';
+COMMENT ON COLUMN CalendarSubscription.colour IS 'The colour used to display events from calendar \'object\' when in the context of calendar \'subject\'';
+
+COMMENT ON TABLE CalendarEvent IS 'Events belonging to calendars';
+COMMENT ON COLUMN CalendarEvent.uid IS 'A globally unique identifier for the event.  This identifier should be preserved through when importing events from a desktop calendar application';
+COMMENT ON COLUMN CalendarEvent.calendar IS 'The calendar this event belongs to';
+COMMENT ON COLUMN CalendarEvent.dtstart IS 'The start time for the event in UTC';
+COMMENT ON COLUMN CalendarEvent.duration IS 'The duration of the event';
+COMMENT ON COLUMN CalendarEvent.title IS 'A one line description of the event';
+COMMENT ON COLUMN CalendarEvent.description IS 'A multiline description of the event';
+COMMENT ON COLUMN CalendarEvent.location IS 'A location associated with the event';

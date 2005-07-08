@@ -1,8 +1,18 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""SSH key interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'ISSHKey',
+    'ISSHKeySet',
+    ]
 
 from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
+
 _ = MessageIDFactory('launchpad')
 
 

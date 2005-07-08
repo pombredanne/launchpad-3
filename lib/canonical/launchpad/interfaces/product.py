@@ -1,18 +1,21 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['IProduct', 'IProductSet']
 
-# Zope schema imports
-from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, Text, TextLine, Password)
+__all__ = [
+    'IProduct',
+    'IProductSet',
+    ]
+
+from zope.schema import Bool, Choice, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
 from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces.launchpad import IHasOwner, IHasAssignee
+from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad.validators.name import valid_name
+
+_ = MessageIDFactory('launchpad')
 
 class IProduct(IHasOwner):
     """
@@ -138,14 +141,14 @@ class IProduct(IHasOwner):
         "A list of the source packages for this product that can be"
         " translated sorted by distrorelease.name and sourcepackage.name.")
 
-    translatable_releases = Attribute(
-        "A list of the releases of this product for which we have translation"
+    translatable_series = Attribute(
+        "A list of the series of this product for which we have translation"
         " templates.")
 
     primary_translatable = Attribute(
         "The best guess we have for what new translators will want to"
         " translate for a given product. First, tries the current development"
-        " Ubuntu package. Then tries the latest release for which we have"
+        " Ubuntu package. Then tries the latest series for which we have"
         " potemplates.")
 
     potemplatecount = Attribute("The number of POTemplates for this Product.")

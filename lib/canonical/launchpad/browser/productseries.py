@@ -1,16 +1,16 @@
-#
-# Copyright (c) 2004-2005 Canonical Ltd
-#
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
+__all__ = ['traverseProductSeries', 'ProductSeriesView',
+           'ProductSeriesRdfView', 'ProductSeriesSourceSetView']
 
 import re
 import urllib
+from urllib import quote as urlquote
 
-from zope.interface import implements
 from zope.component import getUtility
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+from zope.exceptions import NotFoundError
 
 from CVS.protocol import CVSRoot
 import pybaz
@@ -19,14 +19,17 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 
-from canonical.launchpad.interfaces import IPerson
+from canonical.launchpad.helpers import request_languages, browserLanguages
+from canonical.launchpad.interfaces import (IPerson, ICountry,
+    IPOTemplateSet, ILaunchpadCelebrities, ILaunchBag, ISourcePackageNameSet)
 from canonical.launchpad.browser.productrelease import newProductRelease
-from urllib import quote as urlquote
+from canonical.launchpad.browser.potemplate import POTemplateView
 
-__all__ = ['traverseProductSeries', 'ProductSeriesView',
-           'ProductSeriesRdfView', 'ProductSeriesSourceSetView']
 
 def traverseProductSeries(series, request, name):
+    if name == '+pots':
+        potemplateset = getUtility(IPOTemplateSet)
+        return potemplateset.getSubset(productseries=series)
     return series.getRelease(name)
 
 def validate_cvs_root(cvsroot, cvsmodule):
@@ -111,6 +114,7 @@ class ProductSeriesView(object):
         self.product = context.product
         self.request = request
         self.form = request.form
+        self.user = getUtility(ILaunchBag).user
         self.errormsgs = []
         self.displayname = self.context.displayname
         self.summary = self.context.summary
@@ -138,6 +142,36 @@ class ProductSeriesView(object):
         else:
             self.default_targetarchbranch = self.context.name
         self.default_targetarchversion = '0'
+        # List of languages the user is interested on based on their browser,
+        # IP address and launchpad preferences.
+        self.languages = request_languages(self.request)
+        # Whether there is more than one PO template.
+        self.has_multiple_templates = len(self.context.potemplates) > 1
+
+        # let's find out what source package is associated with this
+        # productseries in the current release of ubuntu
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.curr_ubuntu_release = ubuntu.currentrelease
+        self.setUpPackaging()
+
+    def templateviews(self):
+        return [POTemplateView(template, self.request)
+                for template in self.context.potemplates]
+
+    def setUpPackaging(self):
+        """Ensure that the View class correctly reflects the packaging of
+        its product series context."""
+        self.curr_ubuntu_package = None
+        self.curr_ubuntu_pkgname = ''
+        try:
+            cr = self.curr_ubuntu_release
+            self.curr_ubuntu_package = self.context.getPackage(cr)
+            cp = self.curr_ubuntu_package
+            self.curr_ubuntu_pkgname = cp.sourcepackagename.name
+        except NotFoundError:
+            pass
+        ubuntu = self.curr_ubuntu_release.distribution
+        self.ubuntu_history = self.context.getPackagingInDistribution(ubuntu)
 
     def namesReviewed(self):
         if not (self.product.active and self.product.reviewed):
@@ -247,6 +281,11 @@ class ProductSeriesView(object):
             self.context.importstatus = ImportStatus.TESTING
         elif (oldrcstype is None and self.rcstype is not None):
             self.context.importstatus = ImportStatus.TESTING
+        # make sure we also update the ubuntu packaging if it has been
+        # modified
+        self.setCurrentUbuntuPackage()
+        # XXX: conflicted, probably removed --keybuk 24jun05
+        #self.request.response.redirect('.')
 
     def adminSource(self):
         """Make administrative changes to the source details of the
@@ -260,6 +299,14 @@ class ProductSeriesView(object):
         form = self.form
         if form.get("Update RCS Details", None) is None:
             return
+        # FTP release details
+        self.releaseroot = form.get("releaseroot", self.releaseroot) or None
+        self.releasefileglob = form.get("releasefileglob",
+                self.releasefileglob) or None
+        if self.releaseroot:
+            if not validate_release_root(self.releaseroot):
+                self.errormsgs.append('Invalid release root URL')
+                return
         # look for admin changes and retrieve those
         self.cvsroot = form.get('cvsroot', self.cvsroot) or None
         self.cvsmodule = form.get('cvsmodule', self.cvsmodule) or None
@@ -296,6 +343,8 @@ class ProductSeriesView(object):
         self.context.targetarchcategory = self.targetarchcategory
         self.context.targetarchbranch = self.targetarchbranch
         self.context.targetarchversion = self.targetarchversion
+        self.context.releaseroot = self.releaseroot
+        self.context.releasefileglob = self.releasefileglob
         # find and handle editing changes
         self.editSource(fromAdmin=True)
         if self.form.get('syncCertified', None):
@@ -304,6 +353,35 @@ class ProductSeriesView(object):
         if self.form.get('autoSyncEnabled', None):
             if not self.context.autoSyncEnabled():
                 self.context.enableAutoSync()
+
+    def setCurrentUbuntuPackage(self):
+        """Sets the Packaging record for this product series in the current
+        Ubuntu distrorelease to be for the source package name that is given
+        in the form.
+        """
+        # see if anything was posted
+        if self.request.method != "POST":
+            return
+        form = self.form
+        ubuntupkg = form.get("ubuntupkg", None)
+        if ubuntupkg is None:
+            return
+        # make sure we have a person to work with
+        if self.user is None:
+            self.errormsgs.append('Please log in first!')
+            return
+        # see if the name that is given is a real source package name
+        spns = getUtility(ISourcePackageNameSet)
+        try:
+            spn = spns[ubuntupkg]
+        except IndexError:
+            self.errormsgs.append('Invalid source package name %s' % ubuntupkg)
+            return
+        # set the packaging record for this productseries in the current
+        # ubuntu release. if none exists, one will be created
+        self.context.setPackaging(self.curr_ubuntu_release, spn, self.user)
+        self.setUpPackaging()
+
 
     def newProductRelease(self):
         """
@@ -320,6 +398,12 @@ class ProductSeriesView(object):
                                series=self.context.id)
         if pr:
             self.request.response.redirect(pr.version)
+
+    def requestCountry(self):
+        return ICountry(self.request, None)
+
+    def browserLanguages(self):
+        return browserLanguages(self.request)
 
 
 class ProductSeriesRdfView(object):

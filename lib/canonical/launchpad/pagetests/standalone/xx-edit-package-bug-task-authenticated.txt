@@ -62,10 +62,13 @@ Any authenticated user can edit a source package bug task.
   ... Change
   ... -----------------------------89019536856698512711194452--
   ... """)
-  HTTP/1.1 200 Ok
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: http://.../malone/bugs/3
+  <BLANKLINE>
   ...
-            <p class="portalMessage">Updated on ...</p>
-  ...
+
 
   >>> print http(r"""
   ... GET /distros/debian/+bugs/3/+edit HTTP/1.1
@@ -124,9 +127,11 @@ Any authenticated user can edit a source package bug task.
   ... Change
   ... -----------------------------16131040782095479517127443199--
   ... """)
-  HTTP/1.1 200 Ok
-  ...
-            <p class="portalMessage">Updated on ...</p>
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: http://.../malone/bugs/3
+  <BLANKLINE>
   ...
 
   >>> print http(r"""

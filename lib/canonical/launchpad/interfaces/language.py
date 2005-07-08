@@ -1,6 +1,14 @@
-# Zope schema imports
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Language interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'ILanguage',
+    'ILanguageSet',
+    ]
+
 from zope.interface import Interface, Attribute
 
 class ILanguage(Interface):

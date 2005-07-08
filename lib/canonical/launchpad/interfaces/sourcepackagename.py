@@ -1,24 +1,38 @@
-# Imports from zope
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Source package name interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'ISourcePackageName',
+    'ISourcePackageNameSet',
+    ]
+
 from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
-# launchpad imports
 from canonical.launchpad.validators.name import valid_name
 
-#
-# Interface provied by a SourcePackageName. This is a tiny
-# table that allows multiple SourcePackage entities to share
-# a single name.
-#
+_ = MessageIDFactory('launchpad')
+
+
 class ISourcePackageName(Interface):
+    """Interface provied by a SourcePackageName.
+
+    This is a tiny table that allows multiple SourcePackage entities to share
+    a single name.
+    """
+
     """Name of a SourcePackage"""
 
     id = Int(title=_("ID"), required=True)
     name = TextLine(title=_("Valid Source package name"),
                     required=True, constraint=valid_name)
     potemplates = Attribute("The list of PO templates that this object has.")
+    packagings = Attribute("Everything we know about the packaging of "
+        "packages with this source package name.")
 
     def __unicode__():
         """Return the name"""

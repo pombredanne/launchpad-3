@@ -661,11 +661,11 @@ class ImportProcess:
         """
 
         for template in self.potemplateset.getTemplatesPendingImport():
-            logger.info('Importing the template: %s' % template.title)
+            self.logger.info('Importing the template: %s' % template.title)
             yield template
 
         for pofile in self.pofileset.getPOFilesPendingImport():
-            logger.info('Importing the %s translation of %s' % (
+            self.logger.info('Importing the %s translation of %s' % (
                 pofile.language.englishname, pofile.potemplate.title))
             yield pofile
 
@@ -675,15 +675,15 @@ class ImportProcess:
             # objects implement the doRawImport method so we don't
             # need to care about it here.
             try:
-                object.doRawImport(logger)
+                object.doRawImport(self.logger)
             except KeyboardInterrupt:
                 self.ztm.abort()
                 raise
             except:
                 # If we have any exception, we log it and abort the
                 # transaction.
-                logger.error('We got an unexpected exception while importing',
-                             exc_info=1)
+                self.logger.error('We got an unexpected exception while'
+                                  ' importing', exc_info=1)
                 self.ztm.abort()
                 continue
 
@@ -697,8 +697,8 @@ class ImportProcess:
             except:
                 # If we have any exception, we log it and abort the
                 # transaction.
-                logger.error('We got an unexpected exception while committing'
-                             'the transaction', exc_info=1)
+                self.logger.error('We got an unexpected exception while'
+                                  ' committing the transaction', exc_info=1)
                 self.ztm.abort()
 
 

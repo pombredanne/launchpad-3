@@ -43,11 +43,11 @@ from canonical.launchpad.database.binarypackagename import *
 from canonical.launchpad.database.publishedpackage import *
 from canonical.launchpad.database.distribution import *
 from canonical.launchpad.database.distrorelease import *
+from canonical.launchpad.database.distroreleaselanguage import *
 from canonical.launchpad.database.distroarchrelease import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.schema import *
 from canonical.launchpad.database.language import *
-from canonical.launchpad.database.translation_effort import *
 from canonical.launchpad.database.translationgroup import *
 from canonical.launchpad.database.translator import *
 from canonical.launchpad.database.processor import *
@@ -63,6 +63,7 @@ from canonical.launchpad.database.message import *
 from canonical.launchpad.database.queue import *
 from canonical.launchpad.database.country import *
 from canonical.launchpad.database.spokenin import *
+from canonical.launchpad.database.cal import *
 from canonical.launchpad.database.logintoken import *
 from canonical.launchpad.database.codeofconduct import *
 from canonical.launchpad.database.distrotool import *

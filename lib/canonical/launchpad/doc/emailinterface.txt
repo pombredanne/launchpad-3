@@ -35,6 +35,7 @@ sent:
 
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.launchpad.ubuntu.com
+    ... Date: Fri Jun 17 10:20:23 BST 2005
     ... Subject: A bug in Firefox
     ... 
     ... There is a bug in Firefox.
@@ -123,6 +124,7 @@ email:
 
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2005
     ... Subject: A bug in Firefox, Foo Bar will fix it
     ...
     ...  private yes
@@ -148,6 +150,7 @@ we also specify a source package directly:
 
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2005
     ... Subject: A bug in Debian's Evolution package
     ... 
     ... There's a bug in Debian.
@@ -183,7 +186,8 @@ a reply to the notification.
     >>> comment_mail = """From: test@canonical.com
     ... To: 1@malone
     ... In-Reply-To: %s
-    ... Message-Id: <test1>
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Message-Id: <yada-yada-test1>
     ... Subject: New comment to bug 1
     ...
     ... This is a reply to an existing comment.
@@ -191,8 +195,7 @@ a reply to the notification.
 
     >>> process_email(comment_mail)
     >>> transaction.commit()
-    >>> added_message = getUtility(IMessageSet).get('<test1>')
-
+    >>> added_message = getUtility(IMessageSet).get('<yada-yada-test1>')[0]
     >>> added_message in bug.messages
     True
     >>> added_message.parent == bug_message
@@ -209,6 +212,7 @@ XXX: Write explanation and fix this test when BugNotificationsThreading
     ... To: 1@malone
     ... In-Reply-To: %s
     ... Message-Id: <test2>
+    ... Date: Fri Jun 17 10:20:23 BST 2005
     ... Subject: Reply to previous comment
     ...
     ... > This is a reply to an existing comment.
@@ -217,7 +221,7 @@ XXX: Write explanation and fix this test when BugNotificationsThreading
 
     >>> process_email(notification_reply)
     >>> transaction.commit()
-    >>> added_message_reply = getUtility(IMessageSet).get('<test2>')
+    >>> added_message_reply = getUtility(IMessageSet).get('<test2>')[0]
 
     XXX: The following test should pass. I'll fix it after
          BugAddNotifications.
@@ -231,6 +235,7 @@ Note that we can edit more than one bug in the same email, by using the
 
     >>> comment_edit = """From: test@canonical.com
     ... To: 4@malone
+    ... Date: Fri Jun 17 10:20:23 BST 2005
     ... Subject: Don't tell anyone about his bug.
     ...
     ...   private yes
@@ -270,6 +275,7 @@ including an 'affects' command:
 
     >>> submit_mail_no_bugtask = """From: test@canonical.com
     ... To: new@malone
+    ... Date: Fri Jun 17 10:20:23 BST 2005
     ... Subject: A bug without a product or distribution
     ...
     ... There's a nasty bug in Evolution."""
@@ -298,6 +304,7 @@ Now we try to submit a bug on a distribution that doesn't exist:
    
     >>> submit_mail_distro_not_found = """From: test@canonical.com
     ... To: new@malone
+    ... Date: Fri Jun 17 10:20:23 BST 2005
     ... Subject: A bug with a non existing distribution
     ...
     ... There's a nasty bug in Foo.

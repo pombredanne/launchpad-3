@@ -4,12 +4,21 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'POTemplateNameSetView',
+    'POTemplateNameView',
+    'POTemplateNameEditView',
+    'POTemplateNameAddView',
+    'traversePOTemplateNames',
+    ]
+
 from datetime import datetime
 
 from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import IPOTemplateNameSet
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
@@ -52,21 +61,9 @@ class POTemplateNameView:
 
         for potemplate in self.context.potemplates:
 
-            if potemplate.productrelease is not None:
-                url = '/products/%s/%s/+pots/%s' % (
-                    potemplate.productrelease.productseries.product.name,
-                    potemplate.productrelease.version,
-                    self.context.name)
-            else:
-                url = '/distros/%s/%s/+sources/%s/+pots/%s/' % (
-                    potemplate.distrorelease.distribution.name,
-                    potemplate.distrorelease.name,
-                    potemplate.sourcepackagename.name,
-                    self.context.name)
-
             potemplate_view = {
                 'description': potemplate.description,
-                'url': url
+                'url': canonical_url(potemplate)
                 }
 
             potemplates.append(potemplate_view)

@@ -1,15 +1,24 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-# Zope schema imports
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
+"""Product release interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IProductReleaseSet',
+    'IProductRelease',
+    ]
+
+from zope.schema import Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
 from canonical.lp.dbschema import UpstreamFileType
 
+_ = MessageIDFactory('launchpad')
+
 class IProductReleaseSet(Interface):
-    """Auxiliar class for ProductRelease handling.""" 
+    """Auxiliar class for ProductRelease handling."""
 
     def new(version, owner, productseries, title=None, shortdesc=None,
             description=None, changelog=None):
@@ -21,6 +30,8 @@ class IProductRelease(Interface):
     Mozilla 1.7.2 or Apache 2.0.48."""
     id = Int(title=_('ID'), required=True, readonly=True)
     datereleased = Datetime(title=_('Date Released'), required=True,
+                            readonly=False)
+    datecreated = Datetime(title=_('Date Registered'), required=True,
                             readonly=True)
     version = TextLine(title=_('Version'), required=True, readonly=True)
     owner = Int(title=_('Owner'), required=True, readonly=True)
@@ -37,10 +48,6 @@ class IProductRelease(Interface):
     manifest = Attribute(_('Manifest Information.'))
     product = Attribute(_('Retrive Product Instance from ProductSeries.'))
     files = Attribute(_('Iterable of product release files.'))
-    potemplates = Attribute(
-        _("Return an iterator over this productrelease's PO templates."))
-    potemplatecount = Attribute(_("The number of POTemplates for this "
-                        "ProductRelease."))
 
     def addFileAlias(alias_id, file_type=UpstreamFileType.CODETARBALL):
         """Add a link between this product and a library file alias."""

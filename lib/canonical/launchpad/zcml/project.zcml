@@ -8,6 +8,7 @@
     <!-- Project -->
     <content class="canonical.launchpad.database.Project">
         <allow interface="canonical.launchpad.interfaces.IProject" />
+        <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IProject"
@@ -16,7 +17,7 @@
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IProject"
-        getter="getProduct" />
+        function="canonical.launchpad.browser.traversers.traverse_project" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"

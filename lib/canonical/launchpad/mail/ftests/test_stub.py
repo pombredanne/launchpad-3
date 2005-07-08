@@ -1,3 +1,7 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
 import unittest
 from zope.testing.doctest import DocTestSuite
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
@@ -9,8 +13,7 @@ import transaction
 
 import email
 from email.MIMEText import MIMEText
-from canonical.launchpad.mail import *
-from canonical.launchpad.mail import stub
+from canonical.launchpad.mail import stub, simple_sendmail
 
 def setUp(junk):
     # Reset the in-memory mail spool

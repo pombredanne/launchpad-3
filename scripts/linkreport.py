@@ -22,8 +22,8 @@ from canonical.config import config
 from canonical.launchpad.mail import simple_sendmail
 
 
-class BrokenLink(SQLBase):
-    _table = 'BrokenLink'
+class CheckedLink(SQLBase):
+    _table = 'CheckedLink'
     urlname = StringCol(notNull=True)
     recursionlevel = IntCol(notNull=True)
     parentname = StringCol(notNull=True)
@@ -40,7 +40,7 @@ class BrokenLink(SQLBase):
     dltime = FloatCol()
     dlsize = IntCol()
     checktime = FloatCol(notNull=True)
-    since = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    brokensince = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     #cached = BoolCol(notNull=True)
 
     resultcode_index = DatabaseIndex('resultcode')
@@ -54,21 +54,27 @@ def main(csvfile, log):
 
     # Suck in the csv file, updating the database and adding to the broken set
     reader = csv.DictReader(
-            (line for line in csvfile if not line.startswith('#'))
+            (line.replace('\0','') for line in csvfile
+                if not line.startswith('#'))
             )
     for row in reader:
         # Get the result code
-        m = re.search('^(\d+)', row['result'])
-        if m is None:
-            if row['result'] == 'URL is empty':
-                continue
-            elif 'The read operation timed out' in row['result']:
-                row['result'] = '504 %s' % row['result']
-                row['resultcode'] = 504
-            else:
-                raise RuntimeError("Bad result %s" % repr(row["result"]))
+        if row['valid']:
+            row['resultcode'] = 200
+            row['result'] = '200 Ok'
         else:
-            row['resultcode'] = int(m.group(1))
+            m = re.search('^(\d+)', row['result'] or '')
+            if m is None:
+                if row['result'] == 'URL is empty':
+                    continue
+                elif 'The read operation timed out' in row['result']:
+                    row['result'] = '601 %s' % row['result']
+                    row['resultcode'] = 601
+                else:
+                    row['result'] = '602 %s' % row['result']
+                    row['resultcode'] = 602
+            else:
+                row['resultcode'] = int(m.group(1))
 
         # Cast input and nuke crap (to avoid confusing SQLObject)
         row['recursionlevel'] = int(row['recursionlevel'])
@@ -80,42 +86,52 @@ def main(csvfile, log):
         row['dlsize'] = int(row['dlsize'])
         row['checktime'] = float(row['checktime'])
         del row['cached']
+        if row['resultcode'] < 400:
+            row['brokensince'] = None
 
         try:
-            link = BrokenLink.byUrl(row['url'])
+            link = CheckedLink.byUrl(row['url'])
             link.set(**row)
         except LookupError:
-            link = BrokenLink(**row)
+            link = CheckedLink(**row)
         broken.add(link)
 
     total = len(broken)
 
-    # Delete any entries that now pass
-    for link in BrokenLink.select():
+    # Delete any entries that were not spidered
+    # TODO: Only if older than a threshold -- StuartBishop 20050704
+    for link in CheckedLink.select():
         if link in broken:
             continue
         link.destroySelf()
 
-    new_broken_links = BrokenLink.select("""
-        since > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+    new_broken_links = CheckedLink.select("""
+        resultcode in (404, 500, 601)
+        AND brokensince > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
             - '1 day 12 hours'::interval
         """, orderBy=["recursionlevel", "parentname", "url"])
 
-    rep = report("New Arrivals", new_broken_links, total, since=False)
+    rep = report("New Arrivals", new_broken_links, total, brokensince=False)
 
-    old_broken_links = BrokenLink.select("""
-        since <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+    old_broken_links = CheckedLink.select("""
+        resultcode in (404, 500, 601)
+        AND brokensince <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
             - '1 day 12 hours'::interval
-        AND since > CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '14 days'::interval
+        AND brokensince >
+            CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '14 days'::interval
         """, orderBy=["recursionlevel", "parentname", "url"])
 
-    rep += report("Old Favorites", old_broken_links, total, since=True)
+    rep += report("Old Favorites", old_broken_links, total, brokensince=True)
 
-    antique_broken_links = BrokenLink.select("""
-        since <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '14 days'::interval
-        """, orderBy=["since", "recursionlevel", "parentname", "url"])
+    antique_broken_links = CheckedLink.select("""
+        resultcode in (404, 500, 601)
+        AND brokensince <=
+            CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '14 days'::interval
+        """, orderBy=["brokensince", "recursionlevel", "parentname", "url"])
 
-    rep += report("Hall of Shame", antique_broken_links, total, since=True)
+    rep += report(
+            "Hall of Shame", antique_broken_links, total, brokensince=True
+            )
 
     if not options.email:
         # Print to stdout in system encoding - might raise UnicodeError on
@@ -130,7 +146,7 @@ def main(csvfile, log):
                 rep, {'Keywords': 'LinkChecker', 'X-Fnord': 'Fnord'}
                 )
 
-def report(title, links, total, since=True):
+def report(title, links, total, brokensince=True):
 
     out = StringIO()
 
@@ -139,13 +155,15 @@ def report(title, links, total, since=True):
     print >> out, "=" * len(heading)
 
     def print_row(title, value):
-        print >> out, "%-6s: %s" % (title, str(value))
+        print >> out, "%-7s: %s" % (title, str(value))
 
     for link in links:
-        print_row("Parent", link.parentname)
         print_row("Link", link.url)
+        print_row("Parent", link.parentname)
         print_row("Result", link.result)
-        if since:
+        if link.warningstring:
+            print_row("Warning", link.warningstring)
+        if brokensince:
             print_row("Since", link.since.strftime('%A %d %B %Y'))
         print >> out
     print >> out
@@ -188,7 +206,7 @@ if __name__ == '__main__':
     if options.create:
         # Create the table if it doesn't exist. Unfortunately, this is broken
         # so we only create the table if requested on the command line
-        BrokenLink.createTable(ifNotExists=True)
+        CheckedLink.createTable(ifNotExists=True)
 
     main(csvfile, log)
     ztm.commit()

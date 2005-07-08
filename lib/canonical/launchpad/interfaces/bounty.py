@@ -1,17 +1,26 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Bounty interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IBounty',
+    'IBountySet',
+    ]
 
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
-from zope.interface import Interface, Attribute, classImplements
+from zope.interface import Attribute
 
-from zope.schema import Choice, Datetime, Int, Text, TextLine, Float
-from zope.schema.interfaces import IText, ITextLine
+from zope.schema import Datetime, Int, Text, TextLine, Float
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad.fields import Summary, Title, TimeInterval
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces import IHasOwner
 
+_ = MessageIDFactory('launchpad')
 
 class IBounty(IHasOwner):
     """The core bounty description."""

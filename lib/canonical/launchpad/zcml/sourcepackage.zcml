@@ -23,6 +23,25 @@
         for="canonical.launchpad.interfaces.ISourcePackage"
         function="canonical.launchpad.browser.traverseSourcePackage" />
 
+     <browser:url
+         for="canonical.launchpad.interfaces.ISourcePackage"
+         path_expression="string:+sources/${name}"
+         attribute_to_parent="distrorelease"
+         />
+
+    <browser:pages
+      for="canonical.launchpad.interfaces.ISourcePackage"
+      permission="zope.Public">
+      <browser:page
+        name="+portlet-hctstatus"
+        template="../templates/sourcepackage-portlet-hctstatus.pt"
+        lp:url="/distros/ubuntu/hoary/+sources/pmount/+portlet-hctstatus" />
+      <browser:page
+        name="+portlet-releases"
+        template="../templates/sourcepackage-portlet-releases.pt"
+        lp:url="/distros/ubuntu/hoary/+sources/pmount/+portlet-releases" />
+    </browser:pages>
+
     <browser:pages
         for="canonical.launchpad.interfaces.ISourcePackage"
         permission="zope.Public"
@@ -32,13 +51,29 @@
             template="../templates/sourcepackage.pt"
             lp:url="/distros/ubuntu/hoary/+sources/mozilla-firefox/+index" />
         <browser:page
+            name="+gethelp"
+            template="../templates/sourcepackage-gethelp.pt"
+            lp:url="/distros/ubuntu/hoary/+sources/evolution/+gethelp" />
+        <browser:page
+            name="+translate"
+            template="../templates/sourcepackage-translate.pt"
+            lp:url="/distros/ubuntu/hoary/+sources/pmount/+translate" />
+        <browser:page
             name="+changelog"
             template="../templates/sourcepackage-changelog.pt"
             lp:url="/distros/ubuntu/hoary/+sources/evolution/+changelog" />
         <browser:page
+            name="+hctstatus"
+            template="../templates/sourcepackage-hctstatus.pt"
+            lp:url="/distros/ubuntu/hoary/+sources/evolution/+hctstatus" />
+        <browser:page
             name="+translations"
             template="../templates/sourcepackage-translations.pt"
             lp:url="/distros/ubuntu/hoary/+sources/evolution/+translations" />
+        <browser:page
+            name="+buildlog"
+            template="../templates/sourcepackage-buildlog.pt"
+            lp:url="/distros/ubuntu/hoary/+sources/evolution/+buildlog" />
         <browser:page
             name="+potlist"
             template="../templates/object-pots.pt"
@@ -92,6 +127,16 @@
             lp:url="malone/sourcepackage/$SourcePackage.name/+malone-index" />
     </browser:pages>
 
+    <browser:pages
+        for="canonical.launchpad.interfaces.ISourcePackage"
+        permission="launchpad.AnyPerson"
+        class="canonical.launchpad.browser.sourcepackage.SourcePackageView">
+        <browser:page
+            name="+packaging"
+            template="../templates/sourcepackage-packaging.pt"
+            lp:url="/distros/ubuntu/hoary/+sources/apache2/+packaging" />
+    </browser:pages>
+
     <!-- SourcePackageSet -->
     <content class="canonical.launchpad.database.SourcePackageSet">
         <allow
@@ -108,12 +153,6 @@
     <browser:url
         for="canonical.launchpad.interfaces.ISourcePackageSet"
         path_expression="string:+sources"
-        attribute_to_parent="distrorelease"
-        />
-
-    <browser:url
-        for="canonical.launchpad.interfaces.ISourcePackage"
-        path_expression="string:+sources/${name}"
         attribute_to_parent="distrorelease"
         />
 

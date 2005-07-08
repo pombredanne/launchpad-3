@@ -1,0 +1,15 @@
+<div class="portlet">
+  <h4>Package HCT Status:</h4>
+  <div class="portletBody portletContent">
+
+  <b>Upstream Branch:</b><br />
+  <a tal:condition="context/productseries"
+     tal:content="context/productseries/title"
+     tal:attributes="href
+     string:/products/${context/productseries/product/name}/+series/${context/productseries/name}/"
+     >apache head</a>
+  <i tal:condition="not: context/productseries">None linked!</i>
+  <br />
+	
+  </div>
+</div>

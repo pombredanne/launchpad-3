@@ -71,7 +71,7 @@
         <tr tal:repeat="product context/translatable_products">
           <td><img src="/++resource++product_icon.gif"> <span tal:replace="product/name">product</span></td>
           
-          <td><a href="" tal:content="product/title"
+          <td><a href="." tal:content="product/title"
                  tal:attributes="href
                      string:/products/${product/name}/+translations">
                      Product Title here</a></td>

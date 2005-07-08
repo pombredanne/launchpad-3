@@ -1,22 +1,38 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-# Zope schema imports
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
-from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces import IHasOwner
+"""Distribution release interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IDistroRelease',
+    'IDistroReleaseSet',
+    ]
+
+from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
+
+from canonical.launchpad.fields import Title, Summary, Description
+from canonical.launchpad.interfaces import IHasOwner
+
 _ = MessageIDFactory('launchpad')
 
 
 class IDistroRelease(IHasOwner):
     """A Release Object"""
     id = Attribute("The distrorelease's unique number.")
-    name = TextLine(title=_("Name"), required=True,
+    name = TextLine(
+        title=_("Name"), required=True,
         description=_("The name of this distribution release."))
-    displayname = TextLine(title=_("Display name"), required=True,
+    displayname = TextLine(
+        title=_("Display name"), required=True,
         description=_("The release's displayname."))
-    title = Title(title=_("Title"), required=True,
+    fullreleasename = TextLine(
+        title=_("Release name"), required=False,
+        description=_("The release's full name, e.g. Ubuntu Warty"))
+    title = Title(
+        title=_("Title"), required=True,
         description=_("""The title of this release. It should be distinctive 
                       and designed to look good at the top of a page."""))
     summary = Summary(title=_("Summary"), required=True,
@@ -51,8 +67,19 @@ class IDistroRelease(IHasOwner):
     architecturecount = Attribute("The number of architectures in this "
         "release.")
     architectures = Attribute("The Architecture-specific Releases")
+    messagecount = Attribute("The total number of translatable items in "
+        "this distribution release.")
+    distroreleaselanguages = Attribute("The set of dr-languages in this "
+        "release.")
     datelastlangpack = Attribute(
         "The date of the last base language pack export for this release.")
+
+    # related joins
+    packagings = Attribute("All of the Packaging entries for this "
+        "distrorelease.")
+
+    previous_releases = Attribute("Previous distroreleases from the same "
+        "distribution.")
 
     def getBugSourcePackages():
         """Get SourcePackages in a DistroRelease with BugTask"""
@@ -65,9 +92,19 @@ class IDistroRelease(IHasOwner):
     def __getitem__(arch):
         """Return a Set of Binary Packages in this distroarchrelease."""
 
+    def updateStatistics(self):
+        """Update all the Rosetta stats for this distro release."""
+
     def findSourcesByName(name):
         """Return an iterator over source packages with a name that matches
         this one."""
+
+    def getSourcePackageByName(name):
+        """Return a source package in this distro release by name.
+
+        The name given may be a string or an ISourcePackageName-providing
+        object.
+        """
 
     def findBinariesByName(name):
         """Return an iterator over binary packages with a name that matches
@@ -77,6 +114,19 @@ class IDistroRelease(IHasOwner):
         """Given a SourcePackageName, return a list of the currently
         published SourcePackageReleases as SourcePackagePublishing records.
         """
+
+    def publishedBinaryPackages(component=None):
+        """Given an optional component name, return a list of the binary
+        packages that are currently published in this distrorelease in the
+        given component, or in any component if no component name was given.
+        """
+
+    def getDistroReleaseLanguage(language):
+        """Return the DistroReleaseLanguage for this distrorelease and the
+        given language, or None if there's no DistroReleaseLanguage for this
+        distribution and the given language.
+        """
+
 
 class IDistroReleaseSet(Interface):
     """The set of distro releases."""

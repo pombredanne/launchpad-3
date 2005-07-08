@@ -1,8 +1,7 @@
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
-  i18n_domain="canonical.launchpad"
->
+  i18n_domain="canonical.launchpad">
 
   <utility
       factory="canonical.launchpad.utilities.LaunchpadCelebrities"
@@ -68,9 +67,20 @@
       permission="zope.Public"
       />
 
+  <!-- Common menus -->
+
   <browser:menus
       module="canonical.launchpad.browser.launchpad"
       classes="LaunchpadRootFacets RosettaAppMenus"
+      />
+
+  <!-- Menus debug page. -->
+
+  <browser:page
+      for="zope.interface.Interface"
+      name="+debug-menus"
+      template="../templates/launchpad-menus-debug.pt"
+      permission="zope.Public"
       />
 
 </configure>

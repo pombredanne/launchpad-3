@@ -8,16 +8,15 @@ Test if a submit with a big msgid string breaks Rosetta
   >>> data = open(data_file_name)
   >>> print http(r"""
   ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate HTTP/1.1
-  ... Accept-Language: en-gb,en;q=0.5
   ... Content-Length: 8126
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=20
   ... 
   ... %s""" % data.read())
-  HTTP/1.1 303 See Other
-  ...
-  Location: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
   ...
 
 
@@ -25,9 +24,7 @@ Check that the previous submit was saved.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=20 HTTP/1.1
-  ... Accept-Language: en-gb,en;q=0.5
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate
   ... """)
   HTTP/1.1 200 Ok
   ...

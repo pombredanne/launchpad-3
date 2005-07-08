@@ -9,6 +9,9 @@
             <a href="+edit">Edit Project</a>
           </li>
           <li class="edit" tal:condition="context/required:launchpad.Edit">
+            <a href="+reassign">Change Maintainer</a>
+          </li>
+          <li class="edit" tal:condition="context/required:launchpad.Edit">
             <a href="+changetranslators">Change Translators</a>
           </li>
           <li class="download">

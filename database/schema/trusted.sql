@@ -63,7 +63,7 @@ COMMENT ON FUNCTION valid_version(text) IS 'validate a version number
 CREATE OR REPLACE FUNCTION valid_cve(text) RETURNS boolean AS '
     import re
     name = args[0]
-    pat = r"^(CAN|CVE)-(19|20)\\d\\d-\\d+$"
+    pat = r"^(19|20)\\d{2}-\\d{4}$"
     if re.match(pat, name):
         return 1
     return 0
@@ -71,7 +71,7 @@ CREATE OR REPLACE FUNCTION valid_cve(text) RETURNS boolean AS '
 
 COMMENT ON FUNCTION valid_cve(text) IS 'validate a common vulnerability number
 
-    As defined on www.cve.mitre.org';
+    As defined on www.cve.mitre.org, minus the CAN- or CVE- prefix.';
 
 
 CREATE OR REPLACE FUNCTION valid_absolute_url(text) RETURNS boolean AS '

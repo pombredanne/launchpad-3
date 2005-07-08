@@ -6,13 +6,16 @@
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure view/launchbag/distribution/@@+portlet-details" />
-    <div tal:replace="structure view/launchbag/distrorelease/@@+portlet-details" />
+    <div tal:replace="structure context/distribution/@@+portlet-details" />
+    <div tal:replace="structure context/distrorelease/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-translations" />
+    <div tal:replace="structure context/@@+portlet-hctstatus" />
   </metal:leftportlets>
+
 
   <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-actions" />
+    <div tal:replace="structure context/@@+portlet-releases" />
   </metal:rightportlets>
 
 <div metal:fill-slot="main">

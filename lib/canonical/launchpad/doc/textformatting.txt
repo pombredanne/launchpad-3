@@ -1,0 +1,37 @@
+Formatting text in Python
+=========================
+
+Wrapping multi-paragraph text
+-----------------------------
+
+So, textwrap has this little problem. The problem is that the two
+helper functions it currently exports, wrap() and fill() expect their
+argument to be one paragraph of text. If you try to pass a
+multi-paragraph string to one of these functions, you may well be
+unplesantly surprised at the result.
+
+As a solution to this, we've imported contrib.docwrapper.DocWrapper
+from the Python Cookbook. DocWrapper knows how to wrap multi-paragraph
+text.
+
+So, with textwrap:
+
+    >>> import textwrap
+    >>> description = """\
+    ... a new description that is quite long. but the nice thing is that the edit notification email generator knows how to indent and wrap descriptions, so this will appear quite nice in the actual email that gets sent.\n\nit's also smart enough to preserve whitespace, finally!"""
+    >>> textwrap.wrap(description, width=80)
+    ['a new description that is quite long. but the nice thing is that the edit', 'notification email generator knows how to indent and wrap descriptions, so this', "will appear quite nice in the actual email that gets sent.  it's also smart", 'enough to preserve whitespace, finally!']
+
+Note in the above example that the "...gets sent.\n\nit's..." got
+squished into being on the the same line, which is obviously not what
+we want.
+
+DocWrapper to the rescue!
+
+    >>> from contrib.docwrapper import DocWrapper
+    >>> docwrapper = DocWrapper(width=80)
+    >>> docwrapper.wrap(description)
+    ['a new description that is quite long. but the nice thing is that the edit', 'notification email generator knows how to indent and wrap descriptions, so this', 'will appear quite nice in the actual email that gets sent.', '', "it's also smart enough to preserve whitespace, finally!"]
+
+Note how the paragraph that begins after "...email that gets sent." is
+preserved.

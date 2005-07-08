@@ -48,12 +48,12 @@ Now, is time to create the new potemplate
     >>> release = ProductRelease.get(3)
     >>> release.productseries.product.name
     u'firefox'
-
+    >>> series = release.productseries
     >>> from canonical.launchpad.database import POTemplateNameSet
     >>> ptn = POTemplateNameSet().new('firefox', 'Whatever')
 
     >>> from canonical.launchpad.database import POTemplateSubset
-    >>> subset = POTemplateSubset(productrelease=release)
+    >>> subset = POTemplateSubset(productseries=series)
 
 Here's the person who'll be doing the import.
 
@@ -133,6 +133,7 @@ Here are the contents of the file we'll be importing.
     ... msgid ""
     ... msgstr ""
     ... "PO-Revision-Date: 2005-06-03 19:41+0100\n"
+    ... "Last-Translator: Carlos Perello Marin <carlos@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
     ... "Plural-Forms: nplurals=4; plural=n==1) ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
     ...
@@ -215,6 +216,10 @@ Check that the plural form was imported correctly.
     >>> messageSet.published_texts
     [u'Foos', u'Bars', u'Welsh power!', u'We have four!']
 
+The owner for those translations should be Carlos
+
+    >>> published.person.displayname
+    u'Carlos Perell\xf3 Mar\xedn'
 
 Now, is time to check the notification email.
 
@@ -228,12 +233,12 @@ Now, is time to check the notification email.
     ['mark@hbd.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
-    'Translation problems - Welsh (cy) - firefox in Mozilla Firefox 0.9'
+    'Translation problems - Welsh (cy) - firefox in Mozilla Firefox\n\tMilestone Releases'
     >>> print msg.get_payload(decode=True)
     Hello Mark Shuttleworth,
     <BLANKLINE>
     On ... (just requested), you uploaded 5
-    Welsh (cy) translations for firefox in Mozilla Firefox 0.9 in Rosetta.
+    Welsh (cy) translations for firefox in Mozilla Firefox Milestone Releases in Rosetta.
     <BLANKLINE>
     There were problems with 1 of these translations.
     <BLANKLINE>

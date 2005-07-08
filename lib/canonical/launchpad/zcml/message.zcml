@@ -13,16 +13,6 @@
             set_schema="canonical.launchpad.interfaces.IMessage" />
     </content>
 
-    <content class="canonical.launchpad.database.MessageChunk">
-        <allow interface="canonical.launchpad.interfaces.IMessageChunk" />
-    </content>
-
-    <securedutility
-        class="canonical.launchpad.database.MessageSet"
-        provides="canonical.launchpad.interfaces.IMessageSet">
-        <allow interface="canonical.launchpad.interfaces.IMessageSet" />
-    </securedutility>
-
     <adapter
         for="canonical.launchpad.interfaces.IBugMessage"
         provides="canonical.launchpad.interfaces.IMessage"
@@ -40,12 +30,10 @@
         name="+new"
         for="canonical.launchpad.interfaces.IMessagesView"
         schema="canonical.launchpad.interfaces.message.IAddMessage"
-        class="canonical.launchpad.browser.addview.SQLObjectAddView"
+        class="canonical.launchpad.browser.bugmessage.BugMessageAddView"
         label="Add a Comment"
-        fields="title content"
-        content_factory="canonical.launchpad.database.bugmessage.BugMessageFactory"
-        arguments=""
-        keyword_arguments="title content"
+        fields="subject content"
+        keyword_arguments="subject content"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bug.id/messages/+new"
@@ -58,5 +46,17 @@
         template="../templates/messagechunk-snippet.pt"
         permission="launchpad.AnyPerson"
         />
+
+    <!-- MessageChunk -->
+    <content class="canonical.launchpad.database.MessageChunk">
+        <allow interface="canonical.launchpad.interfaces.IMessageChunk" />
+    </content>
+
+  <!-- MessageSet -->
+  <securedutility
+      class="canonical.launchpad.database.MessageSet"
+      provides="canonical.launchpad.interfaces.IMessageSet">
+      <allow interface="canonical.launchpad.interfaces.IMessageSet" />
+  </securedutility>
 
 </configure>

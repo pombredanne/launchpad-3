@@ -31,6 +31,7 @@ __all__ = (
 'BountySubscription',
 'BranchRelationships',
 'BugTaskStatus',
+'BugTrackerType',
 'BugExternalReferenceType',
 'BugInfestationStatus',
 'BugPriority',
@@ -39,11 +40,13 @@ __all__ = (
 'BugSubscription',
 'BuildStatus',
 'CodereleaseRelationships',
+'CVEState',
 'DistributionReleaseStatus',
 'EmailAddressStatus',
 'HashAlgorithm',
 'ImportTestStatus',
 'KarmaActionCategory',
+'KarmaActionName',
 'LoginTokenType',
 'ManifestEntryType',
 'PackagePublishingPriority',
@@ -71,6 +74,7 @@ __all__ = (
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
 'MirrorFreshness',
+'RosettaFileFormat',
 )
 
 from zope.interface.advice import addClassAdvisor
@@ -332,6 +336,60 @@ class ImportTestStatus(DBSchema):
         Succeeded
 
         The sourcesource was successfully imported by the autotester.
+        """)
+
+class BugTrackerType(DBSchema):
+    """The Types of BugTracker Supported by Launchpad
+
+    This enum is used to differentiate between the different types of Bug
+    Tracker that are supported by Malone in the Launchpad.
+    """
+
+    BUGZILLA = Item(1, """
+        Bugzilla
+
+        The godfather of open source bug tracking, the Bugzilla system was
+        developed for the Mozilla project and is now in widespread use. It
+        is big and ugly but also comprehensive.
+        """)
+
+    DEBBUGS = Item(2, """
+        Debbugs
+
+        The debbugs tracker is email based, and allows you to treat every
+        bug like a small mailing list.
+        """)
+
+    ROUNDUP = Item(3, """
+        Roundup
+
+        Roundup is a lightweight, customisable and fast web/email based bug
+        tracker written in Python.
+        """)
+
+
+class CVEState(DBSchema):
+    """The Status of this item in the CVE Database
+
+    When a potential problem is reported to the CVE authorities they assign
+    a CAN number to it. At a later stage, that may be converted into a CVE
+    number. This indicator tells us whether or not the issue is believed to
+    be a CAN or a CVE.
+    """
+
+    CAN = Item(1, """
+        CAN
+
+        The vulnerability is a candidate, it has not yet been confirmed and
+        given a CVE number.
+        """)
+
+    CVE = Item(2, """
+        CVE
+
+        This vulnerability or threat has been assigned a CVE number, and is
+        fully documented. It has been through the full CVE verification
+        process.
         """)
 
 class ProjectStatus(DBSchema):

@@ -4,10 +4,15 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'DistroRelease',
+    'DistroReleaseSet',
+    ]
+
 from zope.interface import implements
 from zope.component import getUtility
 
-from sqlobject import StringCol, ForeignKey, MultipleJoin
+from sqlobject import StringCol, ForeignKey, MultipleJoin, IntCol
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -15,15 +20,21 @@ from canonical.lp.dbschema import (
     PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus)
 
 from canonical.launchpad.interfaces import (
-    IDistroRelease, IDistroReleaseSet, ISourcePackageName)
+    IDistroRelease, IDistroReleaseSet, ISourcePackageName, ISourcePackageSet)
 
 from canonical.launchpad.database.sourcepackageindistro import (
     SourcePackageInDistro)
-from canonical.launchpad.database.publishedpackage import PublishedPackageSet
 from canonical.launchpad.database.publishing import (
     PackagePublishing, SourcePackagePublishing)
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.distroreleaselanguage import \
+    DistroReleaseLanguage
+from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.binarypackage import BinaryPackage
+
 from canonical.launchpad.helpers import shortlist
 
 
@@ -53,13 +64,39 @@ class DistroRelease(SQLBase):
         dbName='owner', foreignKey='Person', notNull=True)
     lucilleconfig = StringCol(notNull=False)
     architectures = MultipleJoin(
-        'DistroArchRelease', joinColumn='distrorelease')
+        'DistroArchRelease', joinColumn='distrorelease',
+        orderBy='datecreated')
     datelastlangpack = UtcDateTimeCol(dbName='datelastlangpack', notNull=False,
                                    default=None)
+    messagecount = IntCol(notNull=True, default=0)
+
+    @property
+    def packagings(self):
+        packagings = list(Packaging.selectBy(distroreleaseID=self.id))
+        packagings.sort(key=lambda a:a.sourcepackagename.name)
+        return packagings
+
+    @property
+    def distroreleaselanguages(self):
+        result = DistroReleaseLanguage.selectBy(distroreleaseID=self.id)
+        return sorted(result, key=lambda a: a.language.englishname)
+
+    @property
+    def previous_releases(self):
+        """See IDistroRelease."""
+        datereleased = self.datereleased
+        # if this one is unreleased, use the last released one
+        if not datereleased:
+            datereleased = 'NOW'
+        return DistroRelease.select('''
+                distribution = %s AND 
+                datereleased < %s
+                ''' % sqlvalues(self.distribution.id, datereleased),
+                orderBy=['-datereleased'])
 
     @property
     def parent(self):
-        """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
+        """See IDistroRelease."""
         if self.parentrelease:
             return self.parentrelease.title
         return ''
@@ -77,7 +114,7 @@ class DistroRelease(SQLBase):
 
     @property
     def binarycount(self):
-        """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
+        """See IDistroRelease."""
         clauseTables = ['DistroArchRelease']
         query = ('PackagePublishing.status = %s '
                  'AND PackagePublishing.distroarchrelease = '
@@ -89,7 +126,7 @@ class DistroRelease(SQLBase):
 
     @property
     def architecturecount(self):
-        """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
+        """See IDistroRelease."""
         return len(list(self.architectures))
 
     @property
@@ -103,8 +140,13 @@ class DistroRelease(SQLBase):
     def potemplatecount(self):
         return len(self.potemplates)
 
+    @property
+    def fullreleasename(self):
+        return "%s %s" % (
+            self.distribution.name.capitalize(), self.name.capitalize())
+
     def getBugSourcePackages(self):
-        """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
+        """See IDistroRelease."""
         clauseTables=["BugTask",]
         query = ("VSourcePackageInDistro.distrorelease = %i AND "
                  "VSourcePackageInDistro.distro = BugTask.distribution AND "
@@ -116,10 +158,59 @@ class DistroRelease(SQLBase):
         return SourcePackageInDistro.select(
             query, clauseTables=clauseTables, distinct=True)
 
+    def getDistroReleaseLanguage(self, language):
+        """See IDistroRelease."""
+        return DistroReleaseLanguage.selectOneBy(
+            distroreleaseID=self.id,
+            languageID=language.id)
+
+    def updateStatistics(self):
+        """See IDistroRelease."""
+        # first find the set of all languages for which we have pofiles in
+        # the distribution
+        langset = set(Language.select('''
+            Language.id = POFile.language AND
+            POFile.potemplate = POTemplate.id AND
+            POTemplate.distrorelease = %s
+            ''' % sqlvalues(self.id),
+            orderBy=['code'],
+            distinct=True,
+            clauseTables=['POFile', 'POTemplate']))
+        # now run through the existing DistroReleaseLanguages for the
+        # distrorelease, and update their stats, and remove them from the
+        # list of languages we need to have stats for
+        for distroreleaselanguage in self.distroreleaselanguages:
+            distroreleaselanguage.updateStatistics()
+            langset.remove(distroreleaselanguage.language)
+        # now we should have a set of languages for which we NEED
+        # to have a DistroReleaseLanguage
+        for lang in langset:
+            drl = DistroReleaseLanguage(distrorelease=self, language=lang)
+            drl.updateStatistics()
+        # lastly, we need to update the message count for this distro
+        # release itself
+        messagecount = 0
+        for potemplate in self.potemplates:
+            messagecount += potemplate.messageCount()
+        self.messagecount = messagecount
+
+
     def findSourcesByName(self, pattern):
         """Get SourcePackages in a DistroRelease with BugTask"""
         srcset = getUtility(ISourcePackageSet)
         return srcset.findByNameInDistroRelease(self.id, pattern)
+
+    def getSourcePackageByName(self, name):
+        """See IDistroRelease."""
+        if not ISourcePackageName.providedBy(name):
+            name_set = SourcePackageNameSet()
+
+            try:
+                name = name_set[name]
+            except IndexError:
+                raise ValueError('No such source package name %r' % name)
+
+        return SourcePackage(sourcepackagename=name, distrorelease=self)
 
     def __getitem__(self, arch):
         """Get SourcePackages in a DistroRelease with BugTask"""
@@ -148,30 +239,37 @@ class DistroRelease(SQLBase):
             clauseTables = ['SourcePackageRelease'])
         return shortlist(published)
 
+    def publishedBinaryPackages(self, component=None):
+        """See IDistroRelease."""
+        # XXX sabdfl 04/07/05 this can become a utility when that works
+        pubpkgset = PublishedPackageSet()
+        result = pubpkgset.query(distrorelease=self, component=component)
+        return [BinaryPackage.get(p.binarypackage) for p in result]
+
 
 class DistroReleaseSet:
     implements(IDistroReleaseSet)
 
     def get(self, distroreleaseid):
-        """See canonical.launchpad.interfaces.IDistroReleaseSet."""
+        """See IDistroReleaseSet."""
         return DistroRelease.get(distroreleaseid)
 
     def translatables(self):
-        """See canonical.launchpad.interfaces.IDistroReleaseSet."""
+        """See IDistroReleaseSet."""
         return DistroRelease.select(
             "POTemplate.distrorelease=DistroRelease.id",
             clauseTables=['POTemplate'], distinct=True)
 
     def findByName(self, name):
-        """See canonical.launchpad.interfaces.IDistroReleaseSet."""
+        """See IDistroReleaseSet."""
         return DistroRelease.selectBy(name=name)
 
     def findByVersion(self, version):
-        """See canonical.launchpad.interfaces.IDistroReleaseSet."""
+        """See IDistroReleaseSet."""
         return DistroRelease.selectBy(version=version)
 
     def search(self, distribution=None, isreleased=None, orderBy=None):
-        """See canonical.launchpad.interfaces.IDistroReleaseSet."""
+        """See IDistroReleaseSet."""
         where_clause = ""
         order_by_param = None
         if distribution is not None:

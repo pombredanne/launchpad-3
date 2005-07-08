@@ -18,8 +18,8 @@ from canonical.launchpad.interfaces import (
         IProduct, IDistribution, IPersonSet, ISourcePackage, IBugEmailCommand,
         IBugEditEmailCommand, IEmailCommand, IBugSet, ILaunchBag, IBugTaskSet)
 from canonical.launchpad.event import (
-    SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent,
-    ISQLObjectCreatedEvent)
+    SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
+from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
 
 from canonical.lp import decorates
 from canonical.lp.dbschema import (
@@ -77,7 +77,7 @@ class BugEmailCommand(EmailCommand):
         bugid = self.string_args[0] 
 
         if bugid == 'new':
-            bug = BugFactory(rfc822msgid=message.rfc822msgid,
+            bug = BugFactory(msg=message,
                              title=message.title,
                              owner=getUtility(ILaunchBag).user)
             return bug, SQLObjectCreatedEvent(bug)

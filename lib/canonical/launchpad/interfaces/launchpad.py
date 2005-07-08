@@ -30,7 +30,9 @@ class ILaunchpadCelebrities(Interface):
     buttsource = Attribute("The 'buttsource' team.")
     admin = Attribute("The 'admins' team.")
     ubuntu = Attribute("The ubuntu Distribution.")
+    debian = Attribute("The debian Distribution.")
     rosetta_expert = Attribute("The Rosetta Experts team.")
+    debbugs = Attribute("The Debian Bug Tracker")
 
 
 class ICrowd(Interface):
@@ -70,9 +72,18 @@ class ILaunchpadRoot(Interface):
 class IMaloneApplication(ILaunchpadApplication):
     """Application root for malone."""
 
+    bug_count = Attribute("The number of bugs recorded in Malone")
+    bugwatch_count = Attribute("The number of links to external bug trackers")
+    bugextref_count = Attribute("The number of links to outside URL's")
+    bugtask_count = Attribute("The number of bug tasks in Malone")
+    bugtracker_count = Attribute("The number of bug trackers in Malone")
+    top_bugtrackers = Attribute("The BugTrackers with the most watches.")
+
 
 class IRosettaApplication(ILaunchpadApplication):
     """Application root for rosetta."""
+
+    statsdate = Attribute("The date the rosetta stats were updated.")
 
     def translatable_products(self, translationProject=None):
         """Return a list of the translatable products in the given
@@ -247,6 +258,7 @@ class ILaunchBag(Interface):
     user = Attribute('Currently authenticated person, or None')
     login = Attribute('The login used by the authenticated person, or None')
 
+    timezone = Attribute("The user's time zone")
 
 class IOpenLaunchBag(ILaunchBag):
     def add(ob):

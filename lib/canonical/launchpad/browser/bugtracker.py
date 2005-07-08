@@ -1,41 +1,49 @@
-from canonical.launchpad.database import BugTracker
-from canonical.launchpad.interfaces import IPerson
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Bug tracker views."""
+
+__metaclass__ = type
+
+__all__ = [
+    'BugTrackerSetView',
+    'BugTrackerView',
+    ]
+
+from zope.app.publisher.browser import BrowserView
+from zope.component import getUtility
+
+from canonical.lp.dbschema import BugTrackerType
+from canonical.launchpad.interfaces import IPerson, IBugTrackerSet
+from canonical.launchpad.webapp import canonical_url
 
 def newBugTracker(form, owner):
     """Process a form to create a new BugTracker Bug Tracking instance
     object."""
-    #
     # Verify that the form was in fact submitted, and that it looks like
     # the right form (by checking the contents of the submit button
     # field, called "Update").
-    #
-    if not form.has_key('Register'): return
-    if not form['Register'] == 'Register Bug Tracker': return
-    #
-    # Extract the BugTracker details, which are in self.form
-    #
+    if not form.has_key('Register'):
+        return
+    if not form['Register'] == 'Register Bug Tracker':
+        return
+    # extract the BugTracker details, which are in self.form
     name = form['name']
     title = form['title']
     summary = form['summary']
     baseurl = form['baseurl']
     contactdetails = form['contactdetails']
-    #
     # XXX Mark Shuttleworth 05/10/04 Hardcoded Bugzilla for the moment
-    #
-    bugtrackertype = 1
-    #
-    # Create the new BugTracker
-    #
-    bugtracker = BugTracker(name=name,
+    bugtrackertype = BugTrackerType.BUGZILLA
+    # create the new BugTracker
+    btset = getUtility(IBugTrackerSet)
+    bugtracker = btset.ensureBugTracker(name=name,
                           bugtrackertype=bugtrackertype,
                           title=title,
                           summary=summary,
                           baseurl=baseurl,
                           contactdetails=contactdetails,
                           owner=owner)
-    #
     # return the bugtracker
-    #
     return bugtracker
 
 
@@ -95,5 +103,4 @@ class BugTrackerView(object):
         # Now redirect to view it again
         #
         self.request.response.redirect(self.request.URL[-1])
-
 

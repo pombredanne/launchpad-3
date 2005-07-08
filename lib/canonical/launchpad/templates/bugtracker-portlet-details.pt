@@ -1,0 +1,31 @@
+<div class="portlet">
+    <h4 tal:content="context/title">bugtracker title</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+
+        <b>Base URL:</b><br />
+        <a class="link-external"
+           tal:attributes="href context/baseurl"
+           tal:content="context/baseurl">http://test.mozilla.org</a><br />
+
+        <b>Tracker Type:</b>
+        <span tal:replace="context/bugtrackertype/title">BugZilla</span>
+        <br />
+
+        <b>Number of watches:</b>
+        <span tal:replace="context/watchcount" /><br />
+
+        <b>Contact Details:</b><br />
+        <span tal:replace="context/contactdetails">contact details go here
+        in a long mess</span><br />
+
+        <b>Creator:</b>
+        <img src="/++resource++user.gif">
+        <a tal:attributes="href string:/people/${context/owner/name}"
+           tal:content="context/owner/browsername"
+           class="link">ownername</a><br />
+
+        </div>
+    </div>
+</div>

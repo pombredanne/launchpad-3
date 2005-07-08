@@ -1,6 +1,14 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
+"""Published package interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IPublishedPackage',
+    'IPublishedPackageSet',
+    ]
+
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
@@ -40,7 +48,7 @@ class IPublishedPackageSet(Interface):
         """Iterate over all published packages."""
 
     def query(name=None, text=None, distribution=None, distrorelease=None,
-              distroarchrelease=None):
+              distroarchrelease=None, component=None):
         """Search through published packages returning those that meet the
         given criteria"""
 

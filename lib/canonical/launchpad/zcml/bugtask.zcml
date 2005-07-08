@@ -49,13 +49,13 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
-        path_expression="string:+bugs/${id}"
+        path_expression="string:+bugs/${bug/id}"
         attribute_to_parent="product"
         />
 
     <browser:url
         for="canonical.launchpad.interfaces.IDistroBugTask"
-        path_expression="string:+bugs/${id}"
+        path_expression="string:+bugs/${bug/id}"
         attribute_to_parent="distribution"
         />
 
@@ -139,7 +139,7 @@
                 severity assignee bugwatch statusexplanation"
         label="Edit Product Bug Task"
         permission="launchpad.Edit"
-        template="../templates/bugtask-editform.pt"
+        template="../templates/bugtask-edit.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
         <browser:widget
           field="statusexplanation"
@@ -156,8 +156,8 @@
                 assignee bugwatch statusexplanation"
         label="Product Bug Task"
         permission="launchpad.View"
-        template="../templates/bugtask-editform.pt"
-        lp:url="malone/tasks/$BugTask.id/+edit">
+        template="../templates/bugtask-view.pt"
+        lp:url="malone/tasks/$BugTask.id/+index">
     </browser:schemadisplay>
 
     <browser:defaultView
@@ -191,7 +191,7 @@
                 status priority severity assignee bugwatch statusexplanation"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
-        template="../templates/bugtask-editform.pt"
+        template="../templates/bugtask-edit.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
         <browser:widget
           field="statusexplanation"
@@ -208,7 +208,7 @@
                 status priority severity assignee bugwatch statusexplanation"
         label="Source Package Bug Task"
         permission="zope.Public"
-        template="../templates/bugtask-editform.pt"
+        template="../templates/bugtask-view.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:schemadisplay>
 
@@ -241,7 +241,7 @@
                 status priority severity assignee bugwatch statusexplanation"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
-        template="../templates/bugtask-editform.pt"
+        template="../templates/bugtask-edit.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
         <browser:widget
           field="statusexplanation"
@@ -258,7 +258,7 @@
                 assignee bugwatch statusexplanation"
         label="Source Package Bug Task"
         permission="zope.Public"
-        template="../templates/bugtask-editform.pt"
+        template="../templates/bugtask-view.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:schemadisplay>
 

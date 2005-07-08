@@ -27,14 +27,16 @@ from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
-    IProduct, IProductSet, IDistribution, ILaunchpadCelebrities)
+    IProduct, IProductSet, IDistribution, ILaunchpadCelebrities,
+    ICalendarOwner)
 
 
 class Product(SQLBase):
     """A Product."""
 
-    implements(IProduct)
+    implements(IProduct, ICalendarOwner)
 
     _table = 'Product'
 
@@ -69,6 +71,17 @@ class Product(SQLBase):
     freshmeatproject = StringCol(notNull=False, default=None)
     sourceforgeproject = StringCol(notNull=False, default=None)
     releaseroot = StringCol(notNull=False, default=None)
+
+    calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
+                          default=None, forceDBName=True)
+
+    def getOrCreateCalendar(self):
+        if not self.calendar:
+            self.calendar = Calendar(
+                title='%s Product Calendar' % self.displayname,
+                revision=0)
+        return self.calendar
+
     bugtasks = MultipleJoin('BugTask', joinColumn='product')
     branches = MultipleJoin('Branch', joinColumn='product')
     serieslist = MultipleJoin('ProductSeries', joinColumn='product')
@@ -124,17 +137,16 @@ class Product(SQLBase):
         return packages
     translatable_packages = property(translatable_packages)
 
-    def translatable_releases(self):
+    @property
+    def translatable_series(self):
         """See IProduct."""
-        releases = ProductRelease.select(
-                        "POTemplate.productrelease=ProductRelease.id AND "
-                        "ProductRelease.productseries=ProductSeries.id AND "
-                        "ProductSeries.product=%d" % self.id,
-                        clauseTables=['POTemplate', 'ProductRelease',
-                                      'ProductSeries'],
-                        orderBy='version', distinct=True)
-        return list(releases)
-    translatable_releases = property(translatable_releases)
+        series = ProductSeries.select('''
+            POTemplate.productseries = ProductSeries.id AND 
+            ProductSeries.product = %d
+            ''' % self.id,
+            clauseTables=['POTemplate'],
+            orderBy='datecreated', distinct=True)
+        return list(series)
 
     def primary_translatable(self):
         """See IProduct."""
@@ -145,10 +157,10 @@ class Product(SQLBase):
         for package in packages:
             if package.distrorelease == targetrelease:
                 return package
-        # now go with the latest release for which we have templates
-        releases = self.translatable_releases
-        if releases:
-            return releases[0]
+        # now go with the latest series for which we have templates
+        series = self.translatable_series
+        if series:
+            return series[0]
         # now let's make do with any ubuntu package
         for package in packages:
             if package.distribution == ubuntu:
@@ -205,14 +217,13 @@ class Product(SQLBase):
     def potemplates(self):
         """See IProduct."""
         # XXX sabdfl 30/03/05 this method is really obsolete, because what
-        # we really care about now is ProductRelease.potemplates
+        # we really care about now is ProductSeries.potemplates
         warn("Product.potemplates is obsolete, should be on ProductRelease",
              DeprecationWarning)
         templates = []
         for series in self.serieslist:
-            for release in series.releases:
-                for potemplate in release.potemplates:
-                    templates.append(potemplate)
+            for potemplate in series.potemplates:
+                templates.append(potemplate)
 
         return templates
 
@@ -416,13 +427,12 @@ class ProductSet:
     def translatables(self, translationProject=None):
         """See IProductSet"""
 
-        translatable_set = sets.Set()
+        translatable_set = set()
         upstream = Product.select('''
             Product.id = ProductSeries.product AND
-            ProductSeries.id = ProductRelease.productseries AND
-            POTemplate.productrelease = ProductRelease.id
+            POTemplate.productseries = ProductSeries.id
             ''',
-            clauseTables=['ProductRelease', 'ProductSeries', 'POTemplate'],
+            clauseTables=['ProductSeries', 'POTemplate'],
             distinct=True)
         for product in upstream:
             translatable_set.add(product)

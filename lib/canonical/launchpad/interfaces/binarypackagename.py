@@ -1,16 +1,21 @@
-# Imports from zope
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Binary package name interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IBinaryPackageName',
+    'IBinaryPackageNameSet',
+    ]
+
 from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
-
-# launchpad imports
 from canonical.launchpad.validators.name import valid_name
 
-#
-#
-#
+_ = MessageIDFactory('launchpad')
 
 class IBinaryPackageName(Interface):
     id = Int(title=_('ID'), required=True)

@@ -1,8 +1,24 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
-from zope.interface import Interface, Attribute
+"""Publishing interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IPackagePublishing',
+    'ISourcePackagePublishing',
+    'ISourcePackageFilePublishing',
+    'IBinaryPackageFilePublishing',
+    'ISourcePackagePublishingView',
+    'IBinaryPackagePublishingView',
+    'ISourcePackagePublishingHistory',
+    'IPackagePublishingHistory',
+    ]
+
+from zope.schema import Bool, Datetime, Int, TextLine
+from zope.interface import Interface
 from zope.i18nmessageid import MessageIDFactory
+
 _ = MessageIDFactory('launchpad')
 
 class IPackagePublishing(Interface):
@@ -48,7 +64,7 @@ class IPackagePublishing(Interface):
             title=_('The pocket into which this entry is published'),
             required=True, readonly=True,
             )
-    
+
 class ISourcePackagePublishing(Interface):
     """A source package publishing record."""
 
@@ -83,12 +99,12 @@ class ISourcePackagePublishing(Interface):
             title=_('The date on which this record is scheduled for deletion'),
             required=False, readonly=False,
             )
-    
+
     pocket = Int(
             title=_('The pocket into which this entry is published'),
             required=True, readonly=True,
             )
-    
+
 class ISourcePackageFilePublishing(Interface):
     """Source package release files and their publishing status"""
 
@@ -105,7 +121,7 @@ class ISourcePackageFilePublishing(Interface):
             title=_('Sourcepackage release file alias'), required=True,
             readonly=True,
             )
- 
+
     libraryfilealiasfilename = TextLine(
             title=_('File name'), required=True, readonly=True,
             )
@@ -146,7 +162,7 @@ class IBinaryPackageFilePublishing(Interface):
             title=_('Binarypackage file alias'), required=True,
             readonly=True,
             )
- 
+
     libraryfilealiasfilename = TextLine(
             title=_('File name'), required=True, readonly=True,
             )
@@ -191,7 +207,7 @@ class ISourcePackagePublishingView(Interface):
     sectionname = TextLine(
             title=_('Section name'), required=True, readonly=True,
             )
-    
+
     distribution = Int(
             title=_('Distribution ID'), required=True, readonly=True,
             )
@@ -215,11 +231,11 @@ class IBinaryPackagePublishingView(Interface):
     sectionname = TextLine(
             title=_('Section name'), required=True, readonly=True,
             )
-    
+
     priority = Int(
             title=_('Priority'), required=True, readonly=True,
             )
-    
+
     distribution = Int(
             title=_('Distribution ID'), required=True, readonly=True,
             )
@@ -269,7 +285,7 @@ class ISourcePackagePublishingHistory(Interface):
             title=_('The date on which this record was marked superseded'),
             required=False, readonly=False,
             )
-    
+
     supersededby = Int(
             title=_('The sourcepackagerelease which superseded this one'),
             required=False, readonly=False,
@@ -289,7 +305,7 @@ class ISourcePackagePublishingHistory(Interface):
             title=_('The pocket into which this entry is published'),
             required=True, readonly=False,
             )
-    
+
     embargo = Bool(
             title=_('Whether or not this record is under embargo'),
             required=True, readonly=False,
@@ -338,7 +354,7 @@ class IPackagePublishingHistory(Interface):
             title=_('The status of this publishing record'),
             required=False, readonly=False,
             )
-    
+
     datecreated = Datetime(
             title=_('The date on which this record was created'),
             required=True, readonly=False,
@@ -348,7 +364,7 @@ class IPackagePublishingHistory(Interface):
             title=_('The date on which this record was marked superseded'),
             required=False, readonly=False,
             )
-    
+
     supersededby = Int(
             title=_('The build which superseded this one'),
             required=False, readonly=False,
@@ -368,7 +384,7 @@ class IPackagePublishingHistory(Interface):
             title=_('The pocket into which this entry is published'),
             required=True, readonly=False,
             )
-    
+
     embargo = Bool(
             title=_('Whether or not this record is under embargo'),
             required=True, readonly=False,

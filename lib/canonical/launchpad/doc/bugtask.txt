@@ -204,20 +204,21 @@ Reset the state of our bugtask.
 Just a distrorelease.
 
     >>> bugtask.distrorelease = NamedThing('distrorelease')
+    >>> bugtask.distrorelease.distribution = NamedThing('distribution')
     >>> bugtask.contextname()
-    '[distrorelease.displayname]'
+    '[distribution.displayname] [distrorelease.displayname]'
 
 Distrorelease and sourcepackagename.
 
     >>> bugtask.sourcepackagename = NamedThing('spn')
     >>> bugtask.contextname()
-    '[distrorelease.displayname] [spn.name]'
+    '[distribution.displayname] [distrorelease.displayname] [spn.name]'
 
 Distrorelease, sourcepackagename and binarypackagename.
 
     >>> bugtask.binarypackagename = NamedThing('bpn')
     >>> bugtask.contextname()
-    '[distrorelease.displayname] [spn.name] [bpn.name]'
+    '[distribution.displayname] [distrorelease.displayname] [spn.name] [bpn.name]'
 
 Note that we haven't tested any combinations that shouldn't occur, except
 for the case when everything is None.
@@ -262,7 +263,7 @@ To provide null-matching search criteria, use canonical.launchpad.searchbuilder.
     >>> print bugtasks.count()
     2
     >>> print [bugtask.bug.id for bugtask in bugtasks]
-    [6, 4]
+    [4, 6]
 
 There's also support for searching tasks based on a string of text, e.g.:
 
@@ -486,7 +487,7 @@ searches:
     >>> firefox_bugtasks = bugtaskset.search(
     ...     product=firefox, status=any(STATUS_NEW, STATUS_ACCEPTED))
     >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
-    [6, 5, 4, 1]
+    [1, 4, 5, 6]
 
 Now, if we log in as David Allouche:
 

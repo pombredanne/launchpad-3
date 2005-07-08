@@ -63,16 +63,13 @@ class POTemplate(SQLBase, RosettaStats):
 
     _table = 'POTemplate'
 
-    productrelease = ForeignKey(foreignKey='ProductRelease',
-        dbName='productrelease', notNull=False, default=None)
+    productseries = ForeignKey(foreignKey='ProductSeries',
+        dbName='productseries', notNull=False, default=None)
     priority = IntCol(dbName='priority', notNull=False, default=None)
     potemplatename = ForeignKey(foreignKey='POTemplateName',
         dbName='potemplatename', notNull=True)
     description = StringCol(dbName='description', notNull=False, default=None)
     copyright = StringCol(dbName='copyright', notNull=False, default=None)
-    # XXX: Why?
-    #       SteveAlexander 2005-04-23
-    #license = ForeignKey(foreignKey='License', dbName='license', notNull=True)
     license = IntCol(dbName='license', notNull=False, default=None)
     datecreated = UtcDateTimeCol(dbName='datecreated', default=DEFAULT)
     path = StringCol(dbName='path', notNull=False, default=None)
@@ -115,11 +112,11 @@ class POTemplate(SQLBase, RosettaStats):
     @property
     def displayname(self):
         """See IPOTemplate."""
-        if self.productrelease:
+        if self.productseries:
             dn = '%s in %s %s' % (
                 self.name,
-                self.productrelease.product.displayname,
-                self.productrelease.version)
+                self.productseries.product.displayname,
+                self.productseries.displayname)
         if self.distrorelease:
             dn = '%s in %s %s package "%s"' % (
                 self.name,
@@ -131,11 +128,11 @@ class POTemplate(SQLBase, RosettaStats):
     @property
     def title(self):
         """See IPOTemplate."""
-        if self.productrelease:
+        if self.productseries:
             title = 'Template "%s" in %s %s' % (
                 self.name,
-                self.productrelease.product.displayname,
-                self.productrelease.version)
+                self.productseries.product.displayname,
+                self.productseries.displayname)
         if self.distrorelease:
             title = 'Template "%s" in %s %s package "%s"' % (
                 self.name,
@@ -153,11 +150,11 @@ class POTemplate(SQLBase, RosettaStats):
             tg = self.distrorelease.distribution.translationgroup
             if tg is not None:
                 ret.append(tg)
-        elif self.productrelease:
-            product_tg = self.productrelease.product.translationgroup
+        elif self.productseries:
+            product_tg = self.productseries.product.translationgroup
             if product_tg is not None:
                 ret.append(product_tg)
-            project = self.productrelease.product.project
+            project = self.productseries.product.project
             if project is not None:
                 if project.translationgroup is not None:
                     ret.append(project.translationgroup)
@@ -174,8 +171,8 @@ class POTemplate(SQLBase, RosettaStats):
             return self.distrorelease.distribution.translationpermission
         # for products, use the "most restrictive permission" between
         # project and product.
-        elif self.productrelease:
-            return self.productrelease.product.aggregatetranslationpermission
+        elif self.productseries:
+            return self.productseries.product.aggregatetranslationpermission
 
     @property
     def translationgroups(self):
@@ -184,11 +181,11 @@ class POTemplate(SQLBase, RosettaStats):
             tg = self.distrorelease.distribution.translationgroup
             if tg is not None:
                 ret.append(tg)
-        elif self.productrelease:
-            product_tg = self.productrelease.product.translationgroup
+        elif self.productseries:
+            product_tg = self.productseries.product.translationgroup
             if product_tg is not None:
                 ret.append(product_tg)
-            project = self.productrelease.product.project
+            project = self.productseries.product.project
             if project is not None:
                 if project.translationgroup is not None:
                     ret.append(project.translationgroup)
@@ -202,10 +199,10 @@ class POTemplate(SQLBase, RosettaStats):
             # in the case of a distro template, use the distro translation
             # permission settings
             return self.distrorelease.distribution.translationpermission
-        elif self.productrelease:
+        elif self.productseries:
             # for products, use the "most restrictive permission" between
             # project and product.
-            return self.productrelease.product.aggregatetranslationpermission
+            return self.productseries.product.aggregatetranslationpermission
 
     @property
     def relatives_by_name(self):
@@ -219,11 +216,11 @@ class POTemplate(SQLBase, RosettaStats):
     @property
     def relatives_by_source(self):
         "See IPOTemplate"
-        if self.productrelease:
+        if self.productseries:
             return POTemplate.select('''
                 id <> %s AND
-                productrelease = %s
-                ''' % sqlvalues(self.id, self.productrelease.id),
+                productseries = %s
+                ''' % sqlvalues(self.id, self.productseries.id),
                 orderBy=['id'])
         elif self.distrorelease and self.sourcepackagename:
             return POTemplate.select('''
@@ -246,6 +243,16 @@ class POTemplate(SQLBase, RosettaStats):
             clauseTables=['POFile'],
             distinct=True).count()
 
+    @property
+    def translationtarget(self):
+        if self.productseries is not None:
+            return self.productseries
+        elif self.distrorelease is not None:
+            from canonical.launchpad.database.sourcepackage import \
+                SourcePackage
+            return SourcePackage(distrorelease=self.distrorelease,
+                sourcepackagename=self.sourcepackagename)
+        raise AssertionError('Unknown POTemplate translation target')
 
     def getPOTMsgSetByMsgIDText(self, key, onlyCurrent=False):
         """See IPOTemplate."""
@@ -428,8 +435,8 @@ class POTemplate(SQLBase, RosettaStats):
             'pluralexpr': language.pluralexpression or '0',
             }
 
-        if self.productrelease is not None:
-            data['origin'] = self.productrelease.product.name
+        if self.productseries is not None:
+            data['origin'] = self.productseries.product.name
         else:
             data['origin'] = self.sourcepackagename.name
 
@@ -579,24 +586,24 @@ class POTemplateSubset:
     implements(IPOTemplateSubset)
 
     def __init__(self, sourcepackagename=None,
-                 distrorelease=None, productrelease=None):
+                 distrorelease=None, productseries=None):
         """Create a new POTemplateSubset object.
 
         The set of POTemplate depends on the arguments you pass to this
-        constructor. The sourcepackagename, distrorelease and productrelease
+        constructor. The sourcepackagename, distrorelease and productseries
         are just filters for that set.
         """
         self.sourcepackagename = sourcepackagename
         self.distrorelease = distrorelease
-        self.productrelease = productrelease
+        self.productseries = productseries
 
-        if (productrelease is not None and (distrorelease is not None or
+        if (productseries is not None and (distrorelease is not None or
             sourcepackagename is not None)):
             raise ValueError(
                 'A product release must not be used with a source package name'
                 ' or a distro release.')
-        elif productrelease is not None:
-            self.query = ('POTemplate.productrelease = %d' % productrelease.id)
+        elif productseries is not None:
+            self.query = ('POTemplate.productseries = %d' % productseries.id)
             self.orderby = None
             self.clausetables = None
         elif distrorelease is not None and sourcepackagename is not None:
@@ -648,36 +655,22 @@ class POTemplateSubset:
             titlestr += ' ' + self.distrorelease.displayname
         if self.sourcepackagename:
             titlestr += ' ' + self.sourcepackagename.name
-        if self.productrelease:
+        if self.productseries:
             titlestr += ' '
-            titlestr += self.productrelease.productseries.product.displayname
-            titlestr += ' ' + self.productrelease.version
+            titlestr += self.productseries.displayname
         return titlestr
 
     def new(self, potemplatename, contents, owner):
-        if self.sourcepackagename is not None:
-            sourcepackagename_id = self.sourcepackagename.id
-        else:
-            sourcepackagename_id = None
-        if self.distrorelease is not None:
-            distrorelease_id = self.distrorelease.id
-        else:
-            distrorelease_id = None
-        if self.productrelease is not None:
-            productrelease_id = self.productrelease.id
-        else:
-            productrelease_id = None
-
         filename = '%s.pot' % potemplatename.translationdomain
         alias = helpers.uploadRosettaFile(filename, contents)
-        return POTemplate(potemplatenameID=potemplatename.id,
-                          sourcepackagenameID=sourcepackagename_id,
-                          distroreleaseID=distrorelease_id,
-                          productreleaseID=productrelease_id,
-                          ownerID=owner.id,
+        return POTemplate(potemplatename=potemplatename,
+                          sourcepackagename=self.sourcepackagename,
+                          distrorelease=self.distrorelease,
+                          productseries=self.productseries,
+                          owner=owner,
                           daterawimport=UTC_NOW,
                           rawfile=alias,
-                          rawimporterID=owner.id,
+                          rawimporter=owner,
                           rawimportstatus=RosettaImportStatus.PENDING)
 
 
@@ -707,7 +700,7 @@ class POTemplateSet:
         if kw.get('distrorelease'):
             # XXX: Should this really be an assert?
             #      -- SteveAlexander 2005-04-23
-            assert 'productrelease' not in kw
+            assert 'productseries' not in kw
 
             distrorelease = kw['distrorelease']
 
@@ -721,8 +714,8 @@ class POTemplateSet:
 
         # XXX: Should this really be an assert?
         #      -- SteveAlexander 2005-04-23
-        assert kw.get('productrelease')
-        return POTemplateSubset(productrelease=kw['productrelease'])
+        assert kw.get('productseries')
+        return POTemplateSubset(productseries=kw['productseries'])
 
     def getTemplatesPendingImport(self):
         """See IPOTemplateSet."""

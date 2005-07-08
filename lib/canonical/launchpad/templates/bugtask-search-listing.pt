@@ -1,11 +1,11 @@
 <metal:page define-macro="buglisting">
   <tal:tag condition="view/assign_to_milestones|nothing"/>
-  <form action="" method="GET"
+  <form action="." method="GET"
      tal:define="listing_columns view/task_columns;
                  logged_in request/lp:person;
                  task_batch_navigator view/search;
                  task_batch task_batch_navigator/batch;
-                 mass_edit python: 'select' in listing_columns and view.is_maintainer">
+                 mass_edit_allowed python: 'select' in listing_columns and view.is_maintainer">
     <p>
       <label tal:content="view/searchtext_widget/label">
         Bug id or text:
@@ -25,7 +25,7 @@
       <thead>
         <tr class="results">
           <td
-            tal:attributes="colspan python: len(listing_columns) + int(mass_edit)"
+            tal:attributes="colspan python: len(listing_columns) + int(mass_edit_allowed)"
             tal:define="startno task_batch/startNumber;
                         endno task_batch/endNumber;
                         total task_batch/total">
@@ -40,7 +40,7 @@
               </a>
               <span tal:omit-tag=""
                     tal:repeat="page_url task_batch_navigator/batchPageURLs">
-                <a href=""
+                <a href="."
                    tal:content="python:page_url.keys()[0]"
                    tal:attributes="href python:page_url.values()[0]">[1]</a>
               </span>
@@ -68,6 +68,9 @@
         </tr>
 
     <tr>
+      <th tal:condition="python:('select' in listing_columns) and mass_edit_allowed">
+        Select
+      </th>
       <th tal:condition="python:'id' in listing_columns">
         <a href="#" tal:attributes="href python:view.getSortLink('id')">ID</a>
       </th>
@@ -119,7 +122,7 @@
                         severity task/severity/title;
                         statusid string:status${repeat/task/number};
                         assigneeid string:assignee${repeat/task/number};">
-          <td tal:condition="mass_edit">
+          <td tal:condition="mass_edit_allowed">
             <input type="checkbox" name="task" value="" tal:attributes="value task/id" />
           </td>
           <td tal:condition="python:'id' in listing_columns">
@@ -173,7 +176,7 @@
       </tbody>
     </table>
 
-  <div tal:condition="mass_edit">
+  <div tal:condition="mass_edit_allowed">
     <tal:milestone condition="context/context/milestones|nothing">
       <tal:block content="structure view/milestone_assignment_widget" />
       <input type="submit" name="assign_to_milestone" value="Assign to Milestone" />

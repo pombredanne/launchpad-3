@@ -1,6 +1,7 @@
 <div class="portlet" tal:condition="context/bounties">
 
-    <h4>Related Bounties:</h4>
+    <h4><span tal:replace="context/displayname">Ubuntu</span> Related
+    Bounties:</h4>
 
     <div class="portletBody">
         <div class="portletContent even">

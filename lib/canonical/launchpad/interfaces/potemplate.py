@@ -20,7 +20,12 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     id = Attribute("A unique ID number")
 
     potemplatename = Choice(
-        title=_("Template name"),
+        title=_("Template Name"),
+        description=_("The name of this PO template, for example "
+            "'evolution-2.2'. Each translation template has a "
+            "unique name in its package. It's important to get this "
+            "correct, because Rosetta will recommend alternative "
+            "translations based on the name."),
         required=True,
         vocabulary="POTemplateName")
 
@@ -30,6 +35,10 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
 
     description = Text(
         title=_("Description"),
+        description=_("Please provide a brief description of the content "
+            "of this translation template, for example, telling translators "
+            "if this template contains strings for end-users or other "
+            "developers."),
         required=False)
 
     header = Text(
@@ -40,7 +49,7 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         required=True)
 
     iscurrent = Bool(
-        title=_("Should be new translations accepted?"),
+        title=_("Accept translations?"),
         description=_(
             "If unchecked, people can no longer change the template's"
             " translations."),
@@ -51,14 +60,16 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         title=_("Owner"),
         required=True,
         description=_(
-            "The owner can change all these fields, and upload new versions"
-            " of the template."),
+            "The owner of the template in Rosetta can edit the template "
+            "and change it's status, and can also upload new versions "
+            "of the template when a new release is made or when the "
+            "translation strings have been changed during development."),
         vocabulary="ValidOwner")
 
-    productrelease = Choice(
-        title=_("Product Release"),
+    productseries = Choice(
+        title=_("Product Branch or Series"),
         required=False,
-        vocabulary="ProductRelease")
+        vocabulary="ProductSeries")
 
     distrorelease = Choice(
         title=_("Distribution Release"),
@@ -125,7 +136,7 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
 
     relatives_by_source = Attribute("An iterator over other PO templates "
         "that have the same source, for example those that came from the "
-        "same productrelease or the same source package.")
+        "same productseries or the same source package.")
 
     displayname = Attribute("A brief name for this template, generated.")
 
@@ -133,6 +144,10 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
 
     language_count = Attribute("The number of languages for which we have "
         "some number of translations.")
+
+    translationtarget = Attribute("The object for which this template is "
+        "a translation. This will either be a SourcePackage or a Product "
+        "Series.")
 
     def __len__():
         """Return the number of Current IPOTMsgSets in this template."""
@@ -271,8 +286,8 @@ class IPOTemplateSubset(Interface):
     distrorelease = Attribute(
         "The distrorelease associated with this subset of POTemplates.")
 
-    productrelease = Attribute(
-        "The productrelease associated with this subset of POTemplates.")
+    productseries = Attribute(
+        "The productseries associated with this subset of POTemplates.")
 
     title = Attribute("Title - use for launchpad pages")
 
@@ -296,7 +311,7 @@ class IPOTemplateSet(Interface):
         """Get a PO template by its name."""
 
     def getSubset(distrorelease=None, sourcepackagename=None,
-                  productrelease=None):
+                  productseries=None):
         """Return a POTemplateSubset object depending on the given arguments.
         """
 
@@ -308,5 +323,5 @@ class IPOTemplateWithContent(IEditPOTemplate):
     """Interface for an IPOTemplate used to create the new POTemplate form."""
 
     content = Bytes(
-        title=_("Select a template file to import"),
+        title=_("PO Template File to Import"),
         required=True)

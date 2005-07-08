@@ -71,7 +71,7 @@ create: check
 	@ echo "* If this fails you need to run as the postgresql superuser"
 	@ echo "* eg. sudo -u postgres make create"
 	@ echo
-	@ echo "* This will hang if another process is accessing the database"
+	@ echo "* Waiting for other processes to stop accessing the database"
 	@ echo
 	@if [ "$$((`psql -l | grep ${TEST_DBNAME} | wc -l`))" = '1' ]; \
 	    then dropdb ${TEST_DBNAME} | grep : | cat ; \

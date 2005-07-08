@@ -70,6 +70,7 @@ class DummyProductRelease:
 class DummyProductSeries:
     def __init__(self):
         self.releases = [DummyProductRelease()]
+        self.displayname = 'Evolution MAIN'
 
 
 class DummyProduct:
@@ -147,12 +148,12 @@ class DummyPOTMsgSet:
     def poMsgSet(self, language):
         return DummyPOMsgSet()
 
-dummy_product_release = DummyProductRelease()
+dummy_product_series = DummyProductSeries()
 
 class DummyPOTemplate:
     def __init__(self, name='foo'):
         self.name = name
-        self.productrelease = dummy_product_release
+        self.productseries = dummy_product_series
 
     def getPOFileByLang(self, language_code):
         self.language_code = language_code

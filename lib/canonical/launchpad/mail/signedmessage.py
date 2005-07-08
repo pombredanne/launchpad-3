@@ -3,6 +3,10 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'SignedMessage',
+    ]
+
 import email.Message
 import re
 

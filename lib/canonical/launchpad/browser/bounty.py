@@ -1,11 +1,15 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
+__all__ = ['BountyView', 'BountySetAddView']
 
 from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
+from zope.app.event.objectevent import ObjectCreatedEvent
 
 from zope.app.form.browser.add import AddView
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import SequenceWidget, ObjectWidget
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 import zope.security.interfaces
 
@@ -15,8 +19,6 @@ from canonical.lp.dbschema import BountySubscription
 
 ow = CustomWidgetFactory(ObjectWidget, Bounty)
 sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
-
-__all__ = ['BountyView', 'BountySetAddView']
 
 class BountySubscriberPortletMixin:
 

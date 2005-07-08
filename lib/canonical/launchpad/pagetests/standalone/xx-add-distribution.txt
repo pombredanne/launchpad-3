@@ -1,0 +1,76 @@
+
+Let's see if we can load the distro's add page:
+
+  >>> print http(r"""
+  ... GET /distros/+add HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...<h1>Create a New Distribution in Soyuz</h1>...
+  ...
+
+And now let's create a Test Distro:
+
+  >>> print http(r"""
+  ... POST /distros/+add HTTP/1.1
+  ... Content-Length: 1334
+  ... Content-Type: multipart/form-data; boundary=---------------------------12746607678165859261433354056
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... 
+  ... -----------------------------12746607678165859261433354056
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... test
+  ... -----------------------------12746607678165859261433354056
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... Test Distro
+  ... -----------------------------12746607678165859261433354056
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... The Test Distribution
+  ... -----------------------------12746607678165859261433354056
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... sjd flkshfksjd hfkjds hflkjdsz fzslkjd hfzlkjds hfszlkjd hfszlkjd hfslkjd hfskdf hsldkf hsdf sd fsd fszdf.
+  ... -----------------------------12746607678165859261433354056
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ...  sdfhskdj skjd fszkdj fzdsf zsd fdsz sd zdf gdzf gdzf gdzf  zdfgdzf dzf gdzf gdzf.g zdg dzf gzdf gz.df gzdfg fdg zd g. zdsfzds fzds zdf fd gz zd fererz gfzerg zeg .
+  ... -----------------------------12746607678165859261433354056
+  ... Content-Disposition: form-data; name="field.domainname"
+  ... 
+  ... foo.com
+  ... -----------------------------12746607678165859261433354056
+  ... Content-Disposition: form-data; name="field.members"
+  ... 
+  ... sabdfl
+  ... -----------------------------12746607678165859261433354056
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------12746607678165859261433354056--
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: test
+  <BLANKLINE>
+  ...
+
+And finally, let's view the new distro:
+
+  >>> print http(r"""
+  ... GET /distros/test HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+  ...<h2>The Test Distribution</h2>...
+  ...
+

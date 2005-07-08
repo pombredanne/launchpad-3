@@ -1,9 +1,21 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Milestone interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IMilestone',
+    'IMilestoneSet',
+    ]
+
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 from zope.interface import Interface
 from zope.schema import Choice, TextLine, Int
 
 from canonical.launchpad.interfaces import IHasProduct
+
+_ = MessageIDFactory('launchpad')
 
 class IMilestone(IHasProduct):
     id = Int(title=_("Id"))

@@ -1,15 +1,22 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Country interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'ICountry',
+    'ICountrySet',
+    ]
 
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+from zope.interface import Interface, Attribute
+from zope.schema import Int, TextLine
 
-from zope.interface import Interface, Attribute, classImplements
-
-from zope.schema import Choice, Datetime, Int, Text, TextLine, Float
-from zope.schema.interfaces import IText, ITextLine
-
-from canonical.launchpad.fields import Summary, Title, Description
+from canonical.launchpad.fields import Title, Description
 from canonical.launchpad.validators.name import valid_name
 
+_ = MessageIDFactory('launchpad')
 
 class ICountry(Interface):
     """The country description."""
@@ -36,7 +43,6 @@ class ICountry(Interface):
                           "that country.")
 
 
-# Interfaces for containers
 class ICountrySet(Interface):
     """A container for countries."""
 

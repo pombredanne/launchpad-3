@@ -5,21 +5,19 @@ __metaclass__ = type
 __all__ = ['Bug', 'BugDelta', 'BugFactory', 'BugSet']
 
 from sets import Set
-from datetime import datetime
 from email.Utils import make_msgid
 
 from zope.interface import implements
 from zope.exceptions import NotFoundError
-from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
-    IBug, IBugAddForm, IBugSet, IBugDelta)
+    IBug, IBugSet, IBugDelta)
 from canonical.launchpad.helpers import contactEmailAddresses
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp import dbschema
@@ -28,6 +26,7 @@ from canonical.launchpad.database.message import (
     Message, MessageSet, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.maintainership import Maintainership
 
@@ -81,7 +80,7 @@ class Bug(SQLBase):
             'BugSubscription', joinColumn='bug', orderBy='id')
     duplicates = MultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
 
-    def followup_title(self):
+    def followup_subject(self):
         return 'Re: '+ self.title
 
     def subscribe(self, person, subscription):
@@ -140,6 +139,40 @@ class Bug(SQLBase):
         emails.sort()
         return emails
 
+    def linkMessage(self, message):
+        if message not in self.messages:
+            BugMessage(bug=self, message=message)
+
+    def addWatch(self, bugtracker, remotebug, owner):
+        """See IBug."""
+        # run through the existing watches and try to find an existing watch
+        # that matches... and return that
+        for watch in self.watches:
+            if (watch.bugtracker == bugtracker and
+                watch.remotebug == remotebug):
+                return watch
+        # ok, we need a new one
+        return BugWatch(bug=self, bugtracker=bugtracker,
+            remotebug=remotebug, owner=owner)
+
+    def addTask(self, owner, product=None, distribution=None,
+        distrorelease=None, sourcepackagename=None,
+        binarypackagename=None):
+        """See IBug."""
+        # look for a match among existing tasks
+        for task in self.bugtasks:
+            if (task.product == product and
+                task.distribution == distribution and
+                task.distrorelease == distrorelease and
+                task.sourcepackagename == sourcepackagename and
+                task.binarypackagename == binarypackagename):
+                return task
+        # create and return a new task
+        return BugTask(owner=owner, product=product,
+            distribution=distribution, distrorelease=distrorelease,
+            sourcepackagename=sourcepackagename,
+            binarypackagename=binarypackagename)
+
 
 class BugDelta:
     """See canonical.launchpad.interfaces.IBugDelta."""
@@ -147,7 +180,7 @@ class BugDelta:
     def __init__(self, bug, bugurl, user, title=None, summary=None,
                  description=None, name=None, private=None, duplicateof=None,
                  external_reference=None, bugwatch=None, cveref=None,
-                 bugtask_deltas=None):
+                 added_bugtasks=None, bugtask_deltas=None):
         self.bug = bug
         self.bugurl = bugurl
         self.user = user
@@ -160,13 +193,14 @@ class BugDelta:
         self.external_reference = external_reference
         self.bugwatch = bugwatch
         self.cveref = cveref
+        self.added_bugtasks = added_bugtasks
         self.bugtask_deltas = bugtask_deltas
 
+
 def BugFactory(addview=None, distribution=None, sourcepackagename=None,
-               binarypackagename=None, product=None, comment=None,
-               description=None, rfc822msgid=None, summary=None,
-               datecreated=None, title=None, private=False,
-               owner=None):
+        binarypackagename=None, product=None, comment=None,
+        description=None, msg=None, summary=None,
+        datecreated=None, title=None, private=False, owner=None):
     """Create a bug and return it.
 
     Things to note when using this factory:
@@ -183,38 +217,27 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
 
       * if either product or distribution is specified, an appropiate
         bug task will be created
+
     """
     # make sure that the factory has been passed enough information
-    if not (comment or description or rfc822msgid):
+    if not (comment or description or msg is not None):
         raise ValueError(
-            'BugFactory requires a comment, rfc822msgid or description')
+            'BugFactory requires a comment, msg, or description')
+
+    # make sure we did not get TOO MUCH information
+    assert not (comment and msg is not None), "Too much information"
 
     # create the bug comment if one was given
     if comment:
-        if not rfc822msgid:
-            rfc822msgid = make_msgid('malonedeb')
-
-    # retrieve or create the message in the db
-    msg_set = MessageSet()
-    try:
-        msg = msg_set.get(rfc822msgid=rfc822msgid)
-    except NotFoundError:
-        msg = Message(
-            title=title, distribution=distribution,
+        rfc822msgid = make_msgid('malonedeb')
+        msg = Message(subject=title, distribution=distribution,
             rfc822msgid=rfc822msgid, owner=owner)
-        chunk = MessageChunk(
-                messageID=msg.id, sequence=1, content=comment, blobID=None)
+        chunk = MessageChunk(messageID=msg.id, sequence=1,
+            content=comment, blobID=None)
 
     # extract the details needed to create the bug and optional msg
     if not description:
         description = msg.contents
-
-    # if we have been passed only a description, then we set the summary to
-    # be the first paragraph of it, up to 320 characters long
-    if description and not summary:
-        summary = description.split('. ')[0]
-        if len(summary) > 320:
-            summary = summary[:320] + '...'
 
     if not datecreated:
         datecreated = UTC_NOW
@@ -228,7 +251,7 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
         person=owner.id, bug=bug.id, subscription=dbschema.BugSubscription.CC)
 
     # link the bug to the message
-    bugmsg = BugMessage(bugID=bug.id, messageID=msg.id)
+    bugmsg = BugMessage(bug=bug, message=msg)
 
     # create the task on a product if one was passed
     if product:
@@ -265,3 +288,33 @@ class BugSet(BugSetBase):
     def search(self, duplicateof=None):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
         return Bug.selectBy(duplicateofID=duplicateof.id)
+
+    def queryByRemoteBug(self, bugtracker, remotebug):
+        """See IBugSet."""
+        buglist = Bug.select("""
+                bugwatch.bugtracker = %s AND
+                bugwatch.remotebug = %s AND
+                bugwatch.bug = bug.id
+                """ % sqlvalues(bugtracker.id, str(remotebug)),
+                distinct=True,
+                clauseTables=['BugWatch'],
+                orderBy=['datecreated'])
+        # ths is weird, but it works around a bug in sqlobject which does
+        # not like slicing buglist (will give a warning if you try to show
+        # buglist[0] for example
+        for item in buglist:
+            return item
+        return None
+
+    def createBug(self, distribution=None, sourcepackagename=None,
+        binarypackagename=None, product=None, comment=None,
+        description=None, msg=None, summary=None, datecreated=None,
+        title=None, private=False, owner=None):
+        return BugFactory(distribution=distribution,
+            sourcepackagename=sourcepackagename,
+            binarypackagename=binarypackagename, product=product,
+            comment=comment, description=description, msg=msg,
+            summary=summary, datecreated=datecreated, title=title,
+            private=private, owner=owner)
+
+

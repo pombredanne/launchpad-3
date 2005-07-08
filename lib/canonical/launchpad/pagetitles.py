@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 """This module is used by the Launchpad webapp to determine titles for pages.
 
 See https://wiki.launchpad.canonical.com/LaunchpadTitles
@@ -34,6 +35,17 @@ __metaclass__ = type
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
 # Helpers.
+
+class BugPageTitle:
+    def __call__(self, context, view):
+        return "Bug #%d - %s" % (context.id, context.title)
+
+
+class BugTaskPageTitle:
+    def __call__(self, context, view):
+        return "Bug #%d in %s - %s" % (
+            context.bug.id, context.contextname, context.bug.title)
+
 
 class SubstitutionHelper:
     def __init__(self, text):
@@ -104,18 +116,23 @@ bug_add = 'Malone: Add a New Bug'
 
 bug_attachments = ContextId('Malone Bug Attachments for Bug #%s')
 
-bug_edit = ContextId('Malone: Edit Bug #%s')
+bug_edit = BugPageTitle()
 
-bug_index = ContextId('Malone: Bug #%s')
+bug_index = BugPageTitle()
 
 bug_references = ContextId('External References for Malone Bug #%s')
+
+bugwatch_editform = ContextTitle('Edit the Watch on %s')
 
 # bugpackageinfestations_index is a redirect
 
 # bugproductinfestations_index is a redirect
 
 def bugs_assigned(context, view):
-    return 'Malone Bugs assigned to %s' % view.user.browsername
+    if view.user:
+        return 'Malone Bugs assigned to %s' % view.user.browsername
+    else:
+        return 'No user to display Malone Bugs for'
 
 bugs_createdby_index = 'Malone Bug Report by Creator'
 
@@ -125,13 +142,9 @@ bugs_index = 'Malone Master Bug List'
 
 bugsubscription_edit = 'Modify Your Bug Subscription'
 
-def bugtask_display(context, view):
-    return 'Bug #%s in %s: %s' % (
-      context.bug.id, context.contextname, context.bug.title)
+bugtask_view = BugTaskPageTitle()
 
-def bugtask_editform(context, view):
-    return 'Editing bug #%s in %s: %s' % (
-      context.bug.id, context.contextname, context.bug.title)
+bugtask_edit = BugTaskPageTitle()
 
 # bugtask_search_listing contains only macros
 # bugtasks_index is a redirect
@@ -143,6 +156,25 @@ bugtracker_index = ContextTitle('Malone Bugtracker: %s')
 bugtracker_new = 'Create Malone Bugtracker'
 
 bugtrackers_index = 'Malone-Registered Bug Trackers'
+
+calendar = ContextTitle('%s')
+
+calendar_event_addform = ContextTitle('Add Event to Calendar "%s"')
+
+calendar_event_display = ContextTitle('Event "%s"')
+
+calendar_event_editform = ContextTitle('Edit Event "%s"')
+
+calendar_subscribe = ContextTitle('Subscribe to "%s"')
+
+calendar_subscriptions = 'Calendar Subscriptions'
+
+def calendar_view(context, view):
+    return '%s - %s' % (context.calendar.title, view.datestring)
+calendar_view_day = calendar_view
+calendar_view_week = calendar_view
+calendar_view_month = calendar_view
+calendar_view_year = calendar_view
 
 codeofconduct_admin = 'Code of Conduct Admin Console'
 
@@ -203,7 +235,7 @@ def distrorelease_edit(context, view):
     return 'Edit %s Details' % context.release.displayname
 
 def distrorelease_index(context, view):
-    return '%s: Releases' % context.distribution.title
+    return '%s: %s' % (context.distribution.title, context.title)
 
 def distrorelease_new(context, view):
     return 'Create New Release of %s' % context.distribution.title
@@ -219,17 +251,19 @@ def distrorelease_sources(context, view):
 distrorelease_translations = ContextTitle(
     'Rosetta Translation Templates for %s')
 
+distroreleaselanguage = ContextTitle('%s')
+
 distros_index = 'Overview of Distributions in Launchpad'
 
-doap_about = 'About the Launchpad DOAP registry'
+doap_about = 'About the Launchpad Registry'
 
 doap_dashboard = 'Launchpad Project & Product Dashboard'
 
-doap_index = 'The DOAP Network: Project and Product Registration in Launchpad'
+doap_index = 'Project and Product Registration in Launchpad'
 
 doap_listall = 'Launchpad: Complete List'
 
-doap_review = 'DOAP Content Review'
+doap_review = 'Launchpad Content Review'
 
 doap_to_do = 'Launchpad To-Do List'
 
@@ -305,7 +339,7 @@ malone_distro_index = ContextTitle('Malone Distribution Manager: %s')
 
 malone_distros_index = 'File a Bug in a Distribution'
 
-malone_index = 'About Malone'
+malone_index = 'Malone: Collaborative Open Source Bug Management'
 
 # malone_people_index is a redirect
 
@@ -424,7 +458,7 @@ def productrelease_edit(context, view):
 def productrelease_new(context, view):
     return 'Register a new release of %s' % view.product.displayname
 
-productrelease_translations = ContextTitle(
+productseries_translations = ContextTitle(
     'Rosetta Translation Templates for %s')
 
 products_index = 'Products in Launchpad'

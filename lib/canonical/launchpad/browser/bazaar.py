@@ -1,14 +1,13 @@
-"""View support classes for the bazaar application.
-"""
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""View support classes for the bazaar application."""
+
 __metaclass__ = type
 
 __all__ = ['BazaarApplicationView']
 
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
-
 from canonical.launchpad.interfaces import IProductSeriesSet
-
 from canonical.lp.dbschema import ImportStatus
 
 
