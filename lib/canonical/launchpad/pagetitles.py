@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 """This module is used by the Launchpad webapp to determine titles for pages.
 
 See https://wiki.launchpad.canonical.com/LaunchpadTitles
@@ -34,6 +35,17 @@ __metaclass__ = type
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
 # Helpers.
+
+class BugPageTitle:
+    def __call__(self, context, view):
+        return "Bug #%d - %s" % (context.id, context.title)
+
+
+class BugTaskPageTitle:
+    def __call__(self, context, view):
+        return "Bug #%d in %s - %s" % (
+            context.bug.id, context.contextname, context.bug.title)
+
 
 class SubstitutionHelper:
     def __init__(self, text):
@@ -104,9 +116,9 @@ bug_add = 'Malone: Add a New Bug'
 
 bug_attachments = ContextId('Malone Bug Attachments for Bug #%s')
 
-bug_edit = ContextId('Malone: Edit Bug #%s')
+bug_edit = BugPageTitle()
 
-bug_index = ContextId('Malone: Bug #%s')
+bug_index = BugPageTitle()
 
 bug_references = ContextId('External References for Malone Bug #%s')
 
@@ -130,13 +142,9 @@ bugs_index = 'Malone Master Bug List'
 
 bugsubscription_edit = 'Modify Your Bug Subscription'
 
-def bugtask_display(context, view):
-    return 'Bug #%s in %s: %s' % (
-      context.bug.id, context.contextname, context.bug.title)
+bugtask_view = BugTaskPageTitle()
 
-def bugtask_editform(context, view):
-    return 'Editing bug #%s in %s: %s' % (
-      context.bug.id, context.contextname, context.bug.title)
+bugtask_edit = BugTaskPageTitle()
 
 # bugtask_search_listing contains only macros
 # bugtasks_index is a redirect
