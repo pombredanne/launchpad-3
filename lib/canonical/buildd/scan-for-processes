@@ -19,7 +19,7 @@ exec 2>&1
 
 set -x
 
-[ $(id -u) = "0" ] || $SUDO $0 "$HOME/build-$BUILDID/chroot-autobuild"
+[ $(id -u) = "0" ] || exec $SUDO $0 "$HOME/build-$BUILDID/chroot-autobuild"
 
 PREFIX="$BUILDID"
 

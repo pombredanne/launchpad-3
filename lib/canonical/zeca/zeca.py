@@ -39,6 +39,7 @@ from twisted.internet import reactor
 
 GREETING = 'Copyright 2004-2005 Canonical Ltd.\n'
 
+
 class Zeca(Resource):
     def getChild(self, name, request):
         if name == '':
@@ -99,6 +100,7 @@ class LookUp(Resource):
         page += '<pre>\n%s\n</pre>\n</html>' % content
 
         return page
+
 
 if __name__ == "__main__":
     from canonical.config import config
