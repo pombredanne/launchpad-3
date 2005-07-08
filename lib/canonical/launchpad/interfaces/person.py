@@ -323,24 +323,22 @@ class IPerson(Interface):
     def subscriptionPolicyDesc():
         """Return a long description of this team's subscription policy."""
 
-    # XXX
-    # What does this do if the language is already present?
-    # -- Dafydd Harries, 2005/07/08
-
     def addLanguage(language):
         """Add a language to this person's preferences.
 
         :language: An object providing ILanguage.
-        """
 
-    # XXX
-    # What does this do if the language is not present?
-    # -- Dafydd Harries, 2005/07/08
+        If the given language is already present, and IntegrityError will be
+        raised. This will be fixed soon; here's the discussion on this topic:
+        https://launchpad.ubuntu.com/malone/bugs/1317.
+        """
 
     def removeLanguage(language):
         """Remove a language from this person's preferences.
 
         :language: An object providing ILanguage.
+
+        If the given language is not present, nothing  will happen.
         """
 
 
