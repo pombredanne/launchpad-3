@@ -22,14 +22,14 @@ from zope.exceptions import NotFoundError
 from canonical.launchpad.interfaces import (
     IBugSet, IBugTaskSet, IBugTaskSubset, IBugTasksReport, IDistributionSet,
     IProjectSet, IProductSet, ISourcePackageSet, IBugTrackerSet, ILaunchBag,
-    ITeamMembershipSubset, ICalendarOwner, ILanguageSet)
+    ITeamMembershipSubset, ICalendarOwner, ILanguageSet, IPublishedPackageSet)
 from canonical.launchpad.database import (
     BugAttachmentSet, BugExternalRefSet, BugSubscriptionSet,
     BugWatchSet, BugTasksReport, CVERefSet, BugProductInfestationSet,
     BugPackageInfestationSet, ProductSeriesSet, ProductMilestoneSet,
-    PublishedPackageSet, SourcePackageSet)
-from canonical.launchpad.browser.distroreleaselanguage import \
-    DummyDistroReleaseLanguage
+    SourcePackageSet)
+from canonical.launchpad.browser.distroreleaselanguage import (
+    DummyDistroReleaseLanguage)
 
 def traverse_malone_application(malone_application, request, name):
     """Traverse the Malone application object."""
@@ -78,7 +78,7 @@ def traverse_product(product, request, name):
 def traverse_distribution(distribution, request, name):
     """Traverse an IDistribution."""
     if name == '+packages':
-        return PublishedPackageSet()
+        return getUtility(IPublishedPackageSet)
     elif name == '+bugs':
         return IBugTaskSubset(distribution)
     else:
@@ -90,7 +90,7 @@ def traverse_distrorelease(distrorelease, request, name):
     if name == '+sources':
         return SourcePackageSet(distrorelease=distrorelease)
     elif name  == '+packages':
-        return PublishedPackageSet()
+        return getUtility(IPublishedPackageSet)
     elif name == '+bugs':
         return IBugTaskSubset(distrorelease)
     elif name == '+lang':

@@ -8,6 +8,7 @@ __all__ = [
     'IProject',
     'IProjectSet',
     'IProjectBugTracker',
+    'IProjectBugTrackerSet',
     ]
 
 from canonical.launchpad.fields import Title, Summary
@@ -179,4 +180,8 @@ class IProjectBugTracker(Interface):
     id = Int(title=_('ID'))
     project = Int(title=_('Owner'))
     bugtracker = Int(title=_('Bug Tracker'))
+
+class IProjectBugTrackerSet(Interface):
+    def new(project, bugtracker):
+        """Create a new project bug tracker."""
 

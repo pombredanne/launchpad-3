@@ -6,7 +6,8 @@ __all__ = ['Distribution', 'DistributionSet', 'DistroPackageFinder']
 from zope.interface import implements
 from zope.exceptions import NotFoundError
 
-from sqlobject import (RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey,
+from sqlobject import (
+    RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey,
     MultipleJoin)
 
 from canonical.database.sqlbase import SQLBase, quote
@@ -154,6 +155,17 @@ class DistributionSet:
         """Returns a Distribution with name = name"""
         return self[name]
 
+    def new(self, name, displayname, title, description, summary, domainname,
+            members, owner):
+        return Distribution(
+            name=name,
+            displayname=displayname,
+            title=title,
+            description=description,
+            summary=summary,
+            domainname=domainname,
+            members=members,
+            owner=owner)
 
 class DistroPackageFinder:
 

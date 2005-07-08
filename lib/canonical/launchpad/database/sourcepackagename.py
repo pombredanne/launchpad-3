@@ -64,3 +64,12 @@ class SourcePackageNameSet:
         query = ('name ILIKE %s' % quote('%%' +name+ '%%'))
         return SourcePackageName.select(query)
 
+    def new(self, name):
+        return SourcePackageName(name=name)
+
+    def getOrCreateByName(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            return self.new(name)
+

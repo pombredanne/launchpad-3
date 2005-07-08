@@ -129,6 +129,10 @@ class IDistributionSet(Interface):
     def getByName(distroname):
         """Return the IDistribution with the given name."""
 
+    def new(name, displayname, title, description, summary, domainname,
+            members, owner):
+        """Creaste a new distribution."""
+
 
 class IDistroPackageFinder(Interface):
     """A tool to find packages in a distribution."""

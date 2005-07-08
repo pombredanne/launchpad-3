@@ -7,15 +7,15 @@ __all__ = ['BinaryPackageName', 'BinaryPackageNameSet']
 from zope.interface import implements
 
 # SQLObject/SQLBase
-from sqlobject import \
-    SQLObjectNotFound, StringCol, MultipleJoin, CONTAINSSTRING
+from sqlobject import (
+    SQLObjectNotFound, StringCol, MultipleJoin, CONTAINSSTRING)
 
 # launchpad imports
-from canonical.database.sqlbase import SQLBase, quote, quote_like
+from canonical.database.sqlbase import SQLBase
 
 # interfaces and database 
-from canonical.launchpad.interfaces import IBinaryPackageName
-from canonical.launchpad.interfaces import IBinaryPackageNameSet
+from canonical.launchpad.interfaces import (
+    IBinaryPackageName, IBinaryPackageNameSet)
 
 
 class BinaryPackageName(SQLBase):
@@ -31,13 +31,6 @@ class BinaryPackageName(SQLBase):
 
     def __unicode__(self):
         return self.name
-
-    def ensure(klass, name):
-        try:
-            return klass.byName(name)
-        except SQLObjectNotFound:
-            return klass(name=name)
-    ensure = classmethod(ensure)
 
 
 class BinaryPackageNameSet:
@@ -65,7 +58,16 @@ class BinaryPackageNameSet:
         if (name is None and distribution is None and
             distrorelease is None and text is None):
             raise ValueError('must give something to the query.')
-        clauseTables = Set(['BinaryPackage'])
+        clauseTables = set(['BinaryPackage'])
         # XXX sabdfl 12/12/04 not done yet
         raise NotImplementedError
+
+    def new(self, name):
+        return BinaryPackageName(name=name)
+
+    def getOrCreateByName(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            return self.new(name)
 
