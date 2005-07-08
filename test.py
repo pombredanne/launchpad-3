@@ -16,9 +16,17 @@
 
 $Id: test.py 25177 2004-06-02 13:17:31Z jim $
 """
-import sys, os, psycopg
+import sys, os, psycopg, time
 from operator import attrgetter
 import itertools
+
+os.setpgrp() # So test_on_merge.py can reap its children
+
+# Make tests run in a timezone no launchpad developers live in.
+# Our tests need to run in any timezone.
+# (No longer actually required, as PQM does this)
+os.environ['TZ'] = 'Asia/Calcutta'
+time.tzset()
 
 here = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.join(here, 'lib'))
@@ -198,7 +206,7 @@ def report_naughty_imports():
 
 atexit.register(report_naughty_imports)
 
-# Tell canonical.config to use the test config file, not launchpad.conf
+# Tell canonical.config to use the test config section in launchpad.conf
 from canonical.config import config
 config.setDefaultSection('testrunner')
 
