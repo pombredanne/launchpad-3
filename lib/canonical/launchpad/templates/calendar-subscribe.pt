@@ -9,18 +9,19 @@
   <body>
 
     <div metal:fill-slot="main">
-      <h1>Calendar Subscriptions</h1>
+      <h1>
+        Subscribe to
+        <q tal:content="context/title">Calendar</q>
+      </h1>
 
       <div tal:content="view/submit" />
 
       <p class="formHelp">
-      Subscribing to a calendar will cause its events to display on
-      your merged calendar.  You can also select the colour used to
-      display the merged events.</p>
+      Subscribing to a calendar causes its events to appear in
+      your calendar, in a colour you choose.</p>
 
       <form action="." tal:attributes="action request/URL" method="post">
-        <fieldset>
-          <div>Subscribe to <q tal:content="context/title">Calendar</q>?</div>
+          <p>Do you want to subscribe to this calendar?</p>
           <div>
             <label for="subscribe-yes">
               <input type="radio" name="subscribe" id="subscribe-yes"
@@ -28,6 +29,8 @@
                      tal:attributes="checked python:view.subscribed() and 'checked' or None" />
               Yes
             </label>
+          </div>
+          <div>
             <label for="subscribe-no">
               <input type="radio" name="subscribe" id="subscribe-no"
                      value="no"
@@ -35,7 +38,7 @@
               No
             </label>
           </div>
-          <div>What colour should events be displayed with?</div>
+          <p>What colour should its events be displayed in?</p>
           <div>
             <select name="colour">
               <option tal:repeat="colour view/colours"
@@ -47,16 +50,13 @@
               </option>
             </select>
           </div>
-        </fieldset>
 
         <div class="separator"></div>
 
-        <div class="row">
-          <div class="controls"><hr />
+        <div class="form actions">
             <input type='submit' value='Submit'
-              name='UPDATE_SUBMIT' style="float: right;"
+              name='UPDATE_SUBMIT'
               i18n:attributes='value submit-button' />
-          </div>
         </div>
              
       </form>

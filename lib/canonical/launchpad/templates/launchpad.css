@@ -578,6 +578,14 @@ dt dfn {
   font-weight: bold;
 }
 
+/* -- Q!: -- */
+
+q {
+  font-family: inherit;
+  font-style: inherit;
+  font-size: inherit;
+}
+
 /* -- Other bugs: -- */
 
 .documentContent {
