@@ -14,12 +14,10 @@ from zope.interface.verify import verifyClass, verifyObject
 
 from canonical.arch.tests.framework import DatabaseTestCase
 
-from canonical.launchpad.interfaces import RevisionAlreadyRegistered
-from canonical.launchpad.interfaces import VersionAlreadyRegistered
-from canonical.launchpad.interfaces import BranchAlreadyRegistered
-from canonical.launchpad.interfaces import CategoryAlreadyRegistered
-from canonical.launchpad.interfaces import ArchiveLocationDoublyRegistered
-
+from canonical.launchpad.interfaces import (
+    RevisionAlreadyRegistered, VersionAlreadyRegistered,
+    BranchAlreadyRegistered, CategoryAlreadyRegistered,
+    ArchiveLocationDoublyRegistered)
 
 
 class Database(DatabaseTestCase):

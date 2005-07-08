@@ -116,8 +116,8 @@ class RevisionMapper:
     def _getId(self, revision):
         """Get the id of a revision."""
         branch_id = VersionMapper()._getDBBranchId(revision.version)
-        changeset = Changeset.selectOneBy(name = revision.name,
-                                          branchID = branch_id)
+        changeset = Changeset.selectOneBy(name=revision.name,
+                                          branchID=branch_id)
         if changeset is None:
             raise RevisionNotRegistered(revision.fullname)
         else:

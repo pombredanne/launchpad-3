@@ -9,17 +9,11 @@ from zope.interface import implements
 from sqlobject import StringCol, ForeignKey, MultipleJoin
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
-from canonical.launchpad.interfaces import ArchiveNotRegistered
-from canonical.launchpad.interfaces import VersionNotRegistered
-from canonical.launchpad.interfaces import VersionAlreadyRegistered
-from canonical.launchpad.interfaces import BranchAlreadyRegistered
-from canonical.launchpad.interfaces import CategoryAlreadyRegistered
-
-from canonical.launchpad.interfaces import IBranch
-
-from canonical.launchpad.database.archarchive import ArchiveMapper
-from canonical.launchpad.database.archarchive import ArchNamespace
-from canonical.launchpad.database.archarchive import ArchArchive
+from canonical.launchpad.interfaces import (
+    ArchiveNotRegistered, VersionNotRegistered, VersionAlreadyRegistered,
+    BranchAlreadyRegistered, CategoryAlreadyRegistered, IBranch)
+from canonical.launchpad.database.archarchive import (
+    ArchiveMapper, ArchNamespace, ArchArchive)
 
 
 class Branch(SQLBase):
@@ -186,10 +180,10 @@ class VersionMapper:
     def _getId(self, version):
         archiveID = ArchiveMapper()._getId(version.branch.category.archive)
         result = ArchNamespace.selectOneBy(
-            archiveID = archiveID,
-            category = version.branch.category.nonarch,
-            branch = version.branch.name,
-            version = version.name)
+            archiveID=archiveID,
+            category=version.branch.category.nonarch,
+            branch=version.branch.name,
+            version=version.name)
         if result is None:
             raise VersionNotRegistered(version.fullname)
         else:
