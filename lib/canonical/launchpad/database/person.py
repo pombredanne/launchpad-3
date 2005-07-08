@@ -402,7 +402,7 @@ class Person(SQLBase):
         """See IPerson."""
         total = 0
         for karma in KarmaCache.selectBy(personID=self.id):
-            total += karma.karma
+            total += karma.karmavalue
         return total
 
     @property 
