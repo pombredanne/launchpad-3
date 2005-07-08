@@ -73,7 +73,10 @@
           </thead>
           <tbody>
             <tr tal:repeat="release series/releases">
-              <td tal:content="release/version">version</td> 
+              <td>
+                <a tal:attributes="href string:${release/version}"
+                   tal:content="release/version">version</a>
+              </td> 
               <td tal:content="release/datereleased/fmt:date">date</td>
               <td>"<span tal:replace="release/title">title</span>"</td>
               <td tal:content="release/owner/browsername">foo bar</td>
