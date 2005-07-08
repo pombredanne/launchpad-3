@@ -28,7 +28,7 @@
         summarising the project's purpose.
     </div>
 
-    <div tal:content="context/description">
+    <div tal:content="structure context/description/fmt:text-to-html">
     This is the Project Description,
     which is a much more substantial description of the project. It should
     be several paragraphs long, and give you a very clear insight into the

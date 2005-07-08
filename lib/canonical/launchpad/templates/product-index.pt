@@ -33,7 +33,7 @@
     highlights.
   </div>
 
-  <div tal:content="context/description">
+  <div tal:content="structure context/description/fmt:text-to-html">
     $Product.description goes here. This should be a longer piece of
     text, up to three paragraphs in length, which gives much more
     detailed information about the open source product in question.
@@ -54,7 +54,8 @@
         (<span tal:replace="series/datecreated/fmt:date">4-12-45</span>)
       </h3>
       
-      <p><span tal:replace="series/summary">A summary of the series
+      <p><span tal:replace="structure series/summary/fmt:text-to-html">
+        A summary of the series
         details and status.</span>
         [<a tal:attributes="href
         string:+series/${series/name}">Details...</a>]
