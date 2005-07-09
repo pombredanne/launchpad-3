@@ -4,6 +4,12 @@
       i18n:domain="rosetta">
 <body>
 
+
+<metal:rightportlets fill-slot="portlets_two">
+        <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
+
 <div metal:fill-slot="main">
 
       <h1>Administer code of conduct signatures</h1>
@@ -59,8 +65,12 @@
 
      <ul tal:condition="view/results">
        <li tal:repeat="code view/results">
+           <a tal:attributes="href string:/people/${code/owner/name}" 
+              tal:content="code/owner/displayname">OWNER</a>
            <a tal:attributes="href code/id"
 	      tal:content="code/displayname">CoC</a>
+           <span tal:omit-tag="" tal:condition="code/active">[ACTIVE]</span>
+           <span tal:omit-tag="" tal:condition="not:code/active">[INACTIVE]</span>
        </li>
      </ul>
 

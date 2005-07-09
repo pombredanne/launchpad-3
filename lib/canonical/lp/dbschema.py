@@ -2176,11 +2176,11 @@ class LoginTokenType(DBSchema):
         address for the team, but this address need to be validated first.
         """)
 
-    VALIDATEGPGUID = Item(6, """
-        Validate GPG key User ID
+    VALIDATEGPG = Item(6, """
+        Validate GPG key 
 
-        A user has submited a new GPG key and , consequently, its User.ids
-        as new email addresses to his account and they need to be validated.
+        A user has submited a new GPG key to his account and it need to
+        be validated.
         """)
 
 

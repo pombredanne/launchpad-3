@@ -105,9 +105,11 @@ class LookUp(Resource):
 if __name__ == "__main__":
     from canonical.config import config
 
+    root = config.zeca.root
+    
     zeca = Zeca()
     keyserver = KeyServer()
-    keyserver.putChild('lookup', LookUp(config.zeca.root))
+    keyserver.putChild('lookup', LookUp(root))
     zeca.putChild('pks', keyserver)
     
     site = server.Site(zeca)

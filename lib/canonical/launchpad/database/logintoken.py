@@ -7,6 +7,7 @@ from datetime import datetime
 import random
 
 from zope.interface import implements
+from zope.component import ComponentLookupError, getUtility
 
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, AND
 
@@ -15,7 +16,9 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.interfaces import ILoginToken, ILoginTokenSet
+from canonical.launchpad.interfaces import (
+    ILoginToken, ILoginTokenSet, IGpgHandler
+    )
 from canonical.lp.dbschema import LoginTokenType, EnumCol
 from canonical.launchpad.validators.email import valid_email
 
@@ -52,6 +55,33 @@ class LoginToken(SQLBase):
         subject = "Launchpad: Validate your email address"
         simple_sendmail(fromaddress, self.email, subject, message)
 
+    def sendGpgValidationRequest(self, appurl, key, encrypt=None):
+        """See ILoginToken."""
+        formatted_uids = ''
+        for email in key.uids:
+            formatted_uids += '\t%s\n' % email
+        
+        template = open(
+            'lib/canonical/launchpad/emailtemplates/validate-gpg.txt').read()
+        fromaddress = "Launchpad GPG Validator <noreply@ubuntu.com>"
+        
+        replacements = {'longstring': self.token,
+                        'requester': self.requester.browsername,
+                        'requesteremail': self.requesteremail,
+                        'displayname': key.displayname, 
+                        'fingerprint': key.fingerprint,
+                        'uids': formatted_uids,
+                        'appurl': appurl}
+        message = template % replacements
+
+        # encrypt message if requested
+        if encrypt:
+            gpghandler = getUtility(IGpgHandler)
+            message = gpghandler.encryptContent(message, key.fingerprint)
+
+        subject = "Launchpad: Validate your GPG Key"
+        simple_sendmail(fromaddress, self.email, subject, message)
+
 
 class LoginTokenSet:
     implements(ILoginTokenSet)
@@ -74,6 +104,25 @@ class LoginTokenSet:
     def deleteByEmailAndRequester(self, email, requester):
         """See ILoginTokenSet."""
         for token in self.searchByEmailAndRequester(email, requester):
+            token.destroySelf()
+
+    def searchByFingerprintAndRequester(self, fingerprint, requester):
+        """See ILoginTokenSet."""
+        return LoginToken.select(AND(LoginToken.q.fingerprint==fingerprint,
+                                     LoginToken.q.requesterID==requester.id))
+
+    def getPendingGpgKeys(self, requesterid=None):
+        """See ILoginTokenSet."""
+        query = 'tokentype=%s ' % LoginTokenType.VALIDATEGPG.value
+
+        if requesterid:
+            query += 'AND requester=%s' % requesterid
+        
+        return LoginToken.select(query)
+
+    def deleteByFingerprintAndRequester(self, fingerprint, requester):
+        for token in self.searchByFingerprintAndRequester(fingerprint,
+                                                          requester):
             token.destroySelf()
             
     def new(self, requester, requesteremail, email, tokentype,

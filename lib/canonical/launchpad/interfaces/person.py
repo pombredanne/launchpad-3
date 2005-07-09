@@ -91,7 +91,12 @@ class IPerson(Interface):
     # Properties of the Person object.
     karma = Attribute("The cached karma for this person.")
     ubuntite = Attribute("Ubuntite Flag")
+    activesignatures = Attribute("Retrieve own Active CoC Signatures.")
+    inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
+    signedcocs = Attribute("List of Signed Code Of Conduct")
     gpgkeys = Attribute("List of GPGkeys")
+    pendinggpgkeys = Attribute("Set of GPG fingerprints pending validation")
+    inactivegpgkeys = Attribute("List of inactive GPG keys in LP Context")
     irc = Attribute("IRC")
     reportedbugs = Attribute("All BugTasks reported by this Person.")
     wiki = Attribute("Wiki")

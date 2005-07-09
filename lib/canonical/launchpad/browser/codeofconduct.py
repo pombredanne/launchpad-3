@@ -12,13 +12,13 @@ __all__ = [
     'SignedCodeOfConductAckView',
     'SignedCodeOfConductView',
     'SignedCodeOfConductAdminView',
-    'SignedCodeOfConductEditView',
     'SignedCodeOfConductActiveView',
     'SignedCodeOfConductDeactiveView',
     ]
 
 from zope.app.form.browser.add import AddView, EditView
 from zope.component import getUtility
+from zope.app.form.interfaces import WidgetsError
 from zope.exceptions import NotFoundError
 import zope.security.interfaces
 
@@ -36,7 +36,7 @@ class CodeOfConductView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-
+        self.bag = getUtility(ILaunchBag)
 
 class CodeOfConductDownloadView(object):
     """Download view class for CoC page.
@@ -86,7 +86,6 @@ class SignedCodeOfConductAddView(AddView):
         self.request = request
         self.bag = getUtility(ILaunchBag)
         self.page_title = self.label
-        self._nextURL = '.'
         AddView.__init__(self, context, request)
 
     def createAndAdd(self, data):
@@ -104,11 +103,12 @@ class SignedCodeOfConductAddView(AddView):
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         info = sCoC_util.verifyAndStore(**kw)
 
-        # xxx cprov 20050328
-        # raising wrong exception
-        if info != None:
-            raise NotFoundError(info)
-
+        if info:
+            self.errors = info
+            raise WidgetsError([self.errors])
+        
+        self._nextURL = '/people/%s/+codesofconduct' % owner.name
+        
     def nextURL(self):
         return self._nextURL
 
@@ -183,32 +183,6 @@ class SignedCodeOfConductAdminView(object):
                 self.results = None
 
             return True
-
-
-class SignedCodeOfConductEditView(EditView):
-    """Edit a SignedCodeOfConduct Entry.
-    When edited:
-     * set new datecreated,
-     * clear recipient,
-     * clear admincomment,
-     * clear active.
-    """
-
-    __used_for__ = ISignedCodeOfConduct
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.page_title = self.label
-        EditView.__init__(self, context, request)
-
-    def changed(self):
-        self.context.datecreated = UTC_NOW
-        self.context.recipient = None
-        self.context.admincomment = None
-        self.context.active = None
-        # now redirect to view the SignedCoC
-        self.request.response.redirect(self.request.URL[-1])
 
 
 class SignedCodeOfConductActiveView(EditView):

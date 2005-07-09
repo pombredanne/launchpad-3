@@ -65,6 +65,10 @@ class ILoginToken(Interface):
     def sendEmailValidationRequest(appurl):
         """Send an email message with a magic URL to validate self.email."""
 
+    def sendGpgValidationRequest(appurl, fingerprint=None):
+        """Send an email message with a magic URL to validate gpg key.
+        if fingerprint is set send encrypted email.
+        """
 
 class ILoginTokenSet(Interface):
     """The set of LoginTokens."""
@@ -82,6 +86,19 @@ class ILoginTokenSet(Interface):
 
     def deleteByEmailAndRequester(email, requester):
         """Delete all LoginToken entries with the given email and requester."""
+
+    def searchByFingerprintAndRequester(fingerprint, requester):
+        """Return all LoginTokens for the given fingerprint and requester."""
+
+    def deleteByFingerprintAndRequester(fingerprint, requester):
+        """Delete all LoginToken entries with the given fingerprint
+        and requester.
+        """
+
+    def getPendingGpgKeys(self, requesterid=None):
+        """Return Tokens for GPG Keys pending validation, optionally for
+        a single user.
+        """
 
     def new(requester, requesteremail, email, tokentype, fingerprint=None):
         """ Create a new LoginToken object. Parameters must be:

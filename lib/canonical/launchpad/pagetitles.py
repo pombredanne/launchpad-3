@@ -301,6 +301,8 @@ foaf_validateemail = 'Validate email address'
 
 foaf_validateteamemail = 'Validate email address'
 
+foaf_validategpg = 'Validate GPG Key'
+
 # launchpad_debug doesn't need a title.
 
 def launchpad_addform(context, view):
@@ -520,7 +522,15 @@ def series(context, view):
     return '%s Release Series: %s' % (
         context.product.displayname, context.displayname)
 
-signedcodeofconduct_index = 'Signed Code of Conduct Entry'
+signedcodeofconduct_index = ContextDisplayName('%s')
+
+signedcodeofconduct_add = ContextTitle('Sign %s')
+
+signedcodeofconduct_acknowledge = 'Acknowledge Code of Conduct Signature'
+
+signedcodeofconduct_activate = ContextDisplayName('Activating %s')
+
+signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 
 sourcepackage_buildlog = 'Source Package Build Log'
 
