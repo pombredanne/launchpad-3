@@ -706,8 +706,8 @@ class PersonEditView(BasePersonView):
         token.sendEmailValidationRequest(self.request.getApplicationURL())
 
         self.message = (
-                "A new message was sent to '%s', please follow the "
-                "instructions on that message to confirm that this email "
+                "An e-mail message was sent to '%s'. Follow the "
+                "instructions in that message to confirm that the "
                 "address is yours." % newemail)
 
     def _setPreferred(self):

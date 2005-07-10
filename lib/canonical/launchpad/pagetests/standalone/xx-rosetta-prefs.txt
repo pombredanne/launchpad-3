@@ -12,10 +12,10 @@ Accordingly, Spanish is selected in his preferences. However, Welsh is not.
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <h2>My Languages</h2>
+      <h1>Your language preferences</h1>
   ...
       <form action="prefs" method="post">
-          <div class="multi_select" style="margin: 1em 0">
+          <div class="listbox">
   ...
               <div>
                   <label>

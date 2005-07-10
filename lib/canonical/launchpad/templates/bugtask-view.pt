@@ -63,15 +63,17 @@
                 package/product</span></a>
           </h2>
 
-          <p tal:condition="context/bug/summary"
+          <div class="documentDescription"
+             tal:condition="context/bug/summary"
              tal:content="context/bug/summary">
              Bug summary goes here if it exists.
-          </p>
+          </div>
 
-          <p class="boardCommentContent"
-             tal:content="structure context/bug/description/fmt:nice_pre">
-             $Bug.description
-          </p>
+          <tal:description
+            content="structure context/bug/description/fmt:text-to-html"
+          >
+            $Bug.description
+          </tal:description>
 
           <div class="field">
             <table>

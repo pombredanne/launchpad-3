@@ -251,6 +251,8 @@ do with 'None/fmt:foo'.
     ''
     >>> test_tales('foo/fmt:pagetitle', foo=None)
     ''
+    >>> test_tales('foo/fmt:text-to-html', foo=None)
+    ''
     >>> test_tales('foo/fmt:url', foo=None)
     ''
     >>> test_tales('foo/fmt:exactduration', foo=None)

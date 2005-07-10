@@ -235,6 +235,7 @@ class NoneFormatter:
         'datetime',
         'exactduration',
         'pagetitle',
+        'text-to-html',
         'url',
         ])
 

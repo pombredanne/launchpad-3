@@ -913,18 +913,19 @@ input {
   color: #999999
 }
 
-/* 
-This style is used for multi-select widgets. These get a scrollbar if they
-expand above a certain size. The box is floated in order to allow it to shrink
-to the smallest appropriate width; this may mean that it will be necessary to
-use the 'clear' attribute on other elemtens surrounding the multi-select box.
-*/
-
-.multi_select {
-  max-height: 20em;
+/* A listbox is a scrolling list of checkboxes or radio buttons. */
+.listbox {
+  border: 1px solid #8cacbb;
+  display: inline-block;
+  max-height: 12em;
   overflow: auto;
-  float: left;
-  padding: 0 1em;
+  overflow: -moz-scrollbars-vertical;
+}
+.listbox label {
+  background-color: #f6f6f6;
+  border: solid white;
+  border-width: 0 0 1px 0;
+  display: block;
 }
 
 /*
