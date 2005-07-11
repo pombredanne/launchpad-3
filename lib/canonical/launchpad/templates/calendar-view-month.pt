@@ -45,7 +45,7 @@
             <ul class="cal-event-list">
               <li tal:repeat="event day/events"
                   tal:attributes="style python:'background: %s' % view.eventColour(event)">
-                <a tal:attributes="href string:../events/${event/id}/">
+                <a tal:attributes="href event/fmt:url">
                 <span tal:replace="python:view.eventStart(event)">12:00</span>
                 -
                 <span tal:replace="event/title">Title</span>

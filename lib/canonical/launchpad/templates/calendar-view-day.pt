@@ -71,7 +71,7 @@
                      tal:attributes="style python:'background: %s;; height: %sem !important;; margin-left: %s%s;; top: %sem' % (colour, view.eventHeight(event), str(num * indent), unit, view.eventTop(event));
                                      class python:mine and 'event' or 'event other';
                                      something compress">
-                  <a tal:attributes="href string:../events/${event/id}/">
+                  <a tal:attributes="href event/fmt:url">
                   <span tal:replace="python:view.eventStart(event)">12:00</span>
                   -
                   <span tal:replace="event/title">Title</span>
