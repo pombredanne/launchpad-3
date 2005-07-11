@@ -56,10 +56,11 @@
 
   <div tal:replace="structure context/@@+portlet-bug-tasks-headline" />
 
-  <p class="boardCommentContent" 
-     tal:content="structure context/description/fmt:nice_pre">
-     $Bug.description
-  </p>
+    <tal:description
+      content="structure context/description/fmt:text-to-html"
+    >
+      $Bug.description
+    </tal:description>
 
   <div class="boardComment"> <!-- this is the new comment -->
     <fieldset class="collapsible collapsed">
@@ -91,10 +92,11 @@
       </div>
 
       <div class="boardCommentBody">
-        <div class="boardCommentContent"
-             tal:content="structure message/contents/fmt:nice_pre">
+        <tal:comment
+          content="structure message/contents/fmt:text-to-html"
+        >
           Comment text.
-        </div>
+        </tal:comment>
       </div>
 
       <div class="visualClear"></div>

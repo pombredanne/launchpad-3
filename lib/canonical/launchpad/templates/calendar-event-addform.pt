@@ -9,13 +9,10 @@
 
     <div metal:use-macro="context/@@launchpad_addform/addform">
 
-      <h1 metal:fill-slot="heading">Add Event</h1>
-
-      <div class="documentDescription" 
-           metal:fill-slot="extra_info">
-         Add an event to
+      <h1 metal:fill-slot="heading">
+        Add event to
          <q tal:content="context/title">Calendar</q>
-      </div>
+      </h1>
     </div>    
 
   </div>

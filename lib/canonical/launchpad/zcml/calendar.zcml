@@ -317,7 +317,7 @@
       permission="launchpad.AnyPerson"
       class="canonical.launchpad.browser.ViewCalendarSubscriptions"
       template="../templates/calendar-subscriptions.pt"
-      lp:url="/calendar/+subscripitions" />
+      lp:url="/calendar/+subscriptions" />
 
 
   <!-- XXX: register IDisplayViews so that the schemadisplay doesn't

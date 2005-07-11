@@ -4,16 +4,17 @@
     <div class="portletBody">
         <div class="portletContent even">
 
+	<tal:block condition="not:context/active">
         <img src="/++resource++edit.gif">
-        <a href="+edit">Edit Signature</a><br />
+        <a href="+activate">Activate Signature</a><br />
+        </tal:block>
 
+	<tal:block condition="context/active">
         <img src="/++resource++edit.gif">
-        <a href="+active">Active Signature</a><br />
+        <a href="+deactivate">Deactivate Signature</a><br />
+        </tal:block>
 
-        <img src="/++resource++edit.gif">
-        <a href="+deactive">Deactive Signature</a>
-
-        <img src="/++resource++edit.gif">
+        <img src="/++resource++info_icon.gif">
         <a href="../">Back to Admin Console</a>
 	
         </div>

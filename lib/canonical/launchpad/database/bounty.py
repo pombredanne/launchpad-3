@@ -8,12 +8,12 @@ import datetime
 
 from zope.interface import implements
 
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, IntervalCol
+from sqlobject import ForeignKey, IntCol, StringCol, IntervalCol
 from sqlobject import CurrencyCol
 from sqlobject import MultipleJoin, RelatedJoin
 
-from canonical.launchpad.interfaces import \
-    IBounty, IBountySet, IAddFormCustomization
+from canonical.launchpad.interfaces import (
+    IBounty, IBountySet, IAddFormCustomization)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
@@ -95,21 +95,14 @@ class BountySet:
         for row in Bounty.select():
             yield row
 
-    def add(self, ob):
-        """Add a new Bounty. This method is called by the addform. ob will
-        be a thing that looks like an IBounty.
-        """
-        kw = {}
-        attrs = ['name', 'title', 'summary', 'description']
-        for attr in attrs:
-            kw[a] = getattr(ob, attr, None)
-        kw['ownerID'] = ob.owner.id
-
-        # create the bounty in the db
-        bounty = Bounty(**kw)
-
-        # Return this rather than the bounty we created from it,
-        # as the return value must be adaptable to the interface
-        # used to generate the form.
-        return ob 
+    def new(self, name, title, summary, description, usdvalue, owner,
+            reviewer):
+        return Bounty(
+            name=name,
+            title=title,
+            summary=summary,
+            description=description,
+            usdvalue=usdvalue,
+            ownerID=owner.id,
+            reviewerID=reviewer.id)
 

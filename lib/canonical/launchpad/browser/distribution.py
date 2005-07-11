@@ -11,7 +11,6 @@ __all__ = [
     'DistributionSetAddView',
     'DistributionSetSearchView',
     'DistrosSearchView',
-    'DistrosAddView',
     'DistrosEditView',
     ]
 
@@ -19,15 +18,13 @@ from zope.interface import implements
 from zope.component import getUtility
 from zope.app.traversing.browser.absoluteurl import absoluteURL
 from zope.app.form.browser.add import AddView
-from zope.app.form.browser import SequenceWidget, ObjectWidget
-from zope.app.form import CustomWidgetFactory
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
-import zope.security.interfaces
+from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.database import Distribution, BugFactory
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, IPerson, IBugTaskSearchListingView)
+    IDistribution, IDistributionSet, IPerson, IBugTaskSearchListingView,
+    IBugSet)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser import BugTaskSearchListingView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
@@ -70,21 +67,18 @@ class DistributionFileBugView(SQLObjectAddView):
         # add the owner information for the bug
         owner = IPerson(self.request.principal, None)
         if not owner:
-            raise zope.security.interfaces.Unauthorized(
-                "Need an authenticated bug owner")
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-        kw['distribution'] = self.context.id
-        bug = BugFactory(
-            distribution = kw['distribution'],
-            sourcepackagename = kw['sourcepackagename'],
-            title = kw['title'], comment = kw['comment'],
-            private = kw['private'], owner = kw['owner'])
-
+            raise Unauthorized(
+                "Need an authenticated user in order to file a"
+                " bug on a distribution.")
+        bug = getUtility(IBugSet).createBug(
+            distribution=self.context,
+            sourcepackagename=data['sourcepackagename'],
+            title=data['title'],
+            comment=data['comment'],
+            private=data['private'],
+            owner=data['owner'])
         notify(SQLObjectCreatedEvent(bug))
-
-        self.addedBug = bug 
+        self.addedBug = bug
         return bug
 
     def nextURL(self):
@@ -105,10 +99,6 @@ class DistributionSetAddView(AddView):
 
     __used_for__ = IDistributionSet
 
-    ow = CustomWidgetFactory(ObjectWidget, Distribution)
-    sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
-    options_widget = sw
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -119,38 +109,24 @@ class DistributionSetAddView(AddView):
         # add the owner information for the product
         owner = IPerson(self.request.principal, None)
         if not owner:
-            raise zope.security.interfaces.Unauthorized, "Need an authenticated owner"
-        kw = {}
-        for item in data.items():
-            kw[str(item[0])] = item[1]
-        kw['owner'] = owner
-        distribution = Distribution(**kw)
+            raise Unauthorized(
+                "Need an authenticated user in order to create a"
+                " distribution.")
+        distribution = getUtility(IDistributionSet).new(
+            name=data['name'],
+            displayname=data['displayname'],
+            title=data['title'],
+            summary=data['summary'],
+            description=data['description'],
+            domainname=data['domainname'],
+            members=data['members'],
+            owner=owner)
         notify(ObjectCreatedEvent(distribution))
-        self._nextURL = kw['name']
+        self._nextURL = data['name']
         return distribution
 
     def nextURL(self):
         return self._nextURL
-
-
-    def add_action(self):
-        title = self.request.get("title", "")
-        description = self.request.get("description", "")
-        domain = self.request.get("domain", "")
-        person = IPerson(self.request.principal, None)
-
-
-        if not person:
-            return False
-
-        if not title:
-            return False
-
-        dt = getUtility(IDistroTools)
-        res = dt.createDistro(person.id, name, displayname,
-            title, summary, description, domain)
-        self.results = res
-        return res
 
 class DistributionSetSearchView:
 
@@ -183,64 +159,7 @@ class DistrosSearchView:
         self.results = []
 
     def search_action(self):
-        name = self.request.get("name", "")
-        title = self.request.get("title", "")
-        description = self.request.get("description", "")
-
-        if not (name or title or description):
-            return False
-
-        name = name.replace('%', '%%')
-        title = title.replace('%', '%%')
-        description = description.replace('%', '%%')
-
-        name_like = LIKE(Distribution.q.name, "%%" + name + "%%")
-        title_like = LIKE(Distribution.q.title, "%%" + title + "%%")
-        description_like = LIKE(Distribution.q.description,
-                                "%%" + description + "%%")
-        query = AND(name_like, title_like, description_like)
-
-##XXX: (case+insensitive) cprov 20041003
-## Performe case insensitive queries using ILIKE doesn't work
-## properly, since we don't have ILIKE method on SQLObject
-## ===============================================================
-#            name_like = ("name ILIKE %s" % "%%" + name + "%%")
-#            title_like = ("title ILIKE %s" % "%%" + title + "%%")
-#            description_like = ("description ILIKE %s" % "%%"\
-#                                + description + "%%")
-#=================================================================
-
-        self.results = Distribution.select(query)
-        self.entries = self.results.count()
-        return True
-
-class DistrosAddView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def add_action(self):
-        name = self.request.get("name", "")
-        displayname = self.request.get("displayname", "")
-        title = self.request.get("title", "")
-        summary = self.request.get("summary", "")
-        description = self.request.get("description", "")
-        domain = self.request.get("domain", "")
-        person = IPerson(self.request.principal, None)
-
-
-        if not person:
-            return False
-
-        if not title:
-            return False
-
-        dt = getUtility(IDistroTools)
-        res = dt.createDistro(person.id, name, displayname,
-            title, summary, description, domain)
-        self.results = res
-        return res
+        raise NotImplementedError
 
 class DistrosEditView:
 

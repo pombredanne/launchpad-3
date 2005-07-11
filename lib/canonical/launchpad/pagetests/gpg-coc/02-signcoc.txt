@@ -1,28 +1,25 @@
 
-
   >>> print http(r"""
-  ... GET /people/cprov/+codesofconduct HTTP/1.1
-  ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206emVjYQ==
+  ... GET /people/name12/+codesofconduct HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-      <title>Celso Providelo Signed Codes of Conduct</title>
+  ...Sample Person Signed Codes of Conduct...
   ...  
-    <p>Celso Providelo has never signed the
-    Ubuntu Code of Conduct.</p>
+  ...Sample Person has never signed the Ubuntu...Code of Conduct...
   ...
+
 
 
   >>> print http(r"""
   ... POST /codeofconduct/1.0/+sign HTTP/1.1
-  ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206emVjYQ==
-  ... Content-Length: 5234
-  ... Content-Type: multipart/form-data; boundary=---------------------------187336075717627542161896021066
-  ... Referer: http://localhost:9000/codeofconduct/1.0/+sign
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------36457731618336329571913084947
   ... 
-  ... -----------------------------187336075717627542161896021066
+  ... -----------------------------36457731618336329571913084947
   ... Content-Disposition: form-data; name="field.signedcode"
   ... 
   ... -----BEGIN PGP SIGNED MESSAGE-----
@@ -110,32 +107,31 @@
   ... -----BEGIN PGP SIGNATURE-----
   ... Version: GnuPG v1.2.5 (GNU/Linux)
   ... 
-  ... iD8DBQFCTUsRn/JYPmgbZGkRAvl2AKCNIRyyVAG77W0aXmImHhP5C3ESEgCfexQS
-  ... mmv3Idu0j2JF6EwXi0ZNqDs=
-  ... =rojb
+  ... iD8DBQFCu/vzuiuTid/SBUMRAtzKAKCA0j8KZCPFORBew3iWumK5kCy8tQCgj71i
+  ... 4AtEVdqN9qzKF/7Pg+NNf+Q=
+  ... =F9VM
   ... -----END PGP SIGNATURE-----
   ... 
-  ... -----------------------------187336075717627542161896021066
+  ... 
+  ... -----------------------------36457731618336329571913084947
   ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
   ... 
   ... Add
-  ... -----------------------------187336075717627542161896021066--
+  ... -----------------------------36457731618336329571913084947--
   ... """)
   HTTP/1.1 303 See Other
   Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: .
   ...
 
 
 
   >>> print http(r"""
-  ... GET /people/cprov/+codesofconduct HTTP/1.1
-  ... Authorization: Basic Y2Vsc28ucHJvdmlkZWxvQGNhbm9uaWNhbC5jb206emVjYQ==
+  ... GET /people/name12/+codesofconduct HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
-  ...<td>681B6469</td>...
+  ...1024D/DFD20543...
   ...
+

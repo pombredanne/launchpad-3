@@ -7,18 +7,13 @@ __all__ = [
     'BinaryPackageNameAddView',
     ]
 
-# zope imports
+from zope.component import getUtility
 from zope.app.form.browser.add import AddView
-from zope.app.form.browser import SequenceWidget, ObjectWidget
-from zope.app.form import CustomWidgetFactory
 
-# launchpad import
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
-
-# launchpad database and interfaces import
-from canonical.launchpad.database import BinaryPackageName
-from canonical.launchpad.interfaces import IBinaryPackageName
+from canonical.launchpad.interfaces import (
+    IBinaryPackageName, IBinaryPackageNameSet)
 
 BATCH_SIZE = 40
 
@@ -47,10 +42,6 @@ class BinaryPackageNameAddView(AddView):
 
     __used_for__ = IBinaryPackageName
 
-    ow = CustomWidgetFactory(ObjectWidget, BinaryPackageName)
-    sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
-    options_widget = sw
-    
 
     def __init__(self, context, request):
         self.context = context
@@ -60,8 +51,9 @@ class BinaryPackageNameAddView(AddView):
 
     def createAndAdd(self, data):
         self.name = data['name']
-        BinaryPackageName.ensure(self.name)
-        self._nextURL = '.?name=%s'%self.name
-        
+        name_set = getUtility(IBinaryPackageNameSet)
+        name_set.getOrCreateByName(self.name)
+        self._nextURL = '.?name=%s' % self.name
+
     def nextURL(self):
         return self._nextURL

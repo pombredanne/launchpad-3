@@ -3,21 +3,33 @@
 
 # Buildd Slave sbuild manager implementation
 
-from canonical.buildd.slave import BuildManager
-from canonical.buildd.slave import RunCapture
+__metaclass__ = type
 
 import os
+
+from canonical.buildd.slave import (
+    BuildManager, RunCapture
+    )
+
 
 class DebianBuildState:
     """States for the DebianBuildManager."""
     
-    UNPACK  = "UNPACK"
-    MOUNT   = "MOUNT"
-    UPDATE  ="UPDATE"
-    SBUILD  ="SBUILD"
-    REAP    = "REAP"
-    UMOUNT  = "UMOUNT"
+    UNPACK = "UNPACK"
+    MOUNT = "MOUNT"
+    UPDATE = "UPDATE"
+    SBUILD = "SBUILD"
+    REAP = "REAP"
+    UMOUNT = "UMOUNT"
     CLEANUP = "CLEANUP"
+
+
+class SBuildExitCodes:
+    """SBUILD process result codes."""
+    OK = 0
+    DEPFAIL = 1
+    BUILDERFAIL = 2
+
 
 class DebianBuildManager(BuildManager):
     """Handle buildd building for a debian style build, using sbuild"""
@@ -27,7 +39,8 @@ class DebianBuildManager(BuildManager):
         self._sbuildpath = slave._config.get("debianmanager", "sbuildpath")
         self._updatepath = slave._config.get("debianmanager", "updatepath")
         self._scanpath = slave._config.get("debianmanager", "processscanpath")
-        self._sbuildargs = slave._config.get("debianmanager", "sbuildargs").split(" ")
+        self._sbuildargs = slave._config.get("debianmanager",
+                                             "sbuildargs").split(" ")
         self._state = DebianBuildState.UNPACK
         slave.emptyLog()
         self.alreadyfailed = False
@@ -58,6 +71,7 @@ class DebianBuildManager(BuildManager):
         """Reap any processes left lying around in the chroot."""
         self.runSubProcess( self._scanpath, [self._scanpath, self._buildid] )
 
+    @staticmethod
     def _parseChangesFile(linesIter):
         """A generator that iterates over files listed in a changes file.
         
@@ -70,9 +84,10 @@ class DebianBuildManager(BuildManager):
             if not seenfiles and line.startswith("Files:"):
                 seenfiles = True
             elif seenfiles:
-                filename = line.split(" ")[-1]
+                if not line.startswith(' '):
+                    break
+                filename = line.split(' ')[-1]
                 yield filename
-    _parseChangesFile = staticmethod(_parseChangesFile)
 
     def gatherResults(self):
         """Gather the results of the build and add them to the file cache.
@@ -100,7 +115,8 @@ class DebianBuildManager(BuildManager):
         self._slave.waitingfiles = filemap
 
     def iterate(self, success):
-        print "Iterating with success flag %d against stage %s" % (success,self._state)
+        print ("Iterating with success flag %d against stage %s"
+               % (int(success), self._state))
         func = getattr(self, "iterate_" + self._state, None)
         if func is None:
             raise ValueError, "Unknown internal state " + self._state
@@ -114,7 +130,6 @@ class DebianBuildManager(BuildManager):
             self._state = DebianBuildState.CLEANUP
             self.alreadyfailed = True
             self.doCleanup()
-            return
         else:
             self._state = DebianBuildState.MOUNT
             self.doMounting()
@@ -126,31 +141,27 @@ class DebianBuildManager(BuildManager):
             self._state = DebianBuildState.UMOUNT
             self.alreadyfailed = True
             self.doUnmounting()
-            return
         else:
             self._state = DebianBuildState.UPDATE
             self.doUpdateChroot()
 
     def iterate_UPDATE(self, success):
-        """Just finished updateing the chroot."""
+        """Just finished updating the chroot."""
         if success != 0:
             self._slave.chrootFail()
             self._state = DebianBuildState.UMOUNT
             self.alreadyfailed = True
             self.doUnmounting()
-            return
         else:
             self._state = DebianBuildState.SBUILD
             self.doRunSbuild()
             
     def iterate_SBUILD(self, success):
         """Finished the sbuild run."""
-        if success != 0:
-            if success == 1:
-                # deps failure
+        if success != SBuildExitCodes.OK:
+            if success == SBuildExitCodes.DEPFAIL:
                 self._slave.depFail()
-            elif success == 2:
-                # space issue -> builderfail
+            elif success == SBuildExitCodes.BUILDERFAIL:
                 self._slave.builderFail()
             else:
                 # anything else is a buildfail

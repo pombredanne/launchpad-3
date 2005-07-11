@@ -1,0 +1,33 @@
+Test the adding of a bugtracker to a project. First, load the page:
+
+  >>> print http(r"""
+  ... GET /projects/mozilla/+newbugtracker HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...
+  <BLANKLINE>
+  ...
+      <h1>Register a New Bug Tracking System</h1>
+  ...
+
+Now post to the page, to add the bug tracker:
+
+  >>> print http(r"""
+  ... POST /projects/mozilla/+newbugtracker HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 238
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... name=mozilla-bugs&title=Bugzilla&summary=The+Mozilla+Bugzilla+is+used+to+track+bugs+in+all+the+mozilla+applicationzillas.&baseurl=http%3A%2F%2Fbugzilla.mozilla.org&contactdetails=admins%40bugzilla.mozilla.org&Register=Register+Bug+Tracker""")
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: http://localhost:9000/projects/mozilla
+  <BLANKLINE>
+  ...
+      <h1>Register a New Bug Tracking System</h1>
+  ...
+
+

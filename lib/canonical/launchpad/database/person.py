@@ -36,7 +36,8 @@ from canonical.launchpad.interfaces import (
     IJabberID, IIrcIDSet, IArchUserIDSet, ISSHKeySet, IJabberIDSet,
     IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IMaintainershipSet,
     IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
-    ICalendarOwner, UBUNTU_WIKI_URL)
+    ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
+    ILoginTokenSet)
 
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.cal import Calendar
@@ -96,7 +97,7 @@ class Person(SQLBase):
     subscribedBounties = RelatedJoin('Bounty', joinColumn='person',
                                      otherColumn='bounty',
                                      intermediateTable='BountySubscription')
-    gpgkeys = MultipleJoin('GPGKey', joinColumn='owner')
+    signedcocs = MultipleJoin('SignedCodeOfConduct', joinColumn='owner')
 
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
@@ -402,7 +403,7 @@ class Person(SQLBase):
         """See IPerson."""
         total = 0
         for karma in KarmaCache.selectBy(personID=self.id):
-            total += karma.karma
+            total += karma.karmavalue
         return total
 
     @property 
@@ -580,6 +581,25 @@ class Person(SQLBase):
         return Karma.selectBy(personID=self.id)
 
     @property
+    def pendinggpgkeys(self):
+        logintokenset = getUtility(ILoginTokenSet)
+        # XXX cprov 20050704
+        # Use set to remove duplicated tokens, I'd appreciate something
+        # SQL DISTINCT-like functionality available for sqlobject
+        return sets.Set([token.fingerprint for token in
+                         logintokenset.getPendingGpgKeys(requesterid=self.id)])
+
+    @property
+    def inactivegpgkeys(self):
+        gpgkeyset = getUtility(IGPGKeySet)
+        return gpgkeyset.getGpgKeys(ownerid=self.id, active=False)
+
+    @property
+    def gpgkeys(self):
+        gpgkeyset = getUtility(IGPGKeySet)
+        return gpgkeyset.getGpgKeys(ownerid=self.id)
+
+    @property
     def wiki(self):
         """See IPerson."""
         # XXX: salgado, 2005-01-14: This method will probably be replaced
@@ -630,19 +650,24 @@ class Person(SQLBase):
 
     @property
     def ubuntite(self):
-        """See IPerson."""
-        # XXX: cprov 20050226
-        # Verify the the SignedCoC version too
-        # we can't do it before add the field version on
-        # SignedCoC table. Then simple compare the already
-        # checked field with what we grab from CoCConf utility.
-        # Simply add 'SignedCodeOfConduct.version = %s' % conf.current
-        # in query when the field was landed.
+        sigset = getUtility(ISignedCodeOfConductSet)
+        lastdate = sigset.getLastAcceptedDate()
+
         query = AND(SignedCodeOfConduct.q.active==True,
-                    SignedCodeOfConduct.q.ownerID==self.id)
+                    SignedCodeOfConduct.q.ownerID==self.id,
+                    SignedCodeOfConduct.q.datecreated>=lastdate)
 
         return bool(SignedCodeOfConduct.select(query).count())
 
+    @property
+    def activesignatures(self):
+        sCoC_util = getUtility(ISignedCodeOfConductSet)
+        return sCoC_util.searchByUser(self.id)
+
+    @property
+    def inactivesignatures(self):
+        sCoC_util = getUtility(ISignedCodeOfConductSet)
+        return sCoC_util.searchByUser(self.id, active=False)
 
 class PersonSet:
     """The set of persons."""
@@ -779,16 +804,14 @@ class PersonSet:
 
     def getUbuntites(self, orderBy=None):
         """See IPersonSet."""
-        clauseTables = ['SignedCodeOfConduct']
+        sigset = getUtility(ISignedCodeOfConductSet)
+        lastdate = sigset.getLastAcceptedDate()
 
-        # XXX: cprov 20050226
-        # Verify the the SignedCoC version too
-        # we can't do it before add the field version on
-        # SignedCoC version.
-        # Needs DISTINCT or check to prevent Sign CoC twice.
-        query = ('Person.id = SignedCodeOfConduct.owner AND '
-                 'SignedCodeOfConduct.active = True')
-        return Person.select(query, clauseTables=clauseTables, orderBy=orderBy)
+        query = AND(Person.q.id==SignedCodeOfConduct.q.ownerID,
+                    SignedCodeOfConduct.q.active==True,
+                    SignedCodeOfConduct.q.datecreated>=lastdate)
+
+        return Person.select(query, distinct=True, orderBy=orderBy)
 
     def merge(self, from_person, to_person):
         """Merge a person into another.
@@ -1006,22 +1029,29 @@ class GPGKey(SQLBase):
     algorithm = EnumCol(dbName='algorithm', notNull=True,
                         schema=GPGKeyAlgorithm)
 
-    revoked = BoolCol(dbName='revoked', notNull=True)
+    active = BoolCol(dbName='active', notNull=True)
 
     @property
-    def algorithmname(self):
-        return self.algorithm.title
+    def displayname(self):
+        return '%s%s/%s' % (self.keysize, self.algorithm.title, self.keyid)
+
+    # XXX cprov 20050705
+    # keep a property to avoid untested issues in other compoenents
+    # that i'm not aware
+    @property
+    def revoked(self):
+        return not self.active
 
 
 class GPGKeySet:
     implements(IGPGKeySet)
 
     def new(self, ownerID, keyid, fingerprint, keysize,
-            algorithm, revoked):
+            algorithm, active=True):
         # add new key in DB
         return GPGKey(owner=ownerID, keyid=keyid,
                       fingerprint=fingerprint, keysize=keysize,
-                      algorithm=algorithm, revoked=revoked)
+                      algorithm=algorithm, active=active)
 
     def get(self, id, default=None):
         try:
@@ -1034,6 +1064,36 @@ class GPGKeySet:
         if result is None:
             return default
         return result
+
+    def deactivateGpgKey(self, keyid):
+        try:
+            key = GPGKey.get(keyid)
+        except SQLObjectNotFound:
+            return None
+        key.active = False
+        return key
+
+    def activateGpgKey(self, keyid):
+        try:
+            key = GPGKey.get(keyid)
+        except SQLObjectNotFound:
+            return None
+        key.active = True
+        return key
+    
+    def getGpgKeys(self, ownerid=None, active=True):
+        """See IGPGKeySet"""
+        if active is False:
+            query =('active=false AND fingerprint NOT IN '
+                    '(SELECT fingerprint from LoginToken WHERE fingerprint '
+                    'IS NOT NULL AND requester = %s)' % sqlvalues(ownerid))
+        else:
+            query = 'active=true'
+
+        if ownerid:
+            query += ' AND owner=%s' % sqlvalues(ownerid)
+        
+        return GPGKey.select(query)
 
 
 class SSHKey(SQLBase):

@@ -144,9 +144,9 @@ class TeamEmailView:
         appurl = self.request.getApplicationURL()
         sendEmailValidationRequest(self.team, email, appurl)
         self.feedback = (
-            "A new message was sent to '%s', please follow the instructions "
-            "on that message to validate the new contact email address of "
-            "this team." % email)
+            "An e-mail message was sent to '%s'. Follow the "
+            "instructions in that message to confirm the new "
+            "contact address for this team." % email)
 
 
 class ITeamCreation(ITeam):

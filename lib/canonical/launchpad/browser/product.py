@@ -12,16 +12,13 @@ import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
 from zope.exceptions import NotFoundError
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 from zope.app.traversing.browser.absoluteurl import absoluteURL
 
-from canonical.launchpad.database import BugFactory
 from canonical.launchpad.interfaces import (
     IPerson, IProduct, IProductSet, IBugTaskSet, IProductSeries,
-    ISourcePackage, ICountry)
+    ISourcePackage, ICountry, IBugSet)
 from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -262,7 +259,7 @@ class ProductFileBugView(SQLObjectAddView):
         # XXX cprov 20050112
         # Try to avoid passing **kw, it is unreadable
         # Pass the keyword explicitly ...
-        bug = BugFactory(**kw)
+        bug = getUtility(IBugSet).createBug(**kw)
         notify(SQLObjectCreatedEvent(bug))
         self.addedBug = bug
         return bug

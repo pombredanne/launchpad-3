@@ -1,0 +1,23 @@
+
+Hello
+
+We received a request from %(requester)s using email address 
+%(requesteremail)s, trying to validate the GPG Key for use in 
+Launchpad.
+
+GPG Key Details
+
+        %(fingerprint)s 
+        %(displayname)s
+%(uids)s
+
+Please click on the link below and complete the process to 
+add the key in question to your existing Launchpad account.
+
+   %(appurl)s/token/%(longstring)s
+
+Thanks,
+
+The Launchpad Team 
+launchpad@ubuntu.com
+

@@ -4,6 +4,7 @@ __metaclass__ = type
 __all__ = ['Build', 'BuildSet', 'Builder', 'BuildQueue']
 
 from datetime import datetime
+import xmlrpclib
 
 from zope.interface import implements
 
@@ -13,8 +14,11 @@ from sqlobject import StringCol, ForeignKey, DateTimeCol, BoolCol, IntCol
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.interfaces import \
+
+from canonical.launchpad.interfaces import (
     IBuild, IBuilder, IBuildSet, IBuildQueue
+    )
+
 from canonical.lp.dbschema import EnumCol, BuildStatus
 
 
@@ -69,6 +73,10 @@ class Builder(SQLBase):
     builderok = BoolCol(dbName='builderok', notNull=True)
     failnotes = StringCol(dbName='failnotes')
     trusted = BoolCol(dbName='trusted', notNull=True, default=False)
+
+    @property
+    def slave(self):
+        return xmlrpclib.Server(self.url)
 
 
 class BuildQueue(SQLBase):

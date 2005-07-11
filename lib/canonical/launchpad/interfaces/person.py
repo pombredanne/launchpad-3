@@ -91,7 +91,12 @@ class IPerson(Interface):
     # Properties of the Person object.
     karma = Attribute("The cached karma for this person.")
     ubuntite = Attribute("Ubuntite Flag")
+    activesignatures = Attribute("Retrieve own Active CoC Signatures.")
+    inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
+    signedcocs = Attribute("List of Signed Code Of Conduct")
     gpgkeys = Attribute("List of GPGkeys")
+    pendinggpgkeys = Attribute("Set of GPG fingerprints pending validation")
+    inactivegpgkeys = Attribute("List of inactive GPG keys in LP Context")
     irc = Attribute("IRC")
     reportedbugs = Attribute("All BugTasks reported by this Person.")
     wiki = Attribute("Wiki")
@@ -322,6 +327,24 @@ class IPerson(Interface):
 
     def subscriptionPolicyDesc():
         """Return a long description of this team's subscription policy."""
+
+    def addLanguage(language):
+        """Add a language to this person's preferences.
+
+        :language: An object providing ILanguage.
+
+        If the given language is already present, and IntegrityError will be
+        raised. This will be fixed soon; here's the discussion on this topic:
+        https://launchpad.ubuntu.com/malone/bugs/1317.
+        """
+
+    def removeLanguage(language):
+        """Remove a language from this person's preferences.
+
+        :language: An object providing ILanguage.
+
+        If the given language is not present, nothing  will happen.
+        """
 
 
 class ITeam(IPerson):

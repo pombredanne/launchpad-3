@@ -1,0 +1,59 @@
+QueueBuilder Tests
+=========================
+
+  QueueBuilder is a script to sanely initialise new build jobs, it
+  verifies the available DistroArchReleases, for which we are able to
+  build packages, repairs broken Builds entries that makes sense,
+  verifies the packages pending to build, install the jobs in
+  BuildQueue table and scores the build acording a bunch of
+  parameters. 
+
+  >>> from canonical.launchpad.scripts.builddmaster import BuilddMaster
+
+  The Master side of Buildd requires access to Launchpad Database, the
+  user designed for this kind of access is 'fiera', as in all test the
+  transaction should be retrieved.
+ 
+  >>> import transaction
+
+  The master also requires an 'logging' instance to not compromise the
+  standard output with noisely output.
+
+  >>> import logging
+
+  Now we have satisfied all needs for BuildMaster, let's instantiate it.
+
+  >>> bm = BuilddMaster(logging.getLogger(), transaction)
+
+  Produce a set of available DistroArchRelease, for which the 
+  build jobs will be created. 
+
+  >>> from canonical.launchpad.database import DistroArchRelease
+  >>> distroreleases = set()
+  >>> for dar in DistroArchRelease.select():
+  ...     distroreleases.add(dar.distrorelease)
+  ...     bm.addDistroArchRelease(dar)
+  ...
+  >>>
+
+  Certify we don't have missing builds (packages w/o build entry) for
+  those distroreleases.
+
+  >>> for dr in distroreleases:
+  ...      bm.createMissingBuilds(dr)
+  ...
+  
+  Now we have Build table properly set and probably with some entries
+  marked as NEEDSBUILD we can create BuildQueue entries for it 
+
+  >>> bm.addMissingBuildQueueEntries()  
+  >>> from canonical.launchpad.database import BuildQueue
+  >>> BuildQueue.select().count()
+  0
+
+  Since the BuildQueue table was filled above we can reorganise the
+  job by the most interesting parameters, See buildd-scoring.txt
+
+  >>> new_jobs = bm.sanitiseAndScoreCandidates()
+  >>> len(new_jobs)
+  0

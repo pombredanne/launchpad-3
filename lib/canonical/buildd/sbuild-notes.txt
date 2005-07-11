@@ -1,11 +1,17 @@
 Notes on how to handle sbuild
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The buildd slave runs as the user buildd
+The buildd slave runs as the user buildd (ensure UID=1003, due 'tar'
+silly defect when decompressing chroots)
 
 This user has sudo privs for running the chroots (must be passwordless)
 
 Sbuild needs patching:
+
+$main::build_source = 0;
++#$main::jobs_file = "$main::HOME/build/build-progress";
+-$main::jobs_file = "build-progress";
+$main::max_lock_trys = 120;
 
   cleanup_close:
 	analyze_fail_stage( $pkgv );
