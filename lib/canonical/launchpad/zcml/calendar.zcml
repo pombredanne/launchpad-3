@@ -114,6 +114,13 @@
       template="../templates/calendar-subscribe.pt"
       lp:url="$obj/calendar/+subscribe" />
 
+  <browser:page
+      for="canonical.launchpad.interfaces.ILaunchpadCalendar"
+      name="+portlet-actions"
+      permission="zope.Public"
+      template="../templates/portlet-calendar-actions.pt"
+      lp:url="/$Calendar/+portlet-actions" />
+
   <browser:traverse
       for="canonical.launchpad.interfaces.ICalendarEventSet"
       getter="__getitem__" />
