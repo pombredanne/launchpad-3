@@ -71,16 +71,23 @@ class BaseListView:
         return BatchNavigator(batch=batch, request=self.request)
 
     def getTeamsList(self):
+        # XXX: salgado: this is batched, sliced, and gives a warning that it
+        #     is not ordered. SteveA. 2005-07-11
         results = getUtility(IPersonSet).getAllTeams()
         return self._getBatchNavigator(results)
 
     def getPeopleList(self):
+        # XXX: salgado: this is batched, sliced, and gives a warning that it
+        #     is not ordered. SteveA. 2005-07-11
         results = getUtility(IPersonSet).getAllPersons()
         return self._getBatchNavigator(results)
 
     def getUbuntitesList(self):
         putil = getUtility(IPersonSet)
         results = putil.getUbuntites()
+        # XXX: I'm suspicious of this "list" below.  It should be "shortlist"
+        #      or better still, not there at all.
+        #      SteveA. 2005-07-11
         return self._getBatchNavigator(list(results))
 
 
@@ -142,6 +149,10 @@ class FOAFSearchView:
     def _findPeopleByName(self, name, peopleonly=False, teamsonly=False):
         # This method is somewhat weird, cause peopleonly and teamsonly
         # are mutually exclusive.
+
+        # XXX: for salgado.
+        #     1. split this into three methods.
+        #     2. searchfor all gives problems with unordered results.
         if peopleonly:
             return getUtility(IPersonSet).findPersonByName(name)
         elif teamsonly:
@@ -166,6 +177,7 @@ class BasePersonView:
 
 class PersonView(BasePersonView):
     """A simple View class to be used in all Person's pages."""
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -179,6 +191,7 @@ class PersonView(BasePersonView):
         """Return a list of actions of the given category performed by 
         this person."""
         kas = getUtility(IKarmaActionSet)
+        # XXX: salgado, this needs an orderby.  SteveA. 2005-07-11
         return kas.selectByCategoryAndPerson(actionCategory, self.context)
 
     def actionsCount(self, action):
@@ -189,6 +202,8 @@ class PersonView(BasePersonView):
     def assignedBugsToShow(self):
         """Return True if there's any bug assigned to this person that match
         the criteria of mostImportantBugTasks() or mostRecentBugTasks()."""
+        # XXX: Bjorn or Brad, one of these things lacks an orderby.
+        #      SteveA 2005-07-11
         return bool(self.mostImportantBugTasks() or self.mostRecentBugTasks())
 
     def mostRecentBugTasks(self):

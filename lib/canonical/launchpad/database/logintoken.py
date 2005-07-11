@@ -7,7 +7,7 @@ from datetime import datetime
 import random
 
 from zope.interface import implements
-from zope.component import ComponentLookupError, getUtility
+from zope.component import getUtility
 
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, AND
 

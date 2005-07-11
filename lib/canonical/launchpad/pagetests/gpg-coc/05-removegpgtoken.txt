@@ -29,12 +29,17 @@
   >>> from canonical.launchpad.helpers import setupInteraction
   >>> setupInteraction(None)
 
-  End up with the pendent token.
+  End up with the pending token.
 
-  >>> from canonical.launchpad.interfaces import ILaunchBag, ILoginTokenSet 
+  >>> from canonical.launchpad.interfaces import ILaunchBag, ILoginTokenSet
   >>> from zope.component import getUtility
-  >>> tokenset= getUtility(ILoginTokenSet)
-  >>> tokenfpr = tokenset.getPendingGpgKeys()[0].fingerprint.encode('ascii')
+  >>> tokenset = getUtility(ILoginTokenSet)
+
+  Listify pending keys result to avoid warnings about slicing an unordered
+  select result.
+
+  >>> pendingkeys = list(tokenset.getPendingGpgKeys())
+  >>> tokenfingerprint = pendingkeys[0].fingerprint.encode('ascii')
 
   Finish the current Interaction
 
@@ -45,7 +50,7 @@
   >>> print http(r"""
   ... POST /people/name12/+editgpgkey HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... action=remove_gpgtoken&REMOVE_GPGTOKEN=%s""" % tokenfpr)
+  ... action=remove_gpgtoken&REMOVE_GPGTOKEN=%s""" % tokenfingerprint)
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...

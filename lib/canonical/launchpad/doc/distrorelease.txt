@@ -31,14 +31,14 @@ To retrieve a specific release of a distribution, use IDistroReleaseSet.get:
 
 Or IDistroReleaseSet.findByName:
 
-    >>> by_name = distroreleaseset.findByName("warty")
-    >>> print by_name[0].name
+    >>> for distrorelease in distroreleaseset.findByName("warty"):
+    ...     print distrorelease.name
     warty
 
 Or IDistroReleaseSet.findByVersion:
 
-    >>> by_version = distroreleaseset.findByVersion("5.04")
-    >>> print by_version[0].name
+    >>> for distrorelease in distroreleaseset.findByVersion("5.04"):
+    ...     print distrorelease.name
     hoary
 
 To search the set of IDistroReleases, use IDistroReleaseSet.search:
