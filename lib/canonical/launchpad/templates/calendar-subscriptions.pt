@@ -29,27 +29,30 @@
           </thead>
           <tbody>
             <tr tal:repeat="sub view/subscriptions">
-              <td tal:content="sub/title">Calendar name</td>
               <td>
-                <label tal:attributes="for string:sub.${sub/id}-yes">
+                <a tal:attributes="href sub/calendar/fmt:url"
+                   tal:content="sub/calendar/title">Calendar name</a>
+              </td>
+              <td>
+                <label tal:attributes="for string:sub.${sub/calendar/id}-yes">
                   <input type="radio"
                          value="yes"
-                         tal:attributes="name string:sub.${sub/id};
-                                         id string:sub.${sub/id}-yes;
+                         tal:attributes="name string:sub.${sub/calendar/id};
+                                         id string:sub.${sub/calendar/id}-yes;
                                          checked python:sub['subscribed'] and 'checked' or None" />
                   Yes
                 </label>
-                <label tal:attributes="for string:sub.${sub/id}-no">
+                <label tal:attributes="for string:sub.${sub/calendar/id}-no">
                   <input type="radio"
                          value="no"
-                         tal:attributes="name string:sub.${sub/id};
-                                         id string:sub.${sub/id}-no;
+                         tal:attributes="name string:sub.${sub/calendar/id};
+                                         id string:sub.${sub/calendar/id}-no;
                                          checked python:not sub['subscribed'] and 'checked' or None" />
                   No
                 </label>
               </td>
               <td>
-                <select tal:attributes="name string:colour.${sub/id}">
+                <select tal:attributes="name string:colour.${sub/calendar/id}">
                   <option tal:repeat="colour view/colours"
                           tal:attributes="value colour/code;
                                           selected python:sub['colour'] == colour['code'] and 'selected' or None;

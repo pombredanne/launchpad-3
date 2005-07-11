@@ -709,7 +709,7 @@ class ViewCalendarSubscriptions:
         # are a member of are always in the subscription list.
         #  - jamesh 2005-01-25
         for cal in self._subscriptions:
-            yield { 'id': cal.id, 'title': cal.title,
+            yield { 'calendar': cal,
                     'subscribed': True,
                     'colour': self._subscriptions.getColour(cal) }
 
