@@ -8,9 +8,6 @@ __all__ = [
     'CalendarWeek',
     'CalendarMonth',
     'CalendarYear',
-    'CalendarViewBase',
-    'MonthInfo',
-    'DayInfo',
     'CalendarDayView',
     'CalendarWeekView',
     'CalendarMonthView',
@@ -46,7 +43,10 @@ from schoolbell.simple import SimpleCalendarEvent
 from canonical.launchpad.interfaces import (
      IPerson, ICalendarDay, ICalendarWeek, ICalendarOwner,
      ILaunchpadCalendar, ICalendarMonth, ICalendarYear, ICalendarSet,
-     ICalendarEventSet, ICalendarSubscriptionSubset, ILaunchBag)
+     ICalendarEventSet, ICalendarSubscriptionSubset, ICalendarRange,
+     ILaunchBag)
+from canonical.launchpad.webapp import (
+    ApplicationMenu, DefaultLink, Link, canonical_url)
 
 from schoolbell.utils import prev_month, next_month
 from schoolbell.utils import weeknum_bounds, check_weeknum
@@ -175,10 +175,20 @@ class CalendarDay:
         date(year, month, day)
         self.calendar = calendar
         self.name = '%04d-%02d-%02d' % (year, month, day)
+        self.date = date(year, month, day)
         self.year = year
         self.month = month
         self.day = day
 
+    @property
+    def prevRange(self):
+        day = self.date - timedelta(days=1)
+        return CalendarDay(self.calendar, day.year, day.month, day.day)
+
+    @property
+    def nextRange(self):
+        day = self.date + timedelta(days=1)
+        return CalendarDay(self.calendar, day.year, day.month, day.day)
 
 class CalendarWeek:
     implements(ICalendarWeek)
@@ -187,10 +197,23 @@ class CalendarWeek:
         # this will raise an error for invalid dates ...
         if not check_weeknum(year, week):
             raise ValueError, 'invalid week number'
+        self.date, dummy = weeknum_bounds(year, week)
         self.calendar = calendar
         self.name = '%04d-W%02d' % (year, week)
         self.year = year
         self.week = week
+
+    @property
+    def prevRange(self):
+        day = self.date - timedelta(days=7)
+        isoyear, isoweek, isoday = day.isocalendar()
+        return CalendarWeek(self.calendar, isoyear, isoweek)
+
+    @property
+    def nextRange(self):
+        day = self.date + timedelta(days=7)
+        isoyear, isoweek, isoday = day.isocalendar()
+        return CalendarWeek(self.calendar, isoyear, isoweek)
 
 
 class CalendarMonth:
@@ -200,20 +223,40 @@ class CalendarMonth:
         # this will raise an error for invalid dates ...
         date(year, month, 1)
         self.calendar = calendar
+        self.date = date(year, month, 1)
         self.name = '%04d-%02d' % (year, month)
         self.year = year
         self.month = month
+
+    @property
+    def prevRange(self):
+        day = prev_month(self.date)
+        return CalendarMonth(self.calendar, day.year, day.month)
+
+    @property
+    def nextRange(self):
+        day = next_month(self.date)
+        return CalendarMonth(self.calendar, day.year, day.month)
 
 
 class CalendarYear:
     implements(ICalendarYear)
 
     def __init__(self, calendar, year):
-        # this will raise an error for invalid dates ...
-        date(year, 1, 1)
         self.calendar = calendar
+        # this will raise an error for invalid years ...
+        self.date = date(year, 1, 1)
         self.name = '%04d' % year
         self.year = year
+
+    @property
+    def prevRange(self):
+        return CalendarYear(self.calendar, self.year - 1)
+
+    @property
+    def nextRange(self):
+        day = next_month(self.date)
+        return CalendarYear(self.calendar, self.year + 1)
 
 
 class CalendarViewBase:
@@ -225,16 +268,6 @@ class CalendarViewBase:
         self.user_timezone = getUtility(ILaunchBag).timezone
         user = getUtility(ILaunchBag).user
         self.subscriptions = ICalendarSubscriptionSubset(user, None)
-
-    def _setViewURLs(self, date):
-        """Computes the URLs used to switch calendar views."""
-        self.dayViewURL = '../%04d-%02d-%02d' % (date.year,
-                                                 date.month,
-                                                 date.day)
-        isoyear, isoweek, isoday = date.isocalendar()
-        self.weekViewURL = '../%04d-W%02d' % (isoyear, isoweek)
-        self.monthViewURL = '../%04d-%02d' % (date.year, date.month)
-        self.yearViewURL = '../%04d' % date.year
 
     def eventColour(self, event):
         if self.subscriptions:
@@ -257,6 +290,59 @@ class CalendarViewBase:
     def eventEnd(self, event):
         dtend = (event.dtstart + event.duration).astimezone(self.user_timezone)
         return dtend.strftime('%H:%M')
+
+
+class CalendarRangeAppMenus(ApplicationMenu):
+    usedfor = ICalendarRange
+    links = ['day', 'week', 'month', 'year']
+
+    # XXX - James Henstridge 2005-07-11
+    # This should change to 'calendar' once we work out the standard facets
+    facet = 'overview'
+
+    def __init__(self, context):
+        self.context = context
+
+    def day(self):
+        """Computes the URLs used to switch calendar views."""
+        target =  canonical_url(CalendarDay(self.context.calendar,
+                                            self.context.date.year,
+                                            self.context.date.month,
+                                            self.context.date.day))
+        text = 'Day'
+        if ICalendarDay.providedBy(self.context):
+            return DefaultLink(target, text)
+        else:
+            return Link(target, text)
+
+    def week(self):
+        isoyear, isoweek, isoday = self.context.date.isocalendar()
+        target = canonical_url(CalendarWeek(self.context.calendar,
+                                            isoyear, isoweek))
+        text = 'Week'
+        if ICalendarWeek.providedBy(self.context):
+            return DefaultLink(target, text)
+        else:
+            return Link(target, text)
+
+    def month(self):
+        target =  canonical_url(CalendarMonth(self.context.calendar,
+                                              self.context.date.year,
+                                              self.context.date.month))
+        text = 'Month'
+        if ICalendarMonth.providedBy(self.context):
+            return DefaultLink(target, text)
+        else:
+            return Link(target, text)
+
+    def year(self):
+        target =  canonical_url(CalendarYear(self.context.calendar,
+                                             self.context.date.year))
+        text = 'Year'
+        if ICalendarYear.providedBy(self.context):
+            return DefaultLink(target, text)
+        else:
+            return Link(target, text)
 
 
 class MonthInfo:
@@ -304,17 +390,6 @@ class CalendarDayView(CalendarViewBase):
                                   '%d %s %04d' % (context.day,
                                                   monthnames[context.month-1],
                                                   context.year))
-
-        day = date(context.year, context.month, context.day)
-        yesterday = day - timedelta(days=1)
-        self.prevURL = '../%04d-%02d-%02d' % (yesterday.year,
-                                              yesterday.month,
-                                              yesterday.day)
-        tomorrow = day + timedelta(days=1)
-        self.nextURL = '../%04d-%02d-%02d' % (tomorrow.year,
-                                              tomorrow.month,
-                                              tomorrow.day)
-        self._setViewURLs(day)
 
         start = datetime(context.year, context.month, context.day,
                          0, 0, 0, 0, self.user_timezone).astimezone(UTC)
@@ -503,14 +578,6 @@ class CalendarWeekView(CalendarViewBase):
 
         start, end = weeknum_bounds(context.year, context.week)
 
-        # navigation links
-        isoyear, isoweek, isoday = (start - timedelta(days=1)).isocalendar()
-        self.prevURL = '../%04d-W%02d' % (isoyear, isoweek)
-        isoyear, isoweek, isoday = (end + timedelta(days=1)).isocalendar()
-        self.nextURL = '../%04d-W%02d' % (isoyear, isoweek)
-
-        self._setViewURLs(start)
-
         self.days = []
         for i in range(7):
             day = DayInfo(start + timedelta(days=i))
@@ -536,13 +603,7 @@ class CalendarMonthView(CalendarViewBase):
         datestring = '%s %04d' % (monthnames[context.month - 1], context.year)
         CalendarViewBase.__init__(self, context, request, datestring)
         start = date(context.year, context.month, 1)
-
-        # navigation links
-        prev = prev_month(start)
-        self.prevURL = '../%04d-%02d' % (prev.year, prev.month)
         next = next_month(start)
-        self.nextURL = '../%04d-%02d' % (next.year, next.month)
-        self._setViewURLs(start)
 
         # create dayinfo instances for each day of the month
         self.days = []
@@ -574,12 +635,6 @@ class CalendarYearView(CalendarViewBase):
         start = date(context.year, 1, 1)
         end = date(context.year + 1, 1, 1) - timedelta(days=1)
         self.bounds = [start, end]
-
-        # navigation links
-        self.prevURL = '../%04d' % (context.year - 1)
-        self.nextURL = '../%04d' % (context.year + 1)
-
-        self._setViewURLs(start)
 
         self.months = []
         for month in range(1, 13):

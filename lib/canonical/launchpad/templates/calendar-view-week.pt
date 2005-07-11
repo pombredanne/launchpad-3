@@ -6,40 +6,24 @@
   <body>
 
     <div metal:fill-slot="main">
-      <div id="content" class="documentEditable">
-        <ul class="contentViews">
-          <li id="contentview-day">
-            <a tal:attributes="href view/dayViewURL">Day</a>
-          </li>
-          <li id="contentview-week" class="selected">
-            <a tal:attributes="href view/weekViewURL">Week</a>
-          </li>
-          <li id="contentview-month">
-            <a tal:attributes="href view/monthViewURL">Month</a>
-          </li>
-          <li id="contentview-year">
-            <a tal:attributes="href view/yearViewURL">Year</a>
-          </li>
-        </ul>
-        <div class="documentContent">
-          <h1>
-            <span tal:replace="context/calendar/title">Calendar Title</span> -
-            <span tal:replace="view/datestring">Time</span>
-          </h1>
+      <h1>
+        <span tal:replace="context/calendar/title">Calendar Title</span> -
+        <span tal:replace="view/datestring">Time</span>
+      </h1>
 
-          <table class="cal-navigation">
-            <tr>
-              <td width="30%" align="left">
-                <a tal:attributes="href view/prevURL">&#8592; Previous</a>
-              </td>
-              <td width="30%" align="center">
-                <a href="../this-week">Today</a>
-              </td>
-              <td width="30%" align="right">
-                <a tal:attributes="href view/nextURL">Next &#8594;</a>
-              </td>
-            </tr>
-          </table>
+      <table class="cal-navigation">
+        <tr>
+          <td width="30%" align="left">
+            <a tal:attributes="href context/prevRange/fmt:url">&#8592; Previous</a>
+          </td>
+          <td width="30%" align="center">
+            <a href="../this-week">Today</a>
+          </td>
+          <td width="30%" align="right">
+            <a tal:attributes="href context/nextRange/fmt:url">Next &#8594;</a>
+          </td>
+        </tr>
+      </table>
 
       <table class="cal-table">
         <tr tal:repeat="row view/layout" valign="top">
@@ -70,8 +54,6 @@
           </tal:block>
         </tr>
       </table>
-        </div>
-      </div>
     </div>
 
   </body>

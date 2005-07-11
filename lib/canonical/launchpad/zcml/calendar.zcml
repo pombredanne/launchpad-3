@@ -118,14 +118,18 @@
       for="canonical.launchpad.interfaces.ICalendarEventSet"
       getter="__getitem__" />
 
+  <browser:url
+      for="canonical.launchpad.interfaces.ICalendarRange"
+      path_expression="name"
+      attribute_to_parent="calendar" />
+
+  <browser:menus
+      module="canonical.launchpad.browser.cal"
+      classes="CalendarRangeAppMenus" />
+
   <content class="canonical.launchpad.browser.CalendarDay">
     <allow interface="canonical.launchpad.interfaces.ICalendarDay" />
   </content>
-
-  <browser:url
-      for="canonical.launchpad.interfaces.ICalendarDay"
-      path_expression="name"
-      attribute_to_parent="calendar" />
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.ICalendarDay"
@@ -144,11 +148,6 @@
     <allow interface="canonical.launchpad.interfaces.ICalendarWeek" />
   </content>
 
-  <browser:url
-      for="canonical.launchpad.interfaces.ICalendarWeek"
-      path_expression="name"
-      attribute_to_parent="calendar" />
-
   <browser:defaultView
       for="canonical.launchpad.interfaces.ICalendarWeek"
       name="+index" />
@@ -166,11 +165,6 @@
     <allow interface="canonical.launchpad.interfaces.ICalendarMonth" />
   </content>
 
-  <browser:url
-      for="canonical.launchpad.interfaces.ICalendarMonth"
-      path_expression="name"
-      attribute_to_parent="calendar" />
-
   <browser:defaultView
       for="canonical.launchpad.interfaces.ICalendarMonth"
       name="+index" />
@@ -187,11 +181,6 @@
   <content class="canonical.launchpad.browser.CalendarYear">
     <allow interface="canonical.launchpad.interfaces.ICalendarYear" />
   </content>
-
-  <browser:url
-      for="canonical.launchpad.interfaces.ICalendarYear"
-      path_expression="name"
-      attribute_to_parent="calendar" />
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.ICalendarYear"

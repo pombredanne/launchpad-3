@@ -9,97 +9,79 @@
   <body>
 
     <div metal:fill-slot="main">
-      <div id="content" class="documentEditable">
-        <ul class="contentViews">
-          <li id="contentview-day" class="selected">
-            <a tal:attributes="href view/dayViewURL">Day</a>
-          </li>
-          <li id="contentview-week">
-            <a tal:attributes="href view/weekViewURL">Week</a>
-          </li>
-          <li id="contentview-month">
-            <a tal:attributes="href view/monthViewURL">Month</a>
-          </li>
-          <li id="contentview-year">
-            <a tal:attributes="href view/yearViewURL">Year</a>
-          </li>
-        </ul>
-        <div class="documentContent">
-          <h1>
-            <span tal:replace="context/calendar/title">Calendar Title</span> -
-            <span tal:replace="view/datestring">Time</span>
-          </h1>
+      <h1>
+        <span tal:replace="context/calendar/title">Calendar Title</span> -
+        <span tal:replace="view/datestring">Time</span>
+      </h1>
 
-          <table class="cal-navigation">
-            <tr>
-              <td width="30%" align="left">
-                <a tal:attributes="href view/prevURL">&#8592; Previous</a>
-              </td>
-              <td width="30%" align="center">
-                <a href="../today">Today</a>
-              </td>
-              <td width="30%" align="right">
-                <a tal:attributes="href view/nextURL">Next &#8594;</a>
-              </td>
-            </tr>
-          </table>
+      <table class="cal-navigation">
+        <tr>
+          <td width="30%" align="left">
+            <a tal:attributes="href context/prevRange/fmt:url">&#8592; Previous</a>
+          </td>
+          <td width="30%" align="center">
+            <a href="../today">Today</a>
+          </td>
+          <td width="30%" align="right">
+            <a tal:attributes="href context/nextRange/fmt:url">Next &#8594;</a>
+          </td>
+        </tr>
+      </table>
 
-          <div id="calendar-view-day"
-               tal:attributes="style python:'height: ' + str(view.visiblehours * 4 + 1) + 'em'">
-            <!-- Day grid -->
-            <tal:loop repeat="hour view/getHours"
-                      tal:define="height python:4">
-              <metal:block tal:define="num repeat/hour/index;
-                                     top python:num * height">
-                <div class="calendar-hour"
-                     tal:define="oddrow repeat/hour/odd"
-                     tal:attributes="style python:'top: ' + str(top) + 'em';
-                                     class python:oddrow and 'hour odd' or 'hour even'">
-                  <a href="../+add"
-                     tal:condition="context/calendar/required:launchpad.Edit"
-                     tal:content="hour/title"
-                     tal:attributes="href hour/addURL">08:00</a>
-                  <span
-                     tal:condition="not:context/calendar/required:launchpad.Edit"
-                     tal:content="hour/title">08:00</span>
-                </div>
-              </metal:block>
-            </tal:loop>
-
-            <!-- Events -->
-            <div class="events">
-            <tal:loop repeat="hour view/getHours"
-                      tal:define="height python:4">
-              <metal:block tal:define="num repeat/hour/index;
-                                     top python:num * height">
-                <tal:block repeat="event hour/cols">
-                  <tal:if condition="event">
-                    <div class="event"
-                         onmouseover="this.style.zIndex=9;"
-                         onmouseout="this.style.zIndex=1;"
-                         tal:define="num repeat/event/index;
-                                     compress python:view.getColumns() > 2;
-                                     unit python:compress and '%' or 'em';
-                                     indent python:compress and 15 or 20.5;
-                                     evdate python:view.eventStartDate(event);
-                                     colour python:view.eventColour(event);
-                                     mine python:True"
-                         tal:attributes="style python:'background: %s;; height: %sem !important;; margin-left: %s%s;; top: %sem' % (colour, view.eventHeight(event), str(num * indent), unit, view.eventTop(event));
-                                         class python:mine and 'event' or 'event other';
-                                         something compress">
-                      <a tal:attributes="href string:../events/${event/id}/">
-                      <span tal:replace="python:view.eventStart(event)">12:00</span>
-                      -
-                      <span tal:replace="event/title">Title</span>
-                      </a>
-                      
-                    </div>
-                  </tal:if>
-                </tal:block>
-              </metal:block>
-            </tal:loop>
+      <div id="calendar-view-day"
+           tal:attributes="style python:'height: ' + str(view.visiblehours * 4 + 1) + 'em'">
+        <!-- Day grid -->
+        <tal:loop repeat="hour view/getHours"
+                  tal:define="height python:4">
+          <metal:block tal:define="num repeat/hour/index;
+                                 top python:num * height">
+            <div class="calendar-hour"
+                 tal:define="oddrow repeat/hour/odd"
+                 tal:attributes="style python:'top: ' + str(top) + 'em';
+                                 class python:oddrow and 'hour odd' or 'hour even'">
+              <a href="../+add"
+                 tal:condition="context/calendar/required:launchpad.Edit"
+                 tal:content="hour/title"
+                 tal:attributes="href hour/addURL">08:00</a>
+              <span
+                 tal:condition="not:context/calendar/required:launchpad.Edit"
+                 tal:content="hour/title">08:00</span>
             </div>
-          </div>
+          </metal:block>
+        </tal:loop>
+
+        <!-- Events -->
+        <div class="events">
+        <tal:loop repeat="hour view/getHours"
+                  tal:define="height python:4">
+          <metal:block tal:define="num repeat/hour/index;
+                                   top python:num * height">
+            <tal:block repeat="event hour/cols">
+              <tal:if condition="event">
+                <div class="event"
+                     onmouseover="this.style.zIndex=9;"
+                     onmouseout="this.style.zIndex=1;"
+                     tal:define="num repeat/event/index;
+                                 compress python:view.getColumns() > 2;
+                                 unit python:compress and '%' or 'em';
+                                 indent python:compress and 15 or 20.5;
+                                 evdate python:view.eventStartDate(event);
+                                 colour python:view.eventColour(event);
+                                 mine python:True"
+                     tal:attributes="style python:'background: %s;; height: %sem !important;; margin-left: %s%s;; top: %sem' % (colour, view.eventHeight(event), str(num * indent), unit, view.eventTop(event));
+                                     class python:mine and 'event' or 'event other';
+                                     something compress">
+                  <a tal:attributes="href string:../events/${event/id}/">
+                  <span tal:replace="python:view.eventStart(event)">12:00</span>
+                  -
+                  <span tal:replace="event/title">Title</span>
+                  </a>
+                      
+                </div>
+              </tal:if>
+            </tal:block>
+          </metal:block>
+        </tal:loop>
         </div>
       </div>
     </div>
