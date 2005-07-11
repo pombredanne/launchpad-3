@@ -310,13 +310,19 @@
       path_expression="string:calendar"
       parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot" />
 
-  <browser:page
-      name="+subscriptions"
+  <browser:pages
       for="canonical.launchpad.interfaces.ILaunchpadMergedCalendar"
       permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.ViewCalendarSubscriptions"
-      template="../templates/calendar-subscriptions.pt"
-      lp:url="/calendar/+subscriptions" />
+      class="canonical.launchpad.browser.ViewCalendarSubscriptions">
+    <browser:page
+        name="+subscriptions"
+        template="../templates/calendar-subscriptions.pt"
+        lp:url="/calendar/+subscriptions" />
+    <browser:page
+        name="+portlet-subscriptions"
+        template="../templates/portlet-calendar-subscriptions.pt"
+        lp:url="/calendar/+portlet-subscriptions" />
+  </browser:pages>
 
 
   <!-- XXX: register IDisplayViews so that the schemadisplay doesn't

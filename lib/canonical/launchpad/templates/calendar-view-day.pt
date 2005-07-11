@@ -8,15 +8,19 @@
 
   <body>
 
+    <metal:leftportlets fill-slot="portlets_one">
+      <div tal:replace="structure context/calendar/@@+portlet-subscriptions|nothing" />
+    </metal:leftportlets>
+
     <metal:rightportlets fill-slot="portlets_two">
       <div tal:replace="structure context/calendar/@@+portlet-actions" />
     </metal:rightportlets>
 
+    <div metal:fill-slot="titleheader"
+         tal:replace="context/calendar/title">Calendar Title</div>
+
     <div metal:fill-slot="main">
-      <h1>
-        <span tal:replace="context/calendar/title">Calendar Title</span> -
-        <span tal:replace="view/datestring">Time</span>
-      </h1>
+      <h1 tal:content="view/datestring">Time</h1>
 
       <table class="cal-navigation">
         <tr>

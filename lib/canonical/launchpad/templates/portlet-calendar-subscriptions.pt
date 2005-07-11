@@ -1,0 +1,18 @@
+<div class="portlet" tal:condition="view/subscriptions">
+  <h4>Subscriptions:</h4>
+  <div class="portletBody">
+    <div class="portletContent odd">
+      <table>
+        <tr tal:repeat="sub view/subscriptions" valign="top">
+          <td>
+            <div tal:attributes="style python:'border: solid 1px black;; width: 1em;; height: 1em;; background-color: %s' % sub['colour']"></div>
+          </td>
+          <td>
+            <a tal:attributes="href sub/calendar/fmt:url"
+               tal:content="sub/calendar/title">Calendar name</a>
+          </td>
+        </tr>
+      </table>
+    </div>
+  </div>
+</div>
