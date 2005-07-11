@@ -128,10 +128,15 @@
                   tal:content="structure view/sourcepackagename_widget" nowrap />
             </tr>
             <tr>
+              <td>&nbsp;</td>
+            </tr>
+            <tr>
               <td colspan="2">
-                <label tal:attributes="for view/assignee_widget/name"
-                       tal:content="view/assignee_widget/label">
-                  Assignee
+                <label tal:attributes="for view/assignee_widget/name">
+                  <a href="#"
+                     tal:attributes="href context/assignee/fmt:url">
+                  <span tal:replace="view/assignee_widget/label">
+                  Assignee</span></a>
                 </label>
               </td>
               <td colspan="2">
