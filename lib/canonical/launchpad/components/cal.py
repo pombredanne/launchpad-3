@@ -18,7 +18,7 @@ from zope.component import getUtility
 from schoolbell.interfaces import ICalendar
 from canonical.launchpad.interfaces import (
     ILaunchBag, ILaunchpadCalendar, ILaunchpadMergedCalendar,
-    ICalendarSubscriptionSet)
+    ICalendarSubscriptionSubset)
 
 from schoolbell.mixins import CalendarMixin, EditableCalendarMixin
 from schoolbell.icalendar import convert_calendar_to_ical
@@ -39,7 +39,7 @@ class MergedCalendar(CalendarMixin, EditableCalendarMixin):
         self.id = None
         self.revision = 0
         self.owner = getUtility(ILaunchBag).user
-        self.subscriptions = getUtility(ICalendarSubscriptionSet)
+        self.subscriptions = ICalendarSubscriptionSubset(self.owner, None)
         if self.owner:
             self.title = _('Merged Calendar for %s') % self.owner.browsername
         else:
