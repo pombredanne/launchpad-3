@@ -50,16 +50,18 @@ class BugWatch(SQLBase):
 
     @property
     def url(self):
+        url_formats = {
+            # XXX 20050712 kiko: slash-suffixing the bugtracker baseurl
+            # protects us from the bugtracker baseurl not ending in
+            # slashes -- should we instead ensure when it is entered?
+            BugTrackerType.BUGZILLA: '%s/show_bug.cgi?id=%s',
+            BugTrackerType.DEBBUGS:  '%s/cgi-bin/bugreport.cgi?bug=%s',
+            BugTrackerType.ROUNDUP:  '%s/issue%s'
+        }
         bt = self.bugtracker.bugtrackertype
-        if bt == BugTrackerType.BUGZILLA:
-            return '%sshow_bug.cgi?bug=%s' % (self.bugtracker.baseurl,
-                self.remotebug)
-        elif bt == BugTrackerType.DEBBUGS:
-            return '%scgi-bin/bugreport.cgi?bug=%s' % (self.bugtracker.baseurl, self.remotebug)
-        elif bt == BugTrackerType.ROUNDUP:
-            return '%s/issue%s' % (self.bugtracker.baseurl, self.remotebug)
-        # we only know about those types
-        raise AssertionError, 'Unknown bug tracker type %s' % bt
+        if not url_formats.has_key(bt):
+            raise AssertionError, 'Unknown bug tracker type %s' % bt
+        return url_formats[bt] % (self.bugtracker.baseurl, self.remotebug)
 
     @property
     def needscheck(self):
