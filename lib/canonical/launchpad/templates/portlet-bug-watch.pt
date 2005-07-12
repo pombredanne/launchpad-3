@@ -12,9 +12,8 @@
               <a tal:attributes="href watch/url">
                   <span tal:replace="watch/bugtracker/name" />
                   #<span tal:replace="watch/remotebug" />
-                  <div class="portletDetails"
-                       tal:content="watch/remotestatus" />
               </a>
+              [<span tal:content="watch/remotestatus" />]
               <small>
                 (<a tal:attributes="href string:$bug_url/watches/${watch/id}/+edit">edit</a>)
               </small>
