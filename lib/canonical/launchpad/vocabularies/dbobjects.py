@@ -344,6 +344,8 @@ class BasePersonVocabulary(SQLObjectVocabularyBase):
             # This doesn't look like an email, so let's simply treat
             # it like a name.
             person = Person.selectOneBy(name=token)
+            if not person:
+                raise LookupError, token
             return self._toTerm(person)
 
     def search(self, text):
