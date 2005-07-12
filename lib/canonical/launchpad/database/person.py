@@ -673,6 +673,8 @@ class PersonSet:
     """The set of persons."""
     implements(IPersonSet)
 
+    _defaultOrder = Person._defaultOrder
+
     def __init__(self):
         self.title = 'Launchpad People'
 
@@ -759,10 +761,14 @@ class PersonSet:
         return self.getAllPersons().count()
 
     def getAllPersons(self, orderBy=None):
+        if orderBy is None:
+            orderBy = self._defaultOrder
         query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
     def getAllValidPersons(self, orderBy=None):
+        if orderBy is None:
+            orderBy = self._defaultOrder
         query = AND(Person.q.teamownerID==None,
                     Person.q.mergedID==None,
                     EmailAddress.q.personID==Person.q.id,
@@ -773,17 +779,25 @@ class PersonSet:
         return self.getAllTeams().count()
 
     def getAllTeams(self, orderBy=None):
+        if orderBy is None:
+            orderBy = self._defaultOrder
         return Person.select(Person.q.teamownerID!=None, orderBy=orderBy)
 
     def findByName(self, name, orderBy=None):
+        if orderBy is None:
+            orderBy = self._defaultOrder
         query = "fti @@ ftq(%s) AND merged is NULL" % quote(name)
         return Person.select(query, orderBy=orderBy)
 
     def findPersonByName(self, name, orderBy=None):
+        if orderBy is None:
+            orderBy = self._defaultOrder
         query = "fti @@ ftq(%s) AND teamowner is NULL AND merged is NULL"
         return Person.select(query % quote(name), orderBy=orderBy)
 
     def findTeamByName(self, name, orderBy=None):
+        if orderBy is None:
+            orderBy = self._defaultOrder
         query = "fti @@ ftq(%s) AND teamowner is not NULL" % quote(name)
         return Person.select(query, orderBy=orderBy)
 
@@ -804,6 +818,8 @@ class PersonSet:
 
     def getUbuntites(self, orderBy=None):
         """See IPersonSet."""
+        if orderBy is None:
+            orderBy = self._defaultOrder
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
 
@@ -1212,6 +1228,7 @@ class TeamMembership(SQLBase):
     implements(ITeamMembership)
 
     _table = 'TeamMembership'
+    _defaultOrder = 'id'
 
     team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
@@ -1250,7 +1267,8 @@ class TeamMembershipSet:
         # XXX: Don't use assert.
         #      SteveAlexander, 2005-04-23
         assert isinstance(teamID, int)
-        orderBy = orderBy or self._defaultOrder
+        if orderBy is None:
+            orderBy = self._defaultOrder
         clauses = []
         for status in statuses:
             clauses.append("TeamMembership.status = %s" % sqlvalues(status))
