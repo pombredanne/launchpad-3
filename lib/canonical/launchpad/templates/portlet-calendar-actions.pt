@@ -4,7 +4,7 @@
     <div class="portletContent odd">
 
       <ul>
-        <li class="edit"
+        <li class="add"
             tal:condition="context/required:launchpad.Edit">
           <a tal:attributes="href string:${context/fmt:url}/+add">
             Add Event
