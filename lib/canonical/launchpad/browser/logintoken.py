@@ -291,11 +291,12 @@ class ValidateEmailView(object):
         list containing the just added address for UI feedback.
         """
         emailset = getUtility(IEmailAddressSet)
-        bag = getUtility(ILaunchBag)
+        requester = self.context.requester
         # build a list of already validated and preferred emailaddress
         # in lowercase for comparision reasons
-        emails = set(email.email.lower() for email in bag.user.validatedemails)
-        emails.add(bag.user.preferredemail.email.lower())
+        emails = set(email.email.lower() for email in
+                     requester.validatedemails)
+        emails.add(requester.preferredemail.email.lower())
 
         guessed = []
         hijacked = []
@@ -304,12 +305,12 @@ class ValidateEmailView(object):
             # if UID isn't validated/preferred, append it to list
             if uid.lower() not in emails:
                 # verify if the email isn't owned by other person.
-                lpemail = emailsset.getbyEmail(uid)
+                lpemail = emailset.getByEmail(uid)
                 if lpemail:
                     hijacked.append(lpemail)
                     continue
                 # store guessed email address with status NEW
-                email = emailset.new(uid, bag.user.id)
+                email = emailset.new(uid, requester.id)
                 guessed.append(email)                    
                                 
         return guessed, hijacked
