@@ -2,7 +2,7 @@
 "Sample Person" is using the "Australia/Perth" time zone:
 
   >>> print http(r"""
-  ... GET /people/name12/+edittz HTTP/1.1
+  ... GET /people/name12/+changetz HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -22,7 +22,7 @@
 We can change the time zone by posting the form:
 
   >>> print http(r"""
-  ... POST /people/name12/+edittz HTTP/1.1
+  ... POST /people/name12/+changetz HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 441
   ... Content-Type: multipart/form-data; boundary=---------------------------50350241221155211392010177932
@@ -58,7 +58,7 @@ We can change the time zone by posting the form:
 Change "Sample Person" back to Australia/Perth.
 
   >>> print http(r"""
-  ... POST /people/name12/+edittz HTTP/1.1
+  ... POST /people/name12/+changetz HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 445
   ... Content-Type: multipart/form-data; boundary=---------------------------328836579426587791788403618
@@ -87,7 +87,7 @@ Change "Sample Person" back to Australia/Perth.
 "Mark Shuttleworth" has no selected time zone in the database:
 
   >>> print http(r"""
-  ... GET /people/sabdfl/+edittz HTTP/1.1
+  ... GET /people/sabdfl/+changetz HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -107,7 +107,7 @@ Change "Sample Person" back to Australia/Perth.
 We can set his time zone to UTC:
 
   >>> print http(r"""
-  ... POST /people/sabdfl/+edittz HTTP/1.1
+  ... POST /people/sabdfl/+changetz HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... Content-Length: 441
   ... Content-Type: multipart/form-data; boundary=---------------------------19822982737336460951121752388
@@ -142,7 +142,7 @@ Submitting the form without a time zone selected causes an input
 validation error:
 
   >>> print http(r"""
-  ... POST /people/sabdfl/+edittz HTTP/1.1
+  ... POST /people/sabdfl/+changetz HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ... Content-Length: 316
   ... Content-Type: multipart/form-data; boundary=---------------------------7739752791407205050362934404

@@ -128,13 +128,13 @@
   </browser:pages>
 
   <browser:editform
-      name="+edittz"
+      name="+changetz"
       for="canonical.launchpad.interfaces.IPerson"
       schema="canonical.launchpad.interfaces.IPerson"
       fields="timezone"
       permission="launchpad.Edit"
       template="../templates/person-timezone.pt"
-      lp:url="/people/$person.id/+edittz">
+      lp:url="/people/$person.id/+changetz">
     <browser:widget
         field="timezone"
         class="zope.app.form.browser.ChoiceInputWidget"
