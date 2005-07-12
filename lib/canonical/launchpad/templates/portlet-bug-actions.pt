@@ -5,29 +5,39 @@
     <div class="portletBody"
          tal:define="bug_url context/@@absolute_url">
         <div class="portletContent odd">
-            <img src="/++resource++edit.gif" alt="Add">
-            <a href="#" tal:attributes="href string:$bug_url/+edit">Edit Bug
-            Details</a><br />
-            <img src="/++resource++add.gif" alt="Add">
-            <a href="#" tal:attributes="href string:$bug_url/people/+new">Subscriber</a><br />
-            <img src="/++resource++add.gif" alt="Add">
-            <a href="#" tal:attributes="href string:$bug_url/+duplicate">Mark as Duplicate</a><br />
+          <ul>
+            <li class="edit">
+              <a href="#" tal:attributes="href string:$bug_url/+edit">Edit Bug
+              Details</a>
+            </li>
+            <li class="edit">
+              <a href="#" tal:attributes="href
+              string:$bug_url/+duplicate">Mark as duplicate</a>
+            </li>
+            <li class="add">
+              <a href="#" tal:attributes="href string:$bug_url/people/+new">Subscriber</a>
+            </li>
             <!-- we can do without these till the implementation is ready
-            <img src="/++resource++add.gif" alt="Add">
-            <a href="#" tal:attributes="href string:$bug_url/productinfestations/+new">Product Infestation</a><br />
-            <img src="/++resource++add.gif" alt="Add">
-            <a href="#" tal:attributes="href string:$bug_url/packageinfestations/+new">Package Infestation</a><br />
+            <li class="add">
+            <a href="#" tal:attributes="href string:$bug_url/productinfestations/+new">Product Infestation</a>
+            </li>
+            <li class="add">
+            <a href="#" tal:attributes="href string:$bug_url/packageinfestations/+new">Package Infestation</a></li>
             -->
-            <img src="/++resource++add.gif" alt="Add">
-            <a href="#" tal:attributes="href string:$bug_url/cverefs/+new"><abbr title="Common Vulnerabilities and Exposures index">CVE</abbr> reference</a><br />
-            <img src="/++resource++add.gif" alt="Add">
-            <a href="#" tal:attributes="href string:$bug_url/references/+new">Web Link</a><br />
-            <img src="/++resource++add.gif" alt="Add">
-            <a href="#" tal:attributes="href
-            string:$bug_url/watches/+new">Bug Tracker</a><br />
-            <img src="/++resource++add.gif" alt="View">
+            <li class="add">
+              <a href="#" tal:attributes="href string:$bug_url/cverefs/+new"><abbr title="Common Vulnerabilities and Exposures index">CVE</abbr> reference</a>
+            </li>
+            <li class="add">
+            <a href="#" tal:attributes="href string:$bug_url/references/+new">Web Link</a>
+            </li>
+            <li class="add">
+              <a href="#" tal:attributes="href string:$bug_url/watches/+new">Remote bug watch</a>
+            </li>
+            <li class="info">
             <a href="#" tal:attributes="href
             string:$bug_url/activity">Activity Log</a><br />
+            </li>
+          </ul>
         </div>
     </div>
 
