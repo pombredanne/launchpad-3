@@ -193,7 +193,7 @@ class IBugAddForm(IBug):
             vocabulary="SourcePackageName")
     distribution = Choice(
             title=_("Linux Distribution"), required=False,
-            description=_("""Debian, Redhat, Gentoo, etc."""),
+            description=_("""Ubuntu, Debian, Gentoo, etc."""),
             vocabulary="Distribution")
     binarypackage = Choice(
             title=_("Binary Package"), required=False,

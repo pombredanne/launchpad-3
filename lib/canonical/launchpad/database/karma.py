@@ -126,7 +126,7 @@ class KarmaActionSet:
         query = ('KarmaAction.category = %s '
                  'AND Karma.action = KarmaAction.id '
                  'AND Karma.person = %s' % sqlvalues(category, person.id))
-        return KarmaAction.select(query, clauseTables=['Karma'])
+        return KarmaAction.select(query, clauseTables=['Karma'], distinct=True)
 
 
 class KarmaCache(SQLBase):

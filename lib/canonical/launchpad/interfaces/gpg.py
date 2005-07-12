@@ -26,15 +26,15 @@ class IGPGKey(Interface):
             constraint=valid_keyid)
     fingerprint = TextLine(title=_("User Fingerprint"), required=True,
             constraint=valid_fingerprint)
-    revoked = Bool(title=_("Revoked"), required=True)
-    algorithmname = Attribute("The Algorithm Name")
-
+    active = Bool(title=_("Active"), required=True)
+    displayname = Attribute("Key Display Name")
+    revoked = Attribute("Workarrounded Revoked flag, temporary.")
 
 class IGPGKeySet(Interface):
     """The set of GPGKeys."""
 
     def new(self, ownerID, keyid, fingerprint, keysize,
-            algorithm, revoked):
+            algorithm, active=True):
         """Create a new GPGKey pointing to the given Person."""
 
     def get(id, default=None):
@@ -43,4 +43,18 @@ class IGPGKeySet(Interface):
         """
 
     def getByFingerprint(fingerprint, default=None):
-        """Return UNIQUE result for a given Key fingerprint."""
+        """Return UNIQUE result for a given Key fingerprint including
+        inactive ones.
+        """
+
+    def deactivateGpgKey(keyid):
+        """Deactivate a Key inside Launchpad Context """
+
+    def activateGpgKey(keyid):
+        """Reactivate a Key inside Launchpad Context """
+        
+    def getGpgKeys(ownerid=None, active=True):
+        """Return GPG keys, optionally for a given owner and or a given
+        status.
+        """ 
+

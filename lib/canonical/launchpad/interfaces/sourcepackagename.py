@@ -56,3 +56,10 @@ class ISourcePackageNameSet(Interface):
 
     def findByName(name):
         """Find sourcepackagenames by its name or part of it"""
+
+    def new(name):
+        """Create a new source package name."""
+
+    def getOrCreateByName(name):
+        """Get a source package name by name, creating it if necessary."""
+

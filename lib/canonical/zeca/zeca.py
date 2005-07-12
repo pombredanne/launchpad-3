@@ -39,6 +39,7 @@ from twisted.internet import reactor
 
 GREETING = 'Copyright 2004-2005 Canonical Ltd.\n'
 
+
 class Zeca(Resource):
     def getChild(self, name, request):
         if name == '':
@@ -100,12 +101,15 @@ class LookUp(Resource):
 
         return page
 
+
 if __name__ == "__main__":
     from canonical.config import config
 
+    root = config.zeca.root
+    
     zeca = Zeca()
     keyserver = KeyServer()
-    keyserver.putChild('lookup', LookUp(config.zeca.root))
+    keyserver.putChild('lookup', LookUp(root))
     zeca.putChild('pks', keyserver)
     
     site = server.Site(zeca)

@@ -14,19 +14,20 @@
       <div tal:content="view/submit" />
 
       <p class="formHelp">
-      This form allows you to change the calendars you are
-      subscribed to.  If you wish to subscribe to a calendar not
+      To subscribe to a calendar not
       listed here, go to the corresponding person, project or
       package page.</p>
 
       <form action="." tal:attributes="action request/URL" method="post">
-        <fieldset>
-          <table>
+        <table>
+          <thead>
             <tr>
               <th>Calendar</th>
               <th>Subscribed</th>
               <th>Colour</th>
             </tr>
+          </thead>
+          <tbody>
             <tr tal:repeat="sub view/subscriptions">
               <td tal:content="sub/title">Calendar name</td>
               <td>
@@ -59,11 +60,8 @@
                 </select>
               </td>
             </tr>
-          </table>
-        </fieldset>
-
-        <div class="separator"></div>
-
+          </tbody>
+        </table>
         <div class="row">
           <div class="controls"><hr />
             <input type='submit' value='Submit'

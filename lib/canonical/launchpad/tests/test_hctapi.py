@@ -350,7 +350,7 @@ class WhereAmI(DatabaseScaffold):
         """where_am_i returns URL for a DistroRelease."""
         from canonical.launchpad.database import DistroRelease
         from canonical.launchpad.hctapi import where_am_i
-        self.assertEquals(where_am_i(DistroRelease.selectBy(name="hoary")[0]),
+        self.assertEquals(where_am_i(DistroRelease.selectOneBy(name="hoary")),
                           "lp:///distros/ubuntu/hoary")
 
     def testSourcePackage(self):

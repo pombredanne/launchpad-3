@@ -71,9 +71,9 @@ from canonical.launchpad.database import (
      Product, ProductSeries, ProductRelease,
      Distribution, DistroRelease, DistroReleaseSet,
      SourcePackageName, SourcePackage, SourcePackageRelease,
-     Manifest, ManifestEntry, Archive, ArchNamespace, Branch, Changeset
+     Manifest, ManifestEntry, Archive, ArchNamespace, Branch, Changeset,
+     VersionMapper
      )
-from canonical.launchpad.database.archbranch import VersionMapper
 from hct.url import register_backend, UrlError
 
 
@@ -225,6 +225,8 @@ def get_object(url, resolve=False):
 
                 objs = DistroReleaseSet().findByVersion(part)
                 if objs.count() == 1:
+                    # XXX: This code path is not tested.  SteveAlexander,
+                    # 2005-07-11
                     obj = objs[0]
                     continue
 
@@ -735,31 +737,28 @@ def put_manifest(url, manifest):
                 np = NameParser(entry.branch)
 
                 # Archive table entry
-                objs = Archive.selectBy(name=np.get_archive())
-                if objs.count():
-                    archive = objs[0]
-                else:
+                archive = Archive.selectOneBy(name=np.get_archive())
+                if archive is None:
                     archive = Archive(name=np.get_archive(), visible=True,
                                       title="", description="")
 
                 # ArchNamespace table entry
-                objs = ArchNamespace.selectBy(archiveID=archive.id,
-                                              category=np.get_category(),
-                                              branch=np.get_branch(),
-                                              version=np.get_version())
-                if objs.count():
-                    namespace = objs[0]
-                else:
-                    namespace = ArchNamespace(archiveID=archive.id, visible=True,
-                                              category=np.get_category(),
-                                              branch=np.get_branch(),
-                                              version=np.get_version())
+                namespace = ArchNamespace.selectOneBy(
+                    archiveID=archive.id,
+                    category=np.get_category(),
+                    branch=np.get_branch(),
+                    version=np.get_version())
+                if namespace is None:
+                    namespace = ArchNamespace(
+                        archiveID=archive.id,
+                        visible=True,
+                        category=np.get_category(),
+                        branch=np.get_branch(),
+                        version=np.get_version())
 
                 # Branch table entry
-                objs = Branch.selectBy(archnamespaceID=namespace.id)
-                if objs.count():
-                    branch = objs[0]
-                else:
+                branch = Branch.selectOneBy(archnamespaceID=namespace.id)
+                if branch is None:
                     branch = Branch(archnamespaceID=namespace.id,
                                     title="", description="")
 
@@ -768,11 +767,9 @@ def put_manifest(url, manifest):
             if entry.changeset is not None:
                 np = NameParser(entry.changeset)
 
-                objs = Changeset.selectBy(branchID=branch.id,
-                                          name=np.get_patchlevel())
-                if objs.count():
-                    changeset = objs[0]
-                else:
+                changeset = Changeset.selectOneBy(
+                    branchID=branch.id, name=np.get_patchlevel())
+                if changeset is None:
                     changeset = Changeset(branchID=branch.id,
                                           name=np.get_patchlevel(),
                                           datecreated=UTC_NOW,

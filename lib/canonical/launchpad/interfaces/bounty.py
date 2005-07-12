@@ -110,3 +110,6 @@ class IBountySet(IAddFormCustomization):
     def __iter__():
         """Iterate through the bounties in this set."""
 
+    def new(name, title, summary, description, usdvalue, owner, reviewer):
+        """Create a new bounty."""
+

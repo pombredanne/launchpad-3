@@ -62,10 +62,10 @@ class DistroRelease(SQLBase):
         dbName='parentrelease', foreignKey='DistroRelease', notNull=False)
     owner = ForeignKey(
         dbName='owner', foreignKey='Person', notNull=True)
-    lucilleconfig = StringCol(notNull=False)
+    lucilleconfig = StringCol(notNull=False, default=None)
     architectures = MultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease',
-        orderBy='datecreated')
+        orderBy='architecturetag')
     datelastlangpack = UtcDateTimeCol(dbName='datelastlangpack', notNull=False,
                                    default=None)
     messagecount = IntCol(notNull=True, default=0)

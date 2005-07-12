@@ -18,15 +18,14 @@
 <div metal:fill-slot="main">
 
     <div tal:condition="not: view/successfullyProcessed">
-      <h1>Validate email: <span tal:replace="context/email"></span></h1>
+      <h1>Validate GPG key: <span tal:replace="context/fingerprint"/> by 
+         <span tal:replace="context/requester/displayname"/></h1>
 
       <div tal:condition="view/errormessage" class="portalMessage"
            tal:content="structure view/errormessage">
       </div>
 
-      <p>To validate your GPG UID as a new email address, just enter
-      your password on the field below. Your GPG key will be imported
-      automatically if necessary.</p>
+      <p>To validate GPG key just enter your password on the field below.</p>
 
       <form autocomplete="off" name="validate" action="" method="POST">
       <table>
@@ -44,7 +43,12 @@
     </div>
 
     <div tal:condition="view/successfullyProcessed">
-      <h1>Email validated successfully.</h1>
+      <h1>GPG was validated successfully.</h1>
+
+      <div tal:condition="view/infomessage" class="portalMessage"
+           tal:content="structure view/infomessage">
+      </div>
+      
     </div>
 
 </div>

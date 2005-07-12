@@ -72,6 +72,10 @@ class IDistribution(IHasOwner):
         title=_("Members"),
         description=_("The distro's members team."), required=True,
         vocabulary='ValidPersonOrTeam')
+    lucilleconfig = TextLine(
+        title=_("Lucille Config"),
+        description=_("The Lucille Config."), required=False)
+
     releases = Attribute("DistroReleases inside this Distributions")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugtasks = Attribute("The bug tasks filed in this distro.")
@@ -128,6 +132,10 @@ class IDistributionSet(Interface):
 
     def getByName(distroname):
         """Return the IDistribution with the given name."""
+
+    def new(name, displayname, title, description, summary, domainname,
+            members, owner):
+        """Creaste a new distribution."""
 
 
 class IDistroPackageFinder(Interface):

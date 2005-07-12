@@ -3,36 +3,20 @@
 
 """Tests that get run automatically on a merge."""
 
-import sys, re
-import os, os.path
-import popen2
+import sys, re, time
+import os, os.path, errno
 import tabnanny
 import checkarchtag
 from StringIO import StringIO
-from threading import Thread
 import psycopg
+from subprocess import Popen, PIPE
+from signal import SIGKILL, SIGTERM
+from select import select
 
-class NonBlockingReader(Thread):
-
-    result = None
-
-    def __init__(self,file):
-        Thread.__init__(self)
-        self.file = file
-
-    def run(self):
-        self.result = self.file.read()
-
-    def read(self):
-        if self.result is None:
-            raise RuntimeError("read() called before run()")
-        return self.result
-
-    def readlines(self):
-        if self.result is None:
-            raise RuntimeError("readlines() called before run()")
-        return self.result.splitlines()
-
+# Die and kill the kids if no output for 10 minutes. Tune this if if your
+# slow arsed machine needs it. The main use for this is to keep the pqm
+# queue flowing without having to give it a lifeless enema.
+TIMEOUT = 10 * 60 
 
 def main():
     """Call test.py with whatever arguments this script was run with.
@@ -91,12 +75,24 @@ def main():
     # Drop the template database if it exists - the Makefile does this
     # too, but we can explicity check for errors here
     con = psycopg.connect('dbname=template1')
+    con.set_isolation_level(0)
     cur = con.cursor()
     try:
-        cur.execute('end transaction; drop database launchpad_ftest_template')
+        cur.execute('drop database launchpad_ftest_template')
     except psycopg.ProgrammingError, x:
         if 'does not exist' not in str(x):
             raise
+    cur.execute("""
+        select count(*) from pg_stat_activity
+        where datname in ('launchpad_dev',
+            'launchpad_ftest_template', 'launchpad_ftest')
+        """)
+    existing_connections = cur.fetchone()[0]
+    if existing_connections > 0:
+        print 'Cannot rebuild database. There are %d open connections.' % (
+                existing_connections,
+                )
+        return 1
     cur.close()
     con.close()
     
@@ -134,7 +130,8 @@ def main():
         WHERE context='internal' AND name='lc_ctype'
         """)
     loc = cur.fetchone()[0]
-    if not (loc.startswith('en_') or loc in ('C', 'en')):
+    #if not (loc.startswith('en_') or loc in ('C', 'en')):
+    if loc != 'C':
         print 'Database locale incorrectly set. Need to rerun initdb.'
         return 1
 
@@ -147,41 +144,71 @@ def main():
     
 
     print 'Running tests.'
-    cmd = 'cd %s; %s test.py %s < /dev/null' % (
-            here, sys.executable, ' '.join(sys.argv[1:])
-            )
-    print cmd
-    proc = popen2.Popen3(cmd, True)
-    stdin, out, err = proc.tochild, proc.fromchild, proc.childerr
+    os.chdir(here)
+    cmd = [sys.executable, 'test.py'] + sys.argv[1:]
+    print ' '.join(cmd)
+    # This would be simpler if we set stderr=STDOUT to combine the streams
+    proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    proc.stdin.close()
 
-    # Use non-blocking reader threads to cope with differing expectations
-    # from the proess of when to consume data from out and error.
-    errthread = NonBlockingReader(err)
-    outthread = NonBlockingReader(out)
-    errthread.start()
-    outthread.start()
-    errthread.join()
-    outthread.join()
-    exitcode = proc.wait()
-    test_ok = (os.WIFEXITED(exitcode) and os.WEXITSTATUS(exitcode) == 0)
+    out =  [] # stdout from tests
+    err = [] # stderr from tests
+    open_readers = set([proc.stderr, proc.stdout])
+    while open_readers:
+        rlist, wlist, xlist = select(open_readers, [], [], TIMEOUT)
 
-    errlines = errthread.readlines()
-    dataout = outthread.read()
+        if len(rlist) == 0:
+            if proc.poll() is None:
+                break
+            print 'Tests hung - no output for %d seconds. Killing.' % TIMEOUT
+            killem(proc.pid, SIGTERM)
+            time.sleep(3)
+            if proc.poll() is None:
+                print 'Not dead yet! - slaughtering mercilessly'
+                killem(proc.pid, SIGKILL)
+            break
+
+        if proc.stdout in rlist:
+            out.append(os.read(proc.stdout.fileno(), 1024))
+            if out[-1] == "":
+                open_readers.remove(proc.stdout)
+        if proc.stderr in rlist:
+            err.append(os.read(proc.stderr.fileno(), 1024))
+            if err[-1] == "":
+                open_readers.remove(proc.stderr)
+
+    test_ok = (proc.wait() == 0)
+
+    out = ''.join(out)
+    err = ''.join(err)
 
     if test_ok:
-        for line in errlines:
+        for line in err.split('\n'):
             if re.match('^Ran\s\d+\stest(s)?\sin\s[\d\.]+s$', line):
                 print line
         return 0
     else:
         print '---- test stdout ----'
-        print dataout
+        print out
         print '---- end test stdout ----'
 
         print '---- test stderr ----'
-        print '\n'.join(errlines)
+        print err
         print '---- end test stderr ----'
         return 1
+
+def killem(pid, signal):
+    """Kill the process group leader identified by pid and other group members
+
+    Note that test.py sets its process to a process group leader.
+    """
+    try:
+        os.killpg(os.getpgid(pid), signal)
+    except OSError, x:
+        if x.errno == errno.ESRCH:
+            pass
+        else:
+            raise
 
 if __name__ == '__main__':
     sys.exit(main())

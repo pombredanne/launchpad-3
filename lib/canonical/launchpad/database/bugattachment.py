@@ -8,7 +8,7 @@ from zope.interface import implements
 
 from sqlobject import DateTimeCol, ForeignKey, StringCol
 
-from canonical.launchpad.database.bug import BugSetBase
+from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.interfaces import IBugAttachmentSet, IBugAttachment
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW

@@ -48,3 +48,9 @@ class IBinaryPackageNameSet(Interface):
         """Return the binary package names for packages that match the given
         criteria."""
 
+    def new(name):
+        """Create a new binary package name."""
+
+    def getOrCreateByName(name):
+        """Get a binary package by name, creating it if necessary."""
+

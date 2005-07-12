@@ -26,11 +26,6 @@
       </p>
 
       <div metal:define-macro="editform">
-        <form
-          action="."
-          tal:attributes="action request/URL"
-          method="post"
-          enctype="multipart/form-data">
           <div metal:define-macro="formbody">
             <!-- XXX: Brad Bollenbach, 2005-06-02: Implement this after
                   merging initial task page changes.
@@ -60,23 +55,25 @@
           </div>
 
           <h2>
-            <a href="#" tal:attributes="href context/bug/fmt:url">Bug 
+            <a href="#" tal:attributes="href context/bug/fmt:url">Bug
               #<span tal:replace="context/bug/id">132</span></a>
             in
             <a href="#" tal:attributes="href context/context/fmt:url">
-              <span tal:replace="context/contextname">some 
+              <span tal:replace="context/contextname">some
                 package/product</span></a>
           </h2>
 
-          <p tal:condition="context/bug/summary"
+          <div class="documentDescription"
+             tal:condition="context/bug/summary"
              tal:content="context/bug/summary">
              Bug summary goes here if it exists.
-          </p>
-          
-          <p class="boardCommentContent" 
-             tal:content="structure context/bug/description/fmt:nice_pre">
-             $Bug.description
-          </p>
+          </div>
+
+          <tal:description
+            content="structure context/bug/description/fmt:text-to-html"
+          >
+            $Bug.description
+          </tal:description>
 
           <div class="field">
             <table>
@@ -113,7 +110,7 @@
               <td tal:condition="context/product"
                   tal:content="structure view/milestone_widget" />
             </tr>
-            <tr tal:condition="python:context.distribution or 
+            <tr tal:condition="python:context.distribution or
                                       context.distrorelease">
               <td colspan="0">
                 <label tal:attributes="for view/sourcepackagename_widget/name"
@@ -122,7 +119,7 @@
                 </label>
               </td>
             </tr>
-            <tr tal:condition="python:context.distribution or 
+            <tr tal:condition="python:context.distribution or
                                       context.distrorelease">
               <td colspan="0"
                   tal:content="structure view/sourcepackagename_widget" nowrap />
@@ -161,14 +158,6 @@
             </div>
           </div>
 
-          <div class="actions" tal:condition="context/required:launchpad.Edit">
-            <input
-              type="submit"
-              name="UPDATE_SUBMIT"
-              value="Save Changes"
-              i18n:attributes="value submit-button" />
-          </div>
-        </form>
         <p tal:condition="context/product">
           <a href=""
               tal:attributes="href string:/malone/products/${context/product/name}"
