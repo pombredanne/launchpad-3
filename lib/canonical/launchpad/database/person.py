@@ -37,7 +37,7 @@ from canonical.launchpad.interfaces import (
     IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IMaintainershipSet,
     IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
     ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
-    ILoginTokenSet)
+    ILoginTokenSet, IBugTaskSet)
 
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.cal import Calendar
@@ -573,7 +573,7 @@ class Person(SQLBase):
     @property
     def reportedbugs(self):
         """See IPerson."""
-        return BugTask.selectBy(ownerID=self.id)
+        return getUtility(IBugTaskSet).search(owner=self)
 
     @property
     def activities(self):
