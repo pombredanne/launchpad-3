@@ -293,6 +293,7 @@ tr.rowLinkified a {
 .boardComment {
   border: 1px solid #364970;
   margin-bottom: 1.5em;
+  margin-top: 1em;
   position: relative;
 }
 
