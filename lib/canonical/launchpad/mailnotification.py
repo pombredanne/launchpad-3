@@ -231,7 +231,7 @@ def generate_bug_edit_email(bug_delta):
             for fieldname, displayattrname in (
                 ("product", "displayname"), ("sourcepackagename", "name"),
                 ("binarypackagename", "name"), ("severity", "title"),
-                ("priority", "title")):
+                ("priority", "title"), ("bugwatch", "title")):
                 change = getattr(bugtask_delta, fieldname)
                 if change:
                     oldval_display, newval_display = _get_task_change_values(
@@ -515,7 +515,8 @@ def get_task_delta(old_task, new_task):
 
     # calculate the differences in the fields that both types of tasks
     # have in common
-    for field_name in ("status", "severity", "priority", "assignee"):
+    for field_name in ("status", "severity", "priority", 
+                       "assignee", "bugwatch"):
         old_val = getattr(old_task, field_name)
         new_val = getattr(new_task, field_name)
         if old_val != new_val:
