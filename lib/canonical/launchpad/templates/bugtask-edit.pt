@@ -134,16 +134,26 @@
               <td colspan="2">
                 <label tal:attributes="for view/assignee_widget/name">
                   <a href="#"
-                     tal:attributes="href context/assignee/fmt:url">
-                  <span tal:replace="view/assignee_widget/label">
-                  Assignee</span></a>
+                     tal:condition="context/assignee"
+                     tal:attributes="href context/assignee/fmt:url;
+                                     title context/assignee/displayname"
+                     tal:content="view/assignee_widget/label">
+                  Assignee</a>
+                  <span tal:condition="not: context/assignee"
+                        tal:content="view/assignee_widget/label" />
                 </label>
               </td>
               <td colspan="2">
                 <label tal:attributes="for view/bugwatch_widget/name"
-                       tal:content="view/bugwatch_widget/label"
                        style="white-space: nowrap">
-                  Remote Watch
+                  <a href="#"
+                     tal:condition="context/bugwatch"
+                     tal:attributes="href context/bugwatch/url"
+                     tal:content="view/bugwatch_widget/label">
+                   Remote Watch
+                  </a>
+                  <span tal:condition="not: context/bugwatch"
+                        tal:content="view/bugwatch_widget/label" />
                 </label>
               </td>
             </tr>
