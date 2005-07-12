@@ -180,7 +180,7 @@ codeofconduct_admin = 'Administer codes of conduct in Launchpad'
 
 codeofconduct_index = ContextTitle('%s')
 
-codeofconduct_list = 'Codes of conduct in Launchpad'
+codeofconduct_list = 'Codes of Conduct in Launchpad'
 
 def cvereference_index(context, view):
     return 'Malone Bug #%s CVE Reference' % context.bug.id
