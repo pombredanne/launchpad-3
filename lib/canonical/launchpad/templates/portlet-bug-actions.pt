@@ -7,35 +7,39 @@
         <div class="portletContent odd">
           <ul>
             <li class="edit">
-              <a href="#" tal:attributes="href string:$bug_url/+edit">Edit Bug
-              Details</a>
+              <a href="#" tal:attributes="href string:$bug_url/+edit">Edit bug
+              details</a>
             </li>
             <li class="edit">
               <a href="#" tal:attributes="href
               string:$bug_url/+duplicate">Mark as duplicate</a>
             </li>
             <li class="add">
-              <a href="#" tal:attributes="href string:$bug_url/people/+new">Subscriber</a>
+              <a href="#" tal:attributes="href string:$bug_url/people/+new">Add subscriber</a>
             </li>
             <!-- we can do without these till the implementation is ready
             <li class="add">
-            <a href="#" tal:attributes="href string:$bug_url/productinfestations/+new">Product Infestation</a>
+            <a href="#" tal:attributes="href string:$bug_url/productinfestations/+new">Add product infestation</a>
             </li>
             <li class="add">
-            <a href="#" tal:attributes="href string:$bug_url/packageinfestations/+new">Package Infestation</a></li>
+            <a href="#" tal:attributes="href string:$bug_url/packageinfestations/+new">Add package infestation</a></li>
             -->
             <li class="add">
-              <a href="#" tal:attributes="href string:$bug_url/cverefs/+new"><abbr title="Common Vulnerabilities and Exposures index">CVE</abbr> reference</a>
+              <a href="#" tal:attributes="href
+              string:$bug_url/cverefs/+new">Add 
+              <abbr title="Common Vulnerabilities and Exposures index">CVE</abbr> reference</a>
             </li>
             <li class="add">
-            <a href="#" tal:attributes="href string:$bug_url/references/+new">Web Link</a>
+            <a href="#" tal:attributes="href
+            string:$bug_url/references/+new">Add web link</a>
             </li>
             <li class="add">
-              <a href="#" tal:attributes="href string:$bug_url/watches/+new">Remote bug watch</a>
+              <a href="#" tal:attributes="href
+              string:$bug_url/watches/+new">Add bug watch</a>
             </li>
             <li class="info">
             <a href="#" tal:attributes="href
-            string:$bug_url/activity">Activity Log</a><br />
+            string:$bug_url/activity">View activity log</a><br />
             </li>
           </ul>
         </div>
