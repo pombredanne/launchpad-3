@@ -2,27 +2,31 @@
      tal:define="bug_url string:/malone/bugs/${context/id}">
 
     <h4 title="Bug watches keep track of this bug in other bug trackers.">
-    BugTracker Watches
+    Remote Bug Watches
     </h4>
 
     <div class="portletBody">
         <div class="portletContent odd">
-
-          <tal:block repeat="watch context/watches">
-            <a tal:attributes="href string:$bug_url/watches/${watch/id}/+edit">
-                <img src="/++resource++search_icon.gif" alt="" />
-                 <span tal:replace="watch/bugtracker/name" />
-                #<span tal:replace="watch/remotebug" />
-                <div class="portletDetails"
-                     tal:content="watch/remotestatus" />
-            </a>
-          </tal:block>
+          <ul>
+            <li tal:repeat="watch context/watches">
+              <a tal:attributes="href watch/url">
+                  <span tal:replace="watch/bugtracker/name" />
+                  #<span tal:replace="watch/remotebug" />
+                  <div class="portletDetails"
+                       tal:content="watch/remotestatus" />
+              </a>
+              <small>
+                (<a tal:attributes="href string:$bug_url/watches/${watch/id}/+edit">edit</a>)
+              </small>
+            </li>
+          </ul>
 
         </div>
 
         <div class="portletContent even">
             <img src="/++resource++add.gif" alt="Add">
-            <a href="#" tal:attributes="href string:$bug_url/watches/+new">Link to other bug tracker...</a>
+            <a href="#" tal:attributes="href
+            string:$bug_url/watches/+new">Add bug watch</a>
         </div>
     </div>
 
