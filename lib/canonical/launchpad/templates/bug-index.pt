@@ -49,7 +49,6 @@
   </div>
 
   <p class="documentDescription"
-     tal:condition="context/summary"
      tal:content="context/summary">
      $bug.summary
   </p>
