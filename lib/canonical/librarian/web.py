@@ -3,7 +3,7 @@
 
 import sqlobject
 
-from twisted.web import resource, static, error, util, server
+from twisted.web import resource, static, error, util, server, proxy
 from twisted.internet.threads import deferToThread
 
 from canonical.librarian.client import quote
@@ -20,9 +20,11 @@ class NotFound(Exception):
 
 
 class LibraryFileResource(resource.Resource):
-    def __init__(self, storage):
+    def __init__(self, storage, upstreamHost, upstreamPort):
         resource.Resource.__init__(self)
         self.storage = storage
+        self.upstreamHost = upstreamHost
+        self.upstreamPort = upstreamPort
 
     def getChild(self, name, request):
         if name == '':
@@ -33,14 +35,17 @@ class LibraryFileResource(resource.Resource):
         except ValueError:
             return fourOhFour
             
-        return LibraryFileAliasResource(self.storage, fileID)
+        return LibraryFileAliasResource(self.storage, fileID, self.upstreamHost,
+                self.upstreamPort)
 
 
 class LibraryFileAliasResource(resource.Resource):
-    def __init__(self, storage, fileID):
+    def __init__(self, storage, fileID, upstreamHost, upstreamPort):
         resource.Resource.__init__(self)
         self.storage = storage
         self.fileID = fileID
+        self.upstreamHost = upstreamHost
+        self.upstreamPort = upstreamPort
 
     def getChild(self, name, request):
         try:
@@ -52,7 +57,7 @@ class LibraryFileAliasResource(resource.Resource):
         filename = request.postpath[0]
 
         deferred = deferToThread(self._getFileAlias, filename)
-        deferred.addCallback(self._cb_getFileAlias, aliasID)
+        deferred.addCallback(self._cb_getFileAlias, aliasID, request)
         deferred.addErrback(self._eb_getFileAlias)
         return util.DeferredResource(deferred)
 
@@ -71,11 +76,15 @@ class LibraryFileAliasResource(resource.Resource):
         failure.trap(NotFound)
         return fourOhFour
         
-    def _cb_getFileAlias(self, (dbAliasID, mimetype), aliasID):
+    def _cb_getFileAlias(self, (dbAliasID, mimetype), aliasID, request):
         if dbAliasID != aliasID:
             return fourOhFour
-        return File(mimetype.encode('ascii'),
-                    self.storage._fileLocation(self.fileID))
+        if self.storage.hasFile(self.fileID) or self.upstreamHost is None:
+            return File(mimetype.encode('ascii'),
+                        self.storage._fileLocation(self.fileID))
+        else:
+            return proxy.ReverseProxyResource(self.upstreamHost,
+                                              self.upstreamPort, request.path)
 
     def render_GET(self, request):
         return defaultResource.render(request)

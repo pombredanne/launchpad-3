@@ -30,6 +30,8 @@
         <key name="root" datatype="string" required="yes" />
         <key name="launch" datatype="boolean" required="no" default="no" />
         <key name="spew" datatype="boolean" required="no" default="no" />
+        <key name="upstream_url" datatype="canonical.config.urlbase"
+            required="no" />
         <key name="logfile" datatype="string" required="no" default="-" />
     </sectiontype>
 
@@ -58,6 +60,16 @@
         <key name="download_host" datatype="ipaddr-or-hostname" required="yes">
             <description>
                 Host Librarian is listening on for HTTP requests
+            </description>
+        </key>
+
+        <key name="download_url" datatype="canonical.config.urlbase"
+            required="yes">
+            <description>
+                The base URL used to generate URLs to the Library contents.
+                Note that this might be on a different host or port to what is
+                specified above if access to the Library is via Apache
+                redirects.
             </description>
         </key>
 
