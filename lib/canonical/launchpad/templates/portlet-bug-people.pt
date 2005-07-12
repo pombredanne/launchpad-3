@@ -24,7 +24,7 @@
     </div>
 </div>
 
-<div class="portlet">
+<div class="portlet" tal:condition="context/subscriptions">
     <h4>Bug Subscribers:</h4>
 
     <div class="portletBody"
@@ -32,12 +32,10 @@
         
         <div class="portletContent even"
              tal:define="subscriptions context/subscriptions;
-                         bugtasks context/bugtasks">
-
-          <tal:subscriptions
-            tal:define="ccs view/getCCs;
-                        watches view/getWatches;
-                        ignores view/getIgnores">
+                         bugtasks context/bugtasks;
+                         ccs view/getCCs;
+                         watches view/getWatches;
+                         ignores view/getIgnores">
             <tal:cc condition="ccs">
               <b>Cc:</b><br />
               <ul class="people">
@@ -94,13 +92,13 @@
               </ul>
             </tal:ignore>
 
-          </tal:subscriptions>
-        <ul>
-          <li class="add"><a
-            title="Add a subscriber to this bug"
-            tal:attributes="href string:$bug_url/people/+new">
-            Add subscribers
-          </a></li>
-        </ul>
+            <ul>
+              <li class="add"><a
+                title="Add a subscriber to this bug"
+                tal:attributes="href string:$bug_url/people/+new">
+                Add subscriber
+              </a></li>
+            </ul>
+        </div>
     </div>
 </div>
