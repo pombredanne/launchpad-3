@@ -1,20 +1,25 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
+"""Interfaces for groups of translators."""
+
 __metaclass__ = type
 
+__all__ = [
+    'ITranslationGroup',
+    'ITranslationGroupSet',
+    'IAddFormCustomization',
+    ]
+
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
-
-from zope.interface import Interface, Attribute, classImplements
-
-from zope.schema import Choice, Datetime, Int, Text, TextLine, Float
-from zope.schema.interfaces import IText, ITextLine
+from zope.interface import Attribute
+from zope.schema import Datetime, Int, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad.fields import Summary, Title
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces import IHasOwner
 
+_ = MessageIDFactory('launchpad')
 
 class ITranslationGroup(IHasOwner):
     """A TranslationGroup."""
@@ -59,7 +64,7 @@ class ITranslationGroup(IHasOwner):
     # accessing the translator list
     def query_translator(language):
         """Retrieve a translator, or None, based on a Language"""
-    
+
     def __getitem__(languagecode):
         """Retrieve the translator for the given language in this group."""
 
@@ -75,7 +80,6 @@ class ITranslationGroup(IHasOwner):
         """Add a new object."""
 
 
-# Interfaces for containers
 class ITranslationGroupSet(IAddFormCustomization):
     """A container for translation groups."""
 

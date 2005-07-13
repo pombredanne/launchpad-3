@@ -66,7 +66,7 @@ notification:
     >>> from_addr, to_addrs, raw_message = sent_emails.pop()
 
     >>> print from_addr
-    Malone Bugtracker <2@...>
+    Foo Bar via Malone <2@...>
     >>> print to_addrs
     ['dilys@muse.19inch.net', 'mark@hbd.com',
      'support@ubuntu.com', 'test@canonical.com']
@@ -75,20 +75,16 @@ notification:
     '[Bug 2] Blackhole Trash folder'
 
     >>> print msg.get_payload(decode = True) #doctest: -NORMALIZE_WHITESPACE
-    Foo Bar <foo.bar@canonical.com> made changes to:
-    <BLANKLINE>
-        http://.../malone/bugs/2
-    <BLANKLINE>
-    *** This bug has been marked a duplicate of 1 ***
-    <BLANKLINE>
-    <BLANKLINE>
+    Public bug report changed:
+    http://.../malone/bugs/2
+    ...
 
   2. To the subscribers of the dup-target bug.
 
     >>> from_addr, to_addrs, raw_message = sent_emails.pop()
 
     >>> print from_addr
-    Malone Bugtracker <1@...>
+    Foo Bar via Malone <1@...>
     >>> print to_addrs
     ['dilys@muse.19inch.net', 'mark@hbd.com',
      'support@ubuntu.com', 'test@canonical.com']

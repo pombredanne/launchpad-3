@@ -53,7 +53,7 @@
   >>> from canonical.launchpad.database import Person, TeamMembership
   >>> salgado = Person.byName('salgado')
   >>> team = Person.byName('myemail')
-  >>> tm = TeamMembership.selectBy(personID=salgado.id, teamID=team.id)[0]
+  >>> tm = TeamMembership.selectOneBy(personID=salgado.id, teamID=team.id)
   >>> tm.statusname
   'Proposed Member'
   >>> salgado.inTeam(team)

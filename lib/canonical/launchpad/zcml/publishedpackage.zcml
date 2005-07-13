@@ -26,7 +26,9 @@
 
     <securedutility
         provides="canonical.launchpad.interfaces.IPublishedPackageSet"
-        class="canonical.launchpad.database.PublishedPackageSet" />
+        class="canonical.launchpad.database.PublishedPackageSet">
+        <allow interface="canonical.launchpad.interfaces.IPublishedPackageSet"/>
+    </securedutility>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPublishedPackageSet"

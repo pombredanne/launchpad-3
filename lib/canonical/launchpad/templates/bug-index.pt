@@ -56,10 +56,11 @@
 
   <div tal:replace="structure context/@@+portlet-bug-tasks-headline" />
 
-  <p class="boardCommentContent" 
-     tal:content="structure context/description/fmt:nice_pre">
-     $Bug.description
-  </p>
+    <tal:description
+      content="structure context/description/fmt:text-to-html"
+    >
+      $Bug.description
+    </tal:description>
 
   <div class="boardComment"> <!-- this is the new comment -->
     <fieldset class="collapsible collapsed">
@@ -67,8 +68,8 @@
       <div class="field">
         <form action="+messages/+new" method="post">
           <b>Subject:</b>
-          <input name="field.title" type="text" size="50" 
-                 tal:attributes="value context/followup_title" /><br />
+          <input name="field.subject" type="text" size="50" 
+                 tal:attributes="value context/followup_subject" /><br />
           <b>Comment:</b> <textarea name="field.content" rows="10"></textarea>
           <input type="submit" name="UPDATE_SUBMIT" value="Add" />
         </form>
@@ -91,10 +92,11 @@
       </div>
 
       <div class="boardCommentBody">
-        <div class="boardCommentContent"
-             tal:content="structure message/contents/fmt:nice_pre">
+        <tal:comment
+          content="structure message/contents/fmt:text-to-html"
+        >
           Comment text.
-        </div>
+        </tal:comment>
       </div>
 
       <div class="visualClear"></div>

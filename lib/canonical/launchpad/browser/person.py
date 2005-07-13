@@ -2,6 +2,22 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'BaseListView',
+    'PeopleListView',
+    'TeamListView',
+    'UbuntiteListView',
+    'FOAFSearchView',
+    'PersonRdfView',
+    'PersonView',
+    'PersonEditView',
+    'RequestPeopleMergeView',
+    'FinishedPeopleMergeRequestView',
+    'RequestPeopleMergeMultipleEmailsView',
+    'ObjectReassignmentView',
+    'TeamReassignmentView',
+    ]
+
 import cgi
 import sets
 
@@ -62,9 +78,8 @@ class BaseListView:
         return self._getBatchNavigator(results)
 
     def getUbuntitesList(self):
-        putil = getUtility(IPersonSet)
-        results = putil.getUbuntites()
-        return self._getBatchNavigator(list(results))
+        results = getUtility(IPersonSet).getUbuntites()
+        return self._getBatchNavigator(results)
 
 
 class PeopleListView(BaseListView):
@@ -112,25 +127,15 @@ class FOAFSearchView:
             return None
 
         if searchfor == "all":
-            results = self._findPeopleByName(name)
+            results = getUtility(IPersonSet).findByName(name)
         elif searchfor == "peopleonly":
-            results = self._findPeopleByName(name, peopleonly=True)
+            results = getUtility(IPersonSet).findPersonByName(name)
         elif searchfor == "teamsonly":
-            results = self._findPeopleByName(name, teamsonly=True)
+            results = getUtility(IPersonSet).findTeamByName(name)
 
         start = int(self.request.get('batch_start', 0))
         batch = Batch(list=results, start=start, size=BATCH_SIZE)
         return BatchNavigator(batch=batch, request=self.request)
-
-    def _findPeopleByName(self, name, peopleonly=False, teamsonly=False):
-        # This method is somewhat weird, cause peopleonly and teamsonly
-        # are mutually exclusive.
-        if peopleonly:
-            return getUtility(IPersonSet).findPersonByName(name)
-        elif teamsonly:
-            return getUtility(IPersonSet).findTeamByName(name)
-
-        return getUtility(IPersonSet).findByName(name)
 
 
 class PersonRdfView:
@@ -144,15 +149,8 @@ class PersonRdfView:
                                    self.context.name + '.rdf')
 
 
-class BasePersonView:
-    """A base class to be used by all IPerson view classes."""    
-
-class PersonView(BasePersonView):
+class PersonView:
     """A simple View class to be used in all Person's pages."""
-
-    # restricted set of methods to be proxied by form_action()
-    permitted_actions = ['claim_gpg', 'remove_gpg',
-                         'add_ssh', 'remove_ssh']
 
     def __init__(self, context, request):
         self.context = context
@@ -167,6 +165,7 @@ class PersonView(BasePersonView):
         """Return a list of actions of the given category performed by 
         this person."""
         kas = getUtility(IKarmaActionSet)
+        # XXX: salgado, this needs an orderby.  SteveA. 2005-07-11
         return kas.selectByCategoryAndPerson(actionCategory, self.context)
 
     def actionsCount(self, action):
@@ -177,6 +176,8 @@ class PersonView(BasePersonView):
     def assignedBugsToShow(self):
         """Return True if there's any bug assigned to this person that match
         the criteria of mostImportantBugTasks() or mostRecentBugTasks()."""
+        # XXX: Bjorn or Brad, one of these things lacks an orderby.
+        #      SteveA 2005-07-11
         return bool(self.mostImportantBugTasks() or self.mostRecentBugTasks())
 
     def mostRecentBugTasks(self):
@@ -247,45 +248,43 @@ class PersonView(BasePersonView):
     def gpgkeysCount(self):
         return len(self.context.gpgkeys)
 
-    def signatures(self):
-        """Return a list of code-of-conduct signatures on record for this
-        person."""
-        # use utility to query on SignedCoCs
-        sCoC_util = getUtility(ISignedCodeOfConductSet)
-        return sCoC_util.searchByUser(self.context.id)
+    def signedcocsCount(self):
+        return len(self.context.signedcocs)
 
     def performCoCChanges(self):
         """Make changes to code-of-conduct signature records for this
         person."""
-        sign_ids = self.request.form.get("DEACTIVE_SIGN")
+        sig_ids = self.request.form.get("DEACTIVATE_SIGNATURE")
 
-        self.message = 'Deactivating: '
-
-        if sign_ids is not None:
+        if sig_ids is not None:
             sCoC_util = getUtility(ISignedCodeOfConductSet)
 
             # verify if we have multiple entries to deactive
-            if not isinstance(sign_ids, list):
-                sign_ids = [sign_ids]
+            if not isinstance(sig_ids, list):
+                sig_ids = [sig_ids]
 
-            for sign_id in sign_ids:
-                sign_id = int(sign_id)
-                self.message += '%d,' % sign_id
+            for sig_id in sig_ids:
+                sig_id = int(sig_id)
                 # Deactivating signature
                 comment = 'Deactivated by Owner'
-                sCoC_util.modifySignature(sign_id, self.user, comment, False)
+                sCoC_util.modifySignature(sig_id, self.user, comment, False)
 
             return True
+
+    # restricted set of methods to be proxied by form_action()
+    permitted_actions = ['claim_gpg', 'deactivate_gpg', 'remove_gpgtoken',
+                         'revalidate_gpg', 'add_ssh', 'remove_ssh']
 
     def form_action(self):
         if self.request.method != "POST":
             # Nothing to do
             return ''
+        
         action = self.request.form.get('action')
 
         # primary check on restrict set of 'form-like' methods.
         if action and (action not in self.permitted_actions):
-            return 'Forbidden Form Method'
+            return 'Forbidden Form Method: %s' % action
         
         # do not mask anything 
         return getattr(self, action)()       
@@ -296,78 +295,124 @@ class PersonView(BasePersonView):
     def claim_gpg(self):
         fingerprint = self.request.form.get('fingerprint')
 
-        sanityfpr = sanitiseFingerprint(fingerprint)
+        sanitisedfpr = sanitiseFingerprint(fingerprint)
 
-        if not sanityfpr:
-            return 'Malformed fingerprint: %s' % fingerprint
+        if not sanitisedfpr:
+            return 'Malformed fingerprint:<code>%s</code>' % fingerprint
 
-        fingerprint = sanityfpr
+        fingerprint = sanitisedfpr
 
         gpgkeyset = getUtility(IGPGKeySet)
                 
         if gpgkeyset.getByFingerprint(fingerprint):
-            return 'GPG key "%s" already imported' % fingerprint
+            return 'GPG key <code>%s</code> already imported' % fingerprint
 
-        # Automatically retrieve key Information from KeyServer
-        # as specified in the GPG configuration file.
+        # import the key to the local keyring
         gpghandler = getUtility(IGpgHandler)
-        keyinfo, uids = gpghandler.getKeyIndex(fingerprint)
-
-        if not keyinfo:
-            return 'Error in Key %s : %s' % (fingerprint, uids)
+        result, key = gpghandler.retrieveKey(fingerprint)
         
-        if len(keyinfo) < 1:
-            return 'Key Not Found: %s' % fingerprint
+        if not result:
+            # use the content ok 'key' for debug proposes
+            return (
+                "Launchpad could not import GPG key, the reason was:"
+                "<code>%s</code>."
+                "Check if you published it correctly in the global key ring "
+                "(using <kbd>gpg --send-keys KEY</kbd>) and that you add "
+                "entered the fingerprint correctly (as produced by <kbd>"
+                "gpg --fingerprint YOU</kdb>). Try later or cancel your "
+                "request." % (key))
 
-        keyinfo = keyinfo[0]
+        self._validateGPG(key)
+
+        return ('A message has been sent to <code>%s</code>, encrypted with '
+                'the key <code>%s<code>. To confirm the key is yours, decrypt '
+                'the message and follow the link inside.'
+                % (self.context.preferredemail.email, key.displayname))
+
+
+    def deactivate_gpg(self):
+        keyids = self.request.form.get('DEACTIVATE_GPGKEY')
+        
+        if keyids is not None:
+            comment = 'Key(s):<code>'
             
-        info = ('Key %s%s/%s was claimed, sending email to :'
-                % (keyinfo[0], keyinfo[1], keyinfo[2]))
+            # verify if we have multiple entries to deactive
+            if not isinstance(keyids, list):
+                keyids = [keyids]
 
-        logintokenset = getUtility(ILoginTokenSet)
+            gpgkeyset = getUtility(IGPGKeySet)
 
-        bag = getUtility(ILaunchBag)
-        # build a list of already validated and preferred emailaddress
-        # in lowercase for comparision reasons
-        emails = []
-        for email in bag.user.validatedemails:
-            emails.append(email.email.lower())
-        emails.append(bag.user.preferredemail.email.lower())
+            for keyid in keyids:
+                gpgkeyset.deactivateGpgKey(keyid)
+                gpgkey = gpgkeyset.get(keyid)
+                comment += ' %s' % gpgkey.displayname
 
-        # iter through UIDs
-        for uid in uids:
-            # if UID isn't validated/preferred, send token email
-            if uid.lower() not in emails:                
-                info += ' %s' % uid
+            comment += '</code> deactivated'
+            flush_database_updates()            
+            return comment
 
-                appurl = self.request.getApplicationURL()
-                token = logintokenset.new(
-                            self.context, getUtility(ILaunchBag).login, uid,
-                            LoginTokenType.VALIDATEGPGUID,
-                            fingerprint=fingerprint)
-                token.sendEmailValidationRequest(appurl)
+        return 'No Key(s) selected for deactivation.'
 
-        info += ('.At least one UID should be validated to get the key '
-                 'imported as yours.')
+    def remove_gpgtoken(self):
+        tokenfprs = self.request.form.get('REMOVE_GPGTOKEN')
+        
+        if tokenfprs is not None:
+            comment = 'Token(s) for:<code>'
+            logintokenset = getUtility(ILoginTokenSet)
 
-        return info
+            # verify if we have multiple entries to deactive
+            if not isinstance(tokenfprs, list):
+                tokenfprs = [tokenfprs]
 
-    # XXX cprov 20050401
-    # is it possible to remove permanently a key from our keyring
-    # The best bet should be DEACTIVE it.
-    def remove_gpg(self):
-        keyid = self.request.form.get('keyid')
-        # retrieve key info
-        gpgkey = getUtility(IGPGKeySet).get(keyid)
-
-        if gpgkey is None:
-            return "Can't remove key that doesn't exist"
-
-        if gpgkey.owner != self.user:
-            return "Cannot remove someone else's key"
+            for tokenfpr in tokenfprs:
+                # retrieve token info
+                logintokenset.deleteByFingerprintAndRequester(tokenfpr,
+                                                              self.user)
+                comment += ' %s' % tokenfpr
                 
-        comment = 'GPG key cannot be removed yet'
-        return comment
+            comment += '</code> key fingerprint(s) deleted.'
+            return comment
+
+        return 'No Token(s) selected for deletion.'
+
+    def revalidate_gpg(self):
+        keyids = self.request.form.get('REVALIDATE_GPGKEY')
+        appurl = self.request.getApplicationURL()
+
+        if keyids is not None:
+            found = []
+            notfound = []
+            # verify if we have multiple entries to deactive
+            if not isinstance(keyids, list):
+                keyids = [keyids]
+                
+            gpghandler = getUtility(IGpgHandler)
+            keyset = getUtility(IGPGKeySet)
+            
+            for keyid in keyids:
+                # retrieve key info from LP
+                gpgkey = keyset.get(keyid)
+                result, key = gpghandler.retrieveKey(gpgkey.fingerprint)
+                if not result:
+                    notfound.append(gpgkey.fingerprint) 
+                    continue
+                self._validateGPG(key)
+                found.append(key.displayname)
+                
+            comment = ''
+            if len(found):
+                comment += ('Key(s):<code>%s</code> revalidation email sent '
+                            'to %s .' % (' '.join(found),
+                                         self.context.preferredemail.email))
+            if len(notfound):
+                comment += ('Key(s):<code>%s</code> were skiped because could '
+                            'not be retrived by Launchpad, verify if the key '
+                            'is correctly published in the global key ring.' %
+                            (''.join(notfound)))
+
+            return comment
+
+        return 'No Key(s) selected for revalidation.'
 
     def add_ssh(self):
         sshkey = self.request.form.get('sshkey')
@@ -403,8 +448,23 @@ class PersonView(BasePersonView):
         sshkey.destroySelf()
         return 'Key "%s" removed' % comment
 
+    def _validateGPG(self, key):
+        logintokenset = getUtility(ILoginTokenSet)
+        bag = getUtility(ILaunchBag)
 
-class PersonEditView(BasePersonView):
+        preferredemail = bag.user.preferredemail.email
+        login = bag.login
+
+        token = logintokenset.new(self.context, login,
+                                  preferredemail,
+                                  LoginTokenType.VALIDATEGPG,
+                                  fingerprint=key.fingerprint)
+
+        appurl = self.request.getApplicationURL()
+        token.sendGpgValidationRequest(appurl, key, encrypt=True)
+
+
+class PersonEditView:
 
     def __init__(self, context, request):
         self.context = context
@@ -635,8 +695,8 @@ class PersonEditView(BasePersonView):
         token.sendEmailValidationRequest(self.request.getApplicationURL())
 
         self.message = (
-                "A new message was sent to '%s', please follow the "
-                "instructions on that message to confirm that this email "
+                "An e-mail message was sent to '%s'. Follow the "
+                "instructions in that message to confirm that the "
                 "address is yours." % newemail)
 
     def _setPreferred(self):

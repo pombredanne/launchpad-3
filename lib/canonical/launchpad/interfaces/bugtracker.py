@@ -1,9 +1,19 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Bug tracker interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IBugTracker',
+    'IBugTrackerSet',
+    ]
 
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
+from zope.schema import Int, Text, TextLine
 
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
+_ = MessageIDFactory('launchpad')
 
 class IBugTracker(Interface):
     """A remote a bug system."""

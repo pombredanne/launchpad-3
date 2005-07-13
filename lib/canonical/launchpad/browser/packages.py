@@ -1,16 +1,25 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 __metaclass__ = type
+
+__all__ = [
+    'SourcePackageView',
+    'DistroSourcesView',
+    'DistrosReleaseBinariesSearchView',
+    'SourcePackageBugsView',
+    'BinaryPackageView',
+    ]
 
 from apt_pkg import ParseDepends
 
 from urllib import quote as urlquote
 
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
 from canonical.lp.dbschema import BugSeverity
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
-from canonical.launchpad.interfaces import IPerson, ILaunchBag
+from canonical.launchpad.interfaces import ILaunchBag
 
 # XXX: Daniel Debonzi
 # Importing stuff from Soyuz directory

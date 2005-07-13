@@ -2,9 +2,23 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+__all__ = [
+    'TeamEditView',
+    'TeamEmailView',
+    'ITeamCreation',
+    'TeamAddView',
+    'TeamView',
+    'TeamJoinView',
+    'TeamLeaveView',
+    'TeamMembersView',
+    'ProposedTeamMembersEditView',
+    'AddTeamMemberView',
+    'TeamMembershipEditView',
+    ]
 
 import pytz
+
+from datetime import datetime
 
 # zope imports
 from zope.schema import TextLine
@@ -12,7 +26,6 @@ from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from zope.component import getUtility
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
@@ -131,9 +144,9 @@ class TeamEmailView:
         appurl = self.request.getApplicationURL()
         sendEmailValidationRequest(self.team, email, appurl)
         self.feedback = (
-            "A new message was sent to '%s', please follow the instructions "
-            "on that message to validate the new contact email address of "
-            "this team." % email)
+            "An e-mail message was sent to '%s'. Follow the "
+            "instructions in that message to confirm the new "
+            "contact address for this team." % email)
 
 
 class ITeamCreation(ITeam):

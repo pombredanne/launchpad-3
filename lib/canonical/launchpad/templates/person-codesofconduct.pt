@@ -19,42 +19,55 @@
 
   <h1>Code of Conduct Signatures</h1>
 
-  <div tal:condition="view/performCoCChanges">
-    <p class="portalMessage" tal:content="view/message"></p>
-  </div>
+  <tal:dummy tal:condition="view/performCoCChanges"/>
 
   <p class="documentDescription">The Ubuntu Code of Conduct is a commitment
   to the principles of collaboration, tolerance and open communication that
   drive the open source community.</p>
 
-  <p tal:condition="not: view/signatures"><span
-  tal:replace="context/browsername">Person Name</span> has never signed the
-  Ubuntu Code of Conduct.</p>
+  <p tal:condition="not: view/signedcocsCount">
+     <span tal:replace="context/displayname"/> has never signed the Ubuntu
+     Code of Conduct.</p> 
 
-  <div tal:condition="view/signatures">
-  <form name="coc" action="" method="POST">
-  <table class="listing rowNavigation">
-    <tr>
-      <th>Signingkey</th>
-      <th>Status</th>
-    </tr>
-    <tr tal:repeat="sign view/signatures">
-      <td tal:condition="sign/signingkey"
-          tal:content="sign/signingkey/keyid">GPGKEY</td>
-      <td tal:condition="not:sign/signingkey">PAPER</td>
-      <td tal:condition="sign/active">
-        <input tal:attributes="value sign/id" name="DEACTIVE_SIGN" 
-               type="checkbox" enable/>
-      </td>
-      <td tal:condition="not:sign/active">DEACTIVE</td>
-    </tr>
-  </table>
-  <input type="submit" value="Submit"/>
-  </form>
+  <div tal:condition="context/activesignatures">
+    <form name="coc" action="" method="POST">
+
+    <h2>Active Signatures</h2>
+
+    <div>
+
+     <p>If you change your mind about agreeing to the Code of Conduct, 
+       you can deactivate your signature.</p>
+
+      <div tal:repeat="sig context/activesignatures">      
+        <input type="checkbox" name="DEACTIVATE_SIGNATURE"
+               tal:attributes="value sig/id"/>
+	<span tal:replace="sig/displayname">SIGNATURE</span>
+      </div>
+    </div>
+
+    <input type="submit" value="Deactivate"/>
+    </form>
+ 
+ </div>
+
+
+  <div tal:condition="context/inactivesignatures">
+    <p>Once <dfn>Inactive</dfn>, a signature can only be reactivated by a
+       member of <a href="/people/admins">Launchpad Administrator Team<a>.</p>
+
+    <h2>Inactive Signatures</h2>
+
+    <div>
+      <ul> 
+         <li tal:repeat="sig context/inactivesignatures"
+             tal:content="sig/displayname"/>
+      </ul>
+    </div>
   </div>
 
-  <p>See or Sign new Code of Conducts Releases in <a
-  href="/codeofconduct">Code of Conduct</a>.</p>
+  <p><a href="/codeofconduct">See or sign new code of conduct releases</a></p>
+
 </div>
 </body>
 </html>

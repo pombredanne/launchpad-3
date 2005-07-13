@@ -17,6 +17,11 @@
   </div>
 
   <div metal:use-macro="context/@@bugtask_search_listing/buglisting" />
+  <script>
+  <!--
+  document.forms[0].elements['field.searchtext'].focus();
+  //-->
+  </script>
 </div>
 
 </body>

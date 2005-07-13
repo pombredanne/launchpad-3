@@ -1,0 +1,69 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-about" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-stats" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Application Translation Statuses</h1>
+
+  <p class="documentDescription">
+    Each of the application translation templates below can be translated.
+    Select a template name to begin translating immediately!
+  </p>
+
+  <table class="listing" width="100%">
+    <thead>
+      <th>Source</th>
+      <th>Template Name</th>
+      <th>Status</th>
+      <th>Last Edited</th>
+      <th>By</th>
+    </thead>
+    <tbody>
+      <tr tal:repeat="pf context/pofiles">
+        <td tal:content="pf/potemplate/sourcepackagename/name">apache2</td>
+        <td>
+          <a tal:attributes="href string:${pf/fmt:url}/+translate"
+             tal:content="pf/potemplate/potemplatename/name">
+             apache2-dev
+          </a>
+        </td>
+        <td>
+          <div tal:replace="structure pf/@@+barchart" />
+        </td>
+        <td>
+          <span tal:condition="pf/latest_submission"
+                tal:replace="pf/latest_submission/datecreated/fmt:date" />
+          <tal:block condition="not: pf/latest_submission">
+              &mdash;
+          </tal:block>
+        </td>
+        <td>
+        <span
+           tal:condition="pf/latest_submission"
+           tal:replace="pf/latest_submission/person/browsername/fmt:shorten/25" />
+          <tal:block condition="not: pf/latest_submission">
+              &mdash;
+          </tal:block>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div tal:replace="structure context/@@+portlet-status-legend" />
+
+</div>
+
+</body>
+</html>

@@ -119,7 +119,7 @@
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         for="canonical.launchpad.interfaces.IBug"
         class="canonical.launchpad.browser.bug.BugAddingView"
-        label="Add Task to fix bug Upstream"
+        label="Request a fix in an upstream product"
         fields="product status priority severity assignee owner"
         content_factory="canonical.launchpad.database.BugTaskFactory"
         arguments=""
@@ -139,7 +139,7 @@
                 severity assignee bugwatch statusexplanation"
         label="Edit Product Bug Task"
         permission="launchpad.Edit"
-        template="../templates/bugtask-editform.pt"
+        template="../templates/bugtask-edit.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
         <browser:widget
           field="statusexplanation"
@@ -156,7 +156,7 @@
                 assignee bugwatch statusexplanation"
         label="Product Bug Task"
         permission="launchpad.View"
-        template="../templates/bugtask-editform.pt"
+        template="../templates/bugtask-view.pt"
         lp:url="malone/tasks/$BugTask.id/+index">
     </browser:schemadisplay>
 
@@ -169,7 +169,7 @@
         schema="canonical.launchpad.interfaces.IDistroBugTask"
         for="canonical.launchpad.interfaces.IBug"
         class="canonical.launchpad.browser.bug.BugAddingView"
-        label="Add SourcePackage Bug Task"
+        label="Request a fix in a distribution"
         fields="distribution sourcepackagename owner"
         content_factory="canonical.launchpad.database.BugTaskFactory"
         keyword_arguments="distribution sourcepackagename owner"
@@ -191,7 +191,7 @@
                 status priority severity assignee bugwatch statusexplanation"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
-        template="../templates/bugtask-editform.pt"
+        template="../templates/bugtask-edit.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
         <browser:widget
           field="statusexplanation"
@@ -208,7 +208,7 @@
                 status priority severity assignee bugwatch statusexplanation"
         label="Source Package Bug Task"
         permission="zope.Public"
-        template="../templates/bugtask-editform.pt"
+        template="../templates/bugtask-view.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:schemadisplay>
 
@@ -221,7 +221,7 @@
         schema="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         for="canonical.launchpad.interfaces.IBug"
         class="canonical.launchpad.browser.bug.BugAddingView"
-        label="Add Distro Release Bug Task"
+        label="Request a fix in a distribution release"
         fields="distrorelease sourcepackagename owner"
         content_factory="canonical.launchpad.database.BugTaskFactory"
         arguments=""
@@ -241,7 +241,7 @@
                 status priority severity assignee bugwatch statusexplanation"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
-        template="../templates/bugtask-editform.pt"
+        template="../templates/bugtask-edit.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
         <browser:widget
           field="statusexplanation"
@@ -258,7 +258,7 @@
                 assignee bugwatch statusexplanation"
         label="Source Package Bug Task"
         permission="zope.Public"
-        template="../templates/bugtask-editform.pt"
+        template="../templates/bugtask-view.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:schemadisplay>
 

@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 """This module is used by the Launchpad webapp to determine titles for pages.
 
 See https://wiki.launchpad.canonical.com/LaunchpadTitles
@@ -34,6 +35,17 @@ __metaclass__ = type
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
 # Helpers.
+
+class BugPageTitle:
+    def __call__(self, context, view):
+        return "Bug #%d - %s" % (context.id, context.title)
+
+
+class BugTaskPageTitle:
+    def __call__(self, context, view):
+        return "Bug #%d in %s - %s" % (
+            context.bug.id, context.contextname, context.bug.title)
+
 
 class SubstitutionHelper:
     def __init__(self, text):
@@ -104,9 +116,9 @@ bug_add = 'Malone: Add a New Bug'
 
 bug_attachments = ContextId('Malone Bug Attachments for Bug #%s')
 
-bug_edit = ContextId('Malone: Edit Bug #%s')
+bug_edit = BugPageTitle()
 
-bug_index = ContextId('Malone: Bug #%s')
+bug_index = BugPageTitle()
 
 bug_references = ContextId('External References for Malone Bug #%s')
 
@@ -130,13 +142,9 @@ bugs_index = 'Malone Master Bug List'
 
 bugsubscription_edit = 'Modify Your Bug Subscription'
 
-def bugtask_display(context, view):
-    return 'Bug #%s in %s: %s' % (
-      context.bug.id, context.contextname, context.bug.title)
+bugtask_view = BugTaskPageTitle()
 
-def bugtask_editform(context, view):
-    return 'Editing bug #%s in %s: %s' % (
-      context.bug.id, context.contextname, context.bug.title)
+bugtask_edit = BugTaskPageTitle()
 
 # bugtask_search_listing contains only macros
 # bugtasks_index is a redirect
@@ -168,11 +176,11 @@ calendar_view_week = calendar_view
 calendar_view_month = calendar_view
 calendar_view_year = calendar_view
 
-codeofconduct_admin = 'Code of Conduct Admin Console'
+codeofconduct_admin = 'Administer codes of conduct in Launchpad'
 
-codeofconduct_index = 'Code of Conduct Release'
+codeofconduct_index = ContextTitle('%s')
 
-codeofconduct_list = 'Launchpad Code of Conduct'
+codeofconduct_list = 'Codes of Conduct in Launchpad'
 
 def cvereference_index(context, view):
     return 'Malone Bug #%s CVE Reference' % context.bug.id
@@ -243,6 +251,8 @@ def distrorelease_sources(context, view):
 distrorelease_translations = ContextTitle(
     'Rosetta Translation Templates for %s')
 
+distroreleaselanguage = ContextTitle('%s')
+
 distros_index = 'Overview of Distributions in Launchpad'
 
 doap_about = 'About the Launchpad Registry'
@@ -290,6 +300,8 @@ foaf_todo = 'To-Do List'
 foaf_validateemail = 'Validate email address'
 
 foaf_validateteamemail = 'Validate email address'
+
+foaf_validategpg = 'Validate GPG Key'
 
 # launchpad_debug doesn't need a title.
 
@@ -510,7 +522,15 @@ def series(context, view):
     return '%s Release Series: %s' % (
         context.product.displayname, context.displayname)
 
-signedcodeofconduct_index = 'Signed Code of Conduct Entry'
+signedcodeofconduct_index = ContextDisplayName('%s')
+
+signedcodeofconduct_add = ContextTitle('Sign %s')
+
+signedcodeofconduct_acknowledge = 'Acknowledge Code of Conduct Signature'
+
+signedcodeofconduct_activate = ContextDisplayName('Activating %s')
+
+signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 
 sourcepackage_buildlog = 'Source Package Build Log'
 

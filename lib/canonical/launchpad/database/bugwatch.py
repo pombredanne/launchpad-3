@@ -16,7 +16,7 @@ from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, MultipleJoin
 
 from canonical.launchpad.interfaces import (IBugWatch, IBugWatchSet,
     IBugTrackerSet)
-from canonical.launchpad.database.bug import BugSetBase
+from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.bugtracker import BugTracker
 from canonical.database.sqlbase import (SQLBase, quote,
     flush_database_updates)

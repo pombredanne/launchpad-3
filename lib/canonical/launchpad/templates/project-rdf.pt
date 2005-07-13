@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <rdf:RDF xmlns:doaml="http://ns.balbinus.net/doaml#"
     xmlns:foaf="http://xmlns.com/foaf/0.1/"
-    xmlns:lp="https://launchpad.ubuntu.com/rdf/rdf#"
+    xmlns:lp="https://launchpad.ubuntu.com/rdf/launchpad#"
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:tal="http://xml.zope.org/namespaces/tal"
     xmlns:metal="http://xml.zope.org/namespaces/metal">
@@ -34,9 +34,11 @@
                              tal:content="context/sourceforgeproject">
             sourceforgeproject
         </lp:sourceforgeProject>
-        <lp:product tal:repeat="product context/products">
-            <lp:specifiedAt tal:attributes="rdf:resource
-                                            string:${product/fmt:url}/+rdf" />
+        <lp:product tal:condition="context/products">
+            <lp:Product tal:repeat="product context/products">
+                <lp:specifiedAt tal:attributes="rdf:resource
+                                                string:${product/fmt:url}/+rdf" />
+            </lp:Product>
         </lp:product>
         <lp:owner>
             <metal:block metal:use-macro="context/@@rdf_macros/owner_foaf" />

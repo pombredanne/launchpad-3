@@ -267,6 +267,15 @@ COMMENT ON COLUMN POMsgSet.iscomplete IS 'This indicates if we believe that
 Rosetta has an active translation for every expected plural form of this
 message set.';
 
+-- DistroReleaseLanguage
+
+COMMENT ON TABLE DistroReleaseLanguage IS 'A cache of the current translation status of that language across an entire distrorelease.';
+COMMENT ON COLUMN DistroReleaseLanguage.dateupdated IS 'The date these statistucs were last updated.';
+COMMENT ON COLUMN DistroReleaseLanguage.currentcount IS 'As per IRosettaStats.';
+COMMENT ON COLUMN DistroReleaseLanguage.updatescount IS 'As per IRosettaStats.';
+COMMENT ON COLUMN DistroReleaseLanguage.rosettacount IS 'As per IRosettaStats.';
+COMMENT ON COLUMN DistroReleaseLanguage.contributorcount IS 'The total number of contributors to the translation of this distrorelease into this language.';
+
 
 /*
   Bazaar
@@ -407,6 +416,7 @@ COMMENT ON COLUMN DistroRelease.datelastlangpack IS
 'The date we last generated a base language pack for this release. Language
 update packs for this release will only include translations added after that
 date.';
+COMMENT ON COLUMN DistroRelease.messagecount IS 'This is a cached value and may be a few hours out of sync with reality. It should, however, be in sync with the values in DistroReleaseLanguage, and should never be updated separately. The total number of translation messages in this distro release, as per IRosettaStats.';
 
 /* ArchArchive */
 
@@ -935,7 +945,7 @@ COMMENT ON COLUMN POExportRequest.format IS
 COMMENT ON TABLE GPGKey IS 'A GPG key belonging to a Person';
 COMMENT ON COLUMN GPGKey.keyid IS 'The 8 character GPG key id, uppercase and no whitespace';
 COMMENT ON COLUMN GPGKey.fingerprint IS 'The 40 character GPG fingerprint, uppercase and no whitespace';
-COMMENT ON COLUMN GPGKey.revoked IS 'True if this key has been revoked';
+COMMENT ON COLUMN GPGKey.active IS 'True if this key is active for use in Launchpad context, false could be deactivated by user or revoked in the global key ring.';
 COMMENT ON COLUMN GPGKey.algorithm IS 'The algorithm used to generate this key. Valid values defined in dbschema.GPGKeyAlgorithms';
 COMMENT ON COLUMN GPGKey.keysize IS 'Size of the key in bits, as reported by GPG. We may refuse to deal with keysizes < 768 bits in the future.';
 

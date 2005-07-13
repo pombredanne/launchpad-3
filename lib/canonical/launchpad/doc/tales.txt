@@ -87,6 +87,85 @@ Test the 'fmt:' namespace where the context is a string.
     ['<pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;word-',
      'wrap: break-word;">hello &amp; goodbye</pre>']
 
+    >>> text = ('This is a paragraph.\n'
+    ...         '\n'
+    ...         'This is another paragraph.')
+    >>> test_tales('foo/fmt:text-to-html', foo=text)
+    '<p>This is a paragraph.</p>\n<p>This is another paragraph.</p>'
+
+    >>> text = ('This is a line.\n'
+    ...         'This is another line.')
+    >>> test_tales('foo/fmt:text-to-html', foo=text)
+    '<div>This is a line.</div>\n<div>This is another line.</div>'
+
+    >>> text = (
+    ...     'This is a paragraph that has been hard-wrapped by an e-mail'
+    ...     ' application.\n'
+    ...     'When copied and pasted into Launchpad, it should nevertheless'
+    ...     ' still display\n'
+    ...     'as a single paragraph. This helps these people:\n'
+    ...     '* Fabio\n'
+    ...     '* Asa'
+    ...     )
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>This is a paragraph that has been hard-wrapped by an e-mail application. When copied and pasted into Launchpad, it should nevertheless still display as a single paragraph. This helps these people:</p>
+    <div>* Fabio</div>
+    <div>* Asa</div>
+
+    >>> text = (
+    ...     " 1. And here's an opposite example\n"
+    ...     ' 2. where a list is followed by a paragraph.\n'
+    ...     '   Leading spaces in a line or paragraph are '
+    ...     'presented, which means converting\n'
+    ...     'them to &nbsp;. Trailing spaces are passed through '
+    ...     'as-is, which means\n'
+    ...     "browsers will ignore them, but that's fine, "
+    ...     "they're not important anyway.\n"
+    ...     '\n'
+    ...     '   That last line was between 60 and 80 characters '
+    ...     'long, but it was still treated as a paragraph '
+    ...     'because it was followed by two newlines.'
+    ...     )
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <div>&nbsp;1. And here's an opposite example</div>
+    <div>&nbsp;2. where a list is followed by a paragraph.</div>
+    <p>&nbsp;&nbsp;&nbsp;Leading spaces in a line or paragraph are presented, which means converting them to &amp;nbsp;. Trailing spaces are passed through as-is, which means browsers will ignore them, but that's fine, they're not important anyway.</p>
+    <p>&nbsp;&nbsp;&nbsp;That last line was between 60 and 80 characters long, but it was still treated as a paragraph because it was followed by two newlines.</p>
+
+    >>> text = (
+    ...     'This is a little paragraph all by itself. How cute!'
+    ...     )
+    >>> test_tales('foo/fmt:text-to-html', foo=text)
+    '<p>This is a little paragraph all by itself. How cute!</p>'
+
+The first line in the example below is 61 characters long, excluding the
+newline.
+
+    >>> text = (
+    ...     'Here are two paragraphs with lots of whitespace between them.\n'
+    ...     '\n'
+    ...     '\n'
+    ...     '\n'
+    ...     '\n'
+    ...     'But they\'re still just two paragraphs.')
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>Here are two paragraphs with lots of whitespace between them.</p>
+    <p>But they're still just two paragraphs.</p>
+
+
+The _substitute_matchgroup_for_spaces() static method is part of the
+fmt:text-to-html code.  It is a helper for writing regular expressions where
+we want to replace a variable number of spaces with the same number of
+&nbsp; entities.
+
+    >>> from canonical.launchpad.webapp.tales import FormattersAPI
+    >>> import re
+    >>> matchobj = re.match('foo(.*)bar', 'fooX Ybar')
+    >>> matchobj.groups()
+    ('X Y',)
+    >>> FormattersAPI._substitute_matchgroup_for_spaces(matchobj)
+    '&nbsp;&nbsp;&nbsp;'
+
 
 Test the 'fmt:' namespace where the context is a dict.
 
@@ -172,10 +251,13 @@ do with 'None/fmt:foo'.
     ''
     >>> test_tales('foo/fmt:pagetitle', foo=None)
     ''
+    >>> test_tales('foo/fmt:text-to-html', foo=None)
+    ''
     >>> test_tales('foo/fmt:url', foo=None)
     ''
     >>> test_tales('foo/fmt:exactduration', foo=None)
     ''
+
 
 Test the 'required:' namespace.  We're already logged in as the anonymous user,
 and anonymous users can't edit any person:

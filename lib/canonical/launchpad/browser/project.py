@@ -1,32 +1,28 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 """Project-related View Classes"""
+
+__metaclass__ = type
+
+__all__ = ['ProjectView', 'ProjectEditView', 'ProjectAddProductView',
+           'ProjectSetView', 'ProjectRdfView']
 
 from urllib import quote as urlquote
 
-from canonical.launchpad.database import Project, Product, \
-        ProjectBugTracker
-from canonical.database.constants import nowUTC
-
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
-
-from zope.app.form.browser.add import AddView
-from zope.app.form.browser import SequenceWidget, ObjectWidget
-from zope.app.form import CustomWidgetFactory
-
-from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
-
 from zope.component import getUtility
-from zope.i18n.interfaces import IUserPreferredLanguages
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.i18nmessageid import MessageIDFactory
+from zope.app.form.browser.add import AddView
+from zope.event import notify
+from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.interfaces import IPerson, IProject
+from canonical.launchpad.interfaces import (
+    IPerson, IProject, IProductSet, IProjectBugTrackerSet)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.bugtracker import newBugTracker
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
-__all__ = ['ProjectView', 'ProjectEditView', 'ProjectAddProductView',
-           'ProjectSetView', 'ProjectRdfView']
+_ = MessageIDFactory('launchpad')
 
 #
 # Traversal functions that help us look up something
@@ -84,8 +80,9 @@ class ProjectView(object):
         if not bugtracker: return
         # Now we need to create the link between that bug tracker and the
         # project itself, using the ProjectBugTracker table
-        projectbugtracker = ProjectBugTracker(project=self.context.id,
-                                              bugtracker=bugtracker)
+        projectbugtracker = getUtility(IProjectBugTrackerSet).new(
+            project=self.context,
+            bugtracker=bugtracker)
         # Now redirect to view it again
         self.request.response.redirect(self.request.URL[-1])
 
@@ -170,10 +167,6 @@ class ProjectAddProductView(AddView):
 
     __used_for__ = IProject
 
-    ow = CustomWidgetFactory(ObjectWidget, Product)
-    sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
-    options_widget = sw
-    
     def __init__(self, context, request):
         self.request = request
         self.context = context
@@ -184,14 +177,25 @@ class ProjectAddProductView(AddView):
         # add the owner information for the product
         owner = IPerson(self.request.principal, None)
         if not owner:
-            raise zope.security.interfaces.Unauthorized, "Need an authenticated bug owner"
-        kw = {}
-        for item in data.items():
-            kw[str(item[0])] = item[1]
-        kw['project'] = self.context.id
-        kw['owner'] = owner
-        # create the prosuct
-        product = Product(**kw)
+            raise Unauthorized(
+                "Need to have an authenticated user in order to create a bug"
+                " on a product")
+        # create the product
+        product = getUtility(IProductSet).createProduct(
+            name=data['name'],
+            title=data['title'],
+            summary=data['summary'],
+            description=data['description'],
+            displayname=data['displayname'],
+            homepageurl=data['homepageurl'],
+            downloadurl=data['downloadurl'],
+            screenshotsurl=data['screenshotsurl'],
+            wikiurl=data['wikiurl'],
+            programminglang=data['programminglang'],
+            freshmeatproject=data['freshmeatproject'],
+            sourceforgeproject=data['sourceforgeproject'],
+            project=self.context,
+            owner=owner)
         notify(ObjectCreatedEvent(product))
         return product
 
@@ -211,10 +215,10 @@ class ProjectSetView(object):
         self.bazaar = self.form.get('bazaar', None)
         self.text = self.form.get('text', None)
         self.searchrequested = False
-        if (self.text is not None or \
-            self.bazaar is not None or \
-            self.malone is not None or \
-            self.rosetta is not None or \
+        if (self.text is not None or
+            self.bazaar is not None or
+            self.malone is not None or
+            self.rosetta is not None or
             self.soyuz is not None):
             self.searchrequested = True
         self.results = None
@@ -260,14 +264,14 @@ class ProjectSetView(object):
         # get the launchpad person who is creating this product
         owner = IPerson(self.request.principal)
         # Now create a new project in the db
-        project = Project(name=name,
-                          displayname=displayname,
+        project = getUtility(IProject).new(
+                          name=name,
                           title=title,
+                          displayname=displayname,
                           summary=summary,
                           description=description,
                           owner=owner,
-                          homepageurl=homepageurl,
-                          datecreated=nowUTC)
+                          homepageurl=homepageurl)
         # now redirect to the page to view it
         self.request.response.redirect(name)
 

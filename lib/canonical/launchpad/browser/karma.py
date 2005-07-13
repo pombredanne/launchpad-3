@@ -2,15 +2,12 @@
 
 __metaclass__ = type
 
+__all__ = ['KarmaActionSetView']
+
 from zope.component import getUtility
-from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent
 
 from canonical.lp.dbschema import KarmaActionCategory
-from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces import IKarmaActionSet
-from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.addview import SQLObjectAddView
 
 
 class KarmaActionSetView:

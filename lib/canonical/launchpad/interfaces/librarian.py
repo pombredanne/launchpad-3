@@ -1,12 +1,20 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""Librarian interfaces."""
+
 __metaclass__ = type
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+__all__ = [
+    'ILibraryFileAlias',
+    'ILibraryFileContent',
+    'ILibraryFileAliasSet',
+    ]
 
+from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Datetime, Int, TextLine
+
+_ = MessageIDFactory('launchpad')
 
 class ILibraryFileAlias(Interface):
     id = Int(

@@ -1,13 +1,21 @@
-# Imports from zope
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Binary package interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IBinaryPackage',
+    'IBinaryPackageSet',
+    ]
+
 from zope.schema import Bool, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
+
 _ = MessageIDFactory('launchpad')
 
 
-#
-# Interface provided by a BinaryPackage
-#
 class IBinaryPackage(Interface):
     id = Int(title=_('ID'), required=True)
     #sourcepackagerelease = Int(required=True)

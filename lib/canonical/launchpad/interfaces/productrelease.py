@@ -1,15 +1,24 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-# Zope schema imports
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
+"""Product release interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IProductReleaseSet',
+    'IProductRelease',
+    ]
+
+from zope.schema import Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
 from canonical.lp.dbschema import UpstreamFileType
 
+_ = MessageIDFactory('launchpad')
+
 class IProductReleaseSet(Interface):
-    """Auxiliar class for ProductRelease handling.""" 
+    """Auxiliar class for ProductRelease handling."""
 
     def new(version, owner, productseries, title=None, shortdesc=None,
             description=None, changelog=None):

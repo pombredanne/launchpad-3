@@ -17,24 +17,32 @@
         Signed Code of Conduct.
       </div>
 
-      <p><b>Displayname:</b> 
-         <span tal:content="context/displayname">CoC</span></p>
+      <p><dfn>Displayname:</dfn> 
+         <span tal:replace="context/displayname">CoC</span></p>
 
-      <p tal:condition="context/active"><b>Status:</b> Active</p>
-      <p tal:condition="not:context/active"><b>Status:</b> Inactive</p>
 
-      <p><b>DateCreated:</b> 
-         <span tal:content="context/datecreated">DATE</span></p>
+      <p><dfn>Status:</dfn> 
+       <span tal:omit-tag="" tal:condition="context/active">Active</span>
+       <span tal:omit-tag="" tal:condition="not:context/active">Inactive</span>
+      </p>
 
-      <p><b>SignedCode:</b></p>
-      <pre tal:content="context/signedcode">CONTENT</pre>
+      <p><dfn>DateCreated:</dfn> 
+         <span tal:replace="context/datecreated/fmt:datetime">DATE</span></p>
 
-      <p tal:condition="context/recipient"><b>Recipient:</b> 
-         <span tal:content="context/recipient/browsername">RECIPIENT</span></p>
+      <tal:block condition="context/recipient">
+         <p><dfn>Recipient:</dfn> 
+         <span tal:replace="context/recipient/browsername">RECIPIENT</span></p>
+      </tal:block>
 
-      <p tal:condition="context/admincomment"><b>AdminComment:</b></p>
-      <pre tal:condition="context/admincomment" 
-           tal:content="context/admincomment">COMMENT</pre>
+      <tal:block condition="context/admincomment">
+          <p><dfn>AdminComment:</dfn></p>
+          <pre tal:content="context/admincomment">COMMENT</pre>
+      </tal:block>                  
+
+      <tal:block condition="context/signedcode">
+          <p><dfn>SignedCode:</dfn></p>
+          <pre tal:content="context/signedcode">SIGNEDCODE</pre>
+      </tal:block>                  
 
 </div>
 

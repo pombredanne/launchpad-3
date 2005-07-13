@@ -2,6 +2,15 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'Calendar',
+    'CalendarSet',
+    'CalendarSubscription',
+    'CalendarSubscriptionSet',
+    'CalendarEvent',
+    'CalendarEventSet',
+    ]
+
 import re
 import pytz
 

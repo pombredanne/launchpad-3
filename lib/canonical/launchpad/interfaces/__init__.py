@@ -33,13 +33,13 @@ from canonical.launchpad.interfaces.cveref import *
 from canonical.launchpad.interfaces.distribution import *
 from canonical.launchpad.interfaces.distroarchrelease import *
 from canonical.launchpad.interfaces.distrorelease import *
+from canonical.launchpad.interfaces.distroreleaselanguage import *
 from canonical.launchpad.interfaces.distrotool import *
 from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.general import *
 from canonical.launchpad.interfaces.geoip import *
 from canonical.launchpad.interfaces.gpg import *
 from canonical.launchpad.interfaces.gpghandler import *
-from canonical.launchpad.interfaces.idatetime import *
 from canonical.launchpad.interfaces.infestation import *
 from canonical.launchpad.interfaces.irc import *
 from canonical.launchpad.interfaces.jabber import *
@@ -90,7 +90,6 @@ from canonical.launchpad.interfaces.sourcepackagename import *
 from canonical.launchpad.interfaces.sourcepackagerelease import *
 from canonical.launchpad.interfaces.spokenin import *
 from canonical.launchpad.interfaces.ssh import *
-from canonical.launchpad.interfaces.translationeffort import *
 from canonical.launchpad.interfaces.translationgroup import *
 from canonical.launchpad.interfaces.translator import *
 from canonical.launchpad.interfaces.vpoexport import *

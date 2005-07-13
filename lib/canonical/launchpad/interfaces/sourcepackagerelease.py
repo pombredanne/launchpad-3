@@ -1,7 +1,15 @@
-# Imports from zope
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Source package release interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'ISourcePackageRelease',
+    'ISourcePackageReleaseSet',
+    ]
+
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
 
 class ISourcePackageRelease(Interface):

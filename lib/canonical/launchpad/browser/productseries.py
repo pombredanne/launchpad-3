@@ -1,19 +1,16 @@
-#
-# Copyright (c) 2004-2005 Canonical Ltd
-#
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
+__all__ = ['traverseProductSeries', 'ProductSeriesView',
+           'ProductSeriesRdfView', 'ProductSeriesSourceSetView']
 
 import re
 import urllib
 from urllib import quote as urlquote
 
-from zope.interface import implements
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.app.publisher.browser import BrowserView
-
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
 from CVS.protocol import CVSRoot
 import pybaz
@@ -28,9 +25,6 @@ from canonical.launchpad.interfaces import (IPerson, ICountry,
 from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad.browser.potemplate import POTemplateView
 
-
-__all__ = ['traverseProductSeries', 'ProductSeriesView',
-           'ProductSeriesRdfView', 'ProductSeriesSourceSetView']
 
 def traverseProductSeries(series, request, name):
     if name == '+pots':

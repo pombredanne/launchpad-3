@@ -1,24 +1,27 @@
-__metaclass__ = object
-__all__ = ['BugCreationConstraintsError',
-           'IBug',
-           'IBugSet',
-           'IBugDelta',
-           'IBugAddForm']
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""Interfaces related to bugs."""
+
+__metaclass__ = type
+
+__all__ = [
+    'BugCreationConstraintsError',
+    'IBug',
+    'IBugSet',
+    'IBugDelta',
+    'IBugAddForm',
+    ]
 
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
-
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
-from zope.schema.interfaces import IText, ITextLine
+from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
-from canonical.lp import dbschema
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.bug import non_duplicate_bug
 from canonical.launchpad.fields import Title, Summary
 
+_ = MessageIDFactory('launchpad')
 
 class BugCreationConstraintsError(Exception):
     """Raised when a bug is created with not all constraints satisfied.
@@ -91,8 +94,8 @@ class IBug(Interface):
     duplicates = Attribute('MultiJoin of the bugs which are dups of this '
         'one')
 
-    def followup_title():
-        """Return a candidate title for a followup message."""
+    def followup_subject():
+        """Return a candidate subject for a followup message."""
 
     def subscribe(person, subscription):
         """Subscribe person to the bug, with the provided subscription type.
@@ -167,8 +170,10 @@ class IBugDelta(Interface):
     cveref = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
         "ICVERef's.")
+    added_bugtasks = Attribute(
+        "A list or tuple of IBugTasks, one IBugTask, or None.")
     bugtask_deltas = Attribute(
-        "A tuple of IBugTaskDelta, one IBugTaskDelta or None.")
+        "A sequence of IBugTaskDeltas, one IBugTaskDelta or None.")
 
 
 class IBugAddForm(IBug):
@@ -188,7 +193,7 @@ class IBugAddForm(IBug):
             vocabulary="SourcePackageName")
     distribution = Choice(
             title=_("Linux Distribution"), required=False,
-            description=_("""Debian, Redhat, Gentoo, etc."""),
+            description=_("""Ubuntu, Debian, Gentoo, etc."""),
             vocabulary="Distribution")
     binarypackage = Choice(
             title=_("Binary Package"), required=False,

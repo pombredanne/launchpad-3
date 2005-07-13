@@ -1,3 +1,5 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 # This file is based on src/zope/app/form/browser/editview.py from
 # Zope X3, with modifications Copyright 2004-2005 Canonical Ltd, as
 # noted below.
@@ -5,6 +7,10 @@
 """editview.py -- editview for the Launchpad application."""
 
 __metaclass__ = type
+
+__all__ = [
+    'SQLObjectEditView',
+    ]
 
 from datetime import datetime
 from transaction import get_transaction

@@ -1,14 +1,33 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Person interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IPerson',
+    'ITeam',
+    'IPersonSet',
+    'IEmailAddress',
+    'IEmailAddressSet',
+    'ITeamMembership',
+    'ITeamMembershipSet',
+    'ITeamMembershipSubset',
+    'ITeamParticipation',
+    'IRequestPeopleMerge',
+    'IObjectReassignment',
+    'ITeamReassignment',
+    ]
 
 from zope.schema import Choice, Datetime, Int, Text, TextLine, Password
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, EmailAddressStatus)
 
+_ = MessageIDFactory('launchpad')
 
 def _valid_person_name(name):
     """See IPersonSet.nameIsValidForInsertion()."""
@@ -72,7 +91,12 @@ class IPerson(Interface):
     # Properties of the Person object.
     karma = Attribute("The cached karma for this person.")
     ubuntite = Attribute("Ubuntite Flag")
+    activesignatures = Attribute("Retrieve own Active CoC Signatures.")
+    inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
+    signedcocs = Attribute("List of Signed Code Of Conduct")
     gpgkeys = Attribute("List of GPGkeys")
+    pendinggpgkeys = Attribute("Set of GPG fingerprints pending validation")
+    inactivegpgkeys = Attribute("List of inactive GPG keys in LP Context")
     irc = Attribute("IRC")
     reportedbugs = Attribute("All BugTasks reported by this Person.")
     wiki = Attribute("Wiki")
@@ -84,7 +108,6 @@ class IPerson(Interface):
     memberships = Attribute(("List of TeamMembership objects for Teams this "
                              "Person is a member of. Either active, inactive "
                              "or proposed member."))
-    translations = Attribute("Translations")
     guessedemails = Attribute("List of emails with status NEW. These email "
                               "addresses probably came from a gina or "
                               "POFileImporter run.")
@@ -183,12 +206,12 @@ class IPerson(Interface):
         """Assign karma for the action named <action_name> to this person."""
 
     def getKarmaPointsByCategory(category):
-        """Return the cached karma of this person for all actions of the given 
+        """Return the cached karma of this person for all actions of the given
         category s(he) performed."""
 
     def inTeam(team):
         """Return True if this person is a member or the owner of <team>.
-        
+
         This method is meant to be called by objects which implement either
         IPerson or ITeam, and it will return True when you ask if a Person is
         a member of himself (i.e. person1.inTeam(person1)).
@@ -254,7 +277,7 @@ class IPerson(Interface):
 
         Make sure status is either APPROVED or PROPOSED and add a
         TeamMembership entry for this person with the given status, reviewer,
-        and reviewer comment. This method is also responsible for filling 
+        and reviewer comment. This method is also responsible for filling
         the TeamParticipation table in case the status is APPROVED.
         """
 
@@ -263,24 +286,24 @@ class IPerson(Interface):
         """Set the status of the person's membership on this team.
 
         Also set all other attributes of TeamMembership, which are <comment>,
-        <reviewer> and <dateexpires>. This method will ensure that we only 
+        <reviewer> and <dateexpires>. This method will ensure that we only
         allow the status transitions specified in the TeamMembership spec.
-        It's also responsible for filling/cleaning the TeamParticipation 
-        table when the transition requires it and setting the expiration 
+        It's also responsible for filling/cleaning the TeamParticipation
+        table when the transition requires it and setting the expiration
         date, reviewer and reviewercomment.
         """
 
     def getSubTeams():
         """Return all subteams of this team.
-        
-        A subteam is any team that is (either directly or indirectly) a 
+
+        A subteam is any team that is (either directly or indirectly) a
         member of this team. As an example, let's say we have this hierarchy
         of teams:
-        
+
         Rosetta Translators
             Rosetta pt Translators
                 Rosetta pt_BR Translators
-        
+
         In this case, both "Rosetta pt Translators" and "Rosetta pt_BR
         Translators" are subteams of the "Rosetta Translators" team, and all
         members of both subteams are considered members of "Rosetta
@@ -297,13 +320,31 @@ class IPerson(Interface):
         Rosetta Translators
             Rosetta pt Translators
                 Rosetta pt_BR Translators
-        
-        In this case, we will return both "Rosetta pt Translators" and 
+
+        In this case, we will return both "Rosetta pt Translators" and
         "Rosetta Translators", because we are member of both of them.
         """
 
     def subscriptionPolicyDesc():
         """Return a long description of this team's subscription policy."""
+
+    def addLanguage(language):
+        """Add a language to this person's preferences.
+
+        :language: An object providing ILanguage.
+
+        If the given language is already present, and IntegrityError will be
+        raised. This will be fixed soon; here's the discussion on this topic:
+        https://launchpad.ubuntu.com/malone/bugs/1317.
+        """
+
+    def removeLanguage(language):
+        """Remove a language from this person's preferences.
+
+        :language: An object providing ILanguage.
+
+        If the given language is not present, nothing  will happen.
+        """
 
 
 class ITeam(IPerson):
@@ -330,38 +371,16 @@ class IPersonSet(Interface):
         <name> will be valid if valid_name(name) returns True.
         """
 
-    def newPerson(**kwargs):
-        """Create a new Person with given keyword arguments.
-
-        These keyword arguments will be passed to Person, which is an
-        SQLBase class and will do all the checks needed before inserting
-        anything in the database. Please refer to the Person implementation
-        to see what keyword arguments are allowed.
-
-        If you want an automatic way to create a Person and an EmailAddress
-        based only on an email address, have a look at
-        IPersonSet.createPerson().
-        """
-
-    def createPerson(email, displayname, givenname=None, familyname=None,
-                     password=None):
+    def createPersonAndEmail(email, name=None, displayname=None, givenname=None,
+            familyname=None, password=None, passwordEncrypted=False):
         """Create a new Person and an EmailAddress for that Person.
 
-        Return the newly created Person if everything went fine or None.
+        Return the newly created Person and EmailAddress if everything went
+        fine or a (None, None) tuple otherwise.
 
         Generate a unique nickname from the email address provided, create a
         Person with that nickname and then create an EmailAddress (with status
-        NEW) for the new Person. This feature is provided mainly for nicole, 
-        debsync and POFile raw importer, which generally have only the email 
-        and displayname to create a new Person.
-        """
-
-    def createPerson(email, displayname=None, givenname=None,
-        familyname=None, password=None):
-        """Create a Person, based on the arguments. This method is more
-        intelligent than IPersonSet.newPerson because it will try to find an
-        appropriate name for the person, based on email address details
-        etc.
+        NEW) for the new Person.
         """
 
     def ensurePerson(email, displayname):
@@ -405,20 +424,20 @@ class IPersonSet(Interface):
 
     def getAllTeams(orderBy=None):
         """Return all Teams.
-        
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
+
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in Person._defaultOrder.
         """
 
     def getAllPersons(orderBy=None):
         """Return all Persons, ignoring the merged ones.
-        
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
+
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in Person._defaultOrder.
         """
 
     def getAllValidPersons(orderBy=None):
@@ -426,10 +445,10 @@ class IPersonSet(Interface):
 
         A valid person is any person with a preferred email address.
 
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in Person._defaultOrder.
         """
 
     def peopleCount():
@@ -440,39 +459,40 @@ class IPersonSet(Interface):
 
     def findByName(name, orderBy=None):
         """Return all non-merged Persons and Teams with name matching.
-        
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
+
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in Person._defaultOrder.
         """
 
     def findPersonByName(name, orderBy=None):
         """Return all not-merged Persons with name matching.
 
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in Person._defaultOrder.
         """
 
     def findTeamByName(name, orderBy=None):
         """Return all Teams with name matching.
 
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in Person._defaultOrder.
         """
 
-    def getUbuntites():
-        """Return a set of person with valid Ubuntite flag."""
+    def getUbuntites(orderBy=None):
+        """Return a set of person with valid Ubuntite flag.
+        
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in Person._defaultOrder.
+        """
 
-    # TODO: Currently not declared part of the interface - we need to
-    # sort out permissions as we need to ensure it can only be called
-    # in specific instances. -- StuartBishop 20050331
-    # XXX: salgado, 2005-03-31: can't we have this method declared in IPerson?
-    # I can't see why we need it here.
     def merge(from_person, to_person):
         """Merge a person into another."""
 
@@ -549,32 +569,32 @@ class ITeamMembershipSet(Interface):
 
     def getActiveMemberships(teamID, orderBy=None):
         """Return all active TeamMemberships for the given team.
-        
+
         Active memberships are the ones with status APPROVED or ADMIN.
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in TeamMembership._defaultOrder.
         """
 
     def getInactiveMemberships(teamID, orderBy=None):
         """Return all inactive TeamMemberships for the given team.
-        
+
         Inactive memberships are the ones with status EXPIRED or DEACTIVATED.
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in TeamMembership._defaultOrder.
         """
 
     def getProposedMemberships(teamID, orderBy=None):
         """Return all proposed TeamMemberships for the given team.
-        
+
         Proposed memberships are the ones with status PROPOSED.
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in TeamMembership._defaultOrder.
         """
 
     def getByPersonAndTeam(personID, teamID, default=None):
@@ -611,7 +631,7 @@ class ITeamMembershipSubset(Interface):
     def getInactiveMemberships():
         """Return all TeamMembership objects for inactive members of this team.
 
-        Inactive members are the ones with membership status of EXPIRED or 
+        Inactive members are the ones with membership status of EXPIRED or
         DEACTIVATED.
         """
 
@@ -630,7 +650,7 @@ class ITeamMembershipSubset(Interface):
 
 class ITeamParticipation(Interface):
     """A TeamParticipation.
-    
+
     A TeamParticipation object represents a person being a member of a team.
     Please note that because a team is also a person in Launchpad, we can
     have a TeamParticipation object representing a team that is a member of

@@ -1,6 +1,13 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
+__all__ = [
+    'ProductReleaseView',
+    'ProductReleaseRdfView',
+    ]
 
 # zope3
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
 # launchpad

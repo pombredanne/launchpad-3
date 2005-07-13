@@ -1,11 +1,22 @@
-# Zope schema imports
-from zope.schema import (
-    Bool, Bytes, Choice, Datetime, Int, Text, TextLine, Password)
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Distribution-related interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IDistribution',
+    'IDistributionSet',
+    'IDistroPackageFinder',
+    ]
+
+from zope.schema import Choice, Int, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import IHasOwner
+
 _ = MessageIDFactory('launchpad')
 
 class IDistribution(IHasOwner):
@@ -61,6 +72,10 @@ class IDistribution(IHasOwner):
         title=_("Members"),
         description=_("The distro's members team."), required=True,
         vocabulary='ValidPersonOrTeam')
+    lucilleconfig = TextLine(
+        title=_("Lucille Config"),
+        description=_("The Lucille Config."), required=False)
+
     releases = Attribute("DistroReleases inside this Distributions")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugtasks = Attribute("The bug tasks filed in this distro.")
@@ -117,6 +132,10 @@ class IDistributionSet(Interface):
 
     def getByName(distroname):
         """Return the IDistribution with the given name."""
+
+    def new(name, displayname, title, description, summary, domainname,
+            members, owner):
+        """Creaste a new distribution."""
 
 
 class IDistroPackageFinder(Interface):

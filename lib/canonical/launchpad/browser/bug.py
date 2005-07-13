@@ -2,20 +2,22 @@
 
 __metaclass__ = type
 
-from urlparse import urljoin
+__all__ = [
+    'BugView',
+    'BugSetView',
+    'BugAbsoluteURL',
+    'BugEditView',
+    'BugAddView',
+    'BugAddingView',
+    'BugAddForm',
+    ]
 
 from zope.app.publisher.browser import BrowserView
-from zope.component import getUtility
-from zope.app.pagetemplate.viewpagetemplatefile import (
-    ViewPageTemplateFile, BoundPageTemplate)
 from zope.interface import implements
 
 from canonical.lp import dbschema, decorates, Passthrough
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.interfaces import (
-    IPerson, ILaunchBag, IBugSet, IBugTaskSet, IDistributionSet, IBugAddForm,
-    IBug)
-from canonical.lp import dbschema
+from canonical.launchpad.interfaces import IBugAddForm, IBug
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
@@ -105,3 +107,4 @@ class BugAddForm:
         self.bug = bug
         self.bugtask = bug.bugtasks[0]
         self.comment = bug.messages[0]
+

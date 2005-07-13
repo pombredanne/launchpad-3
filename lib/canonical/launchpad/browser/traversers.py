@@ -4,18 +4,32 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'traverse_malone_application',
+    'traverse_project',
+    'traverse_product',
+    'traverse_distribution',
+    'traverse_distrorelease',
+    'traverse_person',
+    'traverseTeam',
+    'traverse_bug',
+    'traverse_bugs',
+    ]
+
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
 
 from canonical.launchpad.interfaces import (
     IBugSet, IBugTaskSet, IBugTaskSubset, IBugTasksReport, IDistributionSet,
     IProjectSet, IProductSet, ISourcePackageSet, IBugTrackerSet, ILaunchBag,
-    ITeamMembershipSubset, ICalendarOwner)
+    ITeamMembershipSubset, ICalendarOwner, ILanguageSet, IPublishedPackageSet)
 from canonical.launchpad.database import (
     BugAttachmentSet, BugExternalRefSet, BugSubscriptionSet,
     BugWatchSet, BugTasksReport, CVERefSet, BugProductInfestationSet,
     BugPackageInfestationSet, ProductSeriesSet, ProductMilestoneSet,
-    PublishedPackageSet, SourcePackageSet)
+    SourcePackageSet)
+from canonical.launchpad.browser.distroreleaselanguage import (
+    DummyDistroReleaseLanguage)
 
 def traverse_malone_application(malone_application, request, name):
     """Traverse the Malone application object."""
@@ -64,7 +78,7 @@ def traverse_product(product, request, name):
 def traverse_distribution(distribution, request, name):
     """Traverse an IDistribution."""
     if name == '+packages':
-        return PublishedPackageSet()
+        return getUtility(IPublishedPackageSet)
     elif name == '+bugs':
         return IBugTaskSubset(distribution)
     else:
@@ -76,9 +90,27 @@ def traverse_distrorelease(distrorelease, request, name):
     if name == '+sources':
         return SourcePackageSet(distrorelease=distrorelease)
     elif name  == '+packages':
-        return PublishedPackageSet()
+        return getUtility(IPublishedPackageSet)
     elif name == '+bugs':
         return IBugTaskSubset(distrorelease)
+    elif name == '+lang':
+        travstack = request.getTraversalStack()
+        if len(travstack) == 0:
+            # no lang code passed, we return None for a not found error
+            return None
+        langset = getUtility(ILanguageSet)
+        langcode = travstack[0]
+        try:
+            lang = langset[langcode]
+        except IndexError:
+            # Unknown language code. Return None for a not found error
+            return None
+        drlang = distrorelease.getDistroReleaseLanguage(lang)
+        request.setTraversalStack(travstack[1:])
+        if drlang is not None:
+            return drlang
+        else:
+            return DummyDistroReleaseLanguage(distrorelease, lang)
     else:
         return distrorelease[name]
 

@@ -241,7 +241,8 @@
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="55" />
+           displayWidth="55"
+           extra="tabindex=1" />
         <browser:widget
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"

@@ -1,13 +1,19 @@
-# Imports from zope
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Source package in distribution interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'ISourcePackageInDistro',
+    'ISourcePackageInDistroSet',
+    ]
+
 from zope.schema import Int, Text, TextLine
-from zope.schema import Password
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
-#
-#
-#
+_ = MessageIDFactory('launchpad')
 
 class ISourcePackageInDistro(Interface):
     """A SourcePackage in Distro PG View"""

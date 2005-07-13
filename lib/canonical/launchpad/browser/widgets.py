@@ -4,11 +4,12 @@
 
 __metaclass__ = type
 
+__all__ = ['TitleWidget', 'SummaryWidget', 'DescriptionWidget']
+
 from zope.interface import implements
 
 from zope.schema.interfaces import IText
-from zope.app.form.browser import TextAreaWidget, TextWidget, DisplayWidget
-from zope.app.form.interfaces import IDisplayWidget
+from zope.app.form.browser import TextAreaWidget, TextWidget
 
 class TitleWidget(TextWidget):
     """A launchpad title widget; a little wider than a normal Textline."""

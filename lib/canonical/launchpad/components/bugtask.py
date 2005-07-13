@@ -43,14 +43,14 @@ class ContextToBugTaskSubsetAdapter:
             raise KeyError(item)
 
     def search(self, bug=None, searchtext=None, status=None, priority=None,
-               severity=None, milestone=None, assignee=None, submitter=None,
+               severity=None, milestone=None, assignee=None, owner=None,
                orderby=None, statusexplanation=None):
         """See canonical.launchpad.interfaces.IBugTaskSubset."""
         context_filter_param = self._get_context_search_param()
         return getUtility(IBugTaskSet).search(
             bug=bug, searchtext=searchtext, status=status, priority=priority,
             severity=severity, milestone=milestone, assignee=assignee,
-            submitter=submitter, orderby=orderby,
+            owner=owner, orderby=orderby,
             statusexplanation=statusexplanation, **context_filter_param)
 
     def _get_context_search_param(self):

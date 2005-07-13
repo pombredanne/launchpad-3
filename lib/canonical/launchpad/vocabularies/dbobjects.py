@@ -8,6 +8,34 @@ docstring in __init__.py for details.
 
 __metaclass__ = type
 
+__all__ = [
+    'IHugeVocabulary',
+    'SQLObjectVocabularyBase',
+    'NamedSQLObjectVocabulary',
+    'BinaryPackageNameVocabulary',
+    'ProductVocabulary',
+    'ProjectVocabulary',
+    'BinaryPackageVocabulary',
+    'BugTrackerVocabulary',
+    'LanguageVocabulary',
+    'TranslationGroupVocabulary',
+    'BasePersonVocabulary',
+    'PersonAccountToMergeVocabulary',
+    'ValidPersonOrTeamVocabulary',
+    'ValidTeamMemberVocabulary',
+    'ValidTeamOwnerVocabulary',
+    'ProductReleaseVocabulary',
+    'ProductSeriesVocabulary',
+    'FilteredProductSeriesVocabulary',
+    'MilestoneVocabulary',
+    'BugWatchVocabulary',
+    'PackageReleaseVocabulary',
+    'SourcePackageNameVocabulary',
+    'DistributionVocabulary',
+    'DistroReleaseVocabulary',
+    'POTemplateNameVocabulary',
+    ]
+
 from zope.component import getUtility
 from zope.interface import implements, Interface
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
@@ -432,8 +460,9 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
 
     def __iter__(self):
         for obj in self._table.select(
-            ProductRelease.q.productseries == ProductSeries.q.id,
-            ProductSeries.q.productID == Product.q.id,
+            AND (ProductRelease.q.productseriesID == ProductSeries.q.id,
+                 ProductSeries.q.productID == Product.q.id
+                ),
             orderBy=self._orderBy,
             clauseTables=self._clauseTables,
             ):
@@ -459,10 +488,14 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
         except ValueError:
             raise LookupError, token
 
-        obj = ProductRelease.selectOne(AND(Product.q.name == productname,
+        obj = ProductRelease.selectOne(
+            AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
+                ProductSeries.q.productID == Product.q.id,
+                Product.q.name == productname,
                 ProductSeries.q.name == productseriesname,
                 ProductRelease.q.version == productreleaseversion
-                ))
+                )
+            )
         try:
             return self._toTerm(obj)
         except IndexError:

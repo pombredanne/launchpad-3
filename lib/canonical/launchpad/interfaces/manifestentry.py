@@ -1,17 +1,17 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-# Imports from zope
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
+"""Manifest entry interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IManifestEntry',
+    ]
+
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
-
-#
-# ManifestEntry Related Interfaces
-#
 
 class IManifestEntry(Interface):
-    """"""
+    """A manifest entry."""
     branch = Attribute("A branch")
 
 
