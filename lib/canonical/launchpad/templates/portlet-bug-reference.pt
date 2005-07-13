@@ -9,18 +9,18 @@
       <ul>
         <li class="webref"
             tal:repeat="ref context/externalrefs">
-          <a tal:attributes="href ref/url;
-                             title ref/title"
-             tal:content="ref/url">http://www.wizardzz.com/path/to/data.html
-          </a>[<a tal:attributes="href string:$bug_url/references/${ref/id}/+edit">Edit</a>]
+          <a tal:attributes="href ref/url"
+             tal:content="ref/title">http://www.wizardzz.com/path/to/data.html
+          </a>
+          <small>(<a tal:attributes="href string:$bug_url/references/${ref/id}/+edit">edit</a>)</small>
         </li>
       </ul>
 
-      <div style="text-align: right;">
-        <img src="/++resource++add.gif" alt="Add">
-        <a tal:attributes="href string:$bug_url/references/+new">Add link...</a>
-      </div>
+      <ul>
+        <li class="add">
+          <a tal:attributes="href string:$bug_url/references/+new">Add web link</a>
+        </li>
+      </ul>
     </div>
   </div>
-
 </div>
