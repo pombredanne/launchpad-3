@@ -6,17 +6,17 @@
     <div class="portletContent even">
 
       <b>Distribution:</b><br />
-      <a tal:attributes="href string:/distros/${context/name}/">
+      <a tal:attributes="href context/fmt:url">
       <span tal:replace="context/displayname" /></a><br />
 
       <b>Admin:</b><br />
       <img src="/++resource++user.gif">
-      <a tal:attributes="href string:/people/${context/owner/name}/"
+      <a tal:attributes="href context/owner/fmt:url"
          tal:content="context/owner/browsername">owner name</a> <br />
 
       <b>Members:</b><br />
       <img src="/++resource++user.gif">
-      <a href="+members"
+      <a tal:attributes="href string:${context/fmt:url}/+members"
          tal:content="context/members/browsername">members name</a><br /> 
 
       <b>Translation Group:</b><br />
