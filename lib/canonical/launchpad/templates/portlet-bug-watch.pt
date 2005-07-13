@@ -21,12 +21,11 @@
               </small>
             </li>
           </ul>
-          <br />
 
-          <img src="/++resource++add.gif" alt="Add">
-          <a href="#" tal:attributes="href
-          string:$bug_url/watches/+new">Add bug watch</a>
-        </div>
+         <ul>
+          <li class="add"><a href="#" tal:attributes="href
+          string:$bug_url/watches/+new">Add bug watch</a></li>
+        </ul>
     </div>
-
+  </div>
 </div>
