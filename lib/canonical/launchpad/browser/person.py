@@ -686,10 +686,10 @@ class PersonEditView:
                     "can go to the <a href=\"../+requestmerge\">Merge "
                     "Accounts</a> page to claim this email address and "
                     "everything that is owned by that account."
-                    % (email.email, email.person.browsername))
+                    % (email.email, browsername))
             return
 
-        token = getUtility(ILoginTokenSet).new(
+        token = logintokenset.new(
                     person, getUtility(ILaunchBag).login, newemail,
                     LoginTokenType.VALIDATEEMAIL)
         token.sendEmailValidationRequest(self.request.getApplicationURL())

@@ -19,19 +19,36 @@ __all__ = [
     'ITeamReassignment',
     ]
 
-from zope.schema import Choice, Datetime, Int, Text, TextLine, Password
+from zope.schema import (
+    Choice, Datetime, Int, Text, TextLine, Password, ValidationError)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 from zope.i18nmessageid import MessageIDFactory
+
+from canonical.launchpad.validators.name import valid_name
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, EmailAddressStatus)
 
 _ = MessageIDFactory('launchpad')
 
-def _valid_person_name(name):
-    """See IPersonSet.nameIsValidForInsertion()."""
-    return getUtility(IPersonSet).nameIsValidForInsertion(name)
+
+class NameAlreadyTaken(ValidationError):
+    __doc__ = _("""This name is already in use""")
+
+
+class PersonNameField(TextLine):
+
+    def _validate(self, value):
+        TextLine._validate(self, value)
+        if (IPerson.providedBy(self.context) and 
+            value == getattr(self.context, self.__name__)):
+            # The name wasn't changed.
+            return
+
+        person = getUtility(IPersonSet).getByName(value, ignore_merged=False)
+        if person is not None:
+            raise NameAlreadyTaken(value)
 
 
 class IPerson(Interface):
@@ -40,9 +57,9 @@ class IPerson(Interface):
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
-    name = TextLine(
-            title=_('Name'), required=True, readonly=True,
-            constraint=_valid_person_name,
+    name = PersonNameField(
+            title=_('Name'), required=True, readonly=False,
+            constraint=valid_name,
             description=_(
                 "A short unique name, beginning with a lower-case "
                 "letter or number, and containing only letters, "
@@ -365,12 +382,6 @@ class IPersonSet(Interface):
         Raise KeyError if there is no such person.
         """
 
-    def nameIsValidForInsertion(name):
-        """Return true if <name> is valid and is not yet in the database.
-
-        <name> will be valid if valid_name(name) returns True.
-        """
-
     def createPersonAndEmail(email, name=None, displayname=None, givenname=None,
             familyname=None, password=None, passwordEncrypted=False):
         """Create a new Person and an EmailAddress for that Person.
@@ -416,8 +427,9 @@ class IPersonSet(Interface):
         Return the default value if there is no such person.
         """
 
-    def getByName(name, default=None):
-        """Return the person with the given name, ignoring merged persons.
+    def getByName(name, default=None, ignore_merged=True):
+        """Return the person with the given name, ignoring merged persons if
+        ignore_merged is True.
 
         Return the default value if there is no such person.
         """
