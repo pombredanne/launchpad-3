@@ -37,12 +37,8 @@ XXX: This bit is overly dependent on the db...
 Show that concurrent transactions in different threads work correctly
 
 >>> from sqlobject import StringCol
->>> class TestPerson(SQLBase):
-...     _table = 'Person'
-...     displayname = StringCol()
-...     givenname = StringCol()
-...
->>> mark = TestPerson.selectOneBy(displayname='Mark Shuttleworth')
+>>> from canonical.launchpad.database import Person
+>>> mark = Person.selectOneBy(displayname='Mark Shuttleworth')
 >>> mark.id == 1
 True
 >>> mark.givenname = 'Markk'
@@ -52,8 +48,8 @@ True
  
 >>> event = Event()
 >>> event2 = Event()
->>> def foo(TestPerson=TestPerson, ztm=ztm, event=event, event2=event2):
-...     andrew = TestPerson.selectOneBy(displayname='Andrew Bennetts')
+>>> def foo(Person=Person, ztm=ztm, event=event, event2=event2):
+...     andrew = Person.selectOneBy(displayname='Andrew Bennetts')
 ...     
 ...     andrew.givenname = 'Andreww'
 ...     andrew.givenname = 'Andrew'
@@ -64,7 +60,7 @@ True
 >>> t = Thread(target=foo)
 >>> t.start()
 >>> event.wait()
->>> mark = TestPerson.selectOneBy(displayname='Mark Shuttleworth')
+>>> mark = Person.selectOneBy(displayname='Mark Shuttleworth')
 >>> mark.id == 1
 True
 >>> mark.givenname = 'Markk'
@@ -73,6 +69,21 @@ True
 >>> event2.set()
 >>> 
 >>> t.join()
+
+A failed commit, e.g. due to a transaction conflict or integrity error, will
+raise an exception, but still make it possible to begin a new transaction.
+
+>>> ztm.begin()
+>>> andrew = Person.byName('spiv')
+>>> andrew.name = 'sabdfl'
+>>> ztm.commit()
+Traceback (most recent call last):
+...
+IntegrityError: ERROR:  duplicate key violates unique constraint "person_name_key"
+<BLANKLINE>
+UPDATE Person SET name = 'sabdfl' WHERE id = 7
+>>> ztm.begin()
+>>> ztm.abort()
 
 Cleanup -- make sure this doctest leaves things in the same state it found
 them.

@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 #
 
 __metaclass__ = type
@@ -9,7 +9,6 @@ import sha
 import errno
 import tempfile
 
-from canonical.librarian import db
 from canonical.database.sqlbase import begin, commit, rollback
 
 __all__ = ['DigestMismatchError', 'LibrarianStorage', 'LibraryFileUpload',
