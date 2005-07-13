@@ -7,18 +7,25 @@
              tal:define="subscriptions context/subscriptions;
                          bugtasks context/bugtasks">
 
+            <b>Reporter:</b><br />
+            <ul class="people">
+                <li><a href="#"
+                       style="text-decoration: underline"
+                       tal:content="context/owner/browsername"
+                       tal:attributes="href context/owner/fmt:url" />
+            </ul>
+            <br />
+
             <b>Maintainers:</b><br />
 
             <ul class="people" tal:repeat="task bugtasks">
                 <li tal:condition="task/maintainer">
                 <a href="."
-                   tal:content="task/maintainer/browsername"
                    style="text-decoration: underline"
-                   tal:attributes="href string:/people/${task/maintainer/name}" />
+                   tal:content="task/maintainer/browsername"
+                   tal:attributes="href task/maintainer/fmt:url" />
                 </li>
             </ul>
-
-            <br />
 
         </div>
     </div>
