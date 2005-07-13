@@ -9,7 +9,6 @@ __all__ = [
     'UbuntiteListView',
     'FOAFSearchView',
     'PersonRdfView',
-    'BasePersonView',
     'PersonView',
     'PersonEditView',
     'RequestPeopleMergeView',
@@ -71,24 +70,16 @@ class BaseListView:
         return BatchNavigator(batch=batch, request=self.request)
 
     def getTeamsList(self):
-        # XXX: salgado: this is batched, sliced, and gives a warning that it
-        #     is not ordered. SteveA. 2005-07-11
         results = getUtility(IPersonSet).getAllTeams()
         return self._getBatchNavigator(results)
 
     def getPeopleList(self):
-        # XXX: salgado: this is batched, sliced, and gives a warning that it
-        #     is not ordered. SteveA. 2005-07-11
         results = getUtility(IPersonSet).getAllPersons()
         return self._getBatchNavigator(results)
 
     def getUbuntitesList(self):
-        putil = getUtility(IPersonSet)
-        results = putil.getUbuntites()
-        # XXX: I'm suspicious of this "list" below.  It should be "shortlist"
-        #      or better still, not there at all.
-        #      SteveA. 2005-07-11
-        return self._getBatchNavigator(list(results))
+        results = getUtility(IPersonSet).getUbuntites()
+        return self._getBatchNavigator(results)
 
 
 class PeopleListView(BaseListView):
@@ -136,29 +127,15 @@ class FOAFSearchView:
             return None
 
         if searchfor == "all":
-            results = self._findPeopleByName(name)
+            results = getUtility(IPersonSet).findByName(name)
         elif searchfor == "peopleonly":
-            results = self._findPeopleByName(name, peopleonly=True)
+            results = getUtility(IPersonSet).findPersonByName(name)
         elif searchfor == "teamsonly":
-            results = self._findPeopleByName(name, teamsonly=True)
+            results = getUtility(IPersonSet).findTeamByName(name)
 
         start = int(self.request.get('batch_start', 0))
         batch = Batch(list=results, start=start, size=BATCH_SIZE)
         return BatchNavigator(batch=batch, request=self.request)
-
-    def _findPeopleByName(self, name, peopleonly=False, teamsonly=False):
-        # This method is somewhat weird, cause peopleonly and teamsonly
-        # are mutually exclusive.
-
-        # XXX: for salgado.
-        #     1. split this into three methods.
-        #     2. searchfor all gives problems with unordered results.
-        if peopleonly:
-            return getUtility(IPersonSet).findPersonByName(name)
-        elif teamsonly:
-            return getUtility(IPersonSet).findTeamByName(name)
-
-        return getUtility(IPersonSet).findByName(name)
 
 
 class PersonRdfView:
@@ -172,10 +149,7 @@ class PersonRdfView:
                                    self.context.name + '.rdf')
 
 
-class BasePersonView:
-    """A base class to be used by all IPerson view classes."""    
-
-class PersonView(BasePersonView):
+class PersonView:
     """A simple View class to be used in all Person's pages."""
 
     def __init__(self, context, request):
@@ -490,7 +464,7 @@ class PersonView(BasePersonView):
         token.sendGpgValidationRequest(appurl, key, encrypt=True)
 
 
-class PersonEditView(BasePersonView):
+class PersonEditView:
 
     def __init__(self, context, request):
         self.context = context

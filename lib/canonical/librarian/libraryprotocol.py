@@ -1,5 +1,7 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 #
+
+__metaclass__ = type
 
 # XXX: Write doctests for this network protocol in the style of page tests.
 #       - Andrew Bennetts, 2005-03-24.
@@ -8,7 +10,6 @@ from twisted.internet import protocol
 from twisted.internet.threads import deferToThread
 from twisted.protocols import basic
 from twisted.python import log
-from canonical.lp import initZopeless
 
 
 class ProtocolViolation(Exception):
@@ -189,7 +190,7 @@ if __name__ == '__main__':
     from twisted.python import log
     log.startLogging(sys.stdout)
     from canonical.librarian import db, storage
-    from canonical.arch.sqlbase import SQLBase
+    from canonical.lp import initZopeless
     initZopeless()
     
     try:

@@ -24,13 +24,14 @@ class TacTestSetup(object):
             raise RuntimeError, 'Error %d running %s' % (rv, cmd)
 
         start = time.time()
+        log_magic = 'twisted.web.server.Site starting'
         while 1:
             if not os.path.exists(self.logfile):
                 continue
-            if 'set uid/gid' in open(self.logfile, 'r').read():
+            if log_magic in open(self.logfile, 'r').read():
                 break
             if time.time() > start + 10:
-                raise RuntimeError, 'Unable to start Librarian'
+                raise RuntimeError('Unable to start %s' % self.tacfile)
             time.sleep(0.1)
 
     def tearDown(self):

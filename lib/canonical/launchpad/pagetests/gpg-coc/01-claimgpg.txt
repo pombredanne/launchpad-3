@@ -130,6 +130,66 @@
   ...1024D/DFD20543...
 
 
+  Attempt to the fact the revoked uid present in the key in question
+  wasn't added.
+
+
+  >>> print http(r"""
+  ... GET /foaf/people/name12/+emails HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+    <p>Your contact address for all Launchpad e-mail is: <b>test@canonical.com</b></p>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+    These other addresses are confirmed as being yours:
+  <BLANKLINE>
+    <div style="padding: 0.7em 0em">
+      <div>
+        <label for="testing@canonical.com">
+          <input type="radio" name="VALIDATED_SELECTED"
+                 id="testing@canonical.com"
+                 value="testing@canonical.com" />
+          <b>testing@canonical.com</b>
+        </label>
+      </div>
+    </div>
+    <input type="submit" value="Remove" name="REMOVE_VALIDATED" />
+    <input type="submit" value="Set as Contact Address" name="SET_PREFERRED" />
+    <br /><br /><br />
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+    These addresses may also be yours:
+  <BLANKLINE>
+    <div style="padding: 0.7em 0em">
+      <div>
+        <label for="testtest@canonical.com_unvalidated">
+          <input type="radio" name="UNVALIDATED_SELECTED"
+                 id="testtest@canonical.com_unvalidated"
+                 value="testtest@canonical.com" />
+          <b>testtest@canonical.com</b>
+        </label>
+      </div>
+      <div>
+        <label for="sample.person@canonical.com_unvalidated">
+          <input type="radio" name="UNVALIDATED_SELECTED"
+                 id="sample.person@canonical.com_unvalidated"
+                 value="sample.person@canonical.com" />
+          <b>sample.person@canonical.com</b>
+        </label>
+      </div>
+      </div>
+      <input type="submit" value="Remove" name="REMOVE_UNVALIDATED" />
+      <input type="submit" value="Confirm" name="VALIDATE" />
+  ... 
+
   Kill stub KeyServer
   
   >>> z.tearDown()

@@ -7,7 +7,6 @@ __metaclass__ = type
 import os.path
 import itertools
 import sets
-import re
 
 from contrib.docwrapper import DocWrapper
 
@@ -35,9 +34,13 @@ def get_email_template(filename):
     return open(fullpath).read()
 
 
-def get_bugs_from_address(userpart):
-    return u"Malone Bugtracker <%s@%s>" % (
-        userpart, config.launchpad.bugs_domain)
+def get_bugs_from_address(userpart, user=None):
+    if user is not None:
+        return u"%s via Malone <%s@%s>" % (
+            user.displayname, userpart, config.launchpad.bugs_domain)
+    else:
+        return u"Malone Bugtracker <%s@%s>" % (
+            userpart, config.launchpad.bugs_domain)
 
 
 def send_process_error_notification(to_addrs, subject, error_msg):
@@ -555,8 +558,8 @@ def notify_bug_added(bug, event):
 
         subject, body = generate_bug_add_email(bug)
         simple_sendmail(
-            get_bugs_from_address(bug.id), notification_recipient_emails,
-            subject, body)
+            get_bugs_from_address(bug.id, event.user),
+            notification_recipient_emails, subject, body)
 
 
 def notify_bug_modified(modified_bug, event):
@@ -569,22 +572,23 @@ def notify_bug_modified(modified_bug, event):
 
     if notification_recipient_emails:
         bug_delta = get_bug_delta(
-            old_bug = event.object_before_modification,
-            new_bug = event.object,
-            user = event.user)
+            old_bug=event.object_before_modification,
+            new_bug=event.object,
+            user=event.user)
         send_bug_edit_notification(
-            from_addr = get_bugs_from_address(event.object.id),
-            to_addrs = notification_recipient_emails,
-            bug_delta = bug_delta)
+            from_addr=get_bugs_from_address(event.object.id, event.user),
+            to_addrs=notification_recipient_emails,
+            bug_delta=bug_delta)
         if bug_delta.duplicateof is not None:
             # This bug was marked as a duplicate, so notify the dup
             # target subscribers of this as well.
             dup_target_recipient_emails = get_cc_list(event.object.duplicateof)
             send_bug_duplicate_notification(
-                from_addr = get_bugs_from_address(event.object.duplicateof.id),
-                dup_target_to_addrs = notification_recipient_emails,
-                duplicate_bug = bug_delta.bug,
-                original_bug_url = canonical_url(bug_delta.bug.duplicateof))
+                from_addr=get_bugs_from_address(
+                    event.object.duplicateof.id, event.user),
+                dup_target_to_addrs=notification_recipient_emails,
+                duplicate_bug=bug_delta.bug,
+                original_bug_url=canonical_url(bug_delta.bug.duplicateof))
 
 
 def notify_bugtask_added(bugtask, event):
@@ -599,15 +603,15 @@ def notify_bugtask_added(bugtask, event):
 
     if notification_recipient_emails:
         bug_delta = BugDelta(
-            bug = bugtask.bug,
-            bugurl = canonical_url(bugtask.bug),
-            user = event.user,
-            added_bugtasks = bugtask)
+            bug=bugtask.bug,
+            bugurl=canonical_url(bugtask.bug),
+            user=event.user,
+            added_bugtasks=bugtask)
 
         subject, body = generate_bug_edit_email(bug_delta)
 
         simple_sendmail(
-            get_bugs_from_address(bugtask.bug.id),
+            get_bugs_from_address(bugtask.bug.id, event.user),
             notification_recipient_emails,
             subject, body)
 
@@ -626,14 +630,14 @@ def notify_bugtask_edited(modified_bugtask, event):
         bugtask_delta = get_task_delta(
             event.object_before_modification, event.object)
         bug_delta = BugDelta(
-            bug = event.object.bug,
-            bugurl = canonical_url(event.object.bug),
-            bugtask_deltas = bugtask_delta,
-            user = event.user)
+            bug=event.object.bug,
+            bugurl=canonical_url(event.object.bug),
+            bugtask_deltas=bugtask_delta,
+            user=event.user)
         send_bug_edit_notification(
-            from_addr = get_bugs_from_address(task.bug.id),
-            to_addrs = notification_recipient_emails,
-            bug_delta = bug_delta)
+            from_addr=get_bugs_from_address(task.bug.id, event.user),
+            to_addrs=notification_recipient_emails,
+            bug_delta=bug_delta)
 
 
 def notify_bug_product_infestation_added(product_infestation, event):
@@ -654,7 +658,7 @@ Infestation: %(infestation)s
            'infestation' : product_infestation.infestationstatus.title}
 
         simple_sendmail(
-            get_bugs_from_address(product_infestation.bug.id),
+            get_bugs_from_address(product_infestation.bug.id, event.user),
             notification_recipient_emails,
             "[Bug %d] %s" % (
                 product_infestation.bug.id,
@@ -672,24 +676,24 @@ def notify_bug_product_infestation_modified(modified_product_infestation, event)
 
     if notification_recipient_emails:
         changes = get_changes(
-            before = event.object_before_modification,
-            after = event.object,
-            fields = (
+            before=event.object_before_modification,
+            after=event.object,
+            fields=(
                 ("productrelease", lambda v: "%s %s" % (
                     v.product.name, v.version)),
                 ("infestationstatus", lambda v: v.title)))
 
         bug = modified_product_infestation.bug
         send_bug_edit_notification(
-            bug = bug,
-            from_addr = get_bugs_from_address(bug.id),
-            to_addrs = notification_recipient_emails,
-            subject = "[Bug %d] %s" % (bug.id, bug.title),
-            edit_header_line = (
+            bug=bug,
+            from_addr=get_bugs_from_address(bug.id, event.user),
+            to_addrs=notification_recipient_emails,
+            subject="[Bug %d] %s" % (bug.id, bug.title),
+            edit_header_line=(
                 "Edited infested product: %s" %
                 event.object_before_modification.productrelease.product.displayname + " " +
                 event.object_before_modification.productrelease.version),
-            changes = changes, user = event.user)
+            changes=changes, user=event.user)
 
 
 def notify_bug_package_infestation_added(package_infestation, event):
@@ -712,7 +716,7 @@ Infestation: %(infestation)s
        'infestation' : package_infestation.infestationstatus.title}
 
         simple_sendmail(
-            get_bugs_from_address(package_infestation.bug.id),
+            get_bugs_from_address(package_infestation.bug.id, event.user),
             notification_recipient_emails,
             "[Bug %d] %s" % (
                 package_infestation.bug.id,
@@ -731,24 +735,24 @@ def notify_bug_package_infestation_modified(modified_package_infestation, event)
 
     if notification_recipient_emails:
         changes = get_changes(
-            before = event.object_before_modification,
-            after = event.object,
-            fields = (
+            before=event.object_before_modification,
+            after=event.object,
+            fields=(
                 ("sourcepackagerelease", lambda v: "%s %s" % (
                     v.sourcepackagename.name, v.version)),
                 ("infestationstatus", lambda v: v.title)))
 
         bug = modified_package_infestation.bug
         send_bug_edit_notification(
-            bug = bug,
-            from_addr = get_bugs_from_address(bug.id),
-            to_addrs = notification_recipient_emails,
-            subject = "[Bug %d] %s" % (bug.id, bug.title),
-            edit_header_line = (
+            bug=bug,
+            from_addr=get_bugs_from_address(bug.id, event.user),
+            to_addrs=notification_recipient_emails,
+            subject="[Bug %d] %s" % (bug.id, bug.title),
+            edit_header_line=(
                 "Edited infested package: %s" %
                 event.object_before_modification.sourcepackagerelease.sourcepackagename.name + " " +
                 event.object_before_modification.sourcepackagerelease.version),
-            changes = changes, user = event.user)
+            changes=changes, user=event.user)
 
 
 def notify_bug_comment_added(bugmessage, event):
@@ -793,8 +797,8 @@ def notify_bug_comment_added(bugmessage, event):
         msg += body
 
         simple_sendmail(
-            get_bugs_from_address(bug.id), notification_recipient_emails,
-            subject, body)
+            get_bugs_from_address(bug.id, event.user),
+            notification_recipient_emails, subject, body)
 
 
 def notify_bug_external_ref_added(ext_ref, event):
@@ -808,13 +812,13 @@ def notify_bug_external_ref_added(ext_ref, event):
 
     if notification_recipient_emails:
         bug_delta = BugDelta(
-            bug = ext_ref.bug,
-            bugurl = canonical_url(ext_ref.bug),
-            user = event.user,
-            external_reference = {'new' : ext_ref})
+            bug=ext_ref.bug,
+            bugurl=canonical_url(ext_ref.bug),
+            user=event.user,
+            external_reference={'new' : ext_ref})
 
         send_bug_edit_notification(
-            get_bugs_from_address(ext_ref.bug),
+            get_bugs_from_address(ext_ref.bug, event.user),
             notification_recipient_emails,
             bug_delta)
 
@@ -834,13 +838,13 @@ def notify_bug_external_ref_edited(edited_ext_ref, event):
             # A change was made that's worth sending an edit
             # notification about.
             bug_delta = BugDelta(
-                bug = new.bug,
-                bugurl = canonical_url(new.bug),
-                user = event.user,
-                external_reference = {'old' : old, 'new' : new})
+                bug=new.bug,
+                bugurl=canonical_url(new.bug),
+                user=event.user,
+                external_reference={'old' : old, 'new' : new})
 
             send_bug_edit_notification(
-                get_bugs_from_address(new.bug.id),
+                get_bugs_from_address(new.bug.id, event.user),
                 notification_recipient_emails,
                 bug_delta)
 
@@ -855,13 +859,13 @@ def notify_bug_watch_added(watch, event):
 
     if notification_recipient_emails:
         bug_delta = BugDelta(
-            bug = watch.bug,
-            bugurl = canonical_url(watch.bug),
-            user = event.user,
-            bugwatch = {'new' : watch})
+            bug=watch.bug,
+            bugurl=canonical_url(watch.bug),
+            user=event.user,
+            bugwatch={'new' : watch})
 
         send_bug_edit_notification(
-            get_bugs_from_address(watch.bug.id),
+            get_bugs_from_address(watch.bug.id, event.user),
             notification_recipient_emails,
             bug_delta)
 
@@ -882,14 +886,14 @@ def notify_bug_watch_modified(modified_bug_watch, event):
             # there is a difference worth notifying about here
             # so let's keep going
             bug_delta = BugDelta(
-                bug = new.bug,
-                bugurl = canonical_url(new.bug),
-                user = event.user,
-                bugwatch = {'old' : old, 'new' : new})
+                bug=new.bug,
+                bugurl=canonical_url(new.bug),
+                user=event.user,
+                bugwatch={'old' : old, 'new' : new})
             send_bug_edit_notification(
-                from_addr = get_bugs_from_address(new.id),
-                to_addrs = notification_recipient_emails,
-                bug_delta = bug_delta)
+                from_addr=get_bugs_from_address(new.id, event.user),
+                to_addrs=notification_recipient_emails,
+                bug_delta=bug_delta)
 
 
 def notify_bug_cveref_added(cveref, event):
@@ -902,13 +906,13 @@ def notify_bug_cveref_added(cveref, event):
 
     if notification_recipient_emails:
         bug_delta = BugDelta(
-            bug = cveref.bug,
-            bugurl = canonical_url(cveref.bug),
-            user = event.user,
-            cveref = {'new': cveref})
+            bug=cveref.bug,
+            bugurl=canonical_url(cveref.bug),
+            user=event.user,
+            cveref={'new': cveref})
 
         send_bug_edit_notification(
-            get_bugs_from_address(cveref.bug.id),
+            get_bugs_from_address(cveref.bug.id, event.user),
             notification_recipient_emails,
             bug_delta)
 
@@ -928,15 +932,14 @@ def notify_bug_cveref_edited(edited_cveref, event):
             # There's a change worth notifying about, so let's go
             # ahead and send a notification email.
             bug_delta = BugDelta(
-                bug = new.bug,
-                bugurl = canonical_url(new.bug),
-                user = event.user,
-                cveref = {'old' : old, 'new': new})
+                bug=new.bug,
+                bugurl=canonical_url(new.bug),
+                user=event.user,
+                cveref={'old' : old, 'new': new})
 
             send_bug_edit_notification(
-                get_bugs_from_address(new.id),
-                notification_recipient_emails,
-                bug_delta)
+                get_bugs_from_address(new.id, event.user),
+                notification_recipient_emails, bug_delta)
 
 
 def notify_join_request(event):

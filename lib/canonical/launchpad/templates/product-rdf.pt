@@ -48,9 +48,11 @@
                     string:${context/project/fmt:url}/+rdf" />
             </lp:Project>
         </lp:inProject>
-        <lp:series tal:repeat="series context/serieslist">
-            <lp:specifiedAt tal:attributes="rdf:resource
-                string:${context/fmt:url}/+series/${series/name}/+rdf" />
+        <lp:series tal:condition="context/serieslist">
+            <lp:ProductSeries tal:repeat="series context/serieslist">
+                <lp:specifiedAt tal:attributes="rdf:resource
+                    string:${context/fmt:url}/+series/${series/name}/+rdf" />
+            </lp:ProductSeries>
         </lp:series>
         <lp:owner>
             <metal:block metal:use-macro="context/@@rdf_macros/owner_foaf" />
