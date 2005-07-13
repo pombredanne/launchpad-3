@@ -84,66 +84,13 @@ Change "Sample Person" back to Australia/Perth.
   ...
 
 
-"Mark Shuttleworth" has no selected time zone in the database:
-
-  >>> print http(r"""
-  ... GET /people/sabdfl/+changetz HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-      <title>Time Zone for Mark Shuttleworth</title>
-  ...
-  <select name="field.timezone" size="15" >
-  <option value="UTC">UTC</option>
-  ...
-  <option value="Australia/Perth">Australia/Perth</option>
-  ...
-
-
-We can set his time zone to UTC:
-
-  >>> print http(r"""
-  ... POST /people/sabdfl/+changetz HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... Content-Length: 441
-  ... Content-Type: multipart/form-data; boundary=---------------------------19822982737336460951121752388
-  ... 
-  ... -----------------------------19822982737336460951121752388
-  ... Content-Disposition: form-data; name="field.timezone"
-  ... 
-  ... UTC
-  ... -----------------------------19822982737336460951121752388
-  ... Content-Disposition: form-data; name="field.timezone-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------19822982737336460951121752388
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... -----------------------------19822982737336460951121752388--
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-      <title>Time Zone for Mark Shuttleworth</title>
-  ...
-  <select name="field.timezone" ...
-  <option selected="selected" value="UTC">UTC</option>
-  ...
-
 
 Submitting the form without a time zone selected causes an input
 validation error:
 
   >>> print http(r"""
-  ... POST /people/sabdfl/+changetz HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... POST /people/name12/+changetz HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 316
   ... Content-Type: multipart/form-data; boundary=---------------------------7739752791407205050362934404
   ... 
@@ -162,7 +109,7 @@ validation error:
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Time Zone for Mark Shuttleworth</title>
+      <title>Time Zone for Sample Person</title>
   ...
   ...An error occured...
   ...

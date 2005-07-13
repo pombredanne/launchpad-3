@@ -108,7 +108,7 @@ class Person(SQLBase):
                                      revision=0)
         return self.calendar
 
-    timezone = StringCol(dbName='timezone', default=None)
+    timezone = StringCol(dbName='timezone', default='UTC')
 
     def get(cls, id, connection=None, selectResults=None):
         """Override the classmethod get from the base class.
