@@ -30,7 +30,7 @@ def create_logger():
 def main(args):
     options, args = options_parser.parse_args(args)
     
-    lockfile = LockFile('/var/lock/launchpad-poimport.lock')
+    lockfile = LockFile('/var/lock/launchpad-process-mail.lock')
     lockfile.acquire()
 
     logger = create_logger()
