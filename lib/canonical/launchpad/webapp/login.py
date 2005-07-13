@@ -201,11 +201,9 @@ class LoginOrRegister:
         # Collect up the form inputs that don't start with self.form_prefix.
         # If there are any, then make a query string out of them and add
         # this to the redirect URL.
-        query_params = ['%s=%s' % (name, urllib.quote_plus(value))
-                        for name, value in self.request.form.items()
-                        if not name.startswith(self.form_prefix)]
-        if query_params:
-            target += '?' + '&'.join(query_params)
+        query_string = self.request.get('QUERY_STRING', '')
+        if query_string:
+            target = '%s?%s' % (target, query_string)
         self.request.response.redirect(target)
 
     def preserve_query(self):
@@ -213,12 +211,20 @@ class LoginOrRegister:
         # XXX: Exclude '-C' because this is left in from sys.argv in Zope3
         #      using python's cgi.FieldStorage to process requests.
         # -- SteveAlexander, 2005-04-11
-        L = ['<input type="hidden" name="%s" value="%s" />'
-                 % (name, cgi.escape(value, quote=True))
-             for name, value in self.request.form.items()
-             if not name.startswith(self.form_prefix)
-             if not name == '-C']
-        return ''.join(L)
+        L = []
+        for name, value in self.request.form.items():
+            if name == '-C':
+                continue
+            if name.startswith(self.form_prefix):
+                continue
+            if isinstance(value, list):
+                value_list = value
+            else:
+                value_list = [value]
+            for item in value_list:
+                L.append('<input type="hidden" name="%s" value="%s" />' %
+                    (name, cgi.escape(item, quote=True)))
+        return '\n'.join(L)
 
 
 def logInPerson(request, principal, email):

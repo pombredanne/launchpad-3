@@ -90,7 +90,7 @@ class CodeOfConductSet:
 
     implements(ICodeOfConductSet)
 
-    title = 'Codes of Conduct Page'
+    title = 'Launchpad Codes of Conduct'
 
     def __getitem__(self, version):
         """See ICodeOfConductSet."""
@@ -193,9 +193,7 @@ class SignedCodeOfConductSet:
 
     implements(ISignedCodeOfConductSet)
 
-    # XXX cprov 20050301
-    # Might be replace for something similar to displayname
-    title = 'Signed Codes of Conduct Set Page'
+    title = 'Code of Conduct Administrator Page'
 
     def __getitem__(self, id):
         """Get a Signed CoC Entry."""

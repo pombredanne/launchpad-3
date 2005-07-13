@@ -9,9 +9,10 @@
         <div tal:replace="structure context/@@+portlet-actions" />
 </metal:rightportlets>
 
+
 <div metal:fill-slot="main">
 
-      <h1>Codes of conduct</h1>
+      <h1>Available Codes of Conduct</h1>
 
       <p>
         Select a code of conduct to sign or download it.
@@ -19,7 +20,8 @@
 
       <ul class="document">
          <li tal:repeat="code context"> 
-            <a tal:content="code/title" tal:attributes="href string:${code/version}"/> 
+            <a tal:content="code/title" 
+               tal:attributes="href string:${code/version}"/> 
          </li>
       </ul>
 

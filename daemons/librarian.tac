@@ -35,7 +35,12 @@ f = FileUploadFactory(storage)
 uploadPort = str(config.librarian.upload_port)
 strports.service(uploadPort, f).setServiceParent(librarianService)
 
-root = fatweb.LibraryFileResource(storage)
+if config.librarian.server.upstream_url:
+    upstreamHost, upstreamPort = config.librarian.server.upstream_url.split(':')
+    upstreamPort = int(upstreamPort)
+else:
+    upstreamHost = upstreamPort = None
+root = fatweb.LibraryFileResource(storage, upstreamHost, upstreamPort)
 root.putChild('search', fatweb.DigestSearchResource(storage))
 root.putChild('byalias', fatweb.AliasSearchResource(storage))
 site = server.Site(root)

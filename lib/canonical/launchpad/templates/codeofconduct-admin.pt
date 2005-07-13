@@ -9,7 +9,6 @@
         <div tal:replace="structure context/@@+portlet-actions" />
 </metal:rightportlets>
 
-
 <div metal:fill-slot="main">
 
       <h1>Administer code of conduct signatures</h1>
@@ -78,12 +77,6 @@
           No signatures found.
         </p>
       </tal:results>
-      <ul class="add">
-        <li>
-          <a href="+acknowledge"
-          >Acknowledge signature submitted on paper</a>
-        </li>
-      </ul>
 
 </div>
 

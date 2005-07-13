@@ -306,7 +306,7 @@ class IBugTaskSet(Interface):
     def search(bug=None, searchtext=None, status=None, priority=None,
                severity=None, product=None, distribution=None,
                distrorelease=None, milestone=None, assignee=None,
-               submitter=None, orderby=None, sourcepackagename=None,
+               owner=None, orderby=None, sourcepackagename=None,
                binarypackagename=None):
         """Return a set of IBugTasks that satisfy the query arguments.
 
@@ -399,7 +399,7 @@ class IBugTaskSubset(Interface):
         """
 
     def search(bug=None, searchtext=None, status=None, priority=None,
-               severity=None, milestone=None, assignee=None, submitter=None,
+               severity=None, milestone=None, assignee=None, owner=None,
                orderby=None):
         """Return a set of IBugTasks that satisfy the query arguments.
 

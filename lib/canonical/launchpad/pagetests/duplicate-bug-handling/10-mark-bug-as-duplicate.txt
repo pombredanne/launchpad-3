@@ -66,7 +66,7 @@ notification:
     >>> from_addr, to_addrs, raw_message = sent_emails.pop()
 
     >>> print from_addr
-    Malone Bugtracker <2@...>
+    Foo Bar via Malone <2@...>
     >>> print to_addrs
     ['dilys@muse.19inch.net', 'mark@hbd.com',
      'support@ubuntu.com', 'test@canonical.com']
@@ -84,7 +84,7 @@ notification:
     >>> from_addr, to_addrs, raw_message = sent_emails.pop()
 
     >>> print from_addr
-    Malone Bugtracker <1@...>
+    Foo Bar via Malone <1@...>
     >>> print to_addrs
     ['dilys@muse.19inch.net', 'mark@hbd.com',
      'support@ubuntu.com', 'test@canonical.com']
