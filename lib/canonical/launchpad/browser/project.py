@@ -17,19 +17,42 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
-    IPerson, IProject, IProductSet, IProjectBugTrackerSet)
+    IPerson, IProject, IProductSet, IProjectBugTrackerSet, ICalendarOwner)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.bugtracker import newBugTracker
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, Link, DefaultLink)
 
 _ = MessageIDFactory('launchpad')
 
-#
-# Traversal functions that help us look up something
-# about a project or product
-#
-def traverseProject(project, request, name):
-    return project.getProduct(name)
+
+class ProjectFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for an IProject.
+    """
+
+    usedfor = IProject
+
+    def overview(self):
+        target = ''
+        text = 'Overview'
+        return DefaultLink(target, text)
+
+    def bugs(self):
+        target = '+bugs'
+        text = 'Bugs'
+        return Link(target, text, linked=False)
+
+    def translations(self):
+        target = '+translations'
+        text = 'Translations'
+        return Link(target, text, linked=False)
+
+    def calendar(self):
+        target = '+calendar'
+        text = 'Calendar'
+        linked = ICalendarOwner(self.context).calendar is not None
+        return Link(target, text, linked=linked)
 
 
 #

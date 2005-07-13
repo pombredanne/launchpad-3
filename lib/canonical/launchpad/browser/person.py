@@ -44,12 +44,43 @@ from canonical.launchpad.interfaces import (
     IJabberIDSet, IIrcIDSet, IArchUserIDSet, ILaunchBag, ILoginTokenSet,
     IPasswordEncryptor, ISignedCodeOfConductSet, IObjectReassignment,
     ITeamReassignment, IGPGKeySet, IGpgHandler, IKarmaActionSet, IKarmaSet,
-    UBUNTU_WIKI_URL)
+    IPerson, ICalendarOwner, UBUNTU_WIKI_URL)
 
 from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, Link, DefaultLink)
+
+
+class PersonFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for an IPerson.
+    """
+
+    usedfor = IPerson
+
+    def overview(self):
+        target = ''
+        text = 'Overview'
+        return DefaultLink(target, text)
+
+    def bugs(self):
+        target = '+bugsassigned'
+        text = 'Bugs'
+        return Link(target, text)
+
+    def translations(self):
+        target = '+translations'
+        text = 'Translations'
+        return Link(target, text)
+
+    def calendar(self):
+        target = '+calendar'
+        text = 'Calendar'
+        linked = ICalendarOwner(self.context).calendar is not None
+        return Link(target, text, linked=linked)
+
 
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages

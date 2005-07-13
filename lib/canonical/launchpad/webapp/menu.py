@@ -38,13 +38,13 @@ class Link:
     """General links that aren't default links."""
     implements(ILink)
 
-    def __init__(self, target, text, summary=None):
+    def __init__(self, target, text, summary=None, linked=True):
         self.target = target
         self.text = text
         self.summary = summary
         self.name = None
         self.selected = False
-        self.linked = True
+        self.linked = linked
         self.url = None
 
 

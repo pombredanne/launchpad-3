@@ -13,7 +13,7 @@ from canonical.launchpad.webapp import (
 
 class LaunchpadRootFacets(StandardLaunchpadFacets):
     usedfor = ILaunchpadRoot
-    links = ['overview', 'bugs', 'translations']
+    links = ['overview', 'bugs', 'translations', 'calendar']
 
     def overview(self):
         target = ''
@@ -29,6 +29,13 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         target = 'malone'
         text = 'Bugs'
         return Link(target, text)
+
+    def calendar(self):
+        target = 'calendar'
+        text = 'Calendar'
+        # merged calendar is only available when logged in
+        linked = getUtility(ILaunchBag).user is not None
+        return Link(target, text, linked=linked)
 
 
 class RosettaAppMenus(ApplicationMenu):

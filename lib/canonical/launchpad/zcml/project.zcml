@@ -19,6 +19,10 @@
         for="canonical.launchpad.interfaces.IProject"
         function="canonical.launchpad.browser.traversers.traverse_project" />
 
+    <browser:menus
+        module="canonical.launchpad.browser.project"
+        classes="ProjectFacets" />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
         name="+index" />

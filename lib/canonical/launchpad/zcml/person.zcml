@@ -23,6 +23,10 @@
       for="canonical.launchpad.interfaces.IPerson"
       name="+index" />
 
+  <browser:menus
+      module="canonical.launchpad.browser.person"
+      classes="PersonFacets" />
+
   <browser:editform
       name="+review"
       for="canonical.launchpad.interfaces.IPerson"

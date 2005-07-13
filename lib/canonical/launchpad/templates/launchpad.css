@@ -695,7 +695,7 @@ body {
   list-style: none;
   padding: 0 0.75em 0 1.25em;
 }
-.facets :link, .facets :visited {
+.facets :link, .facets :visited, .facets .disabled {
   background: none;
   color: #dee7ec;
 }
