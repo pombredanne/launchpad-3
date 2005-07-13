@@ -59,3 +59,16 @@ Check that basic auth works.
   ...
   ...<input type="submit" value="Log Out" />...
   ...
+
+The login page preserves all the query parameters it is given.
+
+  >>> result = http(r"""
+  ... GET /malone/+login?foo=mandrill&foo=bonobo&bar=tsimpson HTTP/1.1
+  ... """).getBody()
+  >>> '<input type="hidden" name="foo" value="mandrill" />' in result
+  True
+  >>> '<input type="hidden" name="foo" value="bonobo" />' in result
+  True
+  >>> '<input type="hidden" name="bar" value="tsimpson" />' in result
+  True
+

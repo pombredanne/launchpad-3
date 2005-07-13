@@ -20,9 +20,11 @@ __metaclass__ = type
 # work properly, and the thing/lp:SchemaClass will not work properly.
 
 # The DBSchema subclasses should be in alphabetical order, listed after
-# EnumCol.  Please keep it that way.
+# EnumCol and Item.  Please keep it that way.
 __all__ = (
 'EnumCol',
+'Item',
+'DBSchema',
 # DBSchema types follow.
 'ArchArchiveType',
 'BinaryPackageFileType',
@@ -85,6 +87,7 @@ from sqlobject.col import SOCol, Col
 from sqlobject.include import validators
 import sqlobject.constraints as consts
 
+
 class SODBSchemaEnumCol(SOCol):
 
     def __init__(self, **kw):
@@ -101,8 +104,10 @@ class SODBSchemaEnumCol(SOCol):
     def _sqlType(self):
         return 'INT'
 
+
 class DBSchemaEnumCol(Col):
     baseClass = SODBSchemaEnumCol
+
 
 class DBSchemaValidator(validators.Validator):
 
@@ -201,6 +206,7 @@ def docstring_to_title_descr(string):
     descr = '\n'.join([line[indent:] for line in descrlines])
     return title, descr
 
+
 class OrderedMapping:
 
     def __init__(self, mapping):
@@ -233,6 +239,7 @@ class Item:
 
     An item has a name, title and description.  It also has an integer value.
     """
+
     def __init__(self, value, title, description=None):
         frame = sys._getframe(1)
         locals = frame.f_locals
@@ -2169,11 +2176,11 @@ class LoginTokenType(DBSchema):
         address for the team, but this address need to be validated first.
         """)
 
-    VALIDATEGPGUID = Item(6, """
-        Validate GPG key User ID
+    VALIDATEGPG = Item(6, """
+        Validate GPG key 
 
-        A user has submited a new GPG key and , consequently, its User.ids
-        as new email addresses to his account and they need to be validated.
+        A user has submited a new GPG key to his account and it need to
+        be validated.
         """)
 
 

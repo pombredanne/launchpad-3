@@ -2,7 +2,7 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.database.maintainership import MaintainershipSet
+from canonical.launchpad.database import MaintainershipSet
 from canonical.lp.dbschema import BugSubscription
 
 def make_subscriptions_explicit_on_private_bug(bug, event):

@@ -32,6 +32,13 @@ class IDistroArchRelease(IHasOwner):
     # useful attributes
     binarycount = Attribute('Count of Binary Packages')
 
+    def getChroot(pocket=None, default=None):
+        """Return the librarian file alias of the chroot for a given Pocket.
+         
+        The pocket defaults to the "PLAIN" pocket and if not found returns
+        'default'.
+        """
+
     def findPackagesByName(pattern):
         """Search BinaryPackages matching pattern"""
 
@@ -44,7 +51,8 @@ class IDistroArchRelease(IHasOwner):
 class IPocketChroot(Interface):
     """PocketChroot Table Interface"""
 
-    distroarchrelease = Attribute("The DistroArchRelease this chroot belongs to.")
+    distroarchrelease = Attribute("The DistroArchRelease this chroot "
+                                  "belongs to.")
     pocket = Attribute("The Pocket this chroot is for.")
     chroot = Attribute("The file alias of the chroot.")
 

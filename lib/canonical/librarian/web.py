@@ -1,9 +1,11 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 #
+
+__metaclass__ = type
 
 import sqlobject
 
-from twisted.web import resource, static, error, util, server
+from twisted.web import resource, static, error, util, server, proxy
 from twisted.internet.threads import deferToThread
 
 from canonical.librarian.client import quote
@@ -20,9 +22,11 @@ class NotFound(Exception):
 
 
 class LibraryFileResource(resource.Resource):
-    def __init__(self, storage):
+    def __init__(self, storage, upstreamHost, upstreamPort):
         resource.Resource.__init__(self)
         self.storage = storage
+        self.upstreamHost = upstreamHost
+        self.upstreamPort = upstreamPort
 
     def getChild(self, name, request):
         if name == '':
@@ -33,14 +37,17 @@ class LibraryFileResource(resource.Resource):
         except ValueError:
             return fourOhFour
             
-        return LibraryFileAliasResource(self.storage, fileID)
+        return LibraryFileAliasResource(self.storage, fileID, self.upstreamHost,
+                self.upstreamPort)
 
 
 class LibraryFileAliasResource(resource.Resource):
-    def __init__(self, storage, fileID):
+    def __init__(self, storage, fileID, upstreamHost, upstreamPort):
         resource.Resource.__init__(self)
         self.storage = storage
         self.fileID = fileID
+        self.upstreamHost = upstreamHost
+        self.upstreamPort = upstreamPort
 
     def getChild(self, name, request):
         try:
@@ -52,7 +59,7 @@ class LibraryFileAliasResource(resource.Resource):
         filename = request.postpath[0]
 
         deferred = deferToThread(self._getFileAlias, filename)
-        deferred.addCallback(self._cb_getFileAlias, aliasID)
+        deferred.addCallback(self._cb_getFileAlias, aliasID, request)
         deferred.addErrback(self._eb_getFileAlias)
         return util.DeferredResource(deferred)
 
@@ -71,11 +78,15 @@ class LibraryFileAliasResource(resource.Resource):
         failure.trap(NotFound)
         return fourOhFour
         
-    def _cb_getFileAlias(self, (dbAliasID, mimetype), aliasID):
+    def _cb_getFileAlias(self, (dbAliasID, mimetype), aliasID, request):
         if dbAliasID != aliasID:
             return fourOhFour
-        return File(mimetype.encode('ascii'),
-                    self.storage._fileLocation(self.fileID))
+        if self.storage.hasFile(self.fileID) or self.upstreamHost is None:
+            return File(mimetype.encode('ascii'),
+                        self.storage._fileLocation(self.fileID))
+        else:
+            return proxy.ReverseProxyResource(self.upstreamHost,
+                                              self.upstreamPort, request.path)
 
     def render_GET(self, request):
         return defaultResource.render(request)
@@ -118,53 +129,6 @@ class DigestSearchResource(resource.Resource):
     def _cb_matchingAliases(self, matches, request):
         text = '\n'.join([str(len(matches))] + matches)
         response = static.Data(text.encode('utf-8'), 
-                               'text/plain; charset=utf-8').render(request)
-        request.write(response)
-        request.finish()
-
-
-class AliasSearchErrors:
-    BAD_SEARCH = 'Bad search'
-    NOT_FOUND = 'Not found'
-
-class AliasSearchResource(resource.Resource):
-    def __init__(self,storage):
-        self.storage = storage
-
-    def render_GET(self, request):
-        try:
-            alias = int(request.args['alias'][0])
-        except (LookupError, ValueError):
-            return static.Data(AliasSearchErrors.BAD_SEARCH,
-                               'text/plain').render(request)
-
-        deferred = deferToThread(self._getByAlias, alias)
-        deferred.addCallback(self._cb_getByAlias, alias, request)
-        deferred.addErrback(self._eb_getByAlias, request)
-        deferred.addErrback(_eb, request)
-        return server.NOT_DONE_YET
-
-    def _getByAlias(self, alias):
-        begin()
-        try:
-            alias = self.storage.library.getByAlias(alias)
-            contentID = alias.content.id
-            filename = alias.filename
-            return contentID, filename
-        finally:
-            rollback()
-
-    def _eb_getByAlias(self, failure, request):
-        failure.trap(sqlobject.SQLObjectNotFound)
-        response = static.Data(AliasSearchErrors.NOT_FOUND,
-                               'text/plain').render(request)
-        request.write(response)
-        request.finish()
-
-    def _cb_getByAlias(self, (contentID, filename), alias, request):
-        # Desired format is fileid/aliasid/filename
-        ret = "/%s/%s/%s\n" % (contentID, alias, quote(filename))
-        response = static.Data(ret.encode('utf-8'), 
                                'text/plain; charset=utf-8').render(request)
         request.write(response)
         request.finish()

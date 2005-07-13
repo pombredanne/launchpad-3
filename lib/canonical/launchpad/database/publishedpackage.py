@@ -9,8 +9,8 @@ from sqlobject import StringCol, ForeignKey, IntCol
 
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.interfaces import \
-    IPublishedPackage, IPublishedPackageSet
+from canonical.launchpad.interfaces import (
+    IPublishedPackage, IPublishedPackageSet)
 from canonical.lp.dbschema import EnumCol
 from canonical.lp.dbschema import PackagePublishingStatus
 

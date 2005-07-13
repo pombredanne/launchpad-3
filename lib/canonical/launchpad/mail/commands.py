@@ -13,7 +13,7 @@ from canonical.config import config
 from canonical.launchpad.helpers import Snapshot, get_attribute_names
 from canonical.launchpad.pathlookup import get_object
 from canonical.launchpad.pathlookup.exceptions import PathStepNotFoundError
-from canonical.launchpad.database import BugMessage, BugFactory, BugTaskSet
+from canonical.launchpad.database import BugMessage, BugFactory
 from canonical.launchpad.interfaces import (
         IProduct, IDistribution, IPersonSet, ISourcePackage, IBugEmailCommand,
         IBugEditEmailCommand, IEmailCommand, IBugSet, ILaunchBag, IBugTaskSet)

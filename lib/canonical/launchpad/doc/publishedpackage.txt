@@ -1,0 +1,16 @@
+
+Published Package
+-----------------
+
+This database view gives us information on which packages are published in
+which distributions.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPublishedPackageSet
+    >>> pp_set = getUtility(IPublishedPackageSet)
+
+    >>> from zope.interface.verify import verifyObject
+    >>> verifyObject(IPublishedPackageSet, pp_set)
+    True
+
+

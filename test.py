@@ -16,9 +16,15 @@
 
 $Id: test.py 25177 2004-06-02 13:17:31Z jim $
 """
-import sys, os, psycopg
-from operator import attrgetter
-import itertools
+import sys, os, psycopg, time
+
+os.setpgrp() # So test_on_merge.py can reap its children
+
+# Make tests run in a timezone no launchpad developers live in.
+# Our tests need to run in any timezone.
+# (No longer actually required, as PQM does this)
+os.environ['TZ'] = 'Asia/Calcutta'
+time.tzset()
 
 here = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.join(here, 'lib'))
@@ -26,179 +32,16 @@ sys.path.insert(0, os.path.join(here, 'lib'))
 # Set PYTHONPATH environment variable for spawned processes
 os.environ['PYTHONPATH'] = ':'.join(sys.path)
 
-# Import fascist.  We set this up early to try to intercept as many imports as
-# possible.
-import __builtin__
-import atexit
+# Install the import fascist import hook and atexit handler.
+import importfascist
+importfascist.install_import_fascist()
 
-original_import = __builtin__.__import__
-database_root = 'canonical.launchpad.database'
-browser_root = 'canonical.launchpad.browser'
-naughty_imports = set()
-
-class JackbootError(ImportError):
-    """Import Fascist says you can't make this import."""
-
-    def __init__(self, import_into, name, *args):
-        ImportError.__init__(self, import_into, name, *args)
-        self.import_into = import_into
-        self.name = name
-
-    def format_message(self):
-        return 'Generic JackbootError: %s imported into %s' % (
-            self.name, self.import_into)
-
-    def __str__(self):
-        return self.format_message()
+# Install the warning handler hook and atexit handler.
+import warninghandler
+warninghandler.install_warning_handler()
 
 
-class DatabaseImportPolicyViolation(JackbootError):
-    """Database code is imported directly into other code."""
-
-    def format_message(self):
-        return 'You should not import %s into %s' % (
-            self.name, self.import_into)
-
-
-class FromStarPolicyViolation(JackbootError):
-    """import * from a module that has no __all__."""
-
-    def format_message(self):
-        return ('You should not import * from %s because it has no __all__'
-                ' (in %s)' % (self.name, self.import_into))
-
-
-class NotInModuleAllPolicyViolation(JackbootError):
-    """import of a name that does not appear in a module's __all__."""
-
-    def __init__(self, import_into, name, attrname):
-        JackbootError.__init__(self, import_into, name, attrname)
-        self.attrname = attrname
-
-    def format_message(self):
-        return ('You should not import %s into %s from %s,'
-                ' because it is not in its __all__.' %
-                (self.attrname, self.import_into, self.name))
-
-def report_import_error(error):
-    naughty_imports.add(error)
-
-def raise_import_error(error):
-    raise error
-
-def import_fascist(name, globals={}, locals={}, fromlist=[]):
-    # Change this next line when we want to start raising JackbootErrors
-    # rather than just reporting them.
-    notify_import_error = report_import_error
-
-    import_into = globals.get('__name__')
-    if import_into is None:
-        import_into = ''
-    if name.startswith(database_root) and import_into.startswith(browser_root):
-        # Importing database code into browser code is naughty.
-        # We'll eventually disallow these imports altogether.  For now we just
-        # warn about it.
-        error = DatabaseImportPolicyViolation(import_into, name)
-        notify_import_error(error)
-
-    module = original_import(name, globals, locals, fromlist)
-
-    if fromlist is not None and import_into.startswith('canonical'):
-        # We only want to warn about "from foo import bar" violations in our 
-        # own code.
-        if list(fromlist) == ['*'] and not hasattr(module, '__all__'):
-            # "from foo import *" is naughty if foo has no __all__
-            error = FromStarPolicyViolation(import_into, name)
-            #notify_import_error(error)
-            raise_import_error(error)
-        elif list(fromlist) != ['*'] and hasattr(module, '__all__'):
-            # "from foo import bar" is naughty if bar isn't in foo.__all__ (and
-            # foo actually has an __all__).
-            for attrname in fromlist:
-                if attrname not in module.__all__:
-                    error = NotInModuleAllPolicyViolation(
-                        import_into, name, attrname)
-                    notify_import_error(error)
-    return module
-
-__builtin__.__import__ = import_fascist
-
-
-class attrsgetter:
-    """Like operator.attrgetter, but works on multiple attribute names."""
-
-    def __init__(self, *names):
-        self.names = names
-
-    def __call__(self, obj):
-        return tuple(getattr(obj, name) for name in self.names)
-
-
-def report_naughty_imports():
-    if naughty_imports:
-        print
-        print '** %d import policy violations **' % len(naughty_imports)
-        current_type = None
-
-        database_violations = []
-        fromstar_violations = []
-        notinall_violations = []
-        sorting_map = {
-            DatabaseImportPolicyViolation: database_violations,
-            FromStarPolicyViolation: fromstar_violations,
-            NotInModuleAllPolicyViolation: notinall_violations
-            }
-        for error in naughty_imports:
-            sorting_map[error.__class__].append(error)
-
-        if database_violations:
-            print
-            print "There were %s database import violations." % (
-                len(database_violations))
-            sorted_violations = sorted(
-                database_violations,
-                key=attrsgetter('name', 'import_into'))
-
-            for name, sequence in itertools.groupby(
-                sorted_violations, attrgetter('name')):
-                print "You should not import %s into:" % name
-                for error in sequence:
-                    print "   ", error.import_into
-
-        if fromstar_violations:
-            print
-            print "There were %s imports 'from *' without an __all__." % (
-                len(fromstar_violations))
-            sorted_violations = sorted(
-                fromstar_violations,
-                key=attrsgetter('import_into', 'name'))
-
-            for import_into, sequence in itertools.groupby(
-                sorted_violations, attrgetter('import_into')):
-                print "You should not import * into %s from" % import_into
-                for error in sequence:
-                    print "   ", error.name
-
-        if notinall_violations:
-            print
-            print (
-                "There were %s imports of names not appearing in the __all__."
-                % len(notinall_violations))
-            sorted_violations = sorted(
-                notinall_violations,
-                key=attrsgetter('name', 'attrname', 'import_into'))
-
-            for (name, attrname), sequence in itertools.groupby(
-                sorted_violations, attrsgetter('name', 'attrname')):
-                print "You should not import %s from %s:" % (attrname, name)
-                import_intos = sorted(
-                    set([error.import_into for error in sequence]))
-                for import_into in import_intos:
-                    print "   ", import_into
-
-atexit.register(report_naughty_imports)
-
-# Tell canonical.config to use the test config file, not launchpad.conf
+# Tell canonical.config to use the test config section in launchpad.conf
 from canonical.config import config
 config.setDefaultSection('testrunner')
 

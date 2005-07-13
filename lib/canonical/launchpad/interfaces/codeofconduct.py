@@ -78,16 +78,16 @@ class ISignedCodeOfConduct(Interface):
 
     displayname = Attribute("Fancy Title for CoC.")
 
-    # title is required for the Launchpad Page Layout main template
-    title = Attribute("Page title")
-
+    def sendAdvertisementEmail(subject, content):
+        """ Send Advertisement email to signature owner preferred address
+        containing arbitrary content and subject.
+        """
 
 # Interfaces for containers
 class ICodeOfConductSet(Interface):
     """Unsigned (original) Codes of Conduct container."""
 
-    # title is required for the Launchpad Page Layout main template
-    title = Attribute("Page title")
+    title = Attribute('Page Title propose')
 
     def __getitem__(version):
         """Get a original CoC Release by its version."""
@@ -99,8 +99,7 @@ class ICodeOfConductSet(Interface):
 class ISignedCodeOfConductSet(Interface):
     """A container for Signed CoC."""
 
-    # title is required for the Launchpad Page Layout main template
-    title = Attribute("Page title")
+    title = Attribute('Page Title propose')
 
     def __getitem__(id):
         """Get a Signed CoC by id."""
@@ -114,8 +113,10 @@ class ISignedCodeOfConductSet(Interface):
     def searchByDisplayname(displayname, searchfor=None):
         """Search SignedCoC by Owner.displayname"""
 
-    def searchByUser(user_id):
-        """Search SignedCoC by Owner.id"""
+    def searchByUser(user_id, active=True):
+        """Search SignedCoC by Owner.id, return only the active ones by
+        default.
+        """
 
     def modifySignature(sign_id, recipient, admincomment, state):
         """Modify a Signed CoC."""
@@ -123,10 +124,15 @@ class ISignedCodeOfConductSet(Interface):
     def acknowledgeSignature(user, recipient):
         """Acknowledge a paper submitted Signed CoC."""
 
+    def getLastAcceptedDate():
+        """Return a datetime object corresponding to the last accepted date
+        of Code of Conduct Signature.
+        """
 
 class ICodeOfConductConf(Interface):
     """Component to store the CoC Configuration."""
 
     path = Attribute("CoCs FS path")
     prefix = Attribute("CoC Title Prefix")
-    current = Attribute("Current CoC release")
+    currentrelease = Attribute("Current CoC release")
+    datereleased = Attribute("Date when Current CoC was released")

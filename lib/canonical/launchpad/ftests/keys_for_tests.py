@@ -9,6 +9,9 @@ Before they are used in tests they need to be imported, so that
 GpgHandlder knows about them.  import_public_test_keys() imports all
 public keys available, while import_public_key(email_addr) only imports
 the key associated with that specific email address.
+
+Secret keys are also imported into the local key ring, they are used for
+decrypt data in pagetests.
 """
 
 
@@ -27,7 +30,7 @@ def import_public_key(email_addr):
     personset = getUtility(IPersonSet)
 
     pubkey = open(os.path.join(gpgkeysdir, email_addr + '.pub')).read()
-    key = gpghandler.importPubKey(pubkey)               
+    key = gpghandler.importKey(pubkey)               
 
     person = personset.getByEmail(email_addr)
     for gpgkey in person.gpgkeys:
@@ -42,11 +45,21 @@ def import_public_key(email_addr):
         fingerprint=key.fingerprint,
         keysize=key.keysize,
         algorithm=GPGKeyAlgorithm.items[key.algorithm],
-        revoked=key.revoked)
+        active=(not key.revoked))
 
 def import_public_test_keys():
     """Imports all the public keys located in gpgkeysdir into the db."""
     for name in os.listdir(gpgkeysdir):
         if name.endswith('.pub'):
             import_public_key(name[:-4])
+
+def import_secret_test_key():
+    """Imports the secret key located in gpgkeysdir into local keyring."""
+    gpghandler = getUtility(IGpgHandler)
+
+    seckey = open(os.path.join(gpgkeysdir, 'test@canonical.com.sec')).read()
+    gpghandler.importKey(seckey)               
+            
+
+
 

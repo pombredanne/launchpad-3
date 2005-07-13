@@ -3,20 +3,17 @@
 __metaclass__ = type
 __all__ = ['Branch', 'CategoryMapper', 'BranchMapper', 'VersionMapper']
 
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-from sqlobject import StringCol, ForeignKey, MultipleJoin
-
-from canonical.launchpad.interfaces import \
-    ArchiveNotRegistered, VersionNotRegistered, VersionAlreadyRegistered, \
-    BranchAlreadyRegistered, CategoryAlreadyRegistered
+import pybaz
 
 from zope.interface import implements
-from canonical.launchpad.interfaces import IBranch
+from sqlobject import StringCol, ForeignKey, MultipleJoin
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
-from canonical.launchpad.database.archarchive import \
-        ArchiveMapper, ArchNamespace, ArchArchive
-
-import pybaz
+from canonical.launchpad.interfaces import (
+    ArchiveNotRegistered, VersionNotRegistered, VersionAlreadyRegistered,
+    BranchAlreadyRegistered, CategoryAlreadyRegistered, IBranch)
+from canonical.launchpad.database.archarchive import (
+    ArchiveMapper, ArchNamespace, ArchArchive)
 
 
 class Branch(SQLBase):
@@ -67,15 +64,6 @@ class Branch(SQLBase):
 
 class CategoryMapper:
     """Map categories to and from the database."""
-    def findByName(self, name):
-        count = Category.select('category = ' + quote(name)).count()
-        from canonical.arch import broker
-        if count == 0:
-            return broker.MissingCategory(name)
-        if count == 1:
-            return broker.Category(name)
-        else:
-            raise RuntimeError, "Name %r found %d results" % (name, count)
 
     def insert(self, category):
         """Insert a category into the database."""
@@ -101,15 +89,6 @@ class CategoryMapper:
 
 class BranchMapper:
     """Map branch to and from the database"""
-    def findByName(self, name):
-        count = Branch.select('branch = ' + quote(name)).count()
-        from canonical.arch import broker
-        if count == 0:
-            return broker.MissingBranch(name)
-        if count == 1:
-            return broker.Branch(name)
-        else:
-            raise RuntimeError, "Name %r found %d results" % (name, count)
 
     def insert(self, branch):
         """insert a branch into the database"""
@@ -144,29 +123,21 @@ class BranchMapper:
 
 class VersionMapper:
     """Map versions to and from the database"""
+
     def findByName(self, name):
-        #print name
         parser = pybaz.NameParser(name)
-        archive = ArchArchive.selectOne(
-            'name = ' + quote(parser.get_archive()))
-        if archive is None:
-            return broker.MissingVersion(name)
+        archive = ArchArchive.selectOneBy(name= parser.get_archive())
+        assert archive is not None
         id = archive.id
         version = ArchNamespace.selectOneBy(
             archiveID=id, category=parser.get_category(),
             branch=parser.get_branch(), version=parser.get_version()
             )
-        from canonical.arch import broker
-        if version is None:
-            return broker.MissingVersion(name)
-        else:
-            # migration code to allow access to the real Version 
-            # and yes, this should be tidied - by moving all to native
-            # sqlobject.
-            result = Branch.selectOneBy(archnamespaceID=version.id)
-            if result is None:
-                raise VersionNotRegistered(version.fullname)
-            return result
+        assert version is not None
+        branch = Branch.selectOneBy(archnamespaceID=version.id)
+        if branch is None:
+            raise VersionNotRegistered(version.fullname)
+        return branch
 
     def insert(self, version):
         """insert a version into the database"""
@@ -199,19 +170,20 @@ class VersionMapper:
             an.destroySelf()
         return result
 
-    def findVersionQuery(self, version):
-        id = ArchiveMapper()._getId(version.branch.category.archive)
-        return ("archarchive = %s AND category = %s AND branch = %s "
-                 "AND version = %s" 
-                 % sqlvalues(id, version.branch.category.nonarch,
-                             version.branch.name, version.name))
-
     def exists(self, version):
-        return bool(
-            ArchNamespace.select(self.findVersionQuery(version)).count())
+        try:
+            unused = self._getId(version)
+            return True
+        except VersionNotRegistered:
+            return False
 
     def _getId(self, version):
-        result = ArchNamespace.selectOne(self.findVersionQuery(version))
+        archiveID = ArchiveMapper()._getId(version.branch.category.archive)
+        result = ArchNamespace.selectOneBy(
+            archiveID=archiveID,
+            category=version.branch.category.nonarch,
+            branch=version.branch.name,
+            version=version.name)
         if result is None:
             raise VersionNotRegistered(version.fullname)
         else:

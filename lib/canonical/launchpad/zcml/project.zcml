@@ -247,4 +247,11 @@
             lp:url="Rosetta/projects/+request" />
     </browser:pages>
 
+    <securedutility
+        class="canonical.launchpad.database.ProjectBugTrackerSet"
+        provides="canonical.launchpad.interfaces.IProjectBugTrackerSet">
+        <allow interface="canonical.launchpad.interfaces.IProjectBugTrackerSet"
+            />
+    </securedutility>
+
 </configure>

@@ -42,7 +42,9 @@ class IBuilder(Interface):
     owner = Attribute("The Builder Owner")
     builderok = Attribute("Whether or not the builder is ok")
     failnotes = Attribute("The reason for a builder not being ok")
-    trusted = Attribute("Whether not the builder is trusted to build packages under security embargo.")
+    trusted = Attribute("Whether not the builder is trusted to build packages "
+                        "under security embargo.")
+    slave = Attribute("XMLRPC Server instance for builder slave")
 
 class IBuildSet(Interface):
     """Interface for BuildSet"""
@@ -57,3 +59,5 @@ class IBuildQueue(Interface):
     buildstart = Attribute("The datetime of the last build attempt")
     logtail = Attribute("The current tail of the log of the build")
 
+    def destroySelf():
+        """Delete this entry from the database."""

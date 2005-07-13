@@ -21,7 +21,7 @@
         just a single paragraph of text really, giving a summary of
         this release highlights.
     </div>
-    <div tal:content="context/description">
+    <div tal:content="structure context/description/fmt:text-to-html">
         $ProductRelease.description goes here. This is longer, like the
         product release notes.
     </div>
