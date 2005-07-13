@@ -21,13 +21,11 @@
               </small>
             </li>
           </ul>
+          <br />
 
-        </div>
-
-        <div class="portletContent even">
-            <img src="/++resource++add.gif" alt="Add">
-            <a href="#" tal:attributes="href
-            string:$bug_url/watches/+new">Add bug watch</a>
+          <img src="/++resource++add.gif" alt="Add">
+          <a href="#" tal:attributes="href
+          string:$bug_url/watches/+new">Add bug watch</a>
         </div>
     </div>
 
