@@ -153,11 +153,11 @@ def logger_options(parser, default=logging.INFO):
             help="Decrease verbosity. May be specified multiple times."
             )
 
-def logger(options=None, name=None):
+def logger(options, name=None):
     """Return a logging instance with standard setup.
 
-    If options is not passed, the command line is parsed for the standard
-    options specified by logger_options().
+    options should be the options as returned by an option parser that
+    has been initilized with logger_options(parser)
 
     >>> from optparse import OptionParser
     >>> parser = OptionParser()
@@ -166,11 +166,6 @@ def logger(options=None, name=None):
     >>> log = logger(options)
     >>> log.debug("Not shown - I'm too quiet")
     """
-    if options is None:
-        parser = OptionParser()
-        logger_options(parser)
-        options, args = parser.parse_args()
-
     if name is None:
         # Determine the logger name from the script name
         name = sys.argv[0]
