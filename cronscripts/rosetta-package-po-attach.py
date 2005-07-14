@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
+import _pythonpath
+
 import sys
 from optparse import OptionParser
 
@@ -33,6 +35,7 @@ def parse_options(args):
 
     return options
 
+
 def main(argv):
     options = parse_options(argv[1:])
 
@@ -47,24 +50,18 @@ def main(argv):
                     options.lockfilename)
         return 0
 
-    # Setup zcml machinery to be able to use getUtility
-    execute_zcml_for_scripts()
-    ztm = initZopeless()
-    urlopener = URLOpener()
-
-    # Bare except clause: so that the lockfile is reliably deleted.
-
     try:
-        attach(urlopener, options.archive_uri, ztm, logger_object)
-    except:
-        # Release the lock for the next invocation.
-        logger_object.error('An unexpected exception ocurred', exc_info=1)
-        lockfile.release()
-        return 1
+        # Setup zcml machinery to be able to use getUtility
+        execute_zcml_for_scripts()
+        ztm = initZopeless()
+        urlopener = URLOpener()
 
-    # Release the lock for the next invocation.
-    lockfile.release()
-    return 0
+        attach(urlopener, options.archive_uri, ztm, logger_object)
+        return 0
+    finally:
+        # Release the lock for the next invocation.
+        lockfile.release()
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

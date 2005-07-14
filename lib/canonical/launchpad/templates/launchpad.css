@@ -929,6 +929,21 @@ input {
 }
 
 /*
+  Sortable tables
+*/
+
+table.sortable a.sortheader {
+    color:#666666;
+    font-weight: bold;
+    text-decoration: none;
+    display: block;
+}
+
+table.sortable img.sortarrow {
+    padding-left: 2px;
+}
+
+/*
 Calendar stuff.
 */
 .cal-navigation {

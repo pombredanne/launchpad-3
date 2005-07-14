@@ -181,9 +181,8 @@ An IDistroBugTask.
 
 An IDistroReleaseBugTask.
 
-    XXX: Brad Bollenbach, 2005-06-17: needs sample data (which could
-    cause test breakage, thus might take a bit of time, etc.)
-    XXX canonical_url(getUtility(IBugTaskSet).get())
+    >>> canonical_url(getUtility(IBugTaskSet).get(16))
+    u'http://localhost:8086/distros/ubuntu/warty/+bugs/6'
 
 An IBugSubset.
 
