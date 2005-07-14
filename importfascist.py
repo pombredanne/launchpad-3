@@ -26,12 +26,8 @@ permitted_database_imports = text_lines_to_set("""
 
 warned_database_imports = text_lines_to_set("""
     canonical.launchpad.browser.traversers
-    canonical.launchpad.mail.commands
-    canonical.launchpad.mailnotification
     canonical.launchpad.scripts.builddmaster
     canonical.launchpad.scripts.rosetta
-    canonical.launchpad.subscribers.bugactivity
-    canonical.launchpad.subscribers.bugprivacy
     canonical.launchpad.systemhomes
     canonical.rosetta
     """)
