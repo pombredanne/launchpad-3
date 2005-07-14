@@ -75,7 +75,7 @@ h3 {
 }
 
 label {
-  font-weight: bold;    
+  font-weight: bold;
 }
 
 
@@ -340,7 +340,7 @@ tr.rowLinkified a {
 }
 
 .boardCommentPortrait {
-  float: right; 
+  float: right;
   margin-bottom: 1em;
 }
 
@@ -900,9 +900,9 @@ input {
 }
 /* this lines up text inputs so they don't look a mess */
 .textinput {
-  position: absolute; 
+  position: absolute;
   left: 250px;
-} 
+}
 /* radios had 1px left and right borders - don't know if intended
   but looked shit imo */
 .radios {
