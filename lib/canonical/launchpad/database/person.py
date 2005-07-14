@@ -45,8 +45,6 @@ from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.karma import KarmaCache, KarmaAction, Karma
 
-from canonical.launchpad.validators.name import valid_name
-
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
     TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType)
@@ -495,23 +493,6 @@ class Person(SQLBase):
         else:
             email.status = EmailAddressStatus.VALIDATED
 
-    def validateAndEnsurePreferredEmail(self, email):
-        """See IPerson."""
-        if not IEmailAddress.providedBy(email):
-            raise TypeError, (
-                "Any person's email address must provide the IEmailAddress "
-                "interface. %s doesn't." % email)
-        assert email.person == self
-        assert self.preferredemail != email
-
-        if self.preferredemail is None:
-            # This branch will be executed only in the first time a person
-            # uses Launchpad. Either when creating a new account or when
-            # resetting the password of an automatically created one.
-            self.preferredemail = email
-        else:
-            email.status = EmailAddressStatus.VALIDATED
-
     def _setPreferredemail(self, email):
         """See IPerson."""
         if not IEmailAddress.providedBy(email):
@@ -743,19 +724,15 @@ class PersonSet:
                             email, displayname=displayname)
         return person
 
-    def getByName(self, name, default=None):
+    def getByName(self, name, default=None, ignore_merged=True):
         """See IPersonSet."""
-        query = AND(Person.q.name==name, Person.q.mergedID==None)
+        query = Person.q.name==name
+        if ignore_merged:
+            query = AND(query, Person.q.mergedID==None)
         person = Person.selectOne(query)
         if person is None:
             return default
         return person
-
-    def nameIsValidForInsertion(self, name):
-        if not valid_name(name) or self.getByName(name) is not None:
-            return False
-        else:
-            return True
 
     def peopleCount(self):
         return self.getAllPersons().count()

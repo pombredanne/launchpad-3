@@ -183,15 +183,16 @@ class _ZopelessConnectionDescriptor(object):
         return self.transactions.get(thread.get_ident(), None)
 
     def __set__(self, inst, value):
-        '''Do nothing
+        """Do nothing
         
         This used to issue a warning but it seems to be spurious.
 
-        '''
+        """
         pass
         #import warnings
         #warnings.warn("Something tried to set a _connection.  Ignored.")
 
+    @classmethod
     def install(cls, connectionURI, sqlClass=SQLBase, debug=False,
                 implicitActivate=True, reconnect=False):
         if isinstance(sqlClass.__dict__.get('_connection'),
@@ -204,8 +205,8 @@ class _ZopelessConnectionDescriptor(object):
                          implicitActivate=implicitActivate, reconnect=reconnect)
         sqlClass._connection = descriptor
         return descriptor
-    install = classmethod(install)
 
+    @classmethod
     def uninstall(cls):
         # Explicitly close all connections we opened.
         descriptor = cls.sqlClass.__dict__.get('_connection')
@@ -220,7 +221,6 @@ class _ZopelessConnectionDescriptor(object):
         # _connection in this particular class to start with (which is true for
         # SQLBase, but wouldn't be true for SQLOS)
         del cls.sqlClass._connection
-    uninstall = classmethod(uninstall)
         
 
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
@@ -513,29 +513,19 @@ def flush_database_updates():
 
 
 # Some helpers intended for use with initZopeless.  These allow you to avoid
-# passing the transaction manager all through your code.  Also, this begin()
-# does an implicit rollback() for convenience. 
+# passing the transaction manager all through your code. 
 # XXX: Make these use and work with Zope 3's transaction machinery instead!
 #        - Andrew Bennetts, 2005-02-11
 
 def begin():
-    """Begins a transaction, aborting the current one if necessary."""
-    transaction = SQLBase._connection
-    if transaction is None:
-        ZopelessTransactionManager._installed.begin()
-        return
-    if not transaction._obsolete:
-        # XXX: This perhaps should raise a warning?
-        #        - Andrew Bennetts, 2005-02-11
-        transaction.rollback()
-    _clearCache()
-    transaction.begin()
+    """Begins a transaction."""
+    ZopelessTransactionManager._installed.begin()
 
 def rollback():
-    SQLBase._connection.rollback()
+    ZopelessTransactionManager._installed.abort()
 
 def commit():
-    SQLBase._connection.commit()
+    ZopelessTransactionManager._installed.commit()
 
 def connect(user, dbname=None):
     """Return a fresh DB-API connecction to the database.
@@ -561,12 +551,59 @@ def cursor():
     return SQLBase._connection._connection.cursor()
     
 
+class FakeZopelessTransactionManager:
+    # XXX: There really should be a formal interface that both this and
+    # ZopelessTransactionManager implement.
+    #   -- Andrew Bennetts, 2005-07-12
+
+    def __init__(self, implicitBegin=False):
+        assert ZopelessTransactionManager._installed is None
+        ZopelessTransactionManager._installed = self
+        self.desc = FakeZopelessConnectionDescriptor.install(None)
+        self.implicitBegin = implicitBegin
+        if self.implicitBegin:
+            self.begin()
+    
+    @classmethod
+    def install(cls):
+        fztm = cls()
+        ZopelessTransactionManager._installed = fztm
+        FakeZopelessConnectionDescriptor.install(None)
+        return fztm
+
+    def uninstall(self):
+        assert ZopelessTransactionManager._installed is self
+        FakeZopelessConnectionDescriptor.uninstall()
+        ZopelessTransactionManager._installed = None
+
+    # XXX: Ideally I'd be able to re-use some of the ZopelessTransactionManager
+    #      implementation of begin, commit and abort.
+    #   -- Andrew Bennetts, 2005-07-12
+    def begin(self):
+        if not self.implicitBegin:
+            self.desc._activate()
+        self.desc.begin()
+        
+    def commit(self, sub=False):
+        self.desc.commit()
+        self.desc._deactivate()
+        if self.implicitBegin:
+            self.begin()
+
+    def abort(self, sub=False):
+        self.desc.rollback()
+        self.desc._deactivate()
+        if self.implicitBegin:
+            self.begin()
+
+
 class FakeZopelessConnectionDescriptor(_ZopelessConnectionDescriptor):
     """A helper class for testing.
     
     Use this if you want to know if commit or rollback was called.
     """
     _obsolete = True
+    activated = False
     begun = False
     rolledback = False
     committed = False
@@ -574,13 +611,24 @@ class FakeZopelessConnectionDescriptor(_ZopelessConnectionDescriptor):
     def __get__(self, inst, cls=None):
         return self
 
+    def _activate(self):
+        assert not self.activated
+        self.activated = True
+
+    def _deactivate(self):
+        assert self.activated
+        self.activated = False
+
     def begin(self):
+        assert self.activated
         self.begun = True
 
     def rollback(self):
+        assert self.activated
         self.rolledback = True
 
     def commit(self):
+        assert self.activated
         self.committed = True
 
 

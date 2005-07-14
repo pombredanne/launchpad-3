@@ -197,9 +197,8 @@
       for="canonical.launchpad.interfaces.ITeam"
       class="canonical.launchpad.browser.TeamEditView"
       schema="canonical.launchpad.interfaces.ITeam"
-      fields="displayname teamdescription defaultmembershipperiod 
+      fields="name displayname teamdescription defaultmembershipperiod 
               defaultrenewalperiod subscriptionpolicy"
-      label="Edit Team Information"
       permission="launchpad.Edit"
       template="../templates/team-edit.pt"
       lp:url="/people/$person.id/+edit">
@@ -263,7 +262,6 @@
       name="+newteam"
       for="canonical.launchpad.interfaces.IPersonSet"
       schema="canonical.launchpad.browser.ITeamCreation"
-      label="Create a new Team"
       fields="name displayname contactemail teamdescription 
               defaultmembershipperiod defaultrenewalperiod subscriptionpolicy"
       class="canonical.launchpad.browser.TeamAddView"

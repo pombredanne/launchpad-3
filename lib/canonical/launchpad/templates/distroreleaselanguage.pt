@@ -22,13 +22,15 @@
     Select a template name to begin translating immediately!
   </p>
 
-  <table class="listing" width="100%">
+  <table class="listing sortable" width="100%" id="translationstatuses">
     <thead>
-      <th>Source</th>
-      <th>Template Name</th>
-      <th>Status</th>
-      <th>Last Edited</th>
-      <th>By</th>
+      <tr>
+        <th>Source</th>
+        <th>Template Name</th>
+        <th>Status</th>
+        <th>Last Edited</th>
+        <th>By</th>
+      </tr>
     </thead>
     <tbody>
       <tr tal:repeat="pf context/pofiles">
@@ -40,6 +42,8 @@
           </a>
         </td>
         <td>
+          <!-- this content is used for the purpose of sorting -->
+          <span style="display: none" tal:content="pf/translatedPercentage"/>
           <div tal:replace="structure pf/@@+barchart" />
         </td>
         <td>
