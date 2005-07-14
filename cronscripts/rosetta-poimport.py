@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
+import _pythonpath
+
 import sys
 
 from optparse import OptionParser
@@ -45,27 +47,20 @@ def main(argv):
                            options.lockfilename)
         return 0
 
-    # Setup zcml machinery to be able to use getUtility
-    execute_zcml_for_scripts()
-    ztm = initZopeless()
-
-    # Bare except clause: so that the lockfile is reliably deleted.
-
     try:
+        # Setup zcml machinery to be able to use getUtility
+        execute_zcml_for_scripts()
+        ztm = initZopeless()
+
         # Do the import of all pending files from the queue.
         process = ImportProcess(ztm, logger_object)
         logger_object.debug('Starting the import process')
         process.run()
         logger_object.debug('Finished the import process')
-    except:
-        # Release the lock for the next invocation.
-        logger_object.error('An unexpected exception ocurred', exc_info = 1)
+        return 0
+    finally:
         lockfile.release()
-        return 1
 
-    # Release the lock for the next invocation.
-    lockfile.release()
-    return 0
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
