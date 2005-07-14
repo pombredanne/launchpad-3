@@ -33,7 +33,7 @@ examples that follow:
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     IBugDelta, IBugSet, IPersonSet, IBugMessageSet, IBugTaskSet)
-    >>> from canonical.launchpad.database.bug import BugDelta
+    >>> from canonical.launchpad.components.bug import BugDelta
 
 Filing a bug
 ------------
@@ -204,7 +204,7 @@ As you might expect, generate_bug_edit_email handles generating the
 bugmail when a bug task is edited.
 
     >>> from canonical.launchpad.interfaces import IBugTaskDelta, IBugTaskSet
-    >>> from canonical.launchpad.database.bugtask import BugTaskDelta
+    >>> from canonical.launchpad.components.bugtask import BugTaskDelta
     >>> from canonical.lp.dbschema import BugTaskStatus
 
     >>> edited_bugtask = getUtility(IBugTaskSet).get(3)

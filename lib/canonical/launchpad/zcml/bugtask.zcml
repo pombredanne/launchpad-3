@@ -296,7 +296,7 @@
     </browser:pages>
 
     <!-- BugTaskDelta -->
-    <content class="canonical.launchpad.database.BugTaskDelta">
+    <content class="canonical.launchpad.components.bugtask.BugTaskDelta">
         <allow interface="canonical.launchpad.interfaces.IBugTaskDelta" />
     </content>
 

@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'IBugActivity',
+    'IBugActivitySet',
     ]
 
 from zope.i18nmessageid import MessageIDFactory
@@ -25,3 +26,10 @@ class IBugActivity(Interface):
     newvalue = TextLine(title=_('New Value'))
     message = Text(title=_('Message'))
 
+
+class IBugActivitySet(Interface):
+    """The set of all bug activities."""
+
+    def new(bug, datechanged, person, whatchanged,
+            oldvalue=None, newvalue=None, message=None):
+        """Creates a new log of what happened to a bug and returns it."""

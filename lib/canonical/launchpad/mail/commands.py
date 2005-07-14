@@ -13,7 +13,6 @@ from canonical.config import config
 from canonical.launchpad.helpers import Snapshot, get_attribute_names
 from canonical.launchpad.pathlookup import get_object
 from canonical.launchpad.pathlookup.exceptions import PathStepNotFoundError
-from canonical.launchpad.database import BugMessage, BugFactory
 from canonical.launchpad.interfaces import (
         IProduct, IDistribution, IPersonSet, ISourcePackage, IBugEmailCommand,
         IBugEditEmailCommand, IEmailCommand, IBugSet, ILaunchBag, IBugTaskSet)
@@ -77,14 +76,15 @@ class BugEmailCommand(EmailCommand):
         bugid = self.string_args[0] 
 
         if bugid == 'new':
-            bug = BugFactory(msg=message,
-                             title=message.title,
-                             owner=getUtility(ILaunchBag).user)
+            bug = getUtility(IBugSet).createBug(
+                msg=message,
+                title=message.title,
+                owner=getUtility(ILaunchBag).user)
             return bug, SQLObjectCreatedEvent(bug)
         else:
             bugid = int(bugid)
             bug = getUtility(IBugSet).get(bugid)
-            bug_message = BugMessage(bug=bug, message=message)
+            bug.linkMessage(message)
             return bug, None
     
 
