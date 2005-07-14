@@ -229,7 +229,7 @@
         />
 
     <!-- BugDelta -->
-    <content class="canonical.launchpad.database.bug.BugDelta">
+    <content class="canonical.launchpad.components.bug.BugDelta">
         <allow interface="canonical.launchpad.interfaces.IBugDelta" />
     </content>
 </configure>

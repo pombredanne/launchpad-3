@@ -6,12 +6,12 @@
         <div class="portletContent even">
 
             <b>Release:</b><br />
-            <a tal:attributes="href string:/distros/${context/distribution/name}/${context/name}/">
+            <a tal:attributes="href context/fmt:url">
             <span tal:replace="context/displayname" /></a><br />
 
             <b>Admin:</b><br />
             <img src="/++resource++user.gif">
-            <a tal:attributes="href string:/people/${context/owner/name}"
+            <a tal:attributes="href context/owner/fmt:url"
                tal:content="context/owner/browsername">owner name</a><br />
 
             <b>Status:</b><br />
@@ -28,8 +28,7 @@
 
             <span tal:condition="context/parentrelease" tal:omit-tag>
               <b>Derives from:</b><br />
-              <a tal:attributes="href
-              string:/distros/${context/parentrelease/distribution/name}/${context/parentrelease/name}">
+              <a tal:attributes="href context/parentrelease/fmt:url">
               <span tal:replace="context/parentrelease/distribution/name" />
               <span tal:replace="context/parentrelease/name" /></a>
             </span>
@@ -41,8 +40,7 @@
                   <li tal:repeat="arch context/architectures"
                     class="architecture"
                   ><a tal:content="arch/architecturetag"
-                    tal:attributes="href
-string:/distros/${context/distribution/name}/${context/name}/${arch/architecturetag}"
+                    tal:attributes="href arch/fmt:url"
                   /></li>
                 </ul>
             </span>

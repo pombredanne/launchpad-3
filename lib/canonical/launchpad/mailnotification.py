@@ -17,7 +17,8 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBugTaskSet, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
 from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.database import BugDelta, BugTaskDelta
+from canonical.launchpad.components.bug import BugDelta
+from canonical.launchpad.components.bugtask import BugTaskDelta
 from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.launchpad.webapp import canonical_url
 

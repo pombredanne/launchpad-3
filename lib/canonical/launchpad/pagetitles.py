@@ -402,6 +402,8 @@ person_reportedbugs = ContextDisplayName('Bugs Reported By %s')
 
 person_sshkey = ContextDisplayName('%s SSH Keys')
 
+person_timezone = ContextDisplayName('Time Zone for %s')
+
 person_translations = ContextDisplayName('Translations Made By %s')
 
 # plone.css is a css file

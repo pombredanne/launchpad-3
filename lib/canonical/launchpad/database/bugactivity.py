@@ -1,13 +1,13 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BugActivity']
+__all__ = ['BugActivity', 'BugActivitySet']
 
 from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, StringCol
 
-from canonical.launchpad.interfaces import IBugActivity
+from canonical.launchpad.interfaces import IBugActivity, IBugActivitySet
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -26,3 +26,16 @@ class BugActivity(SQLBase):
     newvalue = StringCol(default=None)
     message = StringCol(default=None)
 
+
+class BugActivitySet:
+    """See IBugActivitySet."""
+    
+    implements(IBugActivitySet)
+
+    def new(self, bug, datechanged, person, whatchanged,
+            oldvalue=None, newvalue=None, message=None):
+        """See IBugActivitySet."""
+        return BugActivity(
+            bug=bug, datechanged=datechanged, person=person,
+            whatchanged=whatchanged, oldvalue=oldvalue, newvalue=newvalue,
+            message=message)

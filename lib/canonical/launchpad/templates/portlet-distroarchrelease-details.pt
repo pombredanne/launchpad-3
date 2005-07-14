@@ -6,7 +6,7 @@
         <div class="portletContent even">
 
             <b>Architecture Tag:</b><br />
-            <a tal:attributes="href string:/distros/${context/distrorelease/distribution/name}/${context/distrorelease/name}/${context/architecturetag}"
+            <a tal:attributes="href context/fmt:url"
                tal:content="context/architecturetag" >
             ARCHTAG
             </a><br />
@@ -16,7 +16,7 @@
 
             <b>Porting Lead:</b><br />
             <img src="/++resource++user.gif">
-            <a tal:attributes="href string:/people/${context/owner/name}"
+            <a tal:attributes="href context/owner/fmt:url"
                tal:content="context/owner/browsername">owner name</a><br /> 
 
         </div>

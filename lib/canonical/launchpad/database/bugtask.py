@@ -1,8 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BugTask', 'BugTaskSet', 'BugTaskDelta', 'mark_task',
-           'BugTaskFactory', 'BugTasksReport']
+__all__ = ['BugTask', 'BugTaskSet', 'BugTaskFactory', 'BugTasksReport']
 
 from sets import Set
 
@@ -16,7 +15,7 @@ from zope.interface import implements, directlyProvides, directlyProvidedBy
 from canonical.lp.dbschema import (EnumCol, BugPriority, BugTaskStatus,
     BugSeverity, BugSubscription)
 
-from canonical.launchpad.interfaces import IBugTask, IBugTaskDelta
+from canonical.launchpad.interfaces import IBugTask
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import nowUTC
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -461,25 +460,6 @@ class BugTaskSet:
         person2Tasks = self.assignedBugTasks(person2, user=user)
         return person1Tasks.intersect(person2Tasks, orderBy=orderBy)
 
-
-class BugTaskDelta:
-    """See canonical.launchpad.interfaces.IBugTaskDelta."""
-    implements(IBugTaskDelta)
-    def __init__(self, bugtask, product=None, sourcepackagename=None,
-                 binarypackagename=None, status=None, severity=None,
-                 priority=None, assignee=None, milestone=None,
-                 statusexplanation=None, bugwatch=None):
-        self.bugtask = bugtask
-        self.product = product
-        self.sourcepackagename = sourcepackagename
-        self.binarypackagename = binarypackagename
-        self.status = status
-        self.severity = severity
-        self.priority = priority
-        self.assignee = assignee
-        self.target = milestone
-        self.statusexplanation = statusexplanation
-        self.bugwatch = bugwatch
 
 def mark_task(obj, iface):
     directlyProvides(obj, iface + directlyProvidedBy(obj))
