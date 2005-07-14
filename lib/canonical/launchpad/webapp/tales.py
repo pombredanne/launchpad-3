@@ -17,9 +17,11 @@ from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.app.traversing.interfaces import ITraversable
 from zope.exceptions import NotFoundError
+from zope.security.interfaces import Unauthorized
 from canonical.launchpad.interfaces import (
     IPerson, ILaunchBag, IFacetMenu, IExtraFacetMenu,
-    IApplicationMenu, IExtraApplicationMenu, NoCanonicalUrl)
+    IApplicationMenu, IExtraApplicationMenu, NoCanonicalUrl,
+    IBugSet)
 import canonical.lp.dbschema
 from canonical.lp import decorates
 import canonical.launchpad.pagetitles
@@ -423,7 +425,7 @@ class FormattersAPI:
         return cgi.escape(self._stringtoformat).replace('\n','<br />\n')
 
     @staticmethod
-    def _substitute_matchgroup_for_spaces(matchobj):
+    def _substitute_matchgroup_for_spaces(match):
         """Return a string made up of '&nbsp;' for each character in the
         first match group.
 
@@ -431,9 +433,49 @@ class FormattersAPI:
 
         There must be only one match group.
         """
-        groups = matchobj.groups()
+        groups = match.groups()
         assert len(groups) == 1
         return '&nbsp;' * len(groups[0])
+
+    @staticmethod
+    def _linkify_substitution(match):
+        if match.group('bug') is not None:
+            bugnum = match.group('bugnum')
+            # Use a hardcoded url so we still have a link for bugs that don't
+            # exist, or are private.
+            # XXX SteveAlexander 2005-07-14, I can't get a canonical_url for
+            #     a private bug.  I should be able to do so.
+            url = '/malone/bugs/%s' % bugnum
+            # The text will have already been cgi escaped.
+            text = match.group('bug')
+            bugset = getUtility(IBugSet)
+            try:
+                bug = bugset.get(bugnum)
+            except NotFoundError:
+                title = "No such bug"
+            else:
+                try:
+                    title = bug.title
+                except Unauthorized:
+                    title = "private bug"
+            title = cgi.escape(title, quote=True)
+            return '<a href="%s" title="%s">%s</a>' % (url, title, text)
+        elif match.group('url') is not None:
+            # The text will already have been cgi escaped.
+            # We still need to escape quotes for the url.
+            url = match.group('url')
+            # The url might end in a spurious &gt;.  If so, remove it
+            # and put it outside the url text.
+            if url.lower().endswith('&gt;'):
+                gt = url[-4:]
+                url = url[:-4]
+            else:
+                gt = ''
+                url = url
+            return '<a rel="nofollow" href="%s">%s</a>%s' % (
+                url.replace('"', '&quot;'), url, gt)
+        else:
+            raise AssertionError("Unknown pattern matched.")
 
     # Match <, >, & when they've been html-escaped, so that we can replace
     # them with a single character to get the correct length of a line.
@@ -450,7 +492,8 @@ class FormattersAPI:
     # some data we want with no newlines or '<', then a look-ahead of
     # a pair or newlines, or a single newline and the end of the string,
     # or the end of the string, or a <div>.
-    _re3 = re.compile('(\n\n|^\n|^|</div>)([^\n<]+)(?=\n\n|\n$|$|<div>)')
+    _re3 = re.compile(
+        '(\n\n|^\n|^|</div>|</div>\n)([^\n<]+)(?=\n\n|\n$|$|<div>)')
 
     # See if the output looks like a single div containing just text.
     _re4 = re.compile('^<div>([^<>]*)</div>$')
@@ -470,6 +513,19 @@ class FormattersAPI:
     # A <p> with any newlines after it, so we can ensure there's exactly
     # one newline after a paragraph.
     _re8 = re.compile('</p>\n*')
+
+    # Match urls or bugs.
+    _re_linkify = re.compile(r'''
+      (?P<url>
+        (?:about|gopher|http|https|ftp|mailto|file|irc|jabber):[/]*
+        (?P<host>[a-zA-Z0-9:@_\-\.]+)
+        (?P<urlchars>[a-zA-Z0-9/:;@_%~#=&\.\-\?\+\$,]*)
+      ) |
+      (?P<bug>
+        bug\s+(?:\#|number\.?|num\.?|no\.?)?\s*
+        0*(?P<bugnum>\d+)
+      )
+    ''', re.IGNORECASE | re.VERBOSE)
 
     def text_to_html(self):
         """Quote text according to DisplayingParagraphsOfText."""
@@ -532,7 +588,7 @@ class FormattersAPI:
         #   - end with multiple newlines or the end of the entire text,
         #     or where the following line now starts with <div>.
 
-        text = self._re3.sub(r'<p>\2</p>', text)
+        text = self._re3.sub(r'\1<p>\2</p>', text)
 
         # Need to move the <parastartmarker> and <paraendmarker> now.
         text = text.replace('<parastartmarker>', '')
@@ -551,6 +607,10 @@ class FormattersAPI:
         text = self._re7.sub('</div>\n', text)
         text = self._re8.sub('</p>\n', text)
         text = text.rstrip()
+
+        # Linkify the text.
+        text = self._re_linkify.sub(self._linkify_substitution, text)
+
         return text
 
     def nice_pre(self):
