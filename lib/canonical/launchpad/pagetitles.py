@@ -201,7 +201,7 @@ default_editform = 'Default "Edit" Page'
 
 default_error = 'System Error'
 
-distribution_bugs = ContextTitle('Release %s: Bugs')
+distribution_members = ContextTitle('Members of the %s distribution')
 
 distro_add = 'Adding New Distribution'
 
@@ -303,6 +303,10 @@ foaf_validateteamemail = 'Validate email address'
 
 foaf_validategpg = 'Validate GPG Key'
 
+karmaaction_index = 'Karma Actions'
+
+karmaaction_edit = 'Edit Karma Action'
+
 # launchpad_debug doesn't need a title.
 
 def launchpad_addform(context, view):
@@ -365,6 +369,8 @@ notfound = 'Launchpad Page Not Found'
 
 object_potemplatenames = ContextDisplayName('Template names for %s')
 
+object_reassignment = ContextTitle('Reassign %s')
+
 def package_bugs(context, view):
     return 'Package Bug Listing for %s' % context.name
 
@@ -400,6 +406,8 @@ person_packages = ContextDisplayName('Packages Maintained By %s')
 
 person_reportedbugs = ContextDisplayName('Bugs Reported By %s')
 
+person_review = ContextDisplayName("Review %s' Information")
+
 person_sshkey = ContextDisplayName('%s SSH Keys')
 
 person_timezone = ContextDisplayName('Time Zone for %s')
@@ -409,6 +417,8 @@ person_translations = ContextDisplayName('Translations Made By %s')
 # plone.css is a css file
 
 pofile_edit = 'Rosetta: Edit PO file details'
+
+pofile_export = ContextTitle('%s file exports')
 
 def pofile_index(context, view):
     return 'Rosetta: %s: %s' % (
@@ -464,6 +474,8 @@ def productrelease_new(context, view):
 
 productseries_translations = ContextTitle(
     'Rosetta Translation Templates for %s')
+
+productseries_ubuntupkg = 'Ubuntu Source Package'
 
 products_index = 'Products in Launchpad'
 

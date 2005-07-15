@@ -412,7 +412,8 @@ class BugTaskSet:
                     (Bug.id in (
                         SELECT Bug.id FROM Bug, BugSubscription WHERE
                            (Bug.id = BugSubscription.bug) AND
-                           (BugSubscription.person = %(personid)s) AND
+                           (BugSubscription.person = TeamParticipation.team) AND
+                           (TeamParticipation.person = %(personid)s) AND
                            (BugSubscription.subscription IN
                                (%(cc)s, %(watch)s))))))'''
                 % sqlvalues(personid=user.id,
