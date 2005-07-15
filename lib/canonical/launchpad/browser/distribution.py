@@ -14,7 +14,6 @@ __all__ = [
 
 from zope.interface import implements
 from zope.component import getUtility
-from zope.app.traversing.browser.absoluteurl import absoluteURL
 from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
@@ -26,8 +25,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser import BugTaskSearchListingView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
-from canonical.launchpad.webapp import StandardLaunchpadFacets
-
+from canonical.launchpad.webapp import StandardLaunchpadFacets, canonical_url
 
 class DistributionFacets(StandardLaunchpadFacets):
     usedfor = IDistribution
@@ -80,7 +78,7 @@ class DistributionFileBugView(SQLObjectAddView):
         return bug
 
     def nextURL(self):
-        return absoluteURL(self.addedBug, self.request)
+        return canonical_url(self.addedBug, self.request)
 
 
 class DistributionSetView:

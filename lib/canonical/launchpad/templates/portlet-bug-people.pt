@@ -2,7 +2,7 @@
     <h4>Related People:</h4>
 
     <div class="portletBody"
-         tal:define="bug_url context/@@absolute_url">
+         tal:define="bug_url context/fmt:url">
         <div class="portletContent even"
              tal:define="subscriptions context/subscriptions;
                          bugtasks context/bugtasks">
@@ -28,8 +28,8 @@
     <h4>Bug Subscribers:</h4>
 
     <div class="portletBody"
-         tal:define="bug_url context/@@absolute_url">
-        
+         tal:define="bug_url context/fmt:url">
+
         <div class="portletContent even"
              tal:define="subscriptions context/subscriptions;
                          bugtasks context/bugtasks">

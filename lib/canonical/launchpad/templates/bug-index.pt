@@ -25,7 +25,7 @@
      style="margin-bottom: 1em">
     This bug is a duplicate of
     <a href="#"
-       tal:attributes="href context/duplicateof/@@absolute_url"
+       tal:attributes="href context/duplicateof/fmt:url"
        tal:content="string:bug #${context/duplicateof/id}">bug 42</a>
   </p>
 

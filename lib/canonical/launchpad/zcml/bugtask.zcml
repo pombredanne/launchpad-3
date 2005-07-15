@@ -19,51 +19,20 @@
         for="canonical.launchpad.interfaces.IBugTask"
         name="+edit" />
 
-    <!--
-    Brad Bollenbach, 2005-05-16:
-
-    Two views are currently required to be registered for handling the
-    absolute_url of an object: one that plays nicely with
-    zope.app.traversing.browser.absoluteurl.absoluteURL and one that
-    plays nicely with foo/@@absolute_url.
-
-    The former requires an unnamed view; the latter requires, of
-    course, a view named absolute_url.
-    -->
-    <view
-        for="canonical.launchpad.interfaces.IBugTask"
-        factory="canonical.launchpad.browser.bugtask.BugTaskAbsoluteURL"
-        type="zope.publisher.interfaces.http.IHTTPRequest"
-        permission="zope.Public"
-        provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
-    </view>
-
-    <view
-        name="absolute_url"
-        for="canonical.launchpad.interfaces.IBugTask"
-        factory="canonical.launchpad.browser.bugtask.BugTaskAbsoluteURL"
-        type="zope.publisher.interfaces.http.IHTTPRequest"
-        permission="zope.Public"
-        provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
-    </view>
-
     <browser:url
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         path_expression="string:+bugs/${bug/id}"
-        attribute_to_parent="product"
-        />
+        attribute_to_parent="product" />
 
     <browser:url
         for="canonical.launchpad.interfaces.IDistroBugTask"
         path_expression="string:+bugs/${bug/id}"
-        attribute_to_parent="distribution"
-        />
+        attribute_to_parent="distribution" />
 
     <browser:url
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         path_expression="string:+bugs/${bug/id}"
-        attribute_to_parent="distrorelease"
-        />
+        attribute_to_parent="distrorelease" />
 
     <!-- BugTaskSet -->
     <content class="canonical.launchpad.database.BugTaskSet">

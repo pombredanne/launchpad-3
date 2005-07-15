@@ -9,7 +9,6 @@ __all__ = [
     'BugTaskEditView',
     'BugTaskDisplayView',
     'BugTaskSearchListingView',
-    'BugTaskAbsoluteURL',
     'BugTaskAnorakSearchPageBegoneView',
     ]
 
@@ -558,28 +557,6 @@ class BugTaskSearchListingView:
         Return the IDistroRelease if yes, otherwise return None.
         """
         return IDistroRelease(self.context.context, None)
-
-
-class BugTaskAbsoluteURL(BrowserView):
-    """The view for an absolute URL of a bug task."""
-    def __str__(self):
-        urlpath = ""
-        task = self.context
-        if task.product is not None:
-            # This is an upstream task.
-            urlpath = "/products/%s/+bugs/" % task.product.name
-        elif task.distribution is not None:
-            # This is a distribution task.
-            urlpath = "/distros/%s/+bugs/" % task.distribution.name
-        elif task.distrorelease is not None:
-            # This is a distrorelease task.
-            urlpath = "/distros/%s/%s/+bugs/" % (
-                task.distrorelease.distribution.name,
-                task.distrorelease.name)
-
-        return "%s%s%d" % (
-            self.request.getApplicationURL(),
-            urlpath, task.bug.id)
 
 
 class BugTaskAnorakSearchPageBegoneView:

@@ -5,7 +5,6 @@ __metaclass__ = type
 __all__ = [
     'BugView',
     'BugSetView',
-    'BugAbsoluteURL',
     'BugEditView',
     'BugAddView',
     'BugAddingView',
@@ -40,14 +39,14 @@ class BugView:
 
 
 class BugSetView:
-    """The default view for /malone/bugs. 
+    """The default view for /malone/bugs.
 
     Essentially, this exists only to allow forms to post IDs here and be
     redirected to the right place.
     """
     def __init__(self, context, request):
         self.request = request
-    
+
     def __call__(self, *args, **kw):
         bug_id = self.request.form.get("id")
         if bug_id:
@@ -55,16 +54,11 @@ class BugSetView:
         return self.request.response.redirect("/malone")
 
 
-class BugAbsoluteURL(BrowserView):
-    """The view for an absolute URL of a bug."""
-    def __str__(self):
-        return canonical_url(self.context)
-
-
 class BugEditView(BugView, SQLObjectEditView):
     def __init__(self, context, request):
         BugView.__init__(self, context, request)
         SQLObjectEditView.__init__(self, context, request)
+
 
 class BugAddView(SQLObjectAddView):
     def add(self, content):
