@@ -4,10 +4,11 @@
 
   <div class="portletBody">
     <div class="portletContent odd">
-            
+
       <ul>
         <li tal:repeat="dup context/duplicates">
-          <a tal:attributes="href dup/fmt:url; title dup/title">
+          <a tal:attributes="href dup/fmt:url; 
+                             title dup/title">
              Bug #<span tal:replace="dup/id">3445</span>
           </a>
           <tal:block condition="dup/name">

@@ -11,7 +11,7 @@
         </li>
       </ul>
       <span tal:condition="not: context/bugtasks">
-          No tasks are currently linked to this watch
+          There are currently no links to this bug watch.
       </span>
     </div>
   </div>

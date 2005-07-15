@@ -519,7 +519,7 @@ def get_task_delta(old_task, new_task):
 
     # calculate the differences in the fields that both types of tasks
     # have in common
-    for field_name in ("status", "severity", "priority", 
+    for field_name in ("status", "severity", "priority",
                        "assignee", "bugwatch"):
         old_val = getattr(old_task, field_name)
         new_val = getattr(new_task, field_name)

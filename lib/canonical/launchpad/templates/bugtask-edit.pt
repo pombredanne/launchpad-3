@@ -136,7 +136,7 @@
                   <a href="#"
                      tal:condition="context/assignee"
                      tal:attributes="href context/assignee/fmt:url;
-                                     title context/assignee/displayname"
+                                     title context/assignee/browsername"
                      tal:content="view/assignee_widget/label">
                   Assignee</a>
                   <span tal:condition="not: context/assignee"

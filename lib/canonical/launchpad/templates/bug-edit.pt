@@ -22,12 +22,12 @@
   <div metal:fill-slot="main">
 
     <div metal:use-macro="context/@@launchpad_editform/editform">
-      
+
       <h3 metal:fill-slot="heading">
         Change information for <a tal:attributes="href
-        context/fmt:url">bug #<span tal:replace="context/id" /></a> 
+        context/fmt:url">bug #<span tal:replace="context/id" /></a>
       </h3>
-    
+
       <p metal:fill-slot="extra_info">
         Your changes will affect the bug description upstream,
         as well as in all the distro packages
@@ -35,7 +35,7 @@
       </p>
 
     </div>
-    
+
   </div>
 
   </body>

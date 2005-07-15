@@ -124,14 +124,14 @@ class SQLObjectVocabularyBase:
         try:
             value = int(value)
         except ValueError:
-            raise LookupError, value
+            raise LookupError(value)
 
         try:
             objs = list(self._table.select(self._table.q.id==value))
         except ValueError:
-            raise LookupError, value
+            raise LookupError(value)
         if len(objs) == 0:
-            raise LookupError, value
+            raise LookupError(value)
         return self._toTerm(objs[0])
 
     def getTermByToken(self, token):
@@ -156,7 +156,7 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
     def getTermByToken(self, token):
         objs = list(self._table.selectBy(name=token))
         if not objs:
-            raise LookupError, token
+            raise LookupError(token)
         return self._toTerm(objs[0])
 
     def search(self, query):
@@ -187,7 +187,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
     def getTermByToken(self, token):
         obj = self._table.selectOne(self._table.q.name == token)
         if obj is None:
-            raise LookupError, token
+            raise LookupError(token)
         return self._toTerm(obj)
 
     def search(self, query):
@@ -220,7 +220,7 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
     def getTermByToken(self, token):
         objs = self._table.select(self._table.q.name == token)
         if len(objs) != 1:
-            raise LookupError, token
+            raise LookupError(token)
         return self._toTerm(objs[0])
 
     def search(self, query):
@@ -337,7 +337,7 @@ class BasePersonVocabulary(SQLObjectVocabularyBase):
             try:
                 email = EmailAddress.selectOneBy(email=token)
             except SQLObjectMoreThanOneResultError:
-                raise LookupError, token
+                raise LookupError(token)
 
             return self._toTerm(email.person)
         else:
@@ -345,7 +345,7 @@ class BasePersonVocabulary(SQLObjectVocabularyBase):
             # it like a name.
             person = Person.selectOneBy(name=token)
             if not person:
-                raise LookupError, token
+                raise LookupError(token)
             return self._toTerm(person)
 
     def search(self, text):
@@ -488,7 +488,7 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
             productname, productseriesname, productreleaseversion = \
                 token.split('/', 2)
         except ValueError:
-            raise LookupError, token
+            raise LookupError(token)
 
         obj = ProductRelease.selectOne(
             AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
@@ -501,7 +501,7 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
         try:
             return self._toTerm(obj)
         except IndexError:
-            raise LookupError, token
+            raise LookupError(token)
 
     def search(self, query):
         """Return terms where query is a substring of the version or name"""
@@ -551,7 +551,7 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
         try:
             productname, productseriesname = token.split('/', 1)
         except ValueError:
-            raise LookupError, token
+            raise LookupError(token)
 
         result = ProductSeries.selectOne('''
                     Product.id = ProductSeries.product AND
@@ -561,7 +561,7 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
                     clauseTables=['Product'])
         if result is not None:
             return self._toTerm(result)
-        raise LookupError, token
+        raise LookupError(token)
 
     def search(self, query):
         """Return terms where query is a substring of the name"""
@@ -621,7 +621,7 @@ class BugWatchVocabulary(SQLObjectVocabularyBase):
     def __iter__(self):
         bug = getUtility(ILaunchBag).bug
         if bug is None:
-            raise ValueError, 'Unknown bug context for Watch list.'
+            raise ValueError('Unknown bug context for Watch list.')
 
         for watch in bug.watches:
             yield self._toTerm(watch)
@@ -705,12 +705,12 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
         try:
             distroname, distroreleasename = token.split('/', 1)
         except ValueError:
-            raise LookupError, token
+            raise LookupError(token)
 
         obj = DistroRelease.selectOne(AND(Distribution.q.name == distroname,
             DistroRelease.q.name == distroreleasename))
         if obj is None:
-            raise LookupError, token
+            raise LookupError(token)
         else:
             return self._toTerm(obj)
 

@@ -4,8 +4,7 @@
     <div class="portletBody"
          tal:define="bug_url context/@@absolute_url">
         <div class="portletContent even"
-             tal:define="subscriptions context/subscriptions;
-                         bugtasks context/bugtasks">
+             tal:define="bugtasks context/bugtasks">
 
             <b>Reporter:</b><br />
             <ul class="people">
