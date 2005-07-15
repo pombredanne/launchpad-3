@@ -8,6 +8,11 @@ __metaclass__ = type
 __all__ = ['CodeOfConduct', 'CodeOfConductSet', 'CodeOfConductConf',
            'SignedCodeOfConduct', 'SignedCodeOfConductSet']
 
+import os
+import errno
+from sha import sha
+from datetime import datetime
+
 from zope.interface import implements
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
@@ -22,13 +27,8 @@ from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.interfaces import (
     ICodeOfConduct, ICodeOfConductSet, ICodeOfConductConf,
     ISignedCodeOfConduct, ISignedCodeOfConductSet, IGpgHandler,
-    IPersonSet, IGPGKeySet, IGpgHandler
+    IGPGKeySet
     )
-
-# Python
-import os
-from datetime import datetime
-from sha import sha
 
 class CodeOfConduct:
     """CoC class model.

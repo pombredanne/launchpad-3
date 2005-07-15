@@ -33,11 +33,11 @@
   <div class="portlet" tal:condition="context/required:launchpad.Edit">
     <h4>Calendar</h4>
     <div class="portletBody">
-      <form action="+calendar-create" method="post">
-        <p align="center">
-          <input type="submit" value="Create Calendar" />
-        </p>
-      </form>
+      <div class="portletContent even" style="text-align: center">
+        <form action="+calendar-create" method="post">
+            <input type="submit" value="Create Calendar" />
+        </form>
+      </div>
     </div>
   </div>
 </tal:block>

@@ -13,6 +13,7 @@ from sqlobject import (
 # launchpad imports
 from canonical.database.sqlbase import SQLBase
 
+
 # interfaces and database 
 from canonical.launchpad.interfaces import (
     IBinaryPackageName, IBinaryPackageNameSet)

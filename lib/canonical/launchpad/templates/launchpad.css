@@ -744,9 +744,12 @@ ul.app>li.current {
   margin-left: 2%;
   width: 48%;
 }
+
 .sidebar {
   background-color: #f7f9fa;
   border: 1px solid #8cacbb;
+  border-top: none;
+  padding-bottom: 1em;
   clear: right;
   float: right;
   font-size: smaller;
@@ -754,8 +757,23 @@ ul.app>li.current {
   width: 25%;
   min-width: 8em;
   max-width: 50%;
-  padding: 0.25em 0.5em;
 }
+
+.sidebar > h4 { /* plone.css .portlet h4 paste-o */
+    background-color: #dee7ec;
+    border-top: 1px solid #8cacbb;
+    border-bottom: 1px solid #8cacbb;
+    padding: 0em 0.3em 0em 1em;
+    text-transform: lowercase;
+    display: block;
+    font-size: 1em;
+    font-weight: normal;
+}
+
+.sidebar > ul {
+    margin-left: 2.5em;
+}
+
 .debug {
   background-color: #ffddee;
 }
