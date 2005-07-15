@@ -76,6 +76,10 @@
         <browser:page name="+portlet-status"
             template="../templates/portlet-bug-status.pt"
             lp:url="malone/tasks/+portlet-status" />
+        
+        <browser:page name="+portlet-product-latestbugs"
+            template="../templates/portlet-product-latestbugs.pt"
+            lp:url="malone/tasks/+portlet-product-latestbugs.pt" />
 
     </browser:pages>
 

@@ -6,7 +6,7 @@
         <div class="portletContent even"
              tal:define="bugtasks context/bugtasks">
 
-            <b>Reporter:</b><br />
+            <b>First reported by:</b><br />
             <ul class="people">
                 <li><a href="#"
                        style="text-decoration: underline"

@@ -1,7 +1,5 @@
 <div class="portlet">
-  <h4>Status of <a tal:attributes="href context/bug/fmt:url" 
-           tal:content="string:bug #${context/bug/id}">
-        bug #42</a>:</h4>
+  <h4>Task Status</h4>
 
   <div class="portletBody"
        tal:define="bug context/bug">
@@ -14,6 +12,12 @@
           <tal:block content="view/makeprivate_widget/label" />
       </tal:publicbug>
 -->
+      <a href="#"
+         style="text-decoration: underline"
+         tal:attributes="href context/bug/fmt:url">
+      <b>Bug #<span tal:replace="context/bug/id" /></b></a>
+      <br />
+
       <b>Occuring in:</b><br />
       <a href="#"
          tal:attributes="href context/context/fmt:url"
@@ -30,6 +34,16 @@
       
       <b>On the date:</b><br />
       <tal:block content="context/datecreated/fmt:datetime" />
+            
+
+      <ul tal:condition="python: not request.getURL().endswith('+edit')">
+        <li class="edit" 
+            tal:condition="context/required:launchpad.Edit">
+          <a href="+edit">
+            Edit this task
+          </a>
+        </li>
+      </ul>
 
     </div>
   </div>

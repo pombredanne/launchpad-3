@@ -5,7 +5,7 @@
 <table class="listing"
        style="width: 100%; margin-bottom: 1px; margin-top: 2px; font-size: 90%;">
 
-  <caption>Needs fixing in...</caption>
+  <caption style="padding-bottom: 0.2em"><span class="explain" title="Tasks are individual work items for each place the bug occurs in">Tasks</span> open on this bug:</caption>
 
   <thead>
 
