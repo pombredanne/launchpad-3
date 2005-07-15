@@ -10,13 +10,10 @@ __all__ = [
     'DistributionSetView',
     'DistributionSetAddView',
     'DistributionSetSearchView',
-    'DistrosSearchView',
-    'DistrosEditView',
     ]
 
 from zope.interface import implements
 from zope.component import getUtility
-from zope.app.traversing.browser.absoluteurl import absoluteURL
 from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
@@ -28,8 +25,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser import BugTaskSearchListingView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
-from canonical.launchpad.webapp import StandardLaunchpadFacets
-
+from canonical.launchpad.webapp import StandardLaunchpadFacets, canonical_url
 
 class DistributionFacets(StandardLaunchpadFacets):
     usedfor = IDistribution
@@ -82,7 +78,7 @@ class DistributionFileBugView(SQLObjectAddView):
         return bug
 
     def nextURL(self):
-        return absoluteURL(self.addedBug, self.request)
+        return canonical_url(self.addedBug, self.request)
 
 
 class DistributionSetView:
@@ -106,7 +102,7 @@ class DistributionSetAddView(AddView):
         AddView.__init__(self, context, request)
 
     def createAndAdd(self, data):
-        # add the owner information for the product
+        # add the owner information for the distribution
         owner = IPerson(self.request.principal, None)
         if not owner:
             raise Unauthorized(
@@ -143,44 +139,4 @@ class DistributionSetSearchView:
 
     def count(self):
         return 3
-
-class DistrosSearchView:
-    """
-    DistroSearchView:
-    This Views able the user to search on all distributions hosted on
-    Soyuz by Name Distribution Title (Dispalyed name),
-    """
-    # TODO: (class+doc) cprov 20041003
-    # This is the EpyDoc Class Document Format,
-    # Does it fits our expectations ? (except the poor content)
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.results = []
-
-    def search_action(self):
-        raise NotImplementedError
-
-class DistrosEditView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def edit_action(self):
-        name = self.request.get("name", "")
-        title = self.request.get("title", "")
-        domainname = self.request.get("domainname", "")
-        description = self.request.get("description", "")
-
-        if not (name or title or description):
-            return False
-
-        ##XXX: (uniques) cprov 20041003
-        ## again :)
-        self.context.distribution.name = name
-        self.context.distribution.title = title
-        self.context.distribution.domainname = domainname
-        self.context.distribution.description = description
-        return True
 

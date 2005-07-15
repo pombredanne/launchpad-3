@@ -125,16 +125,7 @@
         lp:url="/distros/$distro.id/$release.id/+reassign" />
     </browser:pages>
 
-    <browser:page
-        for="canonical.launchpad.interfaces.IDistroRelease"
-        class="canonical.launchpad.browser.ReleaseSearchView"
-        permission="zope.Public"
-        name="+search"
-        template="../templates/distrorelease-search.pt"
-        lp:url="distros/$Distribution.name/$Release.name/+search"
-        />
-
-    <browser:menus
+   <browser:menus
         module="canonical.launchpad.browser.distrorelease"
         classes="DistroReleaseFacets"
         />

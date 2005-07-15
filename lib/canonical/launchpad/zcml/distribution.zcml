@@ -87,6 +87,24 @@
     </browser:pages>
 
     <browser:addform
+        name="+add"
+        for="canonical.launchpad.interfaces.IDistribution"
+        schema="canonical.launchpad.interfaces.IDistroRelease"
+        label="Create a New Distribution Release in Soyuz"
+        fields="name displayname title summary description version
+        parentrelease components sections"
+        content_factory="canonical.launchpad.database.DistroRelease"
+        class="canonical.launchpad.browser.DistroReleaseAddView"
+        permission="launchpad.Admin"
+        template="../templates/launchpad-addform.pt"
+        lp:url="/distros/Distro.name/+add">
+        <browser:widget
+            field="owner"
+            class="canonical.widgets.OwnerWidget" />
+    </browser:addform>
+
+
+    <browser:addform
         name="+filebug"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IBugAddForm"
@@ -208,7 +226,7 @@
         class="canonical.launchpad.browser.DistributionSetAddView"
         permission="launchpad.Admin"
         template="../templates/launchpad-addform.pt"
-        lp:url="soyuz/distros/+add">
+        lp:url="/distros/+add">
         <browser:widget
             field="owner"
             class="canonical.widgets.OwnerWidget" />

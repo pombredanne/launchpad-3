@@ -21,7 +21,7 @@
          class="portalMessage">
         This bug is a duplicate of
         <a href="#"
-           tal:attributes="href context/bug/duplicateof/@@absolute_url">bug
+           tal:attributes="href context/bug/duplicateof/fmt:url">bug
              #<span tal:replace="context/bug/duplicateof/id">42</span></a>
       </p>
 

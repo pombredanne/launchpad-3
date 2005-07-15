@@ -34,6 +34,7 @@ __all__ = [
     'DistributionVocabulary',
     'DistroReleaseVocabulary',
     'POTemplateNameVocabulary',
+    'SchemaVocabulary',
     ]
 
 from zope.component import getUtility
@@ -51,7 +52,7 @@ from canonical.launchpad.database import (
     SourcePackageRelease, SourcePackageName, BinaryPackage, BugWatch,
     BinaryPackageName, BugTracker, Language, Milestone, Product,
     Project, ProductRelease, ProductSeries, TranslationGroup, BugTracker,
-    POTemplateName, EmailAddress)
+    POTemplateName, EmailAddress, Schema)
 from canonical.launchpad.interfaces import (
     ILaunchBag, ITeam, ITeamMembershipSubset)
 
@@ -163,7 +164,8 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
         """Return terms where query is a subtring of the name"""
         if query:
             objs = self._table.select(
-                CONTAINSSTRING(self._table.q.name, query)
+                CONTAINSSTRING(self._table.q.name, query),
+                orderBy=self._orderBy
                 )
             for o in objs:
                 yield self._toTerm(o)
@@ -679,7 +681,6 @@ class DistributionVocabulary(NamedSQLObjectVocabulary):
 
         return []
 
-
 class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
     implements(IHugeVocabulary)
 
@@ -749,3 +750,10 @@ class POTemplateNameVocabulary(NamedSQLObjectVocabulary):
 
             for o in objs:
                 yield self._toTerm(o)
+
+
+class SchemaVocabulary(NamedSQLObjectVocabulary):
+    """See NamedSQLObjectVocabulary."""
+    implements(IHugeVocabulary)
+
+    _table = Schema

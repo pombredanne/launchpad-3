@@ -9,7 +9,7 @@
     <div tal:replace="structure context/@@+portlet-bug-people" />
     <div tal:replace="structure context/@@+portlet-bug-productinfestation" />
     <div tal:replace="structure context/@@+portlet-bug-packageinfestation" />
-    <div tal:replace="structure context/@@+bug-portlet-duplicates" />
+    <div tal:replace="structure context/@@+portlet-bug-duplicates" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
@@ -25,7 +25,7 @@
      style="margin-bottom: 1em">
     This bug is a duplicate of
     <a href="#"
-       tal:attributes="href context/duplicateof/@@absolute_url"
+       tal:attributes="href context/duplicateof/fmt:url"
        tal:content="string:bug #${context/duplicateof/id}">bug 42</a>
   </p>
 
@@ -48,7 +48,7 @@
      $bug.summary
   </p>
 
-  <div tal:replace="structure context/@@+portlet-bug-tasks-headline" />
+  <div tal:replace="structure context/@@+portlet-bug-headline" />
 
     <tal:description
       content="structure context/description/fmt:text-to-html"

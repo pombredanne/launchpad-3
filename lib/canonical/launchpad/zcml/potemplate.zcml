@@ -57,7 +57,7 @@
         />
         <browser:page
             name="+portlet-relateds"
-            template="../templates/potemplate-portlet-relateds.pt"
+            template="../templates/portlet-potemplate-relateds.pt"
         />
         <browser:page
             name="+portlet-for"

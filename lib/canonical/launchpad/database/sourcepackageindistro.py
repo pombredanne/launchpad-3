@@ -13,7 +13,7 @@ from canonical.lp.dbschema import EnumCol, PackagePublishingStatus, \
         SourcePackageFormat
 
 from canonical.launchpad.interfaces import \
-    ISourcePackageInDistro, ISourcePackageInDistroSet, ISourcePackageSet
+    ISourcePackageInDistro, ISourcePackageInDistroSet
 
 from canonical.launchpad.database.vsourcepackagereleasepublishing import \
      VSourcePackageReleasePublishing
@@ -53,10 +53,6 @@ class SourcePackageInDistroSet:
         """Take the distrorelease when it makes part of the context"""
         self.distrorelease = distrorelease
         self.title = 'Source Packages in: ' + distrorelease.title
-
-    def findPackagesByName(self, pattern):
-        srcutil = getUtility(ISourcePackageSet)
-        return srcutil.findByNameInDistroRelease(self.distrorelease.id, pattern)
 
     def __iter__(self):
         query = ('distrorelease = %d' % (self.distrorelease.id))

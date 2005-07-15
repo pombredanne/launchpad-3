@@ -2,7 +2,7 @@
   <h4>Bug Watch Details:</h4>
   <div class="portletBody">
     <div class="portletContent">
-    Malone <a tal:attributes="href context/bug/@@absolute_url">Bug #
+    Malone <a tal:attributes="href context/bug/fmt:url">Bug #
                       <span tal:replace="context/bug/id">4532</span></a><br />
     <b>Tracker:</b>
       <a tal:attributes="href context/bugtracker/fmt:url">

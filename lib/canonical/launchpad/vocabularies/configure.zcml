@@ -181,6 +181,10 @@
         />
 
     <vocabulary
+        name="Schema"
+        factory="canonical.launchpad.vocabularies.SchemaVocabulary"
+        />
+    <vocabulary
         name="TimezoneName"
         factory="canonical.launchpad.vocabularies.TimezoneNameVocabulary"
         />
