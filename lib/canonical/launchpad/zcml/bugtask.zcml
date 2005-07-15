@@ -285,14 +285,14 @@
             name="+index"
             template="../templates/bugs-for-context.pt" />
         <browser:page
-            name="+portlet-bugtask-listing-actions"
-            template="../templates/portlet-bugtask-listing-actions.pt" />
+            name="+portlet-bugtask-actions"
+            template="../templates/portlet-bugtask-actions.pt" />
         <browser:page
             name="+portlet-bug-stats-for-context"
             template="../templates/portlet-bug-stats-for-context.pt" />
         <browser:page
-            name="+portlet-release-bugs"
-            template="../templates/portlet-release-bugs.pt" />
+            name="+portlet-bugtask-releasebugs"
+            template="../templates/portlet-bugtask-releasebugs.pt" />
     </browser:pages>
 
     <!-- BugTaskDelta -->

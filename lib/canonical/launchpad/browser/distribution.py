@@ -10,8 +10,6 @@ __all__ = [
     'DistributionSetView',
     'DistributionSetAddView',
     'DistributionSetSearchView',
-    'DistrosSearchView',
-    'DistrosEditView',
     ]
 
 from zope.interface import implements
@@ -106,7 +104,7 @@ class DistributionSetAddView(AddView):
         AddView.__init__(self, context, request)
 
     def createAndAdd(self, data):
-        # add the owner information for the product
+        # add the owner information for the distribution
         owner = IPerson(self.request.principal, None)
         if not owner:
             raise Unauthorized(
@@ -143,44 +141,4 @@ class DistributionSetSearchView:
 
     def count(self):
         return 3
-
-class DistrosSearchView:
-    """
-    DistroSearchView:
-    This Views able the user to search on all distributions hosted on
-    Soyuz by Name Distribution Title (Dispalyed name),
-    """
-    # TODO: (class+doc) cprov 20041003
-    # This is the EpyDoc Class Document Format,
-    # Does it fits our expectations ? (except the poor content)
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.results = []
-
-    def search_action(self):
-        raise NotImplementedError
-
-class DistrosEditView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def edit_action(self):
-        name = self.request.get("name", "")
-        title = self.request.get("title", "")
-        domainname = self.request.get("domainname", "")
-        description = self.request.get("description", "")
-
-        if not (name or title or description):
-            return False
-
-        ##XXX: (uniques) cprov 20041003
-        ## again :)
-        self.context.distribution.name = name
-        self.context.distribution.title = title
-        self.context.distribution.domainname = domainname
-        self.context.distribution.description = description
-        return True
 

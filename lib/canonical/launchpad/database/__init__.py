@@ -66,7 +66,6 @@ from canonical.launchpad.database.spokenin import *
 from canonical.launchpad.database.cal import *
 from canonical.launchpad.database.logintoken import *
 from canonical.launchpad.database.codeofconduct import *
-from canonical.launchpad.database.distrotool import *
 from canonical.launchpad.database.component import *
 from canonical.launchpad.database.section import *
 from canonical.launchpad.database.vpoexport import *

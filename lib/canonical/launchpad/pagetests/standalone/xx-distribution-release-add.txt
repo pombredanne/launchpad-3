@@ -1,0 +1,85 @@
+Let's see if we can load the distribution release add page:
+
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+add HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...<h1>Create a New Distribution Release...
+  ...
+
+
+
+And now let's create a Test Distro Release:
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+add HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Content-Length: 1380
+  ... Content-Type: multipart/form-data; boundary=---------------------------1853618551860249860207211879
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... 
+  ... -----------------------------1853618551860249860207211879
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... test
+  ... -----------------------------1853618551860249860207211879
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... Test
+  ... -----------------------------1853618551860249860207211879
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Test distrorelease
+  ... -----------------------------1853618551860249860207211879
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... Distro Release for page test
+  ... -----------------------------1853618551860249860207211879
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... This Distro is been created just for page test reasons.
+  ... -----------------------------1853618551860249860207211879
+  ... Content-Disposition: form-data; name="field.version"
+  ... 
+  ... 8.90
+  ... -----------------------------1853618551860249860207211879
+  ... Content-Disposition: form-data; name="field.parentrelease"
+  ... 
+  ... ubuntu/warty
+  ... -----------------------------1853618551860249860207211879
+  ... Content-Disposition: form-data; name="field.components"
+  ... 
+  ... mark
+  ... -----------------------------1853618551860249860207211879
+  ... Content-Disposition: form-data; name="field.sections"
+  ... 
+  ... mark
+  ... -----------------------------1853618551860249860207211879
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------1853618551860249860207211879--
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: test
+  ...
+
+
+And finally, let's view the new distro release:
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/test HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...<h1>Distribution Release Overview</h1> 
+  ...

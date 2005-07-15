@@ -57,7 +57,7 @@ class DistroRelease(SQLBase):
     sections = ForeignKey(
         dbName='sections', foreignKey='Schema', notNull=True)
     releasestatus = EnumCol(notNull=True, schema=DistributionReleaseStatus)
-    datereleased = UtcDateTimeCol(notNull=False)
+    datereleased = UtcDateTimeCol(notNull=False, default=None)
     parentrelease =  ForeignKey(
         dbName='parentrelease', foreignKey='DistroRelease', notNull=False)
     owner = ForeignKey(
@@ -196,9 +196,10 @@ class DistroRelease(SQLBase):
 
 
     def findSourcesByName(self, pattern):
-        """Get SourcePackages in a DistroRelease with BugTask"""
-        srcset = getUtility(ISourcePackageSet)
-        return srcset.findByNameInDistroRelease(self.id, pattern)
+        """Get SourcePackages in a DistroRelease"""        
+        # XXX: Daniel Debonzi 20050711
+        # Implement it as soon as SourcePackageSet issue are sorted out.
+        raise NotImplemented
 
     def getSourcePackageByName(self, name):
         """See IDistroRelease."""
@@ -292,3 +293,21 @@ class DistroReleaseSet:
             return DistroRelease.select(where_clause, orderBy=orderBy)
         else:
             return DistroRelease.select(where_clause)
+
+    def new(self, distribution, name, displayname, title, summary, description,
+            version, components, sections, parentrelease, owner):
+        """See IDistroReleaseSet."""
+        return DistroRelease(
+            distribution = distribution,
+            name = name, 
+            displayname = displayname, 
+            title = title, 
+            summary = summary,
+            description = description,
+            version = version,
+            components = components,
+            sections = sections,
+            releasestatus = DistributionReleaseStatus.EXPERIMENTAL,
+            parentrelease =  parentrelease,
+            owner = owner)
+

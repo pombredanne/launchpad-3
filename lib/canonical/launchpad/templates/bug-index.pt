@@ -9,7 +9,7 @@
     <div tal:replace="structure context/@@+portlet-bug-people" />
     <div tal:replace="structure context/@@+portlet-bug-productinfestation" />
     <div tal:replace="structure context/@@+portlet-bug-packageinfestation" />
-    <div tal:replace="structure context/@@+bug-portlet-duplicates" />
+    <div tal:replace="structure context/@@+portlet-bug-duplicates" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
@@ -54,7 +54,7 @@
      $bug.summary
   </p>
 
-  <div tal:replace="structure context/@@+portlet-bug-tasks-headline" />
+  <div tal:replace="structure context/@@+portlet-bug-headline" />
 
     <tal:description
       content="structure context/description/fmt:text-to-html"
