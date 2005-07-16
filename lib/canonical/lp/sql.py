@@ -1,17 +1,18 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+"""Sanity checks for the PostgreSQL database"""
+
+__metaclass__ = type
+
+import psycopg
+from warnings import warn
+
 from zope.app import zapi
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.app.rdb.interfaces import IZopeConnection, IZopeCursor
 
-from warnings import warn
+from canonical.config import config
+from canonical.database.sqlbase import connect
 
-def _cursor():
-    rdb = zapi.getUtility(IZopeDatabaseAdapter, 'launchpad')
-    dsn = rdb.getDSN()
-    dbname = str(dsn.split('/')[-1])
-    con = IZopeConnection(rdb())
-    cur = IZopeCursor(con.cursor())
-    return (dbname, cur)
- 
 def confirmEncoding(*args, **kw):
     '''Raise an exception, explaining what went wrong, if the PostgreSQL
     database encoding is not UNICODE
@@ -19,20 +20,28 @@ def confirmEncoding(*args, **kw):
     subsribed to zope.app.appsetup.IProcessStartingEvent
 
     '''
-    dbname, cur = _cursor()
-    cur.execute(
-            'select encoding from pg_catalog.pg_database where datname=%s',
-            (dbname,)
-            )
-    res = cur.fetchall()
-    assert len(res) == 1, \
-            'Database %r does not exist or is not unique' % (dbname,)
-    assert res[0][0] == 6, (
-            "Database %r is using the wrong character set (%r). You need to "
-            "recreate your database using 'createdb -E UNICODE %s'" % (
-                dbname, res[0][0], dbname
+    con = connect(config.launchpad.dbuser)
+    try:
+        cur = con.cursor()
+        dbname = config.dbname
+        cur.execute(
+                'select encoding from pg_catalog.pg_database where datname=%s',
+                (dbname,)
                 )
-            )
+        res = cur.fetchall()
+        if len(res) != 1:
+            raise RuntimeError('Database %r does not exist or is not unique'
+                    % (dbname,)
+                    )
+        if res[0][0] != 6:
+            raise RuntimeError(
+                "Database %r is using the wrong encidong (%r). You need "
+                "to recreate your database using 'createdb -E UNICODE %s'" % (
+                    dbname, res[0][0], dbname
+                    )
+                )
+    finally:
+        con.close()
 
 def confirmNoAddMissingFrom(*args, **kw):
     '''Raise a warning if add_missing_from is turned on (dangerous default).
@@ -41,12 +50,16 @@ def confirmNoAddMissingFrom(*args, **kw):
     zope.app.appsetup.IProcessStartingEvent
 
     '''
-    dbname, cur = _cursor()
-    cur.execute('show add_missing_from')
-    res = cur.fetchall()
-    assert len(res) == 1, 'Invalid PostgreSQL version? Wierd error'
-
-    msg='Need to set add_missing_from=false in /etc/postgresql/postgresql.conf'
-    if res[0][0] != 'off':
-        warn(msg, FutureWarning)
-
+    con = connect(config.launchpad.dbuser)
+    try:
+        dbname = config.dbname
+        cur = con.cursor()
+        cur.execute('show add_missing_from')
+        res = cur.fetchall()
+        if res[0][0] != 'off':
+            raise RuntimeError(
+                    "Need to set add_missing_from=false in "
+                    "/etc/postgresql/postgresql.conf"
+                    )
+    finally:
+        con.close()
