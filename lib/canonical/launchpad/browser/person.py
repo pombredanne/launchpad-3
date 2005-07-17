@@ -43,7 +43,7 @@ from canonical.launchpad.interfaces import (
     ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
     IJabberIDSet, IIrcIDSet, IArchUserIDSet, ILaunchBag, ILoginTokenSet,
     IPasswordEncryptor, ISignedCodeOfConductSet, IObjectReassignment,
-    ITeamReassignment, IGPGKeySet, IGpgHandler, IKarmaActionSet, IKarmaSet,
+    ITeamReassignment, IGPGKeySet, IGPGHandler, IKarmaActionSet, IKarmaSet,
     UBUNTU_WIKI_URL)
 
 from canonical.launchpad.helpers import (
@@ -311,7 +311,7 @@ class PersonView:
             return 'GPG key <code>%s</code> already imported' % fingerprint
 
         # import the key to the local keyring
-        gpghandler = getUtility(IGpgHandler)
+        gpghandler = getUtility(IGPGHandler)
         result, key = gpghandler.retrieveKey(fingerprint)
         
         if not result:
@@ -389,7 +389,7 @@ class PersonView:
             if not isinstance(keyids, list):
                 keyids = [keyids]
                 
-            gpghandler = getUtility(IGpgHandler)
+            gpghandler = getUtility(IGPGHandler)
             keyset = getUtility(IGPGKeySet)
             
             for keyid in keyids:

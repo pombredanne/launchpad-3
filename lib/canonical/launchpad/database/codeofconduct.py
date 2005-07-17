@@ -26,7 +26,7 @@ from canonical.launchpad.mail.sendmail import simple_sendmail
 
 from canonical.launchpad.interfaces import (
     ICodeOfConduct, ICodeOfConductSet, ICodeOfConductConf,
-    ISignedCodeOfConduct, ISignedCodeOfConductSet, IGpgHandler,
+    ISignedCodeOfConduct, ISignedCodeOfConductSet, IGPGHandler,
     IGPGKeySet
     )
 
@@ -220,7 +220,7 @@ class SignedCodeOfConductSet:
         # * CoC was signed (correctly) by the GPGkey.
 
         # use a utility to perform the GPG operations
-        gpghandler = getUtility(IGpgHandler)
+        gpghandler = getUtility(IGPGHandler)
         sig = gpghandler.verifySignature(signedcode)
 
         if sig is None:

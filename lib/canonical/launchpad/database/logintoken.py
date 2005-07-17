@@ -17,7 +17,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.interfaces import (
-    ILoginToken, ILoginTokenSet, IGpgHandler
+    ILoginToken, ILoginTokenSet, IGPGHandler
     )
 from canonical.lp.dbschema import LoginTokenType, EnumCol
 from canonical.launchpad.validators.email import valid_email
@@ -76,7 +76,7 @@ class LoginToken(SQLBase):
 
         # encrypt message if requested
         if encrypt:
-            gpghandler = getUtility(IGpgHandler)
+            gpghandler = getUtility(IGPGHandler)
             message = gpghandler.encryptContent(message, key.fingerprint)
 
         subject = "Launchpad: Validate your GPG Key"

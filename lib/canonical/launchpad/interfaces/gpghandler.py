@@ -1,8 +1,8 @@
 from zope.interface import Interface, Attribute
 
-__all__ = ['IGpgHandler', 'IPymeSignature', 'IPymeKey']
+__all__ = ['IGPGHandler', 'IPymeSignature', 'IPymeKey']
 
-class IGpgHandler(Interface):
+class IGPGHandler(Interface):
     """Handler to perform GPG operations."""
 
     def verifySignature(content, signature=None, key=None):
