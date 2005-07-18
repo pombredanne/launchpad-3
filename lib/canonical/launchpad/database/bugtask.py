@@ -12,8 +12,8 @@ from zope.exceptions import NotFoundError
 from zope.component import getUtility, getAdapter
 from zope.interface import implements, directlyProvides, directlyProvidedBy
 
-from canonical.lp.dbschema import (EnumCol, BugPriority, BugTaskStatus,
-    BugSeverity, BugSubscription)
+from canonical.lp.dbschema import (
+    EnumCol, BugTaskPriority, BugTaskStatus, BugTaskSeverity, BugSubscription)
 
 from canonical.launchpad.interfaces import IBugTask
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
@@ -31,14 +31,14 @@ debbugsstatusmap = {'open': BugTaskStatus.NEW,
                     'forwarded': BugTaskStatus.ACCEPTED,
                     'done': BugTaskStatus.FIXED}
 
-debbugsseveritymap = {'wishlist': BugSeverity.WISHLIST,
-                      'minor': BugSeverity.MINOR,
-                      'normal': BugSeverity.NORMAL,
-                      None: BugSeverity.NORMAL,
-                      'important': BugSeverity.MAJOR,
-                      'serious': BugSeverity.MAJOR,
-                      'grave': BugSeverity.MAJOR,
-                      'critical': BugSeverity.CRITICAL}
+debbugsseveritymap = {'wishlist': BugTaskSeverity.WISHLIST,
+                      'minor': BugTaskSeverity.MINOR,
+                      'normal': BugTaskSeverity.NORMAL,
+                      None: BugTaskSeverity.NORMAL,
+                      'important': BugTaskSeverity.MAJOR,
+                      'serious': BugTaskSeverity.MAJOR,
+                      'grave': BugTaskSeverity.MAJOR,
+                      'critical': BugTaskSeverity.CRITICAL}
 
 class BugTask(SQLBase):
     implements(IBugTask)
@@ -68,12 +68,12 @@ class BugTask(SQLBase):
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
     priority = EnumCol(
         dbName='priority', notNull=True,
-        schema=BugPriority,
-        default=BugPriority.MEDIUM)
+        schema=BugTaskPriority,
+        default=BugTaskPriority.MEDIUM)
     severity = EnumCol(
         dbName='severity', notNull=True,
-        schema=BugSeverity,
-        default=BugSeverity.NORMAL)
+        schema=BugTaskSeverity,
+        default=BugTaskSeverity.NORMAL)
     binarypackagename = ForeignKey(
         dbName='binarypackagename', foreignKey='BinaryPackageName',
         notNull=False, default=None)
@@ -481,7 +481,7 @@ class BugTasksReport:
             return querystr
         else:
             return querystr + ' AND BugTask.status < %s' % sqlvalues(
-                BugPriority.MEDIUM)
+                BugTaskPriority.MEDIUM)
 
     # bugs assigned (i.e. tasks) to packages maintained by the user
     def maintainedPackageBugs(self, user, minseverity, minpriority, showclosed):
@@ -496,7 +496,7 @@ class BugTasksReport:
         querystr = self._handle_showclosed(showclosed, querystr)
         if not showclosed:
             querystr = querystr + ' AND BugTask.status < %s' % sqlvalues(
-                BugPriority.MEDIUM)
+                BugTaskPriority.MEDIUM)
         return shortlist(BugTask.select(querystr, clauseTables=clauseTables))
 
     # bugs assigned (i.e. tasks) to products owned by the user

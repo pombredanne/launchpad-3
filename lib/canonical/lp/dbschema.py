@@ -4,9 +4,9 @@
 
 Use them like this:
 
-  from canonical.lp.dbschema import BugSeverity
+  from canonical.lp.dbschema import BugTaskSeverity
 
-  print "SELECT * FROM Bug WHERE Bug.severity='%d'" % BugSeverity.CRITICAL
+  print "SELECT * FROM Bug WHERE Bug.severity='%d'" % BugTaskSeverity.CRITICAL
 
 """
 __metaclass__ = type
@@ -36,9 +36,9 @@ __all__ = (
 'BugTrackerType',
 'BugExternalReferenceType',
 'BugInfestationStatus',
-'BugPriority',
+'BugTaskPriority',
 'BugRelationship',
-'BugSeverity',
+'BugTaskSeverity',
 'BugSubscription',
 'BuildStatus',
 'CodereleaseRelationships',
@@ -1675,45 +1675,46 @@ class RemoteBugStatus(DBSchema):
         The remote bug status cannot be determined.
         """)
 
-class BugPriority(DBSchema):
-    """Bug Priority
+class BugTaskPriority(DBSchema):
+    """Bug Task Priority
 
-    Each bug in Malone can be assigned a priority by the maintainer of
-    the bug. The priority is an indication of the maintainer's desire
-    to fix the bug. This schema documents the priorities Malone allows.
+    Each bug task in Malone can be assigned a priority by the
+    maintainer of the bug. The priority is an indication of the
+    maintainer's desire to fix the task. This schema documents the
+    priorities Malone allows.
     """
 
     HIGH = Item(40, """
         High
 
-        This is a high priority bug for the maintainer.
+        This is a high priority task for the maintainer.
         """)
 
     MEDIUM = Item(30, """
         Medium
 
-        This is a medium priority bug for the maintainer.
+        This is a medium priority task for the maintainer.
         """)
 
     LOW = Item(20, """
         Low
 
-        This is a low priority bug for the maintainer.
+        This is a low priority task for the maintainer.
         """)
 
     WONTFIX = Item(10, """
         Wontfix
 
-        The maintainer does not intend to fix this bug.
+        The maintainer does not intend to fix this task.
         """)
 
 
-class BugSeverity(DBSchema):
-    """Bug Severity
+class BugTaskSeverity(DBSchema):
+    """Bug Task Severity
 
     A bug task has a severity, which is an indication of the
     extent to which the bug impairs the stability and security of
-    the distribution.
+    the distribution or upstream in which it was reported.
     """
 
     CRITICAL = Item(50, """

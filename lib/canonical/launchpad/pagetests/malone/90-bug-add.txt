@@ -6,7 +6,7 @@ A bug is a problem in software.
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <title>Malone: Add a New Bug</title>
+      <title>Malone: Report a Bug</title>
   ...
 
 At the moment, Malone still has a bug filing page on which you can

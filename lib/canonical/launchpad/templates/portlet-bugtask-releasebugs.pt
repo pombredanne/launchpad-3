@@ -5,7 +5,6 @@
   <ul>
     <li tal:repeat="release_bugcount release_bugcounts">
       <a href=""
-         style="text-decoration: underline"
          tal:content="string:${release_bugcount/releasename} (${release_bugcount/bugcount})"
          tal:attributes="href release_bugcount/url">sid (2)</a>
     </li>

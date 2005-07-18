@@ -5,24 +5,19 @@ __all__ = ['emailcommands']
 
 from zope.component import getUtility
 from zope.event import notify
-from zope.exceptions import NotFoundError
 from zope.interface import implements, providedBy
-from zope.publisher.interfaces.browser import IBrowserRequest
 
-from canonical.config import config
-from canonical.launchpad.helpers import Snapshot, get_attribute_names
+from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.pathlookup import get_object
 from canonical.launchpad.pathlookup.exceptions import PathStepNotFoundError
 from canonical.launchpad.interfaces import (
         IProduct, IDistribution, IPersonSet, ISourcePackage, IBugEmailCommand,
-        IBugEditEmailCommand, IEmailCommand, IBugSet, ILaunchBag, IBugTaskSet)
+        IBugEditEmailCommand, IBugSet, ILaunchBag, IBugTaskSet)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
 
-from canonical.lp import decorates
-from canonical.lp.dbschema import (
-    BugSeverity, BugPriority, BugTaskStatus, BugSubscription)
+from canonical.lp.dbschema import BugTaskStatus, BugSubscription
 
 
 class EmailCommand:
@@ -40,15 +35,15 @@ class EmailCommand:
 
     def _ensureNumberOfArguments(self):
         """Checks that the number of arguments is correct.
-        
+
         A ValueError is raise if not.
         """
-        if self._numberOfArguments is not None: 
-            if self._numberOfArguments != len(self.string_args): 
+        if self._numberOfArguments is not None:
+            if self._numberOfArguments != len(self.string_args):
                 raise ValueError(
                     "'%s' expects exactly %s argument(s)." % (
                         self.name, self._numberOfArguments))
-    
+
     def convertArguments(self):
         """Converts the string argument to Python objects.
 
@@ -68,12 +63,12 @@ class EmailCommand:
 
 class BugEmailCommand(EmailCommand):
     implements(IBugEmailCommand)
-    
+
     _numberOfArguments = 1
 
     def execute(self, message):
         self._ensureNumberOfArguments()
-        bugid = self.string_args[0] 
+        bugid = self.string_args[0]
 
         if bugid == 'new':
             bug = getUtility(IBugSet).createBug(
@@ -86,7 +81,7 @@ class BugEmailCommand(EmailCommand):
             bug = getUtility(IBugSet).get(bugid)
             bug.linkMessage(message)
             return bug, None
-    
+
 
 class EditEmailCommand(EmailCommand):
 
@@ -113,7 +108,7 @@ class EditEmailCommand(EmailCommand):
 
 class PrivateEmailCommand(EditEmailCommand):
     implements(IBugEditEmailCommand)
-    
+
     _numberOfArguments = 1
 
     def convertArguments(self):
@@ -155,7 +150,7 @@ class SubscribeEmailCommand(EmailCommand):
             raise ValueError(
                 "'subscribe' commands expects at most two arguments."
                 " Got %s: %s" % (len(string_args), ' '.join(string_args)))
-      
+
         if bug.isSubscribed(person):
             for bugsubscription in bug.subscriptions:
                 if bugsubscription.person == person:
@@ -184,7 +179,7 @@ class AffectsEmailCommand(EditEmailCommand):
             raise ValueError(
                 "'affects' command requires at least one argument.")
         bugtask, event = self.getBugTask(bug, path)
-        
+
         return EditEmailCommand.execute(self, bugtask, event)
 
     def convertArguments(self):
@@ -193,7 +188,7 @@ class AffectsEmailCommand(EditEmailCommand):
         while len(self.string_args) > 0:
             # Get the sub command name.
             subcmd_name = self.string_args.pop(0)
-            # Get the sub command's argument 
+            # Get the sub command's argument
             try:
                 subcmd_arg = self.string_args.pop(0)
             except IndexError:
@@ -218,7 +213,7 @@ class AffectsEmailCommand(EditEmailCommand):
             raise ValueError(
                 "'%s' couldn't be found in command 'affects %s'" % (
                     error.step, path))
-            
+
         bugtask_params = {}
         if IProduct.providedBy(obj):
             bugtask_params['product'] = obj
@@ -228,7 +223,7 @@ class AffectsEmailCommand(EditEmailCommand):
             bugtask_params['sourcepackagename'] = obj.sourcepackagename
             bugtask_params['distribution'] = obj.distribution
 
-        bugtaskset = getUtility(IBugTaskSet) 
+        bugtaskset = getUtility(IBugTaskSet)
         bug_tasks = bugtaskset.search(
                 bug=bug,
                 distribution=bugtask_params.get('distribution'),
@@ -236,7 +231,7 @@ class AffectsEmailCommand(EditEmailCommand):
                 product=bugtask_params.get('product'))
         bug_tasks = list(bug_tasks)
         if len(bug_tasks) > 1:
-            # XXX: This shouldn't happen   
+            # XXX: This shouldn't happen
             raise ValueError('Found more than one bug task.')
         if len(bug_tasks) == 0:
             bugtask = bugtaskset.createTask(
@@ -252,7 +247,7 @@ class AffectsEmailCommand(EditEmailCommand):
 
 class AssigneeEmailCommand(EmailCommand):
     implements(IBugEditEmailCommand)
-    
+
     _numberOfArguments = 1
 
     def convertArguments(self):
@@ -289,7 +284,7 @@ class NoSuchCommand(KeyError):
 
 class EmailCommands:
     """A collection of email commands."""
-    
+
     _commands = {
         'bug': BugEmailCommand,
         'private': PrivateEmailCommand,
@@ -305,7 +300,7 @@ class EmailCommands:
 
     def get(self, name, string_args):
         """Returns a command object with the given name and arguments.
-        
+
         If a command with the given name can't be found, a NoSuchCommand
         error is raised.
         """

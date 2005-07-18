@@ -41,13 +41,13 @@ to access those other objects:
 
 Next, we need to grab some values to provide for priority, severity and status.
 
-    >>> from canonical.lp.dbschema import (BugTaskStatus, BugSeverity,
-    ...     BugPriority)
+    >>> from canonical.lp.dbschema import (BugTaskStatus, BugTaskSeverity,
+    ...     BugTaskPriority)
     >>> STATUS_NEW = BugTaskStatus.NEW
     >>> STATUS_ACCEPTED = BugTaskStatus.ACCEPTED
     >>> STATUS_FIXED = BugTaskStatus.FIXED
-    >>> SEVERITY_NORMAL = BugSeverity.NORMAL
-    >>> PRIORITY_MEDIUM = BugPriority.MEDIUM
+    >>> SEVERITY_NORMAL = BugTaskSeverity.NORMAL
+    >>> PRIORITY_MEDIUM = BugTaskPriority.MEDIUM
 
   i. Upstream -- a bug that has to be fixed in an upstream product
 
