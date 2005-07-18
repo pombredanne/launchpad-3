@@ -13,9 +13,15 @@
 
         <ul tal:condition="other_occurrences">
           <li tal:repeat="task other_occurrences"><a href="#"
+                 tal:condition="not: task/required:launchpad.Edit"
                  tal:attributes="href task/fmt:url"
                  tal:content="task/contextname"
+                 style="text-decoration: underline">Firefox</a><a href="#"
+                 tal:condition="task/required:launchpad.Edit"
+                 tal:attributes="href string:${task/fmt:url}/+edit"
+                 tal:content="task/contextname"
                  style="text-decoration: underline">Firefox</a>
+
                  [<span tal:replace="task/status/title">Pending</span>]
 
           </li>
