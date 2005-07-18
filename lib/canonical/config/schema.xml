@@ -21,6 +21,7 @@
             required="yes" />
         <key name="errors_address" datatype="string" required="yes" />
         <key name="bugs_domain" datatype="string" required="yes" />
+        <key name="db_statement_timeout" datatype="integer" required="no" />
     </sectiontype>
 
     <sectiontype name="librarian_server">
