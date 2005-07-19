@@ -250,7 +250,7 @@ tr.rowLinkified a {
 .batchnav td {
   text-align: center;
   border-top: 1px solid #364970;
-  vertical-align: bottom;>
+  vertical-align: bottom;
 }
 
 /* Bug status markers */
@@ -335,7 +335,7 @@ tr.rowLinkified a {
 }
 
 .boardCommentActions {
-  right: 1em:
+  right: 1em;
 }
 
 .boardCommentPortrait {
