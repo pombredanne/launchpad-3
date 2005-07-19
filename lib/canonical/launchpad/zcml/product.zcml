@@ -94,7 +94,7 @@
             lp:url="/products/evolution/+portlet-actions" />
         <browser:page
             name="+portlet-latest-bugs"
-            template="../templates/portlet-latest-bugs.pt"
+            template="../templates/portlet-product-latestbugs.pt"
             lp:url="/products/evolution/+portlet-latest-bugs" />
         <browser:page
             name="+portlet-related-bounties"

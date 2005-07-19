@@ -22,6 +22,9 @@ class IArchUserID(Interface):
     person = Int(title=_("Owner"), required=True, readonly=True)
     archuserid = TextLine(title=_("ARCH user ID"), required=True)
 
+    def destroySelf():
+        """Delete this ArchUserID from the database."""
+
 
 class IArchUserIDSet(Interface):
     """The set of ArchUserIDs."""

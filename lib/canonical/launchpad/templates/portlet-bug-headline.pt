@@ -26,14 +26,14 @@
         <tal:editabletask condition="bugtask/required:launchpad.Edit">
           <a href="#"
              tal:content="bugtask/contextname"
-             tal:attributes="href string:${bugtask/@@absolute_url}/+edit">
+             tal:attributes="href string:${bugtask/fmt:url}/+edit">
           </a>
         </tal:editabletask>
 
         <tal:readonlytask condition="not: bugtask/required:launchpad.Edit">
           <a href="#"
              tal:content="bugtask/contextname"
-             tal:attributes="href bugtask/@@absolute_url">
+             tal:attributes="href bugtask/fmt:url">
           </a>
         </tal:readonlytask>
 
@@ -71,8 +71,8 @@
 
       <td style="text-align: center">
         <tal:editabletask condition="bugtask/required:launchpad.Edit">
-          [<a tal:attributes="href string:${bugtask/@@absolute_url}/+edit"
-              ><span tal:condition="bugtask/assignee" 
+          [<a tal:attributes="href string:${bugtask/fmt:url}/+edit"
+              ><span tal:condition="bugtask/assignee"
                      tal:omit-tag>re</span>assign</a>]
         </tal:editabletask>
       </td>
@@ -85,10 +85,10 @@
 
 </div>
 
-<div style="font-size: 80%; text-align: right; clear: both; 
+<div style="font-size: 80%; text-align: right; clear: both;
             margin-bottom:1em; text-decoration: none;">
 
-  Indicate bug also exists: 
+  Indicate bug also exists:
   <span style="white-space: nowrap">
       <img src="/++resource++add.gif" alt="+" />
       <a href="+upstreamtask"

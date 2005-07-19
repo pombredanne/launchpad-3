@@ -22,6 +22,9 @@ class IIrcID(Interface):
     network = TextLine(title=_("IRC network"), required=True)
     nickname = TextLine(title=_("Nickname"), required=True)
 
+    def destroySelf():
+        """Delete this IrcId from the database."""
+
 
 class IIrcIDSet(Interface):
     """The set of IrcIDs."""

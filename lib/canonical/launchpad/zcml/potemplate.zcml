@@ -36,7 +36,7 @@
         for="canonical.launchpad.interfaces.IPOTemplate"
         class="canonical.launchpad.browser.POTemplateView"
         permission="zope.Public">
-        
+
         <browser:page
             name="+index"
             template="../templates/potemplate-index.pt"
@@ -57,7 +57,7 @@
         />
         <browser:page
             name="+portlet-relateds"
-            template="../templates/potemplate-portlet-relateds.pt"
+            template="../templates/portlet-potemplate-relateds.pt"
         />
         <browser:page
             name="+portlet-for"
@@ -130,6 +130,11 @@
         getter="__getitem__"
         />
 
+    <browser:menus
+        module="canonical.launchpad.browser.potemplate"
+        classes="POTemplateFacets POTemplateAppMenus"
+        />
+
     <content class="canonical.launchpad.database.POTemplateSubset">
         <require
             permission="zope.Public"
@@ -137,6 +142,7 @@
             set_attributes="sourcepackagename distrorelease"
             />
     </content>
+
     <browser:url
         for="canonical.launchpad.interfaces.IPOTemplateSubset"
         urldata="canonical.launchpad.browser.POTemplateSubsetURL"

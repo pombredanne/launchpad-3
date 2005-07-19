@@ -1,8 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BugTask', 'BugTaskSet', 'BugTaskDelta', 'mark_task',
-           'BugTaskFactory', 'BugTasksReport']
+__all__ = ['BugTask', 'BugTaskSet', 'BugTaskFactory', 'BugTasksReport']
 
 from sets import Set
 
@@ -13,10 +12,10 @@ from zope.exceptions import NotFoundError
 from zope.component import getUtility, getAdapter
 from zope.interface import implements, directlyProvides, directlyProvidedBy
 
-from canonical.lp.dbschema import (EnumCol, BugPriority, BugTaskStatus,
-    BugSeverity, BugSubscription)
+from canonical.lp.dbschema import (
+    EnumCol, BugTaskPriority, BugTaskStatus, BugTaskSeverity, BugSubscription)
 
-from canonical.launchpad.interfaces import IBugTask, IBugTaskDelta
+from canonical.launchpad.interfaces import IBugTask
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import nowUTC
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -32,14 +31,14 @@ debbugsstatusmap = {'open': BugTaskStatus.NEW,
                     'forwarded': BugTaskStatus.ACCEPTED,
                     'done': BugTaskStatus.FIXED}
 
-debbugsseveritymap = {'wishlist': BugSeverity.WISHLIST,
-                      'minor': BugSeverity.MINOR,
-                      'normal': BugSeverity.NORMAL,
-                      None: BugSeverity.NORMAL,
-                      'important': BugSeverity.MAJOR,
-                      'serious': BugSeverity.MAJOR,
-                      'grave': BugSeverity.MAJOR,
-                      'critical': BugSeverity.CRITICAL}
+debbugsseveritymap = {'wishlist': BugTaskSeverity.WISHLIST,
+                      'minor': BugTaskSeverity.MINOR,
+                      'normal': BugTaskSeverity.NORMAL,
+                      None: BugTaskSeverity.NORMAL,
+                      'important': BugTaskSeverity.MAJOR,
+                      'serious': BugTaskSeverity.MAJOR,
+                      'grave': BugTaskSeverity.MAJOR,
+                      'critical': BugTaskSeverity.CRITICAL}
 
 class BugTask(SQLBase):
     implements(IBugTask)
@@ -69,12 +68,12 @@ class BugTask(SQLBase):
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
     priority = EnumCol(
         dbName='priority', notNull=True,
-        schema=BugPriority,
-        default=BugPriority.MEDIUM)
+        schema=BugTaskPriority,
+        default=BugTaskPriority.MEDIUM)
     severity = EnumCol(
         dbName='severity', notNull=True,
-        schema=BugSeverity,
-        default=BugSeverity.NORMAL)
+        schema=BugTaskSeverity,
+        default=BugTaskSeverity.NORMAL)
     binarypackagename = ForeignKey(
         dbName='binarypackagename', foreignKey='BinaryPackageName',
         notNull=False, default=None)
@@ -413,7 +412,8 @@ class BugTaskSet:
                     (Bug.id in (
                         SELECT Bug.id FROM Bug, BugSubscription WHERE
                            (Bug.id = BugSubscription.bug) AND
-                           (BugSubscription.person = %(personid)s) AND
+                           (BugSubscription.person = TeamParticipation.team) AND
+                           (TeamParticipation.person = %(personid)s) AND
                            (BugSubscription.subscription IN
                                (%(cc)s, %(watch)s))))))'''
                 % sqlvalues(personid=user.id,
@@ -462,24 +462,6 @@ class BugTaskSet:
         return person1Tasks.intersect(person2Tasks, orderBy=orderBy)
 
 
-class BugTaskDelta:
-    """See canonical.launchpad.interfaces.IBugTaskDelta."""
-    implements(IBugTaskDelta)
-    def __init__(self, bugtask, product=None, sourcepackagename=None,
-                 binarypackagename=None, status=None, severity=None,
-                 priority=None, assignee=None, milestone=None,
-                 statusexplanation=None):
-        self.bugtask = bugtask
-        self.product = product
-        self.sourcepackagename = sourcepackagename
-        self.binarypackagename = binarypackagename
-        self.status = status
-        self.severity = severity
-        self.priority = priority
-        self.assignee = assignee
-        self.target = milestone
-        self.statusexplanation = statusexplanation
-
 def mark_task(obj, iface):
     directlyProvides(obj, iface + directlyProvidedBy(obj))
 
@@ -499,7 +481,7 @@ class BugTasksReport:
             return querystr
         else:
             return querystr + ' AND BugTask.status < %s' % sqlvalues(
-                BugPriority.MEDIUM)
+                BugTaskPriority.MEDIUM)
 
     # bugs assigned (i.e. tasks) to packages maintained by the user
     def maintainedPackageBugs(self, user, minseverity, minpriority, showclosed):
@@ -514,7 +496,7 @@ class BugTasksReport:
         querystr = self._handle_showclosed(showclosed, querystr)
         if not showclosed:
             querystr = querystr + ' AND BugTask.status < %s' % sqlvalues(
-                BugPriority.MEDIUM)
+                BugTaskPriority.MEDIUM)
         return shortlist(BugTask.select(querystr, clauseTables=clauseTables))
 
     # bugs assigned (i.e. tasks) to products owned by the user

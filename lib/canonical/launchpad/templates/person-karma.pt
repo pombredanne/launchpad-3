@@ -28,15 +28,18 @@
           <span tal:replace="actionCategory/title" />
 
           <table class="listing data">
-            <tr>
-              <th>Action</th>
-              <th>Number of times performed</th>
-            </tr>
-            
-            <tr tal:repeat="action actions">
-              <td><span tal:replace="action/name/title" /></td>
-              <td><span tal:replace="python:view.actionsCount(action)" /></td>
-            </tr>
+            <thead>
+              <tr>
+                <th>Action</th>
+                <th>Number of times performed</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr tal:repeat="action actions">
+                <td><span tal:replace="action/name/title" /></td>
+                <td><span tal:replace="python:view.actionsCount(action)" /></td>
+              </tr>
+            </tbody>
           </table>
         </li>
         <br />

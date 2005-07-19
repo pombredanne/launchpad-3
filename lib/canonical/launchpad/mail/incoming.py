@@ -12,9 +12,9 @@ import transaction
 from zope.component import getUtility, queryUtility
 from zope.component.exceptions import ComponentLookupError
 
-from canonical.launchpad.interfaces import (IPerson, IGpgHandler, 
+from canonical.launchpad.interfaces import (IPerson, IGPGHandler, 
     IMailHandler, IMailBox, ILibraryFileAliasSet)
-from canonical.launchpad.utilities import GpgHandler
+from canonical.launchpad.utilities import GPGHandler
 from canonical.launchpad.helpers import (setupInteraction,
     get_filename_from_message_id)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
@@ -51,7 +51,7 @@ def authenticateEmail(mail):
         return principal
         
     person = IPerson(principal)
-    gpghandler = getUtility(IGpgHandler)
+    gpghandler = getUtility(IGPGHandler)
     sig = gpghandler.verifySignature(signed_content, signature)
     if sig.fingerprint is not None:
         # Log in the user if the key used to sign belongs to him.

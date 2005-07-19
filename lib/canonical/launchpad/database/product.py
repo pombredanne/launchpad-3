@@ -20,7 +20,7 @@ from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, BugSeverity, BugTaskStatus,
+    EnumCol, TranslationPermission, BugTaskSeverity, BugTaskStatus,
     RosettaImportStatus)
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.distribution import Distribution
@@ -328,7 +328,7 @@ class Product(SQLBase):
         #      what it is doing.
         # - Steve Alexander, Tue Nov 30 16:49:40 UTC 2004
         bugmatrix = {}
-        for severity in BugSeverity.items:
+        for severity in BugTaskSeverity.items:
             bugmatrix[severity] = {}
             for status in BugTaskStatus.items:
                 bugmatrix[severity][status] = 0
@@ -337,7 +337,7 @@ class Product(SQLBase):
         resultset = [['']]
         for status in BugTaskStatus.items:
             resultset[0].append(status.title)
-        severities = BugSeverity.items
+        severities = BugTaskSeverity.items
         for severity in severities:
             statuses = BugTaskStatus.items
             statusline = [severity.title]

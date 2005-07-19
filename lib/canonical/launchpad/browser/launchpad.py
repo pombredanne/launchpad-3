@@ -34,7 +34,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 class RosettaAppMenus(ApplicationMenu):
     usedfor = IRosettaApplication
     facet = 'translations'
-    links = ['overview', 'about']
+    links = ['overview', 'about', 'preferences']
 
     def overview(self):
         target = ''
@@ -42,18 +42,23 @@ class RosettaAppMenus(ApplicationMenu):
         return DefaultLink(target, text)
 
     def upload(self):
-        target = ''
+        target = '+upload'
         text = 'Upload'
         return Link(target, text)
 
     def download(self):
-        target = ''
+        target = '+export'
         text = 'Download'
         return Link(target, text)
 
     def about(self):
         target = '+about'
         text = 'About Rosetta'
+        return Link(target, text)
+
+    def preferences(self):
+        target = 'prefs'
+        text = 'Preferences'
         return Link(target, text)
 
 
