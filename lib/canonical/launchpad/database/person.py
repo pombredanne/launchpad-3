@@ -37,15 +37,13 @@ from canonical.launchpad.interfaces import (
     IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IMaintainershipSet,
     IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
     ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
-    ILoginTokenSet)
+    ILoginTokenSet, IBugTaskSet)
 
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.karma import KarmaCache, KarmaAction, Karma
-
-from canonical.launchpad.validators.name import valid_name
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
@@ -108,7 +106,7 @@ class Person(SQLBase):
                                      revision=0)
         return self.calendar
 
-    timezone = StringCol(dbName='timezone', default=None)
+    timezone = StringCol(dbName='timezone', default='UTC')
 
     def get(cls, id, connection=None, selectResults=None):
         """Override the classmethod get from the base class.
@@ -495,23 +493,6 @@ class Person(SQLBase):
         else:
             email.status = EmailAddressStatus.VALIDATED
 
-    def validateAndEnsurePreferredEmail(self, email):
-        """See IPerson."""
-        if not IEmailAddress.providedBy(email):
-            raise TypeError, (
-                "Any person's email address must provide the IEmailAddress "
-                "interface. %s doesn't." % email)
-        assert email.person == self
-        assert self.preferredemail != email
-
-        if self.preferredemail is None:
-            # This branch will be executed only in the first time a person
-            # uses Launchpad. Either when creating a new account or when
-            # resetting the password of an automatically created one.
-            self.preferredemail = email
-        else:
-            email.status = EmailAddressStatus.VALIDATED
-
     def _setPreferredemail(self, email):
         """See IPerson."""
         if not IEmailAddress.providedBy(email):
@@ -573,7 +554,7 @@ class Person(SQLBase):
     @property
     def reportedbugs(self):
         """See IPerson."""
-        return BugTask.selectBy(ownerID=self.id)
+        return getUtility(IBugTaskSet).search(owner=self)
 
     @property
     def activities(self):
@@ -673,6 +654,8 @@ class PersonSet:
     """The set of persons."""
     implements(IPersonSet)
 
+    _defaultOrder = Person._defaultOrder
+
     def __init__(self):
         self.title = 'Launchpad People'
 
@@ -741,28 +724,28 @@ class PersonSet:
                             email, displayname=displayname)
         return person
 
-    def getByName(self, name, default=None):
+    def getByName(self, name, default=None, ignore_merged=True):
         """See IPersonSet."""
-        query = AND(Person.q.name==name, Person.q.mergedID==None)
+        query = Person.q.name==name
+        if ignore_merged:
+            query = AND(query, Person.q.mergedID==None)
         person = Person.selectOne(query)
         if person is None:
             return default
         return person
 
-    def nameIsValidForInsertion(self, name):
-        if not valid_name(name) or self.getByName(name) is not None:
-            return False
-        else:
-            return True
-
     def peopleCount(self):
         return self.getAllPersons().count()
 
     def getAllPersons(self, orderBy=None):
+        if orderBy is None:
+            orderBy = self._defaultOrder
         query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
     def getAllValidPersons(self, orderBy=None):
+        if orderBy is None:
+            orderBy = self._defaultOrder
         query = AND(Person.q.teamownerID==None,
                     Person.q.mergedID==None,
                     EmailAddress.q.personID==Person.q.id,
@@ -773,17 +756,25 @@ class PersonSet:
         return self.getAllTeams().count()
 
     def getAllTeams(self, orderBy=None):
+        if orderBy is None:
+            orderBy = self._defaultOrder
         return Person.select(Person.q.teamownerID!=None, orderBy=orderBy)
 
     def findByName(self, name, orderBy=None):
+        if orderBy is None:
+            orderBy = self._defaultOrder
         query = "fti @@ ftq(%s) AND merged is NULL" % quote(name)
         return Person.select(query, orderBy=orderBy)
 
     def findPersonByName(self, name, orderBy=None):
+        if orderBy is None:
+            orderBy = self._defaultOrder
         query = "fti @@ ftq(%s) AND teamowner is NULL AND merged is NULL"
         return Person.select(query % quote(name), orderBy=orderBy)
 
     def findTeamByName(self, name, orderBy=None):
+        if orderBy is None:
+            orderBy = self._defaultOrder
         query = "fti @@ ftq(%s) AND teamowner is not NULL" % quote(name)
         return Person.select(query, orderBy=orderBy)
 
@@ -804,6 +795,8 @@ class PersonSet:
 
     def getUbuntites(self, orderBy=None):
         """See IPersonSet."""
+        if orderBy is None:
+            orderBy = self._defaultOrder
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
 
@@ -1212,6 +1205,7 @@ class TeamMembership(SQLBase):
     implements(ITeamMembership)
 
     _table = 'TeamMembership'
+    _defaultOrder = 'id'
 
     team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
@@ -1250,7 +1244,8 @@ class TeamMembershipSet:
         # XXX: Don't use assert.
         #      SteveAlexander, 2005-04-23
         assert isinstance(teamID, int)
-        orderBy = orderBy or self._defaultOrder
+        if orderBy is None:
+            orderBy = self._defaultOrder
         clauses = []
         for status in statuses:
             clauses.append("TeamMembership.status = %s" % sqlvalues(status))

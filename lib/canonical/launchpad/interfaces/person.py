@@ -19,19 +19,36 @@ __all__ = [
     'ITeamReassignment',
     ]
 
-from zope.schema import Choice, Datetime, Int, Text, TextLine, Password
+from zope.schema import (
+    Choice, Datetime, Int, Text, TextLine, Password, ValidationError)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 from zope.i18nmessageid import MessageIDFactory
+
+from canonical.launchpad.validators.name import valid_name
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, EmailAddressStatus)
 
 _ = MessageIDFactory('launchpad')
 
-def _valid_person_name(name):
-    """See IPersonSet.nameIsValidForInsertion()."""
-    return getUtility(IPersonSet).nameIsValidForInsertion(name)
+
+class NameAlreadyTaken(ValidationError):
+    __doc__ = _("""This name is already in use""")
+
+
+class PersonNameField(TextLine):
+
+    def _validate(self, value):
+        TextLine._validate(self, value)
+        if (IPerson.providedBy(self.context) and 
+            value == getattr(self.context, self.__name__)):
+            # The name wasn't changed.
+            return
+
+        person = getUtility(IPersonSet).getByName(value, ignore_merged=False)
+        if person is not None:
+            raise NameAlreadyTaken(value)
 
 
 class IPerson(Interface):
@@ -40,9 +57,9 @@ class IPerson(Interface):
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
-    name = TextLine(
-            title=_('Name'), required=True, readonly=True,
-            constraint=_valid_person_name,
+    name = PersonNameField(
+            title=_('Name'), required=True, readonly=False,
+            constraint=valid_name,
             description=_(
                 "A short unique name, beginning with a lower-case "
                 "letter or number, and containing only letters, "
@@ -84,9 +101,8 @@ class IPerson(Interface):
 
     sshkeys = Attribute(_('List of SSH keys'))
 
-    timezone = TextLine(
-        title=_('Timezone Name'), required=False, readonly=False
-        )
+    timezone = Choice(title=_('Timezone Name'), required=True, readonly=False,
+                      vocabulary='TimezoneName')
 
     # Properties of the Person object.
     karma = Attribute("The cached karma for this person.")
@@ -365,12 +381,6 @@ class IPersonSet(Interface):
         Raise KeyError if there is no such person.
         """
 
-    def nameIsValidForInsertion(name):
-        """Return true if <name> is valid and is not yet in the database.
-
-        <name> will be valid if valid_name(name) returns True.
-        """
-
     def createPersonAndEmail(email, name=None, displayname=None, givenname=None,
             familyname=None, password=None, passwordEncrypted=False):
         """Create a new Person and an EmailAddress for that Person.
@@ -416,8 +426,9 @@ class IPersonSet(Interface):
         Return the default value if there is no such person.
         """
 
-    def getByName(name, default=None):
-        """Return the person with the given name, ignoring merged persons.
+    def getByName(name, default=None, ignore_merged=True):
+        """Return the person with the given name, ignoring merged persons if
+        ignore_merged is True.
 
         Return the default value if there is no such person.
         """
@@ -425,19 +436,19 @@ class IPersonSet(Interface):
     def getAllTeams(orderBy=None):
         """Return all Teams.
 
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in Person._defaultOrder.
         """
 
     def getAllPersons(orderBy=None):
         """Return all Persons, ignoring the merged ones.
 
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in Person._defaultOrder.
         """
 
     def getAllValidPersons(orderBy=None):
@@ -445,10 +456,10 @@ class IPersonSet(Interface):
 
         A valid person is any person with a preferred email address.
 
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in Person._defaultOrder.
         """
 
     def peopleCount():
@@ -460,38 +471,39 @@ class IPersonSet(Interface):
     def findByName(name, orderBy=None):
         """Return all non-merged Persons and Teams with name matching.
 
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in Person._defaultOrder.
         """
 
     def findPersonByName(name, orderBy=None):
         """Return all not-merged Persons with name matching.
 
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in Person._defaultOrder.
         """
 
     def findTeamByName(name, orderBy=None):
         """Return all Teams with name matching.
 
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in Person._defaultOrder.
         """
 
-    def getUbuntites():
-        """Return a set of person with valid Ubuntite flag."""
+    def getUbuntites(orderBy=None):
+        """Return a set of person with valid Ubuntite flag.
+        
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in Person._defaultOrder.
+        """
 
-    # TODO: Currently not declared part of the interface - we need to
-    # sort out permissions as we need to ensure it can only be called
-    # in specific instances. -- StuartBishop 20050331
-    # XXX: salgado, 2005-03-31: can't we have this method declared in IPerson?
-    # I can't see why we need it here.
     def merge(from_person, to_person):
         """Merge a person into another."""
 
@@ -570,30 +582,30 @@ class ITeamMembershipSet(Interface):
         """Return all active TeamMemberships for the given team.
 
         Active memberships are the ones with status APPROVED or ADMIN.
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in TeamMembership._defaultOrder.
         """
 
     def getInactiveMemberships(teamID, orderBy=None):
         """Return all inactive TeamMemberships for the given team.
 
         Inactive memberships are the ones with status EXPIRED or DEACTIVATED.
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in TeamMembership._defaultOrder.
         """
 
     def getProposedMemberships(teamID, orderBy=None):
         """Return all proposed TeamMemberships for the given team.
 
         Proposed memberships are the ones with status PROPOSED.
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in TeamMembership._defaultOrder.
         """
 
     def getByPersonAndTeam(personID, teamID, default=None):

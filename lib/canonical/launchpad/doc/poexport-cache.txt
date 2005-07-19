@@ -81,7 +81,7 @@ This tests two specific things:
    cache's validity.
 
     >>> empty_pofile = pofile.potemplate.getOrCreatePOFile('cy')
-    >>> empty_pofile.latest_submission is None
+    >>> empty_pofile.latestsubmission is None
     True
     >>> empty_pofile.validExportCache()
     False

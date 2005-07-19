@@ -12,8 +12,8 @@ from canonical.database.sqlbase import (quote, sqlvalues,
     flush_database_updates)
 from canonical.database.constants import UTC_NOW
 
-from canonical.lp.dbschema import \
-    BugTaskStatus, BugSeverity, PackagePublishingStatus, PackagingType
+from canonical.lp.dbschema import (
+    BugTaskStatus, BugTaskSeverity, PackagePublishingStatus, PackagingType)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (ISourcePackage,
@@ -22,14 +22,14 @@ from canonical.launchpad.interfaces import (ISourcePackage,
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.maintainership import Maintainership
-from canonical.launchpad.database.vsourcepackagereleasepublishing import \
-    VSourcePackageReleasePublishing
-from canonical.launchpad.database.sourcepackageindistro import \
-    SourcePackageInDistro
+from canonical.launchpad.database.vsourcepackagereleasepublishing import (
+    VSourcePackageReleasePublishing)
+from canonical.launchpad.database.sourcepackageindistro import (
+    SourcePackageInDistro)
 from canonical.launchpad.database.publishing import SourcePackagePublishing
 from canonical.launchpad.database.publishedpackage import PublishedPackage
-from canonical.launchpad.database.sourcepackagerelease import \
-    SourcePackageRelease
+from canonical.launchpad.database.sourcepackagerelease import (
+    SourcePackageRelease)
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.potemplate import POTemplate
@@ -303,11 +303,11 @@ class SourcePackage:
 
         ret = [len(self.bugs)]
         severities = [
-            BugSeverity.CRITICAL,
-            BugSeverity.MAJOR,
-            BugSeverity.NORMAL,
-            BugSeverity.MINOR,
-            BugSeverity.WISHLIST,
+            BugTaskSeverity.CRITICAL,
+            BugTaskSeverity.MAJOR,
+            BugTaskSeverity.NORMAL,
+            BugTaskSeverity.MINOR,
+            BugTaskSeverity.WISHLIST,
             BugTaskStatus.FIXED,
             BugTaskStatus.ACCEPTED,
             ]

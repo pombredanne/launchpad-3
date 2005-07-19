@@ -108,9 +108,15 @@ class IKarmaActionSet(IAddFormCustomization):
     def selectByCategory(category):
         """Return all KarmaAction objects of the given category."""
 
-    def selectByCategoryAndPerson(category, person):
+    def selectByCategoryAndPerson(category, person, orderBy=None):
         """Return all KarmaAction objects of the given category if <person>
-        performed these actions at least once."""
+        performed these actions at least once.
+
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in KarmaAction._defaultOrder.
+        """
 
 
 class IKarmaCache(Interface):

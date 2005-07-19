@@ -10,6 +10,7 @@
     <li class="edit"><a href="+editsshkey">SSH Keys</a></li>
     <li class="edit"><a href="+editgpgkey">GPG Keys</a></li>
     <li class="edit"><a href="+codesofconduct">Code of Conduct signatures</a></li>
+    <li class="edit"><a href="+changetz">Change Time Zone</a></li>
     </ul>
   </div>
 </div>

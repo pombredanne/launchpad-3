@@ -17,7 +17,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
-    IPerson, IProject, IProductSet, IProjectBugTrackerSet)
+    IPerson, IProject, IProjectSet, IProductSet, IProjectBugTrackerSet)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.bugtracker import newBugTracker
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -264,7 +264,7 @@ class ProjectSetView(object):
         # get the launchpad person who is creating this product
         owner = IPerson(self.request.principal)
         # Now create a new project in the db
-        project = getUtility(IProject).new(
+        project = getUtility(IProjectSet).new(
                           name=name,
                           title=title,
                           displayname=displayname,

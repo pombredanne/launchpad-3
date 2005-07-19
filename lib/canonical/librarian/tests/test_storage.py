@@ -17,18 +17,19 @@ from canonical.librarian.storage import LibrarianStorage, DigestMismatchError
 from canonical.librarian.storage import _sameFile, _relFileLocation
 from canonical.librarian import db
 from canonical.database.sqlbase import SQLBase
-from canonical.database.sqlbase import FakeZopelessConnectionDescriptor
+from canonical.database.sqlbase import (
+        FakeZopelessConnectionDescriptor, FakeZopelessTransactionManager)
 
 class LibrarianStorageTestCase(unittest.TestCase):
     """Librarian test cases that don't involve the database"""
     def setUp(self):
         self.directory = tempfile.mkdtemp()
         self.storage = LibrarianStorage(self.directory, db.Library())
-        FakeZopelessConnectionDescriptor.install(None)
+        self.fztm = FakeZopelessTransactionManager()
 
     def tearDown(self):
         shutil.rmtree(self.directory, ignore_errors=True)
-        FakeZopelessConnectionDescriptor.uninstall()
+        self.fztm.uninstall()
 
     def test_hasFile_missing(self):
         # Make sure hasFile returns False when a file is missing

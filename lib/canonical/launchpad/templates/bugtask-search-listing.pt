@@ -113,7 +113,7 @@
                         product_name task/product/name|nothing;
                         project_name task/product/project/name|nothing;
                         package_name task/sourcepackagename/name|nothing;
-                        bug_link task/bug/@@absolute_url;
+                        bug_link task/bug/fmt:url;
                         ass_owner task/owner/name|nothing;
                         potential_assignee logged_in/browsername|nothing;
                         status task/status/title;

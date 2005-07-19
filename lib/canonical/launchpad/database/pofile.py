@@ -103,6 +103,9 @@ class POFile(SQLBase, RosettaStats):
     datecreated = UtcDateTimeCol(notNull=True,
         default=UTC_NOW)
 
+    latestsubmission = ForeignKey(foreignKey='POSubmission',
+        dbName='latestsubmission', notNull=False, default=None)
+
     @property
     def title(self):
         """See IPOFile."""
@@ -499,20 +502,6 @@ class POFile(SQLBase, RosettaStats):
         self.fuzzyheader = 'fuzzy' in new_header.flags
         self.pluralforms = new_header.nplurals
 
-    @property
-    def latest_submission(self):
-        """See IPOFile."""
-        results = POSubmission.select('''
-            POSubmission.pomsgset = POMsgSet.id AND
-            POMsgSet.pofile = %s''' % sqlvalues(self.id),
-            orderBy='-datecreated',
-            clauseTables=['POMsgSet'])
-        try:
-            return results[0]
-        except IndexError:
-            return None
-
-
     # ICanAttachRawFileData implementation
 
     def attachRawFileData(self, contents, published, importer=None):
@@ -665,10 +654,10 @@ class POFile(SQLBase, RosettaStats):
         if self.exportfile is None:
             return False
 
-        if not self.latest_submission:
+        if self.latestsubmission is None:
             return True
 
-        change_time = self.latest_submission.datecreated
+        change_time = self.latestsubmission.datecreated
         return change_time < self.exporttime
 
     def updateExportCache(self, contents):

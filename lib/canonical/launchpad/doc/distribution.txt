@@ -48,9 +48,8 @@ Or by version:
 You can list development distroreleases:
 
     >>> devdists = ubuntu.getDevelopmentReleases()
-    >>> print devdists.count()
-    1
-    >>> print devdists[0].name
+    >>> for devdist in devdists:
+    ...     print devdist.name
     hoary
 
 [1] https://wiki.launchpad.canonical.com/DerivationOverview

@@ -36,6 +36,11 @@ os.environ['PYTHONPATH'] = ':'.join(sys.path)
 import importfascist
 importfascist.install_import_fascist()
 
+# Install the warning handler hook and atexit handler.
+import warninghandler
+warninghandler.install_warning_handler()
+
+
 # Tell canonical.config to use the test config section in launchpad.conf
 from canonical.config import config
 config.setDefaultSection('testrunner')

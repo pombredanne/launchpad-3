@@ -19,7 +19,7 @@
     This page shows the details of an external bug tracker registered with
     the Launchpad.
   </p>
-  
+
   <p tal:content="context/summary">
     $BugTracker.summary goes here. This should be quite short,
     just a single paragraph of text really, giving the BugTracker
@@ -41,9 +41,9 @@
     <tbody>
       <tr tal:repeat="watch context/latestwatches"
           tal:attributes="onclick
-              string:window.location='${watch/bug/@@absolute_url}'">
+              string:window.location='${watch/bug/fmt:url}'">
         <td><a tal:content="watch/bug/id"
-               tal:attributes="href string:${watch/bug/@@absolute_url}"
+               tal:attributes="href watch/bug/fmt:url"
                >34</a></td>
         <td tal:content="watch/bug/title">Malone Bug Title</td>
         <td><a tal:content="watch/remotebug"
@@ -53,7 +53,7 @@
   </table>
 
   </tal:block>
-    
+
 </div>
 
 </body>

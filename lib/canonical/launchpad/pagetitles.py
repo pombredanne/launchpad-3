@@ -32,6 +32,8 @@ after the helpers.
 """
 __metaclass__ = type
 
+from canonical.launchpad.interfaces import IBugTaskSubset
+
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
 # Helpers.
@@ -89,7 +91,7 @@ bazaar_sync_review = 'Review upstream repositories for Launchpad Bazaar syncing'
 
 binary_index = 'Binary Packages'
 
-def binarypackage_index (context, view):
+def binarypackage_index(context, view):
     return "%s binary package in Launchpad" % context.title
 
 binarypackage_search = 'Search Binary Package Database'
@@ -110,9 +112,19 @@ bounty = ContextTitle('Launchpad Bounty: %s')
 
 branch_index = ContextTitle('Bazaar Branch: %s')
 
-bug_activity = ContextId('Activity History of Malone Bug # %s')
+bug_activity = ContextId('Bug #%s: Activity Log')
 
-bug_add = 'Malone: Add a New Bug'
+def bug_add(context, view):
+    # XXX, Brad Bollenbach, 2005-07-15: This is a hack until our fancy
+    # new page title machinery allows for two different pages that use
+    # the same template to have different titles (the way ZCML does.)
+    # See https://launchpad.ubuntu.com/malone/bugs/1376
+    contextual_bug_form = IBugTaskSubset(context, None)
+    if contextual_bug_form is not None:
+        context_title = ContextTitle('Bugs in %s: Report a Bug')
+        return context_title(context, view)
+    else:
+        return "Malone: Report a Bug"
 
 bug_attachments = ContextId('Malone Bug Attachments for Bug #%s')
 
@@ -180,7 +192,7 @@ codeofconduct_admin = 'Administer codes of conduct in Launchpad'
 
 codeofconduct_index = ContextTitle('%s')
 
-codeofconduct_list = 'Codes of conduct in Launchpad'
+codeofconduct_list = 'Codes of Conduct in Launchpad'
 
 def cvereference_index(context, view):
     return 'Malone Bug #%s CVE Reference' % context.bug.id
@@ -201,7 +213,7 @@ default_editform = 'Default "Edit" Page'
 
 default_error = 'System Error'
 
-distribution_bugs = ContextTitle('Release %s: Bugs')
+distribution_members = ContextTitle('Members of the %s distribution')
 
 distro_add = 'Adding New Distribution'
 
@@ -303,6 +315,10 @@ foaf_validateteamemail = 'Validate email address'
 
 foaf_validategpg = 'Validate GPG Key'
 
+karmaaction_index = 'Karma Actions'
+
+karmaaction_edit = 'Edit Karma Action'
+
 # launchpad_debug doesn't need a title.
 
 def launchpad_addform(context, view):
@@ -365,6 +381,8 @@ notfound = 'Launchpad Page Not Found'
 
 object_potemplatenames = ContextDisplayName('Template names for %s')
 
+object_reassignment = ContextTitle('Reassign %s')
+
 def package_bugs(context, view):
     return 'Package Bug Listing for %s' % context.name
 
@@ -400,13 +418,19 @@ person_packages = ContextDisplayName('Packages Maintained By %s')
 
 person_reportedbugs = ContextDisplayName('Bugs Reported By %s')
 
+person_review = ContextDisplayName("Review %s' Information")
+
 person_sshkey = ContextDisplayName('%s SSH Keys')
+
+person_timezone = ContextDisplayName('Time Zone for %s')
 
 person_translations = ContextDisplayName('Translations Made By %s')
 
 # plone.css is a css file
 
 pofile_edit = 'Rosetta: Edit PO file details'
+
+pofile_export = ContextTitle('%s file exports')
 
 def pofile_index(context, view):
     return 'Rosetta: %s: %s' % (
@@ -462,6 +486,8 @@ def productrelease_new(context, view):
 
 productseries_translations = ContextTitle(
     'Rosetta Translation Templates for %s')
+
+productseries_ubuntupkg = 'Ubuntu Source Package'
 
 products_index = 'Products in Launchpad'
 

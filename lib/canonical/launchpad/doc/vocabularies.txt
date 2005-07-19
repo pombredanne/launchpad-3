@@ -269,4 +269,14 @@ o ValidTeamOwner - With the exception of the team itself and all teams owned
     >>> person in vocab
     True
 
+o SchemaVocabulary - launchpad Schema Vocabulary..
+
+    >>> vocabulary = vocabulary_registry.get(None,"Schema")
+    >>> list(vocabulary.search(None))
+    []
+    >>> schemas_vocabulary = vocabulary.search("m")
+    >>> schemas = [schema.title for schema in schemas_vocabulary]
+    >>> schemas
+    [u'enema', u'mark', u'schema', u'trema']
+
 XXX: document more vocabularies here, particularly when they break!

@@ -315,7 +315,7 @@ class HeaderUpdateTest(ExportTest):
             datecreated = datetime.fromtimestamp(
                 1000000000, pytz.timezone('UTC')))
         mock_pofile = Mock(
-            latest_submission=mock_submission)
+            latestsubmission=mock_submission)
 
         # The existing header has both fields that should be preserved and
         # fields that need updating.
