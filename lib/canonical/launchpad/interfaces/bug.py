@@ -61,8 +61,7 @@ class IBug(Interface):
     duplicateof = Int(
         title=_('Duplicate Of'), required=False, constraint=non_duplicate_bug)
     communityscore = Int(
-        title=_('Community Score'), required=True, readonly=True,
-        default=0)
+        title=_('Community Score'), required=True, readonly=True, default=0)
     communitytimestamp = Datetime(
         title=_('Community Timestamp'), required=True, readonly=True)
     hits = Int(
