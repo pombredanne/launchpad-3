@@ -363,8 +363,8 @@ class ProductSeriesView(object):
         if self.request.method != "POST":
             return
         form = self.form
-        ubuntupkg = form.get("ubuntupkg", None)
-        if ubuntupkg is None:
+        ubuntupkg = form.get("ubuntupkg", '')
+        if ubuntupkg == '':
             return
         # make sure we have a person to work with
         if self.user is None:
@@ -374,7 +374,7 @@ class ProductSeriesView(object):
         spns = getUtility(ISourcePackageNameSet)
         try:
             spn = spns[ubuntupkg]
-        except IndexError:
+        except NotFoundError:
             self.errormsgs.append('Invalid source package name %s' % ubuntupkg)
             return
         # set the packaging record for this productseries in the current

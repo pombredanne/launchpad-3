@@ -34,8 +34,6 @@
 
         <label>Source Package</label>
 
-        <span class="fieldRequired" title="Required">(Required)</span>
-
           <div class="formHelp">
             The name of the SOURCE package in the current release of
             Ubuntu (Version <span
