@@ -24,13 +24,51 @@ from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IPOTemplateSet, IPOTemplateNameSet, IPersonSet,
-    RawFileAttachFailed, IPOExportRequestSet, ICanonicalUrlData,
-    ILaunchpadCelebrities)
+    IPOTemplate, IPOTemplateSet, IPOTemplateNameSet, IPOExportRequestSet,
+    IPersonSet, RawFileAttachFailed, ICanonicalUrlData, ILaunchpadCelebrities,
+    ILaunchBag)
 from canonical.launchpad.components.poexport import POExport
-from canonical.launchpad.browser.pofile import POFileView
-from canonical.launchpad.browser.pofile import BaseExportView
+from canonical.launchpad.browser.pofile import (
+    POFileView, BaseExportView, POFileAppMenus)
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, ApplicationMenu, DefaultLink, Link, canonical_url)
+
+
+class POTemplateFacets(StandardLaunchpadFacets):
+    usedfor = IPOTemplate
+
+    def _parent_url(self):
+        """Return the URL of the thing this PO template is attached to."""
+
+        if self.context.distrorelease:
+            source_package = self.context.distrorelease.getSourcePackageByName(
+                self.context.sourcepackagename)
+            return canonical_url(source_package)
+        else:
+            return canonical_url(self.context.productseries)
+
+    def overview(self):
+        target = self._parent_url()
+        text = 'Overview'
+        return Link(target, text)
+
+    def translations(self):
+        target = ''
+        text = 'Translations'
+        return DefaultLink(target, text)
+
+    def bugs(self):
+        target = self._parent_url() + '/+bugs'
+        text = 'Bugs'
+        return Link(target, text)
+
+
+class POTemplateAppMenus(POFileAppMenus):
+    usedfor = IPOTemplate
+
+    links = ['overview', 'upload', 'download', 'edit']
+
 
 class POTemplateSubsetView:
 

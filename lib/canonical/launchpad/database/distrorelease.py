@@ -32,6 +32,7 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.distroreleaselanguage import \
     DistroReleaseLanguage
 from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.database.sourcepackagename import SourcePackageNameSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.binarypackage import BinaryPackage
 
