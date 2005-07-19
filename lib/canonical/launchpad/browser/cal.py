@@ -224,7 +224,10 @@ class CalendarViewBase:
         self.datestring = datestring
         self.user_timezone = getUtility(ILaunchBag).timezone
         user = getUtility(ILaunchBag).user
-        self.subscriptions = ICalendarSubscriptionSubset(user, None)
+        if user is not None:
+            self.subscriptions = ICalendarSubscriptionSubset(user)
+        else:
+            self.subscriptions = None
 
     def _setViewURLs(self, date):
         """Computes the URLs used to switch calendar views."""
