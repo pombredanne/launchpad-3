@@ -328,6 +328,10 @@
         lp:url="doap/products/+new">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
         <browser:widget
+           field="name"
+           class="zope.app.form.browser.TextWidget"
+           extra="tabindex=1" />
+        <browser:widget
            field="homepageurl"
            class="zope.app.form.browser.TextWidget"
            displayWidth="60" />
