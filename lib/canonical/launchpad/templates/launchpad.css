@@ -271,7 +271,7 @@ tr.rowLinkified a {
 
 /* Bug Severity markers */
 .severityCritical { color: Red; }
-.severityMajor    { color: Orange; }
+.severityMajor    { color: #ff6600; }
 .severityNormal   { color: Green; }
 .severityMinor    { color: Black; }
 .severityWishlist { color: Blue; }
