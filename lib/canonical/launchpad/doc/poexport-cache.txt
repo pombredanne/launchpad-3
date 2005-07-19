@@ -57,7 +57,8 @@ Now let's add a translation to the PO file.
     >>> msgset = pofile.messageSet(msgid)
     >>> print msgset.active_texts
     [None]
-    >>> msgset.updateTranslationSet(person, {0: 'Blah.'}, False, False, True)
+    >>> msgset.updateTranslationSet(person, {0: 'Blah.'}, fuzzy=False,
+    ...     published=False)
     >>> print msgset.active_texts
     [u'Blah.']
 

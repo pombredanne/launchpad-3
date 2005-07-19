@@ -547,13 +547,11 @@ class POFileView:
                     person=self.user,
                     new_translations=new_translations,
                     fuzzy=fuzzy,
-                    published=False,
-                    is_editor=self.is_editor)
+                    published=False)
             except gettextpo.error, e:
                 # Save the error message gettext gave us to show it to the
                 # user.
                 messageSet['error'] = str(e)
-                number_errors += 1
 
         # update the statistis for this po file
         pofile.updateStatistics()
