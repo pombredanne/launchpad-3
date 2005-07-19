@@ -74,7 +74,7 @@
             lp:url="/products/evolution/+portlet-details" />
         <browser:page
             name="+portlet-branches"
-            template="../templates/product-portlet-branches.pt"
+            template="../templates/portlet-product-branches.pt"
             lp:url="/products/evolution/+portlet-branches" />
         <browser:page
             name="+portlet-translations"
