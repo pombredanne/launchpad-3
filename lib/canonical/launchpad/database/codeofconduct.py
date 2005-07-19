@@ -8,6 +8,11 @@ __metaclass__ = type
 __all__ = ['CodeOfConduct', 'CodeOfConductSet', 'CodeOfConductConf',
            'SignedCodeOfConduct', 'SignedCodeOfConductSet']
 
+import os
+import errno
+from sha import sha
+from datetime import datetime
+
 from zope.interface import implements
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
@@ -21,14 +26,9 @@ from canonical.launchpad.mail.sendmail import simple_sendmail
 
 from canonical.launchpad.interfaces import (
     ICodeOfConduct, ICodeOfConductSet, ICodeOfConductConf,
-    ISignedCodeOfConduct, ISignedCodeOfConductSet, IGpgHandler,
-    IPersonSet, IGPGKeySet, IGpgHandler
+    ISignedCodeOfConduct, ISignedCodeOfConductSet, IGPGHandler,
+    IGPGKeySet
     )
-
-# Python
-import os
-from datetime import datetime
-from sha import sha
 
 class CodeOfConduct:
     """CoC class model.
@@ -90,7 +90,7 @@ class CodeOfConductSet:
 
     implements(ICodeOfConductSet)
 
-    title = 'Codes of Conduct Page'
+    title = 'Launchpad Codes of Conduct'
 
     def __getitem__(self, version):
         """See ICodeOfConductSet."""
@@ -193,9 +193,7 @@ class SignedCodeOfConductSet:
 
     implements(ISignedCodeOfConductSet)
 
-    # XXX cprov 20050301
-    # Might be replace for something similar to displayname
-    title = 'Signed Codes of Conduct Set Page'
+    title = 'Code of Conduct Administrator Page'
 
     def __getitem__(self, id):
         """Get a Signed CoC Entry."""
@@ -222,7 +220,7 @@ class SignedCodeOfConductSet:
         # * CoC was signed (correctly) by the GPGkey.
 
         # use a utility to perform the GPG operations
-        gpghandler = getUtility(IGpgHandler)
+        gpghandler = getUtility(IGPGHandler)
         sig = gpghandler.verifySignature(signedcode)
 
         if sig is None:

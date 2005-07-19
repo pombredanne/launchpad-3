@@ -7,7 +7,7 @@ from datetime import datetime
 import random
 
 from zope.interface import implements
-from zope.component import ComponentLookupError, getUtility
+from zope.component import getUtility
 
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, AND
 
@@ -17,7 +17,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.interfaces import (
-    ILoginToken, ILoginTokenSet, IGpgHandler
+    ILoginToken, ILoginTokenSet, IGPGHandler
     )
 from canonical.lp.dbschema import LoginTokenType, EnumCol
 from canonical.launchpad.validators.email import valid_email
@@ -76,7 +76,7 @@ class LoginToken(SQLBase):
 
         # encrypt message if requested
         if encrypt:
-            gpghandler = getUtility(IGpgHandler)
+            gpghandler = getUtility(IGPGHandler)
             message = gpghandler.encryptContent(message, key.fingerprint)
 
         subject = "Launchpad: Validate your GPG Key"

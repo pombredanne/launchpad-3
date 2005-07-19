@@ -1032,7 +1032,7 @@ class DummyPOFile(RosettaStats):
         self.potemplate = potemplate
         self.language = language
         self.header = ''
-        self.latest_submission = None
+        self.latestsubmission = None
         self.messageCount = len(potemplate)
 
     @property

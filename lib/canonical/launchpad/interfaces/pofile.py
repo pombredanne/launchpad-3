@@ -62,10 +62,9 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 
     datecreated = Attribute("The fate this file was created.")
 
-    latest_submission = Attribute("""Of all the translation submissions
-        belonging to PO messages sets belonging to this PO file, return the
-        one which was most recently modified (greatest datelastactive), or
-        None if there are no submissions belonging to this PO file.""")
+    latestsubmission = Attribute("""The translation submissions which was
+        most recently added, or None if there are no submissions belonging
+        to this PO file.""")
 
     translators = Attribute("A list of Translators that have been "
         "designated as having permission to edit these files in this "

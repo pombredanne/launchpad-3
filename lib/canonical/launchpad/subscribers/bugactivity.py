@@ -4,6 +4,7 @@ __metaclass__ = type
 
 from datetime import datetime
 
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.proxy import isProxy
 from zope.schema.vocabulary import getVocabularyRegistry
@@ -11,8 +12,7 @@ from zope.schema.vocabulary import getVocabularyRegistry
 from canonical.lp.dbschema import Item
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
-    IPerson, IBug, ISourcePackageRelease, IProductRelease)
-from canonical.launchpad.database import BugActivity
+    IPerson, IBug, ISourcePackageRelease, IProductRelease, IBugActivitySet)
 
 vocabulary_registry = getVocabularyRegistry()
 
@@ -65,7 +65,7 @@ def what_changed(sqlobject_modified_event):
     return changes
 
 def record_bug_added(bug, object_created_event):
-    BugActivity(
+    getUtility(IBugActivitySet).new(
         bug = bug.id,
         datechanged = UTC_NOW,
         person = object_created_event.user,
@@ -82,7 +82,7 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
                 whatchanged = 'marked as duplicate'
             else:
                 whatchanged = changed_field
-            BugActivity(
+            getUtility(IBugActivitySet).new(
                 bug = bug_edited.id,
                 datechanged = UTC_NOW,
                 person = sqlobject_modified_event.user,
@@ -97,7 +97,7 @@ def record_bug_task_added(bug_task, object_created_event):
         activity_message = 'assigned to upstream ' + bug_task.product.name
     else:
         activity_message = 'assigned to source package ' + bug_task.sourcepackagename.name
-    BugActivity(
+    getUtility(IBugActivitySet).new(
         bug=bug_task.bugID,
         datechanged=UTC_NOW,
         person=object_created_event.user,
@@ -126,7 +126,7 @@ def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
                 oldvalue = unicode(oldvalue)
             if newvalue is not None:
                 newvalue = unicode(newvalue)
-            BugActivity(
+            getUtility(IBugActivitySet).new(
                 bug=bug_task_edited.bug,
                 datechanged=UTC_NOW,
                 person=sqlobject_modified_event.user,
@@ -136,7 +136,7 @@ def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
                 message='XXX: not yet implemented')
 
 def record_product_task_added(product_task, object_created_event):
-    BugActivity(
+    getUtility(IBugActivitySet).new(
         bug=product_task.bugID,
         datechanged=UTC_NOW,
         person=object_created_event.user,
@@ -149,7 +149,7 @@ def record_product_task_edited(product_task_edited, sqlobject_modified_event):
         product_name = sqlobject_modified_event.object_before_modification.product.name
         for changed_field in changes.keys():
             oldvalue, newvalue = changes[changed_field]
-            BugActivity(
+            getUtility(IBugActivitySet).new(
                 bug=product_task_edited.bug,
                 datechanged=UTC_NOW,
                 person=sqlobject_modified_event.user,
@@ -162,7 +162,7 @@ def record_package_infestation_added(package_infestation, object_created_event):
     package_release_name = "%s %s" % (
         package_infestation.sourcepackagerelease.sourcepackagename.name,
         package_infestation.sourcepackagerelease.version)
-    BugActivity(
+    getUtility(IBugActivitySet).new(
         bug=package_infestation.bugID,
         datechanged=UTC_NOW,
         person=package_infestation.creatorID,
@@ -177,7 +177,7 @@ def record_package_infestation_edited(package_infestation_edited, sqlobject_modi
             sqlobject_modified_event.object_before_modification.sourcepackagerelease.version)
         for changed_field in changes.keys():
             oldvalue, newvalue = changes[changed_field]
-            BugActivity(
+            getUtility(IBugActivitySet).new(
                 bug=package_infestation_edited.bug.id,
                 datechanged=UTC_NOW,
                 person=sqlobject_modified_event.user,
@@ -190,7 +190,7 @@ def record_product_infestation_added(product_infestation, object_created_event):
     product_release_name = "%s %s" % (
         product_infestation.productrelease.product.name,
         product_infestation.productrelease.version)
-    BugActivity(
+    getUtility(IBugActivitySet).new(
         bug=product_infestation.bugID,
         datechanged=UTC_NOW,
         person=product_infestation.creatorID,
@@ -205,7 +205,7 @@ def record_product_infestation_edited(product_infestation_edited, sqlobject_modi
             sqlobject_modified_event.object_before_modification.productrelease.version)
         for changed_field in changes.keys():
             oldvalue, newvalue = changes[changed_field]
-            BugActivity(
+            getUtility(IBugActivitySet).new(
                 bug=product_infestation_edited.bug.id,
                 datechanged=UTC_NOW,
                 person=sqlobject_modified_event.user,
@@ -217,7 +217,7 @@ def record_product_infestation_edited(product_infestation_edited, sqlobject_modi
 def record_bugsubscription_added(bugsubscription_added, object_created_event):
     sv = vocabulary_registry.get(None, "Subscription")
     term = sv.getTerm(bugsubscription_added.subscription)
-    BugActivity(
+    getUtility(IBugActivitySet).new(
         bug=bugsubscription_added.bug,
         datechanged=UTC_NOW,
         person=object_created_event.user,
@@ -231,7 +231,7 @@ def record_bugsubscription_edited(bugsubscription_edited,
     if changes:
         for changed_field in changes.keys():
             oldvalue, newvalue = changes[changed_field]
-            BugActivity(
+            getUtility(IBugActivitySet).new(
                 bug=bugsubscription_edited.bug,
                 datechanged=UTC_NOW,
                 person=sqlobject_modified_event.user,

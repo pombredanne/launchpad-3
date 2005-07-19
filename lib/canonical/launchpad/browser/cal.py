@@ -267,10 +267,14 @@ class CalendarViewBase:
         self.datestring = datestring
         self.user_timezone = getUtility(ILaunchBag).timezone
         user = getUtility(ILaunchBag).user
-        self.subscriptions = ICalendarSubscriptionSubset(user, None)
+        if user is not None:
+            self.subscriptions = ICalendarSubscriptionSubset(user)
+        else:
+            self.subscriptions = None
+
 
     def eventColour(self, event):
-        if self.subscriptions:
+        if self.subscriptions is not None:
             return self.subscriptions.getColour(event.calendar)
         else:
             # XXX - James Henstridge 2005-07-11
@@ -698,7 +702,7 @@ class ViewCalendarSubscriptions:
         self.context = context
         self.request = request
         user = getUtility(ILaunchBag).user
-        self._subscriptions = ICalendarSubscriptionSubset(user, None)
+        self._subscriptions = ICalendarSubscriptionSubset(user)
 
     def subscriptions(self):
         """Returns information about all the user's calendar
@@ -745,9 +749,9 @@ class ViewCalendarSubscribe:
         self.request = request
 
         user = getUtility(ILaunchBag).user
-        self._subscriptions = ICalendarSubscriptionSubset(user, None)
+        self._subscriptions = ICalendarSubscriptionSubset(user)
 
-    def subscribed(self):
+    def isSubscribed(self):
         return self.context in self._subscriptions
 
     def colour(self):

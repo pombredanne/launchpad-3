@@ -50,16 +50,16 @@ class IBugTask(IHasDateCreated):
     milestone = Choice(
         title=_('Target'), required=False, vocabulary='Milestone')
     status = Choice(
-        title=_('Status'), vocabulary='BugStatus',
+        title=_('Status'), vocabulary='BugTaskStatus',
         default=dbschema.BugTaskStatus.NEW)
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     priority = Choice(
-        title=_('Priority'), vocabulary='BugPriority',
-        default=dbschema.BugPriority.MEDIUM)
+        title=_('Priority'), vocabulary='BugTaskPriority',
+        default=dbschema.BugTaskPriority.MEDIUM)
     severity = Choice(
-        title=_('Severity'), vocabulary='BugSeverity',
-        default=dbschema.BugSeverity.NORMAL)
+        title=_('Severity'), vocabulary='BugTaskSeverity',
+        default=dbschema.BugTaskSeverity.NORMAL)
     assignee = Choice(
         title=_('Assignee'), required=False, vocabulary='ValidAssignee')
     binarypackagename = Choice(
@@ -226,14 +226,14 @@ class IBugTaskDelta(Interface):
         """The change made to the priority for this task.
 
         The value is a dict like
-        {'old' : BugPriority.FOO, 'new' : BugPriority.BAR}, or None,
+        {'old' : BugTaskPriority.FOO, 'new' : BugTaskPriority.BAR}, or None,
         if no change was made to the priority.
         """)
     severity = Attribute(
         """The change made to the severity of this task.
 
         The value is a dict like
-        {'old' : BugSeverity.FOO, 'new' : BugSeverity.BAR}, or None,
+        {'old' : BugTaskSeverity.FOO, 'new' : BugTaskSeverity.BAR}, or None,
         if no change was made to the severity.
         """)
     assignee = Attribute(
@@ -306,7 +306,7 @@ class IBugTaskSet(Interface):
     def search(bug=None, searchtext=None, status=None, priority=None,
                severity=None, product=None, distribution=None,
                distrorelease=None, milestone=None, assignee=None,
-               submitter=None, orderby=None, sourcepackagename=None,
+               owner=None, orderby=None, sourcepackagename=None,
                binarypackagename=None):
         """Return a set of IBugTasks that satisfy the query arguments.
 
@@ -399,7 +399,7 @@ class IBugTaskSubset(Interface):
         """
 
     def search(bug=None, searchtext=None, status=None, priority=None,
-               severity=None, milestone=None, assignee=None, submitter=None,
+               severity=None, milestone=None, assignee=None, owner=None,
                orderby=None):
         """Return a set of IBugTasks that satisfy the query arguments.
 

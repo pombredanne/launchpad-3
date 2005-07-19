@@ -21,6 +21,10 @@
               tal:condition="context/required:launchpad.Edit">
             <a href="+changetranslators">Change Translators</a>
           </li>
+          <li class="add"
+              tal:condition="context/required:launchpad.Admin">
+            <a href="+add">Add new Distribution Release</a>
+          </li>
           <li class="search">
             <a href="+packages">Search Packages</a>
           </li>

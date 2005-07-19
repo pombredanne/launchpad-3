@@ -5,6 +5,8 @@
 
 __metaclass__ = type
 
+import _pythonpath
+
 import optparse
 import sys
 
@@ -61,8 +63,10 @@ def main(argv):
     options, distribution_name, release_name = parse_options(argv[1:])
 
     logger_object = logger(options, 'rosetta-language-pack-export')
-    logger_object.info('Exporting translations for release %s of distribution %s',
-        distribution_name, release_name)
+    logger_object.info(
+            'Exporting translations for release %s of distribution %s',
+            distribution_name, release_name
+            )
 
     success = export_language_pack(
         distribution_name=distribution_name,

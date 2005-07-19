@@ -1,0 +1,76 @@
+#!/usr/bin/make -f
+
+export DH_COMPAT=4
+export DH_OPTIONS
+
+# This is an incomplete debian rules file for making the launchpad-buildd deb
+# Only ever invoke this as fakeroot debian/rules binary
+
+target = debian/launchpad-buildd
+topdir = ../../..
+
+daemons = $(topdir)/daemons
+buildd = $(topdir)/lib/canonical/buildd
+
+targetshare = $(target)/usr/share/launchpad-buildd
+pytarget = $(targetshare)/canonical/buildd
+
+pyfiles = debian.py slave.py utils.py __init__.py
+slavebins = unpack-chroot mount-chroot update-debian-chroot sbuild-package \
+scan-for-processes umount-chroot remove-build
+
+BUILDDUID=65500
+BUILDDGID=65500
+
+install: DH_OPTIONS=-plaunchpad-buildd
+install:
+	dh_testdir
+	dh_clean
+	dh_testroot
+	dh_installdirs usr/bin etc usr/share/launchpad-buildd/slavebin \
+	  usr/share/launchpad-buildd/canonical/buildd \
+	  var/run/launchpad-buildd var/log/launchpad-buildd  \
+	  etc/launchpad-buildd
+
+	# Do installs here
+	install -m644 $(daemons)/buildd-slave.tac $(targetshare)/buildd-slave.tac
+	for pyfile in $(pyfiles); do \
+	 install -m644 $(buildd)/$$pyfile $(pytarget)/$$pyfile; \
+        done
+	for slavebin in $(slavebins); do \
+	 install -m755 $(buildd)/$$slavebin $(targetshare)/slavebin/$$slavebin; \
+	done
+	install -m755 $(buildd)/sbuild $(target)/usr/bin/sbuild
+	touch $(targetshare)/canonical/__init__.py
+	install -m644 template-buildd-slave.conf $(targetshare)/template-buildd-slave.conf
+	install -m755 buildd-config.py $(target)/usr/bin/buildd-genconfig
+	install -m755 chapt-get $(target)/usr/bin
+	install -m644 sbuildrc $(targetshare)/sbuildrc
+	# Okay, that's installed all the slave-related files
+
+
+binary-arch:
+	@echo No arch-specific binaries to make
+
+binary-indep: DH_OPTIONS=-plaunchpad-buildd
+binary-indep: install
+	dh_installdocs
+	dh_installchangelogs
+	dh_installinit
+	dh_strip
+	dh_compress
+	dh_fixperms
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb --destdir=.
+
+binary: binary-indep
+
+.PHONY: binary binary-indep binary-arch install clean build
+
+clean:
+	dh_clean
+
+build:
+	@echo Mmm builders

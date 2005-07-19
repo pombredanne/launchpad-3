@@ -54,7 +54,7 @@ what those notifications look like.
     1
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> print from_addr
-    Malone Bugtracker <...>
+    Sample Person via Malone <...>
     >>> print to_addrs
     ['dilys@muse.19inch.net', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
@@ -107,7 +107,7 @@ let's hang a bug onto the ILaunchBag utility.
     1
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> print from_addr
-    Malone Bugtracker <...>
+    Sample Person via Malone <...>
     >>> print to_addrs
     ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
@@ -140,7 +140,7 @@ let's hang a bug onto the ILaunchBag utility.
     1
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> print from_addr
-    Malone Bugtracker <...>
+    Sample Person via Malone <...>
     >>> print to_addrs
     ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
@@ -175,7 +175,7 @@ let's hang a bug onto the ILaunchBag utility.
     1
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> print from_addr
-    Malone Bugtracker <...>
+    Sample Person via Malone <...>
     >>> print to_addrs
     ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
@@ -207,7 +207,7 @@ let's hang a bug onto the ILaunchBag utility.
     1
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> print from_addr
-    Malone Bugtracker <...>
+    Sample Person via Malone <...>
     >>> print to_addrs
     ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
@@ -251,7 +251,7 @@ task Accepted, assigns himself to it, and adds a status note.
     1
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> print from_addr
-    Malone Bugtracker <...>
+    Sample Person via Malone <...>
     >>> print to_addrs
     ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
@@ -282,6 +282,8 @@ pretending we've just added a watch to a bug.
     >>> len(stub.test_emails)
     1
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> print from_addr
+    Sample Person via Malone <...>
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
@@ -312,6 +314,8 @@ the changes made:
     >>> len(stub.test_emails)
     1
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> print from_addr
+    Sample Person via Malone <...>
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
@@ -343,6 +347,8 @@ this document:
     >>> len(stub.test_emails)
     1
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> print from_addr
+    Sample Person via Malone <...>
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
@@ -372,6 +378,8 @@ Next, let's take a look at what the edit notification looks like:
     >>> len(stub.test_emails)
     1
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> print from_addr
+    Sample Person via Malone <...>
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
@@ -402,6 +410,8 @@ publishing an object created event.
     >>> len(stub.test_emails)
     1
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> print from_addr
+    Sample Person via Malone <...>
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
@@ -431,6 +441,8 @@ When a link is edited, the notification will look as follows:
     >>> len(stub.test_emails)
     1
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> print from_addr
+    Sample Person via Malone <...>
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
@@ -517,7 +529,7 @@ private, and Foo Bar is not an explicit subscriber to the bug, he will
     1
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> print from_addr
-    Malone Bugtracker <...>
+    Sample Person via Malone <...>
     >>> print to_addrs
     ['mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)

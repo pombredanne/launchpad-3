@@ -9,7 +9,6 @@ __all__ = [
     'UbuntiteListView',
     'FOAFSearchView',
     'PersonRdfView',
-    'BasePersonView',
     'PersonView',
     'PersonEditView',
     'RequestPeopleMergeView',
@@ -44,7 +43,7 @@ from canonical.launchpad.interfaces import (
     ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
     IJabberIDSet, IIrcIDSet, IArchUserIDSet, ILaunchBag, ILoginTokenSet,
     IPasswordEncryptor, ISignedCodeOfConductSet, IObjectReassignment,
-    ITeamReassignment, IGPGKeySet, IGpgHandler, IKarmaActionSet, IKarmaSet,
+    ITeamReassignment, IGPGKeySet, IGPGHandler, IKarmaActionSet, IKarmaSet,
     UBUNTU_WIKI_URL)
 
 from canonical.launchpad.helpers import (
@@ -79,9 +78,8 @@ class BaseListView:
         return self._getBatchNavigator(results)
 
     def getUbuntitesList(self):
-        putil = getUtility(IPersonSet)
-        results = putil.getUbuntites()
-        return self._getBatchNavigator(list(results))
+        results = getUtility(IPersonSet).getUbuntites()
+        return self._getBatchNavigator(results)
 
 
 class PeopleListView(BaseListView):
@@ -129,25 +127,15 @@ class FOAFSearchView:
             return None
 
         if searchfor == "all":
-            results = self._findPeopleByName(name)
+            results = getUtility(IPersonSet).findByName(name)
         elif searchfor == "peopleonly":
-            results = self._findPeopleByName(name, peopleonly=True)
+            results = getUtility(IPersonSet).findPersonByName(name)
         elif searchfor == "teamsonly":
-            results = self._findPeopleByName(name, teamsonly=True)
+            results = getUtility(IPersonSet).findTeamByName(name)
 
         start = int(self.request.get('batch_start', 0))
         batch = Batch(list=results, start=start, size=BATCH_SIZE)
         return BatchNavigator(batch=batch, request=self.request)
-
-    def _findPeopleByName(self, name, peopleonly=False, teamsonly=False):
-        # This method is somewhat weird, cause peopleonly and teamsonly
-        # are mutually exclusive.
-        if peopleonly:
-            return getUtility(IPersonSet).findPersonByName(name)
-        elif teamsonly:
-            return getUtility(IPersonSet).findTeamByName(name)
-
-        return getUtility(IPersonSet).findByName(name)
 
 
 class PersonRdfView:
@@ -161,11 +149,9 @@ class PersonRdfView:
                                    self.context.name + '.rdf')
 
 
-class BasePersonView:
-    """A base class to be used by all IPerson view classes."""    
-
-class PersonView(BasePersonView):
+class PersonView:
     """A simple View class to be used in all Person's pages."""
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -186,10 +172,16 @@ class PersonView(BasePersonView):
         karmaset = getUtility(IKarmaSet)
         return len(karmaset.selectByPersonAndAction(self.context, action))
 
-    def assignedBugsToShow(self):
-        """Return True if there's any bug assigned to this person that match
-        the criteria of mostImportantBugTasks() or mostRecentBugTasks()."""
-        return bool(self.mostImportantBugTasks() or self.mostRecentBugTasks())
+    def setUpBugTasksToShow(self):
+        """Setup the bugtasks we will always show."""
+        self.recentBugTasks = self.mostRecentBugTasks()
+        self.importantBugTasks = self.mostImportantBugTasks()
+        # XXX: Because of the following 2 lines, a warning is going to be 
+        # raised saying that we're getting a slice of an unordered set, and
+        # this means we probably have a bug hiding somewhere, because both
+        # sets are ordered here.
+        self.assignedBugsToShow = bool(
+            self.recentBugTasks or self.importantBugTasks)
 
     def mostRecentBugTasks(self):
         """Return up to 10 bug tasks (ordered by date assigned) that are 
@@ -233,7 +225,7 @@ class PersonView(BasePersonView):
         bts = getUtility(IBugTaskSet)
         orderBy = ('-dateassigned', '-priority', '-severity')
         results = bts.bugTasksWithSharedInterest(
-                self.context, self.user, orderBy=orderBy)
+                self.context, self.user, user=self.user, orderBy=orderBy)
         return results[:10]
 
     def obfuscatedEmail(self):
@@ -319,7 +311,7 @@ class PersonView(BasePersonView):
             return 'GPG key <code>%s</code> already imported' % fingerprint
 
         # import the key to the local keyring
-        gpghandler = getUtility(IGpgHandler)
+        gpghandler = getUtility(IGPGHandler)
         result, key = gpghandler.retrieveKey(fingerprint)
         
         if not result:
@@ -397,7 +389,7 @@ class PersonView(BasePersonView):
             if not isinstance(keyids, list):
                 keyids = [keyids]
                 
-            gpghandler = getUtility(IGpgHandler)
+            gpghandler = getUtility(IGPGHandler)
             keyset = getUtility(IGPGKeySet)
             
             for keyid in keyids:
@@ -475,7 +467,7 @@ class PersonView(BasePersonView):
         token.sendGpgValidationRequest(appurl, key, encrypt=True)
 
 
-class PersonEditView(BasePersonView):
+class PersonEditView:
 
     def __init__(self, context, request):
         self.context = context
@@ -541,23 +533,34 @@ class PersonEditView(BasePersonView):
             person.wiki.wikiname = wikiname
 
         #IrcID
-        if person.irc:
+        if (network and not nickname) or (nickname and not network):
+            self.errormessage = ('You cannot provide the irc nickname without '
+                                 'an irc network, or the irc network without '
+                                 'a nickname.')
+            return False
+        elif network and nickname and person.irc is not None:
             person.irc.network = network
             person.irc.nickname = nickname
-        elif network and nickname:
+        elif network and nickname and person.irc is None:
             getUtility(IIrcIDSet).new(person.id, network, nickname)
+        elif person.irc is not None:
+            person.irc.destroySelf()
 
         #JabberID
-        if person.jabber:
+        if jabberid and person.jabber is not None:
             person.jabber.jabberid = jabberid
-        elif jabberid:
+        elif jabberid and person.jabber is None:
             getUtility(IJabberIDSet).new(person.id, jabberid)
+        elif person.jabber is not None:
+            person.jabber.destroySelf()
 
         #ArchUserID
-        if person.archuser:
+        if archuserid and person.archuser is not None:
             person.archuser.archuserid = archuserid
-        elif archuserid:
+        elif archuserid and person.archuser is None:
             getUtility(IArchUserIDSet).new(person.id, archuserid)
+        elif person.archuser is not None:
+            person.archuser.destroySelf()
 
         return True
 
@@ -697,10 +700,10 @@ class PersonEditView(BasePersonView):
                     "can go to the <a href=\"../+requestmerge\">Merge "
                     "Accounts</a> page to claim this email address and "
                     "everything that is owned by that account."
-                    % (email.email, email.person.browsername))
+                    % (email.email, browsername))
             return
 
-        token = getUtility(ILoginTokenSet).new(
+        token = logintokenset.new(
                     person, getUtility(ILaunchBag).login, newemail,
                     LoginTokenType.VALIDATEEMAIL)
         token.sendEmailValidationRequest(self.request.getApplicationURL())

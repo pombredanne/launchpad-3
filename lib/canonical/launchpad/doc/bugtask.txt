@@ -41,13 +41,13 @@ to access those other objects:
 
 Next, we need to grab some values to provide for priority, severity and status.
 
-    >>> from canonical.lp.dbschema import (BugTaskStatus, BugSeverity,
-    ...     BugPriority)
+    >>> from canonical.lp.dbschema import (BugTaskStatus, BugTaskSeverity,
+    ...     BugTaskPriority)
     >>> STATUS_NEW = BugTaskStatus.NEW
     >>> STATUS_ACCEPTED = BugTaskStatus.ACCEPTED
     >>> STATUS_FIXED = BugTaskStatus.FIXED
-    >>> SEVERITY_NORMAL = BugSeverity.NORMAL
-    >>> PRIORITY_MEDIUM = BugPriority.MEDIUM
+    >>> SEVERITY_NORMAL = BugTaskSeverity.NORMAL
+    >>> PRIORITY_MEDIUM = BugTaskPriority.MEDIUM
 
   i. Upstream -- a bug that has to be fixed in an upstream product
 
@@ -278,7 +278,7 @@ It's also possible to iterate over all the bug tasks:
 
     >>> bugtasks = [bugtask for bugtasks in bugtaskset]
     >>> print len(bugtasks)
-    12
+    13
 
 Bug Task Maintainers
 --------------------
@@ -489,6 +489,15 @@ searches:
     >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
     [1, 4, 5, 6]
 
+If logged in as Foo Bar we query for all bugtasks assigned to him, we'll see
+that bug 1 is there (we'll not see it if we query logged in as a user who
+can't see that bug).
+    >>> foobar = getUtility(ILaunchBag).user
+    >>> foobar_assigned_tasks = bugtaskset.assignedBugTasks(foobar, user=foobar)
+    >>> [bugtask.bug.id for bugtask in foobar_assigned_tasks]
+    [1, 2]
+
+    
 Now, if we log in as David Allouche:
 
     >>> login("david.allouche@canonical.com")
@@ -505,6 +514,13 @@ Allouche can't see the private bug.
     >>> bugtask_ids = [bt.id for bt in bugtasks]
     >>> print bugtask_ids
     [13, 14, 15]
+
+If logged in as David Allouche we query for all bugtasks assigned to Foo Bar,
+we'll not see bug 1 there because it's a private bug.
+    >>> ddaa = getUtility(ILaunchBag).user
+    >>> foobar_assigned_tasks = bugtaskset.assignedBugTasks(foobar, user=ddaa)
+    >>> [bugtask.bug.id for bugtask in foobar_assigned_tasks]
+    [2]
 
 Trying to retrieve the bug directly will work fine:
 

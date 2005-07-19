@@ -23,7 +23,7 @@
   </div>
   </tal:dummy>
   
-  <form autocomplete="off" name="email" action="" method="POST">
+  <form name="email" action="" method="POST">
 
   <tal:block tal:condition="context/preferredemail">
   <p>Your contact address for all Launchpad e-mail is: <b tal:content="context/preferredemail/email" /></p>
@@ -67,6 +67,10 @@
   <input type="submit" value="Confirm" name="VALIDATE" />
   <br /><br /><br />
   </tal:block>
+
+  </form>
+
+  <form name="newemail" action="" method="POST">
 
   <div>
     Add a new address:

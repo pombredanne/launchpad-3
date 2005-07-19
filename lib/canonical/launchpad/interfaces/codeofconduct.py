@@ -87,6 +87,8 @@ class ISignedCodeOfConduct(Interface):
 class ICodeOfConductSet(Interface):
     """Unsigned (original) Codes of Conduct container."""
 
+    title = Attribute('Page Title propose')
+
     def __getitem__(version):
         """Get a original CoC Release by its version."""
 
@@ -96,6 +98,8 @@ class ICodeOfConductSet(Interface):
 
 class ISignedCodeOfConductSet(Interface):
     """A container for Signed CoC."""
+
+    title = Attribute('Page Title propose')
 
     def __getitem__(id):
         """Get a Signed CoC by id."""

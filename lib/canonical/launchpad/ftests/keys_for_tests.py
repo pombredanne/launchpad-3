@@ -20,13 +20,13 @@ __metaclass__ = type
 import os
 from zope.component import getUtility
 from canonical.lp.dbschema import GPGKeyAlgorithm
-from canonical.launchpad.interfaces import IGPGKeySet, IGpgHandler, IPersonSet
+from canonical.launchpad.interfaces import IGPGKeySet, IGPGHandler, IPersonSet
 
 gpgkeysdir = os.path.join(os.path.dirname(__file__), 'gpgkeys')
 
 def import_public_key(email_addr):
     """Imports the public key related to the given email address."""
-    gpghandler = getUtility(IGpgHandler)
+    gpghandler = getUtility(IGPGHandler)
     personset = getUtility(IPersonSet)
 
     pubkey = open(os.path.join(gpgkeysdir, email_addr + '.pub')).read()
@@ -55,7 +55,7 @@ def import_public_test_keys():
 
 def import_secret_test_key():
     """Imports the secret key located in gpgkeysdir into local keyring."""
-    gpghandler = getUtility(IGpgHandler)
+    gpghandler = getUtility(IGPGHandler)
 
     seckey = open(os.path.join(gpgkeysdir, 'test@canonical.com.sec')).read()
     gpghandler.importKey(seckey)               

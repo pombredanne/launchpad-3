@@ -11,8 +11,7 @@
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
-        <h3 tal:condition="view/label" tal:content="view/label"
-            metal:fill-slot="heading">Create a new Team</h3>
+        <h3 metal:fill-slot="heading">Create a new Team</h3>
 
         <div metal:fill-slot="extra_info" class="formHelp">
           Use a team to group people involved in a common task.

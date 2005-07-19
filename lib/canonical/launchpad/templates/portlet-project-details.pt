@@ -15,7 +15,7 @@
             <b>Project Maintainer:</b><br />
             <img src="/++resource++user.gif">
             <a tal:content="context/owner/browsername"
-               tal:attributes="href string:/people/${context/owner/name}/"
+               tal:attributes="href context/owner/fmt:url"
                >ownername</a><br />
 
             <b>Translation Group:</b><br />
@@ -37,7 +37,7 @@
             <span tal:repeat="prod context/products" tal:omit-tag>
                 <img src="/++resource++product_icon.gif">
                 <a tal:content="prod/displayname"
-                   tal:attributes="href string:${prod/name}">
+                   tal:attributes="href prod/fmt:url">
                    product displayname</a><br />
             </span>
 

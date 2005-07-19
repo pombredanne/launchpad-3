@@ -1,3 +1,4 @@
+<h4>Actions:</h4>
 <ul tal:define="team_url context/fmt:url">
   <li class="edit" tal:condition="context/required:launchpad.Edit">
     <a tal:attributes="href string:${team_url}/+edit">Edit Team Details</a>

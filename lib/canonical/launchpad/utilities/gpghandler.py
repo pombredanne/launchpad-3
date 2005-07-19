@@ -2,7 +2,7 @@
 
 __metaclass__ = type
 
-__all__ = ['GpgHandler', 'PymeSignature', 'PymeKey']
+__all__ = ['GPGHandler', 'PymeSignature', 'PymeKey']
 
 # standard
 import os
@@ -26,7 +26,7 @@ from zope.component import getUtility
 
 # interface
 from canonical.launchpad.interfaces import (
-    IGpgHandler, IPymeSignature, IPymeKey)
+    IGPGHandler, IPymeSignature, IPymeKey)
 
 # XXX cprov 20050707
 # simply using: "import pyme" does not work correctly, we need to explicity
@@ -37,10 +37,10 @@ from canonical.launchpad.interfaces import (
 from pyme import core as pymecore, errors as pymeerrors
 
 
-class GpgHandler:
-    """See IGpgHandler."""
+class GPGHandler:
+    """See IGPGHandler."""
 
-    implements(IGpgHandler)
+    implements(IGPGHandler)
 
     def __init__(self):
         """Initialize environment variable."""
@@ -68,7 +68,7 @@ class GpgHandler:
     # Instantiate a pyme.core.Context() per method, in that way
     # we can perform action in parallel (thread safe)
     def verifySignature(self, content, signature=None, key=None):
-        """See IGpgHandler."""
+        """See IGPGHandler."""
 
         c = pymecore.Context()
 
@@ -122,7 +122,7 @@ class GpgHandler:
 
 
     def importKey(self, content):
-        """See IGpgHandler."""        
+        """See IGPGHandler."""        
         c = pymecore.Context()
         c.set_armor(1)
 
@@ -150,7 +150,7 @@ class GpgHandler:
         return key
 
     def encryptContent(self, content, fingerprint):
-        """See IGpgHandler."""
+        """See IGPGHandler."""
         # setup context
         c = pymecore.Context()
         c.set_armor(1)
@@ -172,7 +172,7 @@ class GpgHandler:
         return cipher.read()
 
     def decryptContent(self, content, password):
-        """See IGpgHandler."""
+        """See IGPGHandler."""
         # setup context
         c = pymecore.Context()
         c.set_armor(1)
@@ -193,7 +193,7 @@ class GpgHandler:
         return plain.read()
 
     def retrieveKey(self, fingerprint):
-        """See IGpgHandler."""
+        """See IGPGHandler."""
         # XXX cprov 20050705
         # Integrate it with the furure proposal related 
         # synchronization of the local key ring with the 
@@ -217,7 +217,7 @@ class GpgHandler:
         return True, key
         
     def _getKeyIndex(self, fingerprint):
-        """See IGpgHandler for further information."""
+        """See IGPGHandler for further information."""
         # Grab Page from keyserver
         result, page = self._grabPage('index', fingerprint)
 
@@ -243,7 +243,7 @@ class GpgHandler:
         return keyinfo, uids
 
     def _getPubKey(self, fingerprint):
-        """See IGpgHandler for further information."""
+        """See IGPGHandler for further information."""
         return self._grabPage('get', fingerprint)
 
     def _grabPage(self, action, fingerprint):

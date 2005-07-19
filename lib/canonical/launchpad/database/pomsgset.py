@@ -332,6 +332,9 @@ class POMsgSet(SQLBase):
             personID=person.id,
             validationstatus=validation_status)
 
+        # Update the latestsubmission field.
+        self.pofile.latestsubmission = submission
+
         # next, we need to update the existing active and possibly also
         # published selections
         if published:

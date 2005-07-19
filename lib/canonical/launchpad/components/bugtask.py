@@ -11,7 +11,7 @@ from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
     IProduct, IDistribution, IDistroRelease, IBugTaskSubset, IBugSet,
-    IBugTaskSet)
+    IBugTaskSet, IBugTaskDelta)
 
 class ContextToBugTaskSubsetAdapter:
     """Adapt a context to an IBugTaskSubset."""
@@ -43,14 +43,14 @@ class ContextToBugTaskSubsetAdapter:
             raise KeyError(item)
 
     def search(self, bug=None, searchtext=None, status=None, priority=None,
-               severity=None, milestone=None, assignee=None, submitter=None,
+               severity=None, milestone=None, assignee=None, owner=None,
                orderby=None, statusexplanation=None):
         """See canonical.launchpad.interfaces.IBugTaskSubset."""
         context_filter_param = self._get_context_search_param()
         return getUtility(IBugTaskSet).search(
             bug=bug, searchtext=searchtext, status=status, priority=priority,
             severity=severity, milestone=milestone, assignee=assignee,
-            submitter=submitter, orderby=orderby,
+            owner=owner, orderby=orderby,
             statusexplanation=statusexplanation, **context_filter_param)
 
     def _get_context_search_param(self):
@@ -70,3 +70,22 @@ class ContextToBugTaskSubsetAdapter:
             raise TypeError("Unknown search context: %s" % repr(self.context))
 
         return search_param
+
+
+class BugTaskDelta:
+    """See canonical.launchpad.interfaces.IBugTaskDelta."""
+    implements(IBugTaskDelta)
+    def __init__(self, bugtask, product=None, sourcepackagename=None,
+                 binarypackagename=None, status=None, severity=None,
+                 priority=None, assignee=None, milestone=None,
+                 statusexplanation=None):
+        self.bugtask = bugtask
+        self.product = product
+        self.sourcepackagename = sourcepackagename
+        self.binarypackagename = binarypackagename
+        self.status = status
+        self.severity = severity
+        self.priority = priority
+        self.assignee = assignee
+        self.target = milestone
+        self.statusexplanation = statusexplanation

@@ -9,7 +9,7 @@ __all__ = [
     'IDistroReleaseSet',
     ]
 
-from zope.schema import Int, TextLine
+from zope.schema import Choice, Int, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
@@ -49,13 +49,22 @@ class IDistroRelease(IHasOwner):
     distribution = Int(title=_("Distribution"), required=True,
         description=_("The distribution for which this is a release."))
     bugtasks = Attribute("The bug tasks filed specifically on this release.")
-    componentes = Attribute("The release componentes.")
-    sections = Attribute("The release section.")
+    components = Choice(
+        title=_("Components"),
+        description=_("The release components."), required=True,
+        vocabulary='Schema')
+    sections = Choice(
+        title=_("Section"),
+        description=_("The release sections."), required=True,
+        vocabulary='Schema')
     releasestatus = Attribute(
         "The release's status, such as FROZEN or DEVELOPMENT, as "
         "specified in the DistributionReleaseStatus enum.")
     datereleased = Attribute("The datereleased.")
-    parentrelease = Attribute("Parent Release")
+    parentrelease = Choice(
+        title=_("Parent Release"),
+        description=_("The Parente Distribution Release."), required=True,
+        vocabulary='DistroRelease')
     owner =Attribute("Owner")
     state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")
@@ -162,3 +171,7 @@ class IDistroReleaseSet(Interface):
 
         released == None will do no filtering on releasestatus.
         """
+
+    def new(distribution, name, displayname, title, summary, description,
+            version, components, sections, parentrelease, owner):
+        """Creates a new distrorelease"""

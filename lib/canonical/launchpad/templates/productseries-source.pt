@@ -34,8 +34,6 @@
 
         <label>Source Package</label>
 
-        <span class="fieldRequired" title="Required">(Required)</span>
-
           <div class="formHelp">
             The name of the SOURCE package in the current release of
             Ubuntu (Version <span
@@ -70,67 +68,28 @@
       <div class="formHelp">
         The type of revision control used by the upstream developers of
         this branch. The most common revision control system is CVS, but the
-        Launchpad also supports the importing of branches in Subversion and
-        Arch formats. Choose the correct format below:
+        Launchpad also supports the importing of branches in the Subversion 
+        format. Choose the correct format below:
       </div>
 
       <div>
          <div tal:replace="structure view/rcs_selector" />
       </div>
-      <!--
-      braine.com:
-      as cvs target version is longest variation it loads in visible state
-      this stops shorter layers overlapping the page footer
-      the order of the divs matters because invisibles must load
-      before visible counterparts otherwise layout goes for a burton
-      it's a hack because i don't know dhtml positioning very well
-      with a bit of effort it could be much better
-      -->
 
-    <div>
+      <fieldset>
 
-      <div style="visibility: hidden; position: absolute; width: 53%;"
-           id="svndetails">
+      <legend>Repository</legend>
+
+      <label>Revision Control Repository</label>
+
+      <div class="formHelp">
+        Please enter details below for only the selected Repository type:
+      </div>
+
+      <div>
 
         <fieldset>
 
-        <legend>SVN Repository</legend>
-        <div class="field">
-          <label>SVN repository</label>
-          <span class="fieldRequired" title="Required">(Required)</span>
-
-          <div class="formHelp">
-          The url (internet address) of the SVN repository and branch to be
-          imported, in <i>svn://</i> or <i>http(s)://</i> format.  Note that
-          this must reference the specific branch to be designated as
-          upstream for the <span tal:replace="context/displayname" />
-          series of <span tal:replace="context/product/displayname" />.
-          </div>
-
-          <input type="text" name="svnrepository" size="30"
-             tal:attributes="value view/svnrepository" />
-        </div>
-        </fieldset>
-
-        <div class="formControls">
-
-        <!--NB. DO NOT CHANGE THE VALUE OF THIS
-          it is used to verify that the correct form was posted.
-          -->
-        <input class="context" type="submit"
-           name="Update RCS Details"
-           value="Update RCS Details" />
-
-        </div>
-
-      </div>
-
-      <div class="visualClear"></div>
-
-        <div style="visibility: visible; width: 100%;"
-             id="cvsdetails">
-
-          <fieldset>
           <legend>CVS Repository</legend>
 
           <div class="field">
@@ -178,23 +137,42 @@
                tal:attributes="value view/cvsbranch" />
           </div>
 
-          </fieldset>
+        </fieldset>
 
-          <div class="formControls">
+        <fieldset>
 
-          <!--NB. DO NOT CHANGE THE VALUE OF THIS
-            it is used to verify that the correct form was posted.
-            -->
-          <input class="context" type="submit"
-             name="Update RCS Details"
-             value="Update RCS Details" />
+          <legend>SVN Repository</legend>
 
+          <div class="field">
+            <label>SVN repository</label>
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+            <div class="formHelp">
+            The url (internet address) of the SVN repository and branch to be
+            imported, in <i>svn://</i> or <i>http(s)://</i> format.  Note that
+            this must reference the specific branch to be designated as
+            upstream for the <span tal:replace="context/displayname" />
+            series of <span tal:replace="context/product/displayname" />.
+            </div>
+
+            <input type="text" name="svnrepository" size="30"
+               tal:attributes="value view/svnrepository" />
           </div>
+        </fieldset>
 
       </div>
 
+      <div class="formControls">
 
-    </div>
+      <!--NB. DO NOT CHANGE THE VALUE OF THIS
+        it is used to verify that the correct form was posted.
+        -->
+      <input class="context" type="submit"
+         name="Update RCS Details"
+         value="Update RCS Details" />
+
+      </div>
+      </fieldset>
 
     </div>
   </fieldset>

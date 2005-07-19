@@ -14,7 +14,6 @@ from zope.event import notify
 from zope.exceptions import NotFoundError
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
-from zope.app.traversing.browser.absoluteurl import absoluteURL
 
 from canonical.launchpad.interfaces import (
     IPerson, IProduct, IProductSet, IBugTaskSet, IProductSeries,
@@ -25,11 +24,10 @@ from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
-
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, DefaultLink)
+    StandardLaunchpadFacets, Link, DefaultLink, canonical_url)
 
-__all__ = ['ProductFacets', 'ProductView', 'ProductEditView', 
+__all__ = ['ProductFacets', 'ProductView', 'ProductEditView',
            'ProductFileBugView', 'ProductRdfView', 'ProductSetView',
            'ProductSetAddView']
 
@@ -265,7 +263,7 @@ class ProductFileBugView(SQLObjectAddView):
         return bug
 
     def nextURL(self):
-        return absoluteURL(self.addedBug, self.request)
+        return canonical_url(self.addedBug, self.request)
 
 
 class ProductRdfView(object):
@@ -321,9 +319,9 @@ class ProductSetView:
         time the method is called, otherwise return previous results.
         """
         if self.results is None:
-            self.results = self.context.search(text=self.text, 
+            self.results = self.context.search(text=self.text,
                                                bazaar=self.bazaar,
-                                               malone=self.malone, 
+                                               malone=self.malone,
                                                rosetta=self.rosetta,
                                                soyuz=self.soyuz)
         self.matches = self.results.count()

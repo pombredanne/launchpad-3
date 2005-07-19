@@ -9,7 +9,6 @@ __all__ = [
     'BugTaskEditView',
     'BugTaskDisplayView',
     'BugTaskSearchListingView',
-    'BugTaskAbsoluteURL',
     'BugTaskAnorakSearchPageBegoneView',
     ]
 
@@ -98,7 +97,7 @@ class BugTasksReportView:
     # TODO: replace this with a smart vocabulary and widget
     def severitySelector(self):
         html = '<select name="minseverity">\n'
-        for item in dbschema.BugSeverity.items:
+        for item in dbschema.BugTaskSeverity.items:
             html = html + '<option value="' + str(item.value) + '"'
             if item.value==self.minseverity:
                 html = html + ' selected="yes"'
@@ -111,7 +110,7 @@ class BugTasksReportView:
     # TODO: replace this with a smart vocabulary and widget
     def prioritySelector(self):
         html = '<select name="minpriority">\n'
-        for item in dbschema.BugPriority.items:
+        for item in dbschema.BugTaskPriority.items:
             html = html + '<option value="' + str(item.value) + '"'
             if item.value==self.minpriority:
                 html = html + ' selected="yes"'
@@ -332,7 +331,7 @@ class BugTaskSearchListingView:
         status_accepted = dbschema.BugTaskStatus.ACCEPTED
 
         critical_tasks = bugtask_subset.search(
-            severity=dbschema.BugSeverity.CRITICAL,
+            severity=dbschema.BugTaskSeverity.CRITICAL,
             status=any(status_new, status_accepted))
 
         return critical_tasks.count()
@@ -558,28 +557,6 @@ class BugTaskSearchListingView:
         Return the IDistroRelease if yes, otherwise return None.
         """
         return IDistroRelease(self.context.context, None)
-
-
-class BugTaskAbsoluteURL(BrowserView):
-    """The view for an absolute URL of a bug task."""
-    def __str__(self):
-        urlpath = ""
-        task = self.context
-        if task.product is not None:
-            # This is an upstream task.
-            urlpath = "/products/%s/+bugs/" % task.product.name
-        elif task.distribution is not None:
-            # This is a distribution task.
-            urlpath = "/distros/%s/+bugs/" % task.distribution.name
-        elif task.distrorelease is not None:
-            # This is a distrorelease task.
-            urlpath = "/distros/%s/%s/+bugs/" % (
-                task.distrorelease.distribution.name,
-                task.distrorelease.name)
-
-        return "%s%s%d" % (
-            self.request.getApplicationURL(),
-            urlpath, task.bug.id)
 
 
 class BugTaskAnorakSearchPageBegoneView:
