@@ -7,13 +7,13 @@ __all__ = ['Bounty', 'BountySet']
 import datetime
 
 from zope.interface import implements
+from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from sqlobject import ForeignKey, IntCol, StringCol, IntervalCol
 from sqlobject import CurrencyCol
 from sqlobject import MultipleJoin, RelatedJoin
 
-from canonical.launchpad.interfaces import (
-    IBounty, IBountySet, IAddFormCustomization)
+from canonical.launchpad.interfaces import IBounty, IBountySet
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
