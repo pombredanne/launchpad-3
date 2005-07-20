@@ -4,6 +4,7 @@ from psycopg import ProgrammingError
 from sqlobject import SQLObjectNotFound
 
 from canonical.lp import initZopeless
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database import (POTranslation, POSubmission,
     POSelection)
 
@@ -74,6 +75,9 @@ def main():
                 break
 
             fix_submission(submission, translation)
+
+        # Flush database updates so that we save a bit of memory
+        flush_database_updates()
         ztm.commit()
 
     # Now, it's time to remove all empty translations
