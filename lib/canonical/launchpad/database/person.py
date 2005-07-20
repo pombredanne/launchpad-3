@@ -1339,12 +1339,7 @@ def _cleanTeamParticipation(person, team):
     # (and its superteams).
     if person.isTeam():
         for submember in person.allmembers:
-            # XXX: We need to cast team.activemembers to a list because the
-            # current implementation of SelectResults.__contains__ is not
-            # working properly for operations like UNION (which is used in
-            # team.activemembers). This is going to be fixed soon and I'll
-            # remove this cast. 2005-07-01, GuilhermeSalgado 
-            if submember not in list(team.activemembers):
+            if submember not in team.activemembers:
                 _cleanTeamParticipation(submember, team)
 
 
@@ -1370,12 +1365,7 @@ def _removeParticipantFromTeamAndSuperTeams(person, team):
         result.destroySelf()
 
     for superteam in team.getSuperTeams():
-        # XXX: We need to cast team.activemembers to a list because the
-        # current implementation of SelectResults.__contains__ is not
-        # working properly for operations like UNION (which is used in
-        # team.activemembers). This is going to be fixed soon and I'll remove
-        # this cast. 2005-07-01, GuilhermeSalgado 
-        if person not in list(superteam.activemembers):
+        if person not in superteam.activemembers:
             _removeParticipantFromTeamAndSuperTeams(person, superteam)
 
 
