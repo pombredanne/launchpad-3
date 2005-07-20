@@ -22,10 +22,9 @@ from StringIO import StringIO
 from zope.component import getUtility
 
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import IDistributionSet, IPersonSet, \
-    ISourcePackageNameSet, IPOTemplateSet, IPOTemplateNameSet, \
-    IBinaryPackageNameSet, IPOFileSet
-from canonical.launchpad.database import LanguageNotFound
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IPersonSet, ISourcePackageNameSet, IPOTemplateSet,
+    IPOTemplateNameSet, IBinaryPackageNameSet, IPOFileSet, LanguageNotFound)
 from canonical.sourcerer.deb.version import Version
 
 class URLOpenerError(Exception):

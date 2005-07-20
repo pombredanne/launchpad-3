@@ -1,8 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['POTemplateSubset', 'POTemplateSet', 'LanguageNotFound',
-           'POTemplate']
+__all__ = ['POTemplateSubset', 'POTemplateSet', 'POTemplate']
 
 import StringIO
 import datetime
@@ -14,13 +13,14 @@ from zope.exceptions import NotFoundError
 # SQL imports
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, SQLObjectNotFound
-from canonical.database.sqlbase import \
-    SQLBase, quote, flush_database_updates, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase, quote, flush_database_updates, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
 
 # canonical imports
-from canonical.launchpad.interfaces import \
-    IEditPOTemplate, IPOTemplateSet, IPOTemplateSubset, IRawFileData, ITeam
+from canonical.launchpad.interfaces import (
+    IEditPOTemplate, IPOTemplateSet, IPOTemplateSubset, IRawFileData, ITeam,
+    LanguageNotFound)
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
@@ -693,9 +693,5 @@ class POTemplateSet:
 
         for potemplate in results:
             yield potemplate
-
-
-class LanguageNotFound(ValueError):
-    """Raised when a a language does not exists in the database."""
 
 
