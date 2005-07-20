@@ -17,7 +17,9 @@
 
   <div metal:define-macro="addform">
 
-    <form action="." tal:attributes="action request/URL" method="post"
+    <form action="." 
+          tal:attributes="action request/URL" 
+          method="post"
           enctype="multipart/form-data">
 
       <div metal:define-macro="formbody">
@@ -27,22 +29,20 @@
             metal:define-slot="heading"
             >Add Something</h1>
 
-          <p metal:define-slot="extra_info" tal:replace="nothing">
-            This is the description of the add form.
-            This text will be in bold, beneath the title of the add form,
-            and should explain a little bit about the form.
-          </p>
+        <p metal:define-slot="extra_info" tal:replace="nothing">
+          This is the description of the add form.
+          This text will be in bold, beneath the title of the add form,
+          and should explain a little bit about the form.
+        </p>
 
-        <p tal:define="status view/update"
+        <p class="portalMessage"
+           tal:define="status view/update"
            tal:condition="status"
            tal:content="status" />
 
-        <p tal:condition="view/errors" i18n:translate="">
-          There are <strong tal:content="view/errors/count:len"
-                            i18n:name="num_errors">6</strong> input errors.
-        </p>
-
-        <div class="row" metal:define-slot="extra_top" tal:replace="nothing">
+        <div class="row" 
+             metal:define-slot="extra_top" 
+             tal:replace="nothing">
             <div class="label">Extra top</div>
             <div class="label"><input type="text" style="width:100%" /></div>
         </div>
@@ -50,7 +50,8 @@
         <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
 
         <div class="row"
-            metal:define-slot="extra_bottom" tal:replace="nothing">
+             metal:define-slot="extra_bottom" 
+             tal:replace="nothing">
           <div class="label">Extra bottom</div>
           <div class="field"><input type="text" style="width:100%" /></div>
         </div>
@@ -58,13 +59,17 @@
       </div>
       <div class="row">
         <div class="controls"><hr />
-          <input type='submit' value='Add'
-            name='UPDATE_SUBMIT' style="float: right;"
-            i18n:attributes='value add-button' />
+          <input type='submit' 
+                 value='Add'
+                 name='UPDATE_SUBMIT' 
+                 style="float: right;"
+                 i18n:attributes='value add-button' />
         </div>
       </div>
 
-      <div class="row" metal:define-slot="extra_buttons" tal:replace="nothing">
+      <div class="row" 
+           metal:define-slot="extra_buttons" 
+           tal:replace="nothing">
       </div>
 
     </form>

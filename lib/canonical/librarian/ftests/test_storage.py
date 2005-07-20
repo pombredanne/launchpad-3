@@ -32,8 +32,6 @@ class LibrarianStorageDBTests(LaunchpadZopelessTestSetup, unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.directory, ignore_errors=True)
-        from canonical.database.sqlbase import begin
-        begin()
         super(LibrarianStorageDBTests, self).tearDown()
 
     def test_addFile(self):

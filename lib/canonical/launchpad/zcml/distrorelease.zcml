@@ -75,17 +75,15 @@
             />
         <browser:page
             name="+portlet-details"
-            template="../templates/portlet-distrorelease-details.pt"
-            lp:url="/distros/ubuntu/hoary/+portlet-details"
+            template="../templates/distrorelease-portlet-details.pt"
             />
         <browser:page
             name="+portlet-actions"
-            template="../templates/portlet-distrorelease-actions.pt"
-            lp:url="/distros/ubuntu/hoary/+portlet-actions"
+            template="../templates/distrorelease-portlet-actions.pt"
             />
         <browser:page
             name="+portlet-translations"
-            template="../templates/portlet-distrorelease-translations.pt"
+            template="../templates/distrorelease-portlet-translations.pt"
             lp:url="/distros/ubuntu/hoary/+portlet-translations"
             />
         <browser:page
@@ -125,16 +123,7 @@
         lp:url="/distros/$distro.id/$release.id/+reassign" />
     </browser:pages>
 
-    <browser:page
-        for="canonical.launchpad.interfaces.IDistroRelease"
-        class="canonical.launchpad.browser.ReleaseSearchView"
-        permission="zope.Public"
-        name="+search"
-        template="../templates/distrorelease-search.pt"
-        lp:url="distros/$Distribution.name/$Release.name/+search"
-        />
-
-    <browser:menus
+   <browser:menus
         module="canonical.launchpad.browser.distrorelease"
         classes="DistroReleaseFacets"
         />

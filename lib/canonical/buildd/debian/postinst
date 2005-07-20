@@ -13,7 +13,7 @@ make_buildd()
 {
  buildd-genconfig --name=default --host=0.0.0.0 --port=8221 > \
   /etc/launchpad-buildd/default
- mkdir /home/${USER}/filecache-default
+ test -d /home/${USER}/filecache-default || mkdir /home/${USER}/filecache-default
  chown $USER:buildd /home/${USER}/filecache-default
  echo Default buildd created.
 }

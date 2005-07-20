@@ -6,17 +6,17 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-bug-people" />
-    <div tal:replace="structure context/@@+portlet-bug-productinfestation" />
-    <div tal:replace="structure context/@@+portlet-bug-packageinfestation" />
-    <div tal:replace="structure context/@@+bug-portlet-duplicates" />
+    <div tal:replace="structure context/@@+portlet-people" />
+    <div tal:replace="structure context/@@+portlet-productinfestation" />
+    <div tal:replace="structure context/@@+portlet-packageinfestation" />
+    <div tal:replace="structure context/@@+portlet-duplicates" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-bug-actions" />
-    <div tal:replace="structure context/@@+portlet-bug-cve" />
-    <div tal:replace="structure context/@@+portlet-bug-reference" />
-    <div tal:replace="structure context/@@+portlet-bug-watch" />
+    <div tal:replace="structure context/@@+portlet-actions" />
+    <div tal:replace="structure context/@@+portlet-cve" />
+    <div tal:replace="structure context/@@+portlet-reference" />
+    <div tal:replace="structure context/@@+portlet-watch" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -25,7 +25,7 @@
      style="margin-bottom: 1em">
     This bug is a duplicate of
     <a href="#"
-       tal:attributes="href context/duplicateof/@@absolute_url"
+       tal:attributes="href context/duplicateof/fmt:url"
        tal:content="string:bug #${context/duplicateof/id}">bug 42</a>
   </p>
 
@@ -54,7 +54,7 @@
      $bug.summary
   </p>
 
-  <div tal:replace="structure context/@@+portlet-bug-tasks-headline" />
+  <div tal:replace="structure context/@@+headline-tasks" />
 
     <tal:description
       content="structure context/description/fmt:text-to-html"

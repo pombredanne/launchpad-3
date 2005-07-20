@@ -13,13 +13,6 @@ class ZeroLengthPOExportError(Exception):
     """An exception raised when a PO file export generated an empty file."""
 
 
-class IPOFileSet(Interface):
-    """A set of POFile."""
-
-    def getPOFilesPendingImport():
-        """Return a list of PO files that have data to be imported."""
-
-
 class IPOFile(IRosettaStats, ICanAttachRawFileData):
     """A PO File."""
 
@@ -62,10 +55,9 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 
     datecreated = Attribute("The fate this file was created.")
 
-    latest_submission = Attribute("""Of all the translation submissions
-        belonging to PO messages sets belonging to this PO file, return the
-        one which was most recently modified (greatest datelastactive), or
-        None if there are no submissions belonging to this PO file.""")
+    latestsubmission = Attribute("""The translation submissions which was
+        most recently added, or None if there are no submissions belonging
+        to this PO file.""")
 
     translators = Attribute("A list of Translators that have been "
         "designated as having permission to edit these files in this "
@@ -180,16 +172,16 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
     def invalidateCache():
         """Invalidate the cached export."""
 
-
-class IEditPOFile(IPOFile):
-    """Edit interface for a PO File."""
-
     def canEditTranslations(person):
         """Say if a person is able to edit existing translations.
 
         Return True or False indicating whether the person is allowed
         to edit these translations.
         """
+
+
+class IEditPOFile(IPOFile):
+    """Edit interface for a PO File."""
 
     def expireAllMessages():
         """Mark our of our message sets as not current (sequence=0)"""
@@ -219,3 +211,15 @@ class IEditPOFile(IPOFile):
 
         new_header is a POHeader object.
         """
+
+
+class IPOFileSet(Interface):
+    """A set of POFile."""
+
+    def getPOFilesPendingImport():
+        """Return a list of PO files that have data to be imported."""
+
+    def getDummy(potemplate, language):
+        """Return a dummy pofile for the given po template and language."""
+
+

@@ -58,13 +58,18 @@
             name="+members"
             template="../templates/distribution-members.pt"
             lp:url="/distros/$Distribution.name/+members" />
+    </browser:pages>
+    
+    <browser:pages
+        for="canonical.launchpad.interfaces.IDistribution"
+        permission="zope.Public" >
         <browser:page
             name="+portlet-actions"
-            template="../templates/portlet-distro-actions.pt"
+            template="../templates/distribution-portlet-actions.pt"
             lp:url="/distros/$Distribution.name/+portlet-actions" />
         <browser:page
             name="+portlet-details"
-            template="../templates/portlet-distro-details.pt"
+            template="../templates/distribution-portlet-details.pt"
             lp:url="/distros/$Distribution.name/+portlet-details" />
         <browser:page
             name="+portlet-releases"
@@ -72,7 +77,7 @@
             lp:url="/distros/$Distribution.name/+portlet-releases" />
         <browser:page
             name="+portlet-bounties"
-            template="../templates/portlet-related-bounties.pt"
+            template="../templates/object-portlet-bounties.pt"
             lp:url="/distros/$Distribution.name/+portlet-bounties" />
     </browser:pages>
 
@@ -85,6 +90,24 @@
               template="../templates/object-reassignment.pt"
               lp:url="/distros/$distro.id/+reassign" />
     </browser:pages>
+
+    <browser:addform
+        name="+add"
+        for="canonical.launchpad.interfaces.IDistribution"
+        schema="canonical.launchpad.interfaces.IDistroRelease"
+        label="Create a New Distribution Release in Soyuz"
+        fields="name displayname title summary description version
+        parentrelease components sections"
+        content_factory="canonical.launchpad.database.DistroRelease"
+        class="canonical.launchpad.browser.DistroReleaseAddView"
+        permission="launchpad.Admin"
+        template="../templates/launchpad-addform.pt"
+        lp:url="/distros/Distro.name/+add">
+        <browser:widget
+            field="owner"
+            class="canonical.widgets.OwnerWidget" />
+    </browser:addform>
+
 
     <browser:addform
         name="+filebug"
@@ -126,7 +149,7 @@
         fields="members"
         label="Select A New Distribution Members Team"
         permission="launchpad.Edit"
-        template="../templates/launchpad-editform.pt"
+        template="../templates/distribution-memberteam.pt"
         lp:url="/distros/$Distribution.name/+selectmemberteam" />
 
     <browser:editform
@@ -136,7 +159,7 @@
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
         label="Select A New Translation Group"
-        template="../templates/launchpad-editform.pt"
+        template="../templates/distribution-translators.pt"
         lp:url="/distros/$Distribution.name/+changetranslators" />
 
     <!-- DistributionSet -->
@@ -208,7 +231,7 @@
         class="canonical.launchpad.browser.DistributionSetAddView"
         permission="launchpad.Admin"
         template="../templates/launchpad-addform.pt"
-        lp:url="soyuz/distros/+add">
+        lp:url="/distros/+add">
         <browser:widget
             field="owner"
             class="canonical.widgets.OwnerWidget" />

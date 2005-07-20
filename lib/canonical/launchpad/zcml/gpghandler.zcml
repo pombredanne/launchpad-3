@@ -6,14 +6,14 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
-    <content class="canonical.launchpad.utilities.GpgHandler">
-        <allow interface="canonical.launchpad.interfaces.IGpgHandler" />
+    <content class="canonical.launchpad.utilities.GPGHandler">
+        <allow interface="canonical.launchpad.interfaces.IGPGHandler" />
     </content>
 
     <securedutility
-        class="canonical.launchpad.utilities.GpgHandler"
-        provides="canonical.launchpad.interfaces.IGpgHandler">
-        <allow interface="canonical.launchpad.interfaces.IGpgHandler" />
+        class="canonical.launchpad.utilities.GPGHandler"
+        provides="canonical.launchpad.interfaces.IGPGHandler">
+        <allow interface="canonical.launchpad.interfaces.IGPGHandler" />
     </securedutility>
 
     <content class="canonical.launchpad.utilities.PymeSignature">

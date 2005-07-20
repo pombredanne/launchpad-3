@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # Copyright 2005 Canonical Ltd. All rights reserved.
 
+import _pythonpath
+
 import logging
 import sys
 from optparse import OptionParser
@@ -18,7 +20,7 @@ def main(args):
     logger = logger_from_options(options)
 
     lockfile_path = '/var/lock/rosetta-export-queue.lock'
-    lockfile = LockFile(lockfile_path)
+    lockfile = LockFile(lockfile_path, logger=logger)
 
     try:
         lockfile.acquire()
@@ -30,14 +32,10 @@ def main(args):
         ztm = initZopeless()
         execute_zcml_for_scripts()
         process_queue(ztm, logger)
-    except:
-        logger.exception('Uncaught exception while processing the queue.')
+        logger.info('Done.')
+        return 0
+    finally:
         lockfile.release()
-        return 1
-
-    logger.info('Done.')
-    lockfile.release()
-    return 0
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

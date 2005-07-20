@@ -6,57 +6,45 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-about" />
+  <div tal:replace="structure context/@@+portlet-rules" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
 <div metal:fill-slot="main">
 
-    <h1>Launchpad Bounty Tracker!</h1>
-
-    <div style="float: right;">
-        [ <a href="+new">Create New Bounty</a> ]
-    </div>
-    
-    <div class="documentDescription">
-        Below are all of the outstanding bounties registered in the
-        Launchpad. Click on a bounty for more information.
-    </div>
-
-    <table class="listing rowNavigation" width="100%">
-        <tr>
-            <th>Date Created</th>
-            <th>Title</th>
-            <th>USD Value<sup>*</sup></th>
-            <th>Est. Difficulty</th>
-            <th>Est. Duration</th>
-        </tr>
-        <tr tal:repeat="bounty context"
-            tal:attributes="onclick
-                string:window.location='${bounty/name}';">
-            <td tal:content="python:bounty.datecreated.strftime('%d %b %y')">
-              date
-            </td>
-            <td><b>
-                <span tal:replace="bounty/title/fmt:shorten/57">title</span>
-                </b></td>
-            <td tal:content="bounty/usdvalue">usdvalue</td>
-            <td tal:content="bounty/difficulty">difficulty</td>
-            <td tal:content="bounty/duration">duration</td>
-        </tr>
-    </table>
-
-    <p><sup>*</sup> A bounty may include contributions in several currencies,
-    this is an estimate of the bounty value in US Dollars based on recent
-    exchange rates.</p>
-
-
-    <p>
-      You can stake a claim to any unclaimed bounty, but must then begin to
-      deliver code on a regular schedule, or forfeit the claim to someone
-      else.  The reviewer will decide when the submission is complete, and can
-      also rule that a claimant is making no progress, which will make the
-      bounty available again. Payments will be made by Paypal, wire transfer
-      can also be made for bounties in excess of $500.
-    </p>
+  <div class="documentDescription">
+    Below are all of the outstanding bounties registered in the
+    Launchpad. Click on a bounty for more information.
   </div>
 
+  <table class="listing" width="100%">
+    <tr>
+      <thead>
+        <th>Date</th>
+        <th>Title</th>
+        <th>USD Value<sup>*</sup></th>
+      </thead>
+    </tr>
+    <tr tal:repeat="bounty context">
+      <td tal:content="bounty/datecreated/fmt:date">
+        date
+      </td>
+      <td><a tal:content="bounty/title/fmt:shorten/57"
+             tal:attributes="href bounty/fmt:url">title</a></td>
+      <td tal:content="bounty/usdvalue">usdvalue</td>
+    </tr>
+  </table>
+
+  <p><sup>*</sup> A bounty may include contributions in several currencies.
+  This is an estimate of the bounty value in US Dollars based on recent
+  exchange rates.</p>
+
+</div>
 </body>
 </html>
 

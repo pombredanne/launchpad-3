@@ -275,8 +275,6 @@ def export_rows(rows, pofile_output):
 
             # Generate the header of the new PO file.
 
-            header_string = row.poheader
-
             header = POHeader(
                 commentText=row.potopcomment,
                 msgstr=row.poheader)
@@ -286,13 +284,25 @@ def export_rows(rows, pofile_output):
 
             header.finish()
 
-            # Update header fields. This part is optional in order to make it
-            # easier to fake data for testing.
+            # Update header fields.
 
-            if row.pofile and row.pofile.latest_submission:
+            if row.potheader:
+                pot_header = POHeader(
+                    msgstr=row.potheader)
+                pot_header.finish()
+
+                if 'Domain' in pot_header:
+                    header['Domain'] = pot_header['Domain']
+
+
+            # This part is conditional on the PO file being present in order
+            # to make it easier to fake data for testing.
+
+            if (row.pofile is not None and
+                row.pofile.latestsubmission is not None):
                 # Update the last translator field.
 
-                submission = row.pofile.latest_submission
+                submission = row.pofile.latestsubmission
                 assert not submission.person.isTeam(), submission.person.name
                 header['Last-Translator'] = (
                     last_translator_text(submission.person))
@@ -646,7 +656,7 @@ class POExport:
 
         # First we get last translator that touched a string and the date when
         # it was done.
-        last_changed = poFile.latest_submission
+        last_changed = poFile.latestsubmission
 
         if last_changed is not None:
             # We have at least one pomsgset with a translation so we are able

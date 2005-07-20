@@ -2,7 +2,7 @@
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
-__all__ = ['Bug', 'BugDelta', 'BugFactory', 'BugSet']
+__all__ = ['Bug', 'BugFactory', 'BugSet']
 
 from sets import Set
 from email.Utils import make_msgid
@@ -14,8 +14,7 @@ from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
 
-from canonical.launchpad.interfaces import (
-    IBug, IBugSet, IBugDelta)
+from canonical.launchpad.interfaces import IBug, IBugSet
 from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
@@ -172,29 +171,6 @@ class Bug(SQLBase):
             distribution=distribution, distrorelease=distrorelease,
             sourcepackagename=sourcepackagename,
             binarypackagename=binarypackagename)
-
-
-class BugDelta:
-    """See canonical.launchpad.interfaces.IBugDelta."""
-    implements(IBugDelta)
-    def __init__(self, bug, bugurl, user, title=None, summary=None,
-                 description=None, name=None, private=None, duplicateof=None,
-                 external_reference=None, bugwatch=None, cveref=None,
-                 added_bugtasks=None, bugtask_deltas=None):
-        self.bug = bug
-        self.bugurl = bugurl
-        self.user = user
-        self.title = title
-        self.summary = summary
-        self.description = description
-        self.name = name
-        self.private = private
-        self.duplicateof = duplicateof
-        self.external_reference = external_reference
-        self.bugwatch = bugwatch
-        self.cveref = cveref
-        self.added_bugtasks = added_bugtasks
-        self.bugtask_deltas = bugtask_deltas
 
 
 def BugFactory(addview=None, distribution=None, sourcepackagename=None,

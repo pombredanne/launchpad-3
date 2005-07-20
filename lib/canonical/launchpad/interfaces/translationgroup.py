@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'ITranslationGroup',
     'ITranslationGroupSet',
-    'IAddFormCustomization',
     ]
 
 from zope.i18nmessageid import MessageIDFactory

@@ -27,11 +27,11 @@ class Distribution(SQLBase):
     _defaultOrder='name'
 
     name = StringCol(notNull=True, alternateID=True, unique=True)
-    displayname = StringCol()
-    title = StringCol()
-    summary = StringCol()
-    description = StringCol()
-    domainname = StringCol()
+    displayname = StringCol(notNull=True)
+    title = StringCol(notNull=True)
+    summary = StringCol(notNull=True)
+    description = StringCol(notNull=True)
+    domainname = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
     translationgroup = ForeignKey(dbName='translationgroup',
@@ -40,7 +40,7 @@ class Distribution(SQLBase):
         notNull=True, schema=TranslationPermission,
         default=TranslationPermission.OPEN)
     releases = MultipleJoin('DistroRelease', joinColumn='distribution',
-                            orderBy='-id')
+                            orderBy='id')
     bounties = RelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistroBounty')
@@ -65,11 +65,6 @@ class Distribution(SQLBase):
             return self.releases[0]
         return None
     currentrelease = property(currentrelease)
-
-    def memberslist(self):
-        if not ITeam.providedBy(self.members):
-            return
-        return ITeamMembershipSubset(self.members).getActiveMemberships()
 
     def __getitem__(self, name):
         for release in self.releases:

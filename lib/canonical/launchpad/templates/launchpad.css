@@ -62,6 +62,21 @@ fieldset.two-column {
   margin-right: 1em;
 }
 
+/* Classes for error indication in forms */
+.portalError {
+    background-color: #ffc9c9;
+    border: 1px solid #ddb0b0;
+    color: Black;
+    margin: 0em 0em 0em 0em;
+    padding: 0.3em 0.3em 0.3em 0.3em;
+}
+
+.portalError .error {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 85%;
+}
 
 
 /* Plone elements that should be changed */
@@ -250,7 +265,7 @@ tr.rowLinkified a {
 .batchnav td {
   text-align: center;
   border-top: 1px solid #364970;
-  vertical-align: bottom;>
+  vertical-align: bottom;
 }
 
 /* Bug status markers */
@@ -271,7 +286,7 @@ tr.rowLinkified a {
 
 /* Bug Severity markers */
 .severityCritical { color: Red; }
-.severityMajor    { color: Orange; }
+.severityMajor    { color: #ff6600; }
 .severityNormal   { color: Green; }
 .severityMinor    { color: Black; }
 .severityWishlist { color: Blue; }
@@ -335,7 +350,7 @@ tr.rowLinkified a {
 }
 
 .boardCommentActions {
-  right: 1em:
+  right: 1em;
 }
 
 .boardCommentPortrait {
@@ -525,7 +540,7 @@ code {
   border: none;
   padding: inherit;
 }
-pre {
+pre, textarea {
   font-family: monospace;
   font-size: 100%;
 }
@@ -744,9 +759,12 @@ ul.app>li.current {
   margin-left: 2%;
   width: 48%;
 }
+
 .sidebar {
   background-color: #f7f9fa;
   border: 1px solid #8cacbb;
+  border-top: none;
+  padding-bottom: 1em;
   clear: right;
   float: right;
   font-size: smaller;
@@ -754,8 +772,23 @@ ul.app>li.current {
   width: 25%;
   min-width: 8em;
   max-width: 50%;
-  padding: 0.25em 0.5em;
 }
+
+.sidebar > h4 { /* plone.css .portlet h4 paste-o */
+    background-color: #dee7ec;
+    border-top: 1px solid #8cacbb;
+    border-bottom: 1px solid #8cacbb;
+    padding: 0em 0.3em 0em 1em;
+    text-transform: lowercase;
+    display: block;
+    font-size: 1em;
+    font-weight: normal;
+}
+
+.sidebar > ul {
+    margin-left: 2.5em;
+}
+
 .debug {
   background-color: #ffddee;
 }
@@ -926,6 +959,21 @@ input {
   border: solid white;
   border-width: 0 0 1px 0;
   display: block;
+}
+
+/*
+  Sortable tables
+*/
+
+table.sortable a.sortheader {
+    color:#666666;
+    font-weight: bold;
+    text-decoration: none;
+    display: block;
+}
+
+table.sortable img.sortarrow {
+    padding-left: 2px;
 }
 
 /*

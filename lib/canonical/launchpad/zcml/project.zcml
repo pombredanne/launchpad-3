@@ -65,25 +65,24 @@
        <!-- Projects portlets -->
        <browser:page
             name="+portlet-languages"
-            template="../templates/portlet-project-languages.pt"
+            template="../templates/project-portlet-languages.pt"
             lp:url="Rosetta/projects/$Project.name/+portlet-languages" />
        <browser:page
-            name="+portlet-related-bounties"
-            template="../templates/portlet-related-bounties.pt"
-            lp:url="Rosetta/projects/$Project.name/+portlet-related-bounties" />
+            name="+portlet-bounties"
+            template="../templates/object-portlet-bounties.pt"
+            lp:url="Rosetta/projects/$Project.name/+portlet-bounties" />
        <browser:page
             name="+portlet-trackers"
-            template="../templates/portlet-project-trackers.pt"
+            template="../templates/project-portlet-trackers.pt"
             lp:url="Rosetta/projects/$Project.name/+portlet-trackers" />
        <browser:page
             name="+portlet-details"
-            template="../templates/portlet-project-details.pt"
+            template="../templates/project-portlet-details.pt"
             lp:url="Rosetta/projects/$Project.name/+portlet-details" />
        <browser:page
             name="+portlet-actions"
-            template="../templates/portlet-project-actions.pt"
+            template="../templates/project-portlet-actions.pt"
             lp:url="Rosetta/projects/$Project.name/+portlet-actions" />
-
     </browser:pages>
 
     <browser:page

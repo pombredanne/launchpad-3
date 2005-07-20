@@ -17,7 +17,7 @@
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-actions" />
     <div tal:replace="structure context/@@+portlet-latest-bugs" />
-    <div tal:replace="structure context/@@+portlet-related-bounties" />
+    <div tal:replace="structure context/@@+portlet-bounties" />
     <div tal:replace="structure context/@@+portlet-packages" />
     <div tal:replace="structure context/@@+portlet-branches" />
     <div tal:replace="structure context/@@+portlet-calendar" />
@@ -44,13 +44,9 @@
 
   <tal:block condition="context/serieslist">
 
-    <p>We list below each of the registered "product series" or
-    branches of <span tal:replace="context/displayname">displayname</span>,
-    and the releases made from them:</p>
-
     <tal:block repeat="series context/serieslist">
 
-      <h3><span tal:replace="series/name">seriesname</span>
+      <h3>Branch: <span tal:replace="series/name">seriesname</span>
         (<span tal:replace="series/datecreated/fmt:date">4-12-45</span>)
       </h3>
       
@@ -58,7 +54,7 @@
         A summary of the series
         details and status.</span>
         [<a tal:attributes="href
-        string:+series/${series/name}">Details...</a>]
+        string:+series/${series/name}">More</a>]
       </p>
             
       <div style="margin-left: 15px;" tal:condition="series/releases">
@@ -74,10 +70,8 @@
           </thead>
           <tbody>
             <tr tal:repeat="release series/releases">
-              <td>
-                <a tal:attributes="href string:${release/version}"
-                   tal:content="release/version">version</a>
-              </td> 
+              <td><a tal:content="release/version"
+                     tal:attributes="href release/fmt:url">version</a></td> 
               <td tal:content="release/datereleased/fmt:date">date</td>
               <td>"<span tal:replace="release/title">title</span>"</td>
               <td tal:content="release/owner/browsername">foo bar</td>

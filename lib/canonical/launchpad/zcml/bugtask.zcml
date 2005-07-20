@@ -19,51 +19,26 @@
         for="canonical.launchpad.interfaces.IBugTask"
         name="+edit" />
 
-    <!--
-    Brad Bollenbach, 2005-05-16:
-
-    Two views are currently required to be registered for handling the
-    absolute_url of an object: one that plays nicely with
-    zope.app.traversing.browser.absoluteurl.absoluteURL and one that
-    plays nicely with foo/@@absolute_url.
-
-    The former requires an unnamed view; the latter requires, of
-    course, a view named absolute_url.
-    -->
-    <view
-        for="canonical.launchpad.interfaces.IBugTask"
-        factory="canonical.launchpad.browser.bugtask.BugTaskAbsoluteURL"
-        type="zope.publisher.interfaces.http.IHTTPRequest"
-        permission="zope.Public"
-        provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
-    </view>
-
-    <view
-        name="absolute_url"
-        for="canonical.launchpad.interfaces.IBugTask"
-        factory="canonical.launchpad.browser.bugtask.BugTaskAbsoluteURL"
-        type="zope.publisher.interfaces.http.IHTTPRequest"
-        permission="zope.Public"
-        provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
-    </view>
-
     <browser:url
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         path_expression="string:+bugs/${bug/id}"
-        attribute_to_parent="product"
-        />
+        attribute_to_parent="product" />
 
     <browser:url
         for="canonical.launchpad.interfaces.IDistroBugTask"
         path_expression="string:+bugs/${bug/id}"
-        attribute_to_parent="distribution"
-        />
+        attribute_to_parent="distribution" />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
+        path_expression="string:+bugs/${bug/id}"
+        attribute_to_parent="distrorelease" />
 
     <!-- BugTaskSet -->
     <content class="canonical.launchpad.database.BugTaskSet">
-        <allow interface="canonical.launchpad.interfaces.IBugTaskSet" />
-        <allow
-            interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
+      <allow interface="canonical.launchpad.interfaces.IBugTaskSet" />
+      <allow
+          interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
     <securedutility
@@ -94,12 +69,12 @@
         permission="zope.Public">
 
         <!-- BugTask Portlets -->
-        <browser:page name="+portlet-also-reported"
-            template="../templates/portlet-bug-also-reported-in.pt"
-            lp:url="malone/tasks/+portlet-also-reported" />
+        <browser:page name="+portlet-alsoreportedin"
+            template="../templates/bugtask-portlet-alsoreportedin.pt"
+            lp:url="malone/tasks/+portlet-alsoreportedin" />
 
         <browser:page name="+portlet-status"
-            template="../templates/portlet-bug-status.pt"
+            template="../templates/bugtask-portlet-status.pt"
             lp:url="malone/tasks/+portlet-status" />
 
     </browser:pages>
@@ -279,18 +254,20 @@
             name="+index"
             template="../templates/bugs-for-context.pt" />
         <browser:page
-            name="+portlet-bugtask-listing-actions"
-            template="../templates/portlet-bugtask-listing-actions.pt" />
+            name="+portlet-actions"
+            template="../templates/bugtasklist-portlet-actions.pt" />
+        <!-- XXX sabdfl 8/7/05
+             the portlet below is poorly named and placed-->
         <browser:page
-            name="+portlet-bug-stats-for-context"
-            template="../templates/portlet-bug-stats-for-context.pt" />
+            name="+portlet-statsforcontext"
+            template="../templates/bug-portlet-statsforcontext.pt" />
         <browser:page
-            name="+portlet-release-bugs"
-            template="../templates/portlet-release-bugs.pt" />
+            name="+portlet-releasebugs"
+            template="../templates/bugtask-portlet-releasebugs.pt" />
     </browser:pages>
 
     <!-- BugTaskDelta -->
-    <content class="canonical.launchpad.database.BugTaskDelta">
+    <content class="canonical.launchpad.components.bugtask.BugTaskDelta">
         <allow interface="canonical.launchpad.interfaces.IBugTaskDelta" />
     </content>
 

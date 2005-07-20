@@ -1,5 +1,7 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 #
+
+__metaclass__ = type
 
 import sqlobject
 
@@ -127,53 +129,6 @@ class DigestSearchResource(resource.Resource):
     def _cb_matchingAliases(self, matches, request):
         text = '\n'.join([str(len(matches))] + matches)
         response = static.Data(text.encode('utf-8'), 
-                               'text/plain; charset=utf-8').render(request)
-        request.write(response)
-        request.finish()
-
-
-class AliasSearchErrors:
-    BAD_SEARCH = 'Bad search'
-    NOT_FOUND = 'Not found'
-
-class AliasSearchResource(resource.Resource):
-    def __init__(self,storage):
-        self.storage = storage
-
-    def render_GET(self, request):
-        try:
-            alias = int(request.args['alias'][0])
-        except (LookupError, ValueError):
-            return static.Data(AliasSearchErrors.BAD_SEARCH,
-                               'text/plain').render(request)
-
-        deferred = deferToThread(self._getByAlias, alias)
-        deferred.addCallback(self._cb_getByAlias, alias, request)
-        deferred.addErrback(self._eb_getByAlias, request)
-        deferred.addErrback(_eb, request)
-        return server.NOT_DONE_YET
-
-    def _getByAlias(self, alias):
-        begin()
-        try:
-            alias = self.storage.library.getByAlias(alias)
-            contentID = alias.content.id
-            filename = alias.filename
-            return contentID, filename
-        finally:
-            rollback()
-
-    def _eb_getByAlias(self, failure, request):
-        failure.trap(sqlobject.SQLObjectNotFound)
-        response = static.Data(AliasSearchErrors.NOT_FOUND,
-                               'text/plain').render(request)
-        request.write(response)
-        request.finish()
-
-    def _cb_getByAlias(self, (contentID, filename), alias, request):
-        # Desired format is fileid/aliasid/filename
-        ret = "/%s/%s/%s\n" % (contentID, alias, quote(filename))
-        response = static.Data(ret.encode('utf-8'), 
                                'text/plain; charset=utf-8').render(request)
         request.write(response)
         request.finish()

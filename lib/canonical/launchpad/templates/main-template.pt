@@ -13,6 +13,7 @@
         media="screen">@import url(/@@/launchpad.css);</style>
     <!-- Launchpad JS code -->
     <script type="text/javascript" src="/@@/launchpad.js"></script>
+    <script type="text/javascript" src="/@@/sorttable.js"></script>
     <link rel="shortcut icon" href="/@@/defaultFavicon.gif" />
 
     <metal:block define-slot="head_epilogue"></metal:block>

@@ -2,7 +2,9 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.database import MaintainershipSet
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces import IMaintainershipSet
 from canonical.lp.dbschema import BugSubscription
 
 def make_subscriptions_explicit_on_private_bug(bug, event):
@@ -29,7 +31,7 @@ def make_subscriptions_explicit_on_private_bug(bug, event):
                         distribution = task.distribution
                     else:
                         distribution = task.distrorelease.distribution
-                    mshiputil = MaintainershipSet()
+                    mshiputil = getUtility(IMaintainershipSet)
                     maintainer = mshiputil.get(distribution,
                                                task.sourcepackagename)
                     if maintainer:

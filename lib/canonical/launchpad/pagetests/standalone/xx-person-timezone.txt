@@ -1,0 +1,119 @@
+
+"Sample Person" is using the "Australia/Perth" time zone:
+
+  >>> print http(r"""
+  ... GET /people/name12/+changetz HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+      <title>Time Zone for Sample Person</title>
+  ...
+  <select name="field.timezone" ...
+  <option value="UTC">UTC</option>
+  ...
+  <option selected="selected" value="Australia/Perth">Australia/Perth</option>
+  ...
+
+
+We can change the time zone by posting the form:
+
+  >>> print http(r"""
+  ... POST /people/name12/+changetz HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 441
+  ... Content-Type: multipart/form-data; boundary=---------------------------50350241221155211392010177932
+  ... 
+  ... -----------------------------50350241221155211392010177932
+  ... Content-Disposition: form-data; name="field.timezone"
+  ... 
+  ... UTC
+  ... -----------------------------50350241221155211392010177932
+  ... Content-Disposition: form-data; name="field.timezone-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------50350241221155211392010177932
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------50350241221155211392010177932--
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+      <title>Time Zone for Sample Person</title>
+  ...
+  <select name="field.timezone" ...
+  <option selected="selected" value="UTC">UTC</option>
+  ...
+  <option value="Australia/Perth">Australia/Perth</option>
+  ...
+
+
+Change "Sample Person" back to Australia/Perth.
+
+  >>> print http(r"""
+  ... POST /people/name12/+changetz HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 445
+  ... Content-Type: multipart/form-data; boundary=---------------------------328836579426587791788403618
+  ... 
+  ... -----------------------------328836579426587791788403618
+  ... Content-Disposition: form-data; name="field.timezone"
+  ... 
+  ... Australia/Perth
+  ... -----------------------------328836579426587791788403618
+  ... Content-Disposition: form-data; name="field.timezone-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------328836579426587791788403618
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------328836579426587791788403618--
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+
+
+
+Submitting the form without a time zone selected causes an input
+validation error:
+
+  >>> print http(r"""
+  ... POST /people/name12/+changetz HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 316
+  ... Content-Type: multipart/form-data; boundary=---------------------------7739752791407205050362934404
+  ... 
+  ... -----------------------------7739752791407205050362934404
+  ... Content-Disposition: form-data; name="field.timezone-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------7739752791407205050362934404
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------7739752791407205050362934404--
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+      <title>Time Zone for Sample Person</title>
+  ...
+  ...An error occured...
+  ...
+  <select name="field.timezone" ...
+  ...
+  ...Required input is missing...
+  ...

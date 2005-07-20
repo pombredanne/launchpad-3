@@ -1,5 +1,7 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 #
+
+__metaclass__ = type
 
 import sha
 import urllib
@@ -22,7 +24,7 @@ import warnings
 
 __all__ = ['FileUploadClient', 'FileDownloadClient', 'LibrarianClient']
 
-class FileUploadClient(object):
+class FileUploadClient:
     """Simple blocking client for uploading to the librarian."""
 
     def connect(self, *args, **kw):
@@ -155,7 +157,7 @@ def quote(s):
     return urllib.quote(s).replace('/', '%2F')
 
 
-class _File(object):
+class _File:
     """A wrapper around a file like object that has security assertions"""
 
     def __init__(self, file):
@@ -171,7 +173,7 @@ class _File(object):
         return self.file.close()
 
 
-class FileDownloadClient(object):
+class FileDownloadClient:
     """A simple client to download files from the librarian"""
 
     _logger = None

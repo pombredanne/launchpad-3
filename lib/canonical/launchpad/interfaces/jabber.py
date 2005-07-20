@@ -21,6 +21,9 @@ class IJabberID(Interface):
     person = Int(title=_("Owner"), required=True)
     jabberid = TextLine(title=_("Jabber user ID"), required=True)
 
+    def destroySelf():
+        """Delete this JabberID from the database."""
+
 
 class IJabberIDSet(Interface):
     """The set of JabberIDs."""

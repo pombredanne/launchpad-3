@@ -14,7 +14,6 @@ from zope.event import notify
 from zope.exceptions import NotFoundError
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
-from zope.app.traversing.browser.absoluteurl import absoluteURL
 
 from canonical.launchpad.interfaces import (
     IPerson, IProduct, IProductSet, IBugTaskSet, IProductSeries,
@@ -25,11 +24,10 @@ from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
-
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, DefaultLink)
+    StandardLaunchpadFacets, Link, DefaultLink, canonical_url)
 
-__all__ = ['ProductFacets', 'ProductView', 'ProductEditView', 
+__all__ = ['ProductFacets', 'ProductView', 'ProductEditView',
            'ProductFileBugView', 'ProductRdfView', 'ProductSetView',
            'ProductSetAddView']
 
@@ -85,8 +83,6 @@ class ProductView:
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(request)
         self.status_message = None
-        # Whether there is more than one PO template.
-        self.has_multiple_templates = len(context.potemplates()) > 1
 
     def primary_translatable(self):
         """Return a dictionary with the info for a primary translatable.
@@ -137,8 +133,11 @@ class ProductView:
             return None
 
     def templateviews(self):
+        target = self.context.primary_translatable
+        if target is None:
+            return []
         return [POTemplateView(template, self.request)
-                for template in self.context.potemplates()]
+                for template in target.potemplates]
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -218,14 +217,11 @@ class ProductView:
         return tasklist[:quantity]
 
     def potemplatenames(self):
-        potemplatenames = []
+        potemplatenames = set([])
 
-        for potemplate in self.context.potemplates():
-            potemplatenames.append(potemplate.potemplatename)
-
-        # Remove the duplicates
-        S = sets.Set(potemplatenames)
-        potemplatenames = list(S)
+        for series in self.context.serieslist:
+            for potemplate in series.potemplates:
+              potemplatenames.add(potemplate.potemplatename)
 
         return sorted(potemplatenames, key=lambda item: item.name)
 
@@ -271,7 +267,7 @@ class ProductFileBugView(SQLObjectAddView):
         return bug
 
     def nextURL(self):
-        return absoluteURL(self.addedBug, self.request)
+        return canonical_url(self.addedBug, self.request)
 
 
 class ProductRdfView(object):
@@ -327,9 +323,9 @@ class ProductSetView:
         time the method is called, otherwise return previous results.
         """
         if self.results is None:
-            self.results = self.context.search(text=self.text, 
+            self.results = self.context.search(text=self.text,
                                                bazaar=self.bazaar,
-                                               malone=self.malone, 
+                                               malone=self.malone,
                                                rosetta=self.rosetta,
                                                soyuz=self.soyuz)
         self.matches = self.results.count()
