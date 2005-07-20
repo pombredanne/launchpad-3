@@ -1,0 +1,192 @@
+
+  If you're not logged in and go to the +polls page of the "Ubuntu Team"
+  you'll see a link to login as a team administrator.
+
+  >>> print http(r"""
+  ... GET /people/name17/+polls HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+        <a href="+login">Log in as an admin to set up a new poll...
+  ...
+
+
+  Try to create a new poll logged in as 'no-priv', which is not a team
+  administrator. 
+
+  >>> print http(r"""
+  ... GET /people/name17/+polls/+new HTTP/1.1
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 403 Forbidden
+  ...
+          Sorry, you don't have permission to access this page.
+  ...
+
+
+  Now we're logged in as 'name16' which is a team administrator and thus can
+  create a new poll.
+
+  >>> print http(r"""
+  ... GET /people/name17/+polls HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+      <ul class="add">
+        <li><a href="+new">Set up a new poll</a></li>
+  ...
+
+
+  >>> print http(r"""
+  ... GET /people/name17/+polls/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+          Create a new poll for team 
+          &#8220;Ubuntu Team&#8221;
+  ...
+
+
+  Create a new poll that will start in 2100 and last one month..
+
+  >>> print http(r"""
+  ... POST /people/name17/+polls/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------644242015206973209368907792
+  ... 
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... election-2100
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Presidential Election 2100
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.proposition"
+  ... 
+  ... Who's going to be the next president?
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.type"
+  ... 
+  ... Condorcet Voting
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.type-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.secrecy"
+  ... 
+  ... Secret Votes (It's impossible to track a person's vote)
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.secrecy-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.allowspoilt.used"
+  ... 
+  ... 
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.allowspoilt"
+  ... 
+  ... on
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.dateopens"
+  ... 
+  ... 2100-06-04 02:00:00+00:00
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.datecloses"
+  ... 
+  ... 2100-07-04 02:00:00+00:00
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------644242015206973209368907792--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/people/name17/+polls/election-2100
+  ...
+
+
+  >>> print http(r"""
+  ... GET /people/name17/+polls/election-2100 HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+
+  Create a new poll that starts in 2005-06-04 and will last until 2025.
+
+  >>> print http(r"""
+  ... POST /people/name17/+polls/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------323203348670962331774819759
+  ... 
+  ... -----------------------------323203348670962331774819759
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... dpl-2080
+  ... -----------------------------323203348670962331774819759
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Debian Project Leader Election 2080
+  ... -----------------------------323203348670962331774819759
+  ... Content-Disposition: form-data; name="field.proposition"
+  ... 
+  ... The next debian project leader.
+  ... -----------------------------323203348670962331774819759
+  ... Content-Disposition: form-data; name="field.type"
+  ... 
+  ... Condorcet Voting
+  ... -----------------------------323203348670962331774819759
+  ... Content-Disposition: form-data; name="field.type-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------323203348670962331774819759
+  ... Content-Disposition: form-data; name="field.secrecy"
+  ... 
+  ... Semi-secret Votes (Only team administrators can see a person's vote)
+  ... -----------------------------323203348670962331774819759
+  ... Content-Disposition: form-data; name="field.secrecy-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------323203348670962331774819759
+  ... Content-Disposition: form-data; name="field.allowspoilt.used"
+  ... 
+  ... 
+  ... -----------------------------323203348670962331774819759
+  ... Content-Disposition: form-data; name="field.allowspoilt"
+  ... 
+  ... on
+  ... -----------------------------323203348670962331774819759
+  ... Content-Disposition: form-data; name="field.dateopens"
+  ... 
+  ... 2005-06-04 02:00:00+00:00
+  ... -----------------------------323203348670962331774819759
+  ... Content-Disposition: form-data; name="field.datecloses"
+  ... 
+  ... 2025-06-04 02:00:00+00:00
+  ... -----------------------------323203348670962331774819759
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------323203348670962331774819759--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/people/name17/+polls/dpl-2080
+  ...
+
+
+  >>> print http(r"""
+  ... GET /people/name17/+polls/dpl-2080 HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+

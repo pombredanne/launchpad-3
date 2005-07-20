@@ -27,6 +27,8 @@ __all__ = (
 'DBSchema',
 # DBSchema types follow.
 'ArchArchiveType',
+'PollAlgorithm',
+'PollSecrecy',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
 'BinaryPackagePriority',
@@ -691,14 +693,14 @@ class TeamMembershipStatus(DBSchema):
     """
 
     PROPOSED = Item(1, """
-        Proposed Member
+        Proposed
 
         You are a proposed member of this team. To become an active member your
         subscription has to bo approved by one of the team's administrators.
         """)
 
     APPROVED = Item(2, """
-        Approved Member
+        Approved
 
         You are an active member of this team.
         """)
@@ -710,19 +712,19 @@ class TeamMembershipStatus(DBSchema):
         """)
 
     DEACTIVATED = Item(4, """
-        Deactivated Member
+        Deactivated
 
         Your subscription to this team has been deactivated.
         """)
 
     EXPIRED = Item(5, """
-        Expired Member
+        Expired
 
         Your subscription to this team is expired.
         """)
 
     DECLINED = Item(6, """
-        Declined Member
+        Declined
 
         Your proposed subscription to this team has been declined.
         """)
@@ -1957,27 +1959,27 @@ class BugSubscription(DBSchema):
 
 
 class RosettaTranslationOrigin(DBSchema):
-     """Rosetta Translation Origin
+    """Rosetta Translation Origin
 
-     Translation sightings in Rosetta can come from a variety
-     of sources. We might see a translation for the first time
-     in CVS, or we might get it through the web, for example.
-     This schema documents those options.
-     """
+    Translation sightings in Rosetta can come from a variety
+    of sources. We might see a translation for the first time
+    in CVS, or we might get it through the web, for example.
+    This schema documents those options.
+    """
 
-     SCM = Item(1, """
-         Source Control Management Source
+    SCM = Item(1, """
+        Source Control Management Source
 
-         This translation sighting came from a PO File we
-         analysed in a source control managements sytem first.
-         """)
+        This translation sighting came from a PO File we
+        analysed in a source control managements sytem first.
+        """)
 
-     ROSETTAWEB = Item(2, """
-         Rosetta Web Source
+    ROSETTAWEB = Item(2, """
+        Rosetta Web Source
 
-         This translation was presented to Rosetta via
-       the community web site.
-         """)
+        This translation was presented to Rosetta via
+        the community web site.
+        """)
 
 
 class RosettaImportStatus(DBSchema):
@@ -2247,6 +2249,46 @@ class MirrorFreshness(DBSchema):
 
         The Freshness was never verified and is unknown.
         """)
+
+
+class PollSecrecy(DBSchema):
+    """The secrecy of a given Poll."""
+
+    OPEN = Item(1, """
+        Public Votes (Anyone can see a person's vote)
+
+        Everyone who wants will be able to see a person's vote.
+        """)
+
+    ADMIN = Item(2, """
+        Semi-secret Votes (Only team administrators can see a person's vote)
+
+        All team owners and administrators will be able to see a person's vote.
+        """)
+
+    SECRET = Item(3, """
+        Secret Votes (It's impossible to track a person's vote)
+
+        We don't store the option a person voted in our database,
+        """)
+
+
+class PollAlgorithm(DBSchema):
+    """The algorithm used to accept and calculate the results."""
+
+    SIMPLE = Item(1, """
+        Simple Voting
+
+        The most simple method for voting; you just choose a single option.
+        """)
+
+    CONDORCET = Item(2, """
+        Condorcet Voting
+
+        One of various methods used for calculating preferential votes. See
+        http://www.electionmethods.org/CondorcetEx.htm for more information.
+        """)
+
 
 class RosettaFileFormat(DBSchema):
     """Rosetta File Format

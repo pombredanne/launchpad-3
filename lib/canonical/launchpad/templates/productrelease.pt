@@ -6,31 +6,36 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/product/@@+portlet-details" />
+</metal:leftportlets>
+
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
+  <div tal:replace="structure context/@@+portlet-actions" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-    <h1><span tal:replace="context/product/title">$Product.title</span></h1>
-    <h2><span tal:replace="context/version">Version</span>: 
-    "<span tal:replace="context/title">Title</span>"</h2>
+    <h1>Overview</h1>
 
-    <div class="documentDescription" tal:content="context/summary">
+    <p class="documentDescription" tal:content="context/summary"
+       tal:condition="context/summary">
         $ProductRelease.summary goes here. This should be quite short,
         just a single paragraph of text really, giving a summary of
         this release highlights.
-    </div>
+    </p>
+
     <div tal:content="structure context/description/fmt:text-to-html">
         $ProductRelease.description goes here. This is longer, like the
         product release notes.
     </div>
 
-    <div tal:condition="context/changelog">
-        <h3>Changelog:</h3>
-        <pre tal:content="context/changelog">
-        </pre>
-    </div>
+    <p tal:condition="not: context/description">
+      <i>This release does not have a description. You may want to edit it
+      and give it a description, including new features and other
+      highlights.</i>
+    </p>
 
 </div>
 

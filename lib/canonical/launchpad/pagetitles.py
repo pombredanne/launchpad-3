@@ -58,9 +58,6 @@ class SubstitutionHelper:
 
 
 class ContextDisplayName(SubstitutionHelper):
-    # XXX: salgado, 2005-06-02: This should not be used for persons because
-    # they can have a NULL displayname. Maybe the right solution is to create
-    # a ContextBrowserName and use it for persons.
     def __call__(self, context, view):
         return self.text % context.displayname
 
@@ -214,6 +211,8 @@ default_editform = 'Default "Edit" Page'
 default_error = 'System Error'
 
 distribution_members = ContextTitle('Members of the %s distribution')
+
+distribution_translators = 'Appoint Distribution Translation Group'
 
 distro_add = 'Adding New Distribution'
 
@@ -408,7 +407,7 @@ person_emails = ContextDisplayName('Edit %s Email Addresses')
 
 person_gpgkey = ContextDisplayName('%s GPG Keys')
 
-person_index = ContextDisplayName('%s Personal Information')
+person_index = ContextDisplayName('%s: Launchpad Overview')
 
 person_karma = ContextDisplayName('Karma for %s')
 
@@ -444,6 +443,25 @@ def pofile_translate(context, view):
 pofile_upload = ContextTitle('%s upload in Rosetta')
 
 # portlet_* are portlets
+
+poll_edit = ContextTitle('Edit poll %s')
+
+poll_index = ContextTitle('%s')
+
+def poll_new(context, view):
+    return 'Create a new Poll in team %s' % context.team.displayname
+
+def polloption_edit(context, view):
+    return 'Edit option %s' % context.shortname
+
+def polloption_new(context, view):
+    return 'Create a new Option in poll %s' % context.poll.title
+
+def polloptions_list(context, view):
+    return 'Options in poll %s' % context.poll.title
+
+def polls_list(context, view):
+    return 'Polls in team %s' % context.team.displayname
 
 potemplage_admin = ContextTitle('%s admin in Rosetta')
 

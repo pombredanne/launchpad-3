@@ -142,15 +142,8 @@
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-    <p>Your contact address for all Launchpad e-mail is: <b>test@canonical.com</b></p>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-    These other addresses are confirmed as being yours:
-  <BLANKLINE>
-    <div style="padding: 0.7em 0em">
+  ...test@canonical.com...
+  ...
       <div>
         <label for="testing@canonical.com">
           <input type="radio" name="VALIDATED_SELECTED"
@@ -162,13 +155,7 @@
     </div>
     <input type="submit" value="Remove" name="REMOVE_VALIDATED" />
     <input type="submit" value="Set as Contact Address" name="SET_PREFERRED" />
-    <br /><br /><br />
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-    These addresses may also be yours:
-  <BLANKLINE>
-    <div style="padding: 0.7em 0em">
+  ...
       <div>
         <label for="testtest@canonical.com_unvalidated">
           <input type="radio" name="UNVALIDATED_SELECTED"

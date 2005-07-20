@@ -2,7 +2,7 @@
 /* This is created as a function so the same definition can be used with
     many tables
 */
-    
+
 CREATE OR REPLACE FUNCTION valid_name(text) RETURNS boolean AS '
     import re
     name = args[0]
@@ -128,4 +128,40 @@ CREATE OR REPLACE FUNCTION you_are_your_own_member() RETURNS trigger AS '
 
 COMMENT ON FUNCTION you_are_your_own_member() IS
     'Trigger function to ensure that every row added to the Person table gets a corresponding row in the TeamParticipation table, as per the TeamParticipationUsage page on the Launchpad wiki';
+
+SET check_function_bodies=false; -- Handle forward references
+
+CREATE OR REPLACE FUNCTION is_team(integer) returns boolean AS '
+    SELECT count(*)>0 FROM Person WHERE id=$1 AND teamowner IS NOT NULL;
+' LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT;
+
+COMMENT ON FUNCTION is_team(integer) IS
+    'True if the given id identifies a team in the Person table';
+
+
+CREATE OR REPLACE FUNCTION is_team(text) returns boolean AS '
+    SELECT count(*)>0 FROM Person WHERE name=$1 AND teamowner IS NOT NULL;
+' LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT;
+
+COMMENT ON FUNCTION is_team(text) IS
+    'True if the given name identifies a team in the Person table';
+
+
+CREATE OR REPLACE FUNCTION is_person(integer) returns boolean AS '
+    SELECT count(*)>0 FROM Person WHERE id=$1 AND teamowner IS NULL;
+' LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT;
+
+COMMENT ON FUNCTION is_person(integer) IS
+    'True if the given id identifies a person in the Person table';
+
+
+CREATE OR REPLACE FUNCTION is_person(text) returns boolean AS '
+    SELECT count(*)>0 FROM Person WHERE name=$1 AND teamowner IS NULL;
+' LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT;
+
+COMMENT ON FUNCTION is_person(text) IS
+    'True if the given name identifies a person in the Person table';
+    
+SET check_function_bodies=true;
+
 

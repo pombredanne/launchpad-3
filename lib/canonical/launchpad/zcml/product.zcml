@@ -70,7 +70,7 @@
 	<!-- Products Portlets -->
         <browser:page
             name="+portlet-details"
-            template="../templates/portlet-product-details.pt"
+            template="../templates/product-portlet-details.pt"
             lp:url="/products/evolution/+portlet-details" />
         <browser:page
             name="+portlet-branches"
@@ -78,35 +78,31 @@
             lp:url="/products/evolution/+portlet-branches" />
         <browser:page
             name="+portlet-translations"
-            template="../templates/portlet-product-translations.pt"
+            template="../templates/product-portlet-translations.pt"
             lp:url="/products/evolution/+portlet-translations" />
         <browser:page
             name="+portlet-milestones"
-            template="../templates/portlet-product-milestones.pt"
+            template="../templates/product-portlet-milestones.pt"
             lp:url="/products/evolution/+portlet-milestones" />
         <browser:page
-            name="+portlet-project"
-            template="../templates/portlet-product-project.pt"
-            lp:url="/products/evolution/+portlet-project" />
-        <browser:page
             name="+portlet-actions"
-            template="../templates/portlet-product-actions.pt"
+            template="../templates/product-portlet-actions.pt"
             lp:url="/products/evolution/+portlet-actions" />
         <browser:page
             name="+portlet-latest-bugs"
             template="../templates/portlet-product-latestbugs.pt"
             lp:url="/products/evolution/+portlet-latest-bugs" />
         <browser:page
-            name="+portlet-related-bounties"
-            template="../templates/portlet-related-bounties.pt"
-            lp:url="/products/evolution/+portlet-related-bounties" />
+            name="+portlet-bounties"
+            template="../templates/object-portlet-bounties.pt"
+            lp:url="/products/evolution/+portlet-bounties" />
         <browser:page
             name="+portlet-packages"
-            template="../templates/portlet-product-packages.pt"
+            template="../templates/product-portlet-packages.pt"
             lp:url="/products/evolution/+portlet-packages" />
         <browser:page
             name="+portlet-summary"
-            template="../templates/portlet-object-summary.pt"
+            template="../templates/object-portlet-summary.pt"
             lp:url="/products/evolution/+portlet-summary" />
         <browser:page
             name="+portlet-pref-lang"
@@ -114,7 +110,7 @@
             lp:url="/products/evolution/+portlet-pref-langs" />
         <browser:page
             name="+portlet-translatables"
-            template="../templates/portlet-product-translatables.pt"
+            template="../templates/product-portlet-translatables.pt"
             lp:url="/products/evolution/+portlet-translatables" />
     </browser:pages>
 

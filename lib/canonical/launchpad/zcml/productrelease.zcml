@@ -50,17 +50,17 @@
         <!-- ProductReleases Portlets -->
         <browser:page
             name="+portlet-actions"
-            template="../templates/portlet-productrelease-actions.pt"
+            template="../templates/productrelease-portlet-actions.pt"
             lp:url="/products/evolution/2.1.6/+portlet-actions"
             />
         <browser:page
-            name="+portlet-summary"
-            template="../templates/portlet-object-summary.pt"
+            name="+portlet-details"
+            template="../templates/productrelease-portlet-details.pt"
+            lp:url="/products/evolution/2.1.6/+portlet-details"
             />
         <browser:page
-            name="+portlet-details"
-            template="../templates/portlet-productrelease-details.pt"
-            lp:url="/products/evolution/2.1.6/+portlet-details"
+            name="+portlet-summary"
+            template="../templates/object-portlet-summary.pt"
             />
         <browser:page
             name="+portlet-pref-langs"

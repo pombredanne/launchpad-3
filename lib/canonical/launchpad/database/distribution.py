@@ -66,11 +66,6 @@ class Distribution(SQLBase):
         return None
     currentrelease = property(currentrelease)
 
-    def memberslist(self):
-        if not ITeam.providedBy(self.members):
-            return
-        return ITeamMembershipSubset(self.members).getActiveMemberships()
-
     def __getitem__(self, name):
         for release in self.releases:
             if release.name == name:

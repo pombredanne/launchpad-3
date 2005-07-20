@@ -1,0 +1,52 @@
+
+
+  >>> print http(r"""
+  ... GET /people/name17/+polls/dpl-2080/+options/+new HTTP/1.1
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 403 Forbidden
+  ...
+
+
+  >>> print http(r"""
+  ... GET /people/name17/+polls/dpl-2080/+options/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+            Create a new option for poll
+            &#8220;Debian Project Leader Election 2080&#8221;
+  ...
+
+
+  >>> print http(r"""
+  ... POST /people/name17/+polls/dpl-2080/+options/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------787692318512460570977813785
+  ... 
+  ... -----------------------------787692318512460570977813785
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... Bill amazingly-huge-middle-name-almost-impossible-to-read Graham
+  ... -----------------------------787692318512460570977813785
+  ... Content-Disposition: form-data; name="field.shortname"
+  ... 
+  ... Bill Graham
+  ... -----------------------------787692318512460570977813785
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------787692318512460570977813785--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/people/name17/+polls/dpl-2080
+  ...
+
+
+  >>> print http(r"""
+  ... GET /people/name17/+polls/dpl-2080 HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...

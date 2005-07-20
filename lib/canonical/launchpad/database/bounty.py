@@ -83,7 +83,7 @@ class BountySet:
     implements(IBountySet, IAddFormCustomization)
 
     def __init__(self):
-        self.title = 'A Set of Bounties'
+        self.title = 'Launchpad Bounties'
 
     def __getitem__(self, name):
         bounty = Bounty.selectOneBy(name=name)

@@ -36,9 +36,9 @@
 
     <!-- BugTaskSet -->
     <content class="canonical.launchpad.database.BugTaskSet">
-        <allow interface="canonical.launchpad.interfaces.IBugTaskSet" />
-        <allow
-            interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
+      <allow interface="canonical.launchpad.interfaces.IBugTaskSet" />
+      <allow
+          interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
     <securedutility
@@ -69,12 +69,12 @@
         permission="zope.Public">
 
         <!-- BugTask Portlets -->
-        <browser:page name="+portlet-also-reported"
-            template="../templates/portlet-bug-also-reported-in.pt"
-            lp:url="malone/tasks/+portlet-also-reported" />
+        <browser:page name="+portlet-alsoreportedin"
+            template="../templates/bugtask-portlet-alsoreportedin.pt"
+            lp:url="malone/tasks/+portlet-alsoreportedin" />
 
         <browser:page name="+portlet-status"
-            template="../templates/portlet-bug-status.pt"
+            template="../templates/bugtask-portlet-status.pt"
             lp:url="malone/tasks/+portlet-status" />
 
     </browser:pages>
@@ -254,14 +254,16 @@
             name="+index"
             template="../templates/bugs-for-context.pt" />
         <browser:page
-            name="+portlet-bugtask-actions"
-            template="../templates/portlet-bugtask-actions.pt" />
+            name="+portlet-actions"
+            template="../templates/bugtasklist-portlet-actions.pt" />
+        <!-- XXX sabdfl 8/7/05
+             the portlet below is poorly named and placed-->
         <browser:page
-            name="+portlet-bug-stats-for-context"
-            template="../templates/portlet-bug-stats-for-context.pt" />
+            name="+portlet-statsforcontext"
+            template="../templates/bug-portlet-statsforcontext.pt" />
         <browser:page
-            name="+portlet-bugtask-releasebugs"
-            template="../templates/portlet-bugtask-releasebugs.pt" />
+            name="+portlet-releasebugs"
+            template="../templates/bugtask-portlet-releasebugs.pt" />
     </browser:pages>
 
     <!-- BugTaskDelta -->

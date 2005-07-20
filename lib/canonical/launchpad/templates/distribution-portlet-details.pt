@@ -22,8 +22,7 @@
       <b>Translation Group:</b><br />
       <img src="/++resource++languages.gif">
       <tal:block condition="context/translationgroup">
-      <a tal:attributes="href
-               string:/rosetta/groups/${context/translationgroup/name}/"
+      <a tal:attributes="href context/translationgroup/fmt:url"
          tal:content="context/translationgroup/title"
       >Group</a><br />
       </tal:block>

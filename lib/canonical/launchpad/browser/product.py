@@ -77,8 +77,6 @@ class ProductView:
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(request)
         self.status_message = None
-        # Whether there is more than one PO template.
-        self.has_multiple_templates = len(context.potemplates()) > 1
 
     def primary_translatable(self):
         """Return a dictionary with the info for a primary translatable.
@@ -129,8 +127,11 @@ class ProductView:
             return None
 
     def templateviews(self):
+        target = self.context.primary_translatable
+        if target is None:
+            return []
         return [POTemplateView(template, self.request)
-                for template in self.context.potemplates()]
+                for template in target.potemplates]
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -210,14 +211,11 @@ class ProductView:
         return tasklist[:quantity]
 
     def potemplatenames(self):
-        potemplatenames = []
+        potemplatenames = set([])
 
-        for potemplate in self.context.potemplates():
-            potemplatenames.append(potemplate.potemplatename)
-
-        # Remove the duplicates
-        S = sets.Set(potemplatenames)
-        potemplatenames = list(S)
+        for series in self.context.serieslist:
+            for potemplate in series.potemplates:
+              potemplatenames.add(potemplate.potemplatename)
 
         return sorted(potemplatenames, key=lambda item: item.name)
 

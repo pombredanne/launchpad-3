@@ -5,16 +5,16 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-views" />
+  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
+  <div tal:replace="structure context/@@+portlet-actions" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-  <h1>Activities Performed in Launchpad</h1>
+  <h1>Launchpad Karma</h1>
 
   <p>This is a summary of all activities performed by <span
     tal:replace="context/browsername" /> in Launchpad, organized per activity

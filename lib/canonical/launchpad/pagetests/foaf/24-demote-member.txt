@@ -35,7 +35,7 @@
   Content-Type: text/html;charset=utf-8
   ...
   ...Foo Bar...
-  ...Approved Member...
+  ...Approved...
   ...
 
 
@@ -46,6 +46,6 @@
   >>> team = Person.byName('myemail')
   >>> tm = TeamMembership.selectOneBy(personID=foobar.id, teamID=team.id)
   >>> tm.statusname
-  'Approved Member'
+  'Approved'
   >>> foobar.inTeam(team)
   True

@@ -10,7 +10,7 @@
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-            <h3>Modify Bounty:</h3>
+            <h1>Modify Bounty:</h1>
   ...
 
 
@@ -60,7 +60,7 @@
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-            <h3>Modify Bounty:</h3>
+            <h1>Modify Bounty:</h1>
   ...
                   <div><input class="textType" id="field.name" name="field.name" size="20" type="text" value="testing"  /></div>
   ...
