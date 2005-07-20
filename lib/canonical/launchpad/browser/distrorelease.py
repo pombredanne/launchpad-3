@@ -18,14 +18,12 @@ from zope.app.form.browser.add import AddView
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import StandardLaunchpadFacets
 
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces import (IDistroReleaseLanguageSet,
     IBugTaskSearchListingView, IDistroRelease, ICountry, IPerson,
     IDistroReleaseSet, ILaunchBag)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.pofile import POFileView
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
-from canonical.launchpad.browser.distroreleaselanguage import \
-    DummyDistroReleaseLanguage
 
 
 class DistroReleaseFacets(StandardLaunchpadFacets):
@@ -67,10 +65,11 @@ class DistroReleaseView:
         # find all the preferred languages which are not in the set of
         # existing languages, and add a dummydistroreleaselanguage for each
         # of them
+        drlangset = getUtility(IDistroReleaseLanguageSet)
         for lang in self.languages:
             if lang not in existing_languages:
-                drlangs.append(DummyDistroReleaseLanguage(
-                    self.context, lang))
+                drl = drlangset.getDummy(self.context, lang)
+                drlangs.append(drl)
         drlangs.sort(key=lambda a: a.language.englishname)
         
         return drlangs

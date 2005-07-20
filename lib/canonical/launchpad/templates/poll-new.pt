@@ -1,0 +1,22 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <div metal:fill-slot="main">
+
+    <div metal:use-macro="context/@@launchpad_addform/addform">
+
+      <h1 metal:fill-slot="heading">
+        Create a new poll for team 
+        &#8220;<span tal:replace="context/team/browsername" />&#8221;
+      </h1>
+
+    </div>
+    
+  </div>
+
+</body>
+</html>

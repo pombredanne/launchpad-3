@@ -385,7 +385,7 @@ tal:replace="submission/person/browsername">person name</span>)
                           </tal:block>
                           <tal:block define="submissions python:messageSet.getAlternateLanguageSubmissions(index)">
                             <tal:block condition="submissions">
-                              <pre><b><span tal:replace="view/alternate_pofile/language/englishname" /> (Alternate Language):</b><br />
+                              <pre><b><span tal:replace="view/second_lang_pofile/language/englishname" /> (Alternate Language):</b><br />
 <tal:block repeat="submission submissions"><span
 tal:replace="submission/potranslation/translation">submission</span> (<span
 tal:replace="submission/person/browsername">person name</span>)

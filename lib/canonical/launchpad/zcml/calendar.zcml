@@ -41,12 +41,15 @@
         interface="canonical.launchpad.interfaces.ILaunchpadCalendar" />
   </content>
 
-  <securedutility
-      class="canonical.launchpad.database.CalendarSubscriptionSet"
-      provides="canonical.launchpad.interfaces.ICalendarSubscriptionSet">
+  <content class="canonical.launchpad.database.CalendarSubscriptionSubset">
     <allow
-        interface="canonical.launchpad.interfaces.ICalendarSubscriptionSet" />
-  </securedutility>
+        interface="canonical.launchpad.interfaces.ICalendarSubscriptionSubset" />
+  </content>
+
+  <adapter
+      for="canonical.launchpad.interfaces.IPerson"
+      provides="canonical.launchpad.interfaces.ICalendarSubscriptionSubset"
+      factory="canonical.launchpad.database.CalendarSubscriptionSubset" />
 
 
   <!-- ICalendarOwner -->
@@ -68,7 +71,7 @@
       for="canonical.launchpad.interfaces.ICalendarOwner"
       name="+portlet-calendar"
       permission="zope.Public"
-      template="../templates/portlet-calendar-info.pt"
+      template="../templates/calendar-portlet-info.pt"
       class="canonical.launchpad.browser.CalendarInfoPortletView"
       lp:url="/$CalendarOwner/+portlet-calendar" />
 

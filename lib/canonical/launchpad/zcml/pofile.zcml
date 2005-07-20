@@ -24,6 +24,11 @@
         attribute_to_parent="potemplate"
         />
 
+    <browser:menus
+        module="canonical.launchpad.browser.pofile"
+        classes="POFileFacets POFileAppMenus"
+        />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPOFile"
         name="+index"
@@ -123,23 +128,11 @@
         />
 
     <!-- Dummy PO File -->
-    <content class="canonical.launchpad.helpers.DummyPOFile">
-        <require
-            permission="zope.Public"
-            interface="canonical.launchpad.interfaces.IEditPOFile"
-            set_attributes="header pluralforms"
-            />
+    <content class="canonical.launchpad.database.DummyPOFile">
+        <allow interface="canonical.launchpad.interfaces.IPOFile" />
     </content>
 
-    <browser:pages
-        for="canonical.launchpad.helpers.DummyPOFile"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.POFileView">
-        <browser:page
-            name="+barchart"
-            template="../templates/pofile-barchart.pt" />
-    </browser:pages>
-
+    <!-- POFileSet -->
     <securedutility
         class="canonical.launchpad.database.POFileSet"
         provides="canonical.launchpad.interfaces.IPOFileSet">

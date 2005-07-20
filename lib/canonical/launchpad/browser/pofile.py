@@ -15,12 +15,74 @@ from zope.publisher.browser import FileUpload
 from zope.exceptions import NotFoundError
 
 from canonical.lp.dbschema import RosettaFileFormat
-from canonical.launchpad.interfaces import (ILaunchBag, ILanguageSet,
-    RawFileAttachFailed, IPOExportRequestSet)
+from canonical.launchpad.interfaces import (
+    IPOFile, IPOExportRequestSet, ILaunchBag, ILanguageSet,
+    RawFileAttachFailed)
 from canonical.launchpad.components.poparser import POHeader
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.pomsgset import POMsgSetView
-#from canonical.launchpad.browser.potemplate import BaseExportView
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, ApplicationMenu, DefaultLink, Link, canonical_url)
+
+
+class POFileFacets(StandardLaunchpadFacets):
+    usedfor = IPOFile
+
+    def _parent_url(self):
+        """Return the URL of the thing the PO template of this PO file is
+        attached to.
+        """
+
+        potemplate = self.context.potemplate
+
+        if potemplate.distrorelease:
+            source_package = potemplate.distrorelease.getSourcePackageByName(
+                potemplate.sourcepackagename)
+            return canonical_url(source_package)
+        else:
+            return canonical_url(potemplate.productseries)
+
+    def overview(self):
+        target = self._parent_url()
+        text = 'Overview'
+        return Link(target, text)
+
+    def translations(self):
+        target = ''
+        text = 'Translations'
+        return DefaultLink(target, text)
+
+
+class POFileAppMenus(ApplicationMenu):
+    usedfor = IPOFile
+    facet = 'translations'
+    links = ['overview', 'translate', 'upload', 'download', 'edit']
+
+    def overview(self):
+        target = ''
+        text = 'Overview'
+        return DefaultLink(target, text)
+
+    def translate(self):
+        target = '+translate'
+        text = 'Translate'
+        return Link(target, text)
+
+    def upload(self):
+        target = '+upload'
+        text = 'Upload'
+        return Link(target, text)
+
+    def download(self):
+        target = '+export'
+        text = 'Download'
+        return Link(target, text)
+
+    def edit(self):
+        target = '+edit'
+        text = 'Edit'
+        return Link(target, text)
+
 
 class BaseExportView:
     """Base class for PO export views."""
@@ -485,13 +547,11 @@ class POFileView:
                     person=self.user,
                     new_translations=new_translations,
                     fuzzy=fuzzy,
-                    published=False,
-                    is_editor=self.is_editor)
+                    published=False)
             except gettextpo.error, e:
                 # Save the error message gettext gave us to show it to the
                 # user.
                 messageSet['error'] = str(e)
-                number_errors += 1
 
         # update the statistis for this po file
         pofile.updateStatistics()

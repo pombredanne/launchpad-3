@@ -49,9 +49,9 @@
             template="../templates/bazaar-index.pt"
             lp:url="bazaar/+index" />
         <browser:page
-            name="+portlet-imports"
-            template="../templates/portlet-upstream-imports.pt"
-            lp:url="bazaar/+portlet-imports" />
+            name="+portlet-importstats"
+            template="../templates/bazaar-portlet-importstats.pt"
+            lp:url="bazaar/+portlet-importstats" />
     </browser:pages>
 
 </configure>

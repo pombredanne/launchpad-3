@@ -5,8 +5,7 @@ __metaclass__ = type
 __all__ = [
     'Calendar',
     'CalendarSet',
-    'CalendarSubscription',
-    'CalendarSubscriptionSet',
+    'CalendarSubscriptionSubset',
     'CalendarEvent',
     'CalendarEventSet',
     ]
@@ -30,8 +29,8 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import (
     ILaunchpadCalendar, ICalendarSet, ICalendarEventSet,
-    ICalendarSubscriptionSet, IHasOwner, ILaunchBag, IPerson, ITeam,
-    IProject, IProduct)
+    ICalendarSubscriptionSubset, IHasOwner, IPerson, ITeam, IProject,
+    IProduct)
 
 
 DEFAULT_COLOUR = '#efefef'
@@ -152,9 +151,12 @@ class CalendarSubscription(SQLBase):
                           foreignKey='Calendar')
     colour = StringCol(dbName='colour', notNull=True, default=DEFAULT_COLOUR)
 
-class CalendarSubscriptionSet:
+class CalendarSubscriptionSubset:
     """The set of subscriptions for a particular user."""
-    implements(ICalendarSubscriptionSet)
+    implements(ICalendarSubscriptionSubset)
+
+    def __init__(self, owner):
+        self.owner = owner
 
     def __contains__(self, calendar):
         # if calendar has no ID, then it is not a database calendar
@@ -162,47 +164,40 @@ class CalendarSubscriptionSet:
             return False
         # if the person has no calendar, then they have no calendar
         # subscriptions
-        user = getUtility(ILaunchBag).user
-        if not (user and user.calendar):
+        if not self.owner.calendar:
             return False
 
-        return bool(CalendarSubscription.selectBy(subjectID=user.calendar.id,
-                                                  objectID=calendar.id))
+        return bool(CalendarSubscription.selectBy(
+            subjectID=self.owner.calendar.id, objectID=calendar.id))
     def __iter__(self):
-        user = getUtility(ILaunchBag).user
-        if user and user.calendar:
+        if self.owner.calendar:
             for sub in CalendarSubscription.selectBy(
-                           subjectID=user.calendar.id):
+                           subjectID=self.owner.calendar.id):
                 yield sub.object
 
     def subscribe(self, calendar):
         if calendar.id is None:
             raise ValueError('calendar has no identifier')
-        user = getUtility(ILaunchBag).user
-        if not user:
-            raise RuntimeError('no user to subscribe with')
         if calendar not in self:
-            CalendarSubscription(subjectID=user.getOrCreateCalendar().id,
+            CalendarSubscription(subjectID=self.owner.getOrCreateCalendar().id,
                                  objectID=calendar.id)
     def unsubscribe(self, calendar):
         if calendar.id is None:
             raise ValueError('calendar has no identifier')
-        user = getUtility(ILaunchBag).user
-        if not (user and user.calendar):
+        if not self.owner.calendar:
             # no calendar for person => no subscription
             return
-        for sub in CalendarSubscription.selectBy(subjectID=user.calendar.id,
-                                                 objectID=calendar.id):
+        for sub in CalendarSubscription.selectBy(
+                subjectID=self.owner.calendar.id, objectID=calendar.id):
             sub.destroySelf()
 
     def getColour(self, calendar):
         if calendar.id is None:
             return DEFAULT_COLOUR
-        user = getUtility(ILaunchBag).user
-        if not (user and user.calendar):
+        if not self.owner.calendar:
             return DEFAULT_COLOUR
-        for sub in CalendarSubscription.selectBy(subjectID=user.calendar.id,
-                                                 objectID=calendar.id):
+        for sub in CalendarSubscription.selectBy(
+                subjectID=self.owner.calendar.id, objectID=calendar.id):
             return sub.colour
         else:
             return DEFAULT_COLOUR
@@ -212,11 +207,10 @@ class CalendarSubscriptionSet:
             raise ValueError('invalid colour value "%s"' % colour)
         if calendar.id is None:
             return
-        user = getUtility(ILaunchBag).user
-        if not (user and user.calendar):
+        if not self.owner.calendar:
             return
-        for sub in CalendarSubscription.selectBy(subjectID=user.calendar.id,
-                                                 objectID=calendar.id):
+        for sub in CalendarSubscription.selectBy(
+                subjectID=self.owner.calendar.id, objectID=calendar.id):
             sub.colour = colour
 
 

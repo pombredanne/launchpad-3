@@ -267,9 +267,16 @@ class ProductSeriesView(object):
             if not validate_cvs_root(self.cvsroot, self.cvsmodule):
                 self.errormsgs.append('Your CVS root and module are invalid.')
                 return
+            if self.svnrepository:
+                self.errormsgs.append('Please remove the SVN repository.')
+                return
         elif rcstype == 'svn':
             if not validate_svn_repo(self.svnrepository):
                 self.errormsgs.append('Please give valid SVN server details')
+                return
+            if (self.cvsroot or self.cvsmodule or self.cvsbranch):
+                self.errormsgs.append(
+                    'Please remove the CVS repository details.')
                 return
         oldrcstype = self.context.rcstype
         self.context.rcstype = self.rcstype
@@ -363,8 +370,8 @@ class ProductSeriesView(object):
         if self.request.method != "POST":
             return
         form = self.form
-        ubuntupkg = form.get("ubuntupkg", None)
-        if ubuntupkg is None:
+        ubuntupkg = form.get("ubuntupkg", '')
+        if ubuntupkg == '':
             return
         # make sure we have a person to work with
         if self.user is None:
@@ -374,7 +381,7 @@ class ProductSeriesView(object):
         spns = getUtility(ISourcePackageNameSet)
         try:
             spn = spns[ubuntupkg]
-        except IndexError:
+        except NotFoundError:
             self.errormsgs.append('Invalid source package name %s' % ubuntupkg)
             return
         # set the packaging record for this productseries in the current

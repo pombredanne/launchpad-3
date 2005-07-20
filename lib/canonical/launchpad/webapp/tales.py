@@ -341,6 +341,9 @@ class RequestFormatterAPI:
         self.request = request
 
     def breadcrumbs(self):
+        # XXX stevea 7/7/05 let's replace this in due course with something
+        # better thought through
+        unclickable = set(['+lang'])
         path_info = self.request.get('PATH_INFO')
         last_path_info_segment = path_info.split('/')[-1]
         clean_path_split = clean_path_segments(self.request)
@@ -355,8 +358,9 @@ class RequestFormatterAPI:
                         and last_path_info_segment == last_clean_path_index):
                     if not segment:
                         segment = 'Launchpad'
-                    L.append('<a rel="parent" href="%s">%s</a>' %
-                        (self.request.URL[index], segment))
+                    if segment not in unclickable:
+                        L.append('<a rel="parent" href="%s">%s</a>' %
+                            (self.request.URL[index], segment))
         sep = '<span class="breadcrumbSeparator"> &raquo; </span>'
         return sep.join(L)
 

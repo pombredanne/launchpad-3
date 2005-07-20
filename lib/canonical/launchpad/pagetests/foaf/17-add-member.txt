@@ -55,6 +55,6 @@
   >>> team = Person.byName('myemail')
   >>> tm = TeamMembership.selectOneBy(personID=cprov.id, teamID=team.id)
   >>> tm.statusname
-  'Approved Member'
+  'Approved'
   >>> cprov.inTeam(team)
   True

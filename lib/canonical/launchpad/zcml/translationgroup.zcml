@@ -22,6 +22,12 @@
         for="canonical.launchpad.interfaces.ITranslationGroup"
         name="+index" />
 
+    <browser:url
+        for="canonical.launchpad.interfaces.ITranslationGroup"
+        path_expression="name"
+        parent_utility="canonical.launchpad.interfaces.ITranslationGroupSet"
+        />
+
     <browser:pages
         for="canonical.launchpad.interfaces.ITranslationGroup"
         class="canonical.launchpad.browser.TranslationGroupView"
@@ -33,7 +39,7 @@
         <!-- TranslationGroup portlets -->
         <browser:page
             name="+portlet-relateds"
-            template="../templates/portlet-translationgroup-relateds.pt"
+            template="../templates/translationgroup-portlet-relateds.pt"
             lp:url="/rosetta/groups/$TranslationGroup.name/+portlet-relateds" />
     </browser:pages>
 
@@ -82,6 +88,7 @@
         for="canonical.launchpad.interfaces.IRosettaApplication"
         utility="canonical.launchpad.interfaces.ITranslationGroupSet"
         name="groups" />
+
     <browser:url
         for="canonical.launchpad.interfaces.ITranslationGroupSet"
         path_expression="string:groups"

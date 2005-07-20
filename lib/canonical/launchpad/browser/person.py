@@ -43,7 +43,7 @@ from canonical.launchpad.interfaces import (
     ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
     IJabberIDSet, IIrcIDSet, IArchUserIDSet, ILaunchBag, ILoginTokenSet,
     IPasswordEncryptor, ISignedCodeOfConductSet, IObjectReassignment,
-    ITeamReassignment, IGPGKeySet, IGpgHandler, IKarmaActionSet, IKarmaSet,
+    ITeamReassignment, IGPGKeySet, IGPGHandler, IKarmaActionSet, IKarmaSet,
     UBUNTU_WIKI_URL)
 
 from canonical.launchpad.helpers import (
@@ -157,6 +157,103 @@ class PersonView:
         self.request = request
         self.message = None
         self.user = getUtility(ILaunchBag).user
+        self.team = self.context
+
+    def no_bounties(self):
+        return not (self.context.ownedBounties or 
+            self.context.reviewerBounties or
+            self.context.subscribedBounties or
+            self.context.claimedBounties)
+
+    def activeMembersCount(self):
+        return len(self.context.activemembers)
+
+    def userIsOwner(self):
+        """Return True if the user is the owner of this Team."""
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            return False
+
+        return user.inTeam(self.context.teamowner)
+
+    def userHasMembershipEntry(self):
+        """Return True if the logged in user has a TeamMembership entry for
+        this Team."""
+        return bool(self._getMembershipForUser())
+
+    def userIsActiveMember(self):
+        """Return True if the logged in user has a TeamParticipation entry
+        for this Team. This implies a membership status of either ADMIN or
+        APPROVED."""
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            return False
+
+        return user.inTeam(self.context)
+
+    def membershipStatusDesc(self):
+        tm = self._getMembershipForUser()
+        assert tm is not None, (
+            'This method is not meant to be called for users which are not '
+            'members of this team.')
+
+        description = tm.status.description
+        if tm.status == TeamMembershipStatus.DEACTIVATED and tm.reviewercomment:
+            description += ("The reason for the deactivation is: '%s'"
+                            % tm.reviewercomment)
+        return description
+
+    def userCanRequestToLeave(self):
+        """Return true if the user can request to leave this team.
+
+        The user can request only if its subscription status is APPROVED or
+        ADMIN.
+        """
+        tm = self._getMembershipForUser()
+        if tm is None:
+            return False
+
+        allowed = [TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN]
+        if tm.status in allowed:
+            return True
+        else:
+            return False
+
+    def userCanRequestToJoin(self):
+        """Return true if the user can request to join this team.
+
+        The user can request if it never asked to join this team, if it
+        already asked and the subscription status is DECLINED or if the team's
+        subscriptionpolicy is OPEN and the user is not an APPROVED or ADMIN
+        member.
+        """
+        tm = self._getMembershipForUser()
+        if tm is None:
+            return True
+
+        adminOrApproved = [TeamMembershipStatus.APPROVED,
+                           TeamMembershipStatus.ADMIN]
+        open = TeamSubscriptionPolicy.OPEN
+        if tm.status == TeamMembershipStatus.DECLINED or (
+            tm.status not in adminOrApproved and
+            tm.team.subscriptionpolicy == open):
+            return True
+        else:
+            return False
+
+    def _getMembershipForUser(self):
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            return None
+        tms = getUtility(ITeamMembershipSet)
+        return tms.getByPersonAndTeam(user.id, self.context.id)
+
+    def joinAllowed(self):
+        """Return True if this is not a restricted team."""
+        restricted = TeamSubscriptionPolicy.RESTRICTED
+        return self.context.subscriptionpolicy != restricted
+
+
 
     def actionCategories(self):
         return KarmaActionCategory.items
@@ -165,7 +262,6 @@ class PersonView:
         """Return a list of actions of the given category performed by 
         this person."""
         kas = getUtility(IKarmaActionSet)
-        # XXX: salgado, this needs an orderby.  SteveA. 2005-07-11
         return kas.selectByCategoryAndPerson(actionCategory, self.context)
 
     def actionsCount(self, action):
@@ -173,12 +269,16 @@ class PersonView:
         karmaset = getUtility(IKarmaSet)
         return len(karmaset.selectByPersonAndAction(self.context, action))
 
-    def assignedBugsToShow(self):
-        """Return True if there's any bug assigned to this person that match
-        the criteria of mostImportantBugTasks() or mostRecentBugTasks()."""
-        # XXX: Bjorn or Brad, one of these things lacks an orderby.
-        #      SteveA 2005-07-11
-        return bool(self.mostImportantBugTasks() or self.mostRecentBugTasks())
+    def setUpBugTasksToShow(self):
+        """Setup the bugtasks we will always show."""
+        self.recentBugTasks = self.mostRecentBugTasks()
+        self.importantBugTasks = self.mostImportantBugTasks()
+        # XXX: Because of the following 2 lines, a warning is going to be 
+        # raised saying that we're getting a slice of an unordered set, and
+        # this means we probably have a bug hiding somewhere, because both
+        # sets are ordered here.
+        self.assignedBugsToShow = bool(
+            self.recentBugTasks or self.importantBugTasks)
 
     def mostRecentBugTasks(self):
         """Return up to 10 bug tasks (ordered by date assigned) that are 
@@ -222,7 +322,7 @@ class PersonView:
         bts = getUtility(IBugTaskSet)
         orderBy = ('-dateassigned', '-priority', '-severity')
         results = bts.bugTasksWithSharedInterest(
-                self.context, self.user, orderBy=orderBy)
+                self.context, self.user, user=self.user, orderBy=orderBy)
         return results[:10]
 
     def obfuscatedEmail(self):
@@ -308,7 +408,7 @@ class PersonView:
             return 'GPG key <code>%s</code> already imported' % fingerprint
 
         # import the key to the local keyring
-        gpghandler = getUtility(IGpgHandler)
+        gpghandler = getUtility(IGPGHandler)
         result, key = gpghandler.retrieveKey(fingerprint)
         
         if not result:
@@ -386,7 +486,7 @@ class PersonView:
             if not isinstance(keyids, list):
                 keyids = [keyids]
                 
-            gpghandler = getUtility(IGpgHandler)
+            gpghandler = getUtility(IGPGHandler)
             keyset = getUtility(IGPGKeySet)
             
             for keyid in keyids:
@@ -530,23 +630,34 @@ class PersonEditView:
             person.wiki.wikiname = wikiname
 
         #IrcID
-        if person.irc:
+        if (network and not nickname) or (nickname and not network):
+            self.errormessage = ('You cannot provide the irc nickname without '
+                                 'an irc network, or the irc network without '
+                                 'a nickname.')
+            return False
+        elif network and nickname and person.irc is not None:
             person.irc.network = network
             person.irc.nickname = nickname
-        elif network and nickname:
+        elif network and nickname and person.irc is None:
             getUtility(IIrcIDSet).new(person.id, network, nickname)
+        elif person.irc is not None:
+            person.irc.destroySelf()
 
         #JabberID
-        if person.jabber:
+        if jabberid and person.jabber is not None:
             person.jabber.jabberid = jabberid
-        elif jabberid:
+        elif jabberid and person.jabber is None:
             getUtility(IJabberIDSet).new(person.id, jabberid)
+        elif person.jabber is not None:
+            person.jabber.destroySelf()
 
         #ArchUserID
-        if person.archuser:
+        if archuserid and person.archuser is not None:
             person.archuser.archuserid = archuserid
-        elif archuserid:
+        elif archuserid and person.archuser is None:
             getUtility(IArchUserIDSet).new(person.id, archuserid)
+        elif person.archuser is not None:
+            person.archuser.destroySelf()
 
         return True
 

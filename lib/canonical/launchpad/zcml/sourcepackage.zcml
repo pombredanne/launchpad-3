@@ -86,11 +86,11 @@
             lp:url="/distros/ubuntu/hoary/+sources/evolution/+portlet-status-legend" />
         <browser:page
             name="+portlet-actions"
-            template="../templates/portlet-sourcepackage-actions.pt"
+            template="../templates/sourcepackage-portlet-actions.pt"
         />
         <browser:page
             name="+portlet-translations"
-            template="../templates/portlet-sourcepackage-translations.pt"
+            template="../templates/sourcepackage-portlet-translations.pt"
         />
         <browser:page
             name="+portlet-pref-langs"

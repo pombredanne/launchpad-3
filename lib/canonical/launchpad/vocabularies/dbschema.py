@@ -10,9 +10,9 @@ __metaclass__ = type
 __all__ = [
     'vocab_factory',
     'SubscriptionVocabulary',
-    'BugStatusVocabulary',
-    'BugPriorityVocabulary',
-    'BugSeverityVocabulary',
+    'BugTaskStatusVocabulary',
+    'BugTaskPriorityVocabulary',
+    'BugTaskSeverityVocabulary',
     'BugRefVocabulary',
     'InfestationStatusVocabulary',
     'PackagingTypeVocabulary',
@@ -21,6 +21,8 @@ __all__ = [
     'TeamSubscriptionPolicyVocabulary',
     'GPGKeyAlgorithmVocabulary',
     'CVEStateVocabulary',
+    'PollAlgorithmVocabulary',
+    'PollSecrecyVocabulary'
     ]
 
 from canonical.lp import dbschema
@@ -47,9 +49,9 @@ def vocab_factory(schema):
 # DB Schema Vocabularies
 
 SubscriptionVocabulary = vocab_factory(dbschema.BugSubscription)
-BugStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
-BugPriorityVocabulary = vocab_factory(dbschema.BugPriority)
-BugSeverityVocabulary = vocab_factory(dbschema.BugSeverity)
+BugTaskStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
+BugTaskPriorityVocabulary = vocab_factory(dbschema.BugTaskPriority)
+BugTaskSeverityVocabulary = vocab_factory(dbschema.BugTaskSeverity)
 BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
 PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
@@ -58,5 +60,7 @@ KarmaActionCategoryVocabulary = vocab_factory(dbschema.KarmaActionCategory)
 TeamSubscriptionPolicyVocabulary = vocab_factory(
         dbschema.TeamSubscriptionPolicy)
 GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
+PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
+PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
 CVEStateVocabulary = vocab_factory(dbschema.CVEState)
 

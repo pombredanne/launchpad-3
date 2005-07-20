@@ -28,8 +28,8 @@ sqlobject.main.isinstance = zope.security.proxy.isinstance
 
 
 class LaunchpadStyle(Style):
-    """A SQLObject style for launchpad. 
-    
+    """A SQLObject style for launchpad.
+
     Python attributes and database columns are lowercase.
     Class names and database tables are MixedCase. Using this style should
     simplify SQLBase class definitions since more defaults will be correct.
@@ -65,7 +65,7 @@ class LaunchpadStyle(Style):
 
 class SQLBase(SQLOS):
     """Base class to use instead of SQLObject/SQLOS.
-    
+
     Annoying hack to allow us to use SQLOS features in Zope, and plain
     SQLObject outside of Zope.  ("Zope" in this case means the Zope 3 Component
     Architecture, i.e. the basic suite of services should be accessible via
@@ -76,7 +76,7 @@ class SQLBase(SQLOS):
     per-thread connection stuff that SQLOS does.
     """
     _style = LaunchpadStyle()
-    
+
     def reset(self):
         if not self._SO_createValues:
             return
@@ -120,7 +120,7 @@ class _ZopelessConnectionDescriptor(object):
             else:
                 # Sleep so that we aren't completely hammering things.
                 time.sleep(1)
-                
+
             # Be neat and tidy: try to close the remains of any previous
             # attempt.
             if conn is not None:
@@ -129,7 +129,7 @@ class _ZopelessConnectionDescriptor(object):
                 except psycopg.Error:
                     pass
                 conn = None
-                
+
             # Make a connection, and a cursor.  If this fails, just loop and try
             # again.
             try:
@@ -174,7 +174,7 @@ class _ZopelessConnectionDescriptor(object):
     def _deactivate(self):
         """Deactivate SQLBase._connection for the current thread."""
         del self.transactions[thread.get_ident()]
-    
+
     def __get__(self, inst, cls=None):
         """Return the Transaction object for this thread if it exists, or None."""
         tid = thread.get_ident()
@@ -184,7 +184,7 @@ class _ZopelessConnectionDescriptor(object):
 
     def __set__(self, inst, value):
         """Do nothing
-        
+
         This used to issue a warning but it seems to be spurious.
 
         """
@@ -221,7 +221,7 @@ class _ZopelessConnectionDescriptor(object):
         # _connection in this particular class to start with (which is true for
         # SQLBase, but wouldn't be true for SQLOS)
         del cls.sqlClass._connection
-        
+
 
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
 "already installed.  This is probably caused by calling initZopeless twice.")
@@ -269,7 +269,7 @@ class ZopelessTransactionManager(object):
         if self.alreadyInited:
             return
         self.alreadyInited = True
-        
+
         # XXX: Importing a module-global and assigning it as an instance
         #      attribute smells funny.  Why not just use transaction.manager
         #      instead of self.manager?
@@ -430,7 +430,7 @@ def sqlvalues(*values, **kwvalues):
     %s as the replacement marker.
 
       ('SELECT foo from Foo where bar = %s and baz = %s'
-       % sqlvalues(BugSeverity.CRITICAL, 'foo'))
+       % sqlvalues(BugTaskSeverity.CRITICAL, 'foo'))
 
     >>> sqlvalues()
     Traceback (most recent call last):
@@ -464,7 +464,7 @@ def sqlvalues(*values, **kwvalues):
 
 def quoteIdentifier(identifier):
     r'''Quote an identifier, such as a table name.
-    
+
     In SQL, identifiers are quoted using " rather than ' which is reserved
     for strings.
 
@@ -483,11 +483,11 @@ def quoteIdentifier(identifier):
 
 def flush_database_updates():
     """Flushes all pending database updates for the current connection.
-    
+
     When SQLObject's _lazyUpdate flag is set, then it's possible to have
     changes written to objects that aren't flushed to the database, leading to
     inconsistencies when doing e.g.::
-        
+
         # Assuming the Beer table already has a 'Victoria Bitter' row...
         assert Beer.select("name LIKE 'Vic%'").count() == 1  # This will pass
         beer = Beer.byName('Victoria Bitter')
@@ -513,7 +513,7 @@ def flush_database_updates():
 
 
 # Some helpers intended for use with initZopeless.  These allow you to avoid
-# passing the transaction manager all through your code. 
+# passing the transaction manager all through your code.
 # XXX: Make these use and work with Zope 3's transaction machinery instead!
 #        - Andrew Bennetts, 2005-02-11
 
@@ -549,7 +549,7 @@ def cursor():
     directly rather than using the SQLObject interface
     '''
     return SQLBase._connection._connection.cursor()
-    
+
 
 class FakeZopelessTransactionManager:
     # XXX: There really should be a formal interface that both this and
@@ -563,7 +563,7 @@ class FakeZopelessTransactionManager:
         self.implicitBegin = implicitBegin
         if self.implicitBegin:
             self.begin()
-    
+
     @classmethod
     def install(cls):
         fztm = cls()
@@ -583,7 +583,7 @@ class FakeZopelessTransactionManager:
         if not self.implicitBegin:
             self.desc._activate()
         self.desc.begin()
-        
+
     def commit(self, sub=False):
         self.desc.commit()
         self.desc._deactivate()
@@ -599,7 +599,7 @@ class FakeZopelessTransactionManager:
 
 class FakeZopelessConnectionDescriptor(_ZopelessConnectionDescriptor):
     """A helper class for testing.
-    
+
     Use this if you want to know if commit or rollback was called.
     """
     _obsolete = True

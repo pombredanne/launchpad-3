@@ -20,7 +20,7 @@ from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, BugSeverity, BugTaskStatus,
+    EnumCol, TranslationPermission, BugTaskSeverity, BugTaskStatus,
     RosettaImportStatus)
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.distribution import Distribution
@@ -86,6 +86,7 @@ class Product(SQLBase):
     branches = MultipleJoin('Branch', joinColumn='product')
     serieslist = MultipleJoin('ProductSeries', joinColumn='product')
 
+    @property
     def releases(self):
         return ProductRelease.select(
             AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
@@ -93,7 +94,6 @@ class Product(SQLBase):
             clauseTables=['ProductSeries'],
             orderBy=['version']
             )
-    releases = property(releases)
 
     milestones = MultipleJoin('Milestone', joinColumn = 'product')
 
@@ -101,6 +101,7 @@ class Product(SQLBase):
         'Bounty', joinColumn='product', otherColumn='bounty',
         intermediateTable='ProductBounty')
 
+    @property
     def sourcepackages(self):
         # XXX: SteveAlexander, 2005-04-25, this needs a system doc test.
         from canonical.launchpad.database.sourcepackage import SourcePackage
@@ -112,7 +113,6 @@ class Product(SQLBase):
         return [SourcePackage(sourcepackagename=r.sourcepackagename,
                               distrorelease=r.distrorelease)
                 for r in ret]
-    sourcepackages = property(sourcepackages)
 
     def getPackage(self, distrorelease):
         if isinstance(distrorelease, Distribution):
@@ -123,6 +123,7 @@ class Product(SQLBase):
         else:
             raise NotFoundError(distrorelease)
 
+    @property
     def translatable_packages(self):
         """See IProduct."""
         packages = sets.Set([package
@@ -135,7 +136,6 @@ class Product(SQLBase):
         # Get the final list of sourcepackages.
         packages = [item for sortkey, item in L]
         return packages
-    translatable_packages = property(translatable_packages)
 
     @property
     def translatable_series(self):
@@ -148,6 +148,7 @@ class Product(SQLBase):
             orderBy='datecreated', distinct=True)
         return list(series)
 
+    @property
     def primary_translatable(self):
         """See IProduct."""
         packages = self.translatable_packages
@@ -170,8 +171,8 @@ class Product(SQLBase):
             return packages[0]
         # capitulate
         return None
-    primary_translatable = property(primary_translatable)
 
+    @property
     def translationgroups(self):
         tg = []
         if self.translationgroup:
@@ -180,8 +181,8 @@ class Product(SQLBase):
             if self.project.translationgroup:
                 if self.project.translationgroup not in tg:
                     tg.append(self.project.translationgroup)
-    translationgroups = property(translationgroups)
 
+    @property
     def aggregatetranslationpermission(self):
         perms = [self.translationpermission]
         if self.project:
@@ -192,7 +193,6 @@ class Product(SQLBase):
         # ensure a consistent sort order in future, but there should be
         # a better way.
         return max(perms)
-    aggregatetranslationpermission = property(aggregatetranslationpermission)
 
     def newseries(self, form):
         # XXX sabdfl 16/04/05 HIDEOUS even if I was responsible. We should
@@ -219,7 +219,7 @@ class Product(SQLBase):
         # XXX sabdfl 30/03/05 this method is really obsolete, because what
         # we really care about now is ProductSeries.potemplates
         warn("Product.potemplates is obsolete, should be on ProductRelease",
-             DeprecationWarning)
+             DeprecationWarning, stacklevel=2)
         templates = []
         for series in self.serieslist:
             for potemplate in series.potemplates:
@@ -227,10 +227,13 @@ class Product(SQLBase):
 
         return templates
 
+    @property
     def potemplatecount(self):
         """See IProduct."""
-        return len(self.potemplates())
-    potemplatecount = property(potemplatecount)
+        target = self.primary_translatable
+        if target is None:
+            return 0
+        return len(target.potemplates)
 
     def poTemplatesToImport(self):
         # XXX sabdfl 30/03/05 again, i think we want to be using
@@ -328,7 +331,7 @@ class Product(SQLBase):
         #      what it is doing.
         # - Steve Alexander, Tue Nov 30 16:49:40 UTC 2004
         bugmatrix = {}
-        for severity in BugSeverity.items:
+        for severity in BugTaskSeverity.items:
             bugmatrix[severity] = {}
             for status in BugTaskStatus.items:
                 bugmatrix[severity][status] = 0
@@ -337,7 +340,7 @@ class Product(SQLBase):
         resultset = [['']]
         for status in BugTaskStatus.items:
             resultset[0].append(status.title)
-        severities = BugSeverity.items
+        severities = BugTaskSeverity.items
         for severity in severities:
             statuses = BugTaskStatus.items
             statusline = [severity.title]

@@ -1,12 +1,12 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['POFileSet', 'POFile']
+__all__ = ['POFile', 'DummyPOFile', 'POFileSet']
 
 import StringIO
 import pytz
 import datetime
-from warnings import warn
+import os.path
 
 # Zope interfaces
 from zope.interface import implements
@@ -21,21 +21,20 @@ from canonical.database.sqlbase import (SQLBase, flush_database_updates,
 from canonical.database.datetimecol import UtcDateTimeCol
 
 # canonical imports
+import canonical.launchpad
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (IPOFileSet, IEditPOFile,
     IRawFileData, ITeam, IPOTemplateExporter, ZeroLengthPOExportError,
-    ILibraryFileAliasSet)
+    ILibraryFileAliasSet, IPOFile)
 from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.components.poparser import POParser, POHeader
-from canonical.launchpad.components.poimport import import_po
+from canonical.launchpad.components.poparser import POHeader
+from canonical.launchpad.components.poimport import import_po, OldPOImported
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgset import POMsgSet
-from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
-from canonical.librarian.interfaces import DownloadFailed, UploadFailed
 from canonical.lp.dbschema import (EnumCol, RosettaImportStatus,
     TranslationPermission, TranslationValidationStatus)
 from canonical.launchpad.components.poparser import (POSyntaxError,
@@ -102,6 +101,9 @@ class POFile(SQLBase, RosettaStats):
                                 default=None)
     datecreated = UtcDateTimeCol(notNull=True,
         default=UTC_NOW)
+
+    latestsubmission = ForeignKey(foreignKey='POSubmission',
+        dbName='latestsubmission', notNull=False, default=None)
 
     @property
     def title(self):
@@ -491,27 +493,13 @@ class POFile(SQLBase, RosettaStats):
                 # XXX Carlos Perello Marin 2005-06-15: We should implement:
                 # https://launchpad.ubuntu.com/malone/bugs/1186 instead of
                 # set it to this default value...
-                header.pluralforms = 1
+                new_header['Plural-Forms'] = 1
         # XXX sabdfl 27/05/05 should we also differentiate between
         # washeaderfuzzy and isheaderfuzzy?
-        self.topcomment = new_header.commentText.encode('utf-8')
-        self.header = new_header.msgstr.encode('utf-8')
+        self.topcomment = new_header.commentText
+        self.header = new_header.msgstr
         self.fuzzyheader = 'fuzzy' in new_header.flags
         self.pluralforms = new_header.nplurals
-
-    @property
-    def latest_submission(self):
-        """See IPOFile."""
-        results = POSubmission.select('''
-            POSubmission.pomsgset = POMsgSet.id AND
-            POMsgSet.pofile = %s''' % sqlvalues(self.id),
-            orderBy='-datecreated',
-            clauseTables=['POMsgSet'])
-        try:
-            return results[0]
-        except IndexError:
-            return None
-
 
     # ICanAttachRawFileData implementation
 
@@ -578,7 +566,14 @@ class POFile(SQLBase, RosettaStats):
             self.rawimportstatus = RosettaImportStatus.FAILED
             if logger:
                 logger.warning(
-                    'We got an error importing %s', self.title, exc_info=1)
+                    'Error importing %s' % self.title, exc_info=1)
+            return
+        except OldPOImported:
+            # The attached file is older than the last imported one, we ignore
+            # it.
+            self.rawimportstatus = RosettaImportStatus.IGNORE
+            if logger:
+                logger.warning('Got an old version for %s' % self.title)
             return
 
         # Request a sync of 'self' as we need to use real datetime values.
@@ -645,8 +640,10 @@ class POFile(SQLBase, RosettaStats):
                 self.language.displayname, self.potemplate.displayname)
 
         # Send the email.
-        template = open('lib/canonical/launchpad/emailtemplates/%s' % (
-            template_mail)).read()
+        template_file = os.path.join(
+            os.path.dirname(canonical.launchpad.__file__),
+            'emailtemplates', template_mail)
+        template = open(template_file).read()
         message = template % replacements
 
         fromaddress = 'Rosetta SWAT Team <rosetta@ubuntu.com>'
@@ -665,10 +662,10 @@ class POFile(SQLBase, RosettaStats):
         if self.exportfile is None:
             return False
 
-        if not self.latest_submission:
+        if self.latestsubmission is None:
             return True
 
-        change_time = self.latest_submission.datecreated
+        change_time = self.latestsubmission.datecreated
         return change_time < self.exporttime
 
     def updateExportCache(self, contents):
@@ -730,25 +727,99 @@ class POFile(SQLBase, RosettaStats):
         self.exportfile = None
 
 
+class DummyPOFile(RosettaStats):
+    """Represents a POFile where we do not yet actually HAVE a POFile for
+    that language for this template.
+    """
+    implements(IPOFile)
+    def __init__(self, potemplate, language):
+        self.potemplate = potemplate
+        self.language = language
+        self.header = ''
+        self.latestsubmission = None
+        self.messageCount = len(potemplate)
+
+    @property
+    def translators(self):
+        tgroups = self.potemplate.translationgroups
+        ret = []
+        for group in tgroups:
+            translator = group.query_translator(self.language)
+            if translator is not None:
+                ret.append(translator)
+        return ret
+
+    def canEditTranslations(self, person):
+
+        tperm = self.potemplate.translationpermission
+        if tperm == TranslationPermission.OPEN:
+            # if the translation policy is "open", then yes
+            return True
+        elif tperm == TranslationPermission.CLOSED:
+            if person is not None:
+                # if the translation policy is "closed", then check if the
+                # person is in the set of translators XXX sabdfl 25/05/05 this
+                # code could be improved when we have implemented CrowdControl
+                translators = [t.translator for t in self.translators]
+                for translator in translators:
+                    if person.inTeam(translator):
+                        return True
+        else:
+            raise NotImplementedError, 'Unknown permission %s', tperm.name
+
+        # At this point you either got an OPEN (true) or you are not in the
+        # designated translation group, so you can't edit them
+        return False
+
+    def currentCount(self):
+        return 0
+
+    def rosettaCount(self):
+        return 0
+
+    def updatesCount(self):
+        return 0
+
+    def nonUpdatesCount(self):
+        return 0
+
+    def translatedCount(self):
+        return 0
+
+    def untranslatedCount(self):
+        return self.messageCount
+
+    def currentPercentage(self):
+        return 0.0
+
+    def rosettaPercentage(self):
+        return 0.0
+
+    def updatesPercentage(self):
+        return 0.0
+
+    def nonUpdatesPercentage(self):
+        return 0.0
+
+    def translatedPercentage(self):
+        return 0.0
+
+    def untranslatedPercentage(self):
+        return 100.0
+
+
 class POFileSet:
     implements(IPOFileSet)
 
     def getPOFilesPendingImport(self):
         """See IPOFileSet."""
-        results = POFile.selectBy(rawimportstatus=RosettaImportStatus.PENDING)
+        results = POFile.selectBy(
+            rawimportstatus=RosettaImportStatus.PENDING,
+            orderBy='-daterawimport')
 
-        # XXX: Carlos Perello Marin 2005-03-24
-        # Really ugly hack needed to do the initial import of the whole hoary
-        # archive. It will disappear as soon as the whole
-        # LaunchpadPackagePoAttach and LaunchpadPoImport are implemented so
-        # rawfile is not used anymore and we start using Librarian.
-        # The problem comes with the memory requirements to get more than 7500
-        # rows into memory with about 200KB - 300KB of data each one.
-        total = results.count()
-        done = 0
-        while done < total:
-            for potemplate in results[done:done+100]:
-                yield potemplate
-            done = done + 100
+        for pofile in results:
+            yield pofile
 
+    def getDummy(self, potemplate, language):
+        return DummyPOFile(potemplate, language)
 

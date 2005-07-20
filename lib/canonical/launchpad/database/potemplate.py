@@ -1,8 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['POTemplateSubset', 'POTemplateSet', 'LanguageNotFound',
-           'POTemplate']
+__all__ = ['POTemplateSubset', 'POTemplateSet', 'POTemplate']
 
 import StringIO
 import datetime
@@ -14,13 +13,14 @@ from zope.exceptions import NotFoundError
 # SQL imports
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, SQLObjectNotFound
-from canonical.database.sqlbase import \
-    SQLBase, quote, flush_database_updates, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase, quote, flush_database_updates, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
 
 # canonical imports
-from canonical.launchpad.interfaces import \
-    IEditPOTemplate, IPOTemplateSet, IPOTemplateSubset, IRawFileData, ITeam
+from canonical.launchpad.interfaces import (
+    IEditPOTemplate, IPOTemplateSet, IPOTemplateSubset, IRawFileData, ITeam,
+    LanguageNotFound)
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
@@ -165,36 +165,6 @@ class POTemplate(SQLBase, RosettaStats):
     @property
     def translationpermission(self):
         """See IPOTemplate."""
-        # in the case of a distro template, use the distro translation
-        # permission settings
-        if self.distrorelease:
-            return self.distrorelease.distribution.translationpermission
-        # for products, use the "most restrictive permission" between
-        # project and product.
-        elif self.productseries:
-            return self.productseries.product.aggregatetranslationpermission
-
-    @property
-    def translationgroups(self):
-        ret = []
-        if self.distrorelease:
-            tg = self.distrorelease.distribution.translationgroup
-            if tg is not None:
-                ret.append(tg)
-        elif self.productseries:
-            product_tg = self.productseries.product.translationgroup
-            if product_tg is not None:
-                ret.append(product_tg)
-            project = self.productseries.product.project
-            if project is not None:
-                if project.translationgroup is not None:
-                    ret.append(project.translationgroup)
-        else:
-            raise NotImplementedError, 'Cannot find translation groups.'
-        return ret
-
-    @property
-    def translationpermission(self):
         if self.distrorelease:
             # in the case of a distro template, use the distro translation
             # permission settings
@@ -296,14 +266,12 @@ class POTemplate(SQLBase, RosettaStats):
                 'POTMsgSet.potemplate = %s' % sqlvalues(self.id),
                 orderBy='sequence')
 
-        if slice is None:
-            # Want all the output.
-            for potmsgset in results:
-                yield potmsgset
-        else:
-            # Want only a subset specified by slice.
-            for potmsgset in results[slice]:
-                yield potmsgset
+        if slice is not None:
+            # Want only a subset specified by slice
+            results = results[slice]
+
+        for potmsgset in results:
+            yield potmsgset
 
     def getPOTMsgSetsCount(self, current=True):
         """See IPOTemplate."""
@@ -720,24 +688,10 @@ class POTemplateSet:
     def getTemplatesPendingImport(self):
         """See IPOTemplateSet."""
         results = POTemplate.selectBy(
-            rawimportstatus=RosettaImportStatus.PENDING)
+            rawimportstatus=RosettaImportStatus.PENDING,
+            orderBy='-daterawimport')
 
-        # XXX: Carlos Perello Marin 2005-03-24
-        # Really ugly hack needed to do the initial import of the whole hoary
-        # archive. It will disappear as soon as the whole
-        # LaunchpadPackagePoAttach and LaunchpadPoImport are implemented so
-        # rawfile is not used anymore and we start using Librarian.
-        # The problem comes with the memory requirements to get more than 7500
-        # rows into memory with about 200KB - 300KB of data each one.
-        total = results.count()
-        done = 0
-        while done < total:
-            for potemplate in results[done:done+100]:
-                yield potemplate
-            done = done + 100
-
-
-class LanguageNotFound(ValueError):
-    """Raised when a a language does not exists in the database."""
+        for potemplate in results:
+            yield potemplate
 
 

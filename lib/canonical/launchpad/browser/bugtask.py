@@ -96,7 +96,7 @@ class BugTasksReportView:
     # TODO: replace this with a smart vocabulary and widget
     def severitySelector(self):
         html = '<select name="minseverity">\n'
-        for item in dbschema.BugSeverity.items:
+        for item in dbschema.BugTaskSeverity.items:
             html = html + '<option value="' + str(item.value) + '"'
             if item.value == self.minseverity:
                 html = html + ' selected="yes"'
@@ -109,7 +109,7 @@ class BugTasksReportView:
     # TODO: replace this with a smart vocabulary and widget
     def prioritySelector(self):
         html = '<select name="minpriority">\n'
-        for item in dbschema.BugPriority.items:
+        for item in dbschema.BugTaskPriority.items:
             html = html + '<option value="' + str(item.value) + '"'
             if item.value == self.minpriority:
                 html = html + ' selected="yes"'
@@ -331,7 +331,7 @@ class BugTaskSearchListingView:
         status_accepted = dbschema.BugTaskStatus.ACCEPTED
 
         critical_tasks = bugtask_subset.search(
-            severity=dbschema.BugSeverity.CRITICAL,
+            severity=dbschema.BugTaskSeverity.CRITICAL,
             status=any(status_new, status_accepted))
 
         return critical_tasks.count()

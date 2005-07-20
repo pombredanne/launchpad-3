@@ -8,7 +8,7 @@
       <div class="portletContent odd">
 
         <tal:block condition="not:other_occurrences">
-            No other known occurrences.
+            <i>No other known occurrences.</i>
         </tal:block>
 
         <ul tal:condition="other_occurrences">
@@ -26,16 +26,5 @@
 
           </li>
         </ul>
-
-
-<!-- XXX: Brad Bollenbach, 2005-06-01: Remove these, says the sabdfl.
-      <b>Report in:</b>
-      <ul>
-        <li><a href=".">another upstream</a></li>
-        <li><a href=".">another distro</a></li>
-        <li><a href="">another distrorelease</a></li>
-       </ul>
--->
-      </div>
     </div>
 </div>

@@ -9,11 +9,11 @@
   <h1>Bugs in <span tal:replace="context/title">Title</span></h1>
 
   <div class="sidebar">
-    <tal:block content="structure context/@@+portlet-bugtask-actions" />
+    <tal:block content="structure context/@@+portlet-actions" />
     <br />
-    <tal:block content="structure context/@@+portlet-bug-stats-for-context" />
+    <tal:block content="structure context/@@+portlet-statsforcontext" />
     <br />
-    <tal:block content="structure context/@@+portlet-bugtask-releasebugs" />
+    <tal:block content="structure context/@@+portlet-releasebugs" />
   </div>
 
   <div metal:use-macro="context/@@bugtask_search_listing/buglisting" />
