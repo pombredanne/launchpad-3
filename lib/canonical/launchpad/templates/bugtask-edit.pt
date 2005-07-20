@@ -73,10 +73,10 @@
              Bug summary goes here if it exists.
           </p>
           
-          <p class="boardCommentContent" 
-             tal:content="structure context/bug/description/fmt:nice_pre">
+          <div
+             tal:content="structure context/bug/description/fmt:text-to-html">
              $Bug.description
-          </p>
+          </div>
 
           <div class="field">
             <table>
