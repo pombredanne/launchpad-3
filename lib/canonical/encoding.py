@@ -1,5 +1,6 @@
 import re
 import codecs
+from warnings import warn
 
 _boms = [
     (codecs.BOM_UTF16_BE, 'utf_16_be'),
@@ -89,8 +90,12 @@ def guess(s):
 
     '''
 
-    # Pass through Unicode objects or subclasses unharmed
+    # Pass through Unicode objects or subclasses unharmed. Deprecated.
+    # Calling this method with a Unicode argument indicates a hidden bug
+    # that will bite you eventually -- StuartBishop 20050709
     if isinstance(s, unicode):
+        warn('encoding.guess called with Unicode string',
+                DeprecationWarning, stacklevel=2)
         return s
 
     # Attempt to use an objects default Unicode conversion, for objects

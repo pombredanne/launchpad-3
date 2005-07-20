@@ -17,6 +17,9 @@ from canonical.launchpad.scripts.gina.changelog import parse_changelog
 from canonical.database.constants import nowUTC
 from canonical.lp.dbschema import GPGKeyAlgorithm
 
+from canonical.launchpad.scripts import log
+from canonical.launchpad.scripts.gina import call
+
 def stripseq(seq):
     return [s.strip() for s in seq]
 
@@ -33,7 +36,7 @@ def get_person_by_key(self, keyrings, key):
             if line.startswith("pub"):
                 break
         else:
-            print "\t** Broke parsing gpg output for %s" % key
+            log.warn("Broke parsing gpg output for %s" % key)
             return None
 
         line = line.split(":")
@@ -80,7 +83,7 @@ class AbstractPackageData:
         try:
             self.do_package(tempdir, package_root)
         except:
-            print "\t** Evil things happened, check out %s" % tempdir
+            log.exception("Evil things happened, check out %s" % tempdir)
             return False
         shutil.rmtree(tempdir)
         if not self.do_katie(kdb, keyrings):
@@ -95,32 +98,28 @@ class AbstractPackageData:
         raise NotImplementedError
 
 
-#
-#
-#
+class MissingRequiredArguments(ValueError):
+    """Missing Required Arguments Exception.
+
+    Raised if we attempted to construct a SourcePackageData without
+    all the required arguments. This is because we are stuck (for now)
+    passing arguments using **args as some of the argument names are not
+    valid Python identifiers
+    """
+    pass
+
 
 class SourcePackageData(AbstractPackageData):
-    """This Class holds important data to a givem sourcepackagerelease.
+    """This Class holds important data to a given sourcepackagerelease."""
 
-    The comments below are attributes names that this class should have
-    once it is instanciated. They should be setted as attributes on the
-    __init__ method
-    """
-    # package
-    # binaries
-    # version
-    # priority
-    # section
-    # maintainer
-    # build-depends
-    # build-depends-indep
-    # architecture
-    # standards-version
-    # format
-    # directory
-    # files
-    # uploaders
-    # licence
+    # These attributes must have been set by the end of the __init__ method.
+    # They are passed in as keyword arguments. If any are not set, a
+    # MissingRequiredArguments exception is raised.
+    _required = [
+        'package', 'binaries', 'version', 'section', 'maintainer', #'priority',
+        'build_depends', 'build_depends_indep', 'architecture',
+        'standards_version', 'directory', 'files', 'licence']
+
     build_depends = ""
     build_depends_indep = ""
     standards_version = ""
@@ -153,7 +152,8 @@ class SourcePackageData(AbstractPackageData):
             else:
                 setattr(self, k.lower().replace("-", "_"), v)
         if getattr(self, 'section', sentinel) is sentinel:
-            print "\tSource package %s lacks a section, looking it up..." % self.package
+            log.info("Source package %s lacks a section, looking it up..." %
+                    self.package)
             if not kdb:
                 self._setDefaults()
                 return
@@ -165,28 +165,30 @@ class SourcePackageData(AbstractPackageData):
                     self._setDefaults()
                     return
             self._setDefaults()
+
+        missing = [attr for attr in self._required if not hasattr(self, attr)]
+        if missing:
+            raise MissingRequiredArguments(missing)
                 
     def _setDefaults(self):
-        print "\t\tDamn, I had to assume 'misc'"
+        log.info("Damn, I had to assume 'misc'")
         self.section = 'misc'
-        
 
     def do_package(self, dir, package_root):
         """Get the Changelog and licence from the package on archive."""
         self.package_root = package_root
         cwd = os.getcwd()
 
-        version = re.sub("^\d+:", "", self.version) 
-        filename = "%s_%s.dsc" % (self.package, version) 
+        version = re.sub("^\d+:", "", self.version)
+        filename = "%s_%s.dsc" % (self.package, version)
         fullpath = os.path.join(package_root, self.directory, filename)
         self.dsc = open(fullpath).read().strip()
 
         os.chdir(dir)
-        sys.stderr.write("\t")
-        os.system("dpkg-source -sn -x %s" % fullpath)
+        call("dpkg-source -sn -x %s" % fullpath)
         
         version = re.sub("-[^-]+$", "", version)
-        filename = "%s-%s" % (self.package, version) 
+        filename = "%s-%s" % (self.package, version)
         fullpath = os.path.join(filename, "debian", "changelog")
 
         if os.path.exists(fullpath):
@@ -200,7 +202,7 @@ class SourcePackageData(AbstractPackageData):
         if os.path.exists(fullpath):
             self.licence = open(fullpath).read().strip()
         else:
-            print "\t** WML courtesy of Missing Copyrights Ltd. in %s" % filename
+            log.info("WML courtesy of Missing Copyrights Ltd. in %s" % filename)
 
         os.chdir(cwd)
 
@@ -241,35 +243,16 @@ class SourcePackageData(AbstractPackageData):
 #
 
 class BinaryPackageData(AbstractPackageData):
-    """This Class holds important data to a givem binarypackage.
+    """This Class holds important data to a given binarypackage."""
 
-    The comments below are attributes names that this class should have
-    once it is instanciated. They should be setted as attributes on the
-    __init__ method
-    """
-    # package
-    # priority
-    # section
-    # installed_size
-    # maintainer
-    # architecture
-    # essential
-    # source
-    # version
-    # replaces
-    # provides
-    # depends
-    # pre_depends
-    # enhances
-    # suggests
-    # conflicts
-    # filename
-    # size
-    # md5sum
-    # description
-    # bugs
-    # origin
-    # task
+    # These attributes must have been set by the end of the __init__ method.
+    # They are passed in as keyword arguments. If any are not set, a
+    # MissingRequiredArguments exception is raised.
+    _required = [
+        'package', 'priority', 'section', 'installed_size', 'maintainer',
+        'architecture', 'essential', 'source', 'version', 'replaces',
+        'provides', 'depends', 'pre_depends', 'enhances', 'suggests',
+        'conflicts', 'filename', 'size', 'md5sum', 'description' ]
     source = None # Some packages have Source, some don't -- the ones
                   # that don't have the same package name
     depends = ""
@@ -301,10 +284,19 @@ class BinaryPackageData(AbstractPackageData):
             self.source = src_bits[0]
             if len(src_bits) > 1:
                 self.source_version = src_bits[1][1:-1]
+        if not hasattr(self, 'section'):
+            log.info("Binary package %s lacks a section... assuming misc" %
+                     self.package)
+            self.section = 'misc'
 
+
+        missing = [attr for attr in self._required if not hasattr(self, attr)]
+        if missing:
+            raise MissingRequiredArguments(missing)
+ 
     def do_package(self, dir, package_root):
         """
-        Grabbe the shared library info from the package on archive if exists.
+        Grab the shared library info from the package on archive if exists.
         
         """
         self.package_root = package_root
@@ -315,11 +307,12 @@ class BinaryPackageData(AbstractPackageData):
         if not os.path.exists(fullpath):
             raise ValueError, '%s not found'%fullpath
 
-        os.system("dpkg -e %s" % fullpath)
+        call("dpkg -e %s" % fullpath)
         shlibfile = os.path.join("DEBIAN", "shlibs")
         if os.path.exists(shlibfile):
-            print "\tGrabbing shared library info from %s" % \
+            log.debug("Grabbing shared library info from %s" % (
                 os.path.basename(fullpath)
+                ))
             self.shlibs = open(shlibfile).read().strip()
         os.chdir(cwd)
     
@@ -339,7 +332,7 @@ class BinaryPackageData(AbstractPackageData):
             raise Exception, "assert len(data) >= 1"
         data = data[0]
         self.gpg_signing_key = data["fingerprint"]
-        print self.gpg_signing_key
+        log.debug(self.gpg_signing_key)
         self.gpg_signing_key_owner = \
             get_person_by_key(keyrings, self.gpg_signing_key)
         return True

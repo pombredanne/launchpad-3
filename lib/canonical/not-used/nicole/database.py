@@ -4,7 +4,7 @@ from string import split, join
 
 # LaunchPad Dependencies
 from canonical.foaf.nickname import generate_nick
-from canonical.lp.encoding import guess as ensure_unicode
+from canonical.encoding import guess as ensure_unicode
 
 def data_sanitizer(data):    
     if not data:
