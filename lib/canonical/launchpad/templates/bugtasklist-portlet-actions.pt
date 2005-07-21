@@ -2,7 +2,7 @@
 <ul>
   <li>
     <a href="#"
-       tal:attributes="href string:${context/context/fmt:url}/+filebug">
+       tal:attributes="href string:${context/fmt:url}/+filebug">
        File a bug
     </a>
     <br />

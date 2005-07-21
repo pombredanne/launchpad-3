@@ -237,35 +237,6 @@
         lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:schemadisplay>
 
-    <!-- BugTaskSubset -->
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBugTaskSubset"
-        getter="__getitem__" />
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IBugTaskSubset"
-        name="+index" />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IBugTaskSubset"
-        class="canonical.launchpad.browser.bugtask.BugTaskSearchListingView"
-        permission="zope.Public">
-        <browser:page
-            name="+index"
-            template="../templates/bugs-for-context.pt" />
-        <browser:page
-            name="+portlet-actions"
-            template="../templates/bugtasklist-portlet-actions.pt" />
-        <!-- XXX sabdfl 8/7/05
-             the portlet below is poorly named and placed-->
-        <browser:page
-            name="+portlet-statsforcontext"
-            template="../templates/bug-portlet-statsforcontext.pt" />
-        <browser:page
-            name="+portlet-releasebugs"
-            template="../templates/bugtask-portlet-releasebugs.pt" />
-    </browser:pages>
-
     <!-- BugTaskDelta -->
     <content class="canonical.launchpad.components.bugtask.BugTaskDelta">
         <allow interface="canonical.launchpad.interfaces.IBugTaskDelta" />

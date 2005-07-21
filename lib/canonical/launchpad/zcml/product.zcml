@@ -16,12 +16,6 @@
         />
     </content>
 
-    <adapter
-        for="canonical.launchpad.interfaces.IProduct"
-        provides="canonical.launchpad.interfaces.IBugTaskSubset"
-        factory="canonical.launchpad.components.bugtask.ContextToBugTaskSubsetAdapter"
-        permission="zope.Public" />
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
         name="+index" />
@@ -125,6 +119,24 @@
         name="+rdf"
         lp:url="/projects/$Product.name/+rdf"
         template="../templates/product-rdf.pt" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProduct"
+        class="canonical.launchpad.browser.BugTaskSearchListingView"
+        permission="zope.Public">
+        <browser:page
+            name="+bugs-only"
+            lp:url="/products/$Product.name/+bugs-only"
+            template="../templates/bugs-for-context.pt" />
+        <browser:page
+            name="+portlet-bugtasklist-actions"
+            template="../templates/bugtasklist-portlet-actions.pt"
+            lp:url="/products/$Product.name/+portlet-bugtasklist-actions" />
+        <browser:page
+            name="+portlet-bugtasklist-statsforcontext"
+            template="../templates/bug-portlet-statsforcontext.pt"
+            lp:url="/products/$Product.name/+portlet-bugtasklist-statsforcontext" />
+    </browser:pages>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"

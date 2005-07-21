@@ -16,7 +16,6 @@ __all__ = [
     'IDistroReleaseBugTask',
     'ISelectResultsSlicable',
     'IBugTaskSet',
-    'IBugTaskSubset',
     'IBugTasksReport',
     ]
 
@@ -307,7 +306,7 @@ class IBugTaskSet(Interface):
                severity=None, product=None, distribution=None,
                distrorelease=None, milestone=None, assignee=None,
                owner=None, orderby=None, sourcepackagename=None,
-               binarypackagename=None):
+               binarypackagename=None, statusexplanation=None):
         """Return a set of IBugTasks that satisfy the query arguments.
 
         Keyword arguments should always be used. The argument passing
@@ -377,51 +376,6 @@ class IBugTaskSet(Interface):
         The <user> parameter is necessary to make sure we don't return any
         bugtask of a private bug for which the user is not subscribed. If
         <user> is None, no private bugtasks will be returned.
-        """
-
-
-class IBugTaskSubset(Interface):
-    """A subset of IBugTasks.
-
-    Generally speaking the 'subset' refers to the bugs reported on a
-    specific upstream, distribution, or distrorelease.
-    """
-
-    context = Attribute(
-        "The IDistribution, IDistroRelease or IProduct.")
-    title = TextLine(title=_("Bugs reported in"))
-
-    def __getitem__(item):
-        """Get an IBugTask.
-
-        Raise a KeyError if the IBug with that given ID is not
-        reported within this context.
-        """
-
-    def search(bug=None, searchtext=None, status=None, priority=None,
-               severity=None, milestone=None, assignee=None, owner=None,
-               orderby=None):
-        """Return a set of IBugTasks that satisfy the query arguments.
-
-        The search results are filtered to include matches within the
-        current context (i.e. the .context attribute.)
-
-        Keyword arguments should always be used. The argument passing
-        semantics are as follows:
-
-        * BugTaskSubset.search(arg = 'foo'): Match all IBugTasks where
-          IBugTask.arg == 'foo'.
-
-        * BugTaskSubset.search(arg = any('foo', 'bar')): Match all IBugTasks
-          where IBugTask.arg == 'foo' or IBugTask.arg == 'bar'
-
-        * BugTaskSubset.search(arg1 = 'foo', arg2 = 'bar'): Match all
-          IBugTasks where IBugTask.arg1 == 'foo' and
-          IBugTask.arg2 == 'bar'
-
-        For a more thorough treatment, check out:
-
-            lib/canonical/launchpad/doc/bugtask.txt
         """
 
 
