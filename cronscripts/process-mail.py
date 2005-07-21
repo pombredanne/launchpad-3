@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.4
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 """Fetches mail from the mail box and feeds them to the handlers."""
 
@@ -10,7 +10,8 @@ from optparse import OptionParser
 from zope.component.exceptions import ComponentLookupError
 
 from canonical.lp import initZopeless
-from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.launchpad.scripts import (
+    execute_zcml_for_scripts, logger_options, logger)
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.mail.incoming import handleMail
 from canonical.launchpad.interfaces import IMailBox
@@ -24,7 +25,7 @@ def main(args):
     logger_options(options_parser)
     options, args = options_parser.parse_args(args)
     
-    log = logger('process-mail')
+    log = logger(options, 'process-mail')
 
     lockfile = LockFile('/var/lock/launchpad-process-mail.lock', logger=log)
     lockfile.acquire()
