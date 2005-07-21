@@ -38,30 +38,48 @@ PYLINTOPTS_INT="$PYLINTOPTS,E0213,E0211"
 
 export PYTHONPATH=lib:$PYTHONPATH
 
-if [ -z $1 ]; then
-    files=`baz status | grep '^ ' | grep '\.py$' | cut -c5-`
+if [ -z "$1" ]; then
+    files=`baz status | grep '^ ' | cut -c5-`
 else
     files=$*
 fi
 
+if [ -z "$files" ]; then
+    echo "No changed files detected"
+    exit
+fi
+
+for file in $files; do
+    if grep -q -e '<<<<<<<' -e '>>>>>>>' $files; then
+        echo "============================================================="
+        echo "Conflict marker found in $file"
+    fi
+done
+
+pyfiles=`echo files | grep '\.py$'`
+
+if [ -z "$pyfiles" ]; then
+    exit
+fi
+
 if which pyflakes >/dev/null; then
-    output=`pyflakes $files`
+    output=`pyflakes $pyfiles`
     if [ ! -z "$output" ]; then
-        echo "-------------------------------------------------------------"
+        echo "============================================================="
         echo "Pyflakes notices"
         echo "-------------------------------------------------------------"
         echo "$output"
     fi
 fi
 
-for file in $files; do
+for file in $pyfiles; do
     OPTS=$PYLINTOPTS
     if echo $file | grep -qs "launchpad/interfaces/"; then
         OPTS=$PYLINTOPTS_INT
     fi
     output=`pylint $file $OPTS 2>/dev/null | grep -v '^*'`
     if [ ! -z "$output" ]; then
-        echo "-------------------------------------------------------------"
+        echo "============================================================="
         echo "Pylint notices on $file"
         echo "-------------------------------------------------------------"
         echo "$output"
