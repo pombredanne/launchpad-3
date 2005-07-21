@@ -557,7 +557,7 @@ rosetta_preferences = 'Rosetta: Preferences'
 def series_edit(context, view):
     return 'Edit %s %s Details' % (context.product.displayname, context.name)
 
-series_new = ContextDisplayName('Register a new Release Series for %s')
+series_new = ContextDisplayName('New Release Series for %s')
 
 def series_review(context, view):
     return 'Review %s %s Details' % (context.product.displayname, context.name)

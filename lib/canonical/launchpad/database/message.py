@@ -21,7 +21,7 @@ from sqlobject import MultipleJoin, RelatedJoin
 
 import pytz
 
-from canonical.lp.encoding import guess as ensure_unicode
+from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
 from canonical.launchpad.interfaces import \
     IMessage, IMessageSet, IMessageChunk, IPersonSet, \

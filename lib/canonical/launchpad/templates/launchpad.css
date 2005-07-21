@@ -541,7 +541,7 @@ code {
   border: none;
   padding: inherit;
 }
-pre {
+pre, textarea {
   font-family: monospace;
   font-size: 100%;
 }

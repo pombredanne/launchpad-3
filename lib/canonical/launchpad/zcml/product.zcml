@@ -116,8 +116,8 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.ProductRdfView"
         permission="zope.Public"
+        class="canonical.launchpad.browser.ProductRdfView"
         name="+rdf"
         lp:url="/projects/$Product.name/+rdf"
         template="../templates/product-rdf.pt" />
@@ -126,10 +126,10 @@
         for="canonical.launchpad.interfaces.IProduct"
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.ObjectReassignmentView">
-          <browser:page
-              name="+reassign"
-              template="../templates/object-reassignment.pt"
-              lp:url="/product/$product.id/+reassign" />
+        <browser:page
+            name="+reassign"
+            template="../templates/object-reassignment.pt"
+            lp:url="/product/$product.id/+reassign" />
     </browser:pages>
 
     <browser:pages
@@ -154,17 +154,11 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
         class="canonical.launchpad.browser.ProductView"
-        permission="launchpad.AnyPerson" >
-        <browser:page
-            name="+addseries"
-            template="../templates/series-new.pt"
-            lp:url="/products/$Product.name/+addseries"
-            />
+        permission="launchpad.AnyPerson">
         <browser:page
             name="+addrelease"
             template="../templates/productrelease-new.pt"
-            lp:url="/products/$Product.name/+addrelease"
-            />
+            lp:url="/products/$Product.name/+addrelease" />
     </browser:pages>
 
     <browser:editform
@@ -243,6 +237,33 @@
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"
            width="62" />
+    </browser:addform>
+
+    <browser:addform
+        name="+addseries"
+        for="canonical.launchpad.interfaces.IProduct"
+        schema="canonical.launchpad.interfaces.IProductSeries"
+        fields="name displayname summary"
+        class="canonical.launchpad.browser.ProductSeriesAddView"
+        keyword_arguments="name displayname summary"
+        permission="launchpad.AnyPerson"
+        template="../templates/series-new.pt"
+        lp:url="/products/$Product.name/+addseries">
+        <browser:widget
+           field="name"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="15"
+           extra="tabindex=1" />
+        <browser:widget
+           field="displayname"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="20"
+           extra="tabindex=2" />
+        <browser:widget
+           field="summary"
+           class="zope.app.form.browser.TextAreaWidget"
+           displayWidth="40"
+           extra="tabindex=3" />
     </browser:addform>
 
     <browser:addform

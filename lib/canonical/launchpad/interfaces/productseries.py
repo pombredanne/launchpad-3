@@ -26,14 +26,32 @@ class IProductSeries(Interface):
     # instead of using object.id.
     id = Int(title=_('ID'))
     # field names
-    product = Choice( title=_('Product'), required=True,
-                      vocabulary='Product')
-    name = TextLine(title=_('Name'), required=True, constraint=valid_name)
+    product = Choice(title=_('Product'), required=True,
+                     vocabulary='Product')
+    name = TextLine(title=_('Name'), required=True, 
+                    description=_('The name of the series is a short, unique '
+                                  'name that identifies it, being used in URLs.'
+                                  'It must be all lowercase, with no special '
+                                  'characters. For example, "2.0" or "trunk".'),
+                    constraint=valid_name)
     datecreated = Datetime(title=_('Date Registered'), required=True,
-                            readonly=True)
+                           readonly=True)
     title = Attribute('Title')
-    displayname = TextLine( title=_('Display Name'), required=True)
-    summary = Text(title=_("Summary"), required=True)
+    displayname = TextLine(title=_('Display Name'),
+                           description=_('The "display name" of the Series is '
+                                         'a short, capitalized name. It should '
+                                         'make sense as part of a paragraph of '
+                                         'text. For example, "2.0 (Stable)" or '
+                                         '"MAIN (development)" or "1.3 '
+                                         '(Obsolete)".'),
+                           required=True)
+    summary = Text(title=_("Summary"), 
+                   description=_('A single paragraph introduction or overview '
+                                 'of this series. For example: "The 2.0 '
+                                 'series of Apache represents the current '
+                                 'stable series, and is recommended for all '
+                                 'new deployments".'),
+                   required=True)
     datecreated = TextLine(title=_('Date Created'), description=_("""The
         date this productseries was created in Launchpad."""))
 
@@ -46,8 +64,8 @@ class IProductSeries(Interface):
     packagings = Attribute("An iterator over the Packaging entries "
         "for this product series.")
 
-    sourcepackages = Attribute(_("List of distribution packages for this \
-        product series"))
+    sourcepackages = Attribute(_("List of distribution packages for this "
+        "product series"))
 
     def getRelease(version):
         """Get the release in this series that has the specified version."""
@@ -72,6 +90,7 @@ class IProductSeries(Interface):
 
     def getPOTemplate(name):
         """Return the POTemplate with this name for the series."""
+
 
 class IProductSeriesSource(Interface):
     # revision control items
