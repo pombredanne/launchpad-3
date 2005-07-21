@@ -67,6 +67,10 @@
             name="+translations"
             template="../templates/product-translations.pt"
             lp:url="/products/evolution/+translations" />
+        <browser:page
+            name="+branches"
+            template="../templates/product-branches.pt"
+            />
 	<!-- Products Portlets -->
         <browser:page
             name="+portlet-details"
@@ -74,7 +78,7 @@
             lp:url="/products/evolution/+portlet-details" />
         <browser:page
             name="+portlet-branches"
-            template="../templates/portlet-product-branches.pt"
+            template="../templates/product-portlet-branches.pt"
             lp:url="/products/evolution/+portlet-branches" />
         <browser:page
             name="+portlet-translations"
@@ -90,7 +94,7 @@
             lp:url="/products/evolution/+portlet-actions" />
         <browser:page
             name="+portlet-latest-bugs"
-            template="../templates/portlet-product-latestbugs.pt"
+            template="../templates/product-portlet-latestbugs.pt"
             lp:url="/products/evolution/+portlet-latest-bugs" />
         <browser:page
             name="+portlet-bounties"
@@ -316,7 +320,7 @@
             lp:url="/products/+all" />
         <browser:page
             name="+portlet-details"
-            template="../templates/portlet-productset-details.pt"
+            template="../templates/productset-portlet-details.pt"
             lp:url="/products/+portlet-details" />
     </browser:pages>
 

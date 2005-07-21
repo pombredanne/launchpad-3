@@ -365,7 +365,8 @@ tr.rowLinkified a {
 
 /* used to mark dummy data with div entity */
 .dummy {
-  background-color: #cccccc;
+  background-color: #eeeeee;
+  color: #656565;
 }
 
 /* Various custom list formats: */
