@@ -9,11 +9,12 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, MultipleJoin
 
-from canonical.launchpad.interfaces import IBugTracker, IBugTrackerSet
-
 from canonical.lp.dbschema import EnumCol, BugTrackerType
 from canonical.database.sqlbase import (SQLBase, flush_database_updates,
     quote)
+
+from canonical.launchpad.interfaces import IBugTracker, IBugTrackerSet
+
 
 
 class BugTracker(SQLBase):
@@ -97,14 +98,14 @@ class BugTrackerSet:
         if name is None:
             scheme, host = urllib.splittype(baseurl)
             host, path = urllib.splithost(host)
-            name='auto-%s' % host
+            name = 'auto-%s' % host
         if title is None:
-            title=quote('Bug tracker at %s' % baseurl)
+            title = quote('Bug tracker at %s' % baseurl)
         if summary is None:
-            summary=("This bugtracker was automatically created. Please "
-                "edit the details to get it correct!")
+            summary = ("This bugtracker was automatically created. Please "
+                       "edit the details to get it correct!")
         if contactdetails is None:
-            contactdetails='No contactdetails provided.'
+            contactdetails = 'No contactdetails provided.'
         bugtracker = BugTracker(name=name,
             bugtrackertype=bugtrackertype,
             title=title, summary=summary, baseurl=baseurl,

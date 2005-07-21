@@ -6,15 +6,14 @@ __all__ = ['BugMessage', 'BugMessageSet']
 from email.Utils import make_msgid
 
 from zope.interface import implements
-from zope.component import getUtility
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 from sqlobject import ForeignKey
 
-from canonical.launchpad.interfaces import (
-    IBugMessage, IBugMessageSet, ILaunchBag)
 from canonical.database.sqlbase import SQLBase
+
+from canonical.launchpad.interfaces import IBugMessage, IBugMessageSet
 from canonical.launchpad.database.message import Message, MessageChunk
 
 class BugMessage(SQLBase):

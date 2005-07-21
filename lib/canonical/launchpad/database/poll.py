@@ -4,13 +4,14 @@ __metaclass__ = type
 __all__ = ['Poll', 'PollSet', 'PollOption', 'PollOptionSet',
            'VoteCast', 'Vote']
 
-from datetime import datetime
 import pytz
+from datetime import datetime
 
 from zope.interface import implements
 
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol, AND)
+
 from canonical.database.sqlbase import SQLBase
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -70,11 +71,11 @@ class PollSet:
                            PollStatus.NOT_YET_OPENED_POLLS])
 
     def new(self, team, name, title, proposition, dateopens, datecloses,
-            type, secrecy, allowspoilt):
+            polltype, secrecy, allowspoilt):
         """See IPollSet."""
         return Poll(teamID=team.id, name=name, title=title,
                 proposition=proposition, dateopens=dateopens,
-                datecloses=datecloses, type=type, secrecy=secrecy,
+                datecloses=datecloses, type=polltype, secrecy=secrecy,
                 allowspoilt=allowspoilt)
 
     def selectByTeam(self, team, status=_statuses, orderBy=None, when=None):
@@ -85,7 +86,7 @@ class PollSet:
         if orderBy is None:
             orderBy = self._defaultOrder
 
-        teamfilter = Poll.q.teamID==team.id
+        teamfilter = Poll.q.teamID == team.id
         results = Poll.select(teamfilter)
 
         if PollStatus.OPEN_POLLS not in status:
@@ -106,7 +107,7 @@ class PollSet:
 
     def getByTeamAndName(self, team, name, default=None):
         """See IPollSet."""
-        query = AND(Poll.q.teamID==team.id, Poll.q.name==name)
+        query = AND(Poll.q.teamID == team.id, Poll.q.name == name)
         try:
             return Poll.selectOne(query)
         except SQLObjectNotFound:
@@ -146,14 +147,15 @@ class PollOptionSet:
 
     def selectByPoll(self, poll, only_active=False):
         """See IPollOptionSet."""
-        query = PollOption.q.pollID==poll.id
+        query = PollOption.q.pollID == poll.id
         if only_active:
-            query = AND(query, PollOption.q.active==True)
+            query = AND(query, PollOption.q.active == True)
         return PollOption.select(query)
 
-    def getByPollAndId(self, poll, id, default=None):
+    def getByPollAndId(self, poll, option_id, default=None):
         """See IPollOptionSet."""
-        query = AND(PollOption.q.pollID==poll.id, PollOption.q.id==id)
+        query = AND(PollOption.q.pollID == poll.id,
+                    PollOption.q.id == option_id)
         try:
             return PollOption.selectOne(query)
         except SQLObjectNotFound:

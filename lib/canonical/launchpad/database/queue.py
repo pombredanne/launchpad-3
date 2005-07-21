@@ -7,12 +7,14 @@ __all__ = ['DistroReleaseQueue', 'DistroReleaseQueueBuild',
 from zope.interface import implements
 
 from sqlobject import ForeignKey, MultipleJoin
+
 from canonical.database.sqlbase import SQLBase
+
+from canonical.lp.dbschema import EnumCol
+from canonical.lp.dbschema import DistroReleaseQueueStatus
 
 from canonical.launchpad.interfaces import \
     IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource
-from canonical.lp.dbschema import EnumCol
-from canonical.lp.dbschema import DistroReleaseQueueStatus
 
 
 class DistroReleaseQueue(SQLBase):

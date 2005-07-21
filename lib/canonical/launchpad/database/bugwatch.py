@@ -4,8 +4,6 @@ __metaclass__ = type
 __all__ = ['BugWatch', 'BugWatchSet', 'BugWatchFactory']
 
 import re
-import urllib
-from datetime import datetime
 
 from zope.interface import implements
 from zope.exceptions import NotFoundError
@@ -14,15 +12,15 @@ from zope.component import getUtility
 # SQL imports
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, MultipleJoin
 
+from canonical.lp.dbschema import BugTrackerType
+
+from canonical.database.sqlbase import SQLBase, flush_database_updates
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
+
 from canonical.launchpad.interfaces import (IBugWatch, IBugWatchSet,
     IBugTrackerSet)
 from canonical.launchpad.database.bugset import BugSetBase
-from canonical.launchpad.database.bugtracker import BugTracker
-from canonical.database.sqlbase import (SQLBase, quote,
-    flush_database_updates)
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.lp.dbschema import BugTrackerType
 
 bugzillaref = re.compile(r'(https?://.+/)show_bug.cgi.+id=(\d+).*')
 roundupref = re.compile(r'(https?://.+/)issue(\d+).*')
@@ -82,12 +80,12 @@ class BugWatchSet(BugSetBase):
         BugSetBase.__init__(self, bug)
         self.title = 'A Set of Bug Watches'
 
-    def get(self, id):
+    def get(self, watch_id):
         """See canonical.launchpad.interfaces.IBugWatchSet."""
         try:
-            return BugWatch.get(id)
+            return BugWatch.get(watch_id)
         except SQLObjectNotFound:
-            raise NotFoundError, id
+            raise NotFoundError, watch_id
 
     def _find_watches(self, pattern, trackertype, text, bug, owner):
         """Find the watches in a piece of text, based on a given pattern and
