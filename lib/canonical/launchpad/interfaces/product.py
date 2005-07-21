@@ -177,7 +177,7 @@ class IProduct(IHasOwner):
     def poTemplate(name):
         """Returns the PO template with the given name."""
 
-    def newseries(form):
+    def newSeries(name, displayname, summary):
         """Creates a new ProductSeries for this series."""
 
     def messageCount():
