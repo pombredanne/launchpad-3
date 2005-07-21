@@ -26,7 +26,7 @@ bugzillaref = re.compile(r'(https?://.+/)show_bug.cgi.+id=(\d+).*')
 roundupref = re.compile(r'(https?://.+/)issue(\d+).*')
 
 class BugWatch(SQLBase):
-    """A watch, which links a Malone bug to a bug in a foreign bugtracker"""
+    """See canonical.launchpad.interfaces.IBugWatch."""
     implements(IBugWatch)
     _table = 'BugWatch'
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)

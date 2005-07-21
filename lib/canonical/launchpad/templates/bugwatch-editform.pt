@@ -26,7 +26,7 @@
            >Form Label will come from ZCML label="xxx"</h3>
 
         <div metal:fill-slot="extra_info" class="documentDescription">
-          This watch links Malone <a tal:attributes="href
+          This watch links <a tal:attributes="href
           context/bug/fmt:url">bug #<span
           tal:replace="context/bug/id">3452</span></a> to:
         </div>

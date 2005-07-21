@@ -24,7 +24,7 @@
               Search bug reports
           </a>
         </li>
-        <li class="add"><a href="+filebug"
+        <li class="add"><a tal:attributes="href string:${context/fmt:url}/+filebug"
           title="File a bug on this product">
           Report new bug<br />
         </a></li>

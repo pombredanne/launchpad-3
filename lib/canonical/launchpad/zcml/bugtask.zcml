@@ -77,10 +77,6 @@
             template="../templates/bugtask-portlet-status.pt"
             lp:url="malone/tasks/+portlet-status" />
         
-        <browser:page name="+portlet-product-latestbugs"
-            template="../templates/portlet-product-latestbugs.pt"
-            lp:url="malone/tasks/+portlet-product-latestbugs.pt" />
-
     </browser:pages>
 
     <!-- XXX: Brad Bollenbach, 2005-01-18: We need to sort out the +upstreamtask

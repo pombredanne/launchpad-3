@@ -36,15 +36,6 @@
       <tal:block content="context/datecreated/fmt:datetime" />
             
 
-      <ul tal:condition="python: not request.getURL().endswith('+edit')">
-        <li class="edit" 
-            tal:condition="context/required:launchpad.Edit">
-          <a href="+edit">
-            Edit this task
-          </a>
-        </li>
-      </ul>
-
     </div>
   </div>
 </div>

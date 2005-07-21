@@ -9,7 +9,7 @@
     <div tal:replace="structure view/bugStatsForContext" />
     -->
     <div tal:replace="structure context/@@+portlet-status" />
-    <div tal:replace="structure context/@@+portlet-also-reported" />
+    <div tal:replace="structure context/@@+portlet-alsoreportedin" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
