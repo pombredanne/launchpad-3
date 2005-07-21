@@ -58,9 +58,9 @@
   >>> cipher_body = msg.get_payload(decode=1)
   >>> from canonical.launchpad.helpers import setupInteraction
   >>> setupInteraction(None)
-  >>> from canonical.launchpad.interfaces import IGpgHandler 
+  >>> from canonical.launchpad.interfaces import IGPGHandler 
   >>> from zope.component import getUtility
-  >>> gpghandler = getUtility(IGpgHandler)
+  >>> gpghandler = getUtility(IGPGHandler)
   >>> body = gpghandler.decryptContent(cipher_body, 'test')
   >>> from zope.security.management import endInteraction
   >>> endInteraction()

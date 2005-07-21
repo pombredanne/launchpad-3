@@ -13,7 +13,8 @@ from canonical.launchpad.interfaces import (
     IMilestone, IBug, IBugTask, IUpstreamBugTask, IDistroBugTask,
     IDistroReleaseBugTask, ITranslator, IProduct, IProductRelease,
     IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
-    ILaunchpadCelebrities, IDistroRelease, IBugTracker)
+    ILaunchpadCelebrities, IDistroRelease, IBugTracker, IPoll, IPollSubset,
+    IPollOption, IPollOptionSubset)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -147,6 +148,41 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
         """
         admins = getUtility(ILaunchpadCelebrities).admin
         return self.obj.id == user.id or user.inTeam(admins)
+
+
+class EditPollByTeamOwnerOrTeamAdminsOrAdmins(
+        EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IPoll
+
+
+class EditPollSubsetByTeamOwnerOrTeamAdminsOrAdmins(
+        EditPollByTeamOwnerOrTeamAdminsOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IPollSubset
+
+
+class EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IPollOption
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(self.obj.poll.team.teamowner) or user.inTeam(admins):
+            return True
+        else:
+            for team in self.obj.poll.team.administrators:
+                if user.inTeam(team):
+                    return True
+
+        return False
+
+
+class EditPollOptionSubsetByTeamOwnerOrTeamAdminsOrAdmins(
+        EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IPollOptionSubset
+
 
 
 class EditUpstreamBugTask(AuthorizationBase):

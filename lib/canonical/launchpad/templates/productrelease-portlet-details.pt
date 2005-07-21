@@ -1,0 +1,33 @@
+<div class="portlet">
+    <h4 tal:content="context/title">productrelease title</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+
+            <b>Product:</b>
+            <a href="#"
+               tal:attributes="href string:/products/${context/product/name}/"
+               tal:content="context/product/displayname"
+               class="link">product displayname</a><br />
+
+            <b>Release Version:</b>
+            <span tal:replace="context/version" /><br />
+
+            <b>Branch:</b>
+            <span tal:replace="context/productseries/name" /><br />
+
+            <b>Released:</b>
+            <span tal:replace="context/datereleased/fmt:date" /><br />
+
+            <b>Registered:</b>
+            <span tal:replace="context/datecreated/fmt:date" /><br />
+
+            <b>Registered By:</b><br />
+            <img src="/++resource++user.gif">
+            <a tal:attributes="href string:/people/${context/owner/name}"
+               tal:content="context/owner/browsername"
+               class="link">ownername</a><br />
+
+        </div>
+    </div>
+</div>

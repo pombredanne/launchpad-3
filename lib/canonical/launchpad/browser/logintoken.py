@@ -28,7 +28,7 @@ from canonical.launchpad.webapp import canonical_url
 
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, IPasswordEncryptor, ILoginTokenSet,
-    IGPGKeySet, IGpgHandler, ILaunchBag)
+    IGPGKeySet, IGPGHandler, ILaunchBag)
 
 
 class LoginTokenView(object):
@@ -203,7 +203,7 @@ class ValidateEmailView(object):
             return
 
         # retrieve respective key info
-        gpghandler = getUtility(IGpgHandler)
+        gpghandler = getUtility(IGPGHandler)
         result, key = gpghandler.retrieveKey(fingerprint)
 
         if not result:

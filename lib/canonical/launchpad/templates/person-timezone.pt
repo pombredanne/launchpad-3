@@ -1,0 +1,33 @@
+<tal:tag condition="view/update"/>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@launchpad_template/master"
+      i18n:domain="launchpad">
+
+  <body>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+  </metal:leftportlets>
+
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-actions" />
+  </metal:rightportlets>
+
+  <div metal:fill-slot="main">
+
+    <div metal:use-macro="context/@@launchpad_editform/editform">
+
+      <h1 metal:fill-slot="heading">Change Time Zone</h1>
+
+      <div metal:fill-slot="extra_info" class="documentDescription">
+        <p>Please select your time zone.  Launchpad uses this
+        information to display dates and times in your local time
+        zone, and to interpret entered dates.</p>
+      </div>
+
+    </div>
+  </div>
+
+  </body>
+</html>

@@ -23,6 +23,9 @@ class PublishedPackage(SQLBase):
     _table = 'PublishedPackageView'
 
     distribution = IntCol(immutable=True)
+    distroarchrelease = ForeignKey(dbName='distroarchrelease',
+                                   foreignKey='DistroArchRelease',
+                                   immutable=True)
     distrorelease = IntCol(immutable=True)
     distroreleasename = StringCol(immutable=True)
     processorfamily = IntCol(immutable=True)

@@ -54,3 +54,9 @@ class IBinaryPackageNameSet(Interface):
     def getOrCreateByName(name):
         """Get a binary package by name, creating it if necessary."""
 
+    def ensure(name):
+        """Ensure that the given BinaryPackageName exists, creating it
+        if necessary.
+
+        Returns the BinaryPackageName
+        """

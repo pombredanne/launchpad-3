@@ -11,9 +11,10 @@ __all__ = [
     'traverse_distribution',
     'traverse_distrorelease',
     'traverse_person',
-    'traverseTeam',
+    'traverse_team',
     'traverse_bug',
     'traverse_bugs',
+    'traverse_poll',
     ]
 
 from zope.component import getUtility
@@ -22,14 +23,13 @@ from zope.exceptions import NotFoundError
 from canonical.launchpad.interfaces import (
     IBugSet, IBugTaskSet, IBugTaskSubset, IBugTasksReport, IDistributionSet,
     IProjectSet, IProductSet, ISourcePackageSet, IBugTrackerSet, ILaunchBag,
-    ITeamMembershipSubset, ICalendarOwner, ILanguageSet, IPublishedPackageSet)
+    ITeamMembershipSubset, ICalendarOwner, ILanguageSet, IPublishedPackageSet,
+    IPollSubset, IPollOptionSubset, IDistroReleaseLanguageSet)
 from canonical.launchpad.database import (
     BugAttachmentSet, BugExternalRefSet, BugSubscriptionSet,
     BugWatchSet, BugTasksReport, CVERefSet, BugProductInfestationSet,
     BugPackageInfestationSet, ProductSeriesSet, ProductMilestoneSet,
     SourcePackageSet)
-from canonical.launchpad.browser.distroreleaselanguage import (
-    DummyDistroReleaseLanguage)
 
 def traverse_malone_application(malone_application, request, name):
     """Traverse the Malone application object."""
@@ -110,7 +110,8 @@ def traverse_distrorelease(distrorelease, request, name):
         if drlang is not None:
             return drlang
         else:
-            return DummyDistroReleaseLanguage(distrorelease, lang)
+            drlangset = getUtility(IDistroReleaseLanguageSet)
+            return drlangset.getDummy(distrorelease, lang)
     else:
         return distrorelease[name]
 
@@ -121,11 +122,13 @@ def traverse_person(person, request, name):
 
     return None
 
-def traverseTeam(team, request, name):
+def traverse_team(team, request, name):
     if name == '+members':
         return ITeamMembershipSubset(team)
     elif name == '+calendar':
         return ICalendarOwner(team).calendar
+    elif name == '+polls':
+        return IPollSubset(team)
     
     return None
 
@@ -171,3 +174,9 @@ def traverse_bugs(bugcontainer, request, name):
         except (NotFoundError, ValueError):
             return None
 
+
+def traverse_poll(poll, request, name):
+    if name == '+options':
+        return IPollOptionSubset(poll)
+
+    return None

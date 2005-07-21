@@ -1,7 +1,7 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
 from zope.schema import Int, TextLine
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
@@ -20,6 +20,7 @@ class IWikiName(Interface):
     person = Int(title=_("Owner"), required=True)
     wiki = TextLine(title=_("Wiki host"), required=True)
     wikiname = TextLine(title=_("Wikiname"), required=True)
+    url = Attribute("The URL for this wiki home page.")
 
 
 class IWikiNameSet(Interface):

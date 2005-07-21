@@ -4,13 +4,41 @@
       i18n:domain="launchpad">
 
   <body>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-about" />
+  </metal:leftportlets>
+
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-actions" />
+    <div tal:replace="structure context/@@+portlet-stats" />
+  </metal:rightportlets>
+
     <div metal:fill-slot="main">
       <tal:block define="bn view/searchPeopleBatchNavigator">
-        <h1>People and teams in Launchpad</h1>
+        <h1>People and Teams in Launchpad</h1>
         <form name="search" action="." method="GET">
           <table style="margin-bottom: 1em;">
             <tr>
-              <th><label>Search for:</label></th>
+              <th><label>Search:</label></th>
+              <td>
+                <input type="text" name="name" size="25" tabindex="1"
+                     tal:attributes="value request/name|nothing"
+                />
+                <input
+                  tal:condition="not: bn"
+                  type="submit"
+                  value="Search"
+                />
+                <input
+                  tal:condition="bn"
+                  type="submit"
+                  value="Search Again"
+                />
+              </td>
+            </tr>
+            <tr>
+              <th></th>
               <td tal:define="searchfor request/searchfor|nothing">
                 <label>
                   <input
@@ -64,37 +92,14 @@
                 </label>
               </td>
             </tr>
-            <tr>
-              <th><label>with names containing:</label></th>
-              <td>
-                <input type="text" name="name" size="20" tabindex="1"
-                     tal:attributes="value request/name|nothing"
-                />
-                <input
-                  tal:condition="not: bn"
-                  type="submit"
-                  value="Search"
-                />
-                <input
-                  tal:condition="bn"
-                  type="submit"
-                  value="Search Again"
-                />
-              </td>
-            </tr>
           </table>
         </form>
         <tal:block condition="not: bn">
           <p> 
-            There are currently <span tal:replace="view/peopleCount" />
-            people and <span tal:replace="view/teamsCount" /> teams 
-            registered in Launchpad.
-          </p>
-          <p> 
-            Some accounts have been automatically created by Launchpad
-            and may be duplicates.
-            If you find you have more than one, please
-            <a href="+requestmerge">merge the accounts</a>.
+            Some accounts have been created automatically by Launchpad
+            and may be duplicates.  If you find you have more than one
+            account, perhaps for different email addresses, please
+            <a href="+requestmerge">merge the accounts</a>. Thank you!
           </p>
         </tal:block>
         <tal:block condition="bn">
@@ -141,12 +146,6 @@
           </tal:block>
         </tal:block>
       </tal:block>
-      <ul>
-        <li><a href="+peoplelist">List all people</a></li>
-        <li><a href="+teamlist">List all teams</a> 
-            [<a href="+newteam">Create a new team</a>]</li>
-        <li><a href="+ubuntitelist">List all ubuntites</a></li>
-      </ul>
     </div>
   </body>
 </html>

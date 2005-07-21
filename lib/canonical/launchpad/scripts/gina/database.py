@@ -12,11 +12,15 @@ import re
 from sets import Set
 import psycopg
 
+from canonical.launchpad.scripts import log
+from canonical.database.sqlbase import connect
+
 class SQLThing:
     def __init__(self, dbname, dry_run):
         self.dbname = dbname
         self.dry_run = dry_run
-        self.db = psycopg.connect('dbname=%s'%self.dbname)
+        log.info("Connecting to %s as %s" % (dbname, config.gina.dbuser))
+        self.db = connect(config.gina.dbuser, dbname=dbname)
 
     def ensure_string_format(self, name):
         assert isinstance(name, basestring), repr(name)
@@ -33,10 +37,13 @@ class SQLThing:
     def commit(self):
         if self.dry_run:
             # Not committing -- we're on a dry run
+            log.debug("Not committing (dry run)")
             return
+        log.debug("Committing")
         return self.db.commit()
     
     def close(self):
+        log.info("Closing connection")
         return self.db.close()
 
     def _get_dicts(self, cursor):
@@ -83,14 +90,14 @@ class Katie(SQLThing):
         self.suite = suite
 
     def getSourcePackageRelease(self, name, version):
-        print "\t\t* Hunting for release %s / %s" % (name,version)
+        log.debug("Hunting for release %s / %s" % (name,version))
         ret =  self._query_to_dict("""SELECT * FROM source, fingerprint
                                       WHERE  source = %s 
                                       AND    source.sig_fpr = fingerprint.id
                                       AND    version = %s""", (name, version))
         if not ret:
             return None #Shortcircuit because the ubuntu lookup fails
-            print "\t\t* that spr didn't turn up. Attempting to find via ubuntu*"
+            log.debug("that spr didn't turn up. Attempting to find via ubuntu")
         else:
             return ret
 

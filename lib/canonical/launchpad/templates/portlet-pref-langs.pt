@@ -1,19 +1,22 @@
 <div class="portlet">
 
-    <h4>Your preferred languages:</h4>
+  <h4>Your preferred languages:</h4>
 
-    <div class="portletBody">
+  <div class="portletBody">
 
-        <div class="portletContent even">
+    <div class="portletContent even">
 
-            <ul tal:condition="view/languages">
-                <li tal:content="lang/englishname"
-                    tal:repeat="lang view/languages">
-                    A Language</li>
-            </ul>
+      <ul tal:condition="view/languages">
+          <li class="languages"
+              tal:content="lang/englishname"
+              tal:repeat="lang view/languages">
+            A Language</li>
+      </ul>
 
-            [<a href="/rosetta/prefs">Select Languages...</a>]
+      <ul style="text-align: right;">
+        <li class="add"><a href="/rosetta/prefs">Select Languages...</a></li>
+      </ul>
 
-        </div>
     </div>
+  </div>
 </div>

@@ -969,3 +969,37 @@ COMMENT ON COLUMN CalendarEvent.duration IS 'The duration of the event';
 COMMENT ON COLUMN CalendarEvent.title IS 'A one line description of the event';
 COMMENT ON COLUMN CalendarEvent.description IS 'A multiline description of the event';
 COMMENT ON COLUMN CalendarEvent.location IS 'A location associated with the event';
+
+
+-- Poll
+COMMENT ON TABLE Poll IS 'The polls belonging to teams.';
+COMMENT ON COLUMN Poll.team IS 'The team this poll belongs to';
+COMMENT ON COLUMN Poll.name IS 'The unique name of this poll.';
+COMMENT ON COLUMN Poll.title IS 'The title of this poll.';
+COMMENT ON COLUMN Poll.dateopens IS 'The date and time when this poll opens.';
+COMMENT ON COLUMN Poll.datecloses IS 'The date and time when this poll closes.';
+COMMENT ON COLUMN Poll.proposition IS 'The proposition that is going to be voted.';
+COMMENT ON COLUMN Poll.type IS 'The type of this poll (Simple, Preferential, etc).';
+COMMENT ON COLUMN Poll.allowspoilt IS 'If people can spoil their votes.';
+COMMENT ON COLUMN Poll.secrecy IS 'If people votes are SECRET (no one can see), ADMIN (team administrators can see) or PUBLIC (everyone can see).';
+
+-- PollOption
+COMMENT ON TABLE PollOption IS 'The options belonging to polls.';
+COMMENT ON COLUMN PollOption.poll IS 'The poll this options belongs to.';
+COMMENT ON COLUMN PollOption.name IS 'The name of this option.';
+COMMENT ON COLUMN PollOption.shortname IS 'A short name for this option.';
+COMMENT ON COLUMN PollOption.active IS 'If TRUE, people will be able to vote on this option. Otherwise they don\'t.';
+
+-- Vote
+COMMENT ON TABLE Vote IS 'The table where we store the actual votes of people.  It may or may not have a reference to the person who voted, depending on the poll\'s secrecy.';
+COMMENT ON COLUMN Vote.person IS 'The person who voted. It\'s NULL for secret polls.';
+COMMENT ON COLUMN Vote.poll IS 'The poll for which this vote applies.';
+COMMENT ON COLUMN Vote.preference IS 'Used to identify in what order the options were chosen by a given user (in case of preferential voting).';
+COMMENT ON COLUMN Vote.option IS 'The choosen option.';
+COMMENT ON COLUMN Vote.token IS 'A unique token that\'s give to the user so he can change his vote later.';
+
+-- VoteCast
+COMMENT ON TABLE VoteCast IS 'Here we store who has already voted in a poll, to ensure they do not vote again, and potentially to notify people that they may still vote.';
+COMMENT ON COLUMN VoteCast.person IS 'The person who voted.';
+COMMENT ON COLUMN VoteCast.poll IS 'The poll in which this person voted.';
+

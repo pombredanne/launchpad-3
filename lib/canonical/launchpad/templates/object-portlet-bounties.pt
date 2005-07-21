@@ -1,0 +1,23 @@
+<div class="portlet" tal:condition="context/bounties">
+
+  <h4><span tal:replace="context/displayname">Ubuntu</span> Bounties:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ol>
+      <li tal:repeat="bounty context/bounties">
+        <a tal:content="bounty/title"
+           tal:attributes="hover bounty/summary;
+                           href bounty/fmt:url">bounty title</a>
+      </li>
+    </ol>
+
+    <ul><li class="info">
+    <a href="+bounties"
+        title="More bounties...">
+        More...
+    </a>
+    </li></ul>
+
+  </div>
+</div>

@@ -1,5 +1,5 @@
 import os, os.path
-from canonical.lp import encoding
+from canonical import encoding
 
 class ChangeLog(object):
     def __init__(self, context, request):

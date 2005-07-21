@@ -1,0 +1,80 @@
+Sending Mail
+============
+
+simple_mail can be used to send mail easily:
+
+    >>> from canonical.launchpad.mail import simple_sendmail
+    >>> msgid = simple_sendmail(
+    ...     from_addr=u'foo.bar@canonical.com',
+    ...     to_addrs=u'test@canonical.com',
+    ...     subject=u'Subject',
+    ...     body=u'Content')
+
+The mail get sent when the transaction gets commited:
+
+    >>> import transaction
+    >>> transaction.commit()
+
+Now let's look at the sent email:
+
+    >>> import email
+    >>> from canonical.launchpad.mail import stub
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg['To']
+    'test@canonical.com'
+    >>> msg['From']
+    'foo.bar@canonical.com'
+    >>> msg['Subject']
+    'Subject'
+    >>> msg.get_payload(decode=True)
+    'Content'
+
+All its input can be unicode strings, which will be encoded to ascii
+strings suitable in emails. Let's try to send an email with non-ascii
+characters:
+
+    >>> msgid = simple_sendmail(
+    ...     from_addr=u'F\xf6\xf6 B\u0105r <foo.bar@canonical.com>',
+    ...     to_addrs=u'S\xe4mple Person <test@canonical.com>',
+    ...     subject=u'\xc4mnesrad',
+    ...     body=u'Inneh\xe5ll')
+    >>> transaction.commit()
+
+Now let's look at the sent email again. Since the headers are encoded
+to preserve the non-ASCII characters, we need to import some functions
+so that we can decode them:
+
+    >>> from email.Utils import parseaddr
+    >>> from email.Header import decode_header
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+
+Let's look at the name and address in the To-header:
+
+    >>> to_name_encoded, to_addr = parseaddr(msg['To'])
+    >>> to_name_str, charset = decode_header(to_name_encoded)[0]
+    >>> to_addr
+    'test@canonical.com'
+    >>> to_name_str.decode(charset)
+    u'S\xe4mple Person'
+
+From-header:
+
+    >>> from_name_encoded, from_addr = parseaddr(msg['From'])
+    >>> from_name_str, charset = decode_header(from_name_encoded)[0]
+    >>> from_addr
+    'foo.bar@canonical.com'
+    >>> from_name_str.decode(charset)
+    u'F\xf6\xf6 B\u0105r'
+
+Subject-header:
+
+    >>> subject_str, charset = decode_header(msg['Subject'])[0]
+    >>> subject_str.decode(charset)
+    u'\xc4mnesrad'
+
+And finally the body of the email:
+
+    >>> msg.get_payload(decode=True).decode(msg.get_content_charset())
+    u'Inneh\xe5ll'

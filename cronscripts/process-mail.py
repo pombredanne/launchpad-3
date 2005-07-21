@@ -2,8 +2,9 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 """Fetches mail from the mail box and feeds them to the handlers."""
 
-import logging, sys
+import _pythonpath
 
+import logging, sys
 from optparse import OptionParser
 
 from zope.component.exceptions import ComponentLookupError
@@ -18,22 +19,15 @@ usage = """%prog [options]
 
 """ + __doc__
 
-options_parser = OptionParser(usage=usage)
-
-def create_logger():
-    logger = logging.getLogger('process-mail')
-    handler = logging.StreamHandler(strm=sys.stderr)
-    logger.addHandler(handler)
-    return logger
-
-
 def main(args):
+    options_parser = OptionParser(usage=usage)
+    logger_options(options_parser)
     options, args = options_parser.parse_args(args)
     
-    lockfile = LockFile('/var/lock/launchpad-process-mail.lock')
-    lockfile.acquire()
+    log = logger('process-mail')
 
-    logger = create_logger()
+    lockfile = LockFile('/var/lock/launchpad-process-mail.lock', logger=log)
+    lockfile.acquire()
 
     try:
         trans = initZopeless()
@@ -41,14 +35,14 @@ def main(args):
 
         try:
             handleMail(trans)
+            return 0
         except ComponentLookupError, lookup_error:
             if lookup_error.args[0] == IMailBox:
-                logger.error(
-                    "No mail box is configured.\n\n"
+                log.error(
+                    "No mail box is configured. "
                     "Please see mailbox.txt for info on how to configure one.")
-            else:
-                logger.warn(
-                    "An exception occured in handleMail.", exc_info=True)
+                return 1
+            raise
     finally:
         lockfile.release()
 

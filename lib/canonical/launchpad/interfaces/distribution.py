@@ -89,9 +89,6 @@ class IDistribution(IHasOwner):
         "interpret that query in the context of the currentrelease."
         )
 
-    def memberslist():
-        """A list with members person objects"""
-
     def traverse(name):
         """Traverse the distribution. Check for special names, and return
         appropriately, otherwise use __getitem__"""

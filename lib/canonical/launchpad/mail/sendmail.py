@@ -14,8 +14,9 @@ messaging settings -- stub 2004-10-21
 __all__ = ['sendmail', 'simple_sendmail', 'raw_sendmail']
 
 import sets
-from email.Utils import make_msgid, formatdate
+from email.Utils import make_msgid, formatdate, parseaddr, formataddr
 from email.Message import Message
+from email.Header import Header
 from email.MIMEText import MIMEText
 from email import Charset
 from smtplib import SMTP
@@ -31,6 +32,23 @@ from canonical.lp import isZopeless
 # which sucks as they look like spam to stupid spam filters. We define
 # our own custom charset definition to force quoted printable.
 Charset.add_charset('utf8', Charset.QP, Charset.QP, 'utf8')
+
+def encode_address_field(address_field):
+    """Encodes an address field according to RFC 2047.
+
+    An address field can look like either:
+
+        Some Name <someaddress>
+
+    or:
+
+        someaddress
+
+    Only 'Some Name' should be encoded.
+    """
+    name, address = parseaddr(address_field)
+    return formataddr((str(Header(name)), str(address)))
+
 
 def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
     """Send an email from from_addr to to_addrs with the subject and body
@@ -65,8 +83,8 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
     for k,v in headers.items():
         del msg[k]
         msg[k] = v
-    msg['To'] = ','.join([str(a) for a in to_addrs])
-    msg['From'] = from_addr
+    msg['To'] = ','.join([encode_address_field(addr) for addr in to_addrs])
+    msg['From'] = encode_address_field(from_addr)
     msg['Subject'] = subject
     return sendmail(msg)
 

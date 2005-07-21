@@ -123,7 +123,7 @@
             name="+index"
             lp:url="codeofconduct/console/$signed.id/+index" />
         <browser:page
-            template="../templates/portlet-signedcodeofconduct-actions.pt"
+            template="../templates/signedcodeofconduct-portlet-actions.pt"
             name="+portlet-actions"
             lp:url="codeofconduct/console/$signed.id/+portlet-actions" />
     </browser:pages>

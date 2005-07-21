@@ -7,6 +7,7 @@ from canonical.launchpad.database.packaging import *
 from canonical.launchpad.database.productseries import *
 from canonical.launchpad.database.productrelease import *
 from canonical.launchpad.database.project import *
+from canonical.launchpad.database.poll import *
 from canonical.launchpad.database.bug import *
 from canonical.launchpad.database.bugwatch import *
 from canonical.launchpad.database.bugsubscription import *
@@ -66,7 +67,6 @@ from canonical.launchpad.database.spokenin import *
 from canonical.launchpad.database.cal import *
 from canonical.launchpad.database.logintoken import *
 from canonical.launchpad.database.codeofconduct import *
-from canonical.launchpad.database.distrotool import *
 from canonical.launchpad.database.component import *
 from canonical.launchpad.database.section import *
 from canonical.launchpad.database.vpoexport import *

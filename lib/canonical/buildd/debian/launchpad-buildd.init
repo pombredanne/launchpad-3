@@ -35,7 +35,7 @@ d_start() {
 d_stop() {
     CONF=$1
     PIDFILE="$PIDROOT"/"$CONF".pid
-    kill -TERM $(cat $PIDFILE)
+    test -r $PIDFILE && kill -TERM $(cat $PIDFILE)
 }
 
 CONFS=$(cd $CONFROOT; ls|grep -v "^-")

@@ -3,6 +3,8 @@
 
 # This script updates the cached stats in the system
 
+import _pythonpath
+
 import sys
 
 from optparse import OptionParser
@@ -47,15 +49,13 @@ def main(argv):
     except OSError:
         logger_object.info("lockfile %s already exists, exiting",
                            options.lockfilename)
-        return 0
-
-    # Setup zcml machinery to be able to use getUtility
-    execute_zcml_for_scripts()
-    ztm = initZopeless()
-
-    # Bare except clause: so that the lockfile is reliably deleted.
+        return 1
 
     try:
+        # Setup zcml machinery to be able to use getUtility
+        execute_zcml_for_scripts()
+        ztm = initZopeless()
+
         # Do the stats update
         logger_object.debug('Starting the stats update')
         distroset = getUtility(IDistributionSet)
@@ -64,15 +64,9 @@ def main(argv):
                 distrorelease.updateStatistics()
         ztm.commit()
         logger_object.debug('Finished the stats update')
-    except:
-        # Release the lock for the next invocation.
-        logger_object.exception('An unexpected exception ocurred!')
+        return 0
+    finally:
         lockfile.release()
-        return 1
-
-    # Release the lock for the next invocation.
-    lockfile.release()
-    return 0
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

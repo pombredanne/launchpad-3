@@ -249,14 +249,8 @@ class TeamView:
         return bool(self._getMembershipForUser())
 
     def userIsActiveMember(self):
-        """Return True if the logged in user has a TeamParticipation entry
-        for this Team. This implies a membership status of either ADMIN or
-        APPROVED."""
-        user = getUtility(ILaunchBag).user
-        if user is None:
-            return False
-
-        return user.inTeam(self.context)
+        """Return True if the user is an active member of this team."""
+        return getUtility(ILaunchBag).user in self.context.activemembers
 
     def membershipStatusDesc(self):
         tm = self._getMembershipForUser()
@@ -273,18 +267,9 @@ class TeamView:
     def userCanRequestToLeave(self):
         """Return true if the user can request to leave this team.
 
-        The user can request only if its subscription status is APPROVED or
-        ADMIN.
+        A given user can leave a team only if he's an active member.
         """
-        tm = self._getMembershipForUser()
-        if tm is None:
-            return False
-
-        allowed = [TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN]
-        if tm.status in allowed:
-            return True
-        else:
-            return False
+        return getUtility(ILaunchBag).user in self.context.activemembers
 
     def userCanRequestToJoin(self):
         """Return true if the user can request to join this team.

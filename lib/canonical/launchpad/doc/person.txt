@@ -75,6 +75,32 @@ False
 True
 
 
+Renaming
+--------
+
+All persons have a unique name in launchpad, so to allow them to change their
+names, we must make sure that name is not already in use by someone else.
+
+>>> from canonical.launchpad.interfaces.person import PersonNameField
+>>> field = PersonNameField(__name__='name', title=u'Unique name',
+...                         description=u'', readonly=False, required=True)
+>>> field = field.bind(lifeless)
+>>> field.context == lifeless
+True
+
+You can always use your own name.
+>>> field.validate(lifeless.name)
+
+Or a name that is not already in use.
+>>> field.validate(u'namenotinuse')
+
+But you can't use Mark's name, of course. ;)
+>>> field.validate(u'sabdfl')
+Traceback (most recent call last):
+...
+NameAlreadyTaken: sabdfl
+
+
 Merging
 -------
 

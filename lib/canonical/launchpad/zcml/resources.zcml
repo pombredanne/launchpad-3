@@ -5,6 +5,7 @@
 
     <!-- Javascript -->
     <resource name="launchpad.js" file="../templates/launchpad.js" />
+    <resource name="sorttable.js" file="../../../contrib/templates/sorttable.js" />
   
     <!-- header images -->
     <resource name="malone.png" file="../images/malone.png" />

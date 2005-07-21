@@ -70,43 +70,39 @@
 	<!-- Products Portlets -->
         <browser:page
             name="+portlet-details"
-            template="../templates/portlet-product-details.pt"
+            template="../templates/product-portlet-details.pt"
             lp:url="/products/evolution/+portlet-details" />
         <browser:page
             name="+portlet-branches"
-            template="../templates/product-portlet-branches.pt"
+            template="../templates/portlet-product-branches.pt"
             lp:url="/products/evolution/+portlet-branches" />
         <browser:page
             name="+portlet-translations"
-            template="../templates/portlet-product-translations.pt"
+            template="../templates/product-portlet-translations.pt"
             lp:url="/products/evolution/+portlet-translations" />
         <browser:page
             name="+portlet-milestones"
-            template="../templates/portlet-product-milestones.pt"
+            template="../templates/product-portlet-milestones.pt"
             lp:url="/products/evolution/+portlet-milestones" />
         <browser:page
-            name="+portlet-project"
-            template="../templates/portlet-product-project.pt"
-            lp:url="/products/evolution/+portlet-project" />
-        <browser:page
             name="+portlet-actions"
-            template="../templates/portlet-product-actions.pt"
+            template="../templates/product-portlet-actions.pt"
             lp:url="/products/evolution/+portlet-actions" />
         <browser:page
             name="+portlet-latest-bugs"
-            template="../templates/portlet-latest-bugs.pt"
+            template="../templates/portlet-product-latestbugs.pt"
             lp:url="/products/evolution/+portlet-latest-bugs" />
         <browser:page
-            name="+portlet-related-bounties"
-            template="../templates/portlet-related-bounties.pt"
-            lp:url="/products/evolution/+portlet-related-bounties" />
+            name="+portlet-bounties"
+            template="../templates/object-portlet-bounties.pt"
+            lp:url="/products/evolution/+portlet-bounties" />
         <browser:page
             name="+portlet-packages"
-            template="../templates/portlet-product-packages.pt"
+            template="../templates/product-portlet-packages.pt"
             lp:url="/products/evolution/+portlet-packages" />
         <browser:page
             name="+portlet-summary"
-            template="../templates/portlet-object-summary.pt"
+            template="../templates/object-portlet-summary.pt"
             lp:url="/products/evolution/+portlet-summary" />
         <browser:page
             name="+portlet-pref-lang"
@@ -114,14 +110,14 @@
             lp:url="/products/evolution/+portlet-pref-langs" />
         <browser:page
             name="+portlet-translatables"
-            template="../templates/portlet-product-translatables.pt"
+            template="../templates/product-portlet-translatables.pt"
             lp:url="/products/evolution/+portlet-translatables" />
     </browser:pages>
 
     <browser:page
         for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.ProductRdfView"
         permission="zope.Public"
+        class="canonical.launchpad.browser.ProductRdfView"
         name="+rdf"
         lp:url="/projects/$Product.name/+rdf"
         template="../templates/product-rdf.pt" />
@@ -130,10 +126,10 @@
         for="canonical.launchpad.interfaces.IProduct"
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.ObjectReassignmentView">
-          <browser:page
-              name="+reassign"
-              template="../templates/object-reassignment.pt"
-              lp:url="/product/$product.id/+reassign" />
+        <browser:page
+            name="+reassign"
+            template="../templates/object-reassignment.pt"
+            lp:url="/product/$product.id/+reassign" />
     </browser:pages>
 
     <browser:pages
@@ -158,17 +154,11 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
         class="canonical.launchpad.browser.ProductView"
-        permission="launchpad.AnyPerson" >
-        <browser:page
-            name="+addseries"
-            template="../templates/series-new.pt"
-            lp:url="/products/$Product.name/+addseries"
-            />
+        permission="launchpad.AnyPerson">
         <browser:page
             name="+addrelease"
             template="../templates/productrelease-new.pt"
-            lp:url="/products/$Product.name/+addrelease"
-            />
+            lp:url="/products/$Product.name/+addrelease" />
     </browser:pages>
 
     <browser:editform
@@ -250,6 +240,33 @@
     </browser:addform>
 
     <browser:addform
+        name="+addseries"
+        for="canonical.launchpad.interfaces.IProduct"
+        schema="canonical.launchpad.interfaces.IProductSeries"
+        fields="name displayname summary"
+        class="canonical.launchpad.browser.ProductSeriesAddView"
+        keyword_arguments="name displayname summary"
+        permission="launchpad.AnyPerson"
+        template="../templates/series-new.pt"
+        lp:url="/products/$Product.name/+addseries">
+        <browser:widget
+           field="name"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="15"
+           extra="tabindex=1" />
+        <browser:widget
+           field="displayname"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="20"
+           extra="tabindex=2" />
+        <browser:widget
+           field="summary"
+           class="zope.app.form.browser.TextAreaWidget"
+           displayWidth="40"
+           extra="tabindex=3" />
+    </browser:addform>
+
+    <browser:addform
         name="+addpackage"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IPackaging"
@@ -327,6 +344,10 @@
         template="../templates/launchpad-addform.pt"
         lp:url="doap/products/+new">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget
+           field="name"
+           class="zope.app.form.browser.TextWidget"
+           extra="tabindex=1" />
         <browser:widget
            field="homepageurl"
            class="zope.app.form.browser.TextWidget"

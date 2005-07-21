@@ -40,41 +40,41 @@
             template="../templates/bug-activity.pt"
             lp:url="malone/bugs/$Bugs.id/activity" />
         <browser:page
-            name="+portlet-bug-watch"
-            template="../templates/portlet-bug-watch.pt"
-            lp:url="malone/bugs/$Bugs.id/+portlet-bug-watch" />
+            name="+portlet-watch"
+            template="../templates/bug-portlet-watch.pt"
+            lp:url="malone/bugs/$Bugs.id/+portlet-watch" />
         <browser:page
-            name="+portlet-bug-productinfestation"
-            template="../templates/portlet-bug-productinfestation.pt"
-            lp:url="malone/bugs/$Bugs.id/+portlet-bug-productinfestation" />
+            name="+portlet-productinfestation"
+            template="../templates/bug-portlet-productinfestation.pt"
+            lp:url="malone/bugs/$Bugs.id/+portlet-productinfestation" />
         <browser:page
-            name="+portlet-bug-packageinfestation"
-            template="../templates/portlet-bug-sourcepackageinfestation.pt"
-            lp:url="malone/bugs/$Bugs.id/+portlet-bug-packageinfestation" />
+            name="+portlet-packageinfestation"
+            template="../templates/bug-portlet-packageinfestation.pt"
+            lp:url="malone/bugs/$Bugs.id/+portlet-packageinfestation" />
         <browser:page
-            name="+portlet-bug-reference"
-            template="../templates/portlet-bug-reference.pt"
-            lp:url="malone/bugs/$Bugs.id/+portlet-bug-reference" />
+            name="+portlet-reference"
+            template="../templates/bug-portlet-reference.pt"
+            lp:url="malone/bugs/$Bugs.id/+portlet-reference" />
         <browser:page
-            name="+bug-portlet-duplicates"
+            name="+portlet-duplicates"
             template="../templates/bug-portlet-duplicates.pt"
-            lp:url="malone/bugs/$Bugs.id/+bug-portlet-duplicates" />
+            lp:url="malone/bugs/$Bugs.id/+portlet-duplicates" />
         <browser:page
-            name="+portlet-bug-cve"
-            template="../templates/portlet-bug-cve.pt"
-            lp:url="malone/bugs/$Bugs.id/+portlet-bug-cve" />
+            name="+portlet-cve"
+            template="../templates/bug-portlet-cve.pt"
+            lp:url="malone/bugs/$Bugs.id/+portlet-cve" />
         <browser:page
-            name="+portlet-bug-people"
-            template="../templates/portlet-bug-people.pt"
-            lp:url="malone/bugs/$Bugs.id/+portlet-bug-people" />
+            name="+portlet-people"
+            template="../templates/bug-portlet-people.pt"
+            lp:url="malone/bugs/$Bugs.id/+portlet-people" />
         <browser:page
-            name="+portlet-bug-tasks-headline"
-            template="../templates/portlet-bug-tasks-headline.pt"
-            lp:url="malone/bugs/$Bugs.id/+portlet-bug-tasks-headline" />
+            name="+headline-tasks"
+            template="../templates/bug-headline-tasks.pt"
+            lp:url="malone/bugs/$Bugs.id/+headline-tasks" />
         <browser:page
-            name="+portlet-bug-actions"
-            template="../templates/portlet-bug-actions.pt"
-            lp:url="malone/bugs/$Bugs.id/+portlet-bug-actions" />
+            name="+portlet-actions"
+            template="../templates/bug-portlet-actions.pt"
+            lp:url="malone/bugs/$Bugs.id/+portlet-actions" />
     </browser:pages>
 
     <!-- Bug -->
@@ -117,34 +117,6 @@
         <defaultPage name="+index" />
     </browser:view>
 
-    <!--
-    Brad Bollenbach, 2005-05-16:
-
-    Two views are currently required to be registered for handling the
-    absolute_url of an object: one that plays nicely with
-    zope.app.traversing.browser.absoluteurl.absoluteURL and one that
-    plays nicely with foo/@@absolute_url.
-
-    The former requires an unnamed view; the latter requires, of
-    course, a view named absolute_url.
-    -->
-    <view
-        for="canonical.launchpad.interfaces.IBug"
-        factory="canonical.launchpad.browser.bug.BugAbsoluteURL"
-        type="zope.publisher.interfaces.http.IHTTPRequest"
-        permission="zope.Public"
-        provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
-    </view>
-
-    <view
-        name="absolute_url"
-        for="canonical.launchpad.interfaces.IBug"
-        factory="canonical.launchpad.browser.bug.BugAbsoluteURL"
-        type="zope.publisher.interfaces.http.IHTTPRequest"
-        permission="zope.Public"
-        provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
-    </view>
-
     <!-- BugSet -->
     <content class="canonical.launchpad.database.BugSet">
         <allow interface="canonical.launchpad.interfaces.IBugSet" />
@@ -155,11 +127,11 @@
         provides="canonical.launchpad.interfaces.IBugSet">
         <allow interface="canonical.launchpad.interfaces.IBugSet" />
     </securedutility>
-    
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugSet"
         name="+index" />
-    
+
     <browser:page
         name="+index"
         for="canonical.launchpad.interfaces.IBugSet"
@@ -230,7 +202,7 @@
         />
 
     <!-- BugDelta -->
-    <content class="canonical.launchpad.database.bug.BugDelta">
+    <content class="canonical.launchpad.components.bug.BugDelta">
         <allow interface="canonical.launchpad.interfaces.IBugDelta" />
     </content>
 </configure>

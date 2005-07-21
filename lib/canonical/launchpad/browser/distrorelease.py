@@ -6,24 +6,24 @@ __all__ = [
     'DistroReleaseFacets',
     'DistroReleaseView',
     'DistroReleaseBugsView',
-    'ReleasesAddView',
-    'ReleaseEditView',
-    'ReleaseSearchView',
+    'DistroReleaseAddView',
     ]
 
 from zope.interface import implements
 from zope.component import getUtility
+from zope.event import notify
+from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.app.form.browser.add import AddView
 
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import StandardLaunchpadFacets
 
-from canonical.launchpad.interfaces import (
-    IBugTaskSearchListingView, IDistroRelease, ICountry)
+from canonical.launchpad.interfaces import (IDistroReleaseLanguageSet,
+    IBugTaskSearchListingView, IDistroRelease, ICountry, IPerson,
+    IDistroReleaseSet, ILaunchBag)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.pofile import POFileView
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
-from canonical.launchpad.browser.distroreleaselanguage import \
-    DummyDistroReleaseLanguage
 
 
 class DistroReleaseFacets(StandardLaunchpadFacets):
@@ -65,10 +65,11 @@ class DistroReleaseView:
         # find all the preferred languages which are not in the set of
         # existing languages, and add a dummydistroreleaselanguage for each
         # of them
+        drlangset = getUtility(IDistroReleaseLanguageSet)
         for lang in self.languages:
             if lang not in existing_languages:
-                drlangs.append(DummyDistroReleaseLanguage(
-                    self.context, lang))
+                drl = drlangset.getDummy(self.context, lang)
+                drlangs.append(drl)
         drlangs.sort(key=lambda a: a.language.englishname)
         
         return drlangs
@@ -88,80 +89,37 @@ class DistroReleaseBugsView(BugTaskSearchListingView):
         return [
             "id", "package", "title", "status", "submittedby", "assignedto"]
 
-class ReleasesAddView:
+class DistroReleaseAddView(AddView):
+    __used_for__ = IDistroRelease
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.results = []
+        self._nextURL = '.'
+        AddView.__init__(self, context, request)
 
-    def add_action(self):
-        person = IPerson(self.request.principal, None)
-        if not person:
-            return False
+    def createAndAdd(self, data):
+        """Create and add a new Distribution Release"""
+        owner = getUtility(ILaunchBag).user
 
-        title = self.request.get("title", "")
-        summary = self.request.get("summary", "")
-        description = self.request.get("description", "")
-        version = self.request.get("version", "")
-        parent = self.request.get("parentrelease", "")
+        assert owner is not None
 
-        if not (title and version and parent):
-            return False
+        distrorelease = getUtility(IDistroReleaseSet).new(
+            name = data['name'],
+            displayname = data['displayname'],
+            title = data['title'],
+            summary = data['summary'],
+            description = data['description'],
+            version = data['version'],
+            distribution = self.context,
+            components = data['components'],
+            sections = data['sections'],
+            parentrelease = data['parentrelease'],
+            owner = owner
+            )
+        notify(ObjectCreatedEvent(distrorelease))
+        self._nextURL = data['name']
+        return distrorelease
 
-        distro_id = self.context.distribution.id
-
-        dt = getUtility(IDistroTools)
-        res = dt.createDistroRelease(person.id, title, distro_id,
-                                     summary, description, version,
-                                     parent)
-        self.results = res
-        return res
-
-    def getReleases(self):
-        d_util = getUtility(IDistroTools)
-        return d_util.getDistroReleases()
-
-class ReleaseEditView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def edit_action(self):
-
-        name = self.request.get("name", "")
-        title = self.request.get("title", "")
-        summary = self.request.get("summary", "")
-        description = self.request.get("description", "")
-        version = self.request.get("version", "")
-
-        if not (name or title or description or version):
-            return False
-
-        ##XXX: (uniques) cprov 20041003
-        self.context.release.name = name
-        self.context.release.title = title
-        self.context.release.summary = summary
-        self.context.release.description = description
-        self.context.release.version = version
-        return True
-
-class ReleaseSearchView:
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.sources = []
-        self.binaries = []
-
-    def search_action(self):
-        name = self.request.get("name", "")
-        context = self.context
-
-        if not name:
-            return False
-
-        self.sources = list(context.findSourcesByName(name))
-        self.binaries = list(context.findBinariesByName(name))
-        return True
-
+    def nextURL(self):
+        return self._nextURL

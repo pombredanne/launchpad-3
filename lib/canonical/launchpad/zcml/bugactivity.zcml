@@ -2,4 +2,10 @@
     <content class="canonical.launchpad.database.BugActivity">
         <allow interface="canonical.launchpad.interfaces.IBugActivity" />
     </content>
+
+    <securedutility
+        class="canonical.launchpad.database.BugActivitySet"
+        provides="canonical.launchpad.interfaces.IBugActivitySet">
+        <allow interface="canonical.launchpad.interfaces.IBugActivitySet" />
+    </securedutility>
 </configure>

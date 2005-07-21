@@ -1,0 +1,30 @@
+Package: python-pam
+Binary: python-pam, python2.3-pam, python2.4-pam
+Version: 0.4.2-10.1ubuntu3
+Priority: optional
+Section: python
+Maintainer: Dima Barsky <dima@debian.org>
+Build-Depends: debhelper (>> 4.2.28), python2.4-dev, python2.3-dev, python (>= 2.4), libpam0g-dev
+Architecture: any
+Standards-Version: 3.6.0
+Format: 1.0
+Directory: pool/main/p/python-pam
+Files:
+ 26c077c02e697075b9357d8c0e2a5844 611 python-pam_0.4.2-10.1ubuntu3.dsc
+ dd7c355da0edc09b306f8fd33e756be3 15064 python-pam_0.4.2-10.1ubuntu3.tar.gz
+
+Package: python-sqlite
+Binary: python2.3-sqlite, python2.4-sqlite, python-sqlite
+Version: 1.0.1-1ubuntu1
+Priority: optional
+Section: python
+Maintainer: Joel Rosdahl <joel@debian.org>
+Build-Depends: debhelper (>> 4.2.18), libsqlite0-dev (>= 2.5.6), python2.3-dev, python2.4-dev, python
+Architecture: any
+Standards-Version: 3.6.1
+Format: 1.0
+Directory: pool/main/p/python-sqlite
+Files:
+ 1f697f6b4e18af840c069d200f2f7d97 697 python-sqlite_1.0.1-1ubuntu1.dsc
+ 4797b5ea7a3d96b87333e6b5af7b9979 41099 python-sqlite_1.0.1.orig.tar.gz
+ af3716b7f9de2dfb654c25a526151611 1596 python-sqlite_1.0.1-1ubuntu1.diff.gz

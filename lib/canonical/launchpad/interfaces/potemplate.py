@@ -11,8 +11,12 @@ _ = MessageIDFactory('launchpad')
 
 __metaclass__ = type
 
-__all__ = ('IPOTemplateSubset', 'IPOTemplateSet', 'IPOTemplate',
-           'IEditPOTemplate', 'IPOTemplateWithContent')
+__all__ = (
+    'LanguageNotFound', 'IPOTemplateSubset', 'IPOTemplateSet', 'IPOTemplate',
+    'IEditPOTemplate', 'IPOTemplateWithContent')
+
+class LanguageNotFound(ValueError):
+    """Raised when a a language does not exist in the database."""
 
 class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     """A PO template. For example 'nautilus/po/nautilus.pot'."""
