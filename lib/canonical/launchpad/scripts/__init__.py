@@ -57,8 +57,12 @@ class CustomMachine(ConfigurationMachine):
         # Hackery to remove 'browser:xxx' directives from being processed.
         # This is needed to avoid page directives, which screw up when you
         # parse the zcml from a cwd that isn't the launchpad root.
+        # XXX: I added a workaround so that browser:url directives get
+        #      processed, though. SteveA said he will fix it better when
+        #      he lands the navigation stuff.
+        #      -- Bjorn Tillenius, 2005-07-14
         ns, simplename = name
-        if ns == u'http://namespaces.zope.org/browser':
+        if ns == u'http://namespaces.zope.org/browser' and simplename != 'url':
             return NullFactory
         else:
             f = ConfigurationMachine.factory(self, context, name)
