@@ -253,6 +253,10 @@
 	</key>
     </sectiontype>
 
+    <sectiontype name="statistician">
+      <key name="dbuser" datatype="string" default="statistician" />
+    </sectiontype>
+
     <sectiontype name="dyson">
         <key name="dbuser" datatype="string" default="dyson" />
 
@@ -317,6 +321,7 @@
         <section name="*" type="zopeless" attribute="zopeless" />
         <section name="*" type="gpghandler" attribute="gpghandler" />
         <section name="*" type="zeca" attribute="zeca" />
+        <section name="*" type="statistician" attribute="statistician" />
         <section name="*" type="dyson" attribute="dyson" />
         <section name="*" type="gina" attribute="gina" />
         <section name="*" type="trebuchet" attribute="trebuchet" />
