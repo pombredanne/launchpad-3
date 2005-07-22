@@ -1,0 +1,30 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <div metal:fill-slot="main">
+
+    <tal:block condition="context/poll/isOpen">
+      <div metal:use-macro="context/@@launchpad_editform/editform">
+
+        <h1 metal:fill-slot="heading">
+          Edit option 
+          &#8220;<span tal:replace="context/name" />&#8221;
+        </h1>
+
+      </div>
+    </tal:block>
+    
+    <tal:block condition="not: context/poll/isOpen">
+      <p class="portalMessage">
+        This poll is already closed, you can't add new options.
+      </p>
+    </tal:block>
+
+  </div>
+
+</body>
+</html>

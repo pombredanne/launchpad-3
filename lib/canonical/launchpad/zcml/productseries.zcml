@@ -85,13 +85,13 @@
             lp:url="/products/$Product.name/+series/$ProductSeries.name/+hctstatus-core" />
         <browser:page
             name="+portlet-actions"
-            template="../templates/portlet-productseries-actions.pt" />
+            template="../templates/productseries-portlet-actions.pt" />
         <browser:page
             name="+portlet-details"
             template="../templates/productseries-portlet-details.pt" />
         <browser:page
             name="+portlet-summary"
-            template="../templates/portlet-object-summary.pt"
+            template="../templates/object-portlet-summary.pt"
             />
         <browser:page
             name="+portlet-potemplates"

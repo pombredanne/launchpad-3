@@ -5,17 +5,23 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <!-- Bounty -->
-    <content class="canonical.launchpad.database.Bounty">
-        <allow interface="canonical.launchpad.interfaces.IBounty" />
-        <require
-            permission="launchpad.AnyPerson"
-            set_schema="canonical.launchpad.interfaces.IBounty" />
-    </content>
+  <!-- Bounty -->
+  <content class="canonical.launchpad.database.Bounty">
+    <allow interface="canonical.launchpad.interfaces.IBounty" />
+    <require
+      permission="launchpad.AnyPerson"
+      set_schema="canonical.launchpad.interfaces.IBounty" />
+  </content>
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IBounty"
-        name="+index" />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IBounty"
+    name="+index" />
+
+  <browser:url
+      for="canonical.launchpad.interfaces.IBounty"
+      path_expression="name"
+      parent_utility="canonical.launchpad.interfaces.IBountySet"
+      />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBounty"
@@ -26,13 +32,13 @@
             name="+index"
             lp:url="/bounties/$Bounty.name/+index" />
         <browser:page
-            template="../templates/portlet-bounty-relateds.pt"
-            name="+portlet-bounty-relateds"
-            lp:url="/bounties/$Bounty.name/+portlet-bounty-relateds" />
+            template="../templates/bounty-portlet-relateds.pt"
+            name="+portlet-relateds"
+            lp:url="/bounties/$Bounty.name/+portlet-relateds" />
         <browser:page
-            template="../templates/portlet-bounty-subscribers.pt"
-            name="+portlet-bounty-subscribers"
-            lp:url="/bounties/$Bounty.name/+portlet-bounty-subscribers" />
+            template="../templates/bounty-portlet-subscribers.pt"
+            name="+portlet-subscribers"
+            lp:url="/bounties/$Bounty.name/+portlet-subscribers" />
     </browser:pages>
 
     <browser:pages
@@ -43,6 +49,14 @@
             template="../templates/bounty-subscription.pt"
             name="+subscribe"
             lp:url="/bounties/$Bounty.name/+subscribe" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBounty"
+        permission="zope.Public">
+        <browser:page
+            template="../templates/bounty-portlet-actions.pt"
+            name="+portlet-actions" />
     </browser:pages>
 
     <browser:editform
@@ -70,6 +84,7 @@
         for="canonical.publication.RootObject"
         utility="canonical.launchpad.interfaces.IBountySet"
         name="bounties" />
+
     <browser:url
         for="canonical.launchpad.interfaces.IBountySet"
         path_expression="string:bounties"
@@ -98,12 +113,21 @@
     </browser:addform>
 
     <browser:pages
-        for="canonical.launchpad.interfaces.IBountySet"
-        permission="zope.Public">
-        <browser:page
-            template="../templates/bounties.pt"
-            name="+index"
-            lp:url="/bounties/+index" />
+      for="canonical.launchpad.interfaces.IBountySet"
+      permission="zope.Public">
+      <browser:page
+        template="../templates/bounties.pt"
+        name="+index"
+        lp:url="/bounties/+index" />
+      <browser:page
+        template="../templates/bounties-portlet-about.pt"
+        name="+portlet-about" />
+      <browser:page
+        template="../templates/bounties-portlet-actions.pt"
+        name="+portlet-actions" />
+      <browser:page
+        template="../templates/bounties-portlet-rules.pt"
+        name="+portlet-rules" />
     </browser:pages>
 
 </configure>

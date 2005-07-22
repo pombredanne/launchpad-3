@@ -1,0 +1,17 @@
+<div class="portlet" tal:condition="context/sourcepackages">
+
+  <h4>Distro Packages:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li class="packages" tal:repeat="package context/sourcepackages">
+        <a tal:content="package/title"
+           tal:attributes="href package/fmt:url">
+             apache in ubuntu hoary
+        </a>
+      </li>
+    </ul>
+
+  </div>
+</div>

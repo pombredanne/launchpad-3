@@ -28,12 +28,14 @@
     language.
   </p>
 
-  <table class="listing" width="100%">
+  <table class="sortable listing" width="100%" id="languagestats">
     <thead>
-      <th>Language</th>
-      <th>Status</th>
-      <th>Contributors</th>
-      <th>Todo</th>
+      <tr>
+        <th>Language</th>
+        <th>Status</th>
+        <th>Contributors</th>
+        <th>Todo</th>
+      </tr>
     </thead>
 
     <tbody>

@@ -26,7 +26,7 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, IPOTemplateNameSet, IPOExportRequestSet,
     IPersonSet, RawFileAttachFailed, ICanonicalUrlData, ILaunchpadCelebrities,
-    ILaunchBag)
+    ILaunchBag, IPOFileSet)
 from canonical.launchpad.components.poexport import POExport
 from canonical.launchpad.browser.pofile import (
     POFileView, BaseExportView, POFileAppMenus)
@@ -121,7 +121,8 @@ class POTemplateView:
         for language in languages:
             pofile = self.context.queryPOFileByLang(language.code)
             if not pofile:
-                pofile = helpers.DummyPOFile(self.context, language)
+                pofileset = getUtility(IPOFileSet)
+                pofile = pofileset.getDummy(self.context, language)
             yield POFileView(pofile, self.request)
 
     def submitForm(self):

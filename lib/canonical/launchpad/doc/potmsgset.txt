@@ -1,0 +1,25 @@
+POTMsgSet tests
+===============
+
+POTMsgSet represents messages to translate that a POTemplate file has.
+
+POTMsgSet.poMsgSet
+------------------
+
+We need to get a POTMsgSet object to performe this test.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPOTemplateSet
+    >>> potemplate_set = getUtility(IPOTemplateSet)
+    >>> potemplate = potemplate_set['pmount']
+    >>> potmsgsets = potemplate.getPOTMsgSets()
+
+A request for a POMsgSet with a variant field value should not break.
+
+    >>> for potmsgset in potmsgsets:
+    ...     potmsgset.poMsgSet('en', 'boldquot')
+    ...     break
+    Traceback (most recent call last):
+    ...
+    NotFoundError: ('en', 'boldquot')
+

@@ -7,15 +7,15 @@
 
 <metal:leftportlets fill-slot="portlets_one">
       <div tal:replace="structure context/@@+portlet-about" />
+      <div tal:replace="structure context/@@+portlet-details" />
       <div tal:replace="structure context/@@+portlet-quickhelp" />
       <div tal:replace="structure context/@@+portlet-stats" />
-      <div tal:replace="structure context/@@+portlet-contributors" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
       <div tal:replace="structure context/@@+portlet-actions" />
-      <div tal:replace="structure context/@@+portlet-details" />
       <div tal:replace="structure context/@@+portlet-translators" />
+      <div tal:replace="structure context/@@+portlet-contributors" />
 </metal:rightportlets>
 
     <div metal:fill-slot="main">
@@ -385,7 +385,7 @@ tal:replace="submission/person/browsername">person name</span>)
                           </tal:block>
                           <tal:block define="submissions python:messageSet.getAlternateLanguageSubmissions(index)">
                             <tal:block condition="submissions">
-                              <pre><b><span tal:replace="view/alternate_pofile/language/englishname" /> (Alternate Language):</b><br />
+                              <pre><b><span tal:replace="view/second_lang_pofile/language/englishname" /> (Alternate Language):</b><br />
 <tal:block repeat="submission submissions"><span
 tal:replace="submission/potranslation/translation">submission</span> (<span
 tal:replace="submission/person/browsername">person name</span>)

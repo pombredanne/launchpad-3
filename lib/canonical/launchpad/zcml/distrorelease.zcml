@@ -20,12 +20,6 @@
     <allow interface="canonical.launchpad.interfaces.IDistroReleaseSet" />
   </securedutility>
 
-  <adapter
-    for="canonical.launchpad.interfaces.IDistroRelease"
-    provides="canonical.launchpad.interfaces.IBugTaskSubset"
-    factory="canonical.launchpad.components.distrorelease.DistroReleaseToBugTaskSubsetAdapter"
-    permission="zope.Public" />
-
   <browser:traverse
     for="canonical.launchpad.interfaces.IDistroRelease"
     function="canonical.launchpad.browser.traversers.traverse_distrorelease" />
@@ -47,6 +41,28 @@
       fields="displayname title summary description version"
       template="../templates/launchpad-editform.pt"
       lp:url="/distros/$Distribution.name/$DistroRelease.name/+edit"/>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IDistroRelease"
+        class="canonical.launchpad.browser.BugTaskSearchListingView"
+        permission="zope.Public">
+        <browser:page
+            name="+bugs-only"
+            lp:url="/distros/$DistroRelease.name/+bugs-only"
+            template="../templates/bugs-for-context.pt" />
+        <browser:page
+            name="+portlet-bugtasklist-actions"
+            template="../templates/bugtasklist-portlet-actions.pt"
+            lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-actions" />
+        <browser:page
+            name="+portlet-bugtasklist-statsforcontext"
+            template="../templates/bug-portlet-statsforcontext.pt"
+            lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-statsforcontext" />
+        <browser:page
+            name="+portlet-bugtasklist-releasebugs"
+            template="../templates/bugtask-portlet-releasebugs.pt"
+            lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-releasebugs" />
+    </browser:pages>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistroRelease"
@@ -75,17 +91,15 @@
             />
         <browser:page
             name="+portlet-details"
-            template="../templates/portlet-distrorelease-details.pt"
-            lp:url="/distros/ubuntu/hoary/+portlet-details"
+            template="../templates/distrorelease-portlet-details.pt"
             />
         <browser:page
             name="+portlet-actions"
-            template="../templates/portlet-distrorelease-actions.pt"
-            lp:url="/distros/ubuntu/hoary/+portlet-actions"
+            template="../templates/distrorelease-portlet-actions.pt"
             />
         <browser:page
             name="+portlet-translations"
-            template="../templates/portlet-distrorelease-translations.pt"
+            template="../templates/distrorelease-portlet-translations.pt"
             lp:url="/distros/ubuntu/hoary/+portlet-translations"
             />
         <browser:page

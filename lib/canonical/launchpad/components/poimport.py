@@ -17,6 +17,15 @@ class OldPOImported(Exception):
     pass
 
 def getLastTranslator(parser):
+    """Return the person that appears as Last-Translator in a parsed PO file.
+
+    If the person is unknown in launchpad, the account will be created.
+    If the parser does not have a IPOHeader, the return value will be None.
+    """
+    if parser.header is None:
+        # The file does not have a header field.
+        return None
+
     try:
         last_translator = parser.header['Last-Translator']
     except KeyError:
@@ -47,7 +56,7 @@ def getLastTranslator(parser):
 def import_po(pofile_or_potemplate, file, published=True):
     """Convert a .pot or .po file into DB objects.
 
-    pofile_or_potemplate is the POFile or POTemplate DB object where the
+    pofile_or_potemplate is the IPOFile or IPOTemplate object where the
     import will be done.
     file is a file-like object with the content we are importing.
 
@@ -92,12 +101,13 @@ def import_po(pofile_or_potemplate, file, published=True):
         potemplate = pofile_or_potemplate
         # Expire old messages
         potemplate.expireAllMessages()
-        # Update the header
-        # XXX: Carlos Perello Marin 2005-06-21
-        # We should not need the .encode('utf-8')
-        potemplate.header = parser.header.msgstr.encode('UTF-8')
+        if parser.header is not None:
+            # Update the header
+            potemplate.header = parser.header.msgstr
     else:
-        raise RuntimeError('Bad argument')
+        raise TypeError(
+            'Bad argument %s, an IPOTemplate or IPOFile was expected.' % 
+                repr(pofile_or_potemplate))
 
     count = 0
 
@@ -195,14 +205,14 @@ def import_po(pofile_or_potemplate, file, published=True):
             try:
                 pomsgset.updateTranslationSet(last_translator,
                                               translations,
-                                              fuzzy, published, is_editor)
+                                              fuzzy, published)
             except gettextpo.error, e:
                 # We got an error, so we submit the translation again but
                 # this time asking to store it as a translation with
                 # errors.
                 pomsgset.updateTranslationSet(last_translator,
                                               translations,
-                                              fuzzy, published, is_editor,
+                                              fuzzy, published,
                                               ignore_errors=True)
 
                 # Add the pomsgset to the list of pomsgsets with errors.

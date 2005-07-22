@@ -6,7 +6,7 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-views" />
+  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
@@ -26,7 +26,10 @@
   <form name="email" action="" method="POST">
 
   <tal:block tal:condition="context/preferredemail">
-  <p>Your contact address for all Launchpad e-mail is: <b tal:content="context/preferredemail/email" /></p>
+    <p>Your preferred contact address for all Launchpad e-mail is:</p>
+    <ul>
+      <li class="mail"><b tal:content="context/preferredemail/email" /></li>
+    </ul>
   </tal:block>
 
   <tal:block tal:condition="not: context/preferredemail">
@@ -35,7 +38,7 @@
   </tal:block>
 
   <tal:block tal:condition="context/validatedemails">
-  These other addresses are confirmed as being yours:
+  <p>These other addresses are confirmed as being yours:</p>
 
   <div style="padding: 0.7em 0em">
     <div tal:repeat="email context/validatedemails" >
@@ -52,7 +55,7 @@
   </tal:block>
 
   <tal:block tal:condition="view/unvalidatedAndGuessedEmails">
-  These addresses may also be yours:
+  <p>These addresses may also be yours:</p>
 
   <div style="padding: 0.7em 0em">
     <div tal:repeat="email view/unvalidatedAndGuessedEmails">
@@ -75,7 +78,7 @@
   <div>
     Add a new address:
     <input type="text" tal:attributes="value view/notWellFormedEmail|nothing"
-           name="newemail" size="30"/>
+           name="newemail" size="23"/>
     <input type="submit" value="Add" name="ADD_EMAIL" />
   </div>
 

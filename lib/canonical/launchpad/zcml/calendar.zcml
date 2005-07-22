@@ -71,7 +71,7 @@
       for="canonical.launchpad.interfaces.ICalendarOwner"
       name="+portlet-calendar"
       permission="zope.Public"
-      template="../templates/portlet-calendar-info.pt"
+      template="../templates/calendar-portlet-info.pt"
       class="canonical.launchpad.browser.CalendarInfoPortletView"
       lp:url="/$CalendarOwner/+portlet-calendar" />
 

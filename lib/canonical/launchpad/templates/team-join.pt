@@ -12,7 +12,9 @@
     <h3>Are you sure you want to join 
       <span tal:replace="context/browsername" />?</h3>
 
-    <p>This is a <span tal:replace="context/subscriptionPolicyDesc" /></p>
+    <p>This team has the following subscription policy:
+    <span tal:replace="context/subscriptionpolicy/title">Open Team</span>.
+    </p>
 
     <p class="portalMessage" tal:condition="view/userHasMembershipEntry" 
        tal:content="view/membershipStatusDesc" />

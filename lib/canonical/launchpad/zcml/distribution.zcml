@@ -16,12 +16,6 @@
             />
     </content>
 
-    <adapter
-        for="canonical.launchpad.interfaces.IDistribution"
-        provides="canonical.launchpad.interfaces.IBugTaskSubset"
-        factory="canonical.launchpad.components.bugtask.ContextToBugTaskSubsetAdapter"
-        permission="zope.Public" />
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
         name="+index" />
@@ -44,6 +38,28 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.BugTaskSearchListingView"
+        permission="zope.Public">
+        <browser:page
+            name="+bugs-only"
+            lp:url="/distros/$Distribution.name/+bugs-only"
+            template="../templates/bugs-for-context.pt" />
+        <browser:page
+            name="+portlet-bugtasklist-actions"
+            template="../templates/bugtasklist-portlet-actions.pt"
+            lp:url="/distros/$Distribution.name/+portlet-bugtasklist-actions" />
+        <browser:page
+            name="+portlet-bugtasklist-statsforcontext"
+            template="../templates/bug-portlet-statsforcontext.pt"
+            lp:url="/distros/$Distribution.name/+portlet-bugtasklist-statsforcontext" />
+        <browser:page
+            name="+portlet-bugtasklist-releasebugs"
+            template="../templates/bugtask-portlet-releasebugs.pt"
+            lp:url="/distros/$Distribution.name/+portlet-bugtasklist-releasebugs" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IDistribution"
         class="canonical.launchpad.browser.DistributionView"
         permission="zope.Public" >
         <browser:page
@@ -58,13 +74,18 @@
             name="+members"
             template="../templates/distribution-members.pt"
             lp:url="/distros/$Distribution.name/+members" />
+    </browser:pages>
+    
+    <browser:pages
+        for="canonical.launchpad.interfaces.IDistribution"
+        permission="zope.Public" >
         <browser:page
             name="+portlet-actions"
-            template="../templates/portlet-distro-actions.pt"
+            template="../templates/distribution-portlet-actions.pt"
             lp:url="/distros/$Distribution.name/+portlet-actions" />
         <browser:page
             name="+portlet-details"
-            template="../templates/portlet-distro-details.pt"
+            template="../templates/distribution-portlet-details.pt"
             lp:url="/distros/$Distribution.name/+portlet-details" />
         <browser:page
             name="+portlet-releases"
@@ -72,7 +93,7 @@
             lp:url="/distros/$Distribution.name/+portlet-releases" />
         <browser:page
             name="+portlet-bounties"
-            template="../templates/portlet-related-bounties.pt"
+            template="../templates/object-portlet-bounties.pt"
             lp:url="/distros/$Distribution.name/+portlet-bounties" />
     </browser:pages>
 
@@ -144,7 +165,7 @@
         fields="members"
         label="Select A New Distribution Members Team"
         permission="launchpad.Edit"
-        template="../templates/launchpad-editform.pt"
+        template="../templates/distribution-memberteam.pt"
         lp:url="/distros/$Distribution.name/+selectmemberteam" />
 
     <browser:editform
@@ -154,7 +175,7 @@
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
         label="Select A New Translation Group"
-        template="../templates/launchpad-editform.pt"
+        template="../templates/distribution-translators.pt"
         lp:url="/distros/$Distribution.name/+changetranslators" />
 
     <!-- DistributionSet -->

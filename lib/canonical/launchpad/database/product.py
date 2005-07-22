@@ -4,7 +4,6 @@ __metaclass__ = type
 __all__ = ['Product', 'ProductSet']
 
 import sets
-from datetime import datetime
 from warnings import warn
 
 from zope.interface import implements
@@ -15,8 +14,7 @@ from sqlobject import (
     ForeignKey, StringCol, BoolCol, MultipleJoin, RelatedJoin,
     SQLObjectNotFound, AND)
 
-import canonical.sourcerer.deb.version
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
@@ -29,8 +27,7 @@ from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
-    IProduct, IProductSet, IDistribution, ILaunchpadCelebrities,
-    ICalendarOwner)
+    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner)
 
 
 class Product(SQLBase):
@@ -86,6 +83,7 @@ class Product(SQLBase):
     branches = MultipleJoin('Branch', joinColumn='product')
     serieslist = MultipleJoin('ProductSeries', joinColumn='product')
 
+    @property
     def releases(self):
         return ProductRelease.select(
             AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
@@ -93,7 +91,6 @@ class Product(SQLBase):
             clauseTables=['ProductSeries'],
             orderBy=['version']
             )
-    releases = property(releases)
 
     milestones = MultipleJoin('Milestone', joinColumn = 'product')
 
@@ -101,6 +98,7 @@ class Product(SQLBase):
         'Bounty', joinColumn='product', otherColumn='bounty',
         intermediateTable='ProductBounty')
 
+    @property
     def sourcepackages(self):
         # XXX: SteveAlexander, 2005-04-25, this needs a system doc test.
         from canonical.launchpad.database.sourcepackage import SourcePackage
@@ -112,7 +110,6 @@ class Product(SQLBase):
         return [SourcePackage(sourcepackagename=r.sourcepackagename,
                               distrorelease=r.distrorelease)
                 for r in ret]
-    sourcepackages = property(sourcepackages)
 
     def getPackage(self, distrorelease):
         if isinstance(distrorelease, Distribution):
@@ -123,6 +120,7 @@ class Product(SQLBase):
         else:
             raise NotFoundError(distrorelease)
 
+    @property
     def translatable_packages(self):
         """See IProduct."""
         packages = sets.Set([package
@@ -131,11 +129,11 @@ class Product(SQLBase):
         # Sort the list of packages by distrorelease.name and package.name
         L = [(item.distrorelease.name + item.name, item)
              for item in packages]
+        # XXX kiko: use sort(key=foo) instead of the DSU here
         L.sort()
         # Get the final list of sourcepackages.
         packages = [item for sortkey, item in L]
         return packages
-    translatable_packages = property(translatable_packages)
 
     @property
     def translatable_series(self):
@@ -148,6 +146,7 @@ class Product(SQLBase):
             orderBy='datecreated', distinct=True)
         return list(series)
 
+    @property
     def primary_translatable(self):
         """See IProduct."""
         packages = self.translatable_packages
@@ -170,8 +169,8 @@ class Product(SQLBase):
             return packages[0]
         # capitulate
         return None
-    primary_translatable = property(primary_translatable)
 
+    @property
     def translationgroups(self):
         tg = []
         if self.translationgroup:
@@ -180,8 +179,8 @@ class Product(SQLBase):
             if self.project.translationgroup:
                 if self.project.translationgroup not in tg:
                     tg.append(self.project.translationgroup)
-    translationgroups = property(translationgroups)
 
+    @property
     def aggregatetranslationpermission(self):
         perms = [self.translationpermission]
         if self.project:
@@ -192,34 +191,13 @@ class Product(SQLBase):
         # ensure a consistent sort order in future, but there should be
         # a better way.
         return max(perms)
-    aggregatetranslationpermission = property(aggregatetranslationpermission)
-
-    def newseries(self, form):
-        # XXX sabdfl 16/04/05 HIDEOUS even if I was responsible. We should
-        # never be passing forms straight through to the content class, that
-        # violates the separation of presentation and model. This should be
-        # a method on the ProductSeriesSet utility.
-        # XXX SteveA 2005-04-25.  The code that processes the request's form
-        # should be in launchpad/browser/*
-        # The code that creates a new ProductSeries should be in
-        # ProductSeriesSet, and accesed via getUtility(IProductSeriesSet) from
-        # the browser code.
-
-        # Extract the details from the form
-        name = form['name']
-        displayname = form['displayname']
-        summary = form['summary']
-        # Now create a new series in the db
-        return ProductSeries(
-            name=name, displayname=displayname, summary=summary,
-            product=self.id)
 
     def potemplates(self):
         """See IProduct."""
         # XXX sabdfl 30/03/05 this method is really obsolete, because what
         # we really care about now is ProductSeries.potemplates
         warn("Product.potemplates is obsolete, should be on ProductRelease",
-             DeprecationWarning)
+             DeprecationWarning, stacklevel=2)
         templates = []
         for series in self.serieslist:
             for potemplate in series.potemplates:
@@ -227,10 +205,13 @@ class Product(SQLBase):
 
         return templates
 
+    @property
     def potemplatecount(self):
         """See IProduct."""
-        return len(self.potemplates())
-    potemplatecount = property(potemplatecount)
+        target = self.primary_translatable
+        if target is None:
+            return 0
+        return len(target.potemplates)
 
     def poTemplatesToImport(self):
         # XXX sabdfl 30/03/05 again, i think we want to be using
@@ -238,26 +219,6 @@ class Product(SQLBase):
         for template in iter(self.potemplates):
             if template.rawimportstatus == RosettaImportStatus.PENDING:
                 yield template
-
-    # XXX: Carlos Perello Marin 2005-03-17
-    # This method should be removed as soon as we have completely
-    # removed the old URL space.
-    def poTemplate(self, name):
-        # XXX sabdfl 30/03/05 this code is no longer correct, because a
-        # potemplatename cannot be assumed to be unique for a given product.
-        # It should be unique for a given productrelease.
-        warn("Product.poTemplate(name) should be on ProductRelease instead",
-             DeprecationWarning)
-        results = POTemplate.selectOne(
-            "ProductSeries.product = %s AND "
-            "ProductSeries.id = ProductRelease.productseries AND "
-            "ProductRelease.id = POTemplate.productrelease AND "
-            "POTemplate.potemplatename = POTemplateName.id AND "
-            "POTemplateName.name = %s" % sqlvalues(self.id, name),
-            clauseTables=['ProductSeries', 'ProductRelease', 'POTemplateName'])
-        if results is None:
-            raise KeyError(name)
-        return results
 
     def messageCount(self):
         count = 0
@@ -290,6 +251,11 @@ class Product(SQLBase):
             raise NotFoundError(name)
         return series
 
+    def newSeries(self, name, displayname, summary):
+        return ProductSeries(product=self, name=name, displayname=displayname,
+                             summary=summary)
+
+
     def getRelease(self, version):
         #return ProductRelease.selectBy(productID=self.id, version=version)[0]
         release = ProductRelease.selectOne(
@@ -305,8 +271,6 @@ class Product(SQLBase):
         return release
 
     def packagedInDistros(self):
-        # This function-local import is so we avoid a circular import
-        from canonical.launchpad.database import Distribution
         distros = Distribution.select(
             "Packaging.productseries = ProductSeries.id AND "
             "ProductSeries.product = %s AND "

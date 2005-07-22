@@ -9,7 +9,7 @@
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Sample Person Personal Information</title>
+      <title>Sample Person: Launchpad Overview</title>
   ...
       <div class="portlet">
     <h4>Sample Person's Calendar</h4>

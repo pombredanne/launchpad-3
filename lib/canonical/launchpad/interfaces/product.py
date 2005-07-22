@@ -174,10 +174,7 @@ class IProduct(IHasOwner):
         """Returns all PO templates from this product that have a rawfile
         pending of import into Rosetta."""
 
-    def poTemplate(name):
-        """Returns the PO template with the given name."""
-
-    def newseries(form):
+    def newSeries(name, displayname, summary):
         """Creates a new ProductSeries for this series."""
 
     def messageCount():

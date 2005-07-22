@@ -122,6 +122,7 @@ Removing t2 from t5 will have implications in all teams that have t5 as a
 
 t5 had only one member and two other indirect members. Now that t2 is not its
 member anymore, it doesn't have any indirect members either.
+
     >>> [m.displayname for m in _getAllMembers(t5, orderBy=defaultOrder)]
     []
 

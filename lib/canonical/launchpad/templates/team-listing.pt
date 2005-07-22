@@ -1,0 +1,31 @@
+  <tal:block replace="nothing">
+    You can include this listing in any page with code that looks like this:
+      <div tal:replace="structure context/path/to/team/@@+teamlist" />
+  </tal:block>
+
+  <p tal:condition="not: context/isTeam" class="portalMessage">
+    <span tal:replace="context/browsername" /> is not a team, so we cannot
+    display a list of members!
+  </p>
+
+  <table class="listing" tal:condition="context/isTeam">
+    <thead>
+      <tr>
+        <th>Member</th>
+        <th>Joined</th>
+        <th>Expires</th>
+        <th>State</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="membership context/activememberships">
+        <td>
+          <a tal:content="membership/person/browsername"
+             tal:attributes="href membership/person/fmt:url" />
+        </td>
+        <td tal:content="membership/datejoined/fmt:date">12-12-2004</td>
+        <td tal:content="membership/dateexpires/fmt:date">12-12-2005</td>
+        <td tal:content="membership/status/title">Administrator</td>
+      </tr>
+    </tbody>
+  </table>

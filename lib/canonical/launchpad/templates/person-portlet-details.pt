@@ -1,0 +1,54 @@
+<div class="portlet">
+  <h4><span tal:replace="context/browsername" />:</h4>
+  
+  <div class="portletBody portletContent">
+	
+    <b>Name:</b>
+    <span tal:replace="context/name">sabdfl</span><br />
+
+    <tal:block condition="not: context/teamowner">
+      <b>Display name:</b><br />
+      <span tal:replace="context/displayname">Mark Shuttleworth</span><br />
+
+      <b>Given name:</b><br />
+      <span tal:replace="context/givenname">Mark</span><br />
+
+      <b>Family name:</b><br />
+      <span tal:replace="context/familyname">Shuttleworth</span><br />
+
+      <b>Timezone:</b>
+      <span tal:replace="context/timezone">UTC</span>
+      <i tal:condition="not: context/timezone">None given</i><br />
+
+      <b>Ubuntite!</b>
+      <tal:block condition="context/ubuntite">Yes</tal:block>
+      <tal:block condition="not: context/ubuntite">Not yet</tal:block>
+      <br />
+
+      <b>Karma:</b>
+      <span tal:replace="context/karma">342</span><br />
+
+    </tal:block>
+    <tal:block condition="context/teamowner">
+
+      <b>Team Owner:</b><br />
+      <a tal:attributes="href string:../${context/teamowner/name}"
+         tal:content="context/teamowner/browsername">sabdfl</a><br />
+
+      <tal:block condition="context/teamdescription">
+        <b>Description:</b>
+        <span tal:replace="context/teamdescription">DESCRIPTION</span>
+        <br />
+      </tal:block>
+               
+      <b>Membership policy:</b>
+      <span tal:replace="context/subscriptionpolicy/title">Open team</span>.
+      <span tal:replace="context/subscriptionpolicy/description">More
+      detail goes here.</span>
+      <br />
+
+    </tal:block>
+    
+  </div>
+
+</div>

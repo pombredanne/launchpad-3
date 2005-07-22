@@ -12,7 +12,7 @@ from canonical.launchpad.database import *
 from canonical.launchpad.validators.name import valid_name
 from canonical.foaf.nickname import generate_nick
 from canonical.database.sqlbase import quote
-from canonical.lp.encoding import guess as ensure_unicode
+from canonical import guess as ensure_unicode
 from canonical.lp.dbschema import EmailAddressStatus
 from sets import Set
 

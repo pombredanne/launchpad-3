@@ -62,6 +62,21 @@ fieldset.two-column {
   margin-right: 1em;
 }
 
+/* Classes for error indication in forms */
+.portalError {
+    background-color: #ffc9c9;
+    border: 1px solid #ddb0b0;
+    color: Black;
+    margin: 0em 0em 0em 0em;
+    padding: 0.3em 0.3em 0.3em 0.3em;
+}
+
+.portalError .error {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 85%;
+}
 
 
 /* Plone elements that should be changed */
@@ -350,7 +365,8 @@ tr.rowLinkified a {
 
 /* used to mark dummy data with div entity */
 .dummy {
-  background-color: #cccccc;
+  background-color: #eeeeee;
+  color: #656565;
 }
 
 /* Various custom list formats: */
@@ -525,7 +541,7 @@ code {
   border: none;
   padding: inherit;
 }
-pre {
+pre, textarea {
   font-family: monospace;
   font-size: 100%;
 }

@@ -21,6 +21,8 @@ __all__ = [
     'TeamSubscriptionPolicyVocabulary',
     'GPGKeyAlgorithmVocabulary',
     'CVEStateVocabulary',
+    'PollAlgorithmVocabulary',
+    'PollSecrecyVocabulary'
     ]
 
 from canonical.lp import dbschema
@@ -58,5 +60,7 @@ KarmaActionCategoryVocabulary = vocab_factory(dbschema.KarmaActionCategory)
 TeamSubscriptionPolicyVocabulary = vocab_factory(
         dbschema.TeamSubscriptionPolicy)
 GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
+PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
+PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
 CVEStateVocabulary = vocab_factory(dbschema.CVEState)
 
