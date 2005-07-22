@@ -159,7 +159,7 @@ class POTemplate(SQLBase, RosettaStats):
                 if project.translationgroup is not None:
                     ret.append(project.translationgroup)
         else:
-            raise NotImplementedError, 'Cannot find translation groups.'
+            raise NotImplementedError('Cannot find translation groups.')
         return ret
 
     @property
@@ -466,14 +466,13 @@ class POTemplate(SQLBase, RosettaStats):
         # This method used to accept 'text' parameters being string objects,
         # but this is depracated.
         if not isinstance(text, unicode):
-            raise TypeError("Message ID text must be unicode: %r", text)
+            raise TypeError("Message ID text must be unicode: %r" % text)
 
         try:
             messageID = POMsgID.byMsgid(text)
             if self.hasMessageID(messageID):
-                raise KeyError(
-                    "There is already a message set for this template, file "
-                    "and primary msgid")
+                raise KeyError("There is already a message set for this "
+                               "template, file and primary msgid")
         except SQLObjectNotFound:
             # If there are no existing message ids, create a new one.
             # We do not need to check whether there is already a message set
@@ -567,9 +566,9 @@ class POTemplateSubset:
 
         if (productseries is not None and (distrorelease is not None or
             sourcepackagename is not None)):
-            raise ValueError(
-                'A product release must not be used with a source package name'
-                ' or a distro release.')
+            raise ValueError('A product release must not be used '
+                             'with a source package name or a distro '
+                             'release.')
         elif productseries is not None:
             self.query = ('POTemplate.productseries = %d' % productseries.id)
             self.orderby = None
@@ -587,8 +586,8 @@ class POTemplateSubset:
             self.orderby = 'DistroRelease.name'
             self.clausetables = ['DistroRelease']
         else:
-            raise ValueError(
-                'You need to specify the kind of subset you want.')
+            raise ValueError('You need to specify the kind '
+                             'of subset you want.')
 
     def __iter__(self):
         """See IPOTemplateSubset."""
@@ -603,7 +602,7 @@ class POTemplateSubset:
         try:
             ptn = POTemplateName.byName(name)
         except SQLObjectNotFound:
-            raise NotFoundError, name
+            raise NotFoundError(name)
 
         if self.query is None:
             query = 'POTemplate.potemplatename = %d' % ptn.id
@@ -613,7 +612,7 @@ class POTemplateSubset:
 
         result = POTemplate.selectOne(query, clauseTables=self.clausetables)
         if result is None:
-            raise NotFoundError, name
+            raise NotFoundError(name)
         return result
 
     @property
@@ -656,11 +655,11 @@ class POTemplateSet:
         try:
             ptn = POTemplateName.byName(name)
         except SQLObjectNotFound:
-            raise NotFoundError, name
+            raise NotFoundError(name)
 
         result = POTemplate.selectOne('POTemplate.potemplatename = %d' % ptn.id)
         if result is None:
-            raise NotFoundError, name
+            raise NotFoundError(name)
         return result
 
     def getSubset(self, **kw):
