@@ -396,6 +396,8 @@ person_assignedbugs = ContextDisplayName('Bugs Assigned To %s')
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
+person_branches = ContextDisplayName("%s's code branches in Launchpad")
+
 person_codesofconduct = ContextDisplayName('%s Signed Codes of Conduct')
 
 person_edit = ContextDisplayName('Edit %s Information')

@@ -53,6 +53,10 @@
           template="../templates/person-index.pt"
           lp:url="/people/$Person.name/index" />
       <browser:page
+          name="+branches"
+          template="../templates/person-branches.pt"
+          lp:url="/people/$Person.name/+branches" />
+      <browser:page
           name="+packages"
           template="../templates/person-packages.pt"
           lp:url="/people/$Person.name/+packages" />
