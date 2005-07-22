@@ -43,20 +43,29 @@ what those notifications look like.
     >>> firefox = getUtility(IProductSet).get(4)
 
     >>> firefox_crashes = BugFactory(
-    ...     product = firefox, title = "firefox crashes all the time",
-    ...     comment = "this is a comment", owner = bug_submitter)
+    ...     product=firefox, title="firefox crashes all the time",
+    ...     comment="this is a comment", owner=bug_submitter)
     >>> notify(SQLObjectCreatedEvent(firefox_crashes))
 
     >>> import transaction
     >>> transaction.commit()
 
-    >>> len(stub.test_emails)
-    1
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+Before we examine the results, we'll define a small helper function
+that we will use to sort sent emails by recipient addresses in various
+examples throughout the rest of this document.
+
+    >>> def by_to_addrs(a, b):
+    ...     return cmp(a[1], b[1])
+
+    >>> test_emails = list(stub.test_emails)
+    >>> test_emails.sort(by_to_addrs)
+    >>> len(test_emails)
+    2
+    >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     Sample Person via Malone <...>
-    >>> print to_addrs
-    ['dilys@muse.19inch.net', 'test@canonical.com']
+    >>> print to_addr
+    ['test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
@@ -69,9 +78,50 @@ bug:
     http://.../malone/bugs/...
     ...
 
+Lastly, let's verify that dilys also received her own notification of
+this bug report. Note that each recipient receives their own copy of
+the bugmail to overcome issues with Reply-To-All causing people to get
+duplicate copies of messages. By having exactly one email address as
+the recipient, this issue is avoided:
+
+    >>> from_addr, to_addr, raw_message = test_emails.pop()
+    >>> print to_addr
+    ['dilys@muse.19inch.net']
+
     >>> stub.test_emails = []
 
-2. Filing a new task on an existing bug
+2. Editing a bug
+
+    >>> from zope.interface import implements
+    >>> from canonical.launchpad.interfaces import IBug
+
+    >>> class MockObject(object):
+    ...     implements(IBug)
+
+    >>> bug_before_modification = MockObject()
+    >>> for name in IBug.names(all=True):
+    ...     setattr(bug_before_modification, name,
+    ...             getattr(firefox_crashes, name))
+    >>> firefox_crashes.summary = "a new summary"
+    >>> firefox_crashes_modified = SQLObjectModifiedEvent(
+    ...     firefox_crashes, bug_before_modification,
+    ...     ["summary"])
+    >>> notify(firefox_crashes_modified)
+
+    >>> transaction.commit()
+
+    >>> test_emails = list(stub.test_emails)
+    >>> test_emails.sort(by_to_addrs)
+    >>> len(test_emails)
+    2
+    >>> all_to_addrs = [
+    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
+    >>> print all_to_addrs
+    [['dilys@muse.19inch.net'], ['test@canonical.com']]
+
+    >>> stub.test_emails = []
+
+3. Filing a new task on an existing bug
 
 There are three kinds of tasks that can be added to an existing
 bug. Let's take a look at each type, demonstrating the implications
@@ -84,7 +134,7 @@ let's hang a bug onto the ILaunchBag utility.
     >>> from canonical.launchpad.interfaces import IOpenLaunchBag
     >>> getUtility(IOpenLaunchBag).add(firefox_crashes)
 
-  2.1 Distro Task
+  3.1 Distro Task
 
     A task that says this bug must be fixed in a certain distro. Because no
     specific release is specified, the developer will assume that the fix
@@ -103,13 +153,17 @@ let's hang a bug onto the ILaunchBag utility.
 
     >>> transaction.commit()
 
-    >>> len(stub.test_emails)
-    1
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> test_emails = list(stub.test_emails)
+    >>> test_emails.sort(by_to_addrs)
+    >>> len(test_emails)
+    3
+    >>> all_to_addrs = [
+    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
+    >>> print all_to_addrs
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
+    >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     Sample Person via Malone <...>
-    >>> print to_addrs
-    ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
@@ -121,7 +175,7 @@ let's hang a bug onto the ILaunchBag utility.
 
     >>> stub.test_emails = []
 
-  2.2 Distro Release Task
+  3.2 Distro Release Task
 
     Similar to a distro task, except that a task filed on a specific distro
     release is meant to be used for backport fixes (e.g. for critical data
@@ -136,13 +190,17 @@ let's hang a bug onto the ILaunchBag utility.
 
     >>> transaction.commit()
 
-    >>> len(stub.test_emails)
-    1
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> test_emails = list(stub.test_emails)
+    >>> test_emails.sort(by_to_addrs)
+    >>> len(test_emails)
+    3
+    >>> all_to_addrs = [
+    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
+    >>> print all_to_addrs
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
+    >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     Sample Person via Malone <...>
-    >>> print to_addrs
-    ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
@@ -154,7 +212,7 @@ let's hang a bug onto the ILaunchBag utility.
 
     >>> stub.test_emails = []
 
-  2.3 Upstream Task
+  3.3 Upstream Task
 
     An upstream tasks notes that a bug needs to be fixed upstream. "Upstream"
     is a somewhat ambiguous term -- it can have different meanings in the eyes
@@ -171,13 +229,17 @@ let's hang a bug onto the ILaunchBag utility.
 
     >>> transaction.commit()
 
-    >>> len(stub.test_emails)
-    1
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> test_emails = list(stub.test_emails)
+    >>> test_emails.sort(by_to_addrs)
+    >>> len(test_emails)
+    3
+    >>> all_to_addrs = [
+    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
+    >>> print all_to_addrs
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
+    >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     Sample Person via Malone <...>
-    >>> print to_addrs
-    ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
@@ -189,7 +251,7 @@ let's hang a bug onto the ILaunchBag utility.
 
     >>> stub.test_emails = []
 
-3. Commenting on a bug
+4. Commenting on a bug
 
     >>> from canonical.launchpad.interfaces import IBugMessageSet
 
@@ -203,13 +265,17 @@ let's hang a bug onto the ILaunchBag utility.
 
     >>> transaction.commit()
 
-    >>> len(stub.test_emails)
-    1
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> test_emails = list(stub.test_emails)
+    >>> test_emails.sort(by_to_addrs)
+    >>> len(test_emails)
+    3
+    >>> all_to_addrs = [
+    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
+    >>> print all_to_addrs
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
+    >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     Sample Person via Malone <...>
-    >>> print to_addrs
-    ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
@@ -221,18 +287,16 @@ let's hang a bug onto the ILaunchBag utility.
 
     >>> stub.test_emails = []
 
-4. Editing a task.
+5. Editing a task.
 
 Let's demonstrate a notification email where Sample Person marks a
 task Accepted, assigns himself to it, and adds a status note.
 
-    >>> from zope.interface import implements
     >>> from canonical.launchpad.interfaces import IDistroBugTask
     >>> from canonical.lp.dbschema import BugTaskStatus
 
     >>> class MockObject(object):
     ...     implements(IDistroBugTask)
-    ...     pass
 
     >>> bugtask_before_modification = MockObject()
     >>> for name in IDistroBugTask.names(all=True):
@@ -247,13 +311,17 @@ task Accepted, assigns himself to it, and adds a status note.
 
     >>> transaction.commit()
 
-    >>> len(stub.test_emails)
-    1
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> test_emails = list(stub.test_emails)
+    >>> test_emails.sort(by_to_addrs)
+    >>> len(test_emails)
+    3
+    >>> all_to_addrs = [
+    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
+    >>> print all_to_addrs
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
+    >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     Sample Person via Malone <...>
-    >>> print to_addrs
-    ['dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
@@ -265,7 +333,7 @@ task Accepted, assigns himself to it, and adds a status note.
 
     >>> stub.test_emails = []
 
-5. Adding and editing a bug watch.
+6. Adding and editing a bug watch.
 
 A bug watch can be added to a bug to watch the status of this bug in a
 remote bug tracker. A notification is sent out to the bug notification
@@ -279,9 +347,15 @@ pretending we've just added a watch to a bug.
 
     >>> transaction.commit()
 
-    >>> len(stub.test_emails)
-    1
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> test_emails = list(stub.test_emails)
+    >>> test_emails.sort(by_to_addrs)
+    >>> len(test_emails)
+    4
+    >>> all_to_addrs = [
+    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
+    >>> print all_to_addrs
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
+    >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     Sample Person via Malone <...>
     >>> msg = email.message_from_string(raw_message)
@@ -311,9 +385,15 @@ the changes made:
 
     >>> transaction.commit()
 
-    >>> len(stub.test_emails)
-    1
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> test_emails = list(stub.test_emails)
+    >>> test_emails.sort(by_to_addrs)
+    >>> len(test_emails)
+    4
+    >>> all_to_addrs = [
+    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
+    >>> print all_to_addrs
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
+    >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     Sample Person via Malone <...>
     >>> msg = email.message_from_string(raw_message)
@@ -327,7 +407,7 @@ the changes made:
 
     >>> stub.test_emails = []
 
-6. Adding and editing a CVE ref.
+7. Adding and editing a CVE ref.
 
 Adding a CVE reference to a bug also causes a notification email to go
 out to the bug notification recipient list. Let's create a CVE ref and
@@ -344,9 +424,15 @@ this document:
 
     >>> transaction.commit()
 
-    >>> len(stub.test_emails)
-    1
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> test_emails = list(stub.test_emails)
+    >>> test_emails.sort(by_to_addrs)
+    >>> len(test_emails)
+    4
+    >>> all_to_addrs = [
+    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
+    >>> print all_to_addrs
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
+    >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     Sample Person via Malone <...>
     >>> msg = email.message_from_string(raw_message)
@@ -375,9 +461,15 @@ Next, let's take a look at what the edit notification looks like:
 
     >>> transaction.commit()
 
-    >>> len(stub.test_emails)
-    1
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> test_emails = list(stub.test_emails)
+    >>> test_emails.sort(by_to_addrs)
+    >>> len(test_emails)
+    4
+    >>> all_to_addrs = [
+    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
+    >>> print all_to_addrs
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
+    >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     Sample Person via Malone <...>
     >>> msg = email.message_from_string(raw_message)
@@ -391,7 +483,7 @@ Next, let's take a look at what the edit notification looks like:
 
     >>> stub.test_emails = []
 
-7. Adding an external URL reference.
+8. Adding an external URL reference.
 
 When someone adds a web link to a bug report (e.g. to a related
 mailing list discussion), an email is sent to the notification
@@ -407,9 +499,15 @@ publishing an object created event.
 
     >>> transaction.commit()
 
-    >>> len(stub.test_emails)
-    1
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> test_emails = list(stub.test_emails)
+    >>> test_emails.sort(by_to_addrs)
+    >>> len(test_emails)
+    4
+    >>> all_to_addrs = [
+    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
+    >>> print all_to_addrs
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
+    >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     Sample Person via Malone <...>
     >>> msg = email.message_from_string(raw_message)
@@ -438,9 +536,15 @@ When a link is edited, the notification will look as follows:
 
     >>> transaction.commit()
 
-    >>> len(stub.test_emails)
-    1
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> test_emails = list(stub.test_emails)
+    >>> test_emails.sort(by_to_addrs)
+    >>> len(test_emails)
+    4
+    >>> all_to_addrs = [
+    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
+    >>> print all_to_addrs
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
+    >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     Sample Person via Malone <...>
     >>> msg = email.message_from_string(raw_message)
@@ -525,13 +629,17 @@ private, and Foo Bar is not an explicit subscriber to the bug, he will
 
     >>> transaction.commit()
 
-    >>> len(stub.test_emails)
-    1
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> test_emails = list(stub.test_emails)
+    >>> test_emails.sort(by_to_addrs)
+    >>> len(test_emails)
+    2
+    >>> all_to_addrs = [
+    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
+    >>> print all_to_addrs
+    [['mark@hbd.com'], ['test@canonical.com']]
+    >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     Sample Person via Malone <...>
-    >>> print to_addrs
-    ['mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
