@@ -118,7 +118,7 @@
       for="canonical.launchpad.interfaces.ILaunchpadCalendar"
       name="+portlet-actions"
       permission="zope.Public"
-      template="../templates/portlet-calendar-actions.pt"
+      template="../templates/calendar-portlet-actions.pt"
       lp:url="/$Calendar/+portlet-actions" />
 
   <browser:traverse
@@ -320,7 +320,7 @@
         lp:url="/calendar/+subscriptions" />
     <browser:page
         name="+portlet-subscriptions"
-        template="../templates/portlet-calendar-subscriptions.pt"
+        template="../templates/calendar-portlet-subscriptions.pt"
         lp:url="/calendar/+portlet-subscriptions" />
   </browser:pages>
 
