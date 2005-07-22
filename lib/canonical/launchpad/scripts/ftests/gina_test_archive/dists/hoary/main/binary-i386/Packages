@@ -1,0 +1,41 @@
+Package: python-pam
+Priority: optional
+Section: python
+Installed-Size: 48
+Maintainer: Dima Barsky <dima@debian.org>
+Architecture: all
+Version: 0.4.2-10.1ubuntu3
+Depends: python (<< 2.5), python2.4-pam, python (>= 2.4)
+Filename: pool/main/p/python-pam/python-pam_0.4.2-10.1ubuntu3_all.deb
+Size: 4078
+MD5sum: 8f5010857148244bb2198afa3ba8fce3
+Description: A Python interface to the PAM library
+ This is a dummy package which depends on the python-pam module for the
+ default version of Python.
+Bugs: mailto:ubuntu-users@lists.ubuntu.com
+Origin: Ubuntu
+Task: ubuntu-desktop
+
+Package: python-sqlite
+Priority: optional
+Section: python
+Installed-Size: 32
+Maintainer: Joel Rosdahl <joel@debian.org>
+Architecture: all
+Version: 1.0.1-1ubuntu1
+Depends: python (<< 2.5), python (>= 2.4), python2.4-sqlite
+Filename: pool/main/p/python-sqlite/python-sqlite_1.0.1-1ubuntu1_all.deb
+Size: 2680
+MD5sum: 3970b3701483e421f5a74b1795cf6ef9
+Description: Python interface to SQLite
+ pysqlite is an interface to the SQLite database server for
+ Python. It aims to be fully compliant with Python database
+ API version 2.0 while also exploiting the unique features of
+ SQLite.
+ .
+ This package is an empty dummy package that always depends on
+ a package built for Debian's default Python version.
+Bugs: mailto:ubuntu-users@lists.ubuntu.com
+Origin: Ubuntu
+Task: ubuntu-desktop
+

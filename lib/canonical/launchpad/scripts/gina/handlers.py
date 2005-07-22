@@ -26,7 +26,7 @@ from canonical.launchpad.database import (Distribution, DistroRelease,
     Component, Section, SourcePackageReleaseFile,
     SourcePackagePublishingHistory, BinaryPackageFile)
 
-from canonical.launchpad.interfaces import IPersonSet
+from canonical.launchpad.interfaces import IPersonSet, IBinaryPackageNameSet
 from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
 
 
@@ -35,21 +35,10 @@ from canonical.database.sqlbase import quote
 from canonical.lp.dbschema import (PackagePublishingStatus,
     BinaryPackagePriority, SourcePackageUrgency, BuildStatus)
 
+from canonical.launchpad.scripts import log
 from canonical.database.constants import nowUTC
-
-
-def ensure_string_format(name):
-    assert isinstance(name, basestring), repr(name)
-    try:
-        # check that this is unicode data
-        name.decode("utf-8").encode("utf-8")
-        return name
-    except UnicodeError:
-        # check that this is latin-1 data
-        s = name.decode("latin-1").encode("utf-8")
-        s.decode("utf-8")
-        return s
-
+from canonical.config import config
+from canonical import encoding
 
 priomap = {
     "low": SourcePackageUrgency.LOW,
@@ -69,13 +58,19 @@ prioritymap = {
                                            #with priority source.
 }
 
+class DisplaynameDecodingError(Exception):
+    """Not valid unicode displayname"""
+    def __init__(self, displayname):
+        message = "Could not decode %s" % (displayname)
+        Exception.__init__(self, message)
+
 class ImporterHandler:
     """ Import Handler class
     
     This class is used to handle the import process.
     """
     def __init__(self, distro_name, distrorelease_name, dry_run):
-        self.ztm = initZopeless()
+        self.ztm = initZopeless(dbuser=config.gina.dbuser)
 
         # Store basic import info.
         self.distro = self._get_distro(distro_name)
@@ -187,9 +182,9 @@ class ImporterHandler:
         # Check if the sourcepackagerelease already exists.
         sourcepackagerelease = self.sphandler.checkSource(sourcepackagedata)
         if sourcepackagerelease:
-            print ('Sourcepackagerelease %s version %s already exist'
-                   %(sourcepackagedata.package,
-                     sourcepackagedata.version))
+            log.debug('Sourcepackagerelease %s version %s already exists' %(
+                sourcepackagedata.package, sourcepackagedata.version
+                ))
         else:
             # If not, create it.
             handler = self.sphandler.createSourcePackageRelease
@@ -197,15 +192,10 @@ class ImporterHandler:
                                            self.distrorelease)
 
         # Append to the sourcepackagerelease imported list.
-        self._cache_sprelease(sourcepackagerelease)
+        if sourcepackagerelease:
+            self._cache_sprelease(sourcepackagerelease)
 
-
-    def publish_sourcepackages(self, pocket):
-        publisher = SourcePublisher(self.distrorelease)
-        print '\nStarting publishing process...'
-        # Goes over the imported sourcepackages publishing them.
-        for spr in self.imported_sources:
-            publisher.publish(spr, pocket)
+        return sourcepackagerelease
 
     def import_binarypackage(self, archtag, binarypackagedata):
         """Handler the binarypackage import process"""
@@ -218,10 +208,9 @@ class ImporterHandler:
                                                 distroarchinfo)
         if binarypackage:
             # Already imported, so return it.
-            print ('Binarypackage %s version %s already exist for %s'
-                   %(binarypackagedata.package,
-                     binarypackagedata.version,
-                     archtag))
+            log.debug('Binarypackage %s version %s already exists for %s' % (
+                binarypackagedata.package, binarypackagedata.version, archtag
+                ))
             self._cache_binaries(binarypackage, archtag)
             return binarypackage
 
@@ -230,30 +219,42 @@ class ImporterHandler:
         if not sourcepackage:
             # If the sourcepackagerelease is not imported, not way to import
             # this binarypackage. Warn and giveup.
-            print "\t** FMO courtesy of TROUP & TROUT inc. on %s (%s)" \
-                  % (binarypackagedata.source,
-                     binarypackagedata.source_version)            
+            log.warn("FMO courtesy of TROUP & TROUT inc. on %s (%s)" % (
+                binarypackagedata.source, binarypackagedata.source_version
+                ))
             return None
 
         # Create the binarypackage on db and import into librarian
         binarypackage = self.bphandler.createBinaryPackage(binarypackagedata,
                                                            sourcepackage,
                                                            distroarchinfo)
+        if binarypackage is None:
+            log.error("Unable to createBinaryPackage on %s (%s)" % (
+                binarypackagedata.source, binarypackagedata.source_version
+                ))
+            return None
 
         # Cache it and return.
         self._cache_binaries(binarypackage, archtag)
         return binarypackage
 
+    def publish_sourcepackages(self, pocket):
+        publisher = SourcePublisher(self.distrorelease)
+        log.info('Starting sourcepackages publishing process...')
+        # Goes over the imported sourcepackages publishing them.
+        for spr in self.imported_sources:
+            publisher.publish(spr, pocket)
+
     def publish_binarypackages(self, pocket):
         """Publish all the binaries present on the binary cache."""
-        print '\nStarting publishing process...'
+        log.info('Starting binarypackages publishing process...')
         for archtag, binarypackages in self.imported_bins.iteritems():
             distroarchrelease = \
                               self.archinfo_cache[archtag]['distroarchrelease']
             publisher = BinaryPackagePublisher(distroarchrelease)
             for binary in binarypackages:
                 publisher.publish(binary, pocket)
-        print '\nPushing done...'
+        log.debug('Pushing done...')
 
 class BinaryPackageHandler:
     """Handler to deal with binarypackages."""
@@ -303,7 +304,7 @@ class BinaryPackageHandler:
         """Create a new binarypackage."""
 
         # Ensure a binarypackagename for this binarypackage.
-        bin_name = BinaryPackageName.ensure(bin.package)
+        bin_name = getUtility(IBinaryPackageNameSet).ensure(bin.package)
 
         # Ensure a build record for this binarypackage.
         build = self.ensureBuild(bin, srcpkg, distroarchinfo)
@@ -312,7 +313,7 @@ class BinaryPackageHandler:
             return
                
         # Get binarypackage the description.
-        description = ensure_string_format(bin.description)
+        description = encoding.guess(bin.description)
 
         # Build a sumary using the description.
         summary = description.split("\n")[0]
@@ -322,7 +323,7 @@ class BinaryPackageHandler:
         # XXX: Daniel Debonzi
         # Keep it til we have licence on the SourcePackageRelease Table
         if hasattr(srcpkg, 'licence'):
-            licence = ensure_string_format(srcpkg.licence)
+            licence = encoding.guess(srcpkg.licence)
         else:
             licence = ''
 
@@ -333,6 +334,21 @@ class BinaryPackageHandler:
         
         # Check the architecture.
         architecturespecific = (bin.architecture == "all")
+
+        # Some binary packages lack priority. Better to import them with
+        # priority 'extra' than not to import them at all. Remove these
+        # lines when we don't want to import these packages anymore.
+        if not hasattr(bin, 'priority'):
+            bin.priority = 'extra'
+
+        # Sanity checking - priority has been known to be missing
+        bin_required = [
+            'version', 'filename', 'priority', 'installed_size',
+            ]
+        missing = [attr for attr in bin_required if not hasattr(bin, attr)]
+        if missing:
+            log.error("Binary package info missing %s" % ' '.join(missing))
+            return None
 
         # Create the binarypackage entry on lp db.
         binpkg = BinaryPackage(
@@ -362,11 +378,17 @@ class BinaryPackageHandler:
         # Insert file into Librarian
 
         fdir, fname = os.path.split(bin.filename)
-        print '  * Including %s into librarian'%fname
-        alias = getLibraryAlias( "%s/%s" % (bin.package_root,
-                                            fdir), fname)
-
-        self.createBinaryPackageFile(binpkg, fname, alias)
+        log.debug('Including %s into librarian' % fname)
+        try:
+            alias = getLibraryAlias(
+                    "%s/%s" % (bin.package_root, fdir), fname
+                    )
+        except IOError:
+            log.debug('Package %s not found on archive %s/%s/%s' % (
+                fname, bin.package_root, fdir, fname
+                ))
+        else:
+            self.createBinaryPackageFile(binpkg, fname, alias)
 
         # Return the binarypackage object.
         return binpkg
@@ -401,13 +423,14 @@ class BinaryPackageHandler:
             return build
 
         # Nothing to do if we fail we insert...
-        print ("\tUnable to retrieve build for %d; making new one..."
-               % srcpkg.id)
+        log.debug("Unable to retrieve build for %d; making new one..." % (
+                srcpkg.id,
+                ))
 
         # If does not exists, create a new record and return.
         build = Build(processor=processor.id,
                       distroarchrelease=distroarchrelease.id,
-                      buildstate=BuildStatus.FULLYBUILT, 
+                      buildstate=BuildStatus.FULLYBUILT,
                       gpgsigningkey=key,
                       sourcepackagerelease=srcpkg.id,
                       buildduration=None,
@@ -425,25 +448,25 @@ class BinaryPackagePublisher:
 
     def publish(self, binarypackage, pocket):
         """Create the publishing entry on db if does not exist."""
-        print ('Publishing BinaryPackage %s-%s'
-               %(binarypackage.binarypackagename.name,
-                 binarypackage.version)
-               )
+        log.debug('Publishing BinaryPackage %s-%s' % (
+            binarypackage.binarypackagename.name, binarypackage.version,
+            ))
 
         # Check if the binarypackage is already published and if yes,
         # just report it.
         binpkg_publishinghistory = self._checkPublishing(
             binarypackage, self.distroarchrelease)
         if binpkg_publishinghistory:
-            print ('  * Binarypackage already published as %s'
-                   %binpkg_publishinghistory.status.title)
+            log.debug('Binarypackage already published as %s' % (
+                binpkg_publishinghistory.status.title,
+                ))
             return
         
 
         # Create the Publishing entry with status PENDING.
         PackagePublishingHistory(
-            binarypackage = binarypackage.id, 
-            component = binarypackage.component, 
+            binarypackage = binarypackage.id,
+            component = binarypackage.component,
             section = binarypackage.section,
             priority = binarypackage.priority,
             distroarchrelease = self.distroarchrelease.id,
@@ -457,7 +480,9 @@ class BinaryPackagePublisher:
             dateremoved = None,
             )
 
-        print '  * BinaryPackage published, Done.'
+        log.debug('BinaryPackage %s-%s published.' % (
+            binarypackage.binarypackagename.name, binarypackage.version,
+            ))
 
 
     def _checkPublishing(self, binarypackage, distroarchrelease):
@@ -486,8 +511,7 @@ class SourcePackageReleaseHandler:
 
         # Check if this sourcepackagerelease already exists using name and
         # version
-        return self._getSource(spname,
-                               binarypackagedata.source_version)
+        return self._getSource(spname, binarypackagedata.source_version)
         
 
     def checkSource(self, sourcepackagedata):
@@ -516,7 +540,15 @@ class SourcePackageReleaseHandler:
 
     def createSourcePackageRelease(self, src, distrorelease):
         """Create a SourcePackagerelease and db dependencies if needed."""
-        maintainer = self.person_handler.ensurePerson(*src.maintainer)
+
+        displayname, emailaddress = src.maintainer
+        try:
+            maintainer = self.person_handler.ensurePerson(displayname,
+                                                          emailaddress)
+        except DisplaynameDecodingError:
+            # problems decoding name in  utf8
+            log.warn('Could not create person %s' % src.maintainer[1])
+            return None
 
 # XXX: Check it later -- Debonzi 20050516
 ##         if src.dsc_signing_key_owner:
@@ -526,10 +558,10 @@ class SourcePackageReleaseHandler:
 ##             key = None
  
         key=None # FIXIT
-        dsc = ensure_string_format(src.dsc)
+        dsc = encoding.guess(src.dsc)
 
         try:
-            changelog = ensure_string_format(src.changelog[0]["changes"])
+            changelog = encoding.guess(src.changelog[0]["changes"])
         except IndexError:
             changelog = None
 
@@ -573,10 +605,10 @@ class SourcePackageReleaseHandler:
             try:
                 alias = getLibraryAlias(path, fname)
             except IOError:
-                print (' ** Package %s not found on archive\n\t%s/%s'
-                       %(fname, path, fname))
+                log.info('Package %s not found on archive %s/%s' %(
+                    fname, path, fname))
             else:
-                print '  *** Package %s included into library'%fname
+                log.info('Package %s included into library' % fname)
                 self.createSourcePackageReleaseFile(spr, fname, alias)
 
         return spr
@@ -600,18 +632,19 @@ class SourcePublisher:
 
     def publish(self, sourcepackagerelease, pocket):
         """Create the publishing entry on db if does not exist."""
-        print ('Publishing SourcePackageRelease %s-%s'
-               %(sourcepackagerelease.sourcepackagename.name,
-                 sourcepackagerelease.version)
-               )
+        log.debug('Publishing SourcePackageRelease %s-%s' % (
+            sourcepackagerelease.sourcepackagename.name,
+            sourcepackagerelease.version,
+            ))
 
         # Check if the sprelease is already published and if yes,
         # just report it.
         souce_publishinghistory = self._checkPublishing(
             sourcepackagerelease, self.distrorelease)
         if souce_publishinghistory:
-            print ('  * SourcePackageRelease already published as %s'
-                   %souce_publishinghistory.status.title)
+            log.debug('SourcePackageRelease already published as %s' % (
+                souce_publishinghistory.status.title
+                ))
             return
         
         # Create the Publishing entry with status PENDING.
@@ -625,7 +658,10 @@ class SourcePublisher:
             datepublished=nowUTC,
             pocket=pocket
             )
-        print '  * SourcePackageRelease published, Done.'
+        log.debug('SourcePackageRelease %s-%s published' % (
+            sourcepackagerelease.sourcepackagename.name,
+            sourcepackagerelease.version,
+            ))
 
 
     def _checkPublishing(self, sourcepackagerelease, distrorelease):
@@ -654,8 +690,8 @@ class DistroHandler:
             raise ValueError, "Component %s not found" % component
 
         self.compcache[component] = ret
-        print "\t+++ Component %s is %s" % \
-              (component, self.compcache[component].id)
+        log.info("Component %s is %s" % \
+              (component, self.compcache[component].id))
 
         return ret
 
@@ -674,7 +710,7 @@ class DistroHandler:
             ret = Section(name=section)
 
         self.sectcache[section] = ret
-        print "\t+++ Section %s is %s" % (section, self.sectcache[section].id)
+        log.info("Section %s is %s" % (section, self.sectcache[section].id))
         return ret
 
     
@@ -697,7 +733,12 @@ class PersonHandler:
 
     def createPerson(self, emailaddress, displayname):
         """Create a new Person"""
-        displayname = ensure_string_format(displayname)
+
+        try:
+            displayname = encoding.guess(displayname)
+        except UnicodeDecodeError:
+            raise DisplaynameDecodingError(displayname)
+
         givenname = split(displayname)[0]
 
         person, email = getUtility(IPersonSet).createPersonAndEmail(

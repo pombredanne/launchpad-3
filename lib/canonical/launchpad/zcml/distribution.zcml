@@ -16,12 +16,6 @@
             />
     </content>
 
-    <adapter
-        for="canonical.launchpad.interfaces.IDistribution"
-        provides="canonical.launchpad.interfaces.IBugTaskSubset"
-        factory="canonical.launchpad.components.bugtask.ContextToBugTaskSubsetAdapter"
-        permission="zope.Public" />
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
         name="+index" />
@@ -41,6 +35,28 @@
         path_expression="name"
         attribute_to_parent="distribution"
         />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.BugTaskSearchListingView"
+        permission="zope.Public">
+        <browser:page
+            name="+bugs-only"
+            lp:url="/distros/$Distribution.name/+bugs-only"
+            template="../templates/bugs-for-context.pt" />
+        <browser:page
+            name="+portlet-bugtasklist-actions"
+            template="../templates/bugtasklist-portlet-actions.pt"
+            lp:url="/distros/$Distribution.name/+portlet-bugtasklist-actions" />
+        <browser:page
+            name="+portlet-bugtasklist-statsforcontext"
+            template="../templates/bug-portlet-statsforcontext.pt"
+            lp:url="/distros/$Distribution.name/+portlet-bugtasklist-statsforcontext" />
+        <browser:page
+            name="+portlet-bugtasklist-releasebugs"
+            template="../templates/bugtask-portlet-releasebugs.pt"
+            lp:url="/distros/$Distribution.name/+portlet-bugtasklist-releasebugs" />
+    </browser:pages>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"

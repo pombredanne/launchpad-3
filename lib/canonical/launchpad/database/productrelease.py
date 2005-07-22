@@ -5,7 +5,7 @@ __all__ = ['ProductRelease', 'ProductReleaseSet', 'ProductReleaseFile']
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, IntCol, StringCol, MultipleJoin
+from sqlobject import ForeignKey, StringCol, MultipleJoin
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -13,7 +13,6 @@ from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import IProductRelease
 from canonical.launchpad.interfaces import IProductReleaseSet
-from canonical.launchpad.database.potemplate import POTemplate
 
 from canonical.lp.dbschema import EnumCol, UpstreamFileType
 
@@ -32,7 +31,7 @@ class ProductRelease(SQLBase):
     # ProductRelease.displayname and the title in the DB.
     # See: https://launchpad.ubuntu.com/malone/bugs/736/
     _title = StringCol(dbName='title', forceDBName=True, notNull=False,
-        default=None)
+                       default=None)
     summary = StringCol(notNull=False, default=None)
     description = StringCol(notNull=False, default=None)
     changelog = StringCol(notNull=False, default=None)
@@ -42,7 +41,7 @@ class ProductRelease(SQLBase):
     productseries = ForeignKey(dbName='productseries',
                                foreignKey='ProductSeries', notNull=True)
     manifest = ForeignKey(dbName='manifest', foreignKey='Manifest',
-            default=None)
+                          default=None)
 
     files = MultipleJoin('ProductReleaseFile', joinColumn='productrelease')
 
@@ -68,30 +67,6 @@ class ProductRelease(SQLBase):
     def set_title(self, title):
         self._title = title
     title = property(title, set_title)
-
-    def messageCount(self):
-        count = 0
-        for t in self.potemplates:
-            count += len(t)
-        return count
-
-    def currentCount(self, language):
-        count = 0
-        for t in self.potemplates:
-            count += t.currentCount(language)
-        return count
-
-    def updatesCount(self, language):
-        count = 0
-        for t in self.potemplates:
-            count += t.updatesCount(language)
-        return count
-
-    def rosettaCount(self, language):
-        count = 0
-        for t in self.potemplates:
-            count += t.rosettaCount(language)
-        return count
 
     def addFileAlias(self, alias_id, file_type=UpstreamFileType.CODETARBALL):
         """See IProductRelease."""

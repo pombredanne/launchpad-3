@@ -4,7 +4,6 @@
 
 __metaclass__ = type
 
-import sets
 from warnings import warn
 from urllib import quote as urlquote
 
@@ -29,7 +28,7 @@ from canonical.launchpad.webapp import (
 
 __all__ = ['ProductFacets', 'ProductView', 'ProductEditView',
            'ProductFileBugView', 'ProductRdfView', 'ProductSetView',
-           'ProductSetAddView']
+           'ProductSetAddView', 'ProductSeriesAddView']
 
 class ProductFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for
@@ -146,11 +145,12 @@ class ProductView:
         return helpers.browserLanguages(self.request)
 
     def projproducts(self):
-        """Return a list of other products from the same project."""
+        """Return a list of other products from the same project as this
+        product, excluding this product"""
         if self.context.project is None:
             return []
         return [product for product in self.context.project.products
-                        if product.id <> self.context.id]
+                        if product.id != self.context.id]
 
     def edit(self):
         """
@@ -177,43 +177,18 @@ class ProductView:
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
 
-    def projproducts(self):
-        """Return a list of other products from the same project as this
-        product, excluding this product"""
-        if self.context.project is None:
-            return []
-        return [p for p in self.context.project.products \
-                    if p.id <> self.context.id]
-
     def newProductRelease(self):
         # default owner is the logged in user
         owner = IPerson(self.request.principal)
         #XXX: cprov 20050112
-        # Avoid passing obscure arguments as self.form
-        pr = newProductRelease(self.form, self.context, owner)
-
-    def newseries(self):
-        """Handle a request to create a new series for this product.
-        The code needs to extract all the relevant form elements,
-        then call the ProductSeries creation methods."""
-        if not self.form.get("Register") == "Register Series":
-            return
-        if not self.request.method == "POST":
-            return
-        # Make sure series name is lowercase
-        self.form["name"] = self.form['name'].lower()
-        #XXX: cprov 20050112
-        # Avoid passing obscure arguments as self.form
-        # XXX sabdfl 16/04/05 we REALLY should not be passing this form to
-        # the context object
-        series = self.context.newseries(self.form)
-        # now redirect to view the page
-        self.request.response.redirect('+series/'+series.name)
+        # Avoid passing obscure arguments such as self.form
+        newProductRelease(self.form, self.context, owner)
 
     def latestBugTasks(self, quantity=5):
         """Return <quantity> latest bugs reported against this product."""
         bugtaskset = getUtility(IBugTaskSet)
-        tasklist = bugtaskset.search(product = self.context, orderby = "-datecreated")
+        tasklist = bugtaskset.search(product=self.context, 
+                                     orderby="-datecreated")
         return tasklist[:quantity]
 
     def potemplatenames(self):
@@ -221,9 +196,10 @@ class ProductView:
 
         for series in self.context.serieslist:
             for potemplate in series.potemplates:
-              potemplatenames.add(potemplate.potemplatename)
+                potemplatenames.add(potemplate.potemplatename)
 
         return sorted(potemplatenames, key=lambda item: item.name)
+
 
 class ProductEditView(ProductView, SQLObjectEditView):
     """View class that lets you edit a Product object."""
@@ -236,6 +212,26 @@ class ProductEditView(ProductView, SQLObjectEditView):
         # If the name changed then the URL changed, so redirect:
         self.request.response.redirect(
             '../%s/+edit' % urlquote(self.context.name))
+
+
+class ProductSeriesAddView(AddView):
+    """Generates a form to add new product release series"""
+    series = None
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.form = request.form
+        AddView.__init__(self, context, request)
+
+    def createAndAdd(self, data):
+        """Handle a request to create a new series for this product."""
+        # Ensure series name is lowercase
+        self.series = self.context.newSeries(data["name"], data["displayname"],
+                                             data["summary"])
+
+    def nextURL(self):
+        assert self.series
+        return '+series/%s' % self.series.name
 
 
 class ProductFileBugView(SQLObjectAddView):

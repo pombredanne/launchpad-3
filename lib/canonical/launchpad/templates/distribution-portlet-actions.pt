@@ -3,7 +3,6 @@
 
   <div class="portletBody portletContent">
 
-<<<<<<< TREE
     <ul>
       <li class="edit"
           tal:condition="context/required:launchpad.Edit">

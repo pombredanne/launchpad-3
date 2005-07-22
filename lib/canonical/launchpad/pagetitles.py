@@ -32,7 +32,8 @@ after the helpers.
 """
 __metaclass__ = type
 
-from canonical.launchpad.interfaces import IBugTaskSubset
+from canonical.launchpad.interfaces import (
+    IProduct, IDistribution, IDistroRelease)
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
@@ -116,8 +117,11 @@ def bug_add(context, view):
     # new page title machinery allows for two different pages that use
     # the same template to have different titles (the way ZCML does.)
     # See https://launchpad.ubuntu.com/malone/bugs/1376
-    contextual_bug_form = IBugTaskSubset(context, None)
-    if contextual_bug_form is not None:
+    product_context = IProduct(context, None)
+    distro_context = IDistribution(context, None)
+    distrorelease_context = IDistroRelease(context, None)
+
+    if product_context or distro_context or distrorelease_context is not None:
         context_title = ContextTitle('Bugs in %s: Report a Bug')
         return context_title(context, view)
     else:
@@ -228,12 +232,7 @@ distro_search = 'Search Distributions'
 # <title metal:fill-slot="title"><span tal:replace="context/title" />: Source
 # Packages</title>
 
-def distroarchrelease_index(context, view):
-    return '%s %s %s' % (
-        context.distrorelease.distribution.displayname,
-        context.distrorelease.displayname,
-        context.title
-        )
+distroarchrelease_index = ContextTitle('Overview of  %s')
 
 distroarchrelease_pkgsearch = 'Binary Package Search'
 
@@ -557,7 +556,7 @@ rosetta_preferences = 'Rosetta: Preferences'
 def series_edit(context, view):
     return 'Edit %s %s Details' % (context.product.displayname, context.name)
 
-series_new = ContextDisplayName('Register a new Release Series for %s')
+series_new = ContextDisplayName('New Release Series for %s')
 
 def series_review(context, view):
     return 'Review %s %s Details' % (context.product.displayname, context.name)
