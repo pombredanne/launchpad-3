@@ -232,12 +232,7 @@ distro_search = 'Search Distributions'
 # <title metal:fill-slot="title"><span tal:replace="context/title" />: Source
 # Packages</title>
 
-def distroarchrelease_index(context, view):
-    return '%s %s %s' % (
-        context.distrorelease.distribution.displayname,
-        context.distrorelease.displayname,
-        context.title
-        )
+distroarchrelease_index = ContextTitle('Overview of  %s')
 
 distroarchrelease_pkgsearch = 'Binary Package Search'
 

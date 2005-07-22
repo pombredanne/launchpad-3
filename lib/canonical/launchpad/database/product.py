@@ -220,26 +220,6 @@ class Product(SQLBase):
             if template.rawimportstatus == RosettaImportStatus.PENDING:
                 yield template
 
-    # XXX: Carlos Perello Marin 2005-03-17
-    # This method should be removed as soon as we have completely
-    # removed the old URL space.
-    def poTemplate(self, name):
-        # XXX sabdfl 30/03/05 this code is no longer correct, because a
-        # potemplatename cannot be assumed to be unique for a given product.
-        # It should be unique for a given productrelease.
-        warn("Product.poTemplate(name) should be on ProductRelease instead",
-             DeprecationWarning)
-        results = POTemplate.selectOne(
-            "ProductSeries.product = %s AND "
-            "ProductSeries.id = ProductRelease.productseries AND "
-            "ProductRelease.id = POTemplate.productrelease AND "
-            "POTemplate.potemplatename = POTemplateName.id AND "
-            "POTemplateName.name = %s" % sqlvalues(self.id, name),
-            clauseTables=['ProductSeries', 'ProductRelease', 'POTemplateName'])
-        if results is None:
-            raise KeyError(name)
-        return results
-
     def messageCount(self):
         count = 0
         for t in self.potemplates:
