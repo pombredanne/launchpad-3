@@ -6,34 +6,33 @@ __all__ = ['POTemplateSubset', 'POTemplateSet', 'POTemplate']
 import StringIO
 import datetime
 
-# Zope interfaces
 from zope.interface import implements
 from zope.exceptions import NotFoundError
 
-# SQL imports
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, SQLObjectNotFound
+
+from canonical.lp.dbschema import RosettaImportStatus, EnumCol
+
 from canonical.database.sqlbase import (
     SQLBase, quote, flush_database_updates, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.constants import DEFAULT, UTC_NOW
 
-# canonical imports
+from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IEditPOTemplate, IPOTemplateSet, IPOTemplateSubset, IRawFileData, ITeam,
+    IEditPOTemplate, IPOTemplateSet, IPOTemplateSubset, IRawFileData,
     LanguageNotFound)
+
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
-from canonical.lp.dbschema import EnumCol
 from canonical.launchpad.database.potemplatename import POTemplateName
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.pomsgid import POMsgID
-from canonical.lp.dbschema import RosettaImportStatus
-from canonical.database.constants import DEFAULT, UTC_NOW
+
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po
-from canonical.launchpad import helpers
-
 from canonical.launchpad.components.poparser import (POSyntaxError,
     POInvalidInputError)
 

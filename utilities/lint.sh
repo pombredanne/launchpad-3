@@ -56,7 +56,7 @@ for file in $files; do
     fi
 done
 
-pyfiles=`echo files | grep '\.py$'`
+pyfiles=`echo "$files" | grep '.py$'`
 if [ -z "$pyfiles" ]; then
     exit
 fi

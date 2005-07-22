@@ -8,37 +8,36 @@ import pytz
 import datetime
 import os.path
 
-# Zope interfaces
 from zope.interface import implements
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
 
-# SQL imports
 from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
     SQLObjectNotFound)
+
 from canonical.database.sqlbase import (SQLBase, flush_database_updates,
     sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
-
-# canonical imports
-import canonical.launchpad
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import (IPOFileSet, IEditPOFile,
-    IRawFileData, ITeam, IPOTemplateExporter, ZeroLengthPOExportError,
-    ILibraryFileAliasSet, IPOFile)
-from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.components.poparser import POHeader
-from canonical.launchpad.components.poimport import import_po, OldPOImported
+
+from canonical.lp.dbschema import (EnumCol, RosettaImportStatus,
+    TranslationPermission, TranslationValidationStatus)
+
+import canonical.launchpad
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
+from canonical.launchpad.interfaces import (IPOFileSet, IEditPOFile,
+    IRawFileData, IPOTemplateExporter, ZeroLengthPOExportError,
+    ILibraryFileAliasSet, IPOFile)
+
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgset import POMsgSet
-from canonical.launchpad.database.posubmission import POSubmission
-from canonical.lp.dbschema import (EnumCol, RosettaImportStatus,
-    TranslationPermission, TranslationValidationStatus)
+
+from canonical.launchpad.components.rosettastats import RosettaStats
+from canonical.launchpad.components.poimport import import_po, OldPOImported
 from canonical.launchpad.components.poparser import (POSyntaxError,
-    POInvalidInputError)
+    POHeader, POInvalidInputError)
 
 class POFile(SQLBase, RosettaStats):
     implements(IEditPOFile, IRawFileData)
@@ -765,7 +764,7 @@ class DummyPOFile(RosettaStats):
                     if person.inTeam(translator):
                         return True
         else:
-            raise NotImplementedError, 'Unknown permission %s', tperm.name
+            raise NotImplementedError('Unknown permission %s' % tperm.name)
 
         # At this point you either got an OPEN (true) or you are not in the
         # designated translation group, so you can't edit them
