@@ -13,6 +13,13 @@
           </td>
         </tr>
       </table>
+      <ul>
+        <li class="edit">
+          <a href="/calendar/+subscriptions">
+            Manage Subscriptions
+          </a>
+        </li>
+      </ul>
     </div>
   </div>
 </div>

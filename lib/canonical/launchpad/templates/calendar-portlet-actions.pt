@@ -4,26 +4,18 @@
     <div class="portletContent odd">
 
       <ul>
-        <li class="add"
-            tal:condition="context/required:launchpad.Edit">
+        <li class="add">
           <a tal:attributes="href string:${context/fmt:url}/+add">
             Add Event
           </a>
         </li>
         <tal:block condition="context/id">
-        <li class="edit"
-            tal:condition="context/required:launchpad.AnyPerson">
+        <li class="edit">
           <a tal:attributes="href string:${context/fmt:url}/+subscribe">
             Subscribe to This Calendar
           </a>
         </li>
         </tal:block>
-        <li class="edit"
-            tal:condition="context/required:launchpad.AnyPerson">
-          <a href="/calendar/+subscriptions">
-            Manage Subscriptions
-          </a>
-        </li>
       </ul>
     </div>
   </div>
