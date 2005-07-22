@@ -106,64 +106,69 @@ CREATE TABLE BranchMessage (
     message int NOT NULL CONSTRAINT branchmessage_message_fk REFERENCES Message
     );
 
--- Commits (nee Changeset)
+-- Revision (nee Changeset)
 
-ALTER TABLE Changeset RENAME TO Commit;
-ALTER TABLE Changeset_id_seq RENAME TO commit_id_seq;
-ALTER TABLE Commit ALTER COLUMN id SET DEFAULT
-    nextval('public.commit_id_seq');
+ALTER TABLE Changeset RENAME TO Revision;
+ALTER TABLE Changeset_id_seq RENAME TO revision_id_seq;
+ALTER TABLE Revision ALTER COLUMN id SET DEFAULT
+    nextval('public.revision_id_seq');
 
-ALTER TABLE Commit ADD COLUMN owner int CONSTRAINT commit_owner_fk
+ALTER TABLE Revision ADD COLUMN owner int CONSTRAINT revision_owner_fk
     REFERENCES Person;
 
-ALTER TABLE Commit ADD COLUMN commit_id text;
+ALTER TABLE Revision ADD COLUMN revision_id text;
 
-ALTER TABLE Commit RENAME COLUMN datecreated TO date_created;
+ALTER TABLE Revision RENAME COLUMN datecreated TO date_created;
 
 -- NULLable? If not, what do we default it too?
-ALTER TABLE Commit ADD COLUMN commit_date timestamp WITHOUT TIME ZONE;
+ALTER TABLE Revision ADD COLUMN revision_date timestamp WITHOUT TIME ZONE;
 
-ALTER TABLE Commit ADD COLUMN diff_adds int;
-ALTER TABLE Commit ADD COLUMN diff_deletes int;
-ALTER TABLE Commit ADD COLUMN log_body text;
+ALTER TABLE Revision ADD COLUMN diff_adds int;
+ALTER TABLE Revision ADD COLUMN diff_deletes int;
+ALTER TABLE Revision RENAME COLUMN logmessage TO log_body;
+
+ALTER TABLE Revision RENAME COLUMN archid TO revision_author;
 
 
--- Fill in Commit.owner from archuserid.person
+-- Fill in Revision.owner from archuserid.person
 -- Unfortunately, this does nothing as the archuserid table is empty
-UPDATE Commit SET owner=archuserid.person
-    FROM archuserid WHERE archuserid.person = Commit.archid;
--- Fill in Commit.commit_id from
-UPDATE Commit SET
-    commit_id=archarchive.name || '/' || 
+UPDATE Revision SET owner=archuserid.person
+    FROM archuserid WHERE archuserid.person = Revision.revision_author;
+-- Fill in Revision.revision_id from
+UPDATE Revision SET
+    revision_id=archarchive.name || '/' || 
     archnamespace.category || '--' || 
     archnamespace.branch || '--' ||
-    archnamespace.version || '--' || commit.name
+    archnamespace.version || '--' || revision.name
     FROM Branch, ArchNamespace, ArchArchive
-    WHERE Commit.branch = Branch.id
+    WHERE Revision.branch = Branch.id
         AND Branch.archnamespace = ArchNamespace.id
         AND ArchNamespace.archarchive = ArchArchive.id;
 
 -- TODO: Can't set this yet as owner is not filled
---ALTER TABLE Commit ALTER COLUMN owner SET NOT NULL;
-ALTER TABLE Commit ALTER COLUMN commit_id SET NOT NULL;
+--ALTER TABLE Revision ALTER COLUMN owner SET NOT NULL;
+ALTER TABLE Revision ALTER COLUMN revision_id SET NOT NULL;
 
 -- Drop unwanted columns
-ALTER TABLE Commit DROP COLUMN name;
+ALTER TABLE Revision DROP COLUMN name;
+ALTER TABLE Branch DROP COLUMN archnamespace;
 
-ALTER TABLE ArchUserId RENAME TO CommitAuthor;
-ALTER TABLE archuserid_id_seq RENAME TO commitauthor_id_seq;
-ALTER TABLE CommitAuthor ALTER COLUMN id
-    SET DEFAULT nextval('commitauthor_id_seq');
-ALTER TABLE CommitAuthor DROP COLUMN person;
-ALTER TABLE CommitAuthor RENAME COLUMN archuserid TO name;
 
-CREATE TABLE CommitParent (
+ALTER TABLE ArchUserId RENAME TO RevisionAuthor;
+ALTER TABLE archuserid_id_seq RENAME TO revisionauthor_id_seq;
+ALTER TABLE RevisionAuthor ALTER COLUMN id
+    SET DEFAULT nextval('revisionauthor_id_seq');
+ALTER TABLE RevisionAuthor DROP COLUMN person;
+ALTER TABLE RevisionAuthor RENAME COLUMN archuserid TO name;
+
+CREATE TABLE RevisionParent (
     id serial PRIMARY KEY,
-    commit int NOT NULL CONSTRAINT commitparent_commit_fk REFERENCES Commit,
-    parent int NOT NULL CONSTRAINT commitparent_parent_fk REFERENCES Commit,
+    revision int NOT NULL CONSTRAINT revisionparent_revision_fk
+        REFERENCES Revision,
+    parent int NOT NULL CONSTRAINT revisionparent_parent_fk REFERENCES Revision,
     -- TODO: This might not be wanted, as per XXX in spec
     committed_against int 
-            CONSTRAINT commitparent_committed_against_fk REFERENCES Commit
+            CONSTRAINT revisionparent_committed_against_fk REFERENCES Revision
     );
 
 CREATE TABLE BranchSubscription (
@@ -174,3 +179,22 @@ CREATE TABLE BranchSubscription (
         CONSTRAINT branchsubscription_branch_fk REFERENCES Branch,
     subscription int NOT NULL -- dbschema
     );
+
+
+-- Tidy up some foreign keys
+ALTER TABLE Branch DROP CONSTRAINT "$2";
+ALTER TABLE Branch ADD CONSTRAINT branch_owner_fk FOREIGN KEY (owner)
+    REFERENCES Person;
+ALTER TABLE Branch DROP CONSTRAINT "$3";
+ALTER TABLE Branch ADD CONSTRAINT branch_product_fk FOREIGN KEY (product)
+    REFERENCES Product;
+
+ALTER TABLE Revision DROP CONSTRAINT "$1";
+ALTER TABLE Revision ADD CONSTRAINT revision_branch_fk
+    FOREIGN KEY (branch) REFERENCES Branch; 
+ALTER TABLE Revision DROP CONSTRAINT "$2";
+ALTER TABLE Revision ADD CONSTRAINT revision_revision_author_fk
+    FOREIGN KEY (revision_author) REFERENCES RevisionAuthor;
+ALTER TABLE Revision DROP CONSTRAINT "$3";
+ALTER TABLE Revision ADD CONSTRAINT revision_gpgkey_fk
+    FOREIGN KEY (gpgkey) REFERENCES GPGKey;
