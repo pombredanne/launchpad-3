@@ -16,7 +16,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 
 from canonical.launchpad.interfaces import (
     IPerson, IProduct, IProductSet, IBugTaskSet, IProductSeries,
-    ISourcePackage, ICountry, IBugSet)
+    ISourcePackage, ICountry, IBugSet, ILaunchBag)
 from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -181,8 +181,11 @@ class ProductView:
     def latestBugTasks(self, quantity=5):
         """Return <quantity> latest bugs reported against this product."""
         bugtaskset = getUtility(IBugTaskSet)
-        tasklist = bugtaskset.search(product=self.context, 
-                                     orderby="-datecreated")
+
+        tasklist = bugtaskset.search(
+            product=self.context, orderby="-datecreated",
+            user=getUtility(ILaunchBag).user)
+
         return tasklist[:quantity]
 
     def potemplatenames(self):

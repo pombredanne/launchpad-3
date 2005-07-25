@@ -8,9 +8,12 @@ from sets import Set
 from sqlobject import ForeignKey, StringCol
 from sqlobject import SQLObjectNotFound
 
+from sqlos.interfaces import ISQLObject
+
 from zope.exceptions import NotFoundError
 from zope.component import getUtility, getAdapter
 from zope.interface import implements, directlyProvides, directlyProvidedBy
+from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.lp.dbschema import (
     EnumCol, BugTaskPriority, BugTaskStatus, BugTaskSeverity, BugSubscription)
@@ -254,50 +257,67 @@ class BugTaskSet:
 
     def search(self, bug=None, searchtext=None, status=None, priority=None,
                severity=None, product=None, distribution=None,
-               distrorelease=None, milestone=None, assignee=None,
-               owner=None, orderby=None, sourcepackagename=None,
-               binarypackagename=None, statusexplanation=None):
+               distrorelease=None, milestone=None, assignee=None, owner=None,
+               orderby=None, sourcepackagename=None, binarypackagename=None,
+               statusexplanation=None, user=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
-        def build_where_condition_fragment(arg_name, arg_val, cb_arg_id):
-            fragment = ""
-            if isinstance(arg_val, any):
-                quoted_ids = [quote(cb_arg_id(obj))
-                              for obj in query_arg.query_values]
-                query_values = ", ".join(quoted_ids)
-                fragment = "(BugTask.%s IN (%s))" % (arg_name, query_values)
-            else:
-                if query_arg == NULL:
-                    fragment = "(BugTask.%s IS NULL)" % (arg_name)
-                else:
-                    fragment = "(BugTask.%s = %s)" % (
-                        arg_name, str(quote(cb_arg_id(query_arg))))
 
-            return fragment
+        # A dict of search argument names and values that will be
+        # looped through to construct part of the SQL WHERE clause.
+        search_args = {
+            'bug': bug,
+            'product': product,
+            'distribution': distribution,
+            'distrorelease': distrorelease,
+            'milestone': milestone,
+            'assignee': assignee,
+            'owner': owner,
+            'status': status,
+            'priority': priority,
+            'severity': severity,
+            'sourcepackagename': sourcepackagename,
+            'binarypackagename': binarypackagename
+        }
 
         query = ""
-        # build the part of the query for FK columns
-        for arg_name in ('bug', 'product', 'distribution', 'distrorelease',
-                         'milestone', 'assignee', 'owner',
-                         'sourcepackagename', 'binarypackagename'):
-            query_arg = eval(arg_name)
-            if query_arg is not None:
-                where_cond = build_where_condition_fragment(
-                    arg_name, query_arg, lambda obj: obj.id)
-                if where_cond:
-                    if query:
-                        query += " AND "
-                    query += where_cond
 
-        # build the part of the query for the db schema columns
-        for arg_name in ('status', 'priority', 'severity'):
-            query_arg = eval(arg_name)
-            if query_arg is not None:
-                where_cond = build_where_condition_fragment(
-                    arg_name, query_arg, lambda obj: obj)
-                if where_cond:
-                    if query:
-                        query += " AND "
-                    query += where_cond
+        # Loop through the search arguments and build the appropriate
+        # SQL WHERE clause. Note that arg_value will be one of:
+        #
+        # * a searchbuilder.any object, representing a set of acceptable filter
+        #   values
+        #
+        # * a searchbuilder.NULL object
+        #
+        # * an sqlobject
+        #
+        # * a dbschema item
+        #
+        # * None (meaning no filter criteria specified for that arg_name)
+        for arg_name, arg_value in search_args.items():
+            if arg_value is not None:
+                if query:
+                    query += " AND "
+
+                if zope_isinstance(arg_value, any):
+                    # The argument value is a list of acceptable
+                    # filter values.
+                    arg_values = sqlvalues(*arg_value.query_values)
+                    where_arg = ", ".join(arg_values)
+                    query += "BugTask.%s IN (%s)" % (arg_name, where_arg)
+                elif arg_value is NULL:
+                    # The argument value indicates we should match
+                    # only NULL values for the column named by
+                    # arg_name.
+                    query += "BugTask.%s IS NULL" % arg_name
+                else:
+                    # We have either an ISQLObject, or a dbschema value.
+                    is_sqlobject = ISQLObject(arg_value, None)
+                    if is_sqlobject:
+                        query += "BugTask.%s = %d" % (arg_name, arg_value.id)
+                    else:
+                        query += "BugTask.%s = %d" % (
+                            arg_name, int(arg_value.value))
 
         if searchtext:
             if query:
@@ -310,8 +330,6 @@ class BugTaskSet:
             if query:
                 query += " AND "
             query += "BugTask.fti @@ ftq(%s)" % sqlvalues(statusexplanation)
-
-        user = getUtility(ILaunchBag).user
 
         if query:
             query += " AND "
@@ -345,7 +363,7 @@ class BugTaskSet:
 
         if orderby is None:
             orderby = []
-        elif not isinstance(orderby, (list, tuple)):
+        elif not zope_isinstance(orderby, (list, tuple)):
             orderby = [orderby]
 
         # Translate orderby values into corresponding Table.attribute.
@@ -358,7 +376,7 @@ class BugTaskSet:
             else:
                 orderby_arg.append(self._ORDERBY_COLUMN[orderby_col])
 
-        # Make sure that the result always is ordered. 
+        # Make sure that the result always is ordered.
         orderby_arg.append('BugTask.id')
 
         bugtasks = BugTask.select(
@@ -556,4 +574,3 @@ class BugTasksReport:
         bugs = [bug for datecreated, bug in buglistwithdates]
 
         return bugs
-

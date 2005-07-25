@@ -473,7 +473,8 @@ class BugTaskSearchListingView:
                 distrorelease=release,
                 status=any(
                     dbschema.BugTaskStatus.NEW,
-                    dbschema.BugTaskStatus.ACCEPTED))
+                    dbschema.BugTaskStatus.ACCEPTED),
+                user=getUtility(ILaunchBag).user)
             release_bugs.append({
                 "releasename" : release.name,
                 "bugcount" : open_release_bugs.count(),
@@ -578,7 +579,8 @@ class BugTaskSearchListingView:
             bug=bug, searchtext=searchtext, status=status, priority=priority,
             severity=severity, milestone=milestone, assignee=assignee,
             owner=owner, orderby=orderby, sourcepackagename=sourcepackagename,
-            binarypackagename=binarypackagename, **context_param)
+            binarypackagename=binarypackagename, user=getUtility(ILaunchBag).user,
+            **context_param)
 
 class BugTaskAnorakSearchPageBegoneView:
     """This view simply kicks the user somewhere else.

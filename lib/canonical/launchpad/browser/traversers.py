@@ -94,7 +94,8 @@ def traverse_product(product, request, name):
                 bugset = getUtility(IBugSet)
 
                 bug = bugset.get(nextstep)
-                bugtasks = bugtaskset.search(product=product, bug=bug)
+                bugtasks = bugtaskset.search(
+                    product=product, bug=bug, user=getUtility(ILaunchBag).user)
 
                 if bugtasks.count() == 1:
                     return bugtasks[0]
@@ -130,7 +131,9 @@ def traverse_distribution(distribution, request, name):
                 bugset = getUtility(IBugSet)
 
                 bug = bugset.get(nextstep)
-                bugtasks = bugtaskset.search(distribution=distribution, bug=bug)
+                bugtasks = bugtaskset.search(
+                    distribution=distribution, bug=bug,
+                    user=getUtility(ILaunchBag).user)
 
                 if bugtasks.count() == 1:
                     return bugtasks[0]
@@ -164,7 +167,9 @@ def traverse_distrorelease(distrorelease, request, name):
                 bugset = getUtility(IBugSet)
 
                 bug = bugset.get(nextstep)
-                bugtasks = bugtaskset.search(distrorelease=distrorelease, bug=bug)
+                bugtasks = bugtaskset.search(
+                    distrorelease=distrorelease, bug=bug,
+                    user=getUtility(ILaunchBag).user)
 
                 if bugtasks.count() == 1:
                     return bugtasks[0]
