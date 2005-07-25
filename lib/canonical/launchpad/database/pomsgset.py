@@ -5,20 +5,19 @@ __all__ = ['POMsgSet']
 
 import gettextpo
 
-from zope.interface import implements
-
+from zope.interface import implements, providedBy
+from zope.event import notify
 from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
                        MultipleJoin, SQLObjectNotFound)
 
+from canonical.launchpad.event.sqlobjectevent import (SQLObjectCreatedEvent,
+    SQLObjectModifiedEvent)
 from canonical.database.sqlbase import (SQLBase, sqlvalues,
                                         flush_database_updates)
-
 from canonical.lp.dbschema import (RosettaTranslationOrigin,
     TranslationValidationStatus)
-
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import IEditPOMsgSet
-
 from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
@@ -336,6 +335,12 @@ class POMsgSet(SQLBase):
             personID=person.id,
             validationstatus=validation_status)
 
+        notify(SQLObjectCreatedEvent(submission))
+
+        # Store the object status before the changes.
+        object_before_modification = helpers.Snapshot(selection,
+            providing=providedBy(selection))
+
         # Update the latestsubmission field.
         self.pofile.latestsubmission = submission
 
@@ -347,6 +352,12 @@ class POMsgSet(SQLBase):
             # activesubmission is updated only if the translation is valid and
             # it's an editor.
             selection.activesubmission = submission
+
+        # List of fields that would be updated.
+        fields = ['publishedsubmission', 'activesubmission']
+
+        notify(SQLObjectModifiedEvent(
+            selection, object_before_modification, fields))
 
         # we cannot properly update the statistics here, because we don't
         # know if the "fuzzy" or completeness status is changing at a higher

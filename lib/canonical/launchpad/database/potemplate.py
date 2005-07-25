@@ -6,8 +6,10 @@ __all__ = ['POTemplateSubset', 'POTemplateSet', 'POTemplate']
 import StringIO
 import datetime
 
-from zope.interface import implements
+# Zope interfaces
+from zope.interface import implements, providedBy
 from zope.exceptions import NotFoundError
+from zope.event import notify
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, SQLObjectNotFound
@@ -33,6 +35,7 @@ from canonical.launchpad.database.pomsgid import POMsgID
 
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po
+from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.components.poparser import (POSyntaxError,
     POInvalidInputError)
 
@@ -556,6 +559,10 @@ class POTemplate(SQLBase, RosettaStats):
 
         file = StringIO.StringIO(rawdata)
 
+        # Store the object status before the changes.
+        object_before_modification = helpers.Snapshot(
+            self, providing=providedBy(self))
+
         try:
             import_po(self, file)
         except (POSyntaxError, POInvalidInputError):
@@ -582,6 +589,12 @@ class POTemplate(SQLBase, RosettaStats):
         # .pot file has because msgsets will have changed.
         for pofile in self.pofiles:
             pofile.updateStatistics()
+
+        # List of fields that would be updated.
+        fields = ['header', 'rawimportstatus', 'messagecount']
+
+        # And finally, emit the modified event.
+        notify(SQLObjectModifiedEvent(self, object_before_modification, fields))
 
 
 class POTemplateSubset:

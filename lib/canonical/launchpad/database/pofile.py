@@ -8,9 +8,11 @@ import pytz
 import datetime
 import os.path
 
-from zope.interface import implements
+# Zope interfaces
+from zope.interface import implements, providedBy
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
+from zope.event import notify
 
 from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
     SQLObjectNotFound)
@@ -38,6 +40,7 @@ from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po, OldPOImported
 from canonical.launchpad.components.poparser import (POSyntaxError,
     POHeader, POInvalidInputError)
+from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 
 class POFile(SQLBase, RosettaStats):
     implements(IEditPOFile, IRawFileData)
@@ -555,6 +558,10 @@ class POFile(SQLBase, RosettaStats):
 
         file = StringIO.StringIO(rawdata)
 
+        # Store the object status before the changes.
+        object_before_modification = helpers.Snapshot(
+            self, providing=providedBy(self))
+
         try:
             errors = import_po(self, file, self.rawfilepublished)
         except (POSyntaxError, POInvalidInputError):
@@ -655,6 +662,14 @@ class POFile(SQLBase, RosettaStats):
 
         # Now we update the statistics after this new import
         self.updateStatistics()
+
+        # List of fields that would be updated.
+        fields = ['header', 'topcomment', 'fuzzyheader', 'pluralforms',
+                  'rawimportstatus', 'currentcount', 'updatescount',
+                  'rosettacount']
+
+        # And finally, emit the modified event.
+        notify(SQLObjectModifiedEvent(self, object_before_modification, fields))
 
     def validExportCache(self):
         """See IPOFile."""
