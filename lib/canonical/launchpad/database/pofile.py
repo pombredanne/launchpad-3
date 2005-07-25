@@ -731,12 +731,24 @@ class DummyPOFile(RosettaStats):
     that language for this template.
     """
     implements(IPOFile)
-    def __init__(self, potemplate, language):
+    def __init__(self, potemplate, language, owner=None, header=''):
         self.potemplate = potemplate
         self.language = language
-        self.header = ''
+        self.owner = owner
+        self.header = header
         self.latestsubmission = None
         self.messageCount = len(potemplate)
+        self.pluralforms = language.pluralforms
+        self.translationpermission = self.potemplate.translationpermission
+        self.lasttranslator = None
+        self.contributors = []
+
+    @property
+    def title(self):
+        """See IPOFile."""
+        title = '%s translation of %s' % (
+            self.language.displayname, self.potemplate.displayname)
+        return title
 
     @property
     def translators(self):
@@ -749,7 +761,6 @@ class DummyPOFile(RosettaStats):
         return ret
 
     def canEditTranslations(self, person):
-
         tperm = self.potemplate.translationpermission
         if tperm == TranslationPermission.OPEN:
             # if the translation policy is "open", then yes

@@ -1,13 +1,14 @@
 <div class="portlet">
 
-    <h4>Release Details:</h4>
+    <h4><span tal:replace="context/displayname">Warty
+        </span> Release Details:</h4>
 
     <div class="portletBody">
         <div class="portletContent even">
 
-            <b>Release:</b><br />
-            <a tal:attributes="href context/fmt:url">
-            <span tal:replace="context/displayname" /></a><br />
+            <b>Distribution:</b><br />
+            <a tal:attributes="href context/distribution/fmt:url">
+            <span tal:replace="context/distribution/displayname" /></a><br />
 
             <b>Admin:</b><br />
             <img src="/++resource++user.gif">

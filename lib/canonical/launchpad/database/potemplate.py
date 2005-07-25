@@ -28,7 +28,7 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
 from canonical.launchpad.database.potemplatename import POTemplateName
-from canonical.launchpad.database.pofile import POFile
+from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
 
 from canonical.launchpad.components.rosettastats import RosettaStats
@@ -377,7 +377,7 @@ class POTemplate(SQLBase, RosettaStats):
             potmsgset.sequence = 0
 
     def getOrCreatePOFile(self, language_code, variant=None, owner=None):
-        """See IPOFile."""
+        """See IPOTemplate."""
         # see if one exists already
         existingpo = self.queryPOFileByLang(language_code, variant)
         if existingpo is not None:
@@ -420,7 +420,7 @@ class POTemplate(SQLBase, RosettaStats):
             personset = PersonSet()
             owner = personset.getByName('ubuntu-translators')
 
-        return POFile(potemplate=self,
+        pofile = POFile(potemplate=self,
                       language=language,
                       topcomment=standardPOFileTopComment % data,
                       header=standardPOFileHeader % data,
@@ -428,6 +428,42 @@ class POTemplate(SQLBase, RosettaStats):
                       owner=owner,
                       pluralforms=data['nplurals'],
                       variant=variant)
+        flush_database_updates()
+        return pofile
+
+    def getPOFileOrDummy(self, language_code, variant=None, owner=None):
+        """See IPOTemplate."""
+        # see if one exists already
+        existingpo = self.queryPOFileByLang(language_code, variant)
+        if existingpo is not None:
+            return existingpo
+
+        # since we don't have one, we will return a dummy
+        try:
+            language = Language.byCode(language_code)
+        except SQLObjectNotFound:
+            raise LanguageNotFound(language_code)
+
+        now = datetime.datetime.now()
+        data = {
+            'year': now.year,
+            'languagename': language.englishname,
+            'languagecode': language_code,
+            'date': now.isoformat(' '),
+            'templatedate': self.datecreated,
+            'copyright': '(c) %d Canonical Ltd, and Rosetta Contributors'
+                         % now.year,
+            'nplurals': language.pluralforms or 1,
+            'pluralexpr': language.pluralexpression or '0',
+            }
+
+        if self.productseries is not None:
+            data['origin'] = self.productseries.product.name
+        else:
+            data['origin'] = self.sourcepackagename.name
+
+        return DummyPOFile(self, language, owner=owner,
+            header=standardPOFileHeader % data)
 
     def createMessageIDSighting(self, potmsgset, messageID):
         """Creates in the database a new message ID sighting.

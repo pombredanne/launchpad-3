@@ -51,7 +51,7 @@
       <browser:page
           name="+index"
           template="../templates/person-index.pt"
-          lp:url="/people/$Person.name/index" />
+          lp:url="/people/$Person.name/" />
       <browser:page
           name="+branches"
           template="../templates/person-branches.pt"

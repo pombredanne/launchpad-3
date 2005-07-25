@@ -11,6 +11,7 @@ __all__ = [
     'traverse_distribution',
     'traverse_distrorelease',
     'traverse_person',
+    'traverse_potemplate',
     'traverse_team',
     'traverse_bug',
     'traverse_bugs',
@@ -49,6 +50,13 @@ def traverse_malone_application(malone_application, request, name):
         return getUtility(IBugTrackerSet)
 
     return None
+
+def traverse_potemplate(potemplate, request, name):
+    user = getUtility(ILaunchBag).user
+    if request.method == 'GET':
+        return potemplate.getPOFileOrDummy(name, owner=user)
+    elif request.method == 'POST':
+        return potemplate.getOrCreatePOFile(name, owner=user)
 
 
 def traverse_project(project, request, name):

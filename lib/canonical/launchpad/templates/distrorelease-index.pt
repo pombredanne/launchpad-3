@@ -7,8 +7,8 @@
 
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/distribution/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-details" /> 
+  <div tal:replace="structure context/distribution/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">

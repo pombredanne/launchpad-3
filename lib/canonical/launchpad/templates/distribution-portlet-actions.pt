@@ -4,20 +4,16 @@
   <div class="portletBody portletContent">
 
     <ul>
-      <li class="edit"
-          tal:condition="context/required:launchpad.Edit">
+      <li class="edit">
         <a href="+edit">Edit Details</a>
       </li>
-      <li class="edit"
-          tal:condition="context/required:launchpad.Edit">
+      <li class="edit">
         <a href="+reassign">Change Admin</a>
       </li>
-      <li class="edit"
-          tal:condition="context/required:launchpad.Edit">
+      <li class="edit">
         <a href="+selectmemberteam">Change Members</a>
       </li>
-      <li class="edit"
-          tal:condition="context/required:launchpad.Edit">
+      <li class="edit">
         <a href="+changetranslators">Change Translators</a>
       </li>
       <li class="search">
