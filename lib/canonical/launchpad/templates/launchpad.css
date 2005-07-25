@@ -89,11 +89,6 @@ h3 {
   list-style-image: url(/++resource++bullet.gif);
 }
 
-label {
-  font-weight: bold;    
-}
-
-
 .listingBar a,
 #portal-personaltools a,
 #portal-breadcrumbs a {
@@ -487,7 +482,8 @@ input.searchButton {
   background-image: url(/@@/search_icon.gif);
 }
 .fieldRequired {
-  background-image: url(/@@/required.gif);
+  background-image: none;
+  padding-left: 0;
 }
 .link-parent {
   background-image: url(/@@/arrowUp.gif);
@@ -643,7 +639,7 @@ abbr, address {
 	font-style: inherit;
 }
 
-label {
+label, .field label {
   font-family: sans-serif;
   font-weight: normal;
   white-space: nowrap;
