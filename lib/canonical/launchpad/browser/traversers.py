@@ -53,10 +53,11 @@ def traverse_malone_application(malone_application, request, name):
 
 def traverse_potemplate(potemplate, request, name):
     user = getUtility(ILaunchBag).user
-    if request.method == 'GET':
+    if request.method in ['GET', 'HEAD']:
         return potemplate.getPOFileOrDummy(name, owner=user)
     elif request.method == 'POST':
         return potemplate.getOrCreatePOFile(name, owner=user)
+    raise AssertionError('We only know about GET, HEAD, and POST')
 
 
 def traverse_project(project, request, name):

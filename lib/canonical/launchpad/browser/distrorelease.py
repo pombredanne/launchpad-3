@@ -39,6 +39,17 @@ class DistroReleaseView:
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(self.request)
 
+    def requestDistroLangs(self):
+        drlangs = []
+        drlangset = getUtility(IDistroReleaseLanguageSet)
+        for language in self.languages:
+            drlang = self.context.getDistroReleaseLanguage(language)
+            if drlang is not None:
+                drlangs.append(drlang)
+            else:
+                drlangs.append(drlangset.getDummy(self.context, language))
+        return drlangs
+
     def requestCountry(self):
         return ICountry(self.request, None)
 
