@@ -7,7 +7,7 @@ Rosetta.
     >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
     >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
 
-    >>> LaunchpadFunctionalTestSetup().setUp()
+    >>> LaunchpadFunctionalTestSetup(dbuser='poimport').setUp()
     >>> LibrarianTestSetup().setUp()
 
 
