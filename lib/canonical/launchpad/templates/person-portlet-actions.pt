@@ -6,10 +6,8 @@
     <ul>
       <li class="info"><a href=".">Overview</a></li>
       <li class="edit"><a href="+edit">Edit Details</a></li>
-      <li class="mail">
-        <a tal:condition="not: context/isTeam" href="+emails">
-          E-mail Addresses
-        </a>
+      <li class="mail" tal:condition="not: context/isTeam">
+        <a href="+emails">E-mail Addresses</a>
       </li>
       <li class="info"><a href="+packages">Packages</a></li>
       <li class="info"><a href="+bounties">Bounties</a></li>
