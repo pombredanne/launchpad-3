@@ -1,5 +1,7 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
+"""Database classes including and related to Product."""
+
 __metaclass__ = type
 __all__ = ['Product', 'ProductSet']
 
@@ -23,6 +25,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.productrelease import ProductRelease
+from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.cal import Calendar
@@ -71,6 +74,22 @@ class Product(SQLBase):
 
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
+
+    def search(self, bug=None, searchtext=None, status=None, priority=None,
+               severity=None, milestone=None, assignee=None, owner=None,
+               orderby=None, statusexplanation=None, user=None):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        # As an initial refactoring, we're wrapping BugTaskSet.search.
+        # It's possible that the search code will live inside this
+        # method instead at some point.
+        #
+        # The implementor who would make such a change should be
+        # mindful of bug privacy.
+        return BugTaskSet().search(
+            product=self, bug=bug, searchtext=searchtext, status=status,
+            priority=priority, severity=severity, milestone=milestone,
+            assignee=assignee, owner=owner, orderby=orderby,
+            statusexplanation=statusexplanation, user=user)
 
     def getOrCreateCalendar(self):
         if not self.calendar:

@@ -1,6 +1,6 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-"""Distribution-related interfaces."""
+"""Interfaces including and related to IDistribution."""
 
 __metaclass__ = type
 
@@ -15,12 +15,12 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces import IHasOwner, IBugTarget
 
 _ = MessageIDFactory('launchpad')
 
-class IDistribution(IHasOwner):
-    """A Distribution Object"""
+class IDistribution(IHasOwner, IBugTarget):
+    """An operating system distribution."""
     id = Attribute("The distro's unique number.")
     name = TextLine(
         title=_("Name"),

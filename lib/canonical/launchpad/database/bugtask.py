@@ -231,7 +231,7 @@ class BugTaskSet:
         "milestone" : "BugTask.milestone",
         "datecreated" : "BugTask.datecreated"}
 
-    def __init__(self, bug=None):
+    def __init__(self):
         self.title = 'A Set of Bug Tasks'
 
     def __getitem__(self, id):

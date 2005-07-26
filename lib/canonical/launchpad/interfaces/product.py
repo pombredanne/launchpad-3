@@ -1,5 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""Interfaces including and related to IProduct."""
+
 __metaclass__ = type
 
 __all__ = [
@@ -12,17 +14,18 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from canonical.launchpad.interfaces import IHasOwner, IBugTarget
 from canonical.launchpad.validators.name import valid_name
 
 _ = MessageIDFactory('launchpad')
 
-class IProduct(IHasOwner):
-    """
-    A Hatchery Product. TheHatchery describes the open source world as
-    Projects and Products. Each Project may be responsible for several
-    Products.  For example, the Mozilla Project has Firefox, Thunderbird and
-    The Mozilla App Suite as Products, among others.
+class IProduct(IHasOwner, IBugTarget):
+    """A Hatchery Product.
+
+    TheHatchery describes the open source world as Projects and
+    Products. Each Project may be responsible for several Products.
+    For example, the Mozilla Project has Firefox, Thunderbird and The
+    Mozilla App Suite as Products, among others.
     """
 
     # XXX Mark Shuttleworth comments: lets get rid of ID's in interfaces

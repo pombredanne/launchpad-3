@@ -35,7 +35,7 @@ from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.sourcepackagename import SourcePackageNameSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.binarypackage import BinaryPackage
-
+from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.helpers import shortlist
 
 
@@ -145,6 +145,22 @@ class DistroRelease(SQLBase):
     def fullreleasename(self):
         return "%s %s" % (
             self.distribution.name.capitalize(), self.name.capitalize())
+
+    def search(self, bug=None, searchtext=None, status=None, priority=None,
+               severity=None, milestone=None, assignee=None, owner=None,
+               orderby=None, statusexplanation=None, user=None):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        # As an initial refactoring, we're wrapping BugTaskSet.search.
+        # It's possible that the search code will live inside this
+        # method instead at some point.
+        #
+        # The implementor who would make such a change should be
+        # mindful of bug privacy.
+        return BugTaskSet().search(
+            distrorelease=self, bug=bug, searchtext=searchtext, status=status,
+            priority=priority, severity=severity, milestone=milestone,
+            assignee=assignee, owner=owner, orderby=orderby,
+            statusexplanation=statusexplanation, user=user)
 
     def getBugSourcePackages(self):
         """See IDistroRelease."""
