@@ -3,6 +3,7 @@
 Cron job to run daily to check all of the BugWatches
 """
 
+import sys
 import _pythonpath
 
 from optparse import OptionParser
@@ -10,8 +11,6 @@ from optparse import OptionParser
 from canonical.lp import initZopeless
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.bugwatch import BugWatch
-from canonical.launchpad.database.bugtracker import BugTracker
-from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.malone import externalsystem
 from canonical.launchpad.scripts import logger, logger_options
@@ -44,7 +43,7 @@ def check_one_watch(watch):
             )
     watch.lastchecked = UTC_NOW
     try:
-        remotesystem = externalsystem.ExternalSystem(bugtracker,version)
+        remotesystem = externalsystem.ExternalSystem(bugtracker, version)
     except externalsystem.UnknownBugTrackerTypeError, val:
         if val == 'debbugs':
             pass # Yes, we know. Just stop spamming us
@@ -78,12 +77,12 @@ def main():
 
 if __name__ == '__main__':
     options = parse_options()
-    log = logger(options, "checkwatches")
-    lockfile = LockFile(options.lockfilename, logger=logger)
+    my_logger = logger(options, "checkwatches")
+    lockfile = LockFile(options.lockfilename, logger=my_logger)
     try:
         lockfile.acquire()
     except OSError:
-        log.info('Lockfile %s in use' % options.lockfilename)
+        my_logger.info('Lockfile %s in use' % options.lockfilename)
         sys.exit(1)
     try:
         main()

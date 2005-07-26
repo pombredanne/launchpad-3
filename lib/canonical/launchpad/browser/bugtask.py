@@ -579,8 +579,8 @@ class BugTaskSearchListingView:
             bug=bug, searchtext=searchtext, status=status, priority=priority,
             severity=severity, milestone=milestone, assignee=assignee,
             owner=owner, orderby=orderby, sourcepackagename=sourcepackagename,
-            binarypackagename=binarypackagename, user=getUtility(ILaunchBag).user,
-            **context_param)
+            binarypackagename=binarypackagename, 
+            user=getUtility(ILaunchBag).user, **context_param)
 
 class BugTaskAnorakSearchPageBegoneView:
     """This view simply kicks the user somewhere else.
