@@ -325,6 +325,8 @@ def launchpad_addform(context, view):
 
 launchpad_editform = launchpad_addform
 
+launchpad_feedback = 'Help us improve Launchpad'
+
 launchpad_forbidden = 'Forbidden'
 
 launchpad_forgottenpassword = 'Forgot Your Launchpad Password?'
