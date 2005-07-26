@@ -43,10 +43,7 @@
 
 .collapsed {
   border-style: dashed none none none;
-}
-
-fieldset.message-strings {
-
+  margin-bottom: 0;
 }
 
 table.data input[type='text'] {
@@ -302,7 +299,7 @@ tr.rowLinkified a {
 
 .boardComment {
   border: 1px solid #364970;
-  margin-bottom: 1.5em;
+  margin-bottom: 1em;
   position: relative;
 }
 
@@ -318,11 +315,11 @@ tr.rowLinkified a {
   border: 1px solid #364970;
   border-style: none none solid none;
   background-color: #f7f9fa;
-  padding: 0.5em 1em;
+  padding: 0.25em 12px;
 }
 
 .boardCommentBody {
-  padding: 0.5em 1em;
+  padding: 0.5em 12px 0;
 }
 
 .boardCommentContent {
@@ -650,6 +647,10 @@ caption {
   color: #666666;
   margin-top: 0;
   margin-bottom: 0;
+}
+
+legend {
+  font-weight: bold;
 }
 
 th {
