@@ -1,0 +1,13 @@
+<div class="portlet">
+
+  <h4>Statistics:</h4>
+
+  <div class="portletBody portletContent">
+
+    There are currently <span tal:replace="view/peopleCount" /> people
+    and <span tal:replace="view/teamsCount" /> teams registered in
+    Launchpad.
+	
+  </div>
+
+</div>

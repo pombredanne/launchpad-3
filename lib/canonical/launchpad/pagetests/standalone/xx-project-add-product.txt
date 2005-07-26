@@ -1,0 +1,87 @@
+
+Adding a Product to a Project
+-----------------------------
+
+Let's add an Eye of GNOME product to the GNOME project.
+
+  >>> print http(r"""
+  ... POST /projects/gnome/+newproduct HTTP/1.1
+  ... Content-Length: 1763
+  ... Content-Type: multipart/form-data; boundary=---------------------------20506544121103416222450339027
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/projects/gnome/+newproduct
+  ... 
+  ... -----------------------------20506544121103416222450339027
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... eog
+  ... -----------------------------20506544121103416222450339027
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... Eye of GNOME
+  ... -----------------------------20506544121103416222450339027
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Eye of GNOME
+  ... -----------------------------20506544121103416222450339027
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... Blah blah.
+  ... -----------------------------20506544121103416222450339027
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... Blah blah blah.
+  ... -----------------------------20506544121103416222450339027
+  ... Content-Disposition: form-data; name="field.homepageurl"
+  ... 
+  ... http://homepage
+  ... -----------------------------20506544121103416222450339027
+  ... Content-Disposition: form-data; name="field.sourceforgeproject"
+  ... 
+  ... eog
+  ... -----------------------------20506544121103416222450339027
+  ... Content-Disposition: form-data; name="field.freshmeatproject"
+  ... 
+  ... eog
+  ... -----------------------------20506544121103416222450339027
+  ... Content-Disposition: form-data; name="field.wikiurl"
+  ... 
+  ... http://wiki
+  ... -----------------------------20506544121103416222450339027
+  ... Content-Disposition: form-data; name="field.screenshotsurl"
+  ... 
+  ... http://screenshots
+  ... -----------------------------20506544121103416222450339027
+  ... Content-Disposition: form-data; name="field.downloadurl"
+  ... 
+  ... http://download
+  ... -----------------------------20506544121103416222450339027
+  ... Content-Disposition: form-data; name="field.programminglang"
+  ... 
+  ... C
+  ... -----------------------------20506544121103416222450339027
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------20506544121103416222450339027--
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: .
+  ...
+
+Now let's get the page for that product to make sure it's there.
+
+  >>> print http(r"""
+  ... GET /projects/gnome/eog HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+      <title>Product: Eye of GNOME</title>
+  ...
+      <h2>Eye of GNOME</h2>
+  ...
+              <a class="link" href="http://homepage">Home page</a><br />
+  ...
+

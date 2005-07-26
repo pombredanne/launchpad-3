@@ -5,7 +5,8 @@ XXX: Much stuff from canonical.publication needs to move here.
 """
 
 __metaclass__ = type
-__all__ = ['canonical_url', 'nearest']
+__all__ = ['canonical_url', 'nearest', 'get_current_browser_request',
+           'canonical_url_iterator']
 
 from zope.interface import implements
 import zope.security.management

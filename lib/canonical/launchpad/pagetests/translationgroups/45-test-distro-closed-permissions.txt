@@ -6,7 +6,7 @@ strings in Ubuntu to Afrikaans. In other languages, Foo Bar should be
 restricted only to seeing and contributing translations for strings which
 are not already translated at all.
 
-Let's see if Foo Bar can see the translated strings in Souther Sotho. We
+Let's see if Foo Bar can see the translated strings in Southern Sotho. We
 expect that they will not have the widget to allow them to show the
 translated strings:
 
@@ -39,19 +39,6 @@ switch to editing previously-translated strings.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-            <select name="show">
-              <option value="all">
-                all items
-              </option>
-              <option value="untranslated">
-                untranslated items
-              </option>
-              <option value="need-review">
-                need review items
-              </option>
-              <option value="translated">
-                translated items
-              </option>
-            </select>
+  ...<select name="alt"...
   ...
 

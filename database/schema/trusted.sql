@@ -2,15 +2,15 @@
 /* This is created as a function so the same definition can be used with
     many tables
 */
-    
+
 CREATE OR REPLACE FUNCTION valid_name(text) RETURNS boolean AS '
     import re
     name = args[0]
     pat = r"^[a-z0-9][a-z0-9\\+\\.\\-]+$"
-    if name is None or re.match(pat, name):
+    if re.match(pat, name):
         return 1
     return 0
-' LANGUAGE plpythonu IMMUTABLE;
+' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
 
 COMMENT ON FUNCTION valid_name(text)
     IS 'validate a name.
@@ -28,10 +28,10 @@ CREATE OR REPLACE FUNCTION valid_bug_name(text) RETURNS boolean AS '
     import re
     name = args[0]
     pat = r"^[a-z][a-z0-9\\+\\.\\-]+$"
-    if name is None or re.match(pat, name):
+    if re.match(pat, name):
         return 1
     return 0
-' LANGUAGE plpythonu IMMUTABLE;
+' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
 
 COMMENT ON FUNCTION valid_bug_name(text) IS 'validate a bug name
 
@@ -43,10 +43,10 @@ CREATE OR REPLACE FUNCTION valid_version(text) RETURNS boolean AS '
     import re
     name = args[0]
     pat = r"^[A-Za-z0-9\\+:\\.\\-\\~]+$"
-    if name is None or re.match(pat, name):
+    if re.match(pat, name):
         return 1
     return 0
-' LANGUAGE plpythonu IMMUTABLE;
+' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
 
 COMMENT ON FUNCTION valid_version(text) IS 'validate a version number
 
@@ -63,15 +63,15 @@ COMMENT ON FUNCTION valid_version(text) IS 'validate a version number
 CREATE OR REPLACE FUNCTION valid_cve(text) RETURNS boolean AS '
     import re
     name = args[0]
-    pat = r"^(CAN|CVE)-(19|20)\\d\\d-\\d+$"
+    pat = r"^(19|20)\\d{2}-\\d{4}$"
     if re.match(pat, name):
         return 1
     return 0
-' LANGUAGE plpythonu IMMUTABLE;
+' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
 
 COMMENT ON FUNCTION valid_cve(text) IS 'validate a common vulnerability number
 
-    As defined on www.cve.mitre.org';
+    As defined on www.cve.mitre.org, minus the CAN- or CVE- prefix.';
 
 
 CREATE OR REPLACE FUNCTION valid_absolute_url(text) RETURNS boolean AS '
@@ -80,7 +80,7 @@ CREATE OR REPLACE FUNCTION valid_absolute_url(text) RETURNS boolean AS '
     if not (scheme and netloc):
         return 0
     return 1
-' LANGUAGE plpythonu IMMUTABLE;
+' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
 
 COMMENT ON FUNCTION valid_absolute_url(text) IS 'Ensure the given test is a valid absolute URL, containing both protocol and network location';
 
@@ -91,7 +91,7 @@ CREATE OR REPLACE FUNCTION valid_fingerprint(text) RETURNS boolean AS '
         return 1
     else:
         return 0
-' LANGUAGE plpythonu IMMUTABLE;
+' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
 
 COMMENT ON FUNCTION valid_fingerprint(text) IS 'Returns true if passed a valid GPG fingerprint. Valid GPG fingerprints are a 40 character long hexadecimal number in uppercase.';
 
@@ -102,7 +102,7 @@ CREATE OR REPLACE FUNCTION valid_keyid(text) RETURNS boolean AS '
         return 1
     else:
         return 0
-' LANGUAGE plpythonu IMMUTABLE;
+' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
 
 COMMENT ON FUNCTION valid_keyid(text) IS 'Returns true if passed a valid GPG keyid. Valid GPG keyids are an 8 character long hexadecimal number in uppercase (in reality, they are 16 characters long but we are using the \'common\' definition.';
 
@@ -110,7 +110,7 @@ COMMENT ON FUNCTION valid_keyid(text) IS 'Returns true if passed a valid GPG key
 CREATE OR REPLACE FUNCTION sha1(text) RETURNS char(40) AS '
     import sha
     return sha.new(args[0]).hexdigest()
-' LANGUAGE plpythonu IMMUTABLE;
+' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
 
 COMMENT ON FUNCTION sha1(text) IS
     'Return the SHA1 one way cryptographic hash as a string of 40 hex digits';
@@ -128,4 +128,40 @@ CREATE OR REPLACE FUNCTION you_are_your_own_member() RETURNS trigger AS '
 
 COMMENT ON FUNCTION you_are_your_own_member() IS
     'Trigger function to ensure that every row added to the Person table gets a corresponding row in the TeamParticipation table, as per the TeamParticipationUsage page on the Launchpad wiki';
+
+SET check_function_bodies=false; -- Handle forward references
+
+CREATE OR REPLACE FUNCTION is_team(integer) returns boolean AS '
+    SELECT count(*)>0 FROM Person WHERE id=$1 AND teamowner IS NOT NULL;
+' LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT;
+
+COMMENT ON FUNCTION is_team(integer) IS
+    'True if the given id identifies a team in the Person table';
+
+
+CREATE OR REPLACE FUNCTION is_team(text) returns boolean AS '
+    SELECT count(*)>0 FROM Person WHERE name=$1 AND teamowner IS NOT NULL;
+' LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT;
+
+COMMENT ON FUNCTION is_team(text) IS
+    'True if the given name identifies a team in the Person table';
+
+
+CREATE OR REPLACE FUNCTION is_person(integer) returns boolean AS '
+    SELECT count(*)>0 FROM Person WHERE id=$1 AND teamowner IS NULL;
+' LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT;
+
+COMMENT ON FUNCTION is_person(integer) IS
+    'True if the given id identifies a person in the Person table';
+
+
+CREATE OR REPLACE FUNCTION is_person(text) returns boolean AS '
+    SELECT count(*)>0 FROM Person WHERE name=$1 AND teamowner IS NULL;
+' LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT;
+
+COMMENT ON FUNCTION is_person(text) IS
+    'True if the given name identifies a person in the Person table';
+    
+SET check_function_bodies=true;
+
 

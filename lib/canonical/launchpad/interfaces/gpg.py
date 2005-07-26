@@ -1,15 +1,19 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-from zope.schema import Bool, Int, Text, TextLine, Choice
+"""GPG key interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IGPGKey',
+    'IGPGKeySet',
+    ]
+
+from zope.schema import Bool, Int, TextLine, Choice
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 from canonical.launchpad import _
 
 from canonical.launchpad.validators.gpg import valid_fingerprint, valid_keyid
-
-#
-# GPG Interfaces
-#
 
 class IGPGKey(Interface):
     """GPG support"""
@@ -22,15 +26,15 @@ class IGPGKey(Interface):
             constraint=valid_keyid)
     fingerprint = TextLine(title=_("User Fingerprint"), required=True,
             constraint=valid_fingerprint)
-    revoked = Bool(title=_("Revoked"), required=True)
-    algorithmname = Attribute("The Algorithm Name")
-
+    active = Bool(title=_("Active"), required=True)
+    displayname = Attribute("Key Display Name")
+    revoked = Attribute("Workarrounded Revoked flag, temporary.")
 
 class IGPGKeySet(Interface):
     """The set of GPGKeys."""
 
     def new(self, ownerID, keyid, fingerprint, keysize,
-            algorithm, revoked):
+            algorithm, active=True):
         """Create a new GPGKey pointing to the given Person."""
 
     def get(id, default=None):
@@ -39,4 +43,18 @@ class IGPGKeySet(Interface):
         """
 
     def getByFingerprint(fingerprint, default=None):
-        """Return UNIQUE result for a given Key fingerprint."""
+        """Return UNIQUE result for a given Key fingerprint including
+        inactive ones.
+        """
+
+    def deactivateGpgKey(keyid):
+        """Deactivate a Key inside Launchpad Context """
+
+    def activateGpgKey(keyid):
+        """Reactivate a Key inside Launchpad Context """
+        
+    def getGpgKeys(ownerid=None, active=True):
+        """Return GPG keys, optionally for a given owner and or a given
+        status.
+        """ 
+

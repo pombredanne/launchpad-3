@@ -70,6 +70,7 @@ class ChangesetFileHash(SQLBase):
 
 class RevisionMapper:
     """Map revisions in and out of the db."""
+
     def findByName(self, name):
         from pybaz import NameParser
         from canonical.arch import broker
@@ -112,16 +113,15 @@ class RevisionMapper:
             Changeset.selectBy(name=revision.name, branchID=version_id)
             )
 
-    def _getId(self, revision, cursor):
+    def _getId(self, revision):
         """Get the id of a revision."""
-        branch_id = VersionMapper()._getId(revision.version, cursor)
-        cursor.execute(
-            "SELECT id FROM Changeset WHERE name = '%s' AND branch = %d" %
-            (revision.name, branch_id))
-        try:
-            return cursor.fetchone()[0]
-        except IndexError:
+        branch_id = VersionMapper()._getDBBranchId(revision.version)
+        changeset = Changeset.selectOneBy(name=revision.name,
+                                          branchID=branch_id)
+        if changeset is None:
             raise RevisionNotRegistered(revision.fullname)
+        else:
+            return changeset.id
 
     def insert_file(self, revision, filename, data, checksums):
         """Insert a file into the database."""

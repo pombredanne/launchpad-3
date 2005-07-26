@@ -7,47 +7,41 @@
 
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/distribution/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-details" /> 
+  <div tal:replace="structure context/distribution/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-actions" />
   <div tal:replace="structure context/@@+portlet-translations" /> 
+  <div tal:replace="structure context/@@+portlet-langstats" /> 
 </metal:rightportlets>
 
 <div metal:fill-slot="main" tal:define="distro context/distribution">
     
-    <h1>Distribution Release Overview</h1> 
+    <h1>Distribution release overview</h1> 
 
         <div class="documentDescription"
-             tal:content="context/summary">
+             tal:content="structure context/summary/fmt:text-to-html">
              Release summary
         </div>
             
-         <div>
-          <span tal:content="context/description">description</span>   
-         </div>
+        <tal:description content="structure context/description/fmt:text-to-html">
+          description
+        </tal:description>
 
-      <tal:block tal:condition="context/architectures" tal:omit-tag>
-      <h2>Architectures</h2>
-
-      <p>A linux distribution will often support multiple architectures.
-      Each architecture is a specific combination of processor and computer
-      design. This release of
-      <span tal:replace="context/distribution/displayname" /> supports the
-      following architectures:</p>
+        <tal:architectures condition="context/architectures">
+          <h2>Architectures</h2>
 
       <ul>
           <li tal:repeat="arch context/architectures">
 	    <a tal:attributes="href arch/architecturetag">
 	      <span tal:replace="arch/processorfamily/name" />:
-              <span tal:replace="arch/processorfamily/title" />
-            </a>
+        <span tal:replace="arch/processorfamily/title" /></a>
              (<span tal:replace="arch/architecturetag"/>) 
           </li>
       </ul>
-      </tal:block>
+        </tal:architectures>
 
       <tal:block tal:define="sourcecount context/sourcecount "
                  tal:condition="sourcecount" tal:omit-tag>
@@ -60,7 +54,7 @@
       from a total of <span tal:replace="sourcecount" /> source
       packages.</p>
 
-          <div tal:condition="sourcecount" align="center">
+          <div tal:condition="sourcecount">
 
               <form name="search" method="POST" action="+packages">
                <div class="formControls">

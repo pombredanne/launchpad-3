@@ -3,7 +3,6 @@ Team, which is one of the maintainers on this bug.
 
   >>> print http(r"""
   ... GET /malone/bugs/2/+edit HTTP/1.1
-  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Cookie: launchpad=rD7snMSOdWFans5Ukm95CcGOHkM8hBYGxDWm0XnZgjudpcjHC7VGSE
   ... """)
@@ -14,8 +13,6 @@ Team, which is one of the maintainers on this bug.
       <div class="portletBody">
           <div class="portletContent even">
   <BLANKLINE>
-              ...First reported by:...
-                  ...Sample Person...
               ...Maintainers:...
                   ...Ubuntu Team...
                   ...Mark Shuttleworth...
@@ -29,12 +26,9 @@ is a member.
 
   >>> print http(r"""
   ... POST /malone/bugs/2/+edit HTTP/1.1
-  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1235
   ... Content-Type: multipart/form-data; boundary=---------------------------115180199804837416230138857
-  ... Cookie: launchpad=rD7snMSOdWFans5Ukm95CcGOHkM8hBYGxDWm0XnZgjudpcjHC7VGSE
-  ... Referer: http://localhost:9000/malone/bugs/2/+edit
   ... 
   ... -----------------------------115180199804837416230138857
   ... Content-Disposition: form-data; name="field.title"
@@ -73,8 +67,6 @@ is a member.
       <div class="portletBody">
           <div class="portletContent even">
   <BLANKLINE>
-              ...First reported by:...
-                  ...Sample Person...
               ...Maintainers:...
                   ...Ubuntu Team...
                   ...Mark Shuttleworth...

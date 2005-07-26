@@ -1,0 +1,118 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<body>
+
+
+<metal:rightportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-packages" />
+</metal:rightportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-actions" />
+    <div tal:replace="structure context/@@+portlet-source" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+<!-- process a form submission -->
+<div tal:condition="view/setCurrentUbuntuPackage" />
+
+    <h1>Ubuntu Packaging</h1>
+
+    <p class="documentDescription">
+      This page allows you to link this branch of <span
+      tal:replace="context/product/displayname">product</span> with the
+      relevant Ubuntu package.
+    </p>
+
+    <p tal:repeat="msg view/errormsgs" class="portalMessage"
+       tal:content="msg">
+       Error Message Here
+    </p>
+
+    <p class="portalMessage"
+       tal:condition="not:request/lp:person">
+       Please log in to edit the mapping from this product branch to its
+       Ubuntu package.
+    </p>
+
+    <form method="POST"
+          tal:condition="request/lp:person"
+          tal:attributes="action request/getURL">
+
+      <fieldset>
+
+        <legend>Package in Ubuntu,
+          <span tal:replace="view/curr_ubuntu_release/title">
+            The Hoary Hedgehog Release
+          </span></legend>
+
+        <div class="field">
+
+          <label>Source Package</label>
+
+          <span class="fieldRequired" title="Required">(Required)</span>
+
+            <div class="formHelp">
+              The name of the SOURCE package in the current release of
+              Ubuntu (Version <span
+              tal:replace="view/curr_ubuntu_release/version">4.10</span>,
+              <span tal:replace="view/curr_ubuntu_release/title">
+                The Hoary Hedgehog Release
+              </span>). it is very important to link exactly the right
+              branch to the relevant Ubuntu package, to ensure that bugs,
+              patches and translations are correctly shared. Please do not
+              link the "HEAD" or "MAIN" or "TRUNK" branch to an Ubuntu
+              package unless you are absolutely certain that the package is
+              actually based on HEAD.
+            </div>
+
+          <input type="text" name="ubuntupkg" size="30"
+                 value="" tal:attributes="value view/curr_ubuntu_pkgname" />
+          
+          <input type="submit" name="setubuntupkg" value="Update">
+
+        </div>
+
+      </fieldset>
+
+    </form>
+
+    <tal:block condition="view/ubuntu_history">
+      <h2>Complete History of Ubuntu Packages</h2>
+
+      <p>Below we list all of the known links between Ubuntu and this branch
+      of <span tal:replace="context/product/displayname">mozilla
+      firefox</span>:</p>
+
+      <table class="listing">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Ubuntu Release</th>
+            <th>Package</th>
+            <th>By</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="packaging view/ubuntu_history">
+            <td tal:content="packaging/datecreated/fmt:date">13-05-2004</td>
+            <td tal:content="packaging/distrorelease/name">hoary</td>
+            <td tal:content="packaging/sourcepackagename/name">evolution</td>
+            <td><span tal:condition="packaging/owner"
+                      tal:replace="packaging/owner/browsername">sabdfl
+                </span></td>
+          </tr>
+        </tbody>
+      </table>
+
+    </tal:block>
+
+</div>
+
+</body>
+</html>

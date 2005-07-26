@@ -1,0 +1,97 @@
+Polls
+=====
+
+In Launchpad, we have teams as a way to group free software
+developers/contributors usually based on the free software
+product/project/distribution they're involved in. This is the case with teams
+like the 'Gnome Team' and the 'Ubuntu Team'. These teams often have leaders
+whose ellection depends on the vote of all members, and this is one of the
+reasons why we teams can have polls attached to them.
+
+  >>> import pytz
+  >>> from datetime import datetime, timedelta
+  >>> from zope.component import getUtility
+  >>> from canonical.lp.dbschema import PollSecrecy, PollAlgorithm
+  >>> from canonical.database.sqlbase import flush_database_updates
+  >>> from canonical.launchpad.ftests import login
+  >>> from canonical.launchpad.interfaces import (
+  ...     IPersonSet, IPollSubset, IPollOptionSubset)
+
+  >>> team = getUtility(IPersonSet).getByName('name17')
+  >>> person = getUtility(IPersonSet).getByName('name16')
+  >>> now = datetime.now(pytz.timezone('UTC'))
+  >>> onesec = timedelta(seconds=1)
+
+We need to login with one of the administrators of the team named 'name17' to
+be able to create/edit polls.
+  >>> login('colin.watson@ubuntulinux.com')
+
+First we get an object implementing IPollSubset, which is the set of polls for
+a given team (in our case, the 'Ubuntu Team')
+  >>> pollsubset = IPollSubset(team)
+  >>> len(pollsubset.getAll())
+  0
+
+Now we create a new poll on this team.
+  >>> opendate = datetime(2005, 01, 01, tzinfo=pytz.timezone('UTC'))
+  >>> closedate = opendate + timedelta(weeks=2)
+  >>> poll = pollsubset.new("leader-election", "2005 Leader's Elections",
+  ...                       "Who's going to be the next leader?",
+  ...                       opendate, closedate,
+  ...                       PollAlgorithm.SIMPLE, PollSecrecy.SECRET, True)
+  >>> len(pollsubset.getAll())
+  1
+
+Now we test the if the poll is open or closed in some specific dates.
+  >>> poll.isOpen(when=opendate)
+  True
+  >>> poll.isOpen(when=opendate - onesec)
+  False
+  >>> poll.isOpen(when=closedate)
+  True
+  >>> poll.isOpen(when=closedate + onesec)
+  False
+
+To know what polls are open/closed/not-yet-opened in a team, you can use the
+methods of PollSubset.
+Here we'll query using three different dates:
+
+Query for open polls in the exact second the poll is opening.
+  >>> [p.name for p in pollsubset.getOpenPolls(when=opendate)]
+  [u'leader-election']
+
+Query for closed polls, one second after the poll closes.
+  >>> [p.name for p in pollsubset.getClosedPolls(when=closedate + onesec)]
+  [u'leader-election']
+
+Query for not-yet-opened polls, one second before the poll opens.
+  >>> [p.name for p in pollsubset.getNotYetOpenedPolls(when=opendate - onesec)]
+  [u'leader-election']
+
+All polls must have a set of options for people to choose, and they'll always
+start with zero options. We're responsible for adding new ones.
+  >>> optionsubset = IPollOptionSubset(poll)
+  >>> len(optionsubset.getAll())
+  0
+
+Let's add some options to this poll, so people can start voting. :)
+  >>> will = optionsubset.new('William Big-Middle-Name Graham', 'Will Graham')
+  >>> jack = optionsubset.new('Jack Crawford')
+  >>> francis = optionsubset.new('Francis Dolarhyde')
+  >>> [o.shortname for o in optionsubset.getActive()]
+  [u'Francis Dolarhyde', u'Jack Crawford', u'Will Graham']
+
+Now, what happens if the poll is already open and, let's say, Francis Dolarhyde
+is arrested and thus becomes ineligible? We'll have to mark that option as
+inactive, so people can't vote on it.
+  >>> francis.active = False
+  >>> flush_database_updates()
+  >>> [o.shortname for o in optionsubset.getActive()]
+  [u'Jack Crawford', u'Will Graham']
+
+# XXX: Must add tests to make sure an option can be removed before (and only
+# before) a poll is closed. Not yet implemented.
+
+# XXX: Make 'person' vote on this poll and test that his vote was stored.
+# To be added later, this is not yet implemented.
+

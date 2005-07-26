@@ -1,12 +1,22 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""Product series interfaces."""
 
-# Zope schema imports
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
+__metaclass__ = type
+
+__all__ = [
+    'IProductSeries',
+    'IProductSeriesSource',
+    'IProductSeriesSourceAdmin',
+    'IProductSeriesSet',
+    ]
+
+from zope.schema import  Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.validators.name import valid_name
+
 _ = MessageIDFactory('launchpad')
 
 class IProductSeries(Interface):
@@ -16,29 +26,70 @@ class IProductSeries(Interface):
     # instead of using object.id.
     id = Int(title=_('ID'))
     # field names
-    product = Choice( title=_('Product'), required=True,
-                      vocabulary='Product')
-    name = Text(title=_('Name'), required=True, constraint=valid_name)
-    name = TextLine(title=_('Name'), required=True)
+    product = Choice(title=_('Product'), required=True,
+                     vocabulary='Product')
+    name = TextLine(title=_('Name'), required=True, 
+                    description=_('The name of the series is a short, unique '
+                                  'name that identifies it, being used in URLs.'
+                                  'It must be all lowercase, with no special '
+                                  'characters. For example, "2.0" or "trunk".'),
+                    constraint=valid_name)
+    datecreated = Datetime(title=_('Date Registered'), required=True,
+                           readonly=True)
     title = Attribute('Title')
-    displayname = TextLine( title=_('Display Name'), required=True)
-    summary = Text(title=_("Summary"), required=True)
+    displayname = TextLine(title=_('Display Name'),
+                           description=_('The "display name" of the Series is '
+                                         'a short, capitalized name. It should '
+                                         'make sense as part of a paragraph of '
+                                         'text. For example, "2.0 (Stable)" or '
+                                         '"MAIN (development)" or "1.3 '
+                                         '(Obsolete)".'),
+                           required=True)
+    summary = Text(title=_("Summary"), 
+                   description=_('A single paragraph introduction or overview '
+                                 'of this series. For example: "The 2.0 '
+                                 'series of Apache represents the current '
+                                 'stable series, and is recommended for all '
+                                 'new deployments".'),
+                   required=True)
     datecreated = TextLine(title=_('Date Created'), description=_("""The
         date this productseries was created in Launchpad."""))
-    # convenient joins
+
     releases = Attribute("An iterator over the releases in this "
         "Series, sorted with latest release first.")
+    potemplates = Attribute(
+        _("Return an iterator over this productrelease's PO templates."))
+    potemplatecount = Attribute(_("The number of POTemplates for this "
+        "Product Series."))
+    packagings = Attribute("An iterator over the Packaging entries "
+        "for this product series.")
 
-    # properties
-    sourcepackages = Attribute(_("List of distribution packages for this \
-        product series"))
+    sourcepackages = Attribute(_("List of distribution packages for this "
+        "product series"))
 
     def getRelease(version):
         """Get the release in this series that has the specified version."""
 
     def getPackage(distrorelease):
         """Return the SourcePackage for this productseries in the supplied
-        distrorelease."""
+        distrorelease. This will use a Packaging record if one exists, but
+        it will also work through the ancestry of the distrorelease to try
+        to find a Packaging entry that may be relevant."""
+
+    def setPackaging(distrorelease, sourcepackagename, owner):
+        """Create or update a Packaging record for this product series,
+        connecting it to the given distrorelease and source package name.
+        """
+
+    def getPackagingInDistribution(distribution):
+        """Return all the Packaging entries for this product series for the
+        given distribution. Note that this only returns EXPLICT packaging
+        entries, it does not look at distro release ancestry in the same way
+        that IProductSeries.getPackage() does.
+        """
+
+    def getPOTemplate(name):
+        """Return the POTemplate with this name for the series."""
 
 
 class IProductSeriesSource(Interface):

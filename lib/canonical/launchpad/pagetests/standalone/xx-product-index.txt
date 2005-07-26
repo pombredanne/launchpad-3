@@ -1,7 +1,7 @@
 Check that the product main page works.
 
   >>> print http(r"""
-  ... GET /doap/products/ubuntu HTTP/1.1
+  ... GET /products/ubuntu HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -25,5 +25,5 @@ upstream that does not have translations in a distribution.
   ... """)
   HTTP/1.1 200 Ok
   ...
-                  <td>Template "netapplet" in NetApplet 1.0</td>
+  ...Template "netapplet" in NetApplet NetApplet Releases...
   ...

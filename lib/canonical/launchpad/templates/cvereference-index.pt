@@ -10,10 +10,13 @@
     reference
   </h1>
   <table class="listing">
+        <thead>
     <tr>
       <th>Title</th>
       <th>Data</th>
     </tr>
+        </thead>
+        <tbody>
     <tr>
       <td tal:content="context/title">CVE Title</td>
       <td>
@@ -21,6 +24,7 @@
            tal:content="context/data">999</a>
       </td>
     </tr>
+        </tbody>
   </table>
 </div>
 

@@ -35,7 +35,7 @@
   Content-Type: text/html;charset=utf-8
   ...
   ...Foo Bar...
-  ...Approved Member...
+  ...Approved...
   ...
 
 
@@ -44,8 +44,8 @@
   >>> from canonical.launchpad.database import Person, TeamMembership
   >>> foobar = Person.byName('name16')
   >>> team = Person.byName('myemail')
-  >>> tm = TeamMembership.selectBy(personID=foobar.id, teamID=team.id)[0]
+  >>> tm = TeamMembership.selectOneBy(personID=foobar.id, teamID=team.id)
   >>> tm.statusname
-  'Approved Member'
+  'Approved'
   >>> foobar.inTeam(team)
   True

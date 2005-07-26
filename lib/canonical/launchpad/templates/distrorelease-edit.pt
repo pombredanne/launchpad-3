@@ -18,7 +18,7 @@
     </div>
     
     <div>
-    <form name="edit" action="" method="POST">
+    <form name="edit" action="." method="POST">
     <fieldset>
     <legend><h3>Edit Release Information</h3><legend>
     <table>

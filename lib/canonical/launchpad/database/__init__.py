@@ -7,6 +7,7 @@ from canonical.launchpad.database.packaging import *
 from canonical.launchpad.database.productseries import *
 from canonical.launchpad.database.productrelease import *
 from canonical.launchpad.database.project import *
+from canonical.launchpad.database.poll import *
 from canonical.launchpad.database.bug import *
 from canonical.launchpad.database.bugwatch import *
 from canonical.launchpad.database.bugsubscription import *
@@ -31,6 +32,7 @@ from canonical.launchpad.database.archarchive import *
 from canonical.launchpad.database.archbranch import *
 from canonical.launchpad.database.archchangeset import *
 from canonical.launchpad.database.librarian import *
+from canonical.launchpad.database.launchpadstatistic import *
 from canonical.launchpad.database.maintainership import *
 from canonical.launchpad.database.infestation import *
 from canonical.launchpad.database.sourcepackage import *
@@ -43,11 +45,11 @@ from canonical.launchpad.database.binarypackagename import *
 from canonical.launchpad.database.publishedpackage import *
 from canonical.launchpad.database.distribution import *
 from canonical.launchpad.database.distrorelease import *
+from canonical.launchpad.database.distroreleaselanguage import *
 from canonical.launchpad.database.distroarchrelease import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.schema import *
 from canonical.launchpad.database.language import *
-from canonical.launchpad.database.translation_effort import *
 from canonical.launchpad.database.translationgroup import *
 from canonical.launchpad.database.translator import *
 from canonical.launchpad.database.processor import *
@@ -63,9 +65,9 @@ from canonical.launchpad.database.message import *
 from canonical.launchpad.database.queue import *
 from canonical.launchpad.database.country import *
 from canonical.launchpad.database.spokenin import *
+from canonical.launchpad.database.cal import *
 from canonical.launchpad.database.logintoken import *
 from canonical.launchpad.database.codeofconduct import *
-from canonical.launchpad.database.distrotool import *
 from canonical.launchpad.database.component import *
 from canonical.launchpad.database.section import *
 from canonical.launchpad.database.vpoexport import *

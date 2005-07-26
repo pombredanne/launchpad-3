@@ -53,8 +53,8 @@
   >>> from canonical.launchpad.database import Person, TeamMembership
   >>> cprov = Person.byName('cprov')
   >>> team = Person.byName('myemail')
-  >>> tm = TeamMembership.selectBy(personID=cprov.id, teamID=team.id)[0]
+  >>> tm = TeamMembership.selectOneBy(personID=cprov.id, teamID=team.id)
   >>> tm.statusname
-  'Approved Member'
+  'Approved'
   >>> cprov.inTeam(team)
   True

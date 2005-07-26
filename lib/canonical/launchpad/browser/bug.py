@@ -2,20 +2,21 @@
 
 __metaclass__ = type
 
-from urlparse import urljoin
+__all__ = [
+    'BugView',
+    'BugSetView',
+    'BugEditView',
+    'BugAddView',
+    'BugAddingView',
+    'BugAddForm',
+    ]
 
 from zope.app.publisher.browser import BrowserView
-from zope.component import getUtility
-from zope.app.pagetemplate.viewpagetemplatefile import (
-    ViewPageTemplateFile, BoundPageTemplate)
 from zope.interface import implements
 
 from canonical.lp import dbschema, decorates, Passthrough
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.interfaces import (
-    IPerson, ILaunchBag, IBugSet, IBugTaskSet, IDistributionSet, IBugAddForm,
-    IBug)
-from canonical.lp import dbschema
+from canonical.launchpad.interfaces import IBugAddForm, IBug
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
@@ -37,10 +38,20 @@ class BugView:
                 if s.subscription==dbschema.BugSubscription.IGNORE]
 
 
-class BugAbsoluteURL(BrowserView):
-    """The view for an absolute URL of a bug."""
-    def __str__(self):
-        return canonical_url(self.context)
+class BugSetView:
+    """The default view for /malone/bugs.
+
+    Essentially, this exists only to allow forms to post IDs here and be
+    redirected to the right place.
+    """
+    def __init__(self, context, request):
+        self.request = request
+
+    def __call__(self, *args, **kw):
+        bug_id = self.request.form.get("id")
+        if bug_id:
+            return self.request.response.redirect(bug_id)
+        return self.request.response.redirect("/malone")
 
 
 class BugEditView(BugView, SQLObjectEditView):
@@ -90,3 +101,4 @@ class BugAddForm:
         self.bug = bug
         self.bugtask = bug.bugtasks[0]
         self.comment = bug.messages[0]
+

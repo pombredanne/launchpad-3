@@ -57,7 +57,7 @@
 
     <div align="center" tal:define="sourcecount context/release/sourcecount">
 
-      <form name="search" method="get" action="">
+      <form name="search" method="get" tal:attributes="action request/getURL">
        <div class="formControls">
         <label>Package name:</label>
         <input tal:attributes="value request/name|nothing" 

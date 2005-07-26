@@ -2,6 +2,7 @@
 <div class="portlet">
   <h4>What&#8217;s this all about?</h4>
   <div class="portletBody portletContent">
+    <img src="/++resource++info_icon.gif" />
     Read <a href="/rosetta/+about">about Rosetta</a> and how you can
     help translate open source software into your local language.
   </div>

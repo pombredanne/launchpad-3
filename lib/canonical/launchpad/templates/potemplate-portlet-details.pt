@@ -1,0 +1,45 @@
+
+<div class="portlet">
+
+    <h4>Template Details:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent odd">
+            <img src="/++resource++document_icon.gif" />
+            <span tal:replace="view/num_messages" /><br />
+            <img src="/++resource++languages.gif" />
+            <span tal:replace="context/language_count">421</span>
+            Languages<br />
+            <b>Owner:</b><br />
+            <img src="/++resource++user.gif" />
+            <span tal:replace="context/owner/browsername" /><br />
+            <b>Created:</b>
+            <span tal:replace="context/datecreated/fmt:date">
+              2004-05-22
+            </span><br />
+            <b>Domain:</b>
+            <span tal:replace="context/potemplatename/translationdomain">
+              foobar
+            </span><br />
+            <b>Translation Group(s):</b><br />
+            <img src="/++resource++languages.gif">
+            <tal:block repeat="group context/translationgroups">
+            <a tal:attributes="href
+                     string:/rosetta/groups/${group/name}/"
+               tal:content="group/title"
+            >Group</a><br />
+            </tal:block>
+            <tal:block condition="not: context/translationgroups">
+            <i>None assigned</i><br />
+            </tal:block>
+            <b>Permissions:</b>
+            <span tal:replace="context/translationpermission/title" /><br />
+            <b>Description:</b><br />
+            <span tal:replace="context/description">
+              POTemplate Description
+            </span>
+            <i tal:condition="not: context/description">None given</i><br/>
+        </div>
+    </div>
+</div>
+

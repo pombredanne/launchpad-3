@@ -2,7 +2,12 @@
 """Launchpad Project-related Database Table Objects."""
 
 __metaclass__ = type
-__all__ = ['Project', 'ProjectSet', 'ProjectBugTracker']
+__all__ = [
+    'Project',
+    'ProjectSet',
+    'ProjectBugTracker',
+    'ProjectBugTrackerSet',
+    ]
 
 import sets
 
@@ -10,23 +15,24 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 
-from canonical.launchpad.interfaces import \
-    IProject, IProjectSet, IProjectBugTracker
+from canonical.launchpad.interfaces import (
+    IProject, IProjectSet, IProjectBugTracker, IProjectBugTrackerSet,
+    ICalendarOwner)
 
-from canonical.lp.dbschema import EnumCol, TranslationPermission, \
-    ImportStatus
+from canonical.lp.dbschema import (
+    EnumCol, TranslationPermission, ImportStatus)
 from canonical.launchpad.database.product import Product
-from canonical.database.constants import UTC_NOW
+from canonical.launchpad.database.cal import Calendar
 
 
 class Project(SQLBase):
     """A Project"""
 
-    implements(IProject)
+    implements(IProject, ICalendarOwner)
 
     _table = "Project"
 
@@ -67,6 +73,16 @@ class Project(SQLBase):
                                otherColumn='bugtracker',
                                intermediateTable='ProjectBugTracker')
 
+    calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
+                          default=None, forceDBName=True)
+
+    def getOrCreateCalendar(self):
+        if not self.calendar:
+            self.calendar = Calendar(
+                title='%s Project Calendar' % self.displayname,
+                revision=0)
+        return self.calendar
+
     def getProduct(self, name):
         return Product.selectOneBy(projectID=self.id, name=name)
 
@@ -91,21 +107,22 @@ class ProjectSet:
         name = name.encode('ascii')
         displayname = displayname.encode('ascii')
         title = title.encode('ascii')
-        if type(url) != NoneType:
-            url = url.encode('ascii')
+        if homepageurl is not None:
+            homepageurl = homepageurl.encode('ascii')
         description = description.encode('ascii')
 
         if Project.selectBy(name=name).count():
             raise KeyError("There is already a project named %s" % name)
 
-        return Project(name = name,
-                       displayname = displayname,
-                       title = title,
-                       summary = summary,
-                       description = description,
-                       homepageurl = url,
-                       owner = owner,
-                       datecreated = UTC_NOW)
+        return Project(
+            name=name,
+            displayname=displayname,
+            title=title,
+            summary=summary,
+            description=description,
+            homepageurl=homepageurl,
+            owner=owner,
+            datecreated=UTC_NOW)
 
     def forReview(self):
         return Project.select("reviewed IS FALSE")
@@ -183,4 +200,10 @@ class ProjectBugTracker(SQLBase):
                 ForeignKey(name='bugtracker', foreignKey="BugTracker",
                            dbName="bugtracker", notNull=True)
                 ]
+
+class ProjectBugTrackerSet:
+    implements(IProjectBugTrackerSet)
+
+    def new(self, project, bugtracker):
+        return ProjectBugTracker(project=project, bugtracker=bugtracker)
 

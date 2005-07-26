@@ -1,3 +1,12 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
+__all__ = [
+    'IbuilddepsSet',
+    'IDownloadURL',
+    ]
+
 # XXX: IbuilddepsSet is named poorly.  These interfaces should not be in
 #      something called 'general.py', and should have docstrings.
 #      SteveAlexander, 2005-06-12

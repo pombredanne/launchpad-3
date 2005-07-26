@@ -22,12 +22,13 @@ CVE references can be created with the ICVERefSet utility.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import ICVERefSet
+    >>> from canonical.lp.dbschema import CVEState
     >>> cverefset = getUtility(ICVERefSet)
 
 To create a CVE reference, call ICVERefSet.createCVERef.
 
     >>> cveref = cverefset.createCVERef(
-    ...     bug = 2, cveref = "CVE-2004-0276",
+    ...     bug = 2, cveref = "2004-0276", cvestate=CVEState.CVE,
     ...     title = "a test cve ref", owner = 12)
-    >>> cveref.cveref
+    >>> cveref.displayname
     u'CVE-2004-0276'

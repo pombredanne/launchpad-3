@@ -1,0 +1,122 @@
+
+  Certify we have a deactivated key   
+
+  >>> print http(r"""
+  ... GET /people/name12/+editgpgkey HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...
+  ...Deactivated GPG Keys...
+  ...1024D/DFD20543...
+  ...
+
+
+  Setup a interaction for current process (black magic needed to used 
+  getUtility and share the current instances inside LP)
+
+  >>> from canonical.launchpad.helpers import setupInteraction
+  >>> setupInteraction(None)
+
+  End up with the pendent token.
+
+  >>> from canonical.launchpad.interfaces import ILaunchBag, ILoginTokenSet 
+  >>> from zope.component import getUtility
+  >>> bag = getUtility(ILaunchBag)
+  >>> tokenset= getUtility(ILoginTokenSet)
+
+  Finish the current Interaction
+
+  >>> from zope.security.management import endInteraction
+  >>> endInteraction()
+
+
+  Request Revalidation 
+
+  >>> print http(r"""
+  ... POST /people/name12/+editgpgkey HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... action=revalidate_gpg&REVALIDATE_GPGKEY=1""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...
+  ...Key(s):...1024D/DFD20543...test@canonical.com...
+  ...GPG Keys Pending Validation...
+  ...A419AE861E88BC9E04B9C26FBA2B9389DFD20543...
+  ...
+
+
+  Recover Token URL
+  XXX cprov 20050624
+  same issue as 01-claimgpg, copied stuff
+
+  >>> import email, re
+  >>> from canonical.launchpad.mail import stub
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> msg = email.message_from_string(raw_msg)  
+  >>> cipher_body = msg.get_payload(decode=1)
+  >>> from canonical.launchpad.helpers import setupInteraction
+  >>> setupInteraction(None)
+  >>> from canonical.launchpad.interfaces import IGPGHandler 
+  >>> from zope.component import getUtility
+  >>> gpghandler = getUtility(IGPGHandler)
+  >>> body = gpghandler.decryptContent(cipher_body, 'test')
+  >>> from zope.security.management import endInteraction
+  >>> endInteraction()
+  >>> link = re.findall(r'http.*/token/.*', body)[0]
+  >>> token = re.sub(r'.*token/', '', link)
+  >>> base_path = '/token/%s' % token
+
+
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """ % base_path)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  ...
+  ...<h1>You're being redirected</h1>
+  ...
+
+  Get Redirected
+
+  >>> path = '%s/+validategpg' % base_path
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """ % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...
+  ...Validate GPG key: A419AE861E88BC9E04B9C26FBA2B9389DFD20543 by 
+  ...Sample Person...
+  ...
+
+
+  Revalidate inactive key.
+
+  >>> print http(r"""
+  ... POST %s HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... 
+  ... password=test&SUBMIT_CHANGES=Submit""" % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...
+  ...The key...1024D/DFD20543...was successfully revalidated. <a href="/people/name12/+editgpgkey">See more Information</a>...
+  ...
+
+ Certify the key is revalidated
+
+  >>> print http(r"""
+  ... GET /foaf/people/name12/+editgpgkey HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...
+  ...Valid GPG Keys...
+  ...1024D/DFD20543...
+  ...

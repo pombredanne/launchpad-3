@@ -2,19 +2,25 @@
 
 __metaclass__ = type
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
-
-from zope.interface import Interface, Attribute
-from zope.exceptions import NotFoundError
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
-from zope.app.form.browser.interfaces import IAddFormCustomization
-
 __all__ = [
-    'IMessagesView', 'IMessage', 'IMessageSet', 'IMessageChunk',
-    'IAddMessage', 'UnknownSender', 'MissingSubject', 'DuplicateMessageId',
+    'IMessagesView',
+    'IMessage',
+    'IMessageSet',
+    'IMessageChunk',
+    'IAddMessage',
+    'UnknownSender',
+    'MissingSubject',
+    'DuplicateMessageId',
     'InvalidEmailMessage',
     ]
+
+from zope.i18nmessageid import MessageIDFactory
+from zope.interface import Interface, Attribute
+from zope.exceptions import NotFoundError
+from zope.schema import Datetime, Int, Text, TextLine
+from zope.app.form.browser.interfaces import IAddFormCustomization
+
+_ = MessageIDFactory('launchpad')
 
 class IMessagesView(IAddFormCustomization):
     """Message views"""
@@ -30,8 +36,8 @@ class IMessage(Interface):
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True,
             )
-    title = TextLine(
-            title=_('Title'), required=True, readonly=True,
+    subject = TextLine(
+            title=_('Subject'), required=True, readonly=True,
             )
     owner = Int(
             title=_('Person'), required=False, readonly=True,
@@ -52,16 +58,20 @@ class IMessage(Interface):
     bugs = Attribute(_('Bug List'))
     chunks = Attribute(_('Message pieces'))
     contents = Attribute(_('Full message contents as plain text'))
-    followup_title = Attribute(_("Candidate title for a followup message."))
+    followup_title = Attribute(_('Candidate title for a followup message.'))
+    title = Attribute(_('The message title, usually just the subject.'))
+
+    def __iter__():
+        """Iterate over all the message chunks."""
 
 
 class IMessageSet(Interface):
     """Set of IMessage"""
 
     def get(rfc822msgid):
-        """Return a single IMessage with the given rfc822msgid.
+        """Return a list of IMessage's with the given rfc822msgid.
 
-        If no such messge exists, raise NotFoundError.
+        If no such messages exist, raise NotFoundError.
         """
 
     def fromEmail(email_message, owner=None, filealias=None,
@@ -103,7 +113,7 @@ class IMessageChunk(Interface):
 
 class IAddMessage(Interface):
     """This schema is used to generate the add comment form"""
-    title = TextLine(title=_("Subject"), required=True)
+    subject = TextLine(title=_("Subject"), required=True)
     content = Text(title=_("Body"), required=True)
 
 

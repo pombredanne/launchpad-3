@@ -1,22 +1,17 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
-
-from zope.app.form.browser.add import AddView
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser import SequenceWidget, ObjectWidget
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-
-import zope.security.interfaces
-
-from canonical.launchpad.interfaces import IBounty, IBountySet, IPerson
-from canonical.launchpad.database import Bounty
-from canonical.lp.dbschema import BountySubscription
-
-ow = CustomWidgetFactory(ObjectWidget, Bounty)
-sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
+__metaclass__ = type
 
 __all__ = ['BountyView', 'BountySetAddView']
+
+from zope.component import getUtility
+from zope.event import notify
+from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.app.form.browser.add import AddView
+from zope.security.interfaces import Unauthorized
+
+from canonical.launchpad.interfaces import IBounty, IBountySet, ILaunchBag
+from canonical.lp.dbschema import BountySubscription
 
 class BountySubscriberPortletMixin:
 
@@ -46,7 +41,7 @@ class BountyView(BountySubscriberPortletMixin):
         self.notices = []
 
         # figure out who the user is for this transaction
-        self.user = IPerson(self.request.principal, None)
+        self.user = getUtility(ILaunchBag).user
 
         # establish if a subscription form was posted
         formsub = request.form.get('Subscribe', None)
@@ -86,14 +81,11 @@ class BountyView(BountySubscriberPortletMixin):
         html += '>None</option>\n'
         html += '</select>\n'
         return html
-        
 
 class BountySetAddView(AddView):
 
     __used_for__ = IBountySet
 
-    options_widget = sw
-    
     def __init__(self, context, request):
         self.request = request
         self.context = context
@@ -102,19 +94,23 @@ class BountySetAddView(AddView):
 
     def createAndAdd(self, data):
         # add the owner information for the bounty
-        owner = IPerson(self.request.principal, None)
+        owner = getUtility(ILaunchBag).user
         if not owner:
-            raise zope.security.interfaces.Unauthorized, "Need an authenticated bounty owner"
-        kw = {}
-        for item in data.items():
-            kw[str(item[0])] = item[1]
-        kw['ownerID'] = owner.id
+            raise Unauthorized(
+                "Must have an authenticated user in order to create a bounty")
         # XXX Mark Shuttleworth need the fancy-person selector to select a
         # reviewer
-        kw['reviewerID'] = owner.id
-        bounty = Bounty(**kw)
+        reviewer = owner
+        bounty = getUtility(IBountySet).new(
+            name=data['name'],
+            title=data['title'],
+            summary=data['summary'],
+            description=data['description'],
+            usdvalue=data['usdvalue'],
+            owner=owner,
+            reviewer=reviewer)
         notify(ObjectCreatedEvent(bounty))
-        self._nextURL = kw['name']
+        self._nextURL = data['name']
         return bounty
 
     def nextURL(self):

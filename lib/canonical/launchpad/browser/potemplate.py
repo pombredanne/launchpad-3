@@ -8,16 +8,13 @@ __all__ = [
     'POTemplateSubsetView', 'POTemplateView', 'POTemplateEditView',
     'POTemplateAdminView', 'POTemplateAddView', 'BaseExportView',
     'POTemplateExportView', 'POTemplateTranslateView',
-    'POTemplateAbsoluteURL', 'POTemplateSubsetURL', 'POTemplateURL']
+    'POTemplateSubsetURL', 'POTemplateURL']
 
-import tarfile
 from sets import Set
-from StringIO import StringIO
 from datetime import datetime
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.publisher.browser import FileUpload
 from zope.app.form.browser.add import AddView
@@ -25,15 +22,53 @@ from zope.app.publisher.browser import BrowserView
 
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
-from canonical.database.constants import UTC_NOW
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IPOTemplateSet, IPOTemplateNameSet, IPersonSet,
-    RawFileAttachFailed, IPOExportRequestSet, ICanonicalUrlData,
-    ILaunchpadCelebrities)
+    IPOTemplate, IPOTemplateSet, IPOTemplateNameSet, IPOExportRequestSet,
+    IPersonSet, RawFileAttachFailed, ICanonicalUrlData, ILaunchpadCelebrities,
+    ILaunchBag, IPOFileSet)
 from canonical.launchpad.components.poexport import POExport
-from canonical.launchpad.browser.pofile import POFileView
-from canonical.launchpad.browser.pofile import BaseExportView
+from canonical.launchpad.browser.pofile import (
+    POFileView, BaseExportView, POFileAppMenus)
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, ApplicationMenu, DefaultLink, Link, canonical_url)
+
+
+class POTemplateFacets(StandardLaunchpadFacets):
+    usedfor = IPOTemplate
+
+    def _parent_url(self):
+        """Return the URL of the thing this PO template is attached to."""
+
+        if self.context.distrorelease:
+            source_package = self.context.distrorelease.getSourcePackageByName(
+                self.context.sourcepackagename)
+            return canonical_url(source_package)
+        else:
+            return canonical_url(self.context.productseries)
+
+    def overview(self):
+        target = self._parent_url()
+        text = 'Overview'
+        return Link(target, text)
+
+    def translations(self):
+        target = ''
+        text = 'Translations'
+        return DefaultLink(target, text)
+
+    def bugs(self):
+        target = self._parent_url() + '/+bugs'
+        text = 'Bugs'
+        return Link(target, text)
+
+
+class POTemplateAppMenus(POFileAppMenus):
+    usedfor = IPOTemplate
+
+    links = ['overview', 'upload', 'download', 'edit']
+
 
 class POTemplateSubsetView:
 
@@ -54,35 +89,6 @@ class POTemplateView:
         self.request_languages = helpers.request_languages(self.request)
         self.description = self.context.potemplatename.description
         self.user = getUtility(ILaunchBag).user
-        # XXX carlos 01/05/05 please fix up when we have the
-        # MagicURLBox
-
-        # We will be constructing a URL path using a list.
-        L = []
-        if self.context.productrelease:
-            L.append('products')
-            L.append(self.context.productrelease.product.name)
-            L.append(self.context.productrelease.version)
-            L.append('+pots')
-            L.append(self.context.potemplatename.name)
-            self.what = self.context.productrelease.product.name
-            self.what += ' ' + self.context.productrelease.version
-        elif self.context.distrorelease and self.context.sourcepackagename:
-            L.append('distros')
-            L.append(self.context.distrorelease.distribution.name)
-            L.append(self.context.distrorelease.name)
-            L.append('+sources')
-            L.append(self.context.sourcepackagename.name)
-            L.append('+pots')
-            L.append(self.context.potemplatename.name)
-            self.what = self.context.sourcepackagename.name + ' in '
-            self.what += self.context.distrorelease.distribution.name + ' '
-            self.what += self.context.distrorelease.name
-        else:
-            raise NotImplementedError('We only understand POTemplates '
-                'linked to source packages and product releases.')
-        # The URL path is to start and end with '/'.
-        self.URL = '/%s/' % '/'.join(L)
         self.status_message = None
 
     def num_messages(self):
@@ -115,7 +121,8 @@ class POTemplateView:
         for language in languages:
             pofile = self.context.queryPOFileByLang(language.code)
             if not pofile:
-                pofile = helpers.DummyPOFile(self.context, language)
+                pofileset = getUtility(IPOFileSet)
+                pofile = pofileset.getDummy(self.context, language)
             yield POFileView(pofile, self.request)
 
     def submitForm(self):
@@ -244,7 +251,7 @@ class POTemplateAddView(AddView):
 
         potemplateset = getUtility(IPOTemplateSet)
         potemplatesubset = potemplateset.getSubset(
-            productrelease=self.context)
+            productseries=self.context)
         # Create the new POTemplate
         potemplate = potemplatesubset.new(
             potemplatename=potemplatename, contents=content,
@@ -256,7 +263,7 @@ class POTemplateAddView(AddView):
         potemplate.path = path
         potemplate.filename = filename
 
-        self._nextURL = "%s" % potemplate.potemplatename.name
+        self._nextURL = canonical_url(potemplate)
 
     def nextURL(self):
         return self._nextURL
@@ -383,24 +390,6 @@ class POTemplateTranslateView:
         self.request.response.redirect(new_url)
 
 
-class POTemplateAbsoluteURL(BrowserView):
-    """The view for an absolute URL of a PO template."""
-
-    def __str__(self):
-        if self.context.productrelease:
-            return "%s/products/%s/%s/+pots/%s/" % (
-                self.request.getApplicationURL(),
-                self.context.productrelease.product.name,
-                self.context.productrelease.version,
-                self.context.potemplatename.name)
-        elif self.context.distrorelease:
-            return "%s/distros/%s/%s/+sources/%s/+pots/%s/" % (
-                self.request.getApplicationURL(),
-                self.context.distrorelease.distribution.name,
-                self.context.distrorelease.name,
-                self.context.sourcepackagename.name,
-                self.context.potemplatename.name)
-
 class POTemplateSubsetURL:
     implements(ICanonicalUrlData)
 
@@ -411,23 +400,23 @@ class POTemplateSubsetURL:
     def path(self):
         potemplatesubset = self.context
         if potemplatesubset.distrorelease is not None:
-            assert potemplatesubset.productrelease is None
+            assert potemplatesubset.productseries is None
             assert potemplatesubset.sourcepackagename is not None
             return '+sources/%s/+pots' % (
                 potemplatesubset.sourcepackagename.name)
         else:
-            assert potemplatesubset.productrelease is not None
+            assert potemplatesubset.productseries is not None
             return '+pots'
 
     @property
     def inside(self):
         potemplatesubset = self.context
         if potemplatesubset.distrorelease is not None:
-            assert potemplatesubset.productrelease is None
+            assert potemplatesubset.productseries is None
             return potemplatesubset.distrorelease
         else:
-            assert potemplatesubset.productrelease is not None
-            return potemplatesubset.productrelease
+            assert potemplatesubset.productseries is not None
+            return potemplatesubset.productseries
 
 
 class POTemplateURL:
@@ -438,14 +427,14 @@ class POTemplateURL:
         potemplate = self.context
         potemplateset = getUtility(IPOTemplateSet)
         if potemplate.distrorelease is not None:
-            assert potemplate.productrelease is None
+            assert potemplate.productseries is None
             self.potemplatesubset = potemplateset.getSubset(
                 distrorelease=potemplate.distrorelease,
                 sourcepackagename=potemplate.sourcepackagename)
         else:
-            assert potemplate.productrelease is not None
+            assert potemplate.productseries is not None
             self.potemplatesubset = potemplateset.getSubset(
-                productrelease=potemplate.productrelease)
+                productseries=potemplate.productseries)
 
     @property
     def path(self):

@@ -5,29 +5,38 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+  <div class="portlet">
+    <div class="portletBody portletContent">
+      
+      <img src="/++resource++info_icon.gif" />
+      The build log is produced when we try to compile the source package
+      into binary packages which can be installed on your distribution.
+      There may not be a build log if this is a read-only distribution (one
+      we just monitor but don't actually produce in the Launchpad, like
+      Ubuntu and its derivatives).
+
+    </div>
+  </div>
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
 <div metal:fill-slot="main">
 
+  <h1>Build Log</h1>
 
-    <h1> 
-     <span tal:content="context/sourcepackage/name">
-	TITLE </span>
-    </h1>
+  <p class="documentDescription">This shows the latest build log for the
+  latest source package release uploaded, if available.</p>
 
-    <fieldset class="dummy" 
-         tal:repeat="sourcepackagerelease context/releases">
-      <legend>
-        <span tal:content="string:${context/sourcepackage/name}-${sourcepackagerelease/version}"/> Build Data
-      </legend>
-      <ul>
-      <li tal:repeat="arch context/archs" 
-          tal:define="name context/sourcepackage/name; 
-                      version sourcepackagerelease/version">
-	  <a tal:attributes="href string:${version}/${arch}/+buildlog" 
-	     tal:content="string:${name}-${version} (${arch})">
-	  BUILDLOG</a></li>
-      <ul>
-    </fieldset>    
-    
+  <pre>
+This should show the last part of the build log of the latest build
+for the current release of the source package. It shoudl show the
+last 30 or so lines of the log, and include a link to the full
+log, which comes from the Librarian.</pre>
+
 </div>
 </body>
 </html>

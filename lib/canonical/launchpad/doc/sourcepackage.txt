@@ -30,3 +30,66 @@ To retrieve a specific source package name, use ISourcePackageNameSet.get:
     >>> firefox = sourcepackagenameset.get(1)
     >>> print firefox.name
     mozilla-firefox
+
+Packaging
+---------
+
+Distribution packages are linked to upstream productseries through the
+packaging process. Here we test the code that links all of those.
+
+First, let's get some useful objects from the db.
+
+    >>> from canonical.launchpad.database import SourcePackageName
+    >>> evolution = SourcePackageName.byName('evolution')
+    >>> a52dec = SourcePackageName.byName('a52dec')
+    >>> netapplet = SourcePackageName.byName('netapplet')
+    >>> firefox = SourcePackageName.byName('mozilla-firefox')
+
+    >>> from canonical.launchpad.database import DistroRelease
+    >>> warty = DistroRelease.get(1)
+    >>> hoary = DistroRelease.get(3)
+    >>> sarge = DistroRelease.get(7)
+    >>> sid = DistroRelease.get(8)
+    >>> g2k5 = DistroRelease.get(9)
+
+Now let's make sure that we can see a productseries for a source package.
+
+    >>> from canonical.launchpad.database import SourcePackage
+    >>> sp = SourcePackage(sourcepackagename=firefox, distrorelease=hoary)
+    >>> sp.productseries.name
+    u'1.0'
+
+Now we make sure there is no Packaging data for a52dec in hoary.
+
+    >>> from canonical.launchpad.database import Packaging
+    >>> Packaging.selectBy(sourcepackagenameID=a52dec.id,
+    ...     distroreleaseID=hoary.id).count()
+    0
+
+So far so good.
+
+Now verify we still get a product for that source package, thanks to the
+fact that we have Warty data for it
+
+    >>> sp = SourcePackage(sourcepackagename=a52dec, distrorelease=hoary)
+    >>> sp.productseries.product.name
+    u'a52dec'
+
+Similarly, we should be able to get the packaging information from a parent
+distrorelease, on the basis that a derivative is highly unlikely to change
+the packaging drastically without changing the name of the package.
+
+First, show there is no packging data for a52dec in g2k5:
+
+    >>> Packaging.selectBy(sourcepackagenameID=a52dec.id,
+    ...     distroreleaseID=g2k5.id).count()
+    0
+
+Now verify we still get a product for that source package
+
+    >>> sp = SourcePackage(sourcepackagename=a52dec, distrorelease=g2k5)
+    >>> sp.productseries.product.name
+    u'a52dec'
+
+
+

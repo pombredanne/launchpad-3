@@ -14,7 +14,7 @@
         Distributions in Soyuz
     </div>
 
-    <form name="search" action="" method="POST">
+    <form name="search" action="." method="POST">
     <fieldset>
     	<legend><h3>Search Distribution</h3></legend>
 	<table>

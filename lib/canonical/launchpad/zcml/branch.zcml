@@ -25,7 +25,10 @@
             name="+index"
             template="../templates/branch-index.pt"
             lp:url="bazaar/branches/$Branch.id/" />
+        <browser:page
+            name="+summary-listing"
+            template="../templates/branch-summary-listing.pt"
+            />
     </browser:pages>
-
 
 </configure>

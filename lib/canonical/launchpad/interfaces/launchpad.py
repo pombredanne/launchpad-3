@@ -21,7 +21,8 @@ __all__ = ['ILaunchpadRoot', 'ILaunchpadApplication', 'IMaloneApplication',
            'ILink', 'IDefaultLink', 'IMenu', 'IMenuBase',
            'IFacetMenu', 'IExtraFacetMenu',
            'IApplicationMenu', 'IExtraApplicationMenu',
-           'ICanonicalUrlData', 'NoCanonicalUrl'
+           'ICanonicalUrlData', 'NoCanonicalUrl',
+           'IDBSchema', 'IDBSchemaItem'
            ]
 
 
@@ -30,7 +31,9 @@ class ILaunchpadCelebrities(Interface):
     buttsource = Attribute("The 'buttsource' team.")
     admin = Attribute("The 'admins' team.")
     ubuntu = Attribute("The ubuntu Distribution.")
+    debian = Attribute("The debian Distribution.")
     rosetta_expert = Attribute("The Rosetta Experts team.")
+    debbugs = Attribute("The Debian Bug Tracker")
 
 
 class ICrowd(Interface):
@@ -70,9 +73,18 @@ class ILaunchpadRoot(Interface):
 class IMaloneApplication(ILaunchpadApplication):
     """Application root for malone."""
 
+    bug_count = Attribute("The number of bugs recorded in Malone")
+    bugwatch_count = Attribute("The number of links to external bug trackers")
+    bugextref_count = Attribute("The number of links to outside URL's")
+    bugtask_count = Attribute("The number of bug tasks in Malone")
+    bugtracker_count = Attribute("The number of bug trackers in Malone")
+    top_bugtrackers = Attribute("The BugTrackers with the most watches.")
+
 
 class IRosettaApplication(ILaunchpadApplication):
     """Application root for rosetta."""
+
+    statsdate = Attribute("""The date stats were last updated.""")
 
     def translatable_products(self, translationProject=None):
         """Return a list of the translatable products in the given
@@ -88,6 +100,9 @@ class IRosettaApplication(ILaunchpadApplication):
 
     def translation_groups(self):
         """Return a list of the translation groups in the system."""
+
+    def updateStatistics(self):
+        """Update the Rosetta statistics in the system."""
 
     def potemplate_count(self):
         """Return the number of potemplates in the system."""
@@ -247,6 +262,7 @@ class ILaunchBag(Interface):
     user = Attribute('Currently authenticated person, or None')
     login = Attribute('The login used by the authenticated person, or None')
 
+    timezone = Attribute("The user's time zone")
 
 class IOpenLaunchBag(ILaunchBag):
     def add(ob):
@@ -329,3 +345,46 @@ class NoCanonicalUrl(TypeError):
         TypeError.__init__(self, 'No url for %r because %r broke the chain.' %
             (object_url_requested_for, broken_link_in_chain)
             )
+
+
+class IDBSchema(Interface):
+    """A DBSchema enumeration."""
+
+    name = Attribute("Lower-cased-spaces-inserted class name of this schema.")
+
+    title = Attribute("Title of this schema.")
+
+    description = Attribute("Description of this schema.")
+
+    items = Attribute("A mapping of [name or value] -> dbschema item.")
+
+
+class IDBSchemaItem(Interface):
+    """An Item in a DBSchema enumeration."""
+
+    value = Attribute("Integer value of this enum item.")
+
+    name = Attribute("Symbolic name of this item.")
+
+    title = Attribute("Title text of this item.")
+
+    description = Attribute("Description text of this item.")
+
+    def __sqlrepr__(dbname):
+        """Return an SQL representation of this item.
+
+        The dbname attribute is required as part of the sqlobject
+        interface, but it not used in this case.
+        """
+
+    def __eq__(other):
+        """An item is equal if it is from the same DBSchema and has the same
+        value.
+        """
+
+    def __ne__(other):
+        """not __eq__"""
+
+    def __hash__():
+        """Returns a hash value."""
+

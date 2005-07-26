@@ -10,12 +10,14 @@ from canonical.config import config
 
 from canonical.zeca import Zeca, KeyServer, LookUp
 
+root = config.zeca.root
+
 application = service.Application('Zeca')
 zecaService = service.IServiceCollection(application)
 
 zeca = Zeca()
 keyserver = KeyServer()
-keyserver.putChild('lookup', LookUp(config.zeca.root))
+keyserver.putChild('lookup', LookUp(root))
 zeca.putChild('pks', keyserver)
     
 site = server.Site(zeca)

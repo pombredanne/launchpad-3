@@ -24,7 +24,8 @@ from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
-from canonical.database.sqlbase import SQLBase, quote, cursor, sqlvalues
+from canonical.database.sqlbase import (SQLBase, quote, cursor, sqlvalues,
+    )
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
@@ -35,19 +36,19 @@ from canonical.launchpad.interfaces import (
     IJabberID, IIrcIDSet, IArchUserIDSet, ISSHKeySet, IJabberIDSet,
     IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IMaintainershipSet,
     IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
-    UBUNTU_WIKI_URL)
+    ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
+    ILoginTokenSet, IBugTaskSet)
 
-from canonical.launchpad.database.translation_effort import TranslationEffort
-from canonical.launchpad.database.bug import BugTask
+from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
+from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.karma import KarmaCache, KarmaAction, Karma
-
-from canonical.launchpad.validators.name import valid_name
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
-    TeamMembershipStatus, GPGKeyAlgorithm)
+    TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType)
 
 from canonical.foaf import nickname
 
@@ -55,7 +56,7 @@ from canonical.foaf import nickname
 class Person(SQLBase):
     """A Person."""
 
-    implements(IPerson)
+    implements(IPerson, ICalendarOwner)
 
     _defaultOrder = 'displayname'
 
@@ -89,13 +90,31 @@ class Person(SQLBase):
                             intermediateTable='PersonLanguage')
 
     # relevant joins
-    ownedBounties = MultipleJoin('Bounty', joinColumn='owner')
-    reviewerBounties = MultipleJoin('Bounty', joinColumn='reviewer')
-    claimedBounties = MultipleJoin('Bounty', joinColumn='claimant')
+    branches = MultipleJoin('Branch', joinColumn='owner')
+    members = MultipleJoin('TeamMembership', joinColumn='team',
+        orderBy='status')
+    ownedBounties = MultipleJoin('Bounty', joinColumn='owner',
+        orderBy='id')
+    reviewerBounties = MultipleJoin('Bounty', joinColumn='reviewer',
+        orderBy='id')
+    claimedBounties = MultipleJoin('Bounty', joinColumn='claimant',
+        orderBy='id')
     subscribedBounties = RelatedJoin('Bounty', joinColumn='person',
-                                     otherColumn='bounty',
-                                     intermediateTable='BountySubscription')
-    gpgkeys = MultipleJoin('GPGKey', joinColumn='owner')
+        otherColumn='bounty', intermediateTable='BountySubscription',
+        orderBy='id')
+    gpgkeys = MultipleJoin('GPGKey', joinColumn='owner', orderBy='id')
+    signedcocs = MultipleJoin('SignedCodeOfConduct', joinColumn='owner')
+
+    calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
+                          default=None, forceDBName=True)
+
+    def getOrCreateCalendar(self):
+        if not self.calendar:
+            self.calendar = Calendar(title=self.browsername,
+                                     revision=0)
+        return self.calendar
+
+    timezone = StringCol(dbName='timezone', default='UTC')
 
     def get(cls, id, connection=None, selectResults=None):
         """Override the classmethod get from the base class.
@@ -115,6 +134,7 @@ class Person(SQLBase):
         return val
     get = classmethod(get)
 
+    @property
     def browsername(self):
         """Return a name suitable for display on a web page.
 
@@ -184,7 +204,6 @@ class Person(SQLBase):
             return ' '.join(L)
         else:
             return self.name
-    browsername = property(browsername)
 
     def isTeam(self):
         """See IPerson."""
@@ -279,11 +298,6 @@ class Person(SQLBase):
     #
     # ITeam methods
     #
-
-    def subscriptionPolicyDesc(self):
-        return '%s. %s' % (self.subscriptionpolicy.title,
-                           self.subscriptionpolicy.description)
-
     def getSuperTeams(self):
         """See IPerson."""
         query = ('Person.id = TeamParticipation.team AND '
@@ -380,69 +394,81 @@ class Person(SQLBase):
                     EmailAddress.q.status==status)
         return EmailAddress.select(query)
 
+    @property
     def title(self):
         """See IPerson."""
         return self.browsername
-    title = property(title)
 
-    @property 
+    @property
     def karma(self):
         """See IPerson."""
         total = 0
         for karma in KarmaCache.selectBy(personID=self.id):
-            total += karma.karma
+            total += karma.karmavalue
         return total
 
+    @property 
     def allmembers(self):
         """See IPerson."""
         return _getAllMembers(self)
-    allmembers = property(allmembers)
 
+    @property
     def deactivatedmembers(self):
         """See IPerson."""
         return self._getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
-    deactivatedmembers = property(deactivatedmembers)
 
+    @property
     def expiredmembers(self):
         """See IPerson."""
         return self._getMembersByStatus(TeamMembershipStatus.EXPIRED)
-    expiredmembers = property(expiredmembers)
 
+    @property
     def declinedmembers(self):
         """See IPerson."""
         return self._getMembersByStatus(TeamMembershipStatus.DECLINED)
-    declinedmembers = property(declinedmembers)
 
+    @property
     def proposedmembers(self):
         """See IPerson."""
         return self._getMembersByStatus(TeamMembershipStatus.PROPOSED)
-    proposedmembers = property(proposedmembers)
 
+    @property
     def administrators(self):
         """See IPerson."""
         return self._getMembersByStatus(TeamMembershipStatus.ADMIN)
-    administrators = property(administrators)
 
+    @property
     def approvedmembers(self):
         """See IPerson."""
         return self._getMembersByStatus(TeamMembershipStatus.APPROVED)
-    approvedmembers = property(approvedmembers)
 
+    @property
     def activemembers(self):
         """See IPerson."""
         return self.approvedmembers.union(self.administrators)
-    activemembers = property(activemembers)
 
+    @property
     def inactivemembers(self):
         """See IPerson."""
         return self.expiredmembers.union(self.deactivatedmembers)
-    inactivemembers = property(inactivemembers)
 
+    @property
     def memberships(self):
         """See IPerson."""
         return TeamMembership.selectBy(personID=self.id)
-    memberships = property(memberships)
 
+    @property
+    def activememberships(self):
+        """See IPerson."""
+        return TeamMembership.select('''
+            team = %s AND
+            status in (%s, %s)
+            ''' % sqlvalues(self.id, TeamMembershipStatus.APPROVED,
+                TeamMembershipStatus.ADMIN),
+            orderBy=['datejoined'],
+            distinct=True)
+
+    @property
     def defaultexpirationdate(self):
         """See IPerson."""
         days = self.defaultmembershipperiod
@@ -450,8 +476,8 @@ class Person(SQLBase):
             return datetime.now(pytz.timezone('UTC')) + timedelta(days)
         else:
             return None
-    defaultexpirationdate = property(defaultexpirationdate)
 
+    @property
     def defaultrenewedexpirationdate(self):
         """See IPerson."""
         days = self.defaultrenewalperiod
@@ -459,7 +485,17 @@ class Person(SQLBase):
             return datetime.now(pytz.timezone('UTC')) + timedelta(days)
         else:
             return None
-    defaultrenewedexpirationdate = property(defaultrenewedexpirationdate)
+
+    @property
+    def touched_pofiles(self):
+        return POFile.select('''
+            POSubmission.person = %s AND
+            POSubmission.pomsgset = POMsgSet.id AND
+            POMsgSet.pofile = POFile.id
+            ''' % sqlvalues(self.id),
+            orderBy=['datecreated'],
+            clauseTables=['POMsgSet', 'POSubmission'],
+            distinct=True)
 
     def validateAndEnsurePreferredEmail(self, email):
         """See IPerson."""
@@ -467,8 +503,12 @@ class Person(SQLBase):
             raise TypeError, (
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
-        assert email.person == self
-        assert self.preferredemail != email
+        # XXX stevea 05/07/05 this is here because of an SQLobject
+        # comparison oddity
+        assert email.person.id == self.id, 'Wrong person! %r, %r' % (
+            email.person, self)
+        assert self.preferredemail != email, 'Wrong prefemail! %r, %r' % (
+            self.preferredemail, email)
 
         if self.preferredemail is None:
             # This branch will be executed only in the first time a person
@@ -509,6 +549,7 @@ class Person(SQLBase):
             return None
     preferredemail = property(_getPreferredemail, _setPreferredemail)
 
+    @property
     def preferredemail_sha1(self):
         """See IPerson."""
         preferredemail = self.preferredemail
@@ -516,46 +557,62 @@ class Person(SQLBase):
             return sha.new(preferredemail.email).hexdigest().upper()
         else:
             return None
-    preferredemail_sha1 = property(preferredemail_sha1)
 
+    @property
     def validatedemails(self):
         """See IPerson."""
         return self._getEmailsByStatus(EmailAddressStatus.VALIDATED)
-    validatedemails = property(validatedemails)
 
+    @property
     def unvalidatedemails(self):
         """See IPerson."""
-        query = "requester=%d AND email IS NOT NULL" % self.id
+        query = ("requester=%s AND (tokentype=%s OR tokentype=%s)" 
+                 % sqlvalues(self.id, LoginTokenType.VALIDATEEMAIL,
+                             LoginTokenType.VALIDATETEAMEMAIL))
         return sets.Set([token.email for token in LoginToken.select(query)])
-    unvalidatedemails = property(unvalidatedemails)
 
+    @property
     def guessedemails(self):
         """See IPerson."""
         return self._getEmailsByStatus(EmailAddressStatus.NEW)
-    guessedemails = property(guessedemails)
 
+    @property
     def reportedbugs(self):
         """See IPerson."""
-        return BugTask.selectBy(ownerID=self.id)
-    reportedbugs = property(reportedbugs)
+        return getUtility(IBugTaskSet).search(owner=self)
 
-    def translations(self):
-        """See IPerson."""
-        return TranslationEffort.selectBy(ownerID=self.id)
-    translations = property(translations)
-
+    @property
     def activities(self):
         """See IPerson."""
         return Karma.selectBy(personID=self.id)
-    activities = property(activities)
 
+    @property
+    def pendinggpgkeys(self):
+        logintokenset = getUtility(ILoginTokenSet)
+        # XXX cprov 20050704
+        # Use set to remove duplicated tokens, I'd appreciate something
+        # SQL DISTINCT-like functionality available for sqlobject
+        return sets.Set([token.fingerprint for token in
+                         logintokenset.getPendingGpgKeys(requesterid=self.id)])
+
+    @property
+    def inactivegpgkeys(self):
+        gpgkeyset = getUtility(IGPGKeySet)
+        return gpgkeyset.getGpgKeys(ownerid=self.id, active=False)
+
+    @property
+    def gpgkeys(self):
+        gpgkeyset = getUtility(IGPGKeySet)
+        return gpgkeyset.getGpgKeys(ownerid=self.id)
+
+    @property
     def wiki(self):
         """See IPerson."""
         # XXX: salgado, 2005-01-14: This method will probably be replaced
         # by a MultipleJoin since we have a good UI to add multiple Wikis.
         return WikiName.selectOneBy(personID=self.id)
-    wiki = property(wiki)
 
+    @property
     def jabber(self):
         """See IPerson."""
         # XXX: salgado, 2005-01-14: This method will probably be replaced
@@ -564,8 +621,8 @@ class Person(SQLBase):
 
         # XXX: Needs system doc test.  SteveAlexander 2005-04-24.
         return JabberID.selectOneBy(personID=self.id)
-    jabber = property(jabber)
 
+    @property
     def archuser(self):
         """See IPerson."""
         # XXX: salgado, 2005-01-14: This method will probably be replaced
@@ -574,8 +631,8 @@ class Person(SQLBase):
 
         # XXX: Needs system doc test.  SteveAlexander 2005-04-24.
         return ArchUserID.selectOneBy(personID=self.id)
-    archuser = property(archuser)
 
+    @property
     def irc(self):
         """See IPerson."""
         # XXX: salgado, 2005-01-14: This method will probably be replaced
@@ -584,39 +641,45 @@ class Person(SQLBase):
 
         # XXX: Needs system doc test.  SteveAlexander 2005-04-24.
         return IrcID.selectOneBy(personID=self.id)
-    irc = property(irc)
 
+    @property
     def maintainerships(self):
         """See IPerson."""
         maintainershipsutil = getUtility(IMaintainershipSet)
         return maintainershipsutil.getByPersonID(self.id)
-    maintainerships = property(maintainerships)
 
+    @property
     def packages(self):
         """See IPerson."""
         sprutil = getUtility(ISourcePackageReleaseSet)
         return sprutil.getByCreatorID(self.id)
-    packages = property(packages)
 
+    @property
     def ubuntite(self):
-        """See IPerson."""
-        # XXX: cprov 20050226
-        # Verify the the SignedCoC version too
-        # we can't do it before add the field version on
-        # SignedCoC table. Then simple compare the already
-        # checked field with what we grab from CoCConf utility.
-        # Simply add 'SignedCodeOfConduct.version = %s' % conf.current
-        # in query when the field was landed.
+        sigset = getUtility(ISignedCodeOfConductSet)
+        lastdate = sigset.getLastAcceptedDate()
+
         query = AND(SignedCodeOfConduct.q.active==True,
-                    SignedCodeOfConduct.q.ownerID==self.id)
+                    SignedCodeOfConduct.q.ownerID==self.id,
+                    SignedCodeOfConduct.q.datecreated>=lastdate)
 
         return bool(SignedCodeOfConduct.select(query).count())
-    ubuntite = property(ubuntite)
 
+    @property
+    def activesignatures(self):
+        sCoC_util = getUtility(ISignedCodeOfConductSet)
+        return sCoC_util.searchByUser(self.id)
+
+    @property
+    def inactivesignatures(self):
+        sCoC_util = getUtility(ISignedCodeOfConductSet)
+        return sCoC_util.searchByUser(self.id, active=False)
 
 class PersonSet:
     """The set of persons."""
     implements(IPersonSet)
+
+    _defaultOrder = Person._defaultOrder
 
     def __init__(self):
         self.title = 'Launchpad People'
@@ -639,33 +702,75 @@ class PersonSet:
         team.setMembershipStatus(owner, TeamMembershipStatus.ADMIN)
         return team
 
-    def newPerson(self, **kw):
+    def createPersonAndEmail(self, email, name=None, displayname=None,
+                             givenname=None, familyname=None, password=None,
+                             passwordEncrypted=False):
         """See IPersonSet."""
-        assert not kw.get('teamownerID')
-        return Person(**kw)
+        if name is None:
+            try:
+                name = nickname.generate_nick(email)
+            except nickname.NicknameGenerationError:
+                return None, None
+        else:
+            if self.getByName(name) is not None:
+                return None, None
 
-    def getByName(self, name, default=None):
+        if not passwordEncrypted and password is not None:
+            password = getUtility(IPasswordEncryptor).encrypt(password)
+
+        displayname = displayname or name.capitalize()
+        person = self._newPerson(name, displayname, givenname=givenname,
+                                 familyname=familyname, password=password)
+
+        email = getUtility(IEmailAddressSet).new(email, person.id)
+        return person, email
+
+    def _newPerson(self, name, displayname, givenname=None, familyname=None,
+                   password=None):
+        """Create a new Person with the given attributes.
+
+        Also generate a wikiname for this person that's not yet used in the
+        Ubuntu wiki.
+        """
+        person = Person(name=name, displayname=displayname, givenname=givenname,
+                        familyname=familyname, password=password)
+        wikinameset = getUtility(IWikiNameSet)
+        wikiname = nickname.generate_wikiname(
+                    person.displayname, wikinameset.exists)
+        wikinameset.new(person.id, UBUNTU_WIKI_URL, wikiname)
+        return person
+
+    def ensurePerson(self, email, displayname):
         """See IPersonSet."""
-        query = AND(Person.q.name==name, Person.q.mergedID==None)
+        person = self.getByEmail(email)
+        if person:
+            return person
+        person, dummy = self.createPersonAndEmail(
+                            email, displayname=displayname)
+        return person
+
+    def getByName(self, name, default=None, ignore_merged=True):
+        """See IPersonSet."""
+        query = Person.q.name==name
+        if ignore_merged:
+            query = AND(query, Person.q.mergedID==None)
         person = Person.selectOne(query)
         if person is None:
             return default
         return person
 
-    def nameIsValidForInsertion(self, name):
-        if not valid_name(name) or self.getByName(name) is not None:
-            return False
-        else:
-            return True
-
     def peopleCount(self):
         return self.getAllPersons().count()
 
     def getAllPersons(self, orderBy=None):
+        if orderBy is None:
+            orderBy = self._defaultOrder
         query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
     def getAllValidPersons(self, orderBy=None):
+        if orderBy is None:
+            orderBy = self._defaultOrder
         query = AND(Person.q.teamownerID==None,
                     Person.q.mergedID==None,
                     EmailAddress.q.personID==Person.q.id,
@@ -676,17 +781,25 @@ class PersonSet:
         return self.getAllTeams().count()
 
     def getAllTeams(self, orderBy=None):
+        if orderBy is None:
+            orderBy = self._defaultOrder
         return Person.select(Person.q.teamownerID!=None, orderBy=orderBy)
 
     def findByName(self, name, orderBy=None):
+        if orderBy is None:
+            orderBy = self._defaultOrder
         query = "fti @@ ftq(%s) AND merged is NULL" % quote(name)
         return Person.select(query, orderBy=orderBy)
 
     def findPersonByName(self, name, orderBy=None):
+        if orderBy is None:
+            orderBy = self._defaultOrder
         query = "fti @@ ftq(%s) AND teamowner is NULL AND merged is NULL"
         return Person.select(query % quote(name), orderBy=orderBy)
 
     def findTeamByName(self, name, orderBy=None):
+        if orderBy is None:
+            orderBy = self._defaultOrder
         query = "fti @@ ftq(%s) AND teamowner is not NULL" % quote(name)
         return Person.select(query, orderBy=orderBy)
 
@@ -700,23 +813,23 @@ class PersonSet:
     def getByEmail(self, email, default=None):
         """See IPersonSet."""
         result = EmailAddress.selectOne(
-            "lower(email) = %s" % quote(email.lower()))
+            "lower(email) = %s" % quote(email.strip().lower()))
         if result is None:
             return default
         return result.person
 
     def getUbuntites(self, orderBy=None):
         """See IPersonSet."""
-        clauseTables = ['SignedCodeOfConduct']
+        if orderBy is None:
+            orderBy = self._defaultOrder
+        sigset = getUtility(ISignedCodeOfConductSet)
+        lastdate = sigset.getLastAcceptedDate()
 
-        # XXX: cprov 20050226
-        # Verify the the SignedCoC version too
-        # we can't do it before add the field version on
-        # SignedCoC version.
-        # Needs DISTINCT or check to prevent Sign CoC twice.
-        query = ('Person.id = SignedCodeOfConduct.owner AND '
-                 'SignedCodeOfConduct.active = True')
-        return Person.select(query, clauseTables=clauseTables, orderBy=orderBy)
+        query = AND(Person.q.id==SignedCodeOfConduct.q.ownerID,
+                    SignedCodeOfConduct.q.active==True,
+                    SignedCodeOfConduct.q.datecreated>=lastdate)
+
+        return Person.select(query, distinct=True, orderBy=orderBy)
 
     def merge(self, from_person, to_person):
         """Merge a person into another.
@@ -758,6 +871,14 @@ class PersonSet:
             ('person', 'merged'),
             ('emailaddress', 'person'),
             ('karmacache', 'person'),
+            # We don't merge teams, so the poll table can be ignored
+            ('poll', 'team'),
+            # I don't think we need to worry about the votecast and vote
+            # tables, because a real human should never have two accounts
+            # in Launchpad that are active members of a given team and voted
+            # in a given poll. -- GuilhermeSalgado 2005-07-07
+            ('votecast', 'person'),
+            ('vote', 'person'),
             ]
 
         # Sanity check. If we have an indirect reference, it must
@@ -871,27 +992,6 @@ class PersonSet:
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
             ''' % vars())
 
-    def createPerson(self, email, displayname=None, givenname=None,
-                     familyname=None, password=None):
-        """See IPersonSet."""
-        try:
-            name = nickname.generate_nick(email)
-        except nickname.NicknameGenerationError:
-            return None
-
-        displayname = displayname or name.capitalize()
-        password = getUtility(IPasswordEncryptor).encrypt(password)
-        person = self.newPerson(name=name, displayname=displayname,
-                                givenname=givenname, familyname=familyname,
-                                password=password)
-
-        getUtility(IEmailAddressSet).new(email, person.id)
-
-        wikiname = nickname.generate_wikiname(displayname, WikiNameSet().exists)
-        WikiName(person=person.id, wiki=UBUNTU_WIKI_URL, wikiname=wikiname)
-
-        return person
-
 
 class EmailAddress(SQLBase):
     implements(IEmailAddress)
@@ -902,9 +1002,9 @@ class EmailAddress(SQLBase):
     status = EnumCol(dbName='status', schema=EmailAddressStatus, notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
+    @property
     def statusname(self):
         return self.status.title
-    statusname = property(statusname)
 
 
 class EmailAddressSet:
@@ -955,22 +1055,29 @@ class GPGKey(SQLBase):
     algorithm = EnumCol(dbName='algorithm', notNull=True,
                         schema=GPGKeyAlgorithm)
 
-    revoked = BoolCol(dbName='revoked', notNull=True)
+    active = BoolCol(dbName='active', notNull=True)
 
-    def algorithmname(self):
-        return self.algorithm.title
-    algorithmname = property(algorithmname)
+    @property
+    def displayname(self):
+        return '%s%s/%s' % (self.keysize, self.algorithm.title, self.keyid)
+
+    # XXX cprov 20050705
+    # keep a property to avoid untested issues in other compoenents
+    # that i'm not aware
+    @property
+    def revoked(self):
+        return not self.active
 
 
 class GPGKeySet:
     implements(IGPGKeySet)
 
     def new(self, ownerID, keyid, fingerprint, keysize,
-            algorithm, revoked):
+            algorithm, active=True):
         # add new key in DB
         return GPGKey(owner=ownerID, keyid=keyid,
                       fingerprint=fingerprint, keysize=keysize,
-                      algorithm=algorithm, revoked=revoked)
+                      algorithm=algorithm, active=active)
 
     def get(self, id, default=None):
         try:
@@ -984,6 +1091,36 @@ class GPGKeySet:
             return default
         return result
 
+    def deactivateGpgKey(self, keyid):
+        try:
+            key = GPGKey.get(keyid)
+        except SQLObjectNotFound:
+            return None
+        key.active = False
+        return key
+
+    def activateGpgKey(self, keyid):
+        try:
+            key = GPGKey.get(keyid)
+        except SQLObjectNotFound:
+            return None
+        key.active = True
+        return key
+    
+    def getGpgKeys(self, ownerid=None, active=True):
+        """See IGPGKeySet"""
+        if active is False:
+            query =('active=false AND fingerprint NOT IN '
+                    '(SELECT fingerprint from LoginToken WHERE fingerprint '
+                    'IS NOT NULL AND requester = %s)' % sqlvalues(ownerid))
+        else:
+            query = 'active=true'
+
+        if ownerid:
+            query += ' AND owner=%s' % sqlvalues(ownerid)
+        
+        return GPGKey.select(query)
+
 
 class SSHKey(SQLBase):
     implements(ISSHKey)
@@ -995,10 +1132,11 @@ class SSHKey(SQLBase):
     keytext = StringCol(dbName='keytext', notNull=True)
     comment = StringCol(dbName='comment', notNull=True)
 
+    @property
     def keytypename(self):
         return self.keytype.title
-    keytypename = property(keytypename)
 
+    @property
     def keykind(self):
         # XXX: This seems rather odd, like it is meant for presentation
         #      of the name of a key.
@@ -1009,7 +1147,6 @@ class SSHKey(SQLBase):
             return 'ssh-rsa'
         else:
             return 'Unknown key type'
-    keykind = property(keykind)
 
 
 class SSHKeySet:
@@ -1051,6 +1188,9 @@ class WikiName(SQLBase):
     wiki = StringCol(dbName='wiki', notNull=True)
     wikiname = StringCol(dbName='wikiname', notNull=True)
 
+    @property
+    def url(self):
+        return self.wiki + self.wikiname
 
 class WikiNameSet:
     implements(IWikiNameSet)
@@ -1101,6 +1241,7 @@ class TeamMembership(SQLBase):
     implements(ITeamMembership)
 
     _table = 'TeamMembership'
+    _defaultOrder = 'id'
 
     team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
@@ -1112,9 +1253,9 @@ class TeamMembership(SQLBase):
     dateexpires = UtcDateTimeCol(dbName='dateexpires', default=None)
     reviewercomment = StringCol(dbName='reviewercomment', default=None)
 
+    @property
     def statusname(self):
         return self.status.title
-    statusname = property(statusname)
 
     def isExpired(self):
         return self.status == TeamMembershipStatus.EXPIRED
@@ -1139,7 +1280,8 @@ class TeamMembershipSet:
         # XXX: Don't use assert.
         #      SteveAlexander, 2005-04-23
         assert isinstance(teamID, int)
-        orderBy = orderBy or self._defaultOrder
+        if orderBy is None:
+            orderBy = self._defaultOrder
         clauses = []
         for status in statuses:
             clauses.append("TeamMembership.status = %s" % sqlvalues(status))
@@ -1198,12 +1340,7 @@ def _cleanTeamParticipation(person, team):
     # (and its superteams).
     if person.isTeam():
         for submember in person.allmembers:
-            # XXX: We need to cast team.activemembers to a list because the
-            # current implementation of SelectResults.__contains__ is not
-            # working properly for operations like UNION (which is used in
-            # team.activemembers). This is going to be fixed soon and I'll
-            # remove this cast. 2005-07-01, GuilhermeSalgado 
-            if submember not in list(team.activemembers):
+            if submember not in team.activemembers:
                 _cleanTeamParticipation(submember, team)
 
 
@@ -1229,12 +1366,7 @@ def _removeParticipantFromTeamAndSuperTeams(person, team):
         result.destroySelf()
 
     for superteam in team.getSuperTeams():
-        # XXX: We need to cast team.activemembers to a list because the
-        # current implementation of SelectResults.__contains__ is not
-        # working properly for operations like UNION (which is used in
-        # team.activemembers). This is going to be fixed soon and I'll remove
-        # this cast. 2005-07-01, GuilhermeSalgado 
-        if person not in list(superteam.activemembers):
+        if person not in superteam.activemembers:
             _removeParticipantFromTeamAndSuperTeams(person, superteam)
 
 

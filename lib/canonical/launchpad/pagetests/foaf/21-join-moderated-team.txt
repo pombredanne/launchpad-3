@@ -9,7 +9,7 @@
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-  ...This is a Moderated Team...
+  ...Moderated Team...
   ...
 
 
@@ -53,8 +53,8 @@
   >>> from canonical.launchpad.database import Person, TeamMembership
   >>> salgado = Person.byName('salgado')
   >>> team = Person.byName('myemail')
-  >>> tm = TeamMembership.selectBy(personID=salgado.id, teamID=team.id)[0]
+  >>> tm = TeamMembership.selectOneBy(personID=salgado.id, teamID=team.id)
   >>> tm.statusname
-  'Proposed Member'
+  'Proposed'
   >>> salgado.inTeam(team)
   False

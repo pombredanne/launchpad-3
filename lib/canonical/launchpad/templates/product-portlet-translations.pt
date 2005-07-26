@@ -1,0 +1,33 @@
+<div class="portlet" tal:define="translatable view/primary_translatable">
+
+  <h4>Translations for <span tal:replace="context/displayname" /></h4>
+
+  <div class="portletBody portletContent">
+
+    <tal:block condition="translatable">
+
+      <ul>
+        <li class="translations"
+            tal:repeat="template translatable/potemplates">
+          <a tal:attributes="href template/fmt:url"
+             tal:content="template/title">template title</a>
+        </li>
+      </ul>
+
+  </tal:block>
+  <tal:block condition="not: translatable">
+    No translation templates registered upstream or in Ubuntu
+  </tal:block>
+
+    <ul>
+      <li class="info">
+        <a href="+translations"
+           title="See more translation options">
+          More about translations...
+        </a>
+      </li>
+    </ul>
+
+  </div>
+
+</div>

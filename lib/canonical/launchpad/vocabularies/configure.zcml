@@ -6,6 +6,11 @@
         />
 
     <vocabulary
+        name="CVEState"
+        factory="canonical.launchpad.vocabularies.CVEStateVocabulary"
+        />
+
+    <vocabulary
         name="BugWatch"
         factory="canonical.launchpad.vocabularies.BugWatchVocabulary"
         />
@@ -38,6 +43,16 @@
     <vocabulary
         name="GPGKeyAlgorithm"
         factory="canonical.launchpad.vocabularies.GPGKeyAlgorithmVocabulary"
+        />
+
+    <vocabulary
+        name="PollAlgorithm"
+        factory="canonical.launchpad.vocabularies.PollAlgorithmVocabulary"
+        />
+
+    <vocabulary
+        name="PollSecrecy"
+        factory="canonical.launchpad.vocabularies.PollSecrecyVocabulary"
         />
 
     <vocabulary
@@ -126,18 +141,18 @@
         />
 
     <vocabulary
-        name="BugStatus"
-        factory="canonical.launchpad.vocabularies.BugStatusVocabulary"
+        name="BugTaskStatus"
+        factory="canonical.launchpad.vocabularies.BugTaskStatusVocabulary"
         />
 
     <vocabulary
-        name="BugPriority"
-        factory="canonical.launchpad.vocabularies.BugPriorityVocabulary"
+        name="BugTaskPriority"
+        factory="canonical.launchpad.vocabularies.BugTaskPriorityVocabulary"
         />
 
     <vocabulary
-        name="BugSeverity"
-        factory="canonical.launchpad.vocabularies.BugSeverityVocabulary"
+        name="BugTaskSeverity"
+        factory="canonical.launchpad.vocabularies.BugTaskSeverityVocabulary"
         />
 
     <vocabulary
@@ -173,6 +188,15 @@
     <vocabulary
         name="POTemplateName"
         factory="canonical.launchpad.vocabularies.POTemplateNameVocabulary"
+        />
+
+    <vocabulary
+        name="Schema"
+        factory="canonical.launchpad.vocabularies.SchemaVocabulary"
+        />
+    <vocabulary
+        name="TimezoneName"
+        factory="canonical.launchpad.vocabularies.TimezoneNameVocabulary"
         />
 
     <!-- Define the widget used by Choice fields that use huge vocabularies -->

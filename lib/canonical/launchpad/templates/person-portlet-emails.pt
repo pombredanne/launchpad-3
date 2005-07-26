@@ -1,0 +1,37 @@
+<tal:block condition="request/lp:person">
+  <tal:block condition="python:context.validatedemails or context.preferredemail">
+    <div class="portlet" tal:condition="request/lp:person">
+
+      <h4>Confirmed Email Addresses:</h4>
+
+      <div class="portletBody portletContent">
+
+        <ul>
+          <li class="mail"
+              tal:condition="context/preferredemail"
+              tal:content="context/preferredemail/email">
+              foo@bar.com
+          </li>
+          <li class="mail"
+              tal:repeat="email context/validatedemails"
+              tal:content="email/email">
+              foo@bar.com
+          </li>
+        </ul>
+
+        <ul style="text-align: right;">
+          <li class="add">
+            <a tal:condition="not: context/isTeam" href="+emails">
+              Manage...
+            </a>
+            <a tal:condition="context/isTeam" href="+editemail">
+              Manage...
+            </a>
+          </li>
+        </ul>
+        
+      </div>
+
+    </div>
+  </tal:block>
+</tal:block>

@@ -57,8 +57,8 @@ Let's only allow translators from that group to translate.
 
 Daf isn't allowed to translate into Welsh.
 
-   >>> release = evolution.getSeries('main').getRelease('2.1.6')
-   >>> subset = potemplate_set.getSubset(productrelease=release)
+   >>> series = evolution.getSeries('main')
+   >>> subset = potemplate_set.getSubset(productseries=series)
    >>> potemplate = subset['evolution-2.2']
    >>> pofile = potemplate.getOrCreatePOFile('cy')
    >>> pofile.canEditTranslations(daf)

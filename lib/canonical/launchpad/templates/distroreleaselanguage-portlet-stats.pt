@@ -1,0 +1,20 @@
+<div class="portlet">
+
+  <h4><span tal:replace="context/language/englishname">French</span>
+      statistics in <span
+      tal:replace="context/distrorelease/displayname">Hoary</span>:</h4>
+
+  <div class="portletBody portletContent">
+
+    <b>Translatable items:</b>
+    <span tal:replace="context/messageCount">N</span>
+    <br/>
+    <b>Untranslated:</b>
+    <span tal:replace="context/untranslatedCount">N</span>
+    <br />
+    <span tal:replace="structure context/@@+barchart">--</span>
+    <br />
+
+  </div>
+
+</div>

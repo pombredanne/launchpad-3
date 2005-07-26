@@ -11,7 +11,7 @@
         tal:content="structure context/@@+portlet-actions"
       />
       <h1>
-        Edit #8220;<span tal:replace="context/browsername">
+        Edit &#8220;<span tal:replace="context/browsername">
         Foo</span>&#8221; team
       </h1>
 

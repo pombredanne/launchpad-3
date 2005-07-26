@@ -7,30 +7,32 @@
 
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/distrorelease/distribution/@@+portlet-details" /> <br />
-  <div tal:replace="structure context/distrorelease/@@+portlet-details" /> <br />
-  <div tal:replace="structure context/@@+portlet-details" /> <br />
+  <div tal:replace="structure context/@@+portlet-details" /> 
+  <div tal:replace="structure context/distrorelease/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-actions" />
+  <div tal:replace="structure context/distrorelease/distribution/@@+portlet-details" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main"
      tal:define="distrorelease context/distrorelease;
                  distro distrorelease/distribution">
 
-    <h1>
-      <span tal:replace="context/title">
-        title
-      </span>
-    </h1> 
+  <h1>Release Overview</h1> 
 
-      <p>This architecture of
-      <span tal:replace="distro/displayname" />
-      <span tal:replace="distrorelease/displayname" /> contains
-      <span tal:replace="context/binarycount" /> software packages. 
-      </p>
+  <p class="documentDescription">This page is an overview of the
+    <span tal:replace="context/architecturetag">i386</span> architecture of 
+    <span tal:replace="distro/displayname">Ubuntu</span>
+    <span tal:replace="distrorelease/displayname">Hoary</span>. From here
+    you can see the state of binary packages for this architecture.
+  </p>
+
+  <p>
+    This archive currently contains
+    <span tal:replace="context/binarycount" /> software packages. 
+  </p>
 
 </div>
 

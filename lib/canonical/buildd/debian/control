@@ -1,0 +1,17 @@
+Source: launchpad-buildd
+Section: misc
+Priority: extra
+Maintainer: Daniel Silverstone <daniel.silverstone@canonical.com>
+Standards-Version: 3.5.9
+Build-Depends-Indep: debhelper (>= 4)
+
+Package: launchpad-buildd
+Section: misc
+Architecture: all
+Depends: python-twisted
+Description: Launchpad buildd slave
+ This is the launchpad buildd slave package. It contains everything needed to
+ get a launchpad buildd going apart from the database manipulation required to
+ tell launchpad about the slave instance. If you are creating more than one
+ slave instance on the same computer, be sure to give them independant configs
+ and independant filecaches etc.

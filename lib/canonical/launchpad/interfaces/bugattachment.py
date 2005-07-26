@@ -1,10 +1,21 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Bug attachment interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IBugAttachment',
+    'IBugAttachmentSet',
+    ]
 
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
 
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
+from zope.schema import Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
+
+_ = MessageIDFactory('launchpad')
 
 class IBugAttachment(Interface):
     """A file attachment to an IMessage."""

@@ -1,0 +1,36 @@
+<div class="portlet">
+    <h4>Actions:</h4>
+
+    <div class="portletBody portletContent">
+        <ul>
+            <li class="info"><a href=".">Series Overview</a></li>
+            <li class="edit"
+                tal:condition="context/required:launchpad.Edit">
+                <a href="+edit">Edit Series Details</a>
+            </li>
+            <li class="edit"
+                tal:condition="context/required:launchpad.Admin">
+                <a href="+review">Review Series Details</a>
+            </li>
+            <li class="edit"
+                tal:condition="context/required:launchpad.Edit">
+                <a href="+source">Edit Source</a>
+            </li>
+            <li class="edit"
+                tal:condition="context/required:launchpad.AnyPerson">
+                <a href="+ubuntupkg">Link to Ubuntu Package</a>
+            </li>
+            <li class="edit"
+                tal:condition="context/required:launchpad.Edit">
+                <a href="+addrelease">Register New Release</a>
+            </li>
+            <li class="add"
+                tal:condition="context/required:launchpad.Admin">
+                <a href="+addpotemplate">Add translation template</a>
+            </li>
+            <li class="download">
+                <a href="+rdf">Download RDF Metadata</a>
+            </li>
+        </ul>
+    </div>
+</div>

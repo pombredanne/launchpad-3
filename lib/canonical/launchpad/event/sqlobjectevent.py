@@ -1,9 +1,10 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-_all_ = ['SQLObjectCreatedEvent',
-         'SQLObjectModifiedEvent',
-         'SQLObjectToBeModifiedEvent']
+
+__all__ = ['SQLObjectCreatedEvent',
+           'SQLObjectModifiedEvent',
+           'SQLObjectToBeModifiedEvent']
 
 from zope.component import getUtility
 from zope.interface import implements

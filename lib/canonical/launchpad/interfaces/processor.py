@@ -1,13 +1,18 @@
-# Imports from zope
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Processor interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IProcessor',
+    'IProcessorFamily',
+    ]
+
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
-#
-# Processor interfaces
-#
+_ = MessageIDFactory('launchpad')
 
 class IProcessor(Interface):
     """The SQLObject Processor Interface"""
@@ -16,7 +21,7 @@ class IProcessor(Interface):
     title = Attribute("The Processor Title")
     description = Attribute("The Processor Description")
     owner = Attribute("The Processor Owner")
-    
+
 class IProcessorFamily(Interface):
     """The SQLObject ProcessorFamily Interface"""
     name = Attribute("The Processor Family Name")

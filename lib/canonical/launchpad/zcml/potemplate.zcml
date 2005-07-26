@@ -24,7 +24,7 @@
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IPOTemplate"
-        getter="getOrCreatePOFile"
+        function="canonical.launchpad.browser.traversers.traverse_potemplate"
         />
 
     <browser:defaultView
@@ -36,7 +36,7 @@
         for="canonical.launchpad.interfaces.IPOTemplate"
         class="canonical.launchpad.browser.POTemplateView"
         permission="zope.Public">
-        
+
         <browser:page
             name="+index"
             template="../templates/potemplate-index.pt"
@@ -49,19 +49,19 @@
         <!-- Potemplate Portlets -->
         <browser:page
             name="+portlet-actions"
-            template="../templates/portlet-potemplate-actions.pt"
+            template="../templates/potemplate-portlet-actions.pt"
         />
         <browser:page
             name="+portlet-details"
-            template="../templates/portlet-potemplate-details.pt"
+            template="../templates/potemplate-portlet-details.pt"
         />
         <browser:page
             name="+portlet-relateds"
-            template="../templates/potemplate-portlet-relateds.pt"
+            template="../templates/portlet-potemplate-relateds.pt"
         />
         <browser:page
             name="+portlet-for"
-            template="../templates/portlet-potemplate-for.pt"
+            template="../templates/potemplate-portlet-for.pt"
         />
         <browser:page
             name="+portlet-status-legend"
@@ -86,12 +86,21 @@
         label="Change PO template Information"
         permission="launchpad.Edit"
         template="../templates/potemplate-edit.pt"
+        fields="potemplatename description" 
+        />
+
+    <browser:editform
+        name="+admin"
+        schema="canonical.launchpad.interfaces.IPOTemplate"
+        class="canonical.launchpad.browser.POTemplateEditView"
+        label="Administer PO Template"
+        permission="launchpad.Admin"
+        template="../templates/potemplate-edit.pt"
         fields="name potemplatename description header iscurrent owner
-                productrelease distrorelease sourcepackagename
+                productseries distrorelease sourcepackagename
                 sourcepackageversion binarypackagename languagepack path
-                filename" >
-        lp:url="Rosetta/products/$Product.name/$POTemplate.name/+edit"
-    </browser:editform>
+                filename" 
+        />
 
     <browser:page
         name="+translate"
@@ -109,24 +118,6 @@
         class="canonical.launchpad.browser.POTemplateExportView"
         />
 
-    <!-- needed for @@absolute_url to work -->
-    <view
-        for="canonical.launchpad.interfaces.IPOTemplate"
-        factory="canonical.launchpad.browser.potemplate.POTemplateAbsoluteURL"
-        type="zope.publisher.interfaces.http.IHTTPRequest"
-        permission="zope.Public"
-        provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
-    </view>
-
-    <view
-        name="absolute_url"
-        for="canonical.launchpad.interfaces.IPOTemplate"
-        factory="canonical.launchpad.browser.potemplate.POTemplateAbsoluteURL"
-        type="zope.publisher.interfaces.http.IHTTPRequest"
-        permission="zope.Public"
-        provides="zope.app.traversing.browser.interfaces.IAbsoluteURL">
-    </view>
-
     <!-- POTemplateSet -->
     <securedutility
         class="canonical.launchpad.database.POTemplateSet"
@@ -139,6 +130,11 @@
         getter="__getitem__"
         />
 
+    <browser:menus
+        module="canonical.launchpad.browser.potemplate"
+        classes="POTemplateFacets POTemplateAppMenus"
+        />
+
     <content class="canonical.launchpad.database.POTemplateSubset">
         <require
             permission="zope.Public"
@@ -146,6 +142,7 @@
             set_attributes="sourcepackagename distrorelease"
             />
     </content>
+
     <browser:url
         for="canonical.launchpad.interfaces.IPOTemplateSubset"
         urldata="canonical.launchpad.browser.POTemplateSubsetURL"

@@ -1,0 +1,47 @@
+Go to the page to add a new project.
+
+  >>> print http(r"""
+  ... GET /projects/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+      <h1>Register a Project with The Launchpad!</h1>
+  ...
+
+Add a new project.
+
+  >>> print http(r"""
+  ... POST /projects/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 223
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: http://localhost:9000/projects/+new
+  ... 
+  ... name=apache&displayname=the+Apache+Project&title=The+Apache+Project&summary=The+Apache+Project&description=The+Apache+Project.%0D%0A%0D%0AThe+Apache+Project.&homepageurl=http%3A%2F%2Fwww.apache.org&Register=Register+Project""")
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: apache
+  <BLANKLINE>
+  ...
+      <h1>Register a Project with The Launchpad!</h1>
+  ...
+
+Now see the new project.
+
+  >>> print http(r"""
+  ... GET /projects/apache HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/projects/+new
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+      <h2>The Apache Project</h2>
+  ...

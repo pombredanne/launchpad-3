@@ -12,7 +12,7 @@
   ...
   ...Foo Bar...
   ...
-  ...Active Member...
+  ...Active...
   ...
 
 
@@ -49,8 +49,8 @@
   >>> from canonical.launchpad.database import Person, TeamMembership
   >>> foobar = Person.byName('name16')
   >>> team = Person.byName('myemail')
-  >>> tm = TeamMembership.selectBy(personID=foobar.id, teamID=team.id)[0]
+  >>> tm = TeamMembership.selectOneBy(personID=foobar.id, teamID=team.id)
   >>> tm.statusname
-  'Expired Member'
+  'Expired'
   >>> foobar.inTeam(team)
   False

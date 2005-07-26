@@ -6,7 +6,6 @@
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure context/@@+portlet-views" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
@@ -20,42 +19,102 @@
     <p>You need to register an GPG key with Launchpad to be able to
     Sign a Code of Conduct and request action through email.</p>
 
-    <div tal:define="msg view/form_action" tal:condition="msg">
-      <p class="portalMessage" tal:content="msg">Something happened.</p>
+
+    <div tal:define="msg view/form_action" tal:condition="msg" 
+         tal:content="structure msg" class="portalMessage">
     </div>
   
-    
-    <div tal:repeat="gpgkey context/gpgkeys"> 
-    <form name="remove" action="" method="POST">
-    <input type="hidden" name="action" value="remove_gpg" />
-    <input type="hidden" name="keyid" tal:attributes="value gpgkey/id" />
-    <fieldset> 
-    <legend>GPG Key Information </legend>
-    <dl>
-    <dt>Key ID</dt>
-        <dd tal:content="string:${gpgkey/keysize}${gpgkey/algorithmname}/${gpgkey/keyid}">ALG</dd>
-    <dt>Key Fingerprint</dt>
-        <dd tal:content="gpgkey/fingerprint">FPR</dd>
-    </dl>
-    <input type="submit" value="Remove" />
-    </fieldset>
-    </form>
-    </div>
-
     <div>
-    <form name="clain" action="" method="POST">
+    <form name="gpg_actions" action="" method="POST">
     <input type="hidden" name="action" value="claim_gpg" />
     <fieldset>
     <legend>Find and Import GPG Key</legend>
     <div>
         <label>Key Fingerprint</label>
         <div class="formHelp">
-	   Paste the Key Fingerprint (use: `gpg --fingerprint YOU`,
-    can only be used with v4 keys)
+	   Paste the Key Fingerprint (use: <kbd>gpg --fingerprint YOU</kbd>,
+           can only be used with v4 keys). Launchpad will send a message to
+	   <span tal:replace="context/preferredemail/email"/> containing the
+	   instructions to conclude the process.
 	</div>
         <input type="text" name="fingerprint" size="60"/>
         <input type="submit" value="Find and Import"/>
     </fieldset>
+    </form>
+    </div>
+
+    
+    <h2>Valid GPG Keys</h2>
+
+    <div tal:condition="view/gpgkeysCount"> 
+    <form name="gpg_actions" action="" method="POST">
+    <input type="hidden" name="action" value="deactivate_gpg" />
+
+         <p><dfn>Deactivating</dfn> a key applies only to Launchpad, not
+         anywhere you use the key. If you deactivate a key, remember it will 
+         automatically deactivate any feature that uses that key, such as 
+         signing code of conduct or comment on a bug report by e-mail.</p>
+
+      <div tal:repeat="key context/gpgkeys">
+        <label>
+        <input type="checkbox" name="DEACTIVATE_GPGKEY"
+               tal:attributes="value key/id"/>	       
+	      <span tal:replace="key/displayname">KEY</span>
+        </label>
+      </div>
+
+    <input type="submit" value="Deactivate Key" />
+    </form>
+    </div>
+
+    <div tal:condition="not:view/gpgkeysCount"> 
+       <p>You have no valid GPG keys registered with Launchpad.</p>
+    </div>
+
+
+    <div tal:condition="context/pendinggpgkeys"> 
+    <form name="gpg_actions" action="" method="POST">
+    <input type="hidden" name="action" value="remove_gpgtoken" />
+
+    <h2>GPG Keys Pending Validation</h2>
+
+    <div>
+
+        <p>If one of these keys doesn't belong to you or is duplicated,
+        please remove it.</p>
+
+      <div tal:repeat="fingerprint context/pendinggpgkeys">
+        <label>
+        <input type="checkbox" name="REMOVE_GPGTOKEN"
+               tal:attributes="value fingerprint"/>	       
+               Key <span tal:replace="fingerprint">TOKEN</span>
+        </label>
+      </div>
+    </div>
+    <input type="submit" value="Remove Key Validation" />
+    </form>
+    </div>
+
+    <div tal:condition="context/inactivegpgkeys"> 
+    <form name="gpg_actions" action="" method="POST">
+    <input type="hidden" name="action" value="revalidate_gpg" />
+
+    <h2>Deactivated GPG Keys</h2>
+
+    <div>
+
+      <p>If you change your mind about deactivating a key, you can
+        <dfn>revalidate</dfn> it.</p>
+
+      <div tal:repeat="key context/inactivegpgkeys">
+        <label>
+        <input type="checkbox" name="REVALIDATE_GPGKEY"
+               tal:attributes="value key/id"/>
+               <span tal:replace="key/displayname">KEY</span>
+        </label>
+      </div>
+    </div>
+    <input type="submit" value="Revalidate Key" />
     </form>
     </div>
 

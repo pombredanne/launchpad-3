@@ -6,16 +6,47 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-views" />
+  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
+    <div tal:content="structure context/@@+portlet-actions" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-      <h1>Translation Activity</h1>
+  <h1>Translation Activity</h1>
+
+  <p class="documentDescription">This page lists any files that include
+  contributions in some form from <span tal:replace="context/browsername">
+  Mark Shuttleworth</span>.</p>
+
+  <tal:block define="pofiles context/touched_pofiles">
+
+    <tal:block condition="pofiles">
+      <table class="listing">
+        <thead>
+          <tr>
+            <th>Language</th>
+            <th>Application</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="pofile context/touched_pofiles">
+            <td tal:content="pofile/language/englishname">Spanish</td>
+            <td><a tal:content="pofile/potemplate/title"
+                   tal:attributes="href pofile/fmt:url">
+            foo bar in package bla</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </tal:block>
+    <tal:block condition="not: pofiles">
+      <p><i>No translations recorded from
+      <span tal:replace="context/browsername">Foo Bar</span>.</i></p>
+    </tal:block>
+  </tal:block>
 
 </div>
 

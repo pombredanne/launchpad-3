@@ -13,7 +13,8 @@ from canonical.launchpad.interfaces import (
     IMilestone, IBug, IBugTask, IUpstreamBugTask, IDistroBugTask,
     IDistroReleaseBugTask, ITranslator, IProduct, IProductRelease,
     IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
-    ILaunchpadCelebrities, IDistroRelease)
+    ILaunchpadCelebrities, IDistroRelease, IBugTracker, IPoll, IPollSubset,
+    IPollOption, IPollOptionSubset)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -147,6 +148,41 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
         """
         admins = getUtility(ILaunchpadCelebrities).admin
         return self.obj.id == user.id or user.inTeam(admins)
+
+
+class EditPollByTeamOwnerOrTeamAdminsOrAdmins(
+        EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IPoll
+
+
+class EditPollSubsetByTeamOwnerOrTeamAdminsOrAdmins(
+        EditPollByTeamOwnerOrTeamAdminsOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IPollSubset
+
+
+class EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IPollOption
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(self.obj.poll.team.teamowner) or user.inTeam(admins):
+            return True
+        else:
+            for team in self.obj.poll.team.administrators:
+                if user.inTeam(team):
+                    return True
+
+        return False
+
+
+class EditPollOptionSubsetByTeamOwnerOrTeamAdminsOrAdmins(
+        EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IPollOptionSubset
+
 
 
 class EditUpstreamBugTask(AuthorizationBase):
@@ -301,8 +337,8 @@ class EditPOTemplateDetails(EditByOwnersOrAdmins):
     def checkAuthenticated(self, user):
         """Allow product/sourcepackage/potemplate owner, experts and admis.
         """
-        if (self.obj.productrelease is not None and
-            user.inTeam(self.obj.productrelease.productseries.product.owner)):
+        if (self.obj.productseries is not None and
+            user.inTeam(self.obj.productseries.product.owner)):
             # The user is the owner of the product.
             return True
 
@@ -367,4 +403,8 @@ class EditPOTemplateNameSet(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Edit'
     usedfor = IPOTemplateNameSet
 
+
+class EditBugTracker(EditByOwnersOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IBugTracker
 

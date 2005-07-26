@@ -11,6 +11,8 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import IPackaging, IPackagingUtil
 from canonical.lp.dbschema import EnumCol
 from canonical.lp.dbschema import PackagingType
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 
 
 class Packaging(SQLBase):
@@ -24,17 +26,22 @@ class Packaging(SQLBase):
     productseries = ForeignKey(foreignKey="ProductSeries",
                                dbName="productseries",
                                notNull=True)
-
     sourcepackagename = ForeignKey(foreignKey="SourcePackageName",
                                    dbName="sourcepackagename",
                                    notNull=True)
-
     distrorelease = ForeignKey(foreignKey='DistroRelease',
                                dbName='distrorelease',
                                notNull=True)
-
     packaging = EnumCol(dbName='packaging', notNull=True,
                         schema=PackagingType)
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+
+    @property
+    def sourcepackage(self):
+        from canonical.launchpad.database.sourcepackage import SourcePackage
+        return SourcePackage(distrorelease=self.distrorelease,
+            sourcepackagename=self.sourcepackagename)
 
 
 class PackagingUtil:

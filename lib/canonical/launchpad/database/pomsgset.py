@@ -3,25 +3,24 @@
 __metaclass__ = type
 __all__ = ['POMsgSet']
 
-import logging
-import datetime
 import gettextpo
-from warnings import warn
 
-from zope.interface import implements
+from zope.interface import implements, providedBy
+from zope.event import notify
+from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
+                       MultipleJoin, SQLObjectNotFound)
 
-from sqlobject import ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin
-from sqlobject import SQLObjectNotFound
+from canonical.launchpad.event.sqlobjectevent import (SQLObjectCreatedEvent,
+    SQLObjectModifiedEvent)
 from canonical.database.sqlbase import (SQLBase, sqlvalues,
-    flush_database_updates)
-from canonical.launchpad.interfaces import IEditPOMsgSet
+                                        flush_database_updates)
 from canonical.lp.dbschema import (RosettaTranslationOrigin,
     TranslationValidationStatus)
-from canonical.database.constants import UTC_NOW
+from canonical.launchpad import helpers
+from canonical.launchpad.interfaces import IEditPOMsgSet
 from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
-from canonical.launchpad import helpers
 
 
 class POMsgSet(SQLBase):
@@ -120,8 +119,11 @@ class POMsgSet(SQLBase):
     # IEditPOMsgSet
 
     def updateTranslationSet(self, person, new_translations, fuzzy,
-        published, is_editor, ignore_errors=False):
+        published, ignore_errors=False):
         """See IEditPOMsgSet."""
+        # Is the person allowed to edit translations?
+        is_editor = self.pofile.canEditTranslations(person)
+
         # First, check that the translations are correct.
         pot_set = self.potmsgset
         msgids_text = [messageid.msgid
@@ -135,7 +137,7 @@ class POMsgSet(SQLBase):
         try:
             helpers.validate_translation(msgids_text, new_translations,
                                          pot_set.flags())
-        except gettextpo.error, e:
+        except gettextpo.error:
             if fuzzy or ignore_errors:
                 # The translations are stored anyway, but we set them as
                 # broken.
@@ -172,13 +174,12 @@ class POMsgSet(SQLBase):
                 complete = False
             # make the new sighting or submission. note that this may not in
             # fact create a whole new submission
-            self.makeSubmission(
+            submission = self.makeSubmission(
                 person=person,
                 text=newtran,
                 pluralform=index,
                 published=published,
-                validation_status=validation_status,
-                is_editor=is_editor)
+                validation_status=validation_status)
 
         # We set the fuzzy flag first, and completeness flags as needed:
         if published and is_editor:
@@ -192,8 +193,10 @@ class POMsgSet(SQLBase):
         self.updateStatistics()
 
     def makeSubmission(self, person, text, pluralform, published,
-            is_editor=True,
             validation_status=TranslationValidationStatus.UNKNOWN):
+        # Is the person allowed to edit translations?
+        is_editor = self.pofile.canEditTranslations(person)
+
         # this is THE KEY method in the whole of rosetta. It deals with the
         # sighting or submission of a translation for a pomsgset and plural
         # form, either online or in the published po file. It has to decide
@@ -220,7 +223,7 @@ class POMsgSet(SQLBase):
         # It makes no sense to have a "published" submission from someone
         # who is not an editor, so let's sanity check that first
         if published and not is_editor:
-            raise AssertionError, 'published translations are ALWAYS is_editor'
+            raise AssertionError('published translations are ALWAYS is_editor')
 
         # first we must deal with the situation where someone has submitted
         # a NULL translation. This only affects the published or active data
@@ -332,6 +335,15 @@ class POMsgSet(SQLBase):
             personID=person.id,
             validationstatus=validation_status)
 
+        notify(SQLObjectCreatedEvent(submission))
+
+        # Store the object status before the changes.
+        object_before_modification = helpers.Snapshot(selection,
+            providing=providedBy(selection))
+
+        # Update the latestsubmission field.
+        self.pofile.latestsubmission = submission
+
         # next, we need to update the existing active and possibly also
         # published selections
         if published:
@@ -340,6 +352,12 @@ class POMsgSet(SQLBase):
             # activesubmission is updated only if the translation is valid and
             # it's an editor.
             selection.activesubmission = submission
+
+        # List of fields that would be updated.
+        fields = ['publishedsubmission', 'activesubmission']
+
+        notify(SQLObjectModifiedEvent(
+            selection, object_before_modification, fields))
 
         # we cannot properly update the statistics here, because we don't
         # know if the "fuzzy" or completeness status is changing at a higher
@@ -413,15 +431,15 @@ class POMsgSet(SQLBase):
         """See IPOMsgSet."""
         submissions = self.potmsgset.getWikiSubmissions(self.pofile.language,
             pluralform)
-        active = self.activeSubmission(pluralform).potranslation
+        active = self.activeSubmission(pluralform)
+        if active and active.potranslation:
+            active = active.potranslation
         return [submission
                 for submission in submissions
                 if submission.potranslation != active]
 
     def getSuggestedSubmissions(self, pluralform):
         """See IPOMsgSet."""
-        # XXX sabdfl 02/06/05 this is Malone bug #906
-        fudgefactor = datetime.timedelta(0,1,0)
         selection = self.selection(pluralform)
         active = None
         if selection is not None and selection.activesubmission:
@@ -430,14 +448,16 @@ class POMsgSet(SQLBase):
                    pluralform = %s''' % sqlvalues(self.id, pluralform)
         if active:
             query += ''' AND datecreated > %s
-                    ''' % sqlvalues(active.datecreated + fudgefactor)
+                    ''' % sqlvalues(active.datecreated)
         return POSubmission.select(query, orderBy=['-datecreated'])
 
     def getCurrentSubmissions(self, pluralform):
         """See IPOMsgSet."""
         submissions = self.potmsgset.getCurrentSubmissions(self.pofile.language,
             pluralform)
-        active = self.activeSubmission(pluralform).potranslation
+        active = self.activeSubmission(pluralform)
+        if active and active.potranslation:
+            active = active.potranslation
         return [submission
                 for submission in submissions
                 if submission.potranslation != active]

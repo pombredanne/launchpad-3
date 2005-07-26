@@ -17,7 +17,6 @@ from canonical.launchpad.interfaces import (
     ILaunchBag, IBugSet, IBugTask, IProduct, IDistribution, IMessageSet,
     IBugEmailCommand, IBugTaskSet, IBug, IMailHandler,
     BugCreationConstraintsError)
-from canonical.launchpad.database import BugFactory, BugMessage
 from canonical.launchpad.mail.commands import emailcommands
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)

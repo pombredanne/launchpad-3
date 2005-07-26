@@ -8,12 +8,13 @@
 
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/@@+portlet-related-bounties" />
+    <div tal:replace="structure context/@@+portlet-bounties" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-actions" />
     <div tal:replace="structure context/@@+portlet-trackers" />
+    <div tal:replace="structure context/@@+portlet-calendar" />
 </metal:rightportlets>
 
 
@@ -27,7 +28,7 @@
         summarising the project's purpose.
     </div>
 
-    <div tal:content="context/description">
+    <div tal:content="structure context/description/fmt:text-to-html">
     This is the Project Description,
     which is a much more substantial description of the project. It should
     be several paragraphs long, and give you a very clear insight into the
@@ -46,19 +47,16 @@
 
     <div>
 	<ul tal:repeat="product context/products">
-		<li><b><a href="" tal:attributes="href product/name" 
+		<li><b><a href="." tal:attributes="href product/name" 
                 tal:content="product/title">Product title</a></b>
             <span tal:condition="exists:product/homepageurl"> [
-            <a href=""
+            <a href="."
                tal:content="product/homepageurl"
                tal:attributes="href product/homepageurl">homepage</a>
             ] </span>
             <br />
             <span tal:content="product/summary">Product short
             description goes here.</span></li>
-            <ul tal:repeat="potemplate product/potemplates">
-                    <li>Translations: <span tal:content="potemplate/title" /></li>
-            </ul>
 	</ul>
     </div>
     <div>

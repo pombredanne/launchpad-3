@@ -1,11 +1,23 @@
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
-from zope.interface import Interface, Attribute
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
+"""External bug reference interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IBugExternalRefsView',
+    'IBugExternalRef',
+    'IBugExternalRefSet',
+    ]
+
+from zope.i18nmessageid import MessageIDFactory
+from zope.interface import Interface, Attribute
+from zope.schema import Datetime, Int, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad.fields import Title
+
+_ = MessageIDFactory('launchpad')
 
 class IBugExternalRefsView(IAddFormCustomization):
     """BugExternalRef views"""

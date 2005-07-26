@@ -1,5 +1,6 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
-#
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Tests for classes in canonical.lp.dbschema."""
 
 import unittest
 from zope.testing.doctestunit import DocTestSuite
@@ -135,11 +136,11 @@ def test_constructor():
 
 def test_decorator():
     """
-    >>> from canonical.lp.dbschema import BugSeverity, Item
+    >>> from canonical.lp.dbschema import BugTaskSeverity, Item
 
     We can iterate over the Items in a DBSchema class
 
-    >>> for s in BugSeverity.items:
+    >>> for s in BugTaskSeverity.items:
     ...     assert isinstance(s, Item)
     ...     print s.name
     ...
@@ -151,17 +152,17 @@ def test_decorator():
 
     We can retrieve an Item by value
 
-    >>> BugSeverity.items[50].name
+    >>> BugTaskSeverity.items[50].name
     'CRITICAL'
 
     We can also retrieve an Item by name.
 
-    >>> BugSeverity.items['CRITICAL'].title
+    >>> BugTaskSeverity.items['CRITICAL'].title
     'Critical'
 
     If we don't ask for the item by its name or its value, we get a KeyError.
 
-    >>> BugSeverity.items['foo']
+    >>> BugTaskSeverity.items['foo']
     Traceback (most recent call last):
     ...
     KeyError: 'foo'

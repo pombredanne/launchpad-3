@@ -1,0 +1,109 @@
+
+We want to be able to edit the ubuntu packaging for a product series, and we
+also want to be able to create it where there was none previously.
+
+first, make sure we can see a page for this on the main series of evolution.
+The form field shows that it is currnetly mapped to evolution.
+
+  >>> print http(r"""
+  ... GET /products/evolution/+series/main/+ubuntupkg HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <BLANKLINE>
+  ...
+      <h2>Evolution Series: MAIN</h2>
+  ...
+      <h1>Ubuntu Packaging</h1>
+  ...
+      <form method="POST"
+            action="http://localhost:9000/products/evolution/+series/main/+ubuntupkg">
+  ...
+            <input type="text" name="ubuntupkg" size="30"
+                   value="evolution" />
+  ...
+
+
+Now let's POST to that form, we'll say we are linking it to package pmount,
+which is clearly not correct! In the resulting page, you can see that the
+form now says pmount, and there is a new row in the history that includes
+it.
+
+  >>> print http(r"""
+  ... POST /products/evolution/+series/main/+ubuntupkg HTTP/1.1
+  ... Content-Length: 36
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... 
+  ... ubuntupkg=pmount&setubuntupkg=Update""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <input type="text" name="ubuntupkg" size="30"
+                   value="pmount" />
+  ...
+
+
+OK, if that worked, we better set it back to where it was so we resotre Balance to the Force...
+
+  >>> print http(r"""
+  ... POST /products/evolution/+series/main/+ubuntupkg HTTP/1.1
+  ... Content-Length: 39
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... 
+  ... ubuntupkg=evolution&setubuntupkg=Update""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <input type="text" name="ubuntupkg" size="30"
+                   value="evolution" />
+  ...
+
+
+
+Now lets make sure we can create a new ubuntu package relationship where
+none existed previously. First make sure none exists, by viewing the form,
+it should have an empty field for ubuntupkg.
+
+  >>> print http(r"""
+  ... GET /products/thunderbird/+series/main/+ubuntupkg HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <input type="text" name="ubuntupkg" size="30"
+                   value="" />
+  ...
+
+
+Now let's post to it. We'll lie and say it's the mozilla source package in
+the current ubuntu distrorelease.
+
+  >>> print http(r"""
+  ... POST /products/thunderbird/+series/main/+ubuntupkg HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 37
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... ubuntupkg=mozilla&setubuntupkg=Update""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <input type="text" name="ubuntupkg" size="30"
+                   value="mozilla" />
+  ...
+

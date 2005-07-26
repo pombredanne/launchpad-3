@@ -7,15 +7,16 @@ __all__ = ['BinaryPackageName', 'BinaryPackageNameSet']
 from zope.interface import implements
 
 # SQLObject/SQLBase
-from sqlobject import \
-    SQLObjectNotFound, StringCol, MultipleJoin, CONTAINSSTRING
+from sqlobject import (
+    SQLObjectNotFound, StringCol, MultipleJoin, CONTAINSSTRING)
 
 # launchpad imports
-from canonical.database.sqlbase import SQLBase, quote, quote_like
+from canonical.database.sqlbase import SQLBase
+
 
 # interfaces and database 
-from canonical.launchpad.interfaces import IBinaryPackageName
-from canonical.launchpad.interfaces import IBinaryPackageNameSet
+from canonical.launchpad.interfaces import (
+    IBinaryPackageName, IBinaryPackageNameSet)
 
 
 class BinaryPackageName(SQLBase):
@@ -32,12 +33,21 @@ class BinaryPackageName(SQLBase):
     def __unicode__(self):
         return self.name
 
-    def ensure(klass, name):
+    @classmethod
+    def ensure(class_, name):
+        """Ensure that the given BinaryPackageName exists, creating it
+        if necessary.
+
+        Returns the BinaryPackageName
+        """
+        # XXX: Debonzi 20050719
+        # Its already writen on BinaryPackageNameSet and not been
+        # used anymore for gina. Just buildmaster.py uses it and
+        # as long as cprov change it he will remove this method.
         try:
-            return klass.byName(name)
+            return class_.byName(name)
         except SQLObjectNotFound:
-            return klass(name=name)
-    ensure = classmethod(ensure)
+            return class_(name=name)
 
 
 class BinaryPackageNameSet:
@@ -65,7 +75,26 @@ class BinaryPackageNameSet:
         if (name is None and distribution is None and
             distrorelease is None and text is None):
             raise ValueError('must give something to the query.')
-        clauseTables = Set(['BinaryPackage'])
+        clauseTables = set(['BinaryPackage'])
         # XXX sabdfl 12/12/04 not done yet
         raise NotImplementedError
 
+    def new(self, name):
+        return BinaryPackageName(name=name)
+
+    def getOrCreateByName(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            return self.new(name)
+
+    def ensure(self, name):
+        """Ensure that the given BinaryPackageName exists, creating it
+        if necessary.
+
+        Returns the BinaryPackageName
+        """
+        try:
+            return BinaryPackageName.byName(name)
+        except SQLObjectNotFound:
+            return BinaryPackageName(name=name)

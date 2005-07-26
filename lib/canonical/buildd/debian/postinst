@@ -1,0 +1,62 @@
+#!/bin/sh
+
+# Post install script
+
+set -e
+set -u
+
+USER=${BUILDD_USER:-buildd}
+BUILDDGID=${BUILDD_GID:-65500}
+BUILDDUID=${BUILDD_UID:-65500}
+
+make_buildd()
+{
+ buildd-genconfig --name=default --host=0.0.0.0 --port=8221 > \
+  /etc/launchpad-buildd/default
+ test -d /home/${USER}/filecache-default || mkdir /home/${USER}/filecache-default
+ chown $USER:buildd /home/${USER}/filecache-default
+ echo Default buildd created.
+}
+
+case "$1" in
+    configure)
+	getent group buildd >/dev/null 2>&1 ||
+                addgroup --gid $BUILDDGID buildd
+
+	getent passwd buildd >/dev/null 2>&1 ||
+        adduser --ingroup buildd --disabled-login --gecos 'Buildd user' \
+                --uid $BUILDDUID ${USER}
+
+        grep -q ^${USER} /etc/sudoers ||
+                echo "${USER}  ALL=(ALL) NOPASSWD: ALL" >>/etc/sudoers
+
+        install -d -o${USER} -m0755 /home/${USER}
+
+        cp  /usr/share/launchpad-buildd/sbuildrc \
+	    /home/${USER}/sbuildrc.tmp
+	cd /home/${USER}
+	sed -e's/@ARCHTAG@/'$(dpkg --print-architecture)'/g' \
+            -e's/@FQDN@/'$(hostname --fqdn)'/g' \
+            <sbuildrc.tmp > .sbuildrc
+	chown $USER:buildd .sbuildrc
+	chmod 0644 .sbuildrc
+
+	# Prepare a default buildd...
+	test -e /etc/launchpad-buildd/default || make_buildd
+
+	chown $USER:buildd /var/log/launchpad-buildd /var/run/launchpad-buildd
+
+	;;
+    abort-upgrade|abort-remove|abort-deconfigure)
+
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+#DEBHELPER#
+
+exit 0

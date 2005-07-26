@@ -1,0 +1,115 @@
+
+<div tal:omit-tag
+     tal:define="bug_url string:/malone/bugs/${context/id}">
+
+<table class="listing"
+       style="width: 100%; margin-bottom: 1px; margin-top: 2px; font-size: 90%;">
+
+  <caption>Needs fixing in...</caption>
+
+  <thead>
+
+    <tr>
+      <th>Upstream / Distro</th>
+      <th>Status</th>
+      <th>Severity</th>
+      <th>Priority</th>
+      <th colspan="2">Assigned to</th>
+    </tr>
+
+  </thead>
+
+  <tbody>
+    <!-- Upstream Tasks -->
+    <tr tal:repeat="bugtask context/bugtasks">
+      <td>
+        <tal:editabletask condition="bugtask/required:launchpad.Edit">
+          <a href="#"
+             tal:content="bugtask/contextname"
+             tal:attributes="href string:${bugtask/fmt:url}/+edit">
+          </a>
+        </tal:editabletask>
+
+        <tal:readonlytask condition="not: bugtask/required:launchpad.Edit">
+          <a href="#"
+             tal:content="bugtask/contextname"
+             tal:attributes="href bugtask/fmt:url">
+          </a>
+        </tal:readonlytask>
+
+        <!--indicate if there is a linked watch -->
+        <img tal:condition="bugtask/bugwatch"
+             src="/++resource++lock_icon.gif"
+             alt="Watch"
+             title="This Task is linked to a Bug Watch" />
+      </td>
+
+      <td tal:content="bugtask/status/title">
+        $BugTask.status
+      </td>
+
+      <td tal:content="bugtask/severity/title"
+          tal:attributes="class string:severity${bugtask/severity/title}">
+        Critical
+      </td>
+
+      <td tal:content="bugtask/priority/title"
+          tal:attributes="class string:priority${bugtask/priority/title}">
+        Medium
+      </td>
+
+      <td>
+        <tal:block condition="bugtask/assignee">
+          <img src="/++resource++user.gif" alt="" />
+          <a href="#"
+             tal:attributes="href bugtask/assignee/fmt:url"
+             tal:content="bugtask/assignee/browsername">
+            assignee.browsername
+          </a>
+        </tal:block>
+      </td>
+
+      <td style="text-align: center">
+        <tal:editabletask condition="bugtask/required:launchpad.Edit">
+          [<a tal:attributes="href string:${bugtask/fmt:url}/+edit"
+              ><span tal:condition="bugtask/assignee"
+                     tal:omit-tag>re</span>assign</a>]
+        </tal:editabletask>
+      </td>
+
+    </tr>
+
+  </tbody>
+
+</table>
+
+</div>
+
+<div style="font-size: 80%; text-align: right; clear: both;
+            margin-bottom:1em; text-decoration: none;">
+
+  Indicate bug also exists:
+  <span style="white-space: nowrap">
+      <img src="/++resource++add.gif" alt="+" />
+      <a href="+upstreamtask"
+         title="Mark this bug as occurring upstream">
+        Upstream
+      </a>
+  </span>
+
+  <span style="white-space: nowrap">
+      <img src="/++resource++add.gif" alt="+" />
+      <a href="+distrotask"
+         title="Mark this bug as occurring in a distro package">
+        In Distro
+      </a>
+  </span>
+  <span style="white-space: nowrap">
+      <img src="/++resource++add.gif" alt="+" />
+      <a href="+distroreleasetask"
+         title="Target the fixing of this bug to a specific distro release">
+        In Distro Release
+      </a>
+  </span>
+
+</div>

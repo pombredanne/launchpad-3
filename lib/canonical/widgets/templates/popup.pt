@@ -15,5 +15,4 @@
         />
 </select>
 
-<a tal:attributes="href view/popupHref">(list)</a>
-
+(<a tal:attributes="href view/popupHref">Choose&hellip;</a>)

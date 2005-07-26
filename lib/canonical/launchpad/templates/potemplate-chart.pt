@@ -9,11 +9,11 @@
 
   <tbody>
     <tr tal:repeat="pfview view/pofiles"
-        tal:attributes="onclick string:window.location='${view/URL}${pfview/URL}'"
+        tal:attributes="onclick string:window.location='${pfview/context/fmt:url}/+translate'"
         >
       <tal:block define="pf pfview/context">
         <td>
-          <a tal:attributes="href string:${view/URL}${pfview/URL}"
+          <a tal:attributes="href string:${pf/fmt:url}/+translate"
              tal:content="pfview/language_name/fmt:shorten/25">
              Language Name
           </a>
@@ -23,17 +23,17 @@
           <div tal:replace="structure pf/@@+barchart" />
         </td>
         <td>
-          <span tal:condition="pf/latest_submission"
-                tal:replace="pf/latest_submission/datecreated/fmt:date" />
-          <tal:block condition="not: pf/latest_submission">
+          <span tal:condition="pf/latestsubmission"
+                tal:replace="pf/latestsubmission/datecreated/fmt:date" />
+          <tal:block condition="not: pf/latestsubmission">
               &mdash;
           </tal:block>
         </td>
         <td>
         <span
-           tal:condition="pf/latest_submission"
-           tal:replace="pf/latest_submission/person/browsername/fmt:shorten/25" />
-          <tal:block condition="not: pf/latest_submission">
+           tal:condition="pf/latestsubmission"
+           tal:replace="pf/latestsubmission/person/browsername/fmt:shorten/25" />
+          <tal:block condition="not: pf/latestsubmission">
               &mdash;
           </tal:block>
         </td>

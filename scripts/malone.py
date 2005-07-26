@@ -12,7 +12,7 @@ from canonical.launchpad.database import *
 from canonical.launchpad.validators.name import valid_name
 from canonical.foaf.nickname import generate_nick
 from canonical.database.sqlbase import quote
-from canonical.lp.encoding import guess as ensure_unicode
+from canonical import guess as ensure_unicode
 from canonical.lp.dbschema import EmailAddressStatus
 from sets import Set
 
@@ -20,16 +20,6 @@ from sets import Set
 
 class Launchpad:
     
-    def __init__(self):
-        # get the debbugs remote bug tracker id
-        self.debtrackerid = list(BugTracker.select("name='debbugs'"))[0].id
-
-    def ensure_person(self, displayname, email):
-        person = PersonSet().getByEmail(email)
-        if not person:
-            person = createPerson(email, displayname=displayname)
-        return person
-
     def ensure_sourcepackagename(self, name):
         name = name.strip().lower()
         if not valid_name(name):
@@ -47,9 +37,6 @@ class Launchpad:
             return BinaryPackageName.selectBy(name=name)[0]
         except IndexError:
             return BinaryPackageName(name=name)
-
-    def get_distribution_by_name(self, name):
-        return Distribution.selectBy(name=name)[0]
 
     def all_deb_watches(self):
         """Return a list of all debian bug numbers being watched by
@@ -88,17 +75,6 @@ class Launchpad:
         except IndexError:
             return None
 
-    def get_malonebug_for_debbug_id(self, debian_bug_id):
-        """Return a malone bugfor a debian bug number,
-        based on the bug watches."""
-        try:
-            return BugWatch.select("""
-               bugtracker = %d AND
-               remotebug = %s
-               """ % (self.debtrackerid, quote(str(debian_bug_id))))[0].bug
-        except IndexError:
-            return None
- 
     def link_bug_and_message(self, bug, msg):
         bugmsg = BugMessage(bug=bug.id, message=msg.id)
         return bugmsg

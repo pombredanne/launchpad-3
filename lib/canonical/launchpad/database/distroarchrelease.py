@@ -10,8 +10,9 @@ from sqlobject import StringCol, ForeignKey, RelatedJoin
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.lp import dbschema
 
-from canonical.launchpad.interfaces import \
-     IDistroArchRelease, IBinaryPackageSet, IPocketChroot
+from canonical.launchpad.interfaces import (
+    IDistroArchRelease, IBinaryPackageSet, IPocketChroot
+    )
 from canonical.launchpad.database.publishing import PackagePublishing
 
 
@@ -39,9 +40,10 @@ class DistroArchRelease(SQLBase):
 
     # for launchpad pages
     def title(self):
-        title = self.architecturetag + ' ('+self.processorfamily.name+') '
-        title += 'for ' + self.distrorelease.distribution.displayname
+        title = self.distrorelease.distribution.displayname
         title += ' ' + self.distrorelease.displayname
+        title += ' for the ' + self.architecturetag
+        title += ' ('+self.processorfamily.name+') architecture'
         return title
     title = property(title)
 
@@ -56,6 +58,20 @@ class DistroArchRelease(SQLBase):
         #return len(self.packages)
     binarycount = property(binarycount)
 
+    def getChroot(self, pocket=None, default=None):
+        """See IDistroArchRelease"""
+        if not pocket:
+            pocket = dbschema.PackagePublishingPocket.PLAIN
+
+        pchroot = PocketChroot.selectOneBy(distroarchreleaseID=self.id,
+                                           pocket=pocket)
+        if pchroot:
+            # return the librarianfilealias of the chroot
+            return pchroot.chroot
+
+        return default
+        
+        
     def findPackagesByName(self, pattern, fti=False):
         """Search BinaryPackages matching pattern and archtag"""
         binset = getUtility(IBinaryPackageSet)

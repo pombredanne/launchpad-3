@@ -1,10 +1,19 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Bug activity interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IBugActivity',
+    'IBugActivitySet',
+    ]
 
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 from zope.interface import Interface
+from zope.schema import Datetime, Int, Text, TextLine
 
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
-
+_ = MessageIDFactory('launchpad')
 
 class IBugActivity(Interface):
     """A log of all things that have happened to a bug."""
@@ -17,3 +26,10 @@ class IBugActivity(Interface):
     newvalue = TextLine(title=_('New Value'))
     message = Text(title=_('Message'))
 
+
+class IBugActivitySet(Interface):
+    """The set of all bug activities."""
+
+    def new(bug, datechanged, person, whatchanged,
+            oldvalue=None, newvalue=None, message=None):
+        """Creates a new log of what happened to a bug and returns it."""

@@ -11,15 +11,17 @@ import sets
 import os.path
 import warnings
 from zope.interface import Interface, Attribute, implements
-from zope.component import getAdapter, queryAdapter
+from zope.component import getAdapter, getUtility, queryAdapter
 
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.app.traversing.interfaces import ITraversable
 from zope.exceptions import NotFoundError
+from zope.security.interfaces import Unauthorized
 from canonical.launchpad.interfaces import (
-    IPerson, IFacetMenu, IExtraFacetMenu,
-    IApplicationMenu, IExtraApplicationMenu, NoCanonicalUrl)
+    IPerson, ILaunchBag, IFacetMenu, IExtraFacetMenu,
+    IApplicationMenu, IExtraApplicationMenu, NoCanonicalUrl,
+    IBugSet)
 import canonical.lp.dbschema
 from canonical.lp import decorates
 import canonical.launchpad.pagetitles
@@ -199,8 +201,13 @@ class DBSchemaAPI:
     DBSchemas.
     """
     implements(ITraversable)
-    _all = dict([(name, getattr(canonical.lp.dbschema, name))
-                 for name in canonical.lp.dbschema.__all__])
+
+    _all = {}
+    for name in canonical.lp.dbschema.__all__:
+        schema = getattr(canonical.lp.dbschema, name)
+        if (schema is not canonical.lp.dbschema.DBSchema and
+            issubclass(schema, canonical.lp.dbschema.DBSchema)):
+            _all[name] = schema
 
     def __init__(self, number):
         self._number = number
@@ -209,7 +216,7 @@ class DBSchemaAPI:
         if name in self._all:
             return self._all[name].items[self._number].title
         else:
-            raise TraversalError, name
+            raise TraversalError(name)
 
 
 class NoneFormatter:
@@ -230,6 +237,7 @@ class NoneFormatter:
         'datetime',
         'exactduration',
         'pagetitle',
+        'text-to-html',
         'url',
         ])
 
@@ -268,12 +276,16 @@ class DateTimeFormatterAPI:
 
     def time(self):
         if self._datetime.tzinfo:
-            return self._datetime.strftime('%T %Z')
+            value = self._datetime.astimezone(getUtility(ILaunchBag).timezone)
+            return value.strftime('%T %Z')
         else:
             return self._datetime.strftime('%T')
 
     def date(self):
-        return self._datetime.strftime('%Y-%m-%d')
+        value = self._datetime
+        if value.tzinfo:
+            value = value.astimezone(getUtility(ILaunchBag).timezone)
+        return value.strftime('%Y-%m-%d')
 
     def datetime(self):
         return "%s %s" % (self.date(), self.time())
@@ -308,7 +320,7 @@ class DurationFormatterAPI:
                 parts.append('%d minutes' % minutes)
         if parts or seconds > 0:
             parts.append('%0.1f seconds' % seconds)
-        
+
         return ', '.join(parts)
 
 
@@ -329,6 +341,9 @@ class RequestFormatterAPI:
         self.request = request
 
     def breadcrumbs(self):
+        # XXX stevea 7/7/05 let's replace this in due course with something
+        # better thought through
+        unclickable = set(['+lang'])
         path_info = self.request.get('PATH_INFO')
         last_path_info_segment = path_info.split('/')[-1]
         clean_path_split = clean_path_segments(self.request)
@@ -343,8 +358,9 @@ class RequestFormatterAPI:
                         and last_path_info_segment == last_clean_path_index):
                     if not segment:
                         segment = 'Launchpad'
-                    L.append('<a rel="parent" href="%s">%s</a>' %
-                        (self.request.URL[index], segment))
+                    if segment not in unclickable:
+                        L.append('<a rel="parent" href="%s">%s</a>' %
+                            (self.request.URL[index], segment))
         sep = '<span class="breadcrumbSeparator"> &raquo; </span>'
         return sep.join(L)
 
@@ -412,6 +428,195 @@ class FormattersAPI:
         """Quote HTML characters, then replace newlines with <br /> tags."""
         return cgi.escape(self._stringtoformat).replace('\n','<br />\n')
 
+    @staticmethod
+    def _substitute_matchgroup_for_spaces(match):
+        """Return a string made up of '&nbsp;' for each character in the
+        first match group.
+
+        Used when replacing leading spaces with nbsps.
+
+        There must be only one match group.
+        """
+        groups = match.groups()
+        assert len(groups) == 1
+        return '&nbsp;' * len(groups[0])
+
+    @staticmethod
+    def _linkify_substitution(match):
+        if match.group('bug') is not None:
+            bugnum = match.group('bugnum')
+            # Use a hardcoded url so we still have a link for bugs that don't
+            # exist, or are private.
+            # XXX SteveAlexander 2005-07-14, I can't get a canonical_url for
+            #     a private bug.  I should be able to do so.
+            url = '/malone/bugs/%s' % bugnum
+            # The text will have already been cgi escaped.
+            text = match.group('bug')
+            bugset = getUtility(IBugSet)
+            try:
+                bug = bugset.get(bugnum)
+            except NotFoundError:
+                title = "No such bug"
+            else:
+                try:
+                    title = bug.title
+                except Unauthorized:
+                    title = "private bug"
+            title = cgi.escape(title, quote=True)
+            return '<a href="%s" title="%s">%s</a>' % (url, title, text)
+        elif match.group('url') is not None:
+            # The text will already have been cgi escaped.
+            # We still need to escape quotes for the url.
+            url = match.group('url')
+            # The url might end in a spurious &gt;.  If so, remove it
+            # and put it outside the url text.
+            if url.lower().endswith('&gt;'):
+                gt = url[-4:]
+                url = url[:-4]
+            else:
+                gt = ''
+                url = url
+            return '<a rel="nofollow" href="%s">%s</a>%s' % (
+                url.replace('"', '&quot;'), url, gt)
+        else:
+            raise AssertionError("Unknown pattern matched.")
+
+    # Match <, >, & when they've been html-escaped, so that we can replace
+    # them with a single character to get the correct length of a line.
+    _re1 = re.compile('&lt;|&gt;|&amp;')
+
+    # Match for putting <div></div> around lines.
+    # Look back to check there was not a \n previously, match a single \n
+    # or the start of the text, some data we want, followed by a look-ahead
+    # of a single \n not followed by another \n, or the end of the text.
+    _re2 = re.compile('(?<!\n)(\n|^)([^\n]+)(?=\n[^\n]|\n$|$)')
+
+    # Match for putting <p></p> around paragraphs.
+    # Match two newlines, start of text and newline, or a </div>, then
+    # some data we want with no newlines or '<', then a look-ahead of
+    # a pair or newlines, or a single newline and the end of the string,
+    # or the end of the string, or a <div>.
+    _re3 = re.compile(
+        '(\n\n|^\n|^|</div>|</div>\n)([^\n<]+)(?=\n\n|\n$|$|<div>)')
+
+    # See if the output looks like a single div containing just text.
+    _re4 = re.compile('^<div>([^<>]*)</div>$')
+
+    # Whitespace following a <div>, so we can replace it with &nbsp;
+    # characters using _substitute_matchgroup_for_spaces().
+    _re5 = re.compile('(?<=<div>)( +)')
+
+    # Whitespace following a <p>, so we can replace it with &nbsp;
+    # characters using _substitute_matchgroup_for_spaces().
+    _re6 = re.compile('(?<=<p>)( +)')
+
+    # A </div> with any newlines after it, so we can ensure there's exactly
+    # one newline after a div.
+    _re7 = re.compile('</div>\n*')
+
+    # A <p> with any newlines after it, so we can ensure there's exactly
+    # one newline after a paragraph.
+    _re8 = re.compile('</p>\n*')
+
+    # Match urls or bugs.
+    _re_linkify = re.compile(r'''
+      (?P<url>
+        (?:about|gopher|http|https|ftp|mailto|file|irc|jabber):[/]*
+        (?P<host>[a-zA-Z0-9:@_\-\.]+)
+        (?P<urlchars>[a-zA-Z0-9/:;@_%~#=&\.\-\?\+\$,]*)
+      ) |
+      (?P<bug>
+        bug\s+(?:\#|number\.?|num\.?|no\.?)?\s*
+        0*(?P<bugnum>\d+)
+      )
+    ''', re.IGNORECASE | re.VERBOSE)
+
+    def text_to_html(self):
+        """Quote text according to DisplayingParagraphsOfText."""
+        text = cgi.escape(self._stringtoformat)
+
+        # This is based on the algorithm in the
+        # DisplayingParagraphsOfText spec, but is a little more
+        # complicated.
+
+        # 1. Trailing whitespace is removed from each line.
+        # 2. For each line in the text, if (when unescaped) it is between
+        #    60 and 80 characters long, and the next line exists and is
+        #    non-empty, replace the newline between them with a space
+        #    character. (We're assuming such line breaks are the result of
+        #    hard-wrapped text, such as an e-mail message.)
+
+        output = []
+        continuous_logical_paragraph = False
+        for line in text.splitlines():
+            line = line.rstrip()
+            output.append(line)
+            # Substitute the unescaped values for measuring the length of the
+            # line.  An 'X' is used to make it clearly show up if we use the
+            # output for anything else.
+            if 60 < len(self._re1.sub('X', line)) < 80:
+                if not continuous_logical_paragraph:
+                    output.insert(-1, '<parastartmarker>\n\n')
+                output.append(' ')
+                continuous_logical_paragraph = True
+            else:
+                if continuous_logical_paragraph:
+                    # Put a special marker in to separate the paragraph from
+                    # whatever is to come next.  This marker cannot occur in
+                    # the real text because the real text has been cgi escaped.
+                    # The marker effectively separates the set of newlines
+                    # that come immediately after the paragraph from the
+                    # newlines that come before the following text.
+                    output.append('\n\n<paraendmarker>')
+                    continuous_logical_paragraph = False
+                    if not line.strip():
+                        # Remove the trailing space, which is the second to
+                        # last item in output.
+                        output.pop(-3)
+                        # This was a deliberately blank line, so add another
+                        # \n.
+                        output.append('\n')
+                output.append('\n')
+        output = output[:-1]
+        text = ''.join(output)
+
+        # 3. Put <div>...</div> around non-whitespace lines that
+        #   - start with a single newline or the start of the entire text, and
+        #   - end with a single newline or the end of the entire text.
+
+        text = self._re2.sub(r'<div>\2</div>', text)
+
+        # 4. Put <p>...</p> around non-whitespace lines that:
+        #   - start with multiple newlines or the start of the entire text,
+        #     or where the previous line now ends in </div>, and
+        #   - end with multiple newlines or the end of the entire text,
+        #     or where the following line now starts with <div>.
+
+        text = self._re3.sub(r'\1<p>\2</p>', text)
+
+        # Need to move the <parastartmarker> and <paraendmarker> now.
+        text = text.replace('<parastartmarker>', '')
+        text = text.replace('<paraendmarker>', '')
+
+        # 5. If the entire text now consists of a single <div>...</div>
+        # element, change it to a <p>...</p> element.
+
+        text = self._re4.sub(r'<p>\1</p>', text)
+
+        # 6. Leading spaces on each line are converted to &nbsp;.
+        text = self._re5.sub(self._substitute_matchgroup_for_spaces, text)
+        text = self._re6.sub(self._substitute_matchgroup_for_spaces, text)
+
+        # Only one newline after closing tags, except at the end.
+        text = self._re7.sub('</div>\n', text)
+        text = self._re8.sub('</p>\n', text)
+        text = text.rstrip()
+
+        # Linkify the text.
+        text = self._re_linkify.sub(self._linkify_substitution, text)
+
+        return text
+
     def nice_pre(self):
         """<pre>, except the browser knows it is allowed to break long lines
 
@@ -445,6 +650,8 @@ class FormattersAPI:
     def traverse(self, name, furtherPath):
         if name == 'nl_to_br':
             return self.nl_to_br()
+        elif name == 'text-to-html':
+            return self.text_to_html()
         elif name == 'nice_pre':
             return self.nice_pre()
         elif name == 'shorten':
