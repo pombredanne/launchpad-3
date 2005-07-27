@@ -26,8 +26,8 @@
                     string:${context/product/fmt:url}/+rdf" />
             </lp:Product>
         </lp:inProduct>
-        <lp:release tal:condition="context/releases">
-            <lp:ProductRelease tal:repeat="release context/releases">
+        <lp:release tal:repeat="release context/releases">
+            <lp:ProductRelease>
                 <lp:specifiedAt tal:attributes="rdf:resource
                     string:${release/product/fmt:url}/+series/${release/productseries/name}/${release/version}/+rdf" />
             </lp:ProductRelease>

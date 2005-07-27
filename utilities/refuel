@@ -26,7 +26,10 @@ if [ ! $LAUNCHPAD ]; then
   exit 1
 fi
 
-ssh-add
+ssh-add -l
+if [ $? -gt 0 ]; then
+  ssh-add
+fi
 
 # update the code that is brought directly into the tree
 cd $LAUNCHPAD

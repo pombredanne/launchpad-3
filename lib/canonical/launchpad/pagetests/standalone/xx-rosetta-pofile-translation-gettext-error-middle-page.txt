@@ -1,5 +1,5 @@
 
-Check to be sure that when a gettext error ocurrs in a "middle" form (that's a
+Check to be sure that when a gettext error occurs in a "middle" form (that's a
 form that is not the first or the last one to translate with the sets of
 messages for this POFile).
 

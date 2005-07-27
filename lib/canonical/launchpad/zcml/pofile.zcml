@@ -53,22 +53,22 @@
             template="../templates/portlet-rosetta-about.pt" />
         <browser:page
             name="+portlet-actions"
-            template="../templates/portlet-pofile-actions.pt" />
+            template="../templates/pofile-portlet-actions.pt" />
         <browser:page
             name="+portlet-contributors"
-            template="../templates/portlet-pofile-contributors.pt" />
+            template="../templates/pofile-portlet-contributors.pt" />
         <browser:page
             name="+portlet-details"
-            template="../templates/portlet-pofile-details.pt" />
+            template="../templates/pofile-portlet-details.pt" />
         <browser:page
             name="+portlet-translators"
-            template="../templates/portlet-pofile-translators.pt" />
+            template="../templates/pofile-portlet-translators.pt" />
         <browser:page
             name="+portlet-quickhelp"
             template="../templates/portlet-rosetta-quickhelp.pt" />
         <browser:page
             name="+portlet-stats"
-            template="../templates/portlet-pofile-stats.pt" />
+            template="../templates/pofile-portlet-stats.pt" />
 
     </browser:pages>
 

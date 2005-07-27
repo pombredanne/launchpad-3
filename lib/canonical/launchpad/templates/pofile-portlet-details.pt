@@ -74,6 +74,7 @@
     <tal:block condition="not: distro/translationgroup">
       <i>None selected</i>
     </tal:block>
+    <br />
     </tal:block>
     </tal:block>
     <b>Permissions:</b>

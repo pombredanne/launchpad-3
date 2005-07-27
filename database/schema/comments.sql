@@ -2,6 +2,13 @@
   Add Comments to Launchpad database
 */
 
+-- LaunchpadStatistic
+COMMENT ON TABLE LaunchpadStatistic IS 'A store of system-wide statistics
+or other integer values, keyed by names. The names are unique and the values
+can be any integer. Each field has a place to store the timestampt when it
+was last updated, so it is possible to know how far out of date any given
+statistic is.';
+
 -- Project
 COMMENT ON TABLE Project IS 'Project: A DOAP Project. This table is the core of the DOAP section of the Launchpad database. It contains details of a single open source Project and is the anchor point for products, potemplates, and translationefforts.';
 COMMENT ON COLUMN Project.owner IS 'The owner of the project will initially be the person who creates this Project in the system. We will encourage upstream project leaders to take on this role. The Project owner is able to edit the project.';

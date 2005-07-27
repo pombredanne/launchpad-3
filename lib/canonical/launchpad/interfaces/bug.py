@@ -10,6 +10,7 @@ __all__ = [
     'IBugSet',
     'IBugDelta',
     'IBugAddForm',
+    'IBugTarget'
     ]
 
 from zope.i18nmessageid import MessageIDFactory
@@ -142,6 +143,23 @@ class IBug(Interface):
         exists, in which case we will just return that) for this bug.
         """
 
+
+class IBugTarget(Interface):
+    """An entity on which a bug can be reported.
+
+    Examples include an IDistribution, an IDistroRelease and an
+    IProduct.
+    """
+    def search(bug=None, searchtext=None, status=None, priority=None,
+               severity=None, milestone=None, assignee=None, owner=None,
+               orderby=None, statusexplanation=None, user=None):
+        """Search the IBugTasks reported on this entity.
+
+        Return an iterable of matching results.
+
+        Note: milestone is currently ignored for all IBugTargets
+        except IProduct.
+        """
 
 
 class IBugDelta(Interface):

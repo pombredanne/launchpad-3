@@ -41,10 +41,10 @@
         permission="launchpad.AnyPerson">
         <browser:page
             name="+portlet-bugtasks"
-            template="../templates/portlet-bugwatch-bugtasks.pt" />
+            template="../templates/bugwatch-portlet-bugtasks.pt" />
         <browser:page
             name="+portlet-details"
-            template="../templates/portlet-bugwatch-details.pt" />
+            template="../templates/bugwatch-portlet-details.pt" />
     </browser:pages>
 
     <!--BugWatchSet -->

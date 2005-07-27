@@ -1,0 +1,72 @@
+The unpriviledge user cannot reach the potemplate creation form.
+
+  >>> print http(r"""
+  ... GET /products/evolution/+series/main/+addpotemplate HTTP/1.1
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 403 Forbidden
+  ...
+
+But and admin, like carlos, can.
+
+  >>> print http(r"""
+  ... GET /products/evolution/+series/main/+addpotemplate HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+And the final check, the form should work when we submit it.
+
+  >>> print http(r"""
+  ... POST /products/evolution/+series/main/+addpotemplate HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 1238
+  ... Content-Type: multipart/form-data; boundary=---------------------------1712653691672741041530594627
+  ... Referer: http://localhost:9000/products/evolution/+series/main/+addpotemplate
+  ... 
+  ... -----------------------------1712653691672741041530594627
+  ... Content-Disposition: form-data; name="field.potemplatename"
+  ... 
+  ... pmount
+  ... -----------------------------1712653691672741041530594627
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... 
+  ... -----------------------------1712653691672741041530594627
+  ... Content-Disposition: form-data; name="field.iscurrent.used"
+  ... 
+  ... 
+  ... -----------------------------1712653691672741041530594627
+  ... Content-Disposition: form-data; name="field.iscurrent"
+  ... 
+  ... on
+  ... -----------------------------1712653691672741041530594627
+  ... Content-Disposition: form-data; name="field.owner"
+  ... 
+  ... carlos@canonical.com
+  ... -----------------------------1712653691672741041530594627
+  ... Content-Disposition: form-data; name="field.path"
+  ... 
+  ... 
+  ... -----------------------------1712653691672741041530594627
+  ... Content-Disposition: form-data; name="field.filename"
+  ... 
+  ... 
+  ... -----------------------------1712653691672741041530594627
+  ... Content-Disposition: form-data; name="field.content"; filename="empty.pot"
+  ... Content-Type: text/x-gettext-translation-template
+  ... 
+  ... foo
+  ... 
+  ... -----------------------------1712653691672741041530594627
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------1712653691672741041530594627--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/products/evolution/+series/main/+pots/pmount
+  ...
+

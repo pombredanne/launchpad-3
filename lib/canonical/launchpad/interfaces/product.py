@@ -1,5 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""Interfaces including and related to IProduct."""
+
 __metaclass__ = type
 
 __all__ = [
@@ -12,17 +14,18 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from canonical.launchpad.interfaces import IHasOwner, IBugTarget
 from canonical.launchpad.validators.name import valid_name
 
 _ = MessageIDFactory('launchpad')
 
-class IProduct(IHasOwner):
-    """
-    A Hatchery Product. TheHatchery describes the open source world as
-    Projects and Products. Each Project may be responsible for several
-    Products.  For example, the Mozilla Project has Firefox, Thunderbird and
-    The Mozilla App Suite as Products, among others.
+class IProduct(IHasOwner, IBugTarget):
+    """A Hatchery Product.
+
+    TheHatchery describes the open source world as Projects and
+    Products. Each Project may be responsible for several Products.
+    For example, the Mozilla Project has Firefox, Thunderbird and The
+    Mozilla App Suite as Products, among others.
     """
 
     # XXX Mark Shuttleworth comments: lets get rid of ID's in interfaces
@@ -30,54 +33,87 @@ class IProduct(IHasOwner):
     # in SQLObject soon. 12/10/04
     id = Int(title=_('The Product ID'))
 
-    project = Choice(title=_('Project'), required=False,
-        vocabulary='Project', description=_("""Optional related Project.
-        Used to group similar products in a coherent way."""))
+    project = Choice(
+        title=_('Project'),
+        required=False,
+        vocabulary='Project',
+        description=_("""Optional related Project.
+            Used to group similar products in a coherent way."""))
 
-    owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
+    owner = Choice(
+        title=_('Owner'),
+        required=True,
+        vocabulary='ValidOwner',
         description=_("""Product owner, it can either a valid Person or Team
-        inside Launchpad context."""))
+            inside Launchpad context."""))
 
-    name = TextLine(title=_('Name'), constraint=valid_name,
-        description=_("""The short name of this
-        product, which must be unique among all the products. It should be
-        at least one lowercase letters or number followed by one or more chars,
-        numbers, plusses, dots or hyphens and will be part of the url to this
-        product in the Launchpad."""))
+    name = TextLine(
+        title=_('Name'),
+        constraint=valid_name,
+        description=_("""The short name of this product, which must be
+            unique among all the products. It should be at least one
+            lowercase letters or number followed by one or more chars,
+            numbers, plusses, dots or hyphens and will be part of the url
+            to this product in the Launchpad."""))
 
-    displayname = TextLine(title=_('Display Name'), description=_("""The
-        display name of this product is the name of this product as it
-        would appear in a paragraph of text."""))
+    displayname = TextLine(
+        title=_('Display Name'),
+        description=_("""The display name of this product is the name of
+            this product as it would appear in a paragraph of text."""))
 
-    title = Title(title=_('Title'), description=_("""The product
-        title. Should be just a few words."""))
+    title = Title(
+        title=_('Title'),
+        description=_("""The product title. Should be just a few words."""))
 
-    summary = Summary(title=_('Summary'), description=_("""The summary should
-        be a single short paragraph."""))
+    summary = Summary(
+        title=_('Summary'),
+        description=_("""The summary should be a single short paragraph."""))
 
-    description = Description(title=_('Description'), description=_("""The
-        product description, may be several paragraphs of text, giving the
-        product highlights and details."""))
+    description = Description(
+        title=_('Description'),
+        description=_("""The product description, may be several paragraphs
+            of text, giving the product highlights and details."""))
 
-    datecreated = TextLine(title=_('Date Created'), description=_("""The
-        date this product was created in Launchpad."""))
+    datecreated = TextLine(
+        title=_('Date Created'),
+        description=_("""The date this product was created in Launchpad."""))
 
-    homepageurl = TextLine(title=_('Homepage URL'), required=False)
+    homepageurl = TextLine(
+        title=_('Homepage URL'),
+        required=False,
+        description=_("""The product home page. Please include 
+            the http://"""))
 
-    wikiurl = TextLine(title=_('Wiki URL'), required=False)
+    wikiurl = TextLine(
+        title=_('Wiki URL'),
+        required=False,
+        description=_("""The URL of this product's wiki, if it has one.
+            Please include the http://"""))
 
-    screenshotsurl = TextLine(title=_('Screenshots URL'), required=False)
+    screenshotsurl = TextLine(
+        title=_('Screenshots URL'),
+        required=False,
+        description=_("""The location of screenshots of this product.
+            Please include the http://"""))
 
-    downloadurl = TextLine(title=_('Download URL'), required=False)
-
-    programminglang = TextLine(title=_('Programming Language'),
+    downloadurl = TextLine(
+        title=_('Download URL'),
         required=False)
+
+    programminglang = TextLine(
+        title=_('Programming Language'),
+        required=False,
+        description=_("""A comma delimited list of programming
+            languages used to produce this product."""))
 
     sourceforgeproject = TextLine(title=_('Sourceforge Project'),
-        required=False)
+        required=False,
+        description=_("""The SourceForge project name for
+            this product, if it is in sourceforge."""))
 
     freshmeatproject = TextLine(title=_('Freshmeat Project'),
-        required=False)
+        required=False, description=_("""The Freshmeat project name for
+            this product, if it is in freshmeat."""))
 
     translationgroup = Choice(
         title = _("Translation group"),
@@ -173,9 +209,6 @@ class IProduct(IHasOwner):
     def poTemplatesToImport():
         """Returns all PO templates from this product that have a rawfile
         pending of import into Rosetta."""
-
-    def poTemplate(name):
-        """Returns the PO template with the given name."""
 
     def newSeries(name, displayname, summary):
         """Creates a new ProductSeries for this series."""

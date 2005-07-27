@@ -40,9 +40,10 @@ class DistroArchRelease(SQLBase):
 
     # for launchpad pages
     def title(self):
-        title = self.architecturetag + ' ('+self.processorfamily.name+') '
-        title += 'for ' + self.distrorelease.distribution.displayname
+        title = self.distrorelease.distribution.displayname
         title += ' ' + self.distrorelease.displayname
+        title += ' for the ' + self.architecturetag
+        title += ' ('+self.processorfamily.name+') architecture'
         return title
     title = property(title)
 

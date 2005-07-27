@@ -11,7 +11,7 @@ from canonical.launchpad.interfaces import (
     IAuthorization, IHasOwner, IPerson, ITeam, ITeamMembershipSubset,
     ITeamMembership, IProductSeriesSource, IProductSeriesSourceAdmin,
     IMilestone, IBug, IBugTask, IUpstreamBugTask, IDistroBugTask,
-    IDistroReleaseBugTask, ITranslator, IProduct, IProductRelease,
+    IDistroReleaseBugTask, ITranslator, IProduct, IProductSeries,
     IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
     ILaunchpadCelebrities, IDistroRelease, IBugTracker, IPoll, IPollSubset,
     IPollOption, IPollOptionSubset)
@@ -352,8 +352,8 @@ class EditPOTemplateDetails(EditByOwnersOrAdmins):
 # SuperSpecialPermissions when implemented.
 # See: https://launchpad.ubuntu.com/malone/bugs/753/
 class AddPOTemplate(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = IProductRelease
+    permission = 'launchpad.Append'
+    usedfor = IProductSeries
 
 
 class EditPOFileDetails(EditByOwnersOrAdmins):

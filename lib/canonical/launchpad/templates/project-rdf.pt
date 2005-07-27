@@ -34,8 +34,8 @@
                              tal:content="context/sourceforgeproject">
             sourceforgeproject
         </lp:sourceforgeProject>
-        <lp:product tal:condition="context/products">
-            <lp:Product tal:repeat="product context/products">
+        <lp:product tal:repeat="product context/products">
+            <lp:Product>
                 <lp:specifiedAt tal:attributes="rdf:resource
                                                 string:${product/fmt:url}/+rdf" />
             </lp:Product>

@@ -84,7 +84,7 @@ class IMaloneApplication(ILaunchpadApplication):
 class IRosettaApplication(ILaunchpadApplication):
     """Application root for rosetta."""
 
-    statsdate = Attribute("The date the rosetta stats were updated.")
+    statsdate = Attribute("""The date stats were last updated.""")
 
     def translatable_products(self, translationProject=None):
         """Return a list of the translatable products in the given
@@ -100,6 +100,9 @@ class IRosettaApplication(ILaunchpadApplication):
 
     def translation_groups(self):
         """Return a list of the translation groups in the system."""
+
+    def updateStatistics(self):
+        """Update the Rosetta statistics in the system."""
 
     def potemplate_count(self):
         """Return the number of potemplates in the system."""

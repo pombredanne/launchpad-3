@@ -87,6 +87,12 @@ def handleMail(trans=transaction):
         file_alias = getUtility(ILibraryFileAliasSet).create(
                 file_name, len(raw_mail),
                 cStringIO(raw_mail), 'message/rfc822')
+        # If something goes wrong when handling the mail, the
+        # transaction will be aborted. Therefore we need to commit the
+        # transaction now, to ensure that the mail gets stored in the
+        # Librarian.
+        trans.commit()
+        trans.begin()
 
         try:
             principal = authenticateEmail(mail)
@@ -98,14 +104,20 @@ def handleMail(trans=transaction):
             notify_errors_list('Unknown user: %s ' % mail['From'], file_alias) 
             continue
 
-        # Extract the domain the mail was sent to
-        # XXX: This part needs improvement. How do we know to which
-        #      specific address the email was sent to?
-        #      -- Bjorn Tillenius, 2005-05-20
-        cc = mail.get_all('cc') or []
-        to = mail.get_all('to') or []
-        names_addresses = getaddresses(to + cc)
-        addresses = [addr for name, addr in names_addresses]
+        # Extract the domain the mail was sent to. Mails sent to
+        # Launchpad should have an X-Original-To header.
+        if mail.has_key('X-Original-To'):
+            addresses = [mail['X-Original-To']]
+        else:
+            log = getLogger('canonical.launchpad.mail')
+            log.warn(
+                "No X-Original-To header was present in email: %s" %
+                 file_alias.url)
+            # Process all addresses found as a fall back.
+            cc = mail.get_all('cc') or []
+            to = mail.get_all('to') or []
+            names_addresses = getaddresses(to + cc)
+            addresses = [addr for name, addr in names_addresses]
         
         handler = None
         for email_addr in addresses:

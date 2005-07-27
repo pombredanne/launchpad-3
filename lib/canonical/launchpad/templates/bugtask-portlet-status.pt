@@ -14,7 +14,7 @@
           <tal:block content="view/makeprivate_widget/label" />
       </tal:publicbug>
 -->
-      <b>Occuring in:</b><br />
+      <b>Occurring in:</b><br />
       <a href="#"
          tal:attributes="href context/context/fmt:url"
          style="text-decoration: underline"

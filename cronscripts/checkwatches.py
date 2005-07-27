@@ -3,6 +3,7 @@
 Cron job to run daily to check all of the BugWatches
 """
 
+import sys
 import _pythonpath
 
 from optparse import OptionParser
@@ -10,11 +11,9 @@ from optparse import OptionParser
 from canonical.lp import initZopeless
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.bugwatch import BugWatch
-from canonical.launchpad.database.bugtracker import BugTracker
-from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.malone import externalsystem
-from canonical.launchpad.scripts import logger, logger_options
+from canonical.launchpad import scripts
 
 _default_lock_file = '/var/lock/launchpad-checkwatches.lock'
 
@@ -22,7 +21,7 @@ versioncache = {}
 
 def parse_options():
     parser = OptionParser()
-    logger_options(parser)
+    scripts.logger_options(parser)
     parser.add_option("-l", "--lockfile", dest="lockfilename",
         default=_default_lock_file,
         help="The file the script should use to lock the process.")
@@ -38,26 +37,24 @@ def check_one_watch(watch):
         version = versioncache[bugtracker.baseurl]
     else:
         version = None
-    logger.info(
-            "Checking: %s %s for bug %d",
-            bugtracker.name, watch.remotebug, watch.bug.id
-            )
+    log.info("Checking: %s %s for bug %d", bugtracker.name,
+             watch.remotebug, watch.bug.id)
     watch.lastchecked = UTC_NOW
     try:
-        remotesystem = externalsystem.ExternalSystem(bugtracker,version)
+        remotesystem = externalsystem.ExternalSystem(bugtracker, version)
     except externalsystem.UnknownBugTrackerTypeError, val:
         if val == 'debbugs':
             pass # Yes, we know. Just stop spamming us
         else:
-            logger.error("BugTrackerType '%s' is not known",
-                    val.bugtrackertypename)
+            log.error("BugTrackerType '%s' is not known",
+                      val.bugtrackertypename)
     except externalsystem.BugTrackerConnectError:
-        logger.exception("Got error trying to contact %s", bugtracker.name)
+        log.exception("Got error trying to contact %s", bugtracker.name)
     else:
         versioncache.update({ bugtracker.baseurl : remotesystem.version })
         remotestatus = remotesystem.get_bug_status(watch.remotebug)
         if remotestatus != watch.remotestatus:
-            logger.debug("it's changed - updating")
+            log.debug("it's changed - updating")
             if remotestatus == None:
                 remotestatus = 'UNKNOWN'
             watch.remotestatus = remotestatus
@@ -78,8 +75,8 @@ def main():
 
 if __name__ == '__main__':
     options = parse_options()
-    log = logger(options, "checkwatches")
-    lockfile = LockFile(options.lockfilename, logger=logger)
+    log = scripts.logger(options, "checkwatches")
+    lockfile = LockFile(options.lockfilename, logger=log)
     try:
         lockfile.acquire()
     except OSError:

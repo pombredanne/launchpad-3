@@ -8,10 +8,10 @@
 # or your LP_DBNAME environment variable (if you have one set).
 #
 import sys
-sys.path.insert(0, '../sourcecode/zope/src/')
-sys.path.insert(0, '../sourcecode/sqlobject/')
+#sys.path.insert(0, '../sourcecode/zope/src/')
+#sys.path.insert(0, '../sourcecode/sqlobject/')
 sys.path.insert(0, '../..')
-sys.path.insert(0, '..')
+#sys.path.insert(0, '..')
 
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 execute_zcml_for_scripts()
