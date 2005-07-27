@@ -52,6 +52,7 @@ class ProjectFacets(StandardLaunchpadFacets):
     def calendar(self):
         target = '+calendar'
         text = 'Calendar'
+        # only link to the calendar if it has been created
         linked = ICalendarOwner(self.context).calendar is not None
         return Link(target, text, linked=linked)
 

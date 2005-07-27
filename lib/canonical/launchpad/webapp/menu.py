@@ -39,6 +39,14 @@ class Link:
     implements(ILink)
 
     def __init__(self, target, text, summary=None, linked=True):
+        """Create a new link to 'target' with 'text' as the link text.
+
+        If the 'linked' argument is set to False, then the link will
+        be disabled.
+
+        If the 'linked' argument is set to True, then the link will be
+        enabled, provided that it does not point to the current page.
+        """
         self.target = target
         self.text = text
         self.summary = summary

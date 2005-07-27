@@ -33,9 +33,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
     def calendar(self):
         target = 'calendar'
         text = 'Calendar'
-        # merged calendar is only available when logged in
-        linked = getUtility(ILaunchBag).user is not None
-        return Link(target, text, linked=linked)
+        return Link(target, text)
 
 
 class RosettaAppMenus(ApplicationMenu):

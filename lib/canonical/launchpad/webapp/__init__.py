@@ -38,6 +38,7 @@ class StandardLaunchpadFacets(FacetMenu):
         return Link(target, text)
 
     def calendar(self):
+        """Disabled calendar link."""
         target = '+calendar'
         text = 'Calendar'
         link = Link(target, text, linked=False)
