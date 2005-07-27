@@ -15,8 +15,9 @@ from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.validators.version import sane_version
 
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 
 class IDistroRelease(IHasOwner):
