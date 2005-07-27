@@ -29,8 +29,7 @@ _ = MessageIDFactory('launchpad')
 
 
 class ProjectFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for an IProject.
-    """
+    """The links that will appear in the facet menu for an IProject."""
 
     usedfor = IProject
 
