@@ -223,7 +223,8 @@ class POMsgSet(SQLBase):
         # It makes no sense to have a "published" submission from someone
         # who is not an editor, so let's sanity check that first
         if published and not is_editor:
-            raise AssertionError('published translations are ALWAYS is_editor')
+            raise AssertionError(
+                'published translations are ALWAYS from an editor')
 
         # first we must deal with the situation where someone has submitted
         # a NULL translation. This only affects the published or active data

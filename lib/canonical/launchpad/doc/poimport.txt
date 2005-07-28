@@ -16,6 +16,7 @@ Here's some database classes we'll be using.
     >>> from canonical.launchpad.database import Person
     >>> from canonical.launchpad.database import POTemplate
     >>> from canonical.launchpad.database import POFile
+    >>> from canonical.launchpad.utilities import LaunchpadCelebrities
 
 We need this for the Librarian to work properly.
 
@@ -273,6 +274,7 @@ Now, is time to check the notification email.
 
 Here are the contents of another file we'll be importing. It has no errros.
 
+    >>> rosetta_experts = LaunchpadCelebrities().rosetta_expert
     >>> pofile_without_errors = r'''
     ... msgid ""
     ... msgstr ""
@@ -284,14 +286,9 @@ Here are the contents of another file we'll be importing. It has no errros.
     ... msgid "foo"
     ... msgstr "blah"
     ... '''
-    >>> pofile.attachRawFileData(pofile_without_errors, True, person)
+    >>> pofile.attachRawFileData(pofile_without_errors, True, rosetta_experts)
     >>> transaction.commit()
     >>> pofile.doRawImport(FakeLogger())
-
-And the number of activities performed is...
-
-    >>> len(person.activities)
-    3
 
 Check the notification email about the success of this import without errors.
 
@@ -305,7 +302,7 @@ Check the notification email about the success of this import without errors.
     >>> msg["Subject"]
     'Translation import - Welsh (cy) - firefox in Mozilla Firefox\n\tMilestone Releases'
     >>> print msg.get_payload(decode=True)
-    Hello Mark Shuttleworth,
+    Hello Rosetta Administrators,
     <BLANKLINE>
     ...
 
@@ -322,7 +319,7 @@ Now, is time to test a .pot import when we don't have any header.
 And the number of activities performed is...
 
     >>> len(person.activities)
-    4
+    3
 
 The header should be the old one as this one does not have any:
 
@@ -362,7 +359,7 @@ The rawimportstatus should be ignored.
 The number of activities shouldn't change as the import was rejected.
 
     >>> len(person.activities)
-    4
+    3
 
 And the date should be the old one
 
