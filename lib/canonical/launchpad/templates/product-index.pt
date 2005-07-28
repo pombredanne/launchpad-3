@@ -94,9 +94,19 @@
     <div style="margin-left: 15px;">
 
       <table class="listing">
+        <thead>
+          <tr>
+            <th>Title</th>
+            <th>Url</th>
+          </tr>
+        </thead>
         <tbody>
           <tr tal:repeat="branch context/branches">
               <td tal:content="branch/title">title</td>
+              <td> http://bazaar.ubuntu.com/<span 
+                  tal:content="branch/getPackageName">category
+                </span>
+              </td>
           </tr>
         </tbody>
       </table>
