@@ -2029,50 +2029,80 @@ class KarmaActionName(DBSchema):
 
     BUGCOMMENTADDED = Item(2, """
         New Comment
-     
+
         New Comment
         """)
 
     BUGTITLECHANGED = Item(3, """
         Bug Title Changed
-      
+
         Bug Title Changed
         """)
 
     BUGSUMMARYCHANGED = Item(4, """
         Bug Summary Changed
-       
+
         Bug Summary Changed
         """)
 
     BUGDESCRIPTIONCHANGED = Item(5, """
         Bug Description Changed
-        
+
         Bug Description Changed
         """)
 
     BUGEXTREFCHANGED = Item(6, """
         Bug External Reference Changed
-  
+
         Bug External Reference Changed
         """)
 
     BUGCVEREFCHANGED = Item(7, """
         Bug CVE Reference Changed
-   
+
         Bug CVE Reference Changed
         """)
 
     BUGFIXED = Item(8, """
         Bug Status Changed to FIXED
-    
+
         Bug Status Changed to FIXED
         """)
 
     BUGTASKCREATED = Item(9, """
         New Bug Task Created
-     
+
         New Bug Task Created
+        """)
+
+    TRANSLATIONTEMPLATEIMPORT = Item(10, """
+        Translation Template Import
+
+        """)
+
+    TRANSLATIONIMPORTUPSTREAM = Item(11, """
+        Import Upstream Translation
+
+        """)
+
+    TRANSLATIONTEMPLATEDESCRIPTIONCHANGED = Item(12, """
+        Translation Template Description Changed
+
+        """)
+
+    TRANSLATIONSUGGESTIONADDED = Item(13, """
+        Translation Suggestion Added
+
+        """)
+
+    TRANSLATIONSUGGESTIONAPPROVED = Item(14, """
+        Translation Suggestion Approved
+
+        """)
+
+    TRANSLATIONREVIEW = Item(15, """
+        Translation Review
+
         """)
 
 

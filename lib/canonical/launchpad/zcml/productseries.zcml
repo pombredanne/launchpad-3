@@ -187,7 +187,7 @@
         keyword_arguments="potemplatename description iscurrent owner
                            path filename content"
         content_factory="canonical.launchpad.database.POTemplate"
-        permission="launchpad.Admin"
+        permission="launchpad.Append"
         template="../templates/potemplate-add.pt" >
         <browser:widget
           field="description"

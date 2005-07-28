@@ -32,6 +32,7 @@ from canonical.launchpad.database.archarchive import *
 from canonical.launchpad.database.archbranch import *
 from canonical.launchpad.database.archchangeset import *
 from canonical.launchpad.database.librarian import *
+from canonical.launchpad.database.launchpadstatistic import *
 from canonical.launchpad.database.maintainership import *
 from canonical.launchpad.database.infestation import *
 from canonical.launchpad.database.sourcepackage import *

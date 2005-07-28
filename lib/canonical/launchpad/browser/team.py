@@ -7,9 +7,6 @@ __all__ = [
     'TeamEmailView',
     'ITeamCreation',
     'TeamAddView',
-    'TeamView',
-    'TeamJoinView',
-    'TeamLeaveView',
     'TeamMembersView',
     'ProposedTeamMembersEditView',
     'AddTeamMemberView',
@@ -20,7 +17,6 @@ import pytz
 
 from datetime import datetime
 
-# zope imports
 from zope.schema import TextLine
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
@@ -29,7 +25,6 @@ from zope.component import getUtility
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-# interface import
 from canonical.launchpad.interfaces import IPersonSet, ILaunchBag, ITeam
 from canonical.launchpad.interfaces import IEmailAddressSet
 from canonical.launchpad.interfaces import ILoginTokenSet
@@ -40,12 +35,9 @@ from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from canonical.config import config
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
-# lp imports
 from canonical.lp.dbschema import TeamMembershipStatus, LoginTokenType
-from canonical.lp.dbschema import TeamSubscriptionPolicy
 
 from canonical.database.sqlbase import flush_database_updates
 
@@ -220,120 +212,6 @@ def sendEmailValidationRequest(team, email, appurl):
                     'admin_email': config.admin_address}
     message = template % replacements
     simple_sendmail(fromaddress, token.email, subject, message)
-
-
-class TeamView:
-    """A simple View class to be used in Team's pages where we don't have
-    actions to process.
-    """
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.team = self.context
-
-    def activeMembersCount(self):
-        return len(self.context.activemembers)
-
-    def userIsOwner(self):
-        """Return True if the user is the owner of this Team."""
-        user = getUtility(ILaunchBag).user
-        if user is None:
-            return False
-
-        return user.inTeam(self.context.teamowner)
-
-    def userHasMembershipEntry(self):
-        """Return True if the logged in user has a TeamMembership entry for
-        this Team."""
-        return bool(self._getMembershipForUser())
-
-    def userIsActiveMember(self):
-        """Return True if the user is an active member of this team."""
-        return getUtility(ILaunchBag).user in self.context.activemembers
-
-    def membershipStatusDesc(self):
-        tm = self._getMembershipForUser()
-        assert tm is not None, (
-            'This method is not meant to be called for users which are not '
-            'members of this team.')
-
-        description = tm.status.description
-        if tm.status == TeamMembershipStatus.DEACTIVATED and tm.reviewercomment:
-            description += ("The reason for the deactivation is: '%s'"
-                            % tm.reviewercomment)
-        return description
-
-    def userCanRequestToLeave(self):
-        """Return true if the user can request to leave this team.
-
-        A given user can leave a team only if he's an active member.
-        """
-        return getUtility(ILaunchBag).user in self.context.activemembers
-
-    def userCanRequestToJoin(self):
-        """Return true if the user can request to join this team.
-
-        The user can request if it never asked to join this team, if it
-        already asked and the subscription status is DECLINED or if the team's
-        subscriptionpolicy is OPEN and the user is not an APPROVED or ADMIN
-        member.
-        """
-        tm = self._getMembershipForUser()
-        if tm is None:
-            return True
-
-        adminOrApproved = [TeamMembershipStatus.APPROVED,
-                           TeamMembershipStatus.ADMIN]
-        open = TeamSubscriptionPolicy.OPEN
-        if tm.status == TeamMembershipStatus.DECLINED or (
-            tm.status not in adminOrApproved and
-            tm.team.subscriptionpolicy == open):
-            return True
-        else:
-            return False
-
-    def _getMembershipForUser(self):
-        user = getUtility(ILaunchBag).user
-        if user is None:
-            return None
-        tms = getUtility(ITeamMembershipSet)
-        return tms.getByPersonAndTeam(user.id, self.context.id)
-
-    def joinAllowed(self):
-        """Return True if this is not a restricted team."""
-        restricted = TeamSubscriptionPolicy.RESTRICTED
-        return self.context.subscriptionpolicy != restricted
-
-
-class TeamJoinView(TeamView):
-
-    def processForm(self):
-        if self.request.method != "POST" or not self.userCanRequestToJoin():
-            # Nothing to do
-            return
-
-        user = getUtility(ILaunchBag).user
-        if self.request.form.get('join'):
-            user.join(self.context)
-            appurl = self.request.getApplicationURL()
-            notify(JoinTeamRequestEvent(user, self.context, appurl))
-
-        self.request.response.redirect('./')
-
-
-class TeamLeaveView(TeamView):
-
-    def processForm(self):
-        if self.request.method != "POST" or not self.userCanRequestToLeave():
-            # Nothing to do
-            return
-
-        user = getUtility(ILaunchBag).user
-        if self.request.form.get('leave'):
-            user.leave(self.context)
-
-        self.request.response.redirect('./')
 
 
 class TeamMembersView:

@@ -90,6 +90,7 @@ class Person(SQLBase):
                             intermediateTable='PersonLanguage')
 
     # relevant joins
+    branches = MultipleJoin('Branch', joinColumn='owner')
     members = MultipleJoin('TeamMembership', joinColumn='team',
         orderBy='status')
     ownedBounties = MultipleJoin('Bounty', joinColumn='owner',

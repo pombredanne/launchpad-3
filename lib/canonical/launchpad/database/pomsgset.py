@@ -3,25 +3,24 @@
 __metaclass__ = type
 __all__ = ['POMsgSet']
 
-import logging
-import datetime
 import gettextpo
-from warnings import warn
 
-from zope.interface import implements
+from zope.interface import implements, providedBy
+from zope.event import notify
+from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
+                       MultipleJoin, SQLObjectNotFound)
 
-from sqlobject import ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin
-from sqlobject import SQLObjectNotFound
+from canonical.launchpad.event.sqlobjectevent import (SQLObjectCreatedEvent,
+    SQLObjectModifiedEvent)
 from canonical.database.sqlbase import (SQLBase, sqlvalues,
-    flush_database_updates)
-from canonical.launchpad.interfaces import IEditPOMsgSet
+                                        flush_database_updates)
 from canonical.lp.dbschema import (RosettaTranslationOrigin,
     TranslationValidationStatus)
-from canonical.database.constants import UTC_NOW
+from canonical.launchpad import helpers
+from canonical.launchpad.interfaces import IEditPOMsgSet
 from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
-from canonical.launchpad import helpers
 
 
 class POMsgSet(SQLBase):
@@ -138,7 +137,7 @@ class POMsgSet(SQLBase):
         try:
             helpers.validate_translation(msgids_text, new_translations,
                                          pot_set.flags())
-        except gettextpo.error, e:
+        except gettextpo.error:
             if fuzzy or ignore_errors:
                 # The translations are stored anyway, but we set them as
                 # broken.
@@ -175,7 +174,7 @@ class POMsgSet(SQLBase):
                 complete = False
             # make the new sighting or submission. note that this may not in
             # fact create a whole new submission
-            self.makeSubmission(
+            submission = self.makeSubmission(
                 person=person,
                 text=newtran,
                 pluralform=index,
@@ -224,7 +223,7 @@ class POMsgSet(SQLBase):
         # It makes no sense to have a "published" submission from someone
         # who is not an editor, so let's sanity check that first
         if published and not is_editor:
-            raise AssertionError, 'published translations are ALWAYS is_editor'
+            raise AssertionError('published translations are ALWAYS is_editor')
 
         # first we must deal with the situation where someone has submitted
         # a NULL translation. This only affects the published or active data
@@ -336,6 +335,12 @@ class POMsgSet(SQLBase):
             personID=person.id,
             validationstatus=validation_status)
 
+        notify(SQLObjectCreatedEvent(submission))
+
+        # Store the object status before the changes.
+        object_before_modification = helpers.Snapshot(selection,
+            providing=providedBy(selection))
+
         # Update the latestsubmission field.
         self.pofile.latestsubmission = submission
 
@@ -347,6 +352,12 @@ class POMsgSet(SQLBase):
             # activesubmission is updated only if the translation is valid and
             # it's an editor.
             selection.activesubmission = submission
+
+        # List of fields that would be updated.
+        fields = ['publishedsubmission', 'activesubmission']
+
+        notify(SQLObjectModifiedEvent(
+            selection, object_before_modification, fields))
 
         # we cannot properly update the statistics here, because we don't
         # know if the "fuzzy" or completeness status is changing at a higher

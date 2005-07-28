@@ -103,7 +103,7 @@ debug:
 		    app = Application('Data.fs', 'site.zcml')()"
 
 clean:
-	find . \( -name '*.o' -o -name '*.so' -o -name '*.py[co]' -o -name \
+	find . -type f \( -name '*.o' -o -name '*.so' -o -name '*.py[co]' -o -name \
 	    '*.dll' \) -exec rm -f {} \;
 	rm -rf build
 

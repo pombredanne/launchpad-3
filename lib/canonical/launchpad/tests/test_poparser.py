@@ -2,13 +2,11 @@
 
 from canonical.launchpad.components import poparser as pofile
 import unittest, doctest
-import warnings
 
 class POBasicTestCase(unittest.TestCase):
 
     def setUp(self):
         self.parser = pofile.POParser()
-        warnings.filterwarnings('ignore', category=pofile.POSyntaxWarning)
 
     def testSingular(self):
         self.parser.write('''msgid "foo"\nmsgstr "bar"\n''')
@@ -157,33 +155,6 @@ class POBasicTestCase(unittest.TestCase):
         messages = self.parser.messages
         self.assertEqual(messages[0].msgid, "foo")
         self.assertEqual(messages[0].msgstr, "bar")
-
-    def testMisorderedHeader(self):
-        warnings.filterwarnings('error', category=pofile.POSyntaxWarning)
-        try:
-            self.parser.write(
-                'msgid "a"\n'
-                'msgstr "b"\n\n'
-                'msgid ""\n'
-                'msgstr "z: y"\n'
-                'msgid "c"\n'
-                'msgstr "d"\n')
-            self.parser.finish()
-        except pofile.POSyntaxWarning:
-            pass
-        else:
-            self.fail("no warning when misordered header encountered")
-
-    def testVeryMisorderedHeader(self):
-        warnings.filterwarnings('error', category=pofile.POSyntaxWarning)
-        try:
-            self.parser.write(
-                '''msgid "a"\nmsgstr "b"\n\nmsgid ""\nmsgstr "z: y"\n''')
-            self.parser.finish()
-        except pofile.POSyntaxWarning:
-            pass
-        else:
-            self.fail("no warning when misordered header encountered")
 
     def testDuplicateMsgid(self):
         try:

@@ -306,21 +306,28 @@ class IBugTaskSet(Interface):
                severity=None, product=None, distribution=None,
                distrorelease=None, milestone=None, assignee=None,
                owner=None, orderby=None, sourcepackagename=None,
-               binarypackagename=None, statusexplanation=None):
+               binarypackagename=None, statusexplanation=None,
+               user=None):
         """Return a set of IBugTasks that satisfy the query arguments.
+
+        user is an object that provides IPerson, and represents the
+        person performing the query (which is important to know for,
+        for example, privacy-aware results.)
 
         Keyword arguments should always be used. The argument passing
         semantics are as follows:
 
-        * BugTaskSet.search(arg = 'foo'): Match all IBugTasks where
-          IBugTask.arg == 'foo'.
+        * BugTaskSet.search(arg='foo', user=bar): Match all IBugTasks
+          where IBugTask.arg == 'foo' for user bar.
 
-        * BugTaskSet.search(arg = any('foo', 'bar')): Match all IBugTasks
-          where IBugTask.arg == 'foo' or IBugTask.arg == 'bar'
+        * BugTaskSet.search(arg=any('foo', 'bar')): Match all
+          IBugTasks where IBugTask.arg == 'foo' or IBugTask.arg ==
+          'bar'. In this case, no user was passed, so all private bugs
+          are excluded from the search results.
 
-        * BugTaskSet.search(arg1 = 'foo', arg2 = 'bar'): Match all
-          IBugTasks where IBugTask.arg1 == 'foo' and
-          IBugTask.arg2 == 'bar'
+        * BugTaskSet.search(arg1='foo', arg2='bar'): Match all
+          IBugTasks where IBugTask.arg1 == 'foo' and IBugTask.arg2 ==
+          'bar'
 
         The set is always ordered by the bugtasks' id. Meaning that if
         you set orderby to 'severity', it will first be ordered by severity,

@@ -10,6 +10,8 @@ __all__ = [
     'FOAFSearchView',
     'PersonRdfView',
     'PersonView',
+    'TeamJoinView',
+    'TeamLeaveView',
     'PersonEditView',
     'RequestPeopleMergeView',
     'FinishedPeopleMergeRequestView',
@@ -21,35 +23,33 @@ __all__ = [
 import cgi
 import sets
 
-# sqlobject/sqlos
 from canonical.database.sqlbase import flush_database_updates
 
-# zope imports
+from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
 from zope.component import getUtility
 
-# lp imports
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    KarmaActionCategory)
+    KarmaActionCategory, TeamSubscriptionPolicy)
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
-# interface import
 from canonical.launchpad.interfaces import (
     ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
     IJabberIDSet, IIrcIDSet, IArchUserIDSet, ILaunchBag, ILoginTokenSet,
     IPasswordEncryptor, ISignedCodeOfConductSet, IObjectReassignment,
     ITeamReassignment, IGPGKeySet, IGPGHandler, IKarmaActionSet, IKarmaSet,
-    IPerson, ICalendarOwner, UBUNTU_WIKI_URL)
+    UBUNTU_WIKI_URL, IPerson, ICalendarOwner, ITeamMembershipSet)
 
 from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
+from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, DefaultLink)
 
@@ -214,14 +214,11 @@ class PersonView:
         return bool(self._getMembershipForUser())
 
     def userIsActiveMember(self):
-        """Return True if the logged in user has a TeamParticipation entry
-        for this Team. This implies a membership status of either ADMIN or
-        APPROVED."""
+        """Return True if the user is an active member of this team."""
         user = getUtility(ILaunchBag).user
         if user is None:
             return False
-
-        return user.inTeam(self.context)
+        return user in self.context.activemembers
 
     def membershipStatusDesc(self):
         tm = self._getMembershipForUser()
@@ -238,18 +235,9 @@ class PersonView:
     def userCanRequestToLeave(self):
         """Return true if the user can request to leave this team.
 
-        The user can request only if its subscription status is APPROVED or
-        ADMIN.
+        A given user can leave a team only if he's an active member.
         """
-        tm = self._getMembershipForUser()
-        if tm is None:
-            return False
-
-        allowed = [TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN]
-        if tm.status in allowed:
-            return True
-        else:
-            return False
+        return self.userIsActiveMember()
 
     def userCanRequestToJoin(self):
         """Return true if the user can request to join this team.
@@ -284,8 +272,6 @@ class PersonView:
         """Return True if this is not a restricted team."""
         restricted = TeamSubscriptionPolicy.RESTRICTED
         return self.context.subscriptionpolicy != restricted
-
-
 
     def actionCategories(self):
         return KarmaActionCategory.items
@@ -509,7 +495,6 @@ class PersonView:
 
     def revalidate_gpg(self):
         keyids = self.request.form.get('REVALIDATE_GPGKEY')
-        appurl = self.request.getApplicationURL()
 
         if keyids is not None:
             found = []
@@ -596,6 +581,36 @@ class PersonView:
         token.sendGpgValidationRequest(appurl, key, encrypt=True)
 
 
+class TeamJoinView(PersonView):
+
+    def processForm(self):
+        if self.request.method != "POST" or not self.userCanRequestToJoin():
+            # Nothing to do
+            return
+
+        user = getUtility(ILaunchBag).user
+        if self.request.form.get('join'):
+            user.join(self.context)
+            appurl = self.request.getApplicationURL()
+            notify(JoinTeamRequestEvent(user, self.context, appurl))
+
+        self.request.response.redirect('./')
+
+
+class TeamLeaveView(PersonView):
+
+    def processForm(self):
+        if self.request.method != "POST" or not self.userCanRequestToLeave():
+            # Nothing to do
+            return
+
+        user = getUtility(ILaunchBag).user
+        if self.request.form.get('leave'):
+            user.leave(self.context)
+
+        self.request.response.redirect('./')
+
+
 class PersonEditView:
 
     def __init__(self, context, request):
@@ -643,7 +658,6 @@ class PersonEditView:
         # XXX: wiki is hard-coded for Launchpad 1.0
         #      - Andrew Bennetts, 2005-06-14
         #wiki = request.form.get("wiki")
-        wiki = UBUNTU_WIKI_URL
         wikiname = request.form.get("wikiname")
         network = request.form.get("network")
         nickname = request.form.get("nickname")

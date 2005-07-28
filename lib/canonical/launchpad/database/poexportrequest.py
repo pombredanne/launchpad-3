@@ -8,10 +8,10 @@ from sqlobject import ForeignKey
 
 from zope.interface import implements
 
+from canonical.lp.dbschema import EnumCol, RosettaFileFormat
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import IPOExportRequestSet, \
     IPOExportRequest
-from canonical.lp.dbschema import EnumCol, RosettaFileFormat
 
 class POExportRequestSet:
     implements(IPOExportRequestSet)
@@ -36,15 +36,17 @@ class POExportRequestSet:
         if request is not None:
             return
 
-        POExportRequest(
+        request = POExportRequest(
             person=person,
             potemplate=potemplate,
             pofile=pofile,
             format=format)
 
-    def addRequest(self, person, potemplate=None, pofiles=[],
+    def addRequest(self, person, potemplate=None, pofiles=None,
             format=RosettaFileFormat.PO):
         """See IPOExportRequestSet."""
+        if pofiles is None:
+            pofiles = []
 
         if not (potemplate or pofiles):
             raise ValueError(

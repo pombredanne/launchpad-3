@@ -27,66 +27,81 @@ class IProject(IHasOwner):
 
     id = Int(title=_('ID'), readonly=True)
 
-    owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
-                   description=_("""Project owner, it can either a valid
-                   Person or Team inside Launchpad context."""))
+    owner = Choice(
+        title=_('Owner'),
+        required=True,
+        vocabulary='ValidOwner',
+        description=_("""Project owner, it can either a valid
+            Person or Team inside Launchpad context."""))
 
     name = TextLine(
-            title=_('Name'), required=True,
-            description=_("""The short
+        title=_('Name'),
+        required=True,
+        description=_("""The short
             name of this project, which must be unique among all the products.
             It should be at least one lowercase letters or number followed by
             one or more chars, numbers, plusses, dots or hyphens and will be
             part of the url to this project in the Launchpad."""),
-            constraint=valid_name,
-            )
+        constraint=valid_name)
 
-    displayname = TextLine(title=_('Display Name'), description=_("""The
-        display name of the project is a short name, appropriately
-        capitalised, for this product. For example, if you were referring to
-        this project in a paragraph of text, you would use this name. Examples:
-        the Apache Project, the Mozilla Project, the GIMP Project."""))
+    displayname = TextLine(
+        title=_('Display Name'),
+        description=_("""The display name of the project is a short name,
+            appropriately capitalised, for this product. For example,
+            if you were referring to this project in a paragraph of text,
+            you would use this name. Examples: the Apache Project, the
+            Mozilla Project, the GIMP Project."""))
 
-    title = Title(title=_('Title'), description=_("""This is the full
-        title of the project, can contain spaces, special characters etc.
-        This is what you would imagine seeing at the top of a page about
-        the project. For example, The Apache Project, The Mozilla Project."""))
+    title = Title(
+        title=_('Title'),
+        description=_("""This is the full title of the project, can contain
+            spaces, special characters etc.  This is what you would imagine
+            seeing at the top of a page about the project. For example,
+            The Apache Project, The Mozilla Project."""))
 
-    summary = Summary(title=_('Project Summary'), description=_("""A summary
-        of the project, in a single short paragraph."""))
+    summary = Summary(
+        title=_('Project Summary'),
+        description=_("""A summary of the project, in a single
+            short paragraph."""))
 
-    description = Text(title=_('Description'), description=_("""A couple of
-        paragraphs describing the project in more detail, from the history of
-        the project to current organisational structure, goals and release
-        strategy."""))
+    description = Text(
+        title=_('Description'),
+        description=_("""A couple of paragraphs describing the project
+            in more detail, from the history of the project to current
+            organisational structure, goals and release strategy."""))
 
-    datecreated = TextLine(title=_('Date Created'), description=_("""The
-        date this project was created in Launchpad."""))
+    datecreated = TextLine(
+        title=_('Date Created'),
+        description=_("""The date this project was created in Launchpad."""))
 
-    homepageurl = TextLine(title=_('Homepage URL'), description=_("""The
-        project home page."""))
+    homepageurl = TextLine(
+        title=_('Homepage URL'),
+        description=_("""The project home page. Please include the http://"""))
 
-    wikiurl = TextLine(title=_('Wiki URL'), required=False,
-                       description=_("""The URL of this project's wiki, if
-                       it has one."""))
+    wikiurl = TextLine(
+        title=_('Wiki URL'),
+        required=False,
+        description=_("""The URL of this project's wiki, if it has one.
+            Please include the http://"""))
 
-    lastdoap = TextLine(title=_('Last-parsed DOAP fragment'),
-                        description=_("""The last DOAP fragment for this
-                        entity that we received and parsed, or
-                        generated."""),
-                        required=False)
+    lastdoap = TextLine(
+        title=_('Last-parsed DOAP fragment'),
+        description=_("""The last DOAP fragment for this
+           entity that we received and parsed, or
+           generated."""),
+        required=False)
 
-    sourceforgeproject = TextLine(title=_("SourceForge Project Name"),
-                                  description=_("""The SourceForge project
-                                  name for this project, if it is in
-                                  sourceforge."""),
-                                  required=False)
+    sourceforgeproject = TextLine(
+        title=_("SourceForge Project Name"),
+        description=_("""The SourceForge project name for this project,
+            if it is in sourceforge."""),
+        required=False)
 
-    freshmeatproject = TextLine(title=_("Freshmeat Project Name"),
-                                  description=_("""The Freshmeat project
-                                  name for this project, if it is in
-                                  freshmeat."""),
-                                required=False)
+    freshmeatproject = TextLine(
+        title=_("Freshmeat Project Name"),
+        description=_("""The Freshmeat project name for this project,
+            if it is in freshmeat."""),
+        required=False)
 
     translationgroup = Choice(
         title = _("Translation group"),

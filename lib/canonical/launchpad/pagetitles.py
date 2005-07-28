@@ -122,7 +122,7 @@ def bug_add(context, view):
     distrorelease_context = IDistroRelease(context, None)
 
     if product_context or distro_context or distrorelease_context is not None:
-        context_title = ContextTitle('Bugs in %s: Report a Bug')
+        context_title = ContextTitle('Report a bug in %s')
         return context_title(context, view)
     else:
         return "Malone: Report a Bug"
@@ -214,7 +214,9 @@ default_editform = 'Default "Edit" Page'
 
 default_error = 'System Error'
 
-distribution_members = ContextTitle('Members of the %s distribution')
+distribution_members = ContextTitle('%s distribution members')
+
+distribution_memberteam = ContextTitle("Change %s's distribution team")
 
 distribution_translators = 'Appoint Distribution Translation Group'
 
@@ -224,15 +226,11 @@ distro_edit = 'Create a new Distribution in Launchpad'
 
 distribution = ContextTitle('Launchpad Distribution Summary: %s')
 
-distro_members = ContextTitle('Distribution Members: %s')
-
-distro_search = 'Search Distributions'
-
 # distro_sources.pt.OBSELETE
 # <title metal:fill-slot="title"><span tal:replace="context/title" />: Source
 # Packages</title>
 
-distroarchrelease_index = ContextTitle('Overview of  %s')
+distroarchrelease_index = ContextTitle('%s overview')
 
 distroarchrelease_pkgsearch = 'Binary Package Search'
 
@@ -325,6 +323,8 @@ def launchpad_addform(context, view):
 
 launchpad_editform = launchpad_addform
 
+launchpad_feedback = 'Help us improve Launchpad'
+
 launchpad_forbidden = 'Forbidden'
 
 launchpad_forgottenpassword = 'Forgot Your Launchpad Password?'
@@ -395,6 +395,8 @@ people_list = 'People registered with Launchpad'
 person_assignedbugs = ContextDisplayName('Bugs Assigned To %s')
 
 person_bounties = ContextDisplayName('Bounties for %s')
+
+person_branches = ContextDisplayName("%s's code branches in Launchpad")
 
 person_codesofconduct = ContextDisplayName('%s Signed Codes of Conduct')
 
@@ -556,7 +558,7 @@ rosetta_preferences = 'Rosetta: Preferences'
 def series_edit(context, view):
     return 'Edit %s %s Details' % (context.product.displayname, context.name)
 
-series_new = ContextDisplayName('New Release Series for %s')
+series_new = ContextDisplayName('Register a new %s release series')
 
 def series_review(context, view):
     return 'Review %s %s Details' % (context.product.displayname, context.name)

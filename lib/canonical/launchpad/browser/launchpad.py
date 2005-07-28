@@ -128,4 +128,3 @@ class LoginStatus:
         if full_url.endswith(logout_url_end):
             full_url = full_url[:-len(logout_url_end)]
         return '%s/+login%s' % (full_url, query_string)
-
