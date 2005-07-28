@@ -118,52 +118,45 @@ def traverseCalendar(calendar, request, name):
     if match:
         try:
             return CalendarYear(calendar,
-                                year=int(match.group(1)))
+                                date(int(match.group(1)), 1, 1))
         except ValueError:
             return None
     match = _month_pat.match(name)
     if match:
         try:
             return CalendarMonth(calendar,
-                                 year=int(match.group(1)),
-                                 month=int(match.group(2)))
+                                 date(int(match.group(1)),
+                                      int(match.group(2)),
+                                      1))
         except ValueError:
             return None
     match = _week_pat.match(name)
     if match:
         try:
-            return CalendarWeek(calendar,
-                                year=int(match.group(1)),
-                                week=int(match.group(2)))
+            start, end = weeknum_bounds(int(match.group(1)),
+                                        int(match.group(2)))
+            return CalendarWeek(calendar, start)
         except ValueError:
             return None
     match = _day_pat.match(name)
     if match:
         try:
             return CalendarDay(calendar,
-                               year=int(match.group(1)),
-                               month=int(match.group(2)),
-                               day=int(match.group(3)))
+                               date(int(match.group(1)),
+                                    int(match.group(2)),
+                                    int(match.group(3))))
         except ValueError:
             return None
     now = datetime.now(user_timezone)
     if name == 'today':
-        return CalendarDay(calendar,
-                           year=now.year,
-                           month=now.month,
-                           day=now.day)
+        return CalendarDay(calendar, now)
     elif name == 'this-week':
         isoyear, isoweek, isoday = now.isocalendar()
-        return CalendarWeek(calendar,
-                            year=isoyear,
-                            week=isoweek)
+        return CalendarWeek(calendar, now)
     elif name == 'this-month':
-        return CalendarMonth(calendar,
-                             year=now.year,
-                             month=now.month)
+        return CalendarMonth(calendar, now)
     elif name == 'this-year':
-        return CalendarYear(calendar,
-                            year=now.year)
+        return CalendarYear(calendar, now)
     elif name == 'events':
         return getUtility(ICalendarEventSet)
     else:
@@ -173,93 +166,79 @@ def traverseCalendar(calendar, request, name):
 class CalendarDay:
     implements(ICalendarDay)
 
-    def __init__(self, calendar, year, month, day):
-        # this will raise an error for invalid dates ...
-        date(year, month, day)
+    def __init__(self, calendar, day):
         self.calendar = calendar
-        self.name = '%04d-%02d-%02d' % (year, month, day)
-        self.date = date(year, month, day)
-        self.year = year
-        self.month = month
-        self.day = day
+        self.name = '%04d-%02d-%02d' % (day.year, day.month, day.day)
+        self.date = day
+        self.year = day.year
+        self.month = day.month
+        self.day = day.day
 
     @property
     def prevRange(self):
-        day = self.date - timedelta(days=1)
-        return CalendarDay(self.calendar, day.year, day.month, day.day)
+        return CalendarDay(self.calendar, self.date - timedelta(days=1))
 
     @property
     def nextRange(self):
-        day = self.date + timedelta(days=1)
-        return CalendarDay(self.calendar, day.year, day.month, day.day)
+        return CalendarDay(self.calendar, self.date + timedelta(days=1))
 
 class CalendarWeek:
     implements(ICalendarWeek)
 
-    def __init__(self, calendar, year, week):
-        # this will raise an error for invalid dates ...
-        if not check_weeknum(year, week):
-            raise ValueError, 'invalid week number'
-        self.date, dummy = weeknum_bounds(year, week)
+    def __init__(self, calendar, day):
         self.calendar = calendar
-        self.name = '%04d-W%02d' % (year, week)
-        self.year = year
-        self.week = week
+        self.date = day
+        self.year, self.week, dummy = day.isocalendar()
+        self.name = '%04d-W%02d' % (self.year, self.week)
 
     @property
     def prevRange(self):
-        day = self.date - timedelta(days=7)
-        isoyear, isoweek, isoday = day.isocalendar()
-        return CalendarWeek(self.calendar, isoyear, isoweek)
+        return CalendarWeek(self.calendar, self.date - timedelta(days=7))
 
     @property
     def nextRange(self):
-        day = self.date + timedelta(days=7)
-        isoyear, isoweek, isoday = day.isocalendar()
-        return CalendarWeek(self.calendar, isoyear, isoweek)
+        return CalendarWeek(self.calendar, self.date + timedelta(days=7))
 
 
 class CalendarMonth:
     implements(ICalendarMonth)
 
-    def __init__(self, calendar, year, month):
-        # this will raise an error for invalid dates ...
-        date(year, month, 1)
+    def __init__(self, calendar, day):
         self.calendar = calendar
-        self.date = date(year, month, 1)
-        self.name = '%04d-%02d' % (year, month)
-        self.year = year
-        self.month = month
+        self.date = day
+        self.name = '%04d-%02d' % (day.year, day.month)
+        self.year = day.year
+        self.month = day.month
 
     @property
     def prevRange(self):
         day = prev_month(self.date)
-        return CalendarMonth(self.calendar, day.year, day.month)
+        return CalendarMonth(self.calendar, day)
 
     @property
     def nextRange(self):
         day = next_month(self.date)
-        return CalendarMonth(self.calendar, day.year, day.month)
+        return CalendarMonth(self.calendar, day)
 
 
 class CalendarYear:
     implements(ICalendarYear)
 
-    def __init__(self, calendar, year):
+    def __init__(self, calendar, day):
         self.calendar = calendar
-        # this will raise an error for invalid years ...
-        self.date = date(year, 1, 1)
-        self.name = '%04d' % year
-        self.year = year
+        self.date = day
+        self.name = '%04d' % day.year
+        self.year = day.year
 
     @property
     def prevRange(self):
-        return CalendarYear(self.calendar, self.year - 1)
+        day = date(self.date.year - 1, self.date.month, self.date.day)
+        return CalendarYear(self.calendar, day)
 
     @property
     def nextRange(self):
-        day = next_month(self.date)
-        return CalendarYear(self.calendar, self.year + 1)
+        day = date(self.date.year + 1, self.date.month, self.date.day)
+        return CalendarYear(self.calendar, day)
 
 
 class ViewCalendar:
@@ -274,79 +253,49 @@ class ViewCalendar:
         self.events = list(events)
         self.events.sort(key=lambda x: x.dtstart)
 
+
 class CalendarAppMenus(ApplicationMenu):
     usedfor = ICalendar
     links = ['day', 'week', 'month', 'year']
     facet = 'calendar'
 
-    def __init__(self, context):
+    def __init__(self, context, date=None):
         self.context = context
-        user_timezone = getUtility(ILaunchBag).timezone
-        self.now = datetime.now(user_timezone)
+        if date is not None:
+            self.date = date
+        else:
+            user_timezone = getUtility(ILaunchBag).timezone
+            self.date = datetime.now(user_timezone)
     
     def day(self):
         """Computes the URLs used to switch calendar views."""
-        target =  canonical_url(CalendarDay(self.context,
-                                            self.now.year,
-                                            self.now.month,
-                                            self.now.day))
+        target =  canonical_url(CalendarDay(self.context, self.date))
         text = 'Day'
         return Link(target, text)
 
     def week(self):
-        isoyear, isoweek, isoday = self.now.isocalendar()
-        target = canonical_url(CalendarWeek(self.context,
-                                            isoyear, isoweek))
+        target = canonical_url(CalendarWeek(self.context, self.date))
         text = 'Week'
         return Link(target, text)
 
     def month(self):
-        target =  canonical_url(CalendarMonth(self.context,
-                                              self.now.year,
-                                              self.now.month))
+        target =  canonical_url(CalendarMonth(self.context, self.date))
         text = 'Month'
         return Link(target, text)
 
     def year(self):
-        target =  canonical_url(CalendarYear(self.context,
-                                             self.now.year))
+        target =  canonical_url(CalendarYear(self.context, self.date))
         text = 'Year'
         return Link(target, text)
 
 
-class CalendarRangeAppMenus(ApplicationMenu):
+class CalendarRangeAppMenus(CalendarAppMenus):
     usedfor = ICalendarRange
-    links = ['day', 'week', 'month', 'year']
-    facet = 'calendar'
 
-    def day(self):
-        """Computes the URLs used to switch calendar views."""
-        target =  canonical_url(CalendarDay(self.context.calendar,
-                                            self.context.date.year,
-                                            self.context.date.month,
-                                            self.context.date.day))
-        text = 'Day'
-        return Link(target, text)
-
-    def week(self):
-        isoyear, isoweek, isoday = self.context.date.isocalendar()
-        target = canonical_url(CalendarWeek(self.context.calendar,
-                                            isoyear, isoweek))
-        text = 'Week'
-        return Link(target, text)
-
-    def month(self):
-        target =  canonical_url(CalendarMonth(self.context.calendar,
-                                              self.context.date.year,
-                                              self.context.date.month))
-        text = 'Month'
-        return Link(target, text)
-
-    def year(self):
-        target =  canonical_url(CalendarYear(self.context.calendar,
-                                             self.context.date.year))
-        text = 'Year'
-        return Link(target, text)
+    def __init__(self, context):
+        CalendarAppMenus.__init__(self,
+                                  context.calendar,
+                                  context.date)
 
 
 class CalendarViewBase:
