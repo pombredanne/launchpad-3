@@ -15,7 +15,7 @@
   administrator. 
 
   >>> print http(r"""
-  ... GET /people/name17/+polls/+new HTTP/1.1
+  ... GET /people/name17/+newpoll HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 403 Forbidden
@@ -34,12 +34,12 @@
   HTTP/1.1 200 Ok
   ...
       <ul class="add">
-        <li><a href="+new">Set up a new poll</a></li>
+        <li><a href="+newpoll">Set up a new poll</a></li>
   ...
 
 
   >>> print http(r"""
-  ... GET /people/name17/+polls/+new HTTP/1.1
+  ... GET /people/name17/+newpoll HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -52,7 +52,7 @@
   Create a new poll that will start in 2100 and last one month..
 
   >>> print http(r"""
-  ... POST /people/name17/+polls/+new HTTP/1.1
+  ... POST /people/name17/+newpoll HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------644242015206973209368907792
   ... 
@@ -108,12 +108,12 @@
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/people/name17/+polls/election-2100
+  Location: http://localhost:9000/people/name17/+poll/election-2100
   ...
 
 
   >>> print http(r"""
-  ... GET /people/name17/+polls/election-2100 HTTP/1.1
+  ... GET /people/name17/+poll/election-2100 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -123,7 +123,7 @@
   Create a new poll that starts in 2005-06-04 and will last until 2025.
 
   >>> print http(r"""
-  ... POST /people/name17/+polls/+new HTTP/1.1
+  ... POST /people/name17/+newpoll HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------323203348670962331774819759
   ... 
@@ -179,12 +179,12 @@
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/people/name17/+polls/dpl-2080
+  Location: http://localhost:9000/people/name17/+poll/dpl-2080
   ...
 
 
   >>> print http(r"""
-  ... GET /people/name17/+polls/dpl-2080 HTTP/1.1
+  ... GET /people/name17/+poll/dpl-2080 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

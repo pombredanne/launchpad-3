@@ -449,20 +449,13 @@ poll_edit = ContextTitle('Edit poll %s')
 
 poll_index = ContextTitle('%s')
 
+poll_newoption = ContextTitle('Create a new Option in poll %s')
+
 def poll_new(context, view):
     return 'Create a new Poll in team %s' % context.team.displayname
 
 def polloption_edit(context, view):
     return 'Edit option %s' % context.shortname
-
-def polloption_new(context, view):
-    return 'Create a new Option in poll %s' % context.poll.title
-
-def polloptions_list(context, view):
-    return 'Options in poll %s' % context.poll.title
-
-def polls_list(context, view):
-    return 'Polls in team %s' % context.team.displayname
 
 potemplage_admin = ContextTitle('%s admin in Rosetta')
 
@@ -635,6 +628,10 @@ def team_members(context, view):
 def teammembership_index(context, view):
     return '%s: Member of %s' % (
         context.person.browsername, context.team.browsername)
+
+team_newpoll = ContextTitle('Create a new Poll in team %s')
+
+team_polls = ContextTitle('Polls in team %s')
 
 template_auto_add = 'Launchpad Auto-Add Form'
 

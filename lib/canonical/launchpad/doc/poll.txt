@@ -35,10 +35,13 @@ a given team (in our case, the 'Ubuntu Team')
 Now we create a new poll on this team.
   >>> opendate = datetime(2005, 01, 01, tzinfo=pytz.timezone('UTC'))
   >>> closedate = opendate + timedelta(weeks=2)
-  >>> poll = pollsubset.new("leader-election", "2005 Leader's Elections",
-  ...                       "Who's going to be the next leader?",
-  ...                       opendate, closedate,
-  ...                       PollAlgorithm.SIMPLE, PollSecrecy.SECRET, True)
+  >>> title = "2005 Leader's Elections"
+  >>> proposition = "Who's going to be the next leader?"
+  >>> type = PollAlgorithm.SIMPLE
+  >>> secrecy = PollSecrecy.SECRET
+  >>> allowspoilt = True
+  >>> poll = pollsubset.new("leader-election", title, proposition, opendate,
+  ...                       closedate, type, secrecy, allowspoilt)
   >>> len(pollsubset.getAll())
   1
 
@@ -82,7 +85,7 @@ Let's add some options to this poll, so people can start voting. :)
   [u'Francis Dolarhyde', u'Jack Crawford', u'Will Graham']
 
 Now, what happens if the poll is already open and, let's say, Francis Dolarhyde
-is arrested and thus becomes ineligible? We'll have to mark that option as
+is convicted and thus becomes ineligible? We'll have to mark that option as
 inactive, so people can't vote on it.
   >>> francis.active = False
   >>> flush_database_updates()

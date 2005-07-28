@@ -12,18 +12,18 @@
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IPoll" />
     </content>
- 
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPoll"
         name="+index" />
- 
+
     <browser:traverse
         for="canonical.launchpad.interfaces.IPoll"
         function="canonical.launchpad.browser.traverse_poll" />
- 
+
     <browser:url
         for="canonical.launchpad.interfaces.IPoll"
-        path_expression="string:+polls/${name}"
+        path_expression="string:+poll/${name}"
         attribute_to_parent="team" />
 
     <browser:pages
@@ -33,9 +33,19 @@
         <browser:page
             name="+index"
             template="../templates/poll-index.pt"
-            lp:url="/people/$team.name/+polls/$poll/+index" />
+            lp:url="/people/$team.name/+poll/$poll/+index" />
     </browser:pages>
- 
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IPoll"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.PollView">
+        <browser:page
+            name="+options"
+            template="../templates/poll-options.pt"
+            lp:url="/people/$team.name/+poll/$poll/+options" />
+    </browser:pages>
+
     <browser:editform
         name="+edit"
         for="canonical.launchpad.interfaces.IPoll"
@@ -46,10 +56,22 @@
         label="Edit Poll Details"
         permission="launchpad.Edit"
         template="../templates/poll-edit.pt"
-        lp:url="/people/$team.id/+polls/$poll/+edit">
+        lp:url="/people/$team.id/+poll/$poll/+edit">
     </browser:editform>
- 
- 
+
+    <browser:addform
+        name="+newoption"
+        for="canonical.launchpad.interfaces.IPoll"
+        class="canonical.launchpad.browser.PollOptionAddView"
+        schema="canonical.launchpad.interfaces.IPollOption"
+        fields="name shortname"
+        label="Create a New Option for a Poll"
+        permission="launchpad.Edit"
+        template="../templates/poll-newoption.pt"
+        lp:url="/people/$team.id/+poll/$poll/+newoption">
+    </browser:addform>
+
+
     <!-- PollOption -->
     <content class="canonical.launchpad.database.PollOption">
         <allow interface="canonical.launchpad.interfaces.IPollOption" />
@@ -57,14 +79,14 @@
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IPollOption" />
     </content>
- 
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPollOption"
         name="+edit" />
- 
+
     <browser:url
         for="canonical.launchpad.interfaces.IPollOption"
-        path_expression="string:+options/${id}"
+        path_expression="string:+option/${id}"
         attribute_to_parent="poll" />
 
     <browser:editform
@@ -76,21 +98,21 @@
         label="Edit Poll Details"
         permission="launchpad.Edit"
         template="../templates/polloption-edit.pt"
-        lp:url="/people/$team.id/+polls/$poll/$option/+edit">
+        lp:url="/people/$team.id/+poll/$poll/$option/+edit">
     </browser:editform>
- 
+
 
     <!-- PollSet -->
     <content class="canonical.launchpad.database.PollSet">
         <allow interface="canonical.launchpad.interfaces.IPollSet" />
     </content>
- 
+
     <securedutility
         class="canonical.launchpad.database.PollSet"
         provides="canonical.launchpad.interfaces.IPollSet">
         <allow interface="canonical.launchpad.interfaces.IPollSet" />
     </securedutility>
- 
+
 
     <!-- PollSubset -->
     <adapter
@@ -98,50 +120,19 @@
         provides="canonical.launchpad.interfaces.IPollSubset"
         factory="canonical.launchpad.components.poll.PollSubset"
         permission="zope.Public" />
- 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IPollSubset"
-        name="+index" />
- 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IPollSubset"
-        getter="getByName" />
- 
-    <browser:pages
-        for="canonical.launchpad.interfaces.IPollSubset"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.PollListView">
-        <browser:page
-            name="+index"
-            template="../templates/polls-list.pt"
-            lp:url="/people/$team.name/+polls/+index" />
-    </browser:pages>
- 
-    <browser:addform
-        name="+new"
-        for="canonical.launchpad.interfaces.IPollSubset"
-        class="canonical.launchpad.browser.PollAddView"
-        schema="canonical.launchpad.interfaces.IPoll"
-        fields="name title proposition type secrecy allowspoilt
-                dateopens datecloses"
-        label="Create a New Poll"
-        permission="launchpad.Edit"
-        template="../templates/poll-new.pt"
-        lp:url="/people/$team.id/+polls/+new">
-    </browser:addform>
 
 
     <!-- PollOptionSet -->
     <content class="canonical.launchpad.database.PollOptionSet">
         <allow interface="canonical.launchpad.interfaces.IPollOptionSet" />
     </content>
- 
+
     <securedutility
         class="canonical.launchpad.database.PollOptionSet"
         provides="canonical.launchpad.interfaces.IPollOptionSet">
         <allow interface="canonical.launchpad.interfaces.IPollOptionSet" />
     </securedutility>
- 
+
 
     <!-- PollOptionSubset -->
     <adapter
@@ -149,35 +140,5 @@
         provides="canonical.launchpad.interfaces.IPollOptionSubset"
         factory="canonical.launchpad.components.poll.PollOptionSubset"
         permission="zope.Public" />
- 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IPollOptionSubset"
-        name="+index" />
- 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IPollOptionSubset"
-        getter="get_default" />
- 
-    <browser:pages
-        for="canonical.launchpad.interfaces.IPollOptionSubset"
-        permission="launchpad.Edit"
-        class="canonical.launchpad.browser.PollOptionListView">
-        <browser:page
-            name="+index"
-            template="../templates/polloptions-list.pt"
-            lp:url="/people/$team.name/+polls/+options/+index" />
-    </browser:pages>
- 
-    <browser:addform
-        name="+new"
-        for="canonical.launchpad.interfaces.IPollOptionSubset"
-        class="canonical.launchpad.browser.PollOptionAddView"
-        schema="canonical.launchpad.interfaces.IPollOption"
-        fields="name shortname"
-        label="Create a New Option for a Poll"
-        permission="launchpad.Edit"
-        template="../templates/polloption-new.pt"
-        lp:url="/people/$team.id/+polls/+options/+new">
-    </browser:addform>
 
 </configure>
