@@ -89,7 +89,8 @@
 
   <browser:pages
       for="schoolbell.interfaces.ICalendar"
-      permission="zope.Public">
+      permission="zope.Public"
+      class="canonical.launchpad.browser.ViewCalendar">
     <browser:page
         template="../templates/calendar-index.pt"
         name="+index" />

@@ -8,6 +8,9 @@ __all__ = [
     'CalendarWeek',
     'CalendarMonth',
     'CalendarYear',
+    'ViewCalendar',
+    'CalendarAppMenus',
+    'CalendarRangeAppMenus',
     'CalendarDayView',
     'CalendarWeekView',
     'CalendarMonthView',
@@ -259,42 +262,17 @@ class CalendarYear:
         return CalendarYear(self.calendar, self.year + 1)
 
 
-class CalendarViewBase:
-
-    def __init__(self, context, request, datestring):
+class ViewCalendar:
+    def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.datestring = datestring
-        self.user_timezone = getUtility(ILaunchBag).timezone
-        user = getUtility(ILaunchBag).user
-        if user is not None:
-            self.subscriptions = ICalendarSubscriptionSubset(user)
-        else:
-            self.subscriptions = None
 
+        user_timezone = getUtility(ILaunchBag).timezone
+        now = datetime.now(user_timezone)
 
-    def eventColour(self, event):
-        if self.subscriptions is not None:
-            return self.subscriptions.getColour(event.calendar)
-        else:
-            # XXX - James Henstridge 2005-07-11
-            # This is replicating a constant from database/cal.py
-            # This won't be necessary once CalendarAggregation is
-            # implemented.
-            return '#efefef'
-
-    def eventStart(self, event):
-        dtstart = event.dtstart.astimezone(self.user_timezone)
-        return dtstart.strftime('%H:%M')
-
-    def eventStartDate(self, event):
-        dtstart = event.dtstart.astimezone(self.user_timezone)
-        return dtstart.strftime('%Y-%m-%d')
-
-    def eventEnd(self, event):
-        dtend = (event.dtstart + event.duration).astimezone(self.user_timezone)
-        return dtend.strftime('%H:%M')
-
+        events = self.context.expand(now, now + timedelta(days=14))
+        self.events = list(events)
+        self.events.sort(key=lambda x: x.dtstart)
 
 class CalendarAppMenus(ApplicationMenu):
     usedfor = ICalendar
@@ -369,6 +347,43 @@ class CalendarRangeAppMenus(ApplicationMenu):
                                              self.context.date.year))
         text = 'Year'
         return Link(target, text)
+
+
+class CalendarViewBase:
+
+    def __init__(self, context, request, datestring):
+        self.context = context
+        self.request = request
+        self.datestring = datestring
+        self.user_timezone = getUtility(ILaunchBag).timezone
+        user = getUtility(ILaunchBag).user
+        if user is not None:
+            self.subscriptions = ICalendarSubscriptionSubset(user)
+        else:
+            self.subscriptions = None
+
+
+    def eventColour(self, event):
+        if self.subscriptions is not None:
+            return self.subscriptions.getColour(event.calendar)
+        else:
+            # XXX - James Henstridge 2005-07-11
+            # This is replicating a constant from database/cal.py
+            # This won't be necessary once CalendarAggregation is
+            # implemented.
+            return '#efefef'
+
+    def eventStart(self, event):
+        dtstart = event.dtstart.astimezone(self.user_timezone)
+        return dtstart.strftime('%H:%M')
+
+    def eventStartDate(self, event):
+        dtstart = event.dtstart.astimezone(self.user_timezone)
+        return dtstart.strftime('%Y-%m-%d')
+
+    def eventEnd(self, event):
+        dtend = (event.dtstart + event.duration).astimezone(self.user_timezone)
+        return dtend.strftime('%H:%M')
 
 
 class MonthInfo:

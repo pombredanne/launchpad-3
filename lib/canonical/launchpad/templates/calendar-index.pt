@@ -14,6 +14,29 @@
     </metal:rightportlets>
 
     <div metal:fill-slot="main">
+      <h2>Coming Events</h2>
+
+      <table class="listing" tal:condition="view/events">
+        <thead>
+          <tr>
+            <th>Start Date</th>
+            <th>Title</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="event view/events">
+            <td tal:content="event/dtstart/fmt:datetime">
+              2005-04-01 08:00:00
+            </td>
+            <td tal:content="event/title">
+              April Fool's day
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p tal:condition="not: view/events">
+      No events in the next two weeks
+      </p>
     </div>
 
   </body>
