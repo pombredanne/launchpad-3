@@ -300,9 +300,7 @@ class CalendarRangeAppMenus(ApplicationMenu):
     usedfor = ICalendarRange
     links = ['day', 'week', 'month', 'year']
 
-    # XXX - James Henstridge 2005-07-11
-    # This should change to 'calendar' once we work out the standard facets
-    facet = 'overview'
+    facet = 'calendar'
 
     def __init__(self, context):
         self.context = context
