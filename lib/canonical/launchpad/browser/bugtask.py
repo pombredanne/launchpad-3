@@ -255,8 +255,10 @@ class BugTaskSearchListingView:
         search_params["statusexplanation"] = form_params.get(
                 "statusexplanation")
 
+        search_params["user"] = getUtility(ILaunchBag).user
+
         # make this search context-sensitive
-        tasks = self._searchBugsInContext(**search_params)
+        tasks = self.context.search(**search_params)
 
         return BatchNavigator(
             batch=Batch(tasks, int(self.request.get('batch_start', 0))),
@@ -327,9 +329,10 @@ class BugTaskSearchListingView:
         status_new = dbschema.BugTaskStatus.NEW
         status_accepted = dbschema.BugTaskStatus.ACCEPTED
 
-        critical_tasks = self._searchBugsInContext(
+        critical_tasks = self.context.search(
             severity=dbschema.BugTaskSeverity.CRITICAL,
-            status=any(status_new, status_accepted))
+            status=any(status_new, status_accepted),
+            user=getUtility(ILaunchBag).user)
 
         return critical_tasks.count()
 
@@ -354,9 +357,10 @@ class BugTaskSearchListingView:
         status_new = dbschema.BugTaskStatus.NEW
         status_accepted = dbschema.BugTaskStatus.ACCEPTED
 
-        tasks_assigned_to_user = self._searchBugsInContext(
+        tasks_assigned_to_user = self.context.search(
             assignee=getUtility(ILaunchBag).user,
-            status=any(status_new, status_accepted))
+            status=any(status_new, status_accepted),
+            user=getUtility(ILaunchBag).user)
 
         return tasks_assigned_to_user.count()
 
@@ -381,8 +385,8 @@ class BugTaskSearchListingView:
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
-        untriaged_tasks = self._searchBugsInContext(
-            status=dbschema.BugTaskStatus.NEW)
+        untriaged_tasks = self.context.search(
+            status=dbschema.BugTaskStatus.NEW, user=getUtility(ILaunchBag).user)
 
         return untriaged_tasks.count()
 
@@ -404,8 +408,9 @@ class BugTaskSearchListingView:
         status_new = dbschema.BugTaskStatus.NEW
         status_accepted = dbschema.BugTaskStatus.ACCEPTED
 
-        unassigned_tasks = self._searchBugsInContext(
-            assignee=NULL, status=any(status_new, status_accepted))
+        unassigned_tasks = self.context.search(
+            assignee=NULL, status=any(status_new, status_accepted),
+            user=getUtility(ILaunchBag).user)
 
         return unassigned_tasks.count()
 
@@ -428,7 +433,7 @@ class BugTaskSearchListingView:
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
-        total_bugs = self._searchBugsInContext()
+        total_bugs = self.context.search(user=getUtility(ILaunchBag).user)
 
         return total_bugs.count()
 
@@ -469,11 +474,11 @@ class BugTaskSearchListingView:
 
         release_bugs = []
         for release in releases:
-            open_release_bugs = getUtility(IBugTaskSet).search(
-                distrorelease=release,
+            open_release_bugs = release.search(
                 status=any(
                     dbschema.BugTaskStatus.NEW,
-                    dbschema.BugTaskStatus.ACCEPTED))
+                    dbschema.BugTaskStatus.ACCEPTED),
+                user=getUtility(ILaunchBag).user)
             release_bugs.append({
                 "releasename" : release.name,
                 "bugcount" : open_release_bugs.count(),
@@ -548,37 +553,6 @@ class BugTaskSearchListingView:
         """
         return IDistroRelease(self.context, None)
 
-    def _searchBugsInContext(self, bug=None, searchtext=None, status=None,
-                             priority=None, severity=None, milestone=None,
-                             assignee=None, owner=None, orderby=None,
-                             sourcepackagename=None, binarypackagename=None,
-                             statusexplanation=None):
-        """A proxy method to IBugTaskSet.search.
-
-        This is a helper method that automatically filters the search
-        based on the current IProduct, IDistribution, or
-        IDistroRelease context.
-        """
-        context_param = {}
-
-        upstream_context = self._upstreamContext()
-        distro_context = self._distributionContext()
-        distrorelease_context = self._distroReleaseContext()
-
-        if upstream_context:
-            context_param = {"product": upstream_context}
-        elif distro_context:
-            context_param = {"distribution": distro_context}
-        elif distrorelease_context:
-            context_param = {"distrorelease": distrorelease_context}
-
-        bugtaskset = getUtility(IBugTaskSet)
-
-        return bugtaskset.search(
-            bug=bug, searchtext=searchtext, status=status, priority=priority,
-            severity=severity, milestone=milestone, assignee=assignee,
-            owner=owner, orderby=orderby, sourcepackagename=sourcepackagename,
-            binarypackagename=binarypackagename, **context_param)
 
 class BugTaskAnorakSearchPageBegoneView:
     """This view simply kicks the user somewhere else.

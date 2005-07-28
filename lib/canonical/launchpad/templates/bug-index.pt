@@ -62,10 +62,8 @@
       $Bug.description
     </tal:description>
 
-  <div class="boardComment"> <!-- this is the new comment -->
     <fieldset class="collapsible collapsed">
       <legend>New comment on this bug</legend>
-      <div class="field">
         <form action="+messages/+new" method="post">
           <b>Subject:</b>
           <input name="field.subject" type="text" size="50" 
@@ -73,9 +71,7 @@
           <b>Comment:</b> <textarea name="field.content" rows="10"></textarea>
           <input type="submit" name="UPDATE_SUBMIT" value="Add" />
         </form>
-      </div>
     </fieldset>
-  </div>
 
   <tal:block repeat="message context/messages">
     <div class="boardComment"
@@ -98,8 +94,6 @@
           Comment text.
         </tal:comment>
       </div>
-
-      <div class="visualClear"></div>
 
     </div>
   </tal:block> <!-- repeating over message -->

@@ -84,7 +84,7 @@ class SQLObjectEditView(EditView):
                             self.fieldNames))
             except WidgetsError, errors:
                 self.errors = errors
-                status = _("An error occured.")
+                status = _("An error occurred.")
                 get_transaction().abort()
             else:
                 setUpEditWidgets(self, self.schema, source=self.adapted,

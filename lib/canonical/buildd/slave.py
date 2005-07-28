@@ -135,6 +135,7 @@ class BuildDSlave(object):
         self._cachepath = self._config.get("slave","filecache")
         self.buildstatus = BuildStatus.OK
         self.waitingfiles = {}
+        self._log = ""
         
         if not os.path.isdir(self._cachepath):
             raise ValueError("FileCache path is not a dir")
@@ -163,7 +164,7 @@ class BuildDSlave(object):
                 try:
                     f = urllib2.urlopen(url)
                 except Exception, e:
-                    self.log('Error accessing Librarian:', e)
+                    self.log('Error accessing Librarian: %s' % e)
                 else:
                     of = open(self.cachePath(sha1sum), "w")
                     for chunk in iter(lambda: f.read(4096), ''):
@@ -323,7 +324,7 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         func = getattr(self, "status_" + statusname, None)
         if func is None:
             raise ValueError("Unknown status '%s'" % status)
-        return (status,) + func()
+        return (status,) + (func())
 
     def status_IDLE(self):
         """Handler for xmlrpc_status IDLE.
@@ -361,7 +362,7 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         """
         return self.buildid
 
-    def xmlrpc_fetchlogtail(self, amount):
+    def xmlrpc_fetchlogtail(self, amount=None):
         """Return the requested amount of log information."""
         return xmlrpclib.Binary(self.slave.fetchLogTail(amount))
     

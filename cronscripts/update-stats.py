@@ -12,10 +12,12 @@ from optparse import OptionParser
 from zope.component import getUtility
 
 from canonical.lp import initZopeless
-from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.scripts import (execute_zcml_for_scripts,
-    logger_options, logger)
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IRosettaApplication)
+from canonical.launchpad.scripts import (
+    execute_zcml_for_scripts, logger_options, logger)
 from canonical.launchpad.scripts.lockfile import LockFile
+from canonical.config import config
 
 default_lock_file = '/var/lock/launchpad-stats.lock'
 
@@ -54,7 +56,7 @@ def main(argv):
     try:
         # Setup zcml machinery to be able to use getUtility
         execute_zcml_for_scripts()
-        ztm = initZopeless()
+        ztm = initZopeless(dbuser=config.statistician.dbuser)
 
         # Do the stats update
         logger_object.debug('Starting the stats update')
@@ -62,6 +64,8 @@ def main(argv):
         for distro in distroset:
             for distrorelease in distro.releases:
                 distrorelease.updateStatistics()
+        rosetta_app = getUtility(IRosettaApplication)
+        rosetta_app.updateStatistics()
         ztm.commit()
         logger_object.debug('Finished the stats update')
         return 0

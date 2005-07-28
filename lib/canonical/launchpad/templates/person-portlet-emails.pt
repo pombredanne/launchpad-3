@@ -20,7 +20,14 @@
         </ul>
 
         <ul style="text-align: right;">
-          <li class="add"><a href="+emails">Manage...</a></li>
+          <li class="add">
+            <a tal:condition="not: context/isTeam" href="+emails">
+              Manage...
+            </a>
+            <a tal:condition="context/isTeam" href="+editemail">
+              Manage...
+            </a>
+          </li>
         </ul>
         
       </div>

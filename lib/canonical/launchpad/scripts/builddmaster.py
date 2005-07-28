@@ -16,6 +16,7 @@ __all__ = ['BuilddMaster']
 
 
 import logging
+import warnings
 import xmlrpclib
 import os
 import socket
@@ -147,9 +148,9 @@ class BuilderGroup:
                              url, libraryfilealias.content.sha1))
         
         if not builder.slave.doyouhave(libraryfilealias.content.sha1, url):
-            warnings.warn(DeprecationWarning,
-                          'oops: Deprecated method, Verify if Slave can '
-                          'properly access librarian')
+            warnings.warn('oops: Deprecated method, Verify if Slave can '
+                          'properly access librarian',
+                          DeprecationWarning)
 
             self.logger.debug("Attempting to fetch %s to give to builder on %s"
                               % (libraryfilealias.content.sha1, builder.url))
@@ -223,7 +224,7 @@ class BuilderGroup:
         # figure out the MIME content-type
         ftype = filenameToContentType(filename)
         
-        aliasid = librarian.addFile(filename, len(filedata), fileobj,
+        aliasid = librarian.addFile(filename, len(str(filedata)), fileobj,
                                     contentType=ftype)
 
         # XXX: dsilvers: 20050302: Remove these when the library works
@@ -319,6 +320,8 @@ class BuilderGroup:
         except TypeError:
             self.logger.critical("Received wrong number of args in response.")
 
+        self.commit()
+
     def updateBuild_IDLE(self, queueItem, slave, librarian):
         """Somehow the builder forgot about the build log this and reset
         the record.
@@ -353,7 +356,7 @@ class BuilderGroup:
           component available).
         """
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
-        queueItem.build.buildlog = self.getLogFromSlave(s, buildid,
+        queueItem.build.buildlog = self.getLogFromSlave(slave, buildid,
                                                         librarian)
         queueItem.build.datebuilt = nowUTC
 
@@ -371,8 +374,12 @@ class BuilderGroup:
                 if result.endswith(".deb"):
                     # Process a binary package
                     self.processBinaryPackage(queueItem.build, aliasid, result)
+                    release = queueItem.build.sourcepackagerelease
                     self.logger.debug("Gathered build of %s completely"
                                       % release.sourcepackagename.name)
+            # release the builder and remove BQ entry
+            slave.clean()
+            queueItem.destroySelf()
 
     def updateBuild_DEPFAIL(self, queueItem, slave, librarian, info):
         """Build has failed by missing dependencies, set the job status as
@@ -517,7 +524,7 @@ class BuilddMaster:
                 # check the available slaves for this archrelease
                 archFamilyId = archrelease.processorfamily.id
                 archTag = archrelease.architecturetag
-                buildersGroup.checkAvailableSlaves(archFamilyId, archTag)
+                builderGroup.checkAvailableSlaves(archFamilyId, archTag)
 
                 notes[archrelease.processorfamily]["builders"] = builderGroup
                 
@@ -545,11 +552,13 @@ class BuilddMaster:
 
         releases = set(pubrec.sourcepackagerelease for pubrec in spp)
 
+        self._logger.info("Found %d Sources to build.", len(releases))
+
         # 2. Determine the set of distroarchreleases we care about in this
         # cycle
-        archs = set(arch for arch in distrorelease.architectures
-                    if arch in self._archreleases)
-
+        archs = set([arch for arch in distrorelease.architectures
+                     if arch in self._archreleases])
+        
         # 3. For each of the sourcepackagereleases, find its builds...
         for release in releases:
             for arch in archs:
@@ -599,7 +608,7 @@ class BuilddMaster:
                 )                                  
         
         for build in builds:
-            if BuildQueue.selectBy(buildID=b.id).count() == 0:
+            if BuildQueue.selectBy(buildID=build.id).count() == 0:
                 name = build.sourcepackagerelease.sourcepackagename.name
                 version = build.sourcepackagerelease.version
                 tag = build.distroarchrelease.architecturetag

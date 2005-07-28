@@ -11,6 +11,7 @@ __all__ = [
     'traverse_distribution',
     'traverse_distrorelease',
     'traverse_person',
+    'traverse_potemplate',
     'traverse_team',
     'traverse_bug',
     'traverse_bugs',
@@ -50,6 +51,14 @@ def traverse_malone_application(malone_application, request, name):
 
     return None
 
+def traverse_potemplate(potemplate, request, name):
+    user = getUtility(ILaunchBag).user
+    if request.method in ['GET', 'HEAD']:
+        return potemplate.getPOFileOrDummy(name, owner=user)
+    elif request.method == 'POST':
+        return potemplate.getOrCreatePOFile(name, owner=user)
+    raise AssertionError('We only know about GET, HEAD, and POST')
+
 
 def traverse_project(project, request, name):
     """Traverse an IProject."""
@@ -85,7 +94,8 @@ def traverse_product(product, request, name):
                 bugset = getUtility(IBugSet)
 
                 bug = bugset.get(nextstep)
-                bugtasks = bugtaskset.search(product=product, bug=bug)
+                bugtasks = bugtaskset.search(
+                    product=product, bug=bug, user=getUtility(ILaunchBag).user)
 
                 if bugtasks.count() == 1:
                     return bugtasks[0]
@@ -121,7 +131,9 @@ def traverse_distribution(distribution, request, name):
                 bugset = getUtility(IBugSet)
 
                 bug = bugset.get(nextstep)
-                bugtasks = bugtaskset.search(distribution=distribution, bug=bug)
+                bugtasks = bugtaskset.search(
+                    distribution=distribution, bug=bug,
+                    user=getUtility(ILaunchBag).user)
 
                 if bugtasks.count() == 1:
                     return bugtasks[0]
@@ -155,7 +167,9 @@ def traverse_distrorelease(distrorelease, request, name):
                 bugset = getUtility(IBugSet)
 
                 bug = bugset.get(nextstep)
-                bugtasks = bugtaskset.search(distrorelease=distrorelease, bug=bug)
+                bugtasks = bugtaskset.search(
+                    distrorelease=distrorelease, bug=bug,
+                    user=getUtility(ILaunchBag).user)
 
                 if bugtasks.count() == 1:
                     return bugtasks[0]

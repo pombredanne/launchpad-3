@@ -24,7 +24,7 @@
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IPOTemplate"
-        getter="getOrCreatePOFile"
+        function="canonical.launchpad.browser.traversers.traverse_potemplate"
         />
 
     <browser:defaultView

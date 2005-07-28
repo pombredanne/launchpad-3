@@ -103,6 +103,10 @@
             lp:url="/distros/ubuntu/hoary/+portlet-translations"
             />
         <browser:page
+            name="+portlet-langstats"
+            template="../templates/distrorelease-portlet-langstats.pt"
+            />
+        <browser:page
             name="+portlet-aboutlangs"
             template="../templates/distrorelease-portlet-aboutlangs.pt"
             lp:url="/distros/ubuntu/hoary/+portlet-aboutlangs"

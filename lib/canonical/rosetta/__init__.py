@@ -12,11 +12,13 @@ from zope.component import getUtility
 
 import pytz
 
-from canonical.launchpad.interfaces import IRosettaApplication, \
-    IProductSet, IDistroReleaseSet, ITranslationGroupSet
-from canonical.launchpad.database import POTemplate, POFile, Language, \
-    POMsgID, Person
+from canonical.launchpad.interfaces import (
+    IRosettaApplication, IProductSet, IDistroReleaseSet,
+    ITranslationGroupSet, ILaunchpadStatisticSet)
+from canonical.launchpad.database import (
+    POTemplate, POFile, Language, POMsgID, Person)
 from canonical.publication import rootObject
+from canonical.database.constants import UTC_NOW
 
 
 class RosettaApplication:
@@ -26,25 +28,25 @@ class RosettaApplication:
 
     def __init__(self):
         self.title = 'Rosetta: Translations in the Launchpad'
-        self.statsdate = None
 
-    def _update_stats(self):
-        now = datetime.now(pytz.timezone('UTC'))
-        aday = timedelta(1)
-        if self.statsdate is not None and self.statsdate + aday > now:
-            return
-        self._potemplate_count = POTemplate.select().count()
-        self._pofile_count = POFile.select().count()
-        self._pomsgid_count = POMsgID.select().count()
-        self._translator_count = Person.select(
-                    "POSubmission.person=Person.id",
-                    clauseTables=['POSubmission'],
-                    distinct=True).count()
-        self._language_count = Language.select(
-                    "POFile.language=Language.id",
-                    clauseTables=['POFile'],
-                    distinct=True).count()
-        self.statsdate = datetime.now(pytz.timezone('UTC'))
+    @property
+    def statsdate(self):
+        stats = getUtility(ILaunchpadStatisticSet)
+        return stats.dateupdated('potemplate_count')
+
+    def updateStatistics(self):
+        stats = getUtility(ILaunchpadStatisticSet)
+        stats.update('potemplate_count', POTemplate.select().count())
+        stats.update('pofile_count', POFile.select().count())
+        stats.update('pomsgid_count', POMsgID.select().count())
+        stats.update('translator_count', Person.select(
+            "POSubmission.person=Person.id",
+            clauseTables=['POSubmission'],
+            distinct=True).count())
+        stats.update('language_count', Language.select(
+            "POFile.language=Language.id",
+            clauseTables=['POFile'],
+            distinct=True).count())
 
     def translatable_products(self, translationProject=None):
         """See IRosettaApplication."""
@@ -62,28 +64,28 @@ class RosettaApplication:
 
     def potemplate_count(self):
         """See IRosettaApplication."""
-        self._update_stats()
-        return self._potemplate_count
+        stats = getUtility(ILaunchpadStatisticSet)
+        return stats.value('potemplate_count')
 
     def pofile_count(self):
         """See IRosettaApplication."""
-        self._update_stats()
-        return self._pofile_count
+        stats = getUtility(ILaunchpadStatisticSet)
+        return stats.value('pofile_count')
 
     def pomsgid_count(self):
         """See IRosettaApplication."""
-        self._update_stats()
-        return self._pomsgid_count
+        stats = getUtility(ILaunchpadStatisticSet)
+        return stats.value('pomsgid_count')
 
     def translator_count(self):
         """See IRosettaApplication."""
-        self._update_stats()
-        return self._translator_count
+        stats = getUtility(ILaunchpadStatisticSet)
+        return stats.value('translator_count')
 
     def language_count(self):
         """See IRosettaApplication."""
-        self._update_stats()
-        return self._language_count
+        stats = getUtility(ILaunchpadStatisticSet)
+        return stats.value('language_count')
         
     name = 'Rosetta'
 
