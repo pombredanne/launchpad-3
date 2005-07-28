@@ -48,9 +48,9 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     ApplicationMenu, DefaultLink, Link, canonical_url)
 
-from schoolbell.utils import prev_month, next_month
-from schoolbell.utils import weeknum_bounds, check_weeknum
-from schoolbell.utils import Slots
+from schoolbell.interfaces import ICalendar
+from schoolbell.utils import (
+    prev_month, next_month, weeknum_bounds, check_weeknum, Slots)
 
 
 daynames = [
@@ -296,14 +296,50 @@ class CalendarViewBase:
         return dtend.strftime('%H:%M')
 
 
-class CalendarRangeAppMenus(ApplicationMenu):
-    usedfor = ICalendarRange
+class CalendarAppMenus(ApplicationMenu):
+    usedfor = ICalendar
     links = ['day', 'week', 'month', 'year']
-
     facet = 'calendar'
 
     def __init__(self, context):
         self.context = context
+        user_timezone = getUtility(ILaunchBag).timezone
+        self.now = datetime.now(user_timezone)
+    
+    def day(self):
+        """Computes the URLs used to switch calendar views."""
+        target =  canonical_url(CalendarDay(self.context,
+                                            self.now.year,
+                                            self.now.month,
+                                            self.now.day))
+        text = 'Day'
+        return Link(target, text)
+
+    def week(self):
+        isoyear, isoweek, isoday = self.now.isocalendar()
+        target = canonical_url(CalendarWeek(self.context,
+                                            isoyear, isoweek))
+        text = 'Week'
+        return Link(target, text)
+
+    def month(self):
+        target =  canonical_url(CalendarMonth(self.context,
+                                              self.now.year,
+                                              self.now.month))
+        text = 'Month'
+        return Link(target, text)
+
+    def year(self):
+        target =  canonical_url(CalendarYear(self.context,
+                                             self.now.year))
+        text = 'Year'
+        return Link(target, text)
+
+
+class CalendarRangeAppMenus(ApplicationMenu):
+    usedfor = ICalendarRange
+    links = ['day', 'week', 'month', 'year']
+    facet = 'calendar'
 
     def day(self):
         """Computes the URLs used to switch calendar views."""
@@ -312,39 +348,27 @@ class CalendarRangeAppMenus(ApplicationMenu):
                                             self.context.date.month,
                                             self.context.date.day))
         text = 'Day'
-        if ICalendarDay.providedBy(self.context):
-            return DefaultLink(target, text)
-        else:
-            return Link(target, text)
+        return Link(target, text)
 
     def week(self):
         isoyear, isoweek, isoday = self.context.date.isocalendar()
         target = canonical_url(CalendarWeek(self.context.calendar,
                                             isoyear, isoweek))
         text = 'Week'
-        if ICalendarWeek.providedBy(self.context):
-            return DefaultLink(target, text)
-        else:
-            return Link(target, text)
+        return Link(target, text)
 
     def month(self):
         target =  canonical_url(CalendarMonth(self.context.calendar,
                                               self.context.date.year,
                                               self.context.date.month))
         text = 'Month'
-        if ICalendarMonth.providedBy(self.context):
-            return DefaultLink(target, text)
-        else:
-            return Link(target, text)
+        return Link(target, text)
 
     def year(self):
         target =  canonical_url(CalendarYear(self.context.calendar,
                                              self.context.date.year))
         text = 'Year'
-        if ICalendarYear.providedBy(self.context):
-            return DefaultLink(target, text)
-        else:
-            return Link(target, text)
+        return Link(target, text)
 
 
 class MonthInfo:

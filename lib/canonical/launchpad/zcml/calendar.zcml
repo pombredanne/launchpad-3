@@ -91,7 +91,7 @@
       for="schoolbell.interfaces.ICalendar"
       permission="zope.Public">
     <browser:page
-        template="../templates/calendar.pt"
+        template="../templates/calendar-index.pt"
         name="+index" />
   </browser:pages>
 
@@ -132,7 +132,7 @@
 
   <browser:menus
       module="canonical.launchpad.browser.cal"
-      classes="CalendarRangeAppMenus" />
+      classes="CalendarAppMenus CalendarRangeAppMenus" />
 
   <content class="canonical.launchpad.browser.CalendarDay">
     <allow interface="canonical.launchpad.interfaces.ICalendarDay" />
