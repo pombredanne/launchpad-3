@@ -13,14 +13,16 @@ from zope.schema import Bool, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
+
+from canonical.launchpad.validators.version import valid_debian_version
 
 
 class IBinaryPackage(Interface):
     id = Int(title=_('ID'), required=True)
     #sourcepackagerelease = Int(required=True)
     binarypackagename = Int(required=True)
-    version = TextLine(required=True)
+    version = TextLine(required=True, constraint=valid_debian_version)
     summary = Text(required=True)
     description = Text(required=True)
     build = Int(required=True)
