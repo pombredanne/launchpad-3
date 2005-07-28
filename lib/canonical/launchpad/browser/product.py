@@ -16,7 +16,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 
 from canonical.launchpad.interfaces import (
     IPerson, IProduct, IProductSet, IBugTaskSet, IProductSeries,
-    ISourcePackage, ICountry, IBugSet, ILaunchBag)
+    ISourcePackage, ICountry, IBugSet, ICalendarOwner, ILaunchBag)
 from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -60,6 +60,13 @@ class ProductFacets(StandardLaunchpadFacets):
         text = 'Translations'
         summary = 'Translations of %s in Rosetta' % self.context.displayname
         return Link(target, text, summary)
+
+    def calendar(self):
+        target = '+calendar'
+        text = 'Calendar'
+        # only link to the calendar if it has been created
+        linked = ICalendarOwner(self.context).calendar is not None
+        return Link(target, text, linked=linked)
 
 
 # A View Class for Product

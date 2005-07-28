@@ -20,7 +20,7 @@ class StandardLaunchpadFacets(FacetMenu):
     # provide your own 'usedfor' in subclasses.
     #   usedfor = IWhatever
 
-    links = ['overview', 'bugs', 'translations']
+    links = ['overview', 'bugs', 'translations', 'calendar']
 
     def overview(self):
         target = ''
@@ -37,3 +37,8 @@ class StandardLaunchpadFacets(FacetMenu):
         text = 'Bugs'
         return Link(target, text)
 
+    def calendar(self):
+        """Disabled calendar link."""
+        target = '+calendar'
+        text = 'Calendar'
+        return Link(target, text, linked=False)

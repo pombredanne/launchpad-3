@@ -13,7 +13,7 @@ from canonical.launchpad.webapp import (
 
 class LaunchpadRootFacets(StandardLaunchpadFacets):
     usedfor = ILaunchpadRoot
-    links = ['overview', 'bugs', 'translations']
+    links = ['overview', 'bugs', 'translations', 'calendar']
 
     def overview(self):
         target = ''
@@ -28,6 +28,11 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
     def bugs(self):
         target = 'malone'
         text = 'Bugs'
+        return Link(target, text)
+
+    def calendar(self):
+        target = 'calendar'
+        text = 'Calendar'
         return Link(target, text)
 
 

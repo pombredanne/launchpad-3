@@ -23,6 +23,10 @@
       for="canonical.launchpad.interfaces.IPerson"
       name="+index" />
 
+  <browser:menus
+      module="canonical.launchpad.browser.person"
+      classes="PersonFacets" />
+
   <browser:url
       for="canonical.launchpad.interfaces.IPerson"
       path_expression="name"

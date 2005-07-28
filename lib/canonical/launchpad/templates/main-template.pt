@@ -59,9 +59,15 @@
             </li>
             <li tal:condition="not: link/selected">
               <a
+                tal:condition="link/linked"
                 tal:attributes="href link/url"
                 tal:content="link/text"
               >ghi</a>
+              <span
+                class="disabled"
+                tal:condition="not: link/linked"
+                tal:content="link/text"
+              >jkl</span>
             </li>
           </tal:block>
         </tal:block>
