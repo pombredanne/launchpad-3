@@ -24,6 +24,21 @@ COMMENT ON FUNCTION valid_name(text)
     namespace conflict if URL traversal is possible by name as well as id.';
 
 
+CREATE OR REPLACE FUNCTION valid_branch_name(text) RETURNS boolean AS '
+    import re
+    name = args[0]
+    pat = r"^(?i)[a-z0-9][a-z0-9\\+\\.\\-\\@]+$"
+    if re.match(pat, name):
+        return 1
+    return 0
+' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
+
+COMMENT ON FUNCTION valid_branch_name(text)
+    IS 'validate a branch name.
+
+    As per valid_name, except we allow uppercase and @';
+
+
 CREATE OR REPLACE FUNCTION valid_bug_name(text) RETURNS boolean AS '
     import re
     name = args[0]

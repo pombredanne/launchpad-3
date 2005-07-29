@@ -4,7 +4,7 @@ ALTER TABLE Branch ADD COLUMN registrant integer
     CONSTRAINT branch_registrant_fk REFERENCES Person;
 
 ALTER TABLE Branch ADD COLUMN name text;
-ALTER TABLE Branch ADD CONSTRAINT valid_name CHECK (valid_name(name));
+ALTER TABLE Branch ADD CONSTRAINT valid_name CHECK (valid_branch_name(name));
 
 ALTER TABLE Branch RENAME COLUMN description TO summary;
 
@@ -80,11 +80,12 @@ UPDATE Branch SET
 UPDATE Branch SET
     url = 'http://bazaar.ubuntu.com/'
         || archarchive.name || '/' || archnamespace.category ||
+        '--' || archnamespace.branch || '--' || archnamespace.version,
+    name = archarchive.name || '_' || archnamespace.category ||
         '--' || archnamespace.branch || '--' || archnamespace.version
     FROM ArchArchive, ArchNamespace
         WHERE Branch.archnamespace = ArchNamespace.id
             AND ArchNamespace.archarchive = ArchArchive.id;
-    
 
 -- Set final column constraints after data migration
 ALTER TABLE Branch ALTER COLUMN owner SET NOT NULL;
@@ -95,8 +96,7 @@ ALTER TABLE Branch ALTER COLUMN branch_status SET NOT NULL;
 ALTER TABLE Branch ALTER COLUMN current_activity SET NOT NULL;
 ALTER TABLE Branch ALTER COLUMN mirror_status SET NOT NULL;
 ALTER TABLE Branch ALTER COLUMN mirror_failures SET NOT NULL;
--- TODO: Should name be NULLable? If so, need to set default values
--- ALTER TABLE Branch ALTER COLUMN name SET NOT NULL;
+ALTER TABLE Branch ALTER COLUMN name SET NOT NULL;
 
 -- BranchMessage
 
@@ -145,8 +145,7 @@ UPDATE Revision SET
         AND Branch.archnamespace = ArchNamespace.id
         AND ArchNamespace.archarchive = ArchArchive.id;
 
--- TODO: Can't set this yet as owner is not filled
---ALTER TABLE Revision ALTER COLUMN owner SET NOT NULL;
+ALTER TABLE Revision ALTER COLUMN owner SET NOT NULL;
 ALTER TABLE Revision ALTER COLUMN revision_id SET NOT NULL;
 
 -- Drop unwanted columns
