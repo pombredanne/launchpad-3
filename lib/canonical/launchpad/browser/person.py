@@ -67,7 +67,7 @@ class PersonFacets(StandardLaunchpadFacets):
         return DefaultLink(target, text)
 
     def bugs(self):
-        target = '+bugsassigned'
+        target = '+assignedbugs'
         text = 'Bugs'
         return Link(target, text)
 
