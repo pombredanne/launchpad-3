@@ -108,13 +108,18 @@ class ICalendarRange(Interface):
     name = TextLine(
         title=_('Name'), required=True, readonly=True,
         description=_("""A string describing the range"""))
-    date = Attribute(_('A time within the range'))
+    date = Attribute(_("""A time within the range"""))
 
-    prevRange = Attribute("""The previous range in the calendar.
-        This will typically be the same length as this range""")
+    start = Attribute(_("""The timestamp representing the closed start of
+        the range."""))
+    end = Attribute(_("""The timestamp representing the open end of
+        the range."""))
 
-    nextRange = Attribute("""The next range in the calendar.
-        This will typically be the same length as this range""")
+    prevRange = Attribute(_("""The previous range in the calendar.
+        This will typically be the same length as this range"""))
+
+    nextRange = Attribute(_("""The next range in the calendar.
+        This will typically be the same length as this range"""))
 
 class ICalendarDay(ICalendarRange):
     """Represents a particular day of events in a calendar"""

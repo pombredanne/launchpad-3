@@ -174,6 +174,11 @@ class CalendarDay:
         self.month = day.month
         self.day = day.day
 
+        user_timezone = getUtility(ILaunchBag).timezone
+        self.start = datetime(day.year, day.month, day.day,
+                              0, 0, 0, 0, user_timezone).astimezone(UTC)
+        self.end = self.start + timedelta(days=1)
+
     @property
     def prevRange(self):
         return CalendarDay(self.calendar, self.date - timedelta(days=1))
@@ -190,6 +195,12 @@ class CalendarWeek:
         self.date = day
         self.year, self.week, dummy = day.isocalendar()
         self.name = '%04d-W%02d' % (self.year, self.week)
+
+        user_timezone = getUtility(ILaunchBag).timezone
+        start, end = weeknum_bounds(self.year, self.week)
+        self.start = datetime(start.year, start.month, start.day,
+                              0, 0, 0, 0, user_timezone).astimezone(UTC)
+        self.end = self.start + timedelta(weeks=1)
 
     @property
     def prevRange(self):
@@ -210,6 +221,13 @@ class CalendarMonth:
         self.year = day.year
         self.month = day.month
 
+        user_timezone = getUtility(ILaunchBag).timezone
+        self.start = datetime(day.year, day.month, 1,
+                              0, 0, 0, 0, user_timezone).astimezone(UTC)
+        next = next_month(self.start)
+        self.end = datetime(next.year, next.month, 1,
+                            0, 0, 0, 0, user_timezone).astimezone(UTC)
+
     @property
     def prevRange(self):
         day = prev_month(self.date)
@@ -229,6 +247,12 @@ class CalendarYear:
         self.date = day
         self.name = '%04d' % day.year
         self.year = day.year
+
+        user_timezone = getUtility(ILaunchBag).timezone
+        self.start = datetime(day.year, 1, 1,
+                              0, 0, 0, 0, user_timezone).astimezone(UTC)
+        self.end = datetime(day.year + 1, 1, 1,
+                            0, 0, 0, 0, user_timezone).astimezone(UTC)
 
     @property
     def prevRange(self):
@@ -311,6 +335,9 @@ class CalendarViewBase:
         else:
             self.subscriptions = None
 
+        # get the events occurring within the given time range
+        self.events = list(context.calendar.expand(context.start, context.end))
+        self.events.sort()
 
     def eventColour(self, event):
         if self.subscriptions is not None:
@@ -381,12 +408,6 @@ class CalendarDayView(CalendarViewBase):
                                                   monthnames[context.month-1],
                                                   context.year))
 
-        start = datetime(context.year, context.month, context.day,
-                         0, 0, 0, 0, self.user_timezone).astimezone(UTC)
-        end = start + timedelta(days=1)
-
-        self.events = list(context.calendar.expand(start, end))
-        self.events.sort()
         self._setRange()
         self.visiblehours = self.endhour - self.starthour
 
@@ -574,11 +595,7 @@ class CalendarWeekView(CalendarViewBase):
             self.days.append(day)
 
         # find events for the week
-        self.events = []
-        start = datetime(start.year, start.month, start.day,
-                         0, 0, 0, 0, self.user_timezone).astimezone(UTC)
-        end = start + timedelta(weeks=1)
-        for event in context.calendar.expand(start, end):
+        for event in self.events:
             dtstart = event.dtstart.astimezone(self.user_timezone)
             self.days[dtstart.weekday()].events.append(event)
 
@@ -592,8 +609,6 @@ class CalendarMonthView(CalendarViewBase):
     def __init__(self, context, request):
         datestring = '%s %04d' % (monthnames[context.month - 1], context.year)
         CalendarViewBase.__init__(self, context, request, datestring)
-        start = date(context.year, context.month, 1)
-        next = next_month(start)
 
         # create dayinfo instances for each day of the month
         self.days = []
@@ -601,13 +616,7 @@ class CalendarMonthView(CalendarViewBase):
         for i in range(num_days):
             self.days.append(DayInfo(date(context.year, context.month, i+1)))
 
-        # convert to UTC time offsets
-        start = datetime(start.year, start.month, 1,
-                         0, 0, 0, 0, self.user_timezone).astimezone(UTC)
-        end = datetime(next.year, next.month, 1,
-                       0, 0, 0, 0, self.user_timezone).astimezone(UTC)
-
-        for event in context.calendar.expand(start, end):
+        for event in self.events:
             dtstart = event.dtstart.astimezone(self.user_timezone)
             self.days[dtstart.day - 1].events.append(event)
 
@@ -622,20 +631,12 @@ class CalendarYearView(CalendarViewBase):
     def __init__(self, context, request):
         CalendarViewBase.__init__(self, context, request,
                                   '%04d' % context.year)
-        start = date(context.year, 1, 1)
-        end = date(context.year + 1, 1, 1) - timedelta(days=1)
-        self.bounds = [start, end]
 
         self.months = []
         for month in range(1, 13):
             self.months.append(MonthInfo(context.year, month))
 
-        # convert to UTC time offsets
-        start = datetime(context.year, 1, 1,
-                         0, 0, 0, 0, self.user_timezone).astimezone(UTC)
-        end = datetime(context.year+1, 1, 1,
-                         0, 0, 0, 0, self.user_timezone).astimezone(UTC)
-        for event in context.calendar.expand(start, end):
+        for event in self.events:
             dtstart = event.dtstart.astimezone(self.user_timezone)
             dayinfo = self.months[dtstart.month - 1].days[dtstart.day - 1]
             dayinfo.events.append(event)
@@ -651,6 +652,8 @@ class CalendarEventAddView(AddView):
 
     __used_for__ = IEditCalendar
 
+    _nextURL = '.'
+
     def createAndAdd(self, data):
         """Create a new calendar event.
 
@@ -661,8 +664,12 @@ class CalendarEventAddView(AddView):
         event = calendar.addEvent(SimpleCalendarEvent(**kw))
         notify(ObjectCreatedEvent(event))
 
+        dtstart = event.dtstart.astimezone(
+            getUtility(ILaunchBag).timezone)
+        self._nextURL = canonical_url(CalendarDay(calendar, dtstart))
+
     def nextURL(self):
-        return '.'
+        return self._nextURL
 
 class ViewCreateCalendar:
     __used_for__ = ICalendarOwner
