@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces import (
     IBugSet, IBugTaskSet, IBugTasksReport, IDistributionSet, IProjectSet,
     IProductSet, ISourcePackageSet, IBugTrackerSet, ILaunchBag,
     ITeamMembershipSubset, ICalendarOwner, ILanguageSet, IPublishedPackageSet,
-    IPollSubset, IPollOptionSubset, IDistroReleaseLanguageSet)
+    IPollSet, IPollOptionSet, IDistroReleaseLanguageSet)
 from canonical.launchpad.database import (
     BugAttachmentSet, BugExternalRefSet, BugSubscriptionSet,
     BugWatchSet, BugTasksReport, CVERefSet, BugProductInfestationSet,
@@ -210,8 +210,17 @@ def traverse_team(team, request, name):
         return ITeamMembershipSubset(team)
     elif name == '+calendar':
         return ICalendarOwner(team).calendar
-    elif name == '+polls':
-        return IPollSubset(team)
+    elif name == '+poll':
+        travstack = request.getTraversalStack()
+        if len(travstack) == 0:
+            # No option name given; returning None will raise a not found error
+            return None
+        # Consume the poll name from the traversal stack
+        pollname = travstack.pop()
+        poll = getUtility(IPollSet).getByTeamAndName(team, pollname)
+        request._traversed_names.append(pollname)
+        request.setTraversalStack(travstack)
+        return poll
 
     return None
 
@@ -259,7 +268,17 @@ def traverse_bugs(bugcontainer, request, name):
 
 
 def traverse_poll(poll, request, name):
-    if name == '+options':
-        return IPollOptionSubset(poll)
+    if name == '+option':
+        travstack = request.getTraversalStack()
+        if len(travstack) == 0:
+            # No option name given; returning None will raise a not found error
+            return None
+        optionset = getUtility(IPollOptionSet)
+        # Consume the option name from the traversal stack
+        optionid = travstack.pop()
+        option = getUtility(IPollOptionSet).getByPollAndId(poll, optionid)
+        request._traversed_names.append(optionid)
+        request.setTraversalStack(travstack)
+        return option
 
     return None

@@ -74,13 +74,13 @@ class SourcePackage:
         # Set self.currentrelease based on current published sourcepackage
         # with this name in the distrorelease.  If none is published, leave
         # self.currentrelease as None
-        r = SourcePackageInDistro.selectOneBy(
-                sourcepackagenameID=sourcepackagename.id,
-                distroreleaseID = self.distrorelease.id)
-        if r is None:
+        package = SourcePackageInDistro.selectOneBy(
+                    sourcepackagenameID=sourcepackagename.id,
+                    distroreleaseID = self.distrorelease.id)
+        if package is None:
             self.currentrelease = None
         else:
-            self.currentrelease = SourcePackageRelease.get(r.id)
+            self.currentrelease = SourcePackageRelease.get(package.id)
 
     def _get_ubuntu(self):
         """This is a temporary measure while
@@ -111,10 +111,14 @@ class SourcePackage:
 
     @property
     def format(self):
+        if not self.currentrelease:
+            return None
         return self.currentrelease.format
 
     @property
     def changelog(self):
+        if not self.currentrelease:
+            return None
         return self.currentrelease.changelog
 
     @property
@@ -124,6 +128,8 @@ class SourcePackage:
         distrorelease. In future, we might have a separate table for the
         current working copy of the manifest for a source package.
         """
+        if not self.currentrelease:
+            return None
         return self.currentrelease.manifest
 
     @property

@@ -235,6 +235,29 @@
           lp:url="foaf/person/$person.id/+leave" />
   </browser:pages>
 
+  <browser:pages
+      for="canonical.launchpad.interfaces.ITeam"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.PersonView">
+      <browser:page
+          name="+polls"
+          template="../templates/team-polls.pt"
+          lp:url="/people/$team.name/+polls" />
+  </browser:pages>
+
+  <browser:addform
+      name="+newpoll"
+      for="canonical.launchpad.interfaces.ITeam"
+      class="canonical.launchpad.browser.PollAddView"
+      schema="canonical.launchpad.interfaces.IPoll"
+      fields="name title proposition type secrecy allowspoilt
+              dateopens datecloses"
+      label="Create a New Poll"
+      permission="launchpad.Edit"
+      template="../templates/team-newpoll.pt"
+      lp:url="/people/$team.id/+newpoll">
+  </browser:addform>
+
   <!-- PersonSet -->
   <content class="canonical.launchpad.database.PersonSet">
       <allow interface="canonical.launchpad.interfaces.IPersonSet" />
@@ -257,7 +280,7 @@
   <browser:addform
       name="+newteam"
       for="canonical.launchpad.interfaces.IPersonSet"
-      schema="canonical.launchpad.browser.ITeamCreation"
+      schema="canonical.launchpad.interfaces.ITeamCreation"
       fields="name displayname contactemail teamdescription 
               defaultmembershipperiod defaultrenewalperiod subscriptionpolicy"
       class="canonical.launchpad.browser.TeamAddView"
@@ -317,7 +340,7 @@
   <browser:addform
       name="+requestmerge"
       for="canonical.launchpad.interfaces.IPersonSet"
-      schema="canonical.launchpad.interfaces.IRequestPeopleMerge"
+      schema="canonical.launchpad.interfaces.person.IRequestPeopleMerge"
       label="Request Merge of User Accounts"
       fields="dupeaccount"
       class="canonical.launchpad.browser.RequestPeopleMergeView"

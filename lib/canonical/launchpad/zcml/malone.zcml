@@ -51,8 +51,7 @@
     <!-- pages for the malone application -->
     <browser:pages
         for="canonical.launchpad.interfaces.IMaloneApplication"
-        permission="zope.Public"
-        class="canonical.malone.browser.MaloneApplicationView" >
+        permission="zope.Public">
         <browser:page
             name="+index"
             template="../templates/malone-index.pt"

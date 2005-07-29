@@ -19,7 +19,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import (
     IPoll, IPollSet, IPollOption, IPollOptionSet, IVote, IVoteCast,
-    PollStatus)
+    PollStatus, IPollOptionSubset)
 
 
 class Poll(SQLBase):
@@ -55,6 +55,16 @@ class Poll(SQLBase):
             when = datetime.now(pytz.timezone('UTC'))
         return (self.datecloses >= when and self.dateopens <= when)
 
+    def isClosed(self, when=None):
+        """See IPoll."""
+        if when is None:
+            when = datetime.now(pytz.timezone('UTC'))
+        return self.datecloses <= when
+
+    def getAllOptions(self):
+        """See IPoll."""
+        return IPollOptionSubset(self).getAll()
+
     def personVoted(self, person):
         """See IPoll."""
         results = VoteCast.selectBy(personID=person.id, pollID=self.id)
@@ -67,9 +77,6 @@ class PollSet:
     implements(IPollSet)
 
     _defaultOrder = Poll._defaultOrder
-    _statuses = frozenset([PollStatus.OPEN_POLLS, 
-                           PollStatus.CLOSED_POLLS,
-                           PollStatus.NOT_YET_OPENED_POLLS])
 
     def new(self, team, name, title, proposition, dateopens, datecloses,
             poll_type, secrecy, allowspoilt):
@@ -79,7 +86,7 @@ class PollSet:
                 datecloses=datecloses, type=poll_type, secrecy=secrecy,
                 allowspoilt=allowspoilt)
 
-    def selectByTeam(self, team, status=_statuses, orderBy=None, when=None):
+    def selectByTeam(self, team, status=PollStatus.ALL, orderBy=None, when=None):
         """See IPollSet."""
         if when is None:
             when = datetime.now(pytz.timezone('UTC'))
@@ -89,17 +96,18 @@ class PollSet:
 
         teamfilter = Poll.q.teamID == team.id
         results = Poll.select(teamfilter)
+        status = set(status)
 
-        if PollStatus.OPEN_POLLS not in status:
+        if PollStatus.OPEN not in status:
             openpolls = Poll.select(
                 AND(teamfilter, Poll.q.dateopens<=when, Poll.q.datecloses>when))
             results = results.except_(openpolls)
 
-        if PollStatus.CLOSED_POLLS not in status:
+        if PollStatus.CLOSED not in status:
             closedpolls = Poll.select(AND(teamfilter, Poll.q.datecloses<=when))
             results = results.except_(closedpolls)
 
-        if PollStatus.NOT_YET_OPENED_POLLS not in status:
+        if PollStatus.NOT_YET_OPENED not in status:
             notyetopenedpolls = Poll.select(
                 AND(teamfilter, Poll.q.dateopens>when))
             results = results.except_(notyetopenedpolls)
