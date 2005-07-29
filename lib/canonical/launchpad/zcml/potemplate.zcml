@@ -24,7 +24,7 @@
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IPOTemplate"
-        getter="getOrCreatePOFile"
+        function="canonical.launchpad.browser.traversers.traverse_potemplate"
         />
 
     <browser:defaultView
@@ -49,11 +49,11 @@
         <!-- Potemplate Portlets -->
         <browser:page
             name="+portlet-actions"
-            template="../templates/portlet-potemplate-actions.pt"
+            template="../templates/potemplate-portlet-actions.pt"
         />
         <browser:page
             name="+portlet-details"
-            template="../templates/portlet-potemplate-details.pt"
+            template="../templates/potemplate-portlet-details.pt"
         />
         <browser:page
             name="+portlet-relateds"
@@ -61,7 +61,7 @@
         />
         <browser:page
             name="+portlet-for"
-            template="../templates/portlet-potemplate-for.pt"
+            template="../templates/potemplate-portlet-for.pt"
         />
         <browser:page
             name="+portlet-status-legend"

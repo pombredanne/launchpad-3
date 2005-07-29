@@ -5,19 +5,20 @@
 
 <body>
 
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-views" />
-  </metal:leftportlets>
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
 
-  <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
-  </metal:rightportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
 
   <div metal:fill-slot="main">
 
     <tal:block condition="view/setUpBugTasksToShow" />
 
-    <h1>Bugs Assigned to <span tal:replace="context/browsername" /></h1>
+    <h1>Bugs Assigned</h1>
 
     <p tal:condition="not: view/assignedBugsToShow">No bugs have been 
     assigned to <span tal:replace="context/browsername" /> or to any 

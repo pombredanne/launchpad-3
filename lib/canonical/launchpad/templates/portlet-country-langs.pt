@@ -2,25 +2,26 @@
      tal:condition="view/requestCountry"
      tal:define="country view/requestCountry">
 
-    <h4>Languages in <span tal:replace="country/name">country</span>:</h4>
+  <h4>Languages in <span tal:replace="country/name">country</span>:</h4>
 
-    <div class="portletBody portletContent">
+  <div class="portletBody portletContent">
 
-            <ul tal:condition="country/languages">
+    <ul tal:condition="country/languages">
             
-                <li tal:repeat="lang country/languages">
-                   <span tal:replace="lang/englishname" />
-                </li>
+      <li class="languages"
+          tal:repeat="lang country/languages">
+        <span tal:replace="lang/englishname" />
+      </li>
 
-            </ul>
+    </ul>
 
-            <tal:block condition="not: country/languages">
-              No languages currently registered as spoken in <span
-              tal:replace="country/name">country</span>, please contact the
-              Rosetta Admins on #launchpad to make sure we correct this.
-              Thank you!
-            </tal:block>
+    <tal:block condition="not: country/languages">
+      No languages currently registered as spoken in <span
+      tal:replace="country/name">country</span>. Please contact the
+      Rosetta Admins on #launchpad to make sure we correct this.
+      Thank you!
+    </tal:block>
 
-    </div>
+  </div>
 </div>
 

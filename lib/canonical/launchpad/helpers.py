@@ -45,7 +45,7 @@ from canonical.librarian.interfaces import (
 from canonical.launchpad.interfaces import (
     ILaunchBag, IOpenLaunchBag, IHasOwner, IGeoIP, IRequestPreferredLanguages,
     ILanguageSet, IRequestLocalLanguages, RawFileAttachFailed, ITeam,
-    RawFileFetchFailed, ILoginTokenSet, IPOFile
+    RawFileFetchFailed, ILoginTokenSet
     )
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POInvalidInputError, POParser
@@ -877,7 +877,7 @@ def expand_rosetta_tabs(text):
     >>> expand_rosetta_tabs('foo\tbar')
     'foo[tab]bar'
 
-    Literal ocurrences of '[tab]' get escaped.
+    Literal occurrences of '[tab]' get escaped.
 
     >>> expand_rosetta_tabs('foo[tab]bar')
     'foo\\[tab]bar'
@@ -1020,88 +1020,6 @@ def is_tar_filename(filename):
     return (filename.endswith('.tar') or
             filename.endswith('.tar.gz') or
             filename.endswith('.tar.bz2'))
-
-
-class DummyPOFile(RosettaStats):
-    """
-    Represents a POFile where we do not yet actually HAVE a POFile for that
-    language for this template.
-    """
-    implements(IPOFile)
-    def __init__(self, potemplate, language):
-        self.potemplate = potemplate
-        self.language = language
-        self.header = ''
-        self.latestsubmission = None
-        self.messageCount = len(potemplate)
-
-    @property
-    def translators(self):
-        tgroups = self.potemplate.translationgroups
-        ret = []
-        for group in tgroups:
-            translator = group.query_translator(self.language)
-            if translator is not None:
-                ret.append(translator)
-        return ret
-
-    def canEditTranslations(self, person):
-
-        tperm = self.potemplate.translationpermission
-        if tperm == TranslationPermission.OPEN:
-            # if the translation policy is "open", then yes
-            return True
-        elif tperm == TranslationPermission.CLOSED:
-            if person is not None:
-                # if the translation policy is "closed", then check if the
-                # person is in the set of translators XXX sabdfl 25/05/05 this
-                # code could be improved when we have implemented CrowdControl
-                translators = [t.translator for t in self.translators]
-                for translator in translators:
-                    if person.inTeam(translator):
-                        return True
-        else:
-            raise NotImplementedError, 'Unknown permission %s', tperm.name
-
-        # At this point you either got an OPEN (true) or you are not in the
-        # designated translation group, so you can't edit them
-        return False
-
-    def currentCount(self):
-        return 0
-
-    def rosettaCount(self):
-        return 0
-
-    def updatesCount(self):
-        return 0
-
-    def nonUpdatesCount(self):
-        return 0
-
-    def translatedCount(self):
-        return 0
-
-    def untranslatedCount(self):
-        return self.messageCount
-
-    def currentPercentage(self):
-        return 0.0
-
-    def rosettaPercentage(self):
-        return 0.0
-
-    def updatesPercentage(self):
-        return 0.0
-
-    def nonUpdatesPercentage(self):
-        return 0.0
-
-    def translatedPercentage(self):
-        return 0.0
-
-    def untranslatedPercentage(self):
-        return 100.0
 
 
 def test_diff(lines_a, lines_b):

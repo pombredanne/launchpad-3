@@ -1,0 +1,27 @@
+<div class="portlet">
+
+    <h4>Details for <span tal:replace="context/architecturetag">ARCHITECTURE NAME</span>:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+
+            <b>Architecture Tag:</b>
+            <a tal:attributes="href context/fmt:url"
+               tal:content="context/architecturetag" >
+            ARCHTAG
+            </a><br />
+
+            <b>Processor Family:</b><br />
+            <span tal:replace="context/processorfamily/title" /><br />
+
+            <b>Porting Lead:</b><br />
+            <img src="/++resource++user.gif">
+            <a tal:attributes="href context/owner/fmt:url"
+               tal:content="context/owner/browsername">owner name</a><br /> 
+
+            <b><span tal:content="context/binarycount">4234</span> binary
+            packages</b><br />
+
+        </div>
+    </div>
+</div>

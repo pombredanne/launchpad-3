@@ -6,6 +6,8 @@
 
   <permission id="launchpad.Edit" title="Editing something" />
 
+  <permission id="launchpad.Append" title="Adding something" />
+
   <permission id="launchpad.Admin" title="Administer something" />
 
   <permission id="launchpad.WEGSND" title="What even god should not do" />

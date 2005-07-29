@@ -17,6 +17,7 @@ __all__ = [
     'IRequestPeopleMerge',
     'IObjectReassignment',
     'ITeamReassignment',
+    'ITeamCreation',
     ]
 
 from zope.schema import (
@@ -114,27 +115,28 @@ class IPerson(Interface):
     pendinggpgkeys = Attribute("Set of GPG fingerprints pending validation")
     inactivegpgkeys = Attribute("List of inactive GPG keys in LP Context")
     irc = Attribute("IRC")
-    reportedbugs = Attribute("All BugTasks reported by this Person.")
+    reportedbugs = Attribute("All Bugs reported by this Person.")
     wiki = Attribute("Wiki")
     jabber = Attribute("Jabber")
     archuser = Attribute("Arch user")
     packages = Attribute("A Selection of SourcePackageReleases")
+    branches = Attribute("The branches for a person.")
     maintainerships = Attribute("This person's Maintainerships")
     activities = Attribute("Karma")
-    memberships = Attribute(("List of TeamMembership objects for Teams this "
-                             "Person is a member of. Either active, inactive "
-                             "or proposed member."))
+    memberships = Attribute("List of TeamMembership objects for Teams this "
+        "Person is a member of. Either active, inactive or proposed "
+        "member.")
+    activememberships = Attribute("List of TeamMembership objects for "
+        "people who are members in this team.")
     guessedemails = Attribute("List of emails with status NEW. These email "
-                              "addresses probably came from a gina or "
-                              "POFileImporter run.")
+        "addresses probably came from a gina or POFileImporter run.")
     validatedemails = Attribute("Emails with status VALIDATED")
     unvalidatedemails = Attribute("Emails this person added in Launchpad "
-                                  "but are not yet validated.")
-
-    allmembers = Attribute("List of all direct/indirect members of this team. "
-                           "If you want a method to check if a given person is "
-                           "a member of a team, you should probably look at "
-                           "IPerson.inTeam().")
+        "but are not yet validated.")
+    allmembers = Attribute("List of all direct and indirect people and "
+        "teams who, one way or another, are a part of this team. If you "
+        "want a method to check if a given person is a member of a team, "
+        "you should probably look at IPerson.inTeam().")
     activemembers = Attribute("List of members with ADMIN or APPROVED status")
     administrators = Attribute("List of members with ADMIN status")
     expiredmembers = Attribute("List of members with EXPIRED status")
@@ -144,6 +146,9 @@ class IPerson(Interface):
     inactivemembers = Attribute(("List of members with EXPIRED or "
                                  "DEACTIVATED status"))
     deactivatedmembers = Attribute("List of members with DEACTIVATED status")
+    members = Attribute("The list of TeamMemberships for people who are "
+        "members or proposed members of this team, sorted by membership "
+        "state.")
 
     teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
                        vocabulary='ValidTeamOwner')
@@ -208,6 +213,9 @@ class IPerson(Interface):
                 'this is set to None, then this Person has not been merged '
                 'into another and is still valid')
                 )
+
+    touched_pofiles = Attribute("The set of pofiles which the person has "
+        "worked on in some way.")
 
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
@@ -341,9 +349,6 @@ class IPerson(Interface):
         "Rosetta Translators", because we are member of both of them.
         """
 
-    def subscriptionPolicyDesc():
-        """Return a long description of this team's subscription policy."""
-
     def addLanguage(language):
         """Add a language to this person's preferences.
 
@@ -361,7 +366,6 @@ class IPerson(Interface):
 
         If the given language is not present, nothing  will happen.
         """
-
 
 class ITeam(IPerson):
     """ITeam extends IPerson.
@@ -693,4 +697,21 @@ class ITeamReassignment(Interface):
     """The schema used by the team reassignment page."""
 
     owner = Choice(title=_('Owner'), vocabulary='ValidTeamOwner', required=True)
+
+
+class ITeamCreation(ITeam):
+    """An interface to be used by the team creation form.
+
+    We need this special interface so we can allow people to specify a contact
+    email address for a team upon its creation.
+    """
+
+    contactemail = TextLine(
+        title=_("Contact Email Address"), required=False, readonly=False,
+        description=_(
+            "This is the email address we'll send all notifications to this "
+            "team. If no contact address is chosen, notifications directed to "
+            "this team will be sent to all team members. After finishing the "
+            "team creation, a new message will be sent to this address with "
+            "instructions on how to finish its registration."))
 

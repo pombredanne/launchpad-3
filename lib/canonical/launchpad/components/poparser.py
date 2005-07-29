@@ -6,7 +6,11 @@
 # XXX: Carlos Perello Marin 2005-04-15: This code will be "componentized"
 # soon. https://launchpad.ubuntu.com/malone/bugs/403
 
-import sys, sets, warnings, textwrap, codecs
+import sys
+import sets
+import textwrap
+import codecs
+import logging
 
 from canonical.launchpad.interfaces import IPOMessage, IPOHeader, IPOParser
 from zope.interface import implements
@@ -77,12 +81,12 @@ class POMessage(object):
     def check(self, **kw):
         if kw.get('msgstrPlurals'):
             if 'header' not in kw or type(kw['header'].nplurals) is not int:
-                warnings.warn(POSyntaxWarning(
+                logging.warning(POSyntaxWarning(
                     msg="File has plural forms, but plural-forms header entry"
                         " is missing or invalid."
                     ))
             if len(kw['msgstrPlurals']) > kw['header'].nplurals:
-                warnings.warn(POSyntaxWarning(
+                logging.warning(POSyntaxWarning(
                     lno=kw.get('_lineno'),
                     msg="Bad number of plural-forms in entry '%s' (line %s)."
                         % (kw['msgid'], str(kw.get('_lineno')))
@@ -289,7 +293,7 @@ class POHeader(dict, POMessage):
     def finish(self):
         for attr in ('msgidPlural', 'msgstrPlurals', 'fileReferences'):
             if getattr(self, attr):
-                warnings.warn(POSyntaxWarning(msg='PO file header entry should have no %s'
+                logging.warning(POSyntaxWarning(msg='PO file header entry should have no %s'
                                               % attr))
                 setattr(self, attr, u'')
 
@@ -300,7 +304,7 @@ class POHeader(dict, POMessage):
             try:
                 field, value = l.split(':', 1)
             except ValueError:
-                warnings.warn(POSyntaxWarning(
+                logging.warning(POSyntaxWarning(
                     msg='PO file header entry has a bad entry: %s' % l))
                 continue
             field, value = field.strip(), value.strip()
@@ -312,14 +316,14 @@ class POHeader(dict, POMessage):
             else:
                 self.__setitem__(field, value, False)
         if 'content-type' not in self:
-            warnings.warn(POSyntaxWarning(msg='PO file header entry has no content-type field'))
+            logging.warning(POSyntaxWarning(msg='PO file header entry has no content-type field'))
             self['Content-Type'] = 'text/plain; charset=us-ascii'
 
     def _decode(self, v):
         try:
             v = unicode(v, self.charset)
         except UnicodeError:
-            warnings.warn(POSyntaxWarning(self._lineno,
+            logging.warning(POSyntaxWarning(self._lineno,
                                           'string is not in declared charset %r'
                                           % self.charset))
             v = unicode(v, self.charset, 'replace')
@@ -394,7 +398,7 @@ class POHeader(dict, POMessage):
                     # There are some po files with bad headers that have a non
                     # numeric value here and sometimes an empty value. In that
                     # case, set the default value.
-                    warnings.warn(POSyntaxWarning(
+                    logging.warning(POSyntaxWarning(
                         self._lineno,
                         "The plural form header has an unknown error. Using"
                         " the default value..."
@@ -415,7 +419,7 @@ class POHeader(dict, POMessage):
                 except ValueError:
                     # The header has an entry without ':' that's an error in
                     # the header, log it and continue with next entry.
-                    warnings.warn(
+                    logging.warning(
                         POSyntaxWarning(self._lineno, 'Invalid header entry.'))
                     continue
                 field = field.strip()
@@ -539,7 +543,7 @@ class POParser(object):
                 e.lno = self._partial_transl['_lineno']
             raise
         if self.messages:
-            warnings.warn(POSyntaxWarning(self._lineno,
+            logging.warning(POSyntaxWarning(self._lineno,
                                           'Header entry is not first entry'))
 
     def to_unicode(self, text):
@@ -548,7 +552,7 @@ class POParser(object):
             try:
                 return unicode(text, self.header.charset)
             except UnicodeError:
-                warnings.warn(POSyntaxWarning(self._lineno,
+                logging.warning(POSyntaxWarning(self._lineno,
                                               'string is not in declared charset %r'
                                               % self.header.charset))
                 return unicode(text, self.header.charset, 'replace')
@@ -623,20 +627,20 @@ class POParser(object):
                 new_plural_case, l = l[1:].split(']', 1)
                 new_plural_case = int(new_plural_case)
                 if (self._plural_case is not None) and (new_plural_case != self._plural_case + 1):
-                    warnings.warn(POSyntaxWarning(self._lineno,
+                    logging.warning(POSyntaxWarning(self._lineno,
                                                   'bad plural case number'))
                 if new_plural_case != self._plural_case:
                     self._partial_transl['msgstrPlurals'].append('')
                     self._plural_case = new_plural_case
                 else:
-                    warnings.warn(POSyntaxWarning(self._lineno,
+                    logging.warning(POSyntaxWarning(self._lineno,
                                                   'msgstr[] but same plural case number'))
             else:
                 self._plural_case = None
 
         l = l.strip()
         if not l:
-            warnings.warn(POSyntaxWarning(self._lineno,
+            logging.warning(POSyntaxWarning(self._lineno,
                                           'line has no content; this is not supported by '
                                           'some implementations of msgfmt'))
             return
@@ -671,7 +675,7 @@ class POParser(object):
         Throws an exception if the parser was in the
         middle of a message."""
         if self._pending_line:
-            warnings.warn(POSyntaxWarning(self._lineno,
+            logging.warning(POSyntaxWarning(self._lineno,
                                           'No newline at end of file'))
             self.parse_line(self._pending_line)
         if self._section and self._section.startswith('msgid'):
@@ -704,7 +708,7 @@ def parse_assignments(text, separator=';', assigner='=', skipfirst=False):
         if assigner in assignment:
             name, value = assignment.split(assigner, 1)
         else:
-            warnings.warn(POSyntaxWarning(
+            logging.warning(POSyntaxWarning(
                 msg="Found an error in the header content: %s" % text
                 ))
             continue

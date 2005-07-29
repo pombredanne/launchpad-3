@@ -46,6 +46,16 @@
         />
 
     <vocabulary
+        name="PollAlgorithm"
+        factory="canonical.launchpad.vocabularies.PollAlgorithmVocabulary"
+        />
+
+    <vocabulary
+        name="PollSecrecy"
+        factory="canonical.launchpad.vocabularies.PollSecrecyVocabulary"
+        />
+
+    <vocabulary
         name="PersonAccountToMerge"
         factory="canonical.launchpad.vocabularies.PersonAccountToMergeVocabulary"
         />

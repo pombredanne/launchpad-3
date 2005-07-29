@@ -48,8 +48,8 @@
                     string:${context/project/fmt:url}/+rdf" />
             </lp:Project>
         </lp:inProject>
-        <lp:series tal:condition="context/serieslist">
-            <lp:ProductSeries tal:repeat="series context/serieslist">
+        <lp:series tal:repeat="series context/serieslist">
+            <lp:ProductSeries>
                 <lp:specifiedAt tal:attributes="rdf:resource
                     string:${context/fmt:url}/+series/${series/name}/+rdf" />
             </lp:ProductSeries>

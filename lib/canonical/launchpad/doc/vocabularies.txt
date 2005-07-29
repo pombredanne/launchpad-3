@@ -186,7 +186,7 @@ o ValidPersonOrTeam - all 'valid' persons or teams. This is currently defined
     Almost all teams have the word 'team' as part of their names, so a search
     for 'team' should give us some of them.
     >>> [t.token for t in vocab.search('team')]
-    ['name21', 'name18', 'support@ubuntu.com', 'name19', 'name20']
+    ['name21', 'name18', 'support@ubuntu.com', 'name19', 'name20', 'testing-spanish-team']
 
     Stuart hasn't validated his email address; he's not a valid Person.
     >>> [t.token for t in vocab.search('bishop')]
@@ -205,7 +205,7 @@ o ValidOwner - all valid persons and teams are also valid owners.
     Almost all teams have the word 'team' as part of their names, so a search
     for 'team' should give us some of them.
     >>> [t.token for t in vocab.search('team')]
-    ['name21', 'name18', 'support@ubuntu.com', 'name19', 'name20']
+    ['name21', 'name18', 'support@ubuntu.com', 'name19', 'name20', 'testing-spanish-team']
 
 o ValidTeamMember - With the exception of all teams that have this team as a
   member and the team itself, all valid persons and teams are valid

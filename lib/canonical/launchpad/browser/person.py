@@ -10,6 +10,8 @@ __all__ = [
     'FOAFSearchView',
     'PersonRdfView',
     'PersonView',
+    'TeamJoinView',
+    'TeamLeaveView',
     'PersonEditView',
     'RequestPeopleMergeView',
     'FinishedPeopleMergeRequestView',
@@ -21,35 +23,66 @@ __all__ = [
 import cgi
 import sets
 
-# sqlobject/sqlos
 from canonical.database.sqlbase import flush_database_updates
 
-# zope imports
+from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
 from zope.component import getUtility
 
-# lp imports
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    KarmaActionCategory)
+    KarmaActionCategory, TeamSubscriptionPolicy)
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
-# interface import
 from canonical.launchpad.interfaces import (
     ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
     IJabberIDSet, IIrcIDSet, IArchUserIDSet, ILaunchBag, ILoginTokenSet,
-    IPasswordEncryptor, ISignedCodeOfConductSet, IObjectReassignment,
-    ITeamReassignment, IGPGKeySet, IGPGHandler, IKarmaActionSet, IKarmaSet,
-    UBUNTU_WIKI_URL)
+    IPasswordEncryptor, ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler,
+    IKarmaActionSet, IKarmaSet, UBUNTU_WIKI_URL, ITeamMembershipSet,
+    IObjectReassignment, ITeamReassignment, IPollSubset, IPerson,
+    ICalendarOwner)
 
 from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
+from canonical.launchpad.event.team import JoinTeamRequestEvent
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, Link, DefaultLink)
+
+
+class PersonFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for an IPerson.
+    """
+
+    usedfor = IPerson
+
+    def overview(self):
+        target = ''
+        text = 'Overview'
+        return DefaultLink(target, text)
+
+    def bugs(self):
+        target = '+bugsassigned'
+        text = 'Bugs'
+        return Link(target, text)
+
+    def translations(self):
+        target = '+translations'
+        text = 'Translations'
+        return Link(target, text)
+
+    def calendar(self):
+        target = '+calendar'
+        text = 'Calendar'
+        # only link to the calendar if it has been created
+        linked = ICalendarOwner(self.context).calendar is not None
+        return Link(target, text, linked=linked)
+
 
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages
@@ -157,6 +190,100 @@ class PersonView:
         self.request = request
         self.message = None
         self.user = getUtility(ILaunchBag).user
+        if context.isTeam():
+            # These methods are called here because their return values are
+            # going to be used in some other places (including
+            # self.hasCurrentPolls()).
+            pollsubset = IPollSubset(self.context)
+            self.openpolls = pollsubset.getOpenPolls()
+            self.closedpolls = pollsubset.getClosedPolls()
+            self.notyetopenedpolls = pollsubset.getNotYetOpenedPolls()
+
+    def hasCurrentPolls(self):
+        """Return True if this team has any non-closed polls."""
+        assert self.context.isTeam()
+        return bool(len(self.openpolls) or len(self.notyetopenedpolls))
+
+    def no_bounties(self):
+        return not (self.context.ownedBounties or 
+            self.context.reviewerBounties or
+            self.context.subscribedBounties or
+            self.context.claimedBounties)
+    def activeMembersCount(self):
+        return len(self.context.activemembers)
+
+    def userIsOwner(self):
+        """Return True if the user is the owner of this Team."""
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            return False
+
+        return user.inTeam(self.context.teamowner)
+
+    def userHasMembershipEntry(self):
+        """Return True if the logged in user has a TeamMembership entry for
+        this Team."""
+        return bool(self._getMembershipForUser())
+
+    def userIsActiveMember(self):
+        """Return True if the user is an active member of this team."""
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            return False
+        return user in self.context.activemembers
+
+    def membershipStatusDesc(self):
+        tm = self._getMembershipForUser()
+        assert tm is not None, (
+            'This method is not meant to be called for users which are not '
+            'members of this team.')
+
+        description = tm.status.description
+        if tm.status == TeamMembershipStatus.DEACTIVATED and tm.reviewercomment:
+            description += ("The reason for the deactivation is: '%s'"
+                            % tm.reviewercomment)
+        return description
+
+    def userCanRequestToLeave(self):
+        """Return true if the user can request to leave this team.
+
+        A given user can leave a team only if he's an active member.
+        """
+        return self.userIsActiveMember()
+
+    def userCanRequestToJoin(self):
+        """Return true if the user can request to join this team.
+
+        The user can request if it never asked to join this team, if it
+        already asked and the subscription status is DECLINED or if the team's
+        subscriptionpolicy is OPEN and the user is not an APPROVED or ADMIN
+        member.
+        """
+        tm = self._getMembershipForUser()
+        if tm is None:
+            return True
+
+        adminOrApproved = [TeamMembershipStatus.APPROVED,
+                           TeamMembershipStatus.ADMIN]
+        open = TeamSubscriptionPolicy.OPEN
+        if tm.status == TeamMembershipStatus.DECLINED or (
+            tm.status not in adminOrApproved and
+            tm.team.subscriptionpolicy == open):
+            return True
+        else:
+            return False
+
+    def _getMembershipForUser(self):
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            return None
+        tms = getUtility(ITeamMembershipSet)
+        return tms.getByPersonAndTeam(user.id, self.context.id)
+
+    def joinAllowed(self):
+        """Return True if this is not a restricted team."""
+        restricted = TeamSubscriptionPolicy.RESTRICTED
+        return self.context.subscriptionpolicy != restricted
 
     def actionCategories(self):
         return KarmaActionCategory.items
@@ -380,7 +507,6 @@ class PersonView:
 
     def revalidate_gpg(self):
         keyids = self.request.form.get('REVALIDATE_GPGKEY')
-        appurl = self.request.getApplicationURL()
 
         if keyids is not None:
             found = []
@@ -467,6 +593,36 @@ class PersonView:
         token.sendGpgValidationRequest(appurl, key, encrypt=True)
 
 
+class TeamJoinView(PersonView):
+
+    def processForm(self):
+        if self.request.method != "POST" or not self.userCanRequestToJoin():
+            # Nothing to do
+            return
+
+        user = getUtility(ILaunchBag).user
+        if self.request.form.get('join'):
+            user.join(self.context)
+            appurl = self.request.getApplicationURL()
+            notify(JoinTeamRequestEvent(user, self.context, appurl))
+
+        self.request.response.redirect('./')
+
+
+class TeamLeaveView(PersonView):
+
+    def processForm(self):
+        if self.request.method != "POST" or not self.userCanRequestToLeave():
+            # Nothing to do
+            return
+
+        user = getUtility(ILaunchBag).user
+        if self.request.form.get('leave'):
+            user.leave(self.context)
+
+        self.request.response.redirect('./')
+
+
 class PersonEditView:
 
     def __init__(self, context, request):
@@ -514,7 +670,6 @@ class PersonEditView:
         # XXX: wiki is hard-coded for Launchpad 1.0
         #      - Andrew Bennetts, 2005-06-14
         #wiki = request.form.get("wiki")
-        wiki = UBUNTU_WIKI_URL
         wikiname = request.form.get("wikiname")
         network = request.form.get("network")
         nickname = request.form.get("nickname")

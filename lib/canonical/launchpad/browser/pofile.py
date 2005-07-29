@@ -105,6 +105,12 @@ class BaseExportView:
 
 
 class POFileView:
+    """The View class for a POFile or a DummyPOFile. Note that the
+    DummyPOFile is presented if there is no POFile in the database, but the
+    user wants to render one. Check the traverse_potemplate function for
+    more information about when the user is looking at a POFile, or a
+    DummyPOFile.
+    """
 
     DEFAULT_COUNT = 10
     MAX_COUNT = 100
@@ -547,13 +553,11 @@ class POFileView:
                     person=self.user,
                     new_translations=new_translations,
                     fuzzy=fuzzy,
-                    published=False,
-                    is_editor=self.is_editor)
+                    published=False)
             except gettextpo.error, e:
                 # Save the error message gettext gave us to show it to the
                 # user.
                 messageSet['error'] = str(e)
-                number_errors += 1
 
         # update the statistis for this po file
         pofile.updateStatistics()

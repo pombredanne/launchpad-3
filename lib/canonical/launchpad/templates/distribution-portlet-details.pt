@@ -1,0 +1,36 @@
+<div class="portlet">
+
+  <h4><span tal:replace="context/displayname">Ubuntu
+      </span> Distribution Details:</h4>
+
+  <div class="portletBody">
+    <div class="portletContent even">
+
+      <b>Admin:</b><br />
+      <img src="/++resource++user.gif">
+      <a tal:attributes="href context/owner/fmt:url"
+         tal:content="context/owner/browsername">owner name</a> <br />
+
+      <b>Members:</b><br />
+      <img src="/++resource++user.gif">
+      <a tal:attributes="href string:${context/fmt:url}/+members"
+         tal:content="context/members/browsername">members name</a><br /> 
+
+      <b>Translation Group:</b><br />
+      <img src="/++resource++languages.gif">
+      <tal:block condition="context/translationgroup">
+      <a tal:attributes="href context/translationgroup/fmt:url"
+         tal:content="context/translationgroup/title"
+      >Group</a><br />
+      </tal:block>
+      <tal:block condition="not: context/translationgroup">
+      <i>Not assigned</i><br />
+      </tal:block>
+      <b>Translation Perms:</b><br />
+      <span tal:replace="context/translationpermission/title">Open</span>
+      <br />
+
+    </div>
+  </div>
+</div>
+

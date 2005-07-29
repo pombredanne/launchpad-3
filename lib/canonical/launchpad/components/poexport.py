@@ -275,8 +275,6 @@ def export_rows(rows, pofile_output):
 
             # Generate the header of the new PO file.
 
-            header_string = row.poheader
-
             header = POHeader(
                 commentText=row.potopcomment,
                 msgstr=row.poheader)
@@ -286,8 +284,19 @@ def export_rows(rows, pofile_output):
 
             header.finish()
 
-            # Update header fields. This part is optional in order to make it
-            # easier to fake data for testing.
+            # Update header fields.
+
+            if row.potheader:
+                pot_header = POHeader(
+                    msgstr=row.potheader)
+                pot_header.finish()
+
+                if 'Domain' in pot_header:
+                    header['Domain'] = pot_header['Domain']
+
+
+            # This part is conditional on the PO file being present in order
+            # to make it easier to fake data for testing.
 
             if (row.pofile is not None and
                 row.pofile.latestsubmission is not None):

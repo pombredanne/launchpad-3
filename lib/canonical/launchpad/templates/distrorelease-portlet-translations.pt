@@ -1,0 +1,21 @@
+<div class="portlet"
+  tal:condition="context/potemplatecount">
+
+  <h4>Translation Sets:</h4>
+
+  <div class="portletBody">
+
+    <div class="portletContent even">
+
+    <div><span tal:replace="context/potemplatecount">9</span> translation
+    templates exist for this release which can be translated in
+    Rosetta.</div>
+
+      <ul class="add"><li><a href="+translations"
+         title="See more translation options for this product">
+        More...
+      </a></li></ul>
+
+    </div>
+  </div>
+</div>

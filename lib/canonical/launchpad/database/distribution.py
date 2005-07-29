@@ -14,6 +14,7 @@ from canonical.database.sqlbase import SQLBase, quote
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.lp.dbschema import (EnumCol, BugTaskStatus,
     DistributionReleaseStatus, TranslationPermission)
 from canonical.launchpad.interfaces import (IDistribution, IDistributionSet,
@@ -47,6 +48,22 @@ class Distribution(SQLBase):
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
     lucilleconfig = StringCol(notNull=False, default=None)
 
+    def search(self, bug=None, searchtext=None, status=None, priority=None,
+               severity=None, milestone=None, assignee=None, owner=None,
+               orderby=None, statusexplanation=None, user=None):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        # As an initial refactoring, we're wrapping BugTaskSet.search.
+        # It's possible that the search code will live inside this
+        # method instead at some point.
+        #
+        # The implementor who would make such a change should be
+        # mindful of bug privacy.
+        return BugTaskSet().search(
+            distribution=self, bug=bug, searchtext=searchtext, status=status,
+            priority=priority, severity=severity, milestone=milestone,
+            assignee=assignee, owner=owner, orderby=orderby,
+            statusexplanation=statusexplanation, user=user)
+
     def currentrelease(self):
         # if we have a frozen one, return that
         for rel in self.releases:
@@ -65,11 +82,6 @@ class Distribution(SQLBase):
             return self.releases[0]
         return None
     currentrelease = property(currentrelease)
-
-    def memberslist(self):
-        if not ITeam.providedBy(self.members):
-            return
-        return ITeamMembershipSubset(self.members).getActiveMemberships()
 
     def __getitem__(self, name):
         for release in self.releases:

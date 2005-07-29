@@ -1,0 +1,29 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <div metal:fill-slot="main">
+    <tal:block condition="not: context/isClosed">
+      <div metal:use-macro="context/@@launchpad_addform/addform">
+
+        <h1 metal:fill-slot="heading">
+          Create a new option for poll
+          &#8220;<span tal:replace="context/title" />&#8221;
+        </h1>
+
+      </div>
+    </tal:block>
+
+    <tal:block condition="context/isClosed">
+      <p class="portalMessage">
+        This poll is already closed, you can't add new options.
+      </p>
+    </tal:block>
+
+  </div>
+
+</body>
+</html>

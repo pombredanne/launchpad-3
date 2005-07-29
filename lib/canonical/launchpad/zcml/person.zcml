@@ -23,6 +23,16 @@
       for="canonical.launchpad.interfaces.IPerson"
       name="+index" />
 
+  <browser:menus
+      module="canonical.launchpad.browser.person"
+      classes="PersonFacets" />
+
+  <browser:url
+      for="canonical.launchpad.interfaces.IPerson"
+      path_expression="name"
+      parent_utility="canonical.launchpad.interfaces.IPersonSet"
+      />
+
   <browser:editform
       name="+review"
       for="canonical.launchpad.interfaces.IPerson"
@@ -45,7 +55,11 @@
       <browser:page
           name="+index"
           template="../templates/person-index.pt"
-          lp:url="/people/$Person.name/index" />
+          lp:url="/people/$Person.name/" />
+      <browser:page
+          name="+branches"
+          template="../templates/person-branches.pt"
+          lp:url="/people/$Person.name/+branches" />
       <browser:page
           name="+packages"
           template="../templates/person-packages.pt"
@@ -74,17 +88,23 @@
           name="+bounties"
           template="../templates/person-bounties.pt"
           lp:url="/people/$Person.name/+bounties" />
-
-      <browser:page
-          name="+portlet-views"
-          template="../templates/portlet-person-views.pt"
-          lp:url="/people/$Person.name/+portlet-views" />
       <browser:page
           name="+portlet-actions"
-          template="../templates/portlet-person-actions.pt"
+          template="../templates/person-portlet-actions.pt"
           lp:url="/people/$Person.name/+portlet-actions" />
-
-
+      <browser:page
+          name="+portlet-emails"
+          template="../templates/person-portlet-emails.pt"
+          lp:url="/people/$Person.name/+portlet-emails" />
+      <browser:page
+          name="+portlet-details"
+          template="../templates/person-portlet-details.pt"
+          lp:url="/people/$Person.name/+portlet-details" />
+      <!-- this should be on IPerson because we don't always know if it is a
+      team or a person -->
+      <browser:page
+        name="+teamlist"
+        template="../templates/team-listing.pt" />
   </browser:pages>
 
   <browser:page
@@ -145,35 +165,16 @@
   <!-- Team Views -->
   <browser:traverse
       for="canonical.launchpad.interfaces.ITeam"
-      function="canonical.launchpad.browser.traverseTeam" />
+      function="canonical.launchpad.browser.traverse_team" />
 
   <browser:pages
       for="canonical.launchpad.interfaces.ITeam"
       permission="zope.Public"
-      class="canonical.launchpad.browser.TeamView">
+      class="canonical.launchpad.browser.PersonView">
       <browser:page
-          name="+index"
-          template="../templates/team-index.pt"
-          lp:url="/people/$person.id/index" />
-      <browser:page
-          name="+packages"
-          template="../templates/person-packages.pt"
-          lp:url="/people/$Person.name/+packages" />
-      <browser:page
-          name="+translations"
-          template="../templates/person-translations.pt"
-          lp:url="/people/$Person.name/+translations" />
-      <browser:page
-          name="+bounties"
-          template="../templates/person-bounties.pt"
-          lp:url="/people/$Person.name/+bounties" />
-
-      <!-- Team Portlets -->
-      <browser:page
-          name="+portlet-actions"
-          template="../templates/portlet-team-actions.pt"
-          lp:url="/people/$Person.name/+portlet-actions" />
-
+        name="+teamhierarchy"
+        template="../templates/person-teamhierarchy.pt"
+        lp:url="/people/$person.id/+teamhierarchy" />
   </browser:pages>
 
   <browser:pages
@@ -234,6 +235,29 @@
           lp:url="foaf/person/$person.id/+leave" />
   </browser:pages>
 
+  <browser:pages
+      for="canonical.launchpad.interfaces.ITeam"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.PersonView">
+      <browser:page
+          name="+polls"
+          template="../templates/team-polls.pt"
+          lp:url="/people/$team.name/+polls" />
+  </browser:pages>
+
+  <browser:addform
+      name="+newpoll"
+      for="canonical.launchpad.interfaces.ITeam"
+      class="canonical.launchpad.browser.PollAddView"
+      schema="canonical.launchpad.interfaces.IPoll"
+      fields="name title proposition type secrecy allowspoilt
+              dateopens datecloses"
+      label="Create a New Poll"
+      permission="launchpad.Edit"
+      template="../templates/team-newpoll.pt"
+      lp:url="/people/$team.id/+newpoll">
+  </browser:addform>
+
   <!-- PersonSet -->
   <content class="canonical.launchpad.database.PersonSet">
       <allow interface="canonical.launchpad.interfaces.IPersonSet" />
@@ -252,16 +276,11 @@
   <browser:traverse
       for="canonical.launchpad.interfaces.IPersonSet"
       getter="getByName" />
-  <browser:url
-      for="canonical.launchpad.interfaces.IPerson"
-      path_expression="name"
-      parent_utility="canonical.launchpad.interfaces.IPersonSet"
-      />
 
   <browser:addform
       name="+newteam"
       for="canonical.launchpad.interfaces.IPersonSet"
-      schema="canonical.launchpad.browser.ITeamCreation"
+      schema="canonical.launchpad.interfaces.ITeamCreation"
       fields="name displayname contactemail teamdescription 
               defaultmembershipperiod defaultrenewalperiod subscriptionpolicy"
       class="canonical.launchpad.browser.TeamAddView"
@@ -313,12 +332,15 @@
           name="+index"
           template="../templates/people-index.pt"
           lp:url="foaf/people/+index" />
+      <browser:page
+        name="+portlet-stats"
+        template="../templates/people-portlet-stats.pt" />
   </browser:pages>
 
   <browser:addform
       name="+requestmerge"
       for="canonical.launchpad.interfaces.IPersonSet"
-      schema="canonical.launchpad.interfaces.IRequestPeopleMerge"
+      schema="canonical.launchpad.interfaces.person.IRequestPeopleMerge"
       label="Request Merge of User Accounts"
       fields="dupeaccount"
       class="canonical.launchpad.browser.RequestPeopleMergeView"
@@ -347,5 +369,15 @@
           lp:url="foaf/people/+mergerequest-sent" />
   </browser:pages>
 
+  <browser:pages
+    for="canonical.launchpad.interfaces.IPersonSet"
+    permission="zope.Public">
+      <browser:page
+        name="+portlet-about"
+        template="../templates/people-portlet-about.pt" />
+      <browser:page
+        name="+portlet-actions"
+        template="../templates/people-portlet-actions.pt" />
+  </browser:pages>
 
 </configure>

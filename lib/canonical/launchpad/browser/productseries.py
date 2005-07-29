@@ -20,8 +20,8 @@ from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 
 from canonical.launchpad.helpers import request_languages, browserLanguages
-from canonical.launchpad.interfaces import (IPerson, ICountry,
-    IPOTemplateSet, ILaunchpadCelebrities, ILaunchBag, ISourcePackageNameSet)
+from canonical.launchpad.interfaces import (IPerson, ICountry, IPOTemplateSet,
+    ILaunchpadCelebrities, ILaunchBag, ISourcePackageNameSet)
 from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad.browser.potemplate import POTemplateView
 
@@ -35,7 +35,7 @@ def traverseProductSeries(series, request, name):
 def validate_cvs_root(cvsroot, cvsmodule):
     try:
         root = CVSRoot(cvsroot + '/' + cvsmodule)
-    except ValueError, e:
+    except ValueError:
         return False
     valid_module = re.compile('^[a-zA-Z][a-zA-Z0-9_/.+-]*$')
     if not valid_module.match(cvsmodule):
@@ -97,7 +97,6 @@ def validate_release_root(repo):
 
 def validate_svn_repo(repo):
     return _validate_url(repo, ["http", "https", "svn", "svn+ssh"])
-
 
 
 #

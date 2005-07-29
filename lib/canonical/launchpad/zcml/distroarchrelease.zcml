@@ -35,16 +35,13 @@
 
 	<browser:page
         name="+portlet-details"
-        template="../templates/portlet-distroarchrelease-details.pt"
-        lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+portlet-details"/>
-
+        template="../templates/distroarchrelease-portlet-details.pt" />
 	<browser:page
         name="+portlet-actions"
-        template="../templates/portlet-distroarchrelease-actions.pt"
-        lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+portlet-actions"/>
-    </browser:pages>
+        template="../templates/distroarchrelease-portlet-actions.pt" />
+  </browser:pages>
 
-    <browser:page
+  <browser:page
         for="canonical.launchpad.database.DistroArchRelease" 
         permission="zope.Public"
         name="+pkgsearch"

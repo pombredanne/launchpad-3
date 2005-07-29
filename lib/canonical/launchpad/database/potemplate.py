@@ -1,39 +1,41 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['POTemplateSubset', 'POTemplateSet', 'LanguageNotFound',
-           'POTemplate']
+__all__ = ['POTemplateSubset', 'POTemplateSet', 'POTemplate']
 
 import StringIO
 import datetime
 
 # Zope interfaces
-from zope.interface import implements
+from zope.interface import implements, providedBy
 from zope.exceptions import NotFoundError
+from zope.event import notify
 
-# SQL imports
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, SQLObjectNotFound
-from canonical.database.sqlbase import \
-    SQLBase, quote, flush_database_updates, sqlvalues
-from canonical.database.datetimecol import UtcDateTimeCol
 
-# canonical imports
-from canonical.launchpad.interfaces import \
-    IEditPOTemplate, IPOTemplateSet, IPOTemplateSubset, IRawFileData, ITeam
+from canonical.lp.dbschema import RosettaImportStatus, EnumCol
+
+from canonical.database.sqlbase import (
+    SQLBase, quote, flush_database_updates, sqlvalues)
+from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.constants import DEFAULT, UTC_NOW
+
+from canonical.launchpad import helpers
+from canonical.launchpad.interfaces import (
+    IEditPOTemplate, IPOTemplateSet, IPOTemplateSubset, IRawFileData,
+    LanguageNotFound)
+
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
-from canonical.lp.dbschema import EnumCol
 from canonical.launchpad.database.potemplatename import POTemplateName
-from canonical.launchpad.database.pofile import POFile
+from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
-from canonical.lp.dbschema import RosettaImportStatus
-from canonical.database.constants import DEFAULT, UTC_NOW
+
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po
-from canonical.launchpad import helpers
-
+from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.components.poparser import (POSyntaxError,
     POInvalidInputError)
 
@@ -159,42 +161,12 @@ class POTemplate(SQLBase, RosettaStats):
                 if project.translationgroup is not None:
                     ret.append(project.translationgroup)
         else:
-            raise NotImplementedError, 'Cannot find translation groups.'
+            raise NotImplementedError('Cannot find translation groups.')
         return ret
 
     @property
     def translationpermission(self):
         """See IPOTemplate."""
-        # in the case of a distro template, use the distro translation
-        # permission settings
-        if self.distrorelease:
-            return self.distrorelease.distribution.translationpermission
-        # for products, use the "most restrictive permission" between
-        # project and product.
-        elif self.productseries:
-            return self.productseries.product.aggregatetranslationpermission
-
-    @property
-    def translationgroups(self):
-        ret = []
-        if self.distrorelease:
-            tg = self.distrorelease.distribution.translationgroup
-            if tg is not None:
-                ret.append(tg)
-        elif self.productseries:
-            product_tg = self.productseries.product.translationgroup
-            if product_tg is not None:
-                ret.append(product_tg)
-            project = self.productseries.product.project
-            if project is not None:
-                if project.translationgroup is not None:
-                    ret.append(project.translationgroup)
-        else:
-            raise NotImplementedError, 'Cannot find translation groups.'
-        return ret
-
-    @property
-    def translationpermission(self):
         if self.distrorelease:
             # in the case of a distro template, use the distro translation
             # permission settings
@@ -296,14 +268,12 @@ class POTemplate(SQLBase, RosettaStats):
                 'POTMsgSet.potemplate = %s' % sqlvalues(self.id),
                 orderBy='sequence')
 
-        if slice is None:
-            # Want all the output.
-            for potmsgset in results:
-                yield potmsgset
-        else:
-            # Want only a subset specified by slice.
-            for potmsgset in results[slice]:
-                yield potmsgset
+        if slice is not None:
+            # Want only a subset specified by slice
+            results = results[slice]
+
+        for potmsgset in results:
+            yield potmsgset
 
     def getPOTMsgSetsCount(self, current=True):
         """See IPOTemplate."""
@@ -410,7 +380,7 @@ class POTemplate(SQLBase, RosettaStats):
             potmsgset.sequence = 0
 
     def getOrCreatePOFile(self, language_code, variant=None, owner=None):
-        """See IPOFile."""
+        """See IPOTemplate."""
         # see if one exists already
         existingpo = self.queryPOFileByLang(language_code, variant)
         if existingpo is not None:
@@ -453,7 +423,7 @@ class POTemplate(SQLBase, RosettaStats):
             personset = PersonSet()
             owner = personset.getByName('ubuntu-translators')
 
-        return POFile(potemplate=self,
+        pofile = POFile(potemplate=self,
                       language=language,
                       topcomment=standardPOFileTopComment % data,
                       header=standardPOFileHeader % data,
@@ -461,6 +431,42 @@ class POTemplate(SQLBase, RosettaStats):
                       owner=owner,
                       pluralforms=data['nplurals'],
                       variant=variant)
+        flush_database_updates()
+        return pofile
+
+    def getPOFileOrDummy(self, language_code, variant=None, owner=None):
+        """See IPOTemplate."""
+        # see if one exists already
+        existingpo = self.queryPOFileByLang(language_code, variant)
+        if existingpo is not None:
+            return existingpo
+
+        # since we don't have one, we will return a dummy
+        try:
+            language = Language.byCode(language_code)
+        except SQLObjectNotFound:
+            raise LanguageNotFound(language_code)
+
+        now = datetime.datetime.now()
+        data = {
+            'year': now.year,
+            'languagename': language.englishname,
+            'languagecode': language_code,
+            'date': now.isoformat(' '),
+            'templatedate': self.datecreated,
+            'copyright': '(c) %d Canonical Ltd, and Rosetta Contributors'
+                         % now.year,
+            'nplurals': language.pluralforms or 1,
+            'pluralexpr': language.pluralexpression or '0',
+            }
+
+        if self.productseries is not None:
+            data['origin'] = self.productseries.product.name
+        else:
+            data['origin'] = self.sourcepackagename.name
+
+        return DummyPOFile(self, language, owner=owner,
+            header=standardPOFileHeader % data)
 
     def createMessageIDSighting(self, potmsgset, messageID):
         """Creates in the database a new message ID sighting.
@@ -498,14 +504,13 @@ class POTemplate(SQLBase, RosettaStats):
         # This method used to accept 'text' parameters being string objects,
         # but this is depracated.
         if not isinstance(text, unicode):
-            raise TypeError("Message ID text must be unicode: %r", text)
+            raise TypeError("Message ID text must be unicode: %r" % text)
 
         try:
             messageID = POMsgID.byMsgid(text)
             if self.hasMessageID(messageID):
-                raise KeyError(
-                    "There is already a message set for this template, file "
-                    "and primary msgid")
+                raise KeyError("There is already a message set for this "
+                               "template, file and primary msgid")
         except SQLObjectNotFound:
             # If there are no existing message ids, create a new one.
             # We do not need to check whether there is already a message set
@@ -554,6 +559,10 @@ class POTemplate(SQLBase, RosettaStats):
 
         file = StringIO.StringIO(rawdata)
 
+        # Store the object status before the changes.
+        object_before_modification = helpers.Snapshot(
+            self, providing=providedBy(self))
+
         try:
             import_po(self, file)
         except (POSyntaxError, POInvalidInputError):
@@ -581,6 +590,12 @@ class POTemplate(SQLBase, RosettaStats):
         for pofile in self.pofiles:
             pofile.updateStatistics()
 
+        # List of fields that would be updated.
+        fields = ['header', 'rawimportstatus', 'messagecount']
+
+        # And finally, emit the modified event.
+        notify(SQLObjectModifiedEvent(self, object_before_modification, fields))
+
 
 class POTemplateSubset:
     implements(IPOTemplateSubset)
@@ -599,9 +614,9 @@ class POTemplateSubset:
 
         if (productseries is not None and (distrorelease is not None or
             sourcepackagename is not None)):
-            raise ValueError(
-                'A product release must not be used with a source package name'
-                ' or a distro release.')
+            raise ValueError('A product release must not be used '
+                             'with a source package name or a distro '
+                             'release.')
         elif productseries is not None:
             self.query = ('POTemplate.productseries = %d' % productseries.id)
             self.orderby = None
@@ -619,8 +634,8 @@ class POTemplateSubset:
             self.orderby = 'DistroRelease.name'
             self.clausetables = ['DistroRelease']
         else:
-            raise ValueError(
-                'You need to specify the kind of subset you want.')
+            raise ValueError('You need to specify the kind '
+                             'of subset you want.')
 
     def __iter__(self):
         """See IPOTemplateSubset."""
@@ -635,7 +650,7 @@ class POTemplateSubset:
         try:
             ptn = POTemplateName.byName(name)
         except SQLObjectNotFound:
-            raise NotFoundError, name
+            raise NotFoundError(name)
 
         if self.query is None:
             query = 'POTemplate.potemplatename = %d' % ptn.id
@@ -645,7 +660,7 @@ class POTemplateSubset:
 
         result = POTemplate.selectOne(query, clauseTables=self.clausetables)
         if result is None:
-            raise NotFoundError, name
+            raise NotFoundError(name)
         return result
 
     @property
@@ -688,11 +703,11 @@ class POTemplateSet:
         try:
             ptn = POTemplateName.byName(name)
         except SQLObjectNotFound:
-            raise NotFoundError, name
+            raise NotFoundError(name)
 
         result = POTemplate.selectOne('POTemplate.potemplatename = %d' % ptn.id)
         if result is None:
-            raise NotFoundError, name
+            raise NotFoundError(name)
         return result
 
     def getSubset(self, **kw):
@@ -720,24 +735,10 @@ class POTemplateSet:
     def getTemplatesPendingImport(self):
         """See IPOTemplateSet."""
         results = POTemplate.selectBy(
-            rawimportstatus=RosettaImportStatus.PENDING)
+            rawimportstatus=RosettaImportStatus.PENDING,
+            orderBy='-daterawimport')
 
-        # XXX: Carlos Perello Marin 2005-03-24
-        # Really ugly hack needed to do the initial import of the whole hoary
-        # archive. It will disappear as soon as the whole
-        # LaunchpadPackagePoAttach and LaunchpadPoImport are implemented so
-        # rawfile is not used anymore and we start using Librarian.
-        # The problem comes with the memory requirements to get more than 7500
-        # rows into memory with about 200KB - 300KB of data each one.
-        total = results.count()
-        done = 0
-        while done < total:
-            for potemplate in results[done:done+100]:
-                yield potemplate
-            done = done + 100
-
-
-class LanguageNotFound(ValueError):
-    """Raised when a a language does not exists in the database."""
+        for potemplate in results:
+            yield potemplate
 
 

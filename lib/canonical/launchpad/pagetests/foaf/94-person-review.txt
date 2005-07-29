@@ -79,8 +79,6 @@ entered back to the client for security reasons).
   ... """)
   HTTP/1.1 200 Ok
   ...
-               There are <strong>1</strong> input errors.
-  ...
   <div>
   <input type="password" value="" style=""
          name="field.password" id="field.password"

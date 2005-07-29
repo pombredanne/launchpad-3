@@ -30,7 +30,7 @@
 
         <browser:page
             name="+portlet-latestversions"
-            template="../templates/portlet-binarypackage-latestversions.pt"
+            template="../templates/binarypackage-portlet-latestversions.pt"
             lp:url="distros/$Distro/$Distrorelease/$Archtag/$Bin/+portlet-latestversions"/>
    </browser:pages>
 

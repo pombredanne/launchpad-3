@@ -5,15 +5,17 @@ __all__ = ['POSubmission']
 
 from zope.interface import implements
 
-from sqlobject import DateTimeCol, ForeignKey, IntCol, BoolCol
+from sqlobject import ForeignKey, IntCol
+
 from canonical.database.sqlbase import SQLBase
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
+
+from canonical.lp.dbschema import (EnumCol, RosettaTranslationOrigin,
+    TranslationValidationStatus)
 
 from canonical.launchpad.interfaces import IPOSubmission
-from canonical.lp.dbschema import EnumCol
-from canonical.database.constants import DEFAULT, UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.lp.dbschema import (RosettaTranslationOrigin,
-    TranslationValidationStatus)
+
 
 
 class POSubmission(SQLBase):

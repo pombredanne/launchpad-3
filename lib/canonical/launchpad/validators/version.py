@@ -2,25 +2,122 @@
 
 __metaclass__ = type
 
-def valid_version(name):
-    """validate a version number
+import warnings
 
-    Note that this is more flexible than the Debian naming policy,
-    as it states 'SHOULD' rather than 'MUST', and we have already
-    imported packages that don't match it. Note that versions
-    may contain both uppercase and lowercase letters so we shouldn't use them
-    in URLs. Also note that both a product name and a version may contain
-    hypens, so we cannot join the product name and the version with a hypen
-    to form a unique string (we need to use a space or some other character
-    disallowed in the product name spec instead.
+def valid_version(name):
+    """Deprecated.
+    
+    This method will be replaced with one that accepts two parameters:
+    the version, and the type of version to validate against (because
+    Debian version numbers are different to Fedora version numbers)
+    """
+    warnings.warn(
+            'Use valid_debian_version instead of valid_version',
+            DeprecationWarning, stacklevel=2
+            )
+    return valid_debian_version(name)
+
+def valid_debian_version(version):
+    """
+    Returns True if version is a valid debian version string
+
+    As per http://www.debian.org/doc/debian-policy/ch-controlfields.html
+    (Except we appear to need to allow ~ characters, which is not documented
+    in the spec.)
+
+    >>> valid_debian_version('1')
+    True
+    >>> valid_debian_version('1.0')
+    True
+    >>> valid_debian_version('1:1.0')
+    True
+    >>> valid_debian_version('1.0-1')
+    True
+    >>> valid_debian_version("1:1.0-1")
+    True
+    >>> valid_debian_version("3.4-2.1")
+    True
+    >>> valid_debian_version("1.5.4-1.woody.0")
+    True
+    >>> valid_debian_version("1.5.4-1.WOODY.0")
+    True
+    >>> valid_debian_version("1.6-0+1.5a-4")
+    True
+    >>> valid_debian_version("1.3~rc1-4")
+    True
+    >>> valid_debian_version("1:")
+    False
+    >>> valid_debian_version("1:-")
+    False
+    >>> valid_debian_version("44-")
+    False
+    >>> valid_debian_version("~-~")
+    False
+    >>> valid_debian_version("0~")
+    True
+    >>> valid_debian_version("0~-~")
+    True
+    >>> valid_debian_version(":44")
+    False
+    >>> valid_debian_version("foo:")
+    False
+    >>> valid_debian_version("12:12:alpha-alpha")
+    True
     """
     import re
-    pat = r"^[A-Za-z0-9\\+:\\.\\-\\~]+$"
-    if name is None or re.match(pat, name):
+    m = re.search("""^(?ix)
+        ([0-9]+:)?
+        ([0-9][a-z0-9+:.~-]*?)
+        (-[a-z0-9+.~]+)?
+        $""", version)
+    if m is None:
+        return False
+    epoch, version, revision = m.groups()
+    if not epoch:
+        # Can't contain : if no epoch
+        if ":" in version:
+            return False
+    if not revision:
+        # Can't contain - if no revision
+        if "-" in version:
+            return False
+    return True
+
+
+def sane_version(version):
+    '''A sane version number for use by ProductRelease and DistroRelease.
+    
+    We may make it less strict if required, but it would be nice if we can
+    enforce simple version strings because we use them in URLs
+
+    >>> sane_version('hello')
+    True
+    >>> sane_version('HELLO')
+    True
+    >>> sane_version('1.0')
+    True
+    >>> sane_version('12:45')
+    False
+    >>> sane_version('1b2')
+    True
+    >>> sane_version('1-')
+    False
+    >>> sane_version('1-2')
+    True
+    >>> sane_version('-2')
+    False
+    >>> sane_version('uncle sam')
+    False
+    >>> sane_version('uncle_sam')
+    False
+    >>> sane_version('uncle-sam')
+    True
+    '''
+    import re
+    if re.search("""^(?ix)
+        [0-9a-z]
+        ( [0-9a-z] | [0-9a-z.-]*[0-9a-z] )*
+        $""", version):
         return True
     return False
-    
-valid_version.sql_signature = [
-    ('name', 'text'),
-    ]
 

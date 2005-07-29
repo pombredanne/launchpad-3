@@ -43,6 +43,7 @@ from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
+from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.karma import KarmaCache, KarmaAction, Karma
 
 from canonical.lp.dbschema import (
@@ -89,12 +90,19 @@ class Person(SQLBase):
                             intermediateTable='PersonLanguage')
 
     # relevant joins
-    ownedBounties = MultipleJoin('Bounty', joinColumn='owner')
-    reviewerBounties = MultipleJoin('Bounty', joinColumn='reviewer')
-    claimedBounties = MultipleJoin('Bounty', joinColumn='claimant')
+    branches = MultipleJoin('Branch', joinColumn='owner')
+    members = MultipleJoin('TeamMembership', joinColumn='team',
+        orderBy='status')
+    ownedBounties = MultipleJoin('Bounty', joinColumn='owner',
+        orderBy='id')
+    reviewerBounties = MultipleJoin('Bounty', joinColumn='reviewer',
+        orderBy='id')
+    claimedBounties = MultipleJoin('Bounty', joinColumn='claimant',
+        orderBy='id')
     subscribedBounties = RelatedJoin('Bounty', joinColumn='person',
-                                     otherColumn='bounty',
-                                     intermediateTable='BountySubscription')
+        otherColumn='bounty', intermediateTable='BountySubscription',
+        orderBy='id')
+    gpgkeys = MultipleJoin('GPGKey', joinColumn='owner', orderBy='id')
     signedcocs = MultipleJoin('SignedCodeOfConduct', joinColumn='owner')
 
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
@@ -290,11 +298,6 @@ class Person(SQLBase):
     #
     # ITeam methods
     #
-
-    def subscriptionPolicyDesc(self):
-        return '%s. %s' % (self.subscriptionpolicy.title,
-                           self.subscriptionpolicy.description)
-
     def getSuperTeams(self):
         """See IPerson."""
         query = ('Person.id = TeamParticipation.team AND '
@@ -455,6 +458,17 @@ class Person(SQLBase):
         return TeamMembership.selectBy(personID=self.id)
 
     @property
+    def activememberships(self):
+        """See IPerson."""
+        return TeamMembership.select('''
+            team = %s AND
+            status in (%s, %s)
+            ''' % sqlvalues(self.id, TeamMembershipStatus.APPROVED,
+                TeamMembershipStatus.ADMIN),
+            orderBy=['datejoined'],
+            distinct=True)
+
+    @property
     def defaultexpirationdate(self):
         """See IPerson."""
         days = self.defaultmembershipperiod
@@ -471,6 +485,17 @@ class Person(SQLBase):
             return datetime.now(pytz.timezone('UTC')) + timedelta(days)
         else:
             return None
+
+    @property
+    def touched_pofiles(self):
+        return POFile.select('''
+            POSubmission.person = %s AND
+            POSubmission.pomsgset = POMsgSet.id AND
+            POMsgSet.pofile = POFile.id
+            ''' % sqlvalues(self.id),
+            orderBy=['datecreated'],
+            clauseTables=['POMsgSet', 'POSubmission'],
+            distinct=True)
 
     def validateAndEnsurePreferredEmail(self, email):
         """See IPerson."""
@@ -846,6 +871,14 @@ class PersonSet:
             ('person', 'merged'),
             ('emailaddress', 'person'),
             ('karmacache', 'person'),
+            # We don't merge teams, so the poll table can be ignored
+            ('poll', 'team'),
+            # I don't think we need to worry about the votecast and vote
+            # tables, because a real human should never have two accounts
+            # in Launchpad that are active members of a given team and voted
+            # in a given poll. -- GuilhermeSalgado 2005-07-07
+            ('votecast', 'person'),
+            ('vote', 'person'),
             ]
 
         # Sanity check. If we have an indirect reference, it must
@@ -1155,6 +1188,9 @@ class WikiName(SQLBase):
     wiki = StringCol(dbName='wiki', notNull=True)
     wikiname = StringCol(dbName='wikiname', notNull=True)
 
+    @property
+    def url(self):
+        return self.wiki + self.wikiname
 
 class WikiNameSet:
     implements(IWikiNameSet)
@@ -1304,12 +1340,7 @@ def _cleanTeamParticipation(person, team):
     # (and its superteams).
     if person.isTeam():
         for submember in person.allmembers:
-            # XXX: We need to cast team.activemembers to a list because the
-            # current implementation of SelectResults.__contains__ is not
-            # working properly for operations like UNION (which is used in
-            # team.activemembers). This is going to be fixed soon and I'll
-            # remove this cast. 2005-07-01, GuilhermeSalgado 
-            if submember not in list(team.activemembers):
+            if submember not in team.activemembers:
                 _cleanTeamParticipation(submember, team)
 
 
@@ -1335,12 +1366,7 @@ def _removeParticipantFromTeamAndSuperTeams(person, team):
         result.destroySelf()
 
     for superteam in team.getSuperTeams():
-        # XXX: We need to cast team.activemembers to a list because the
-        # current implementation of SelectResults.__contains__ is not
-        # working properly for operations like UNION (which is used in
-        # team.activemembers). This is going to be fixed soon and I'll remove
-        # this cast. 2005-07-01, GuilhermeSalgado 
-        if person not in list(superteam.activemembers):
+        if person not in superteam.activemembers:
             _removeParticipantFromTeamAndSuperTeams(person, superteam)
 
 

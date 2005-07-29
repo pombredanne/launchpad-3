@@ -41,6 +41,20 @@
     Canonical Ltd and may be used freely for any purpose as long as
     accreditation and the Launchpad URL are given along with that data.</p>
 
+  <h2>Soyuz Copyright</h2>
+
+    <p>All packages contained in distributions or personal package archives
+    within the Launchpad are aggregations of content which may potentially belong
+    to many different people. You should take care to check all copyright messages
+    in source packages and binary packages before assuming you can use them for any
+    purpose.</p>
+
+    <p>Build logs and other automatically generated content produced by Soyuz
+    and its related components within the Launchpad is the property of Canonical
+    Ltd, unless otherwise specified therein, and may be used freely for any purpose
+    as long as accreditation and the Launchpad URL are given along with the
+    data.</p>
+
 </div>
 
 </body>

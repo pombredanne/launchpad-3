@@ -6,16 +6,16 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-bug-people" />
-    <div tal:replace="structure context/@@+portlet-bug-productinfestation" />
-    <div tal:replace="structure context/@@+portlet-bug-packageinfestation" />
+    <div tal:replace="structure context/@@+portlet-people" />
+    <div tal:replace="structure context/@@+portlet-productinfestation" />
+    <div tal:replace="structure context/@@+portlet-packageinfestation" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-bug-actions" />
-    <div tal:replace="structure context/@@+portlet-bug-cve" />
-    <div tal:replace="structure context/@@+portlet-bug-reference" />
-    <div tal:replace="structure context/@@+portlet-bug-watch" />
+    <div tal:replace="structure context/@@+portlet-actions" />
+    <div tal:replace="structure context/@@+portlet-cve" />
+    <div tal:replace="structure context/@@+portlet-reference" />
+    <div tal:replace="structure context/@@+portlet-watch" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">

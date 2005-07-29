@@ -134,10 +134,8 @@ class POTMsgSet(SQLBase):
         """See IPOTMsgSet."""
         if variant is None:
             variantspec = 'IS NULL'
-        elif isinstance(variant, unicode):
-            variantspec = (u'= "%s"' % quote(variant))
         else:
-            raise TypeError('Variant must be None or unicode.')
+            variantspec = ('= %s' % quote(variant))
 
         pomsgset = POMsgSet.selectOne('''
             POMsgSet.potmsgset = %d AND

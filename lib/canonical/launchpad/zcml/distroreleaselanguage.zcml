@@ -43,11 +43,18 @@
       template="../templates/distroreleaselanguage-portlet-stats.pt" />
   </browser:pages>
 
-    <!-- Dummy DistroReleaseLanguage -->
-    <content class="canonical.launchpad.browser.distroreleaselanguage.DummyDistroReleaseLanguage">
-        <allow
-            interface="canonical.launchpad.interfaces.IDistroReleaseLanguage"
-            />
-    </content>
+  <!-- Dummy DistroReleaseLanguage -->
+  <content class="canonical.launchpad.database.DummyDistroReleaseLanguage">
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseLanguage"
+      />
+  </content>
+
+  <!-- DistroReleaseLanguageSet -->
+  <securedutility
+    class="canonical.launchpad.database.DistroReleaseLanguageSet"
+    provides="canonical.launchpad.interfaces.IDistroReleaseLanguageSet">
+    <allow
+      interface="canonical.launchpad.interfaces.IDistroReleaseLanguageSet" />
+  </securedutility>
 
 </configure>

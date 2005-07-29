@@ -45,6 +45,7 @@ from canonical.launchpad.interfaces.jabber import *
 from canonical.launchpad.interfaces.karma import *
 from canonical.launchpad.interfaces.language import *
 from canonical.launchpad.interfaces.launchpad import *
+from canonical.launchpad.interfaces.launchpadstatistic import *
 from canonical.launchpad.interfaces.librarian import *
 from canonical.launchpad.interfaces.logintoken import *
 from canonical.launchpad.interfaces.mail import *
@@ -60,6 +61,7 @@ from canonical.launchpad.interfaces.pathlookup import *
 from canonical.launchpad.interfaces.person import *
 from canonical.launchpad.interfaces.poexport import *
 from canonical.launchpad.interfaces.pofile import *
+from canonical.launchpad.interfaces.poll import *
 from canonical.launchpad.interfaces.pomsgid import *
 from canonical.launchpad.interfaces.pomsgidsighting import *
 from canonical.launchpad.interfaces.pomsgset import *

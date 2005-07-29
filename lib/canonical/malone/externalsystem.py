@@ -3,7 +3,6 @@
 import urllib
 import urllib2
 from xml.dom import minidom
-from canonical.launchpad.database.bugtracker import BugTracker, BugTrackerType
 
 class UnknownBugTrackerTypeError(Exception):
     """
@@ -40,7 +39,10 @@ class ExternalSystem(object):
         self.bugtracker = bugtracker
         self.bugtrackertype = bugtracker.bugtrackertype
         self.remotesystem = None
-        if self.bugtrackertype.name == 'bugzilla':
+        # XXX kiko 2005-07-25 -- we're getting uppercase "BUGZILLA" in
+        # production, so lower() it is. I have no clue why, but I need
+        # to turn off the checkwatches.py spam or my eyeballs will melt.
+        if self.bugtrackertype.lower() == 'bugzilla':
             self.remotesystem = Bugzilla(self.bugtracker.baseurl,version)
         if not self.remotesystem:
             raise UnknownBugTrackerTypeError(self.bugtrackertype.name,

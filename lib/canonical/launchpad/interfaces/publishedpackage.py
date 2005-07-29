@@ -22,6 +22,7 @@ class IPublishedPackage(Interface):
 
     id = Attribute("The id of the packagepublishing record")
     distribution = Attribute("The distribution id")
+    distroarchrelease = Attribute("The distroarchrelease.")
     distrorelease = Attribute("The distribution release id")
     distroreleasename = Attribute("The distribution release name")
     processorfamily = Attribute("The processor family id")

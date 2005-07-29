@@ -1,0 +1,34 @@
+Gina Test
+---------
+
+This file is a simple test for gina just check it she is broken by any other
+launchpad modification.
+
+    >>> import subprocess, sys, os
+    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+    >>> LibrarianTestSetup().setUp()
+
+Lets now give and absolute path to the gina_test_archive
+
+    >>> relative_path = ('lib/canonical/launchpad/scripts/'
+    ...                  'ftests/gina_test_archive')
+    >>> path = os.path.join(os.getcwd(), relative_path)
+    >>> os.symlink(path, '/tmp/gina_test_archive')
+
+Now, lets run gina
+    >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q', 'hoary']
+    >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
+
+STDERR should be empty
+    >>> print proc.stderr.read()
+    <BLANKLINE>
+
+Exit status must be Success
+    >>> proc.wait()
+    0
+
+Stop Librarian
+    >>> LibrarianTestSetup().tearDown()
+
+Remove the tmp link to the gina_test_archive
+    >>> os.remove('/tmp/gina_test_archive')

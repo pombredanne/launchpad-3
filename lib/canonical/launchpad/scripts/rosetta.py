@@ -22,10 +22,9 @@ from StringIO import StringIO
 from zope.component import getUtility
 
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import IDistributionSet, IPersonSet, \
-    ISourcePackageNameSet, IPOTemplateSet, IPOTemplateNameSet, \
-    IBinaryPackageNameSet, IPOFileSet
-from canonical.launchpad.database import LanguageNotFound
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IPersonSet, ISourcePackageNameSet, IPOTemplateSet,
+    IPOTemplateNameSet, IBinaryPackageNameSet, IPOFileSet, LanguageNotFound)
 from canonical.sourcerer.deb.version import Version
 
 class URLOpenerError(Exception):
@@ -661,12 +660,11 @@ class ImportProcess:
         """
 
         for template in self.potemplateset.getTemplatesPendingImport():
-            self.logger.info('Importing the template: %s' % template.title)
+            self.logger.info('Importing: %s' % template.title)
             yield template
 
         for pofile in self.pofileset.getPOFilesPendingImport():
-            self.logger.info('Importing the %s translation of %s' % (
-                pofile.language.englishname, pofile.potemplate.title))
+            self.logger.info('Importing: %s' % pofile.title)
             yield pofile
 
     def run(self):
@@ -682,8 +680,8 @@ class ImportProcess:
             except:
                 # If we have any exception, we log it and abort the
                 # transaction.
-                self.logger.error('We got an unexpected exception while'
-                                  ' importing', exc_info=1)
+                self.logger.error('Got an unexpected exception while'
+                                  ' importing %s' % object.title, exc_info=1)
                 self.ztm.abort()
                 continue
 

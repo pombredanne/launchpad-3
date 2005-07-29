@@ -37,7 +37,7 @@ should be marked as awaiting import.
 
     >>> pofile = template.getPOFileByLang('es')
     >>> pofile.rawimportstatus
-    <Item PENDING (2) from <class 'canonical.lp.dbschema.RosettaImportStatus'>>
+    <Item IGNORE (1) from <class 'canonical.lp.dbschema.RosettaImportStatus'>>
 
 Get a PO message set for a particular message and check it has a translation.
 
@@ -54,7 +54,7 @@ Add a translation.
 
     >>> translations = { 0: u'foo' }
     >>> pomsgset.updateTranslationSet(person, translations, fuzzy=False,
-    ...                               published=False, is_editor=True)
+    ...                               published=False)
 
 Check that this submission is now the active one for this msgset/pluralform
 
@@ -93,7 +93,7 @@ this project from Pa.
 
     >>> translations = { 0: u'bar' }
     >>> pomsgset.updateTranslationSet(Pa, translations, fuzzy=False,
-    ...                               published=True, is_editor=True)
+    ...                               published=True)
     >>> submission = pomsgset.activeSubmission(0)
 
 Make sure that the new submission is in fact from Pa.
@@ -116,7 +116,7 @@ Now, let's add a translation from Pb, through the web.
 
     >>> translations = { 0: u'baz' }
     >>> pomsgset.updateTranslationSet(Pb, translations, fuzzy=False,
-    ...                               published=False, is_editor=True)
+    ...                               published=False)
     >>> web_submission = pomsgset.activeSubmission(0)
 
 Make sure the new submission is from Pb.
@@ -147,7 +147,7 @@ along and says it's 'baz', we don't record anything new.
 
     >>> translations = { 0: u'baz' }
     >>> pomsgset.updateTranslationSet(Pc, translations, fuzzy=False,
-    ...                               published=False, is_editor=True)
+    ...                               published=False)
     >>> repeat_submission = pomsgset.activeSubmission(0)
 
 Since that is exactly what Pb already said, let's see that the submission we
@@ -181,15 +181,15 @@ to see a non-editor published submission.
 
     >>> translations = { 0: u'bong' }
     >>> pomsgset.updateTranslationSet(Pn, translations, fuzzy=False,
-    ...                               published=True, is_editor=False)
+    ...                               published=True)
     Traceback (most recent call last):
     ...
-    AssertionError: published translations are ALWAYS is_editor
+    AssertionError: published translations are ALWAYS from an editor
 
 Now let's try again, this time through the web:
 
     >>> noneditor_submission = pomsgset.makeSubmission(
-    ...    Pn, u'bong', 0, published=False, is_editor=False)
+    ...    Pn, u'bong', 0, published=False)
 
 This submission should come from the new non-editor person:
 

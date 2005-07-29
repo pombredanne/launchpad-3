@@ -1,0 +1,144 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- Poll -->
+    <content class="canonical.launchpad.database.Poll">
+        <allow interface="canonical.launchpad.interfaces.IPoll" />
+        <require 
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IPoll" />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IPoll"
+        name="+index" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IPoll"
+        function="canonical.launchpad.browser.traverse_poll" />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IPoll"
+        path_expression="string:+poll/${name}"
+        attribute_to_parent="team" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IPoll"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.PollView">
+        <browser:page
+            name="+index"
+            template="../templates/poll-index.pt"
+            lp:url="/people/$team.name/+poll/$poll/+index" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IPoll"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.PollView">
+        <browser:page
+            name="+options"
+            template="../templates/poll-options.pt"
+            lp:url="/people/$team.name/+poll/$poll/+options" />
+    </browser:pages>
+
+    <browser:editform
+        name="+edit"
+        for="canonical.launchpad.interfaces.IPoll"
+        class="canonical.launchpad.browser.editview.SQLObjectEditView"
+        schema="canonical.launchpad.interfaces.IPoll"
+        fields="name title proposition type secrecy allowspoilt
+                dateopens datecloses"
+        label="Edit Poll Details"
+        permission="launchpad.Edit"
+        template="../templates/poll-edit.pt"
+        lp:url="/people/$team.id/+poll/$poll/+edit">
+    </browser:editform>
+
+    <browser:addform
+        name="+newoption"
+        for="canonical.launchpad.interfaces.IPoll"
+        class="canonical.launchpad.browser.PollOptionAddView"
+        schema="canonical.launchpad.interfaces.IPollOption"
+        fields="name shortname"
+        label="Create a New Option for a Poll"
+        permission="launchpad.Edit"
+        template="../templates/poll-newoption.pt"
+        lp:url="/people/$team.id/+poll/$poll/+newoption">
+    </browser:addform>
+
+
+    <!-- PollOption -->
+    <content class="canonical.launchpad.database.PollOption">
+        <allow interface="canonical.launchpad.interfaces.IPollOption" />
+        <require 
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IPollOption" />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IPollOption"
+        name="+edit" />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IPollOption"
+        path_expression="string:+option/${id}"
+        attribute_to_parent="poll" />
+
+    <browser:editform
+        name="+edit"
+        for="canonical.launchpad.interfaces.IPollOption"
+        class="canonical.launchpad.browser.editview.SQLObjectEditView"
+        schema="canonical.launchpad.interfaces.IPollOption"
+        fields="name shortname active"
+        label="Edit Poll Details"
+        permission="launchpad.Edit"
+        template="../templates/polloption-edit.pt"
+        lp:url="/people/$team.id/+poll/$poll/$option/+edit">
+    </browser:editform>
+
+
+    <!-- PollSet -->
+    <content class="canonical.launchpad.database.PollSet">
+        <allow interface="canonical.launchpad.interfaces.IPollSet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.PollSet"
+        provides="canonical.launchpad.interfaces.IPollSet">
+        <allow interface="canonical.launchpad.interfaces.IPollSet" />
+    </securedutility>
+
+
+    <!-- PollSubset -->
+    <adapter
+        for="canonical.launchpad.interfaces.ITeam"
+        provides="canonical.launchpad.interfaces.IPollSubset"
+        factory="canonical.launchpad.components.poll.PollSubset"
+        permission="zope.Public" />
+
+
+    <!-- PollOptionSet -->
+    <content class="canonical.launchpad.database.PollOptionSet">
+        <allow interface="canonical.launchpad.interfaces.IPollOptionSet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.PollOptionSet"
+        provides="canonical.launchpad.interfaces.IPollOptionSet">
+        <allow interface="canonical.launchpad.interfaces.IPollOptionSet" />
+    </securedutility>
+
+
+    <!-- PollOptionSubset -->
+    <adapter
+        for="canonical.launchpad.interfaces.IPoll"
+        provides="canonical.launchpad.interfaces.IPollOptionSubset"
+        factory="canonical.launchpad.components.poll.PollOptionSubset"
+        permission="zope.Public" />
+
+</configure>

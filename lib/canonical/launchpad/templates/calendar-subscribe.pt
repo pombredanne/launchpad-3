@@ -26,7 +26,7 @@
             <label for="subscribe-yes">
               <input type="radio" name="subscribe" id="subscribe-yes"
                      value="yes"
-                     tal:attributes="checked python:view.subscribed() and 'checked' or None" />
+                     tal:attributes="checked python:view.isSubscribed() and 'checked' or None" />
               Yes
             </label>
           </div>
@@ -34,7 +34,7 @@
             <label for="subscribe-no">
               <input type="radio" name="subscribe" id="subscribe-no"
                      value="no"
-                     tal:attributes="checked python:not view.subscribed() and 'checked' or None" />
+                     tal:attributes="checked python:not view.isSubscribed() and 'checked' or None" />
               No
             </label>
           </div>

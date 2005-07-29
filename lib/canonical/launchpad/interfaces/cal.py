@@ -10,7 +10,7 @@ __all__ = [
     'ICalendarOwner',
     'ICalendarSet',
     'ICalendarEventSet',
-    'ICalendarSubscriptionSet',
+    'ICalendarSubscriptionSubset',
     'ICalendarDay',
     'ICalendarWeek',
     'ICalendarMonth',
@@ -69,7 +69,7 @@ class ICalendarEventSet(Interface):
     def __getitem__(id):
         """Get an event by ID."""
 
-class ICalendarSubscriptionSet(Interface):
+class ICalendarSubscriptionSubset(Interface):
     """A list of calendars a user is subscribed to."""
     owner = Attribute(_("The owner of the subscriptions"))
 

@@ -18,21 +18,18 @@ from zope.interface import implements
 from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.publisher.browser import FileUpload
 from zope.app.form.browser.add import AddView
-from zope.app.publisher.browser import BrowserView
 
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
-from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, IPOTemplateNameSet, IPOExportRequestSet,
     IPersonSet, RawFileAttachFailed, ICanonicalUrlData, ILaunchpadCelebrities,
-    ILaunchBag)
-from canonical.launchpad.components.poexport import POExport
+    ILaunchBag, IPOFileSet)
 from canonical.launchpad.browser.pofile import (
     POFileView, BaseExportView, POFileAppMenus)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ApplicationMenu, DefaultLink, Link, canonical_url)
+    StandardLaunchpadFacets, DefaultLink, Link, canonical_url)
 
 
 class POTemplateFacets(StandardLaunchpadFacets):
@@ -121,7 +118,8 @@ class POTemplateView:
         for language in languages:
             pofile = self.context.queryPOFileByLang(language.code)
             if not pofile:
-                pofile = helpers.DummyPOFile(self.context, language)
+                pofileset = getUtility(IPOFileSet)
+                pofile = pofileset.getDummy(self.context, language)
             yield POFileView(pofile, self.request)
 
     def submitForm(self):

@@ -7,6 +7,7 @@ from canonical.launchpad.database.packaging import *
 from canonical.launchpad.database.productseries import *
 from canonical.launchpad.database.productrelease import *
 from canonical.launchpad.database.project import *
+from canonical.launchpad.database.poll import *
 from canonical.launchpad.database.bug import *
 from canonical.launchpad.database.bugwatch import *
 from canonical.launchpad.database.bugsubscription import *
@@ -31,6 +32,7 @@ from canonical.launchpad.database.archarchive import *
 from canonical.launchpad.database.archbranch import *
 from canonical.launchpad.database.archchangeset import *
 from canonical.launchpad.database.librarian import *
+from canonical.launchpad.database.launchpadstatistic import *
 from canonical.launchpad.database.maintainership import *
 from canonical.launchpad.database.infestation import *
 from canonical.launchpad.database.sourcepackage import *

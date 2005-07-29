@@ -43,10 +43,7 @@
 
 .collapsed {
   border-style: dashed none none none;
-}
-
-fieldset.message-strings {
-
+  margin-bottom: 0;
 }
 
 table.data input[type='text'] {
@@ -62,6 +59,21 @@ fieldset.two-column {
   margin-right: 1em;
 }
 
+/* Classes for error indication in forms */
+.portalError {
+    background-color: #ffc9c9;
+    border: 1px solid #ddb0b0;
+    color: Black;
+    margin: 0em 0em 0em 0em;
+    padding: 0.3em 0.3em 0.3em 0.3em;
+}
+
+.portalError .error {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 85%;
+}
 
 
 /* Plone elements that should be changed */
@@ -73,11 +85,6 @@ h1, h2, h3, h4, h5, h6 {
 h3 {
   list-style-image: url(/++resource++bullet.gif);
 }
-
-label {
-  font-weight: bold;    
-}
-
 
 .listingBar a,
 #portal-personaltools a,
@@ -271,7 +278,7 @@ tr.rowLinkified a {
 
 /* Bug Severity markers */
 .severityCritical { color: Red; }
-.severityMajor    { color: Orange; }
+.severityMajor    { color: #ff6600; }
 .severityNormal   { color: Green; }
 .severityMinor    { color: Black; }
 .severityWishlist { color: Blue; }
@@ -292,7 +299,7 @@ tr.rowLinkified a {
 
 .boardComment {
   border: 1px solid #364970;
-  margin-bottom: 1.5em;
+  margin-bottom: 1em;
   position: relative;
 }
 
@@ -308,11 +315,11 @@ tr.rowLinkified a {
   border: 1px solid #364970;
   border-style: none none solid none;
   background-color: #f7f9fa;
-  padding: 0.5em 1em;
+  padding: 0.25em 12px;
 }
 
 .boardCommentBody {
-  padding: 0.5em 1em;
+  padding: 0.5em 12px 0;
 }
 
 .boardCommentContent {
@@ -350,7 +357,8 @@ tr.rowLinkified a {
 
 /* used to mark dummy data with div entity */
 .dummy {
-  background-color: #cccccc;
+  background-color: #eeeeee;
+  color: #656565;
 }
 
 /* Various custom list formats: */
@@ -471,7 +479,8 @@ input.searchButton {
   background-image: url(/@@/search_icon.gif);
 }
 .fieldRequired {
-  background-image: url(/@@/required.gif);
+  background-image: none;
+  padding-left: 0;
 }
 .link-parent {
   background-image: url(/@@/arrowUp.gif);
@@ -525,7 +534,7 @@ code {
   border: none;
   padding: inherit;
 }
-pre {
+pre, textarea {
   font-family: monospace;
   font-size: 100%;
 }
@@ -627,7 +636,7 @@ abbr, address {
 	font-style: inherit;
 }
 
-label {
+label, .field label {
   font-family: sans-serif;
   font-weight: normal;
   white-space: nowrap;
@@ -638,6 +647,10 @@ caption {
   color: #666666;
   margin-top: 0;
   margin-bottom: 0;
+}
+
+legend {
+  font-weight: bold;
 }
 
 th {
@@ -695,7 +708,7 @@ body {
   list-style: none;
   padding: 0 0.75em 0 1.25em;
 }
-.facets :link, .facets :visited {
+.facets :link, .facets :visited, .facets .disabled {
   background: none;
   color: #dee7ec;
 }

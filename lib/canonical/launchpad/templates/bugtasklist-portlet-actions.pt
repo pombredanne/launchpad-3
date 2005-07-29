@@ -1,0 +1,10 @@
+<h4>Actions:</h4>
+<ul>
+  <li>
+    <a href="#"
+       tal:attributes="href string:${context/fmt:url}/+filebug">
+       File a bug
+    </a>
+    <br />
+  </li>
+</ul>

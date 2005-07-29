@@ -1,0 +1,41 @@
+<div class="portlet">
+    <h4>Product Actions:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+
+            <ul>
+                <li class="add">
+                  <a href="+branches">Show Branches</a>
+                </li>
+                <li class="edit">
+                  <a href="+edit">Edit Details</a>
+                </li>
+                <li class="edit">
+                    <a href="+reassign">Change Maintainer</a>
+                </li>
+                <li class="add">
+                  <a href="+addpackage">Link To Package</a>
+                </li>
+                <li class="add"><a href="+addseries">Add Branch</a></li>
+                <li class="edit">
+                  <a href="+changetranslators">Change Translators</a>
+                </li>
+                <li class="add">
+                  <a href="+milestone">Add Milestone</a>
+                </li>
+                <li class="download">
+                  <a href="+rdf">Download RDF Metadata</a>
+                </li>
+                <li class="edit"
+                    tal:condition="context/required:launchpad.Admin">
+                  <a href="+potemplatenames">Edit template names</a>
+                </li>
+                <li class="edit"
+                    tal:condition="context/required:launchpad.Admin">
+                  <a href="+review">Review</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>

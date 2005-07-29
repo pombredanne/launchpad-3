@@ -120,6 +120,14 @@
     permission="zope.Public"
     />
 
+  <!-- feedback page -->
+  <browser:page
+    for="canonical.publication.RootObject"
+    name="feedback"
+    template="templates/launchpad-feedback.pt"
+    permission="zope.Public"
+    />
+
   <!-- RDF downloadable documents -->
   <browser:page
     for="canonical.publication.RootObject"

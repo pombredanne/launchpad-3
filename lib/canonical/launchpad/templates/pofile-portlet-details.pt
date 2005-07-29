@@ -1,0 +1,96 @@
+<div class="portlet">
+
+  <h4>Translation File Details:</h4>
+
+  <div class="portletBody">
+  <div class="portletContent even">
+
+    <ul>
+      <li class="languages">
+        <span tal:replace="context/language/englishname">Language</span>
+        <tal:block condition="context/language/nativename">
+          (<span tal:replace="context/language/nativename">native</span>)
+        </tal:block>
+      </li>
+    </ul>
+    <b>Creator:</b><br />
+    <ul class="people">
+      <li><a tal:content="context/owner/browsername"
+             tal:attributes="href string:/people/${context/owner/name}/">
+        Creator</a>
+      </li>
+    </ul>
+    <tal:block condition="context/potemplate/productseries">
+    <tal:block define="product context/potemplate/productseries/product">
+      <b>For:</b>
+      <a tal:content="context/potemplate/productseries/displayname"
+         tal:attributes="href context/potemplate/productseries/fmt:url">
+         Mozilla Main
+      </a><br />
+      <tal:block condition="product/translationgroup">
+        <b>Translation Group:</b><br />
+        <a tal:content="product/translationgroup/title"
+           tal:attributes="href
+             string:/rosetta/groups/${product/translationgroup/name}/"
+             >Ubuntu Translation Group</a><br />
+      </tal:block>
+      <tal:block condition="product/project"
+                 define="project product/project">
+        <b>Project:</b>
+          <a tal:content="project/displayname"
+             tal:attributes="href string:/projects/${project/name}/" /><br />
+        <tal:block condition="project/translationgroup">
+          <b>Project Translation Group:</b><br />
+          <a tal:content="project/translationgroup/title"
+             tal:attributes="href
+                 string:/rosetta/groups/${project/translationgroup/name}/"
+               >Ubuntu Translation Group</a><br />
+        </tal:block>
+      </tal:block>
+    </tal:block>
+    </tal:block>
+    <tal:block condition="context/potemplate/distrorelease">
+    <tal:block define="distro context/potemplate/distrorelease/distribution">
+    <b>Distribution:</b>
+    <a tal:content="distro/displayname"
+       tal:attributes="href string:/distros/${distro/name}/" /><br />
+    <b>Release:</b>
+    <a tal:content="context/potemplate/distrorelease/name"
+       tal:attributes="href
+         string:/distros/${distro/name}/${context/potemplate/distrorelease/name}/" /><br />
+    <b>Source Package:</b><br />
+    <a tal:attributes="href
+         string:/distros/${distro/name}/${context/potemplate/distrorelease/name}/+sources/${context/potemplate/sourcepackagename/name}/">
+      <span tal:replace="context/potemplate/sourcepackagename/name" />
+      <span tal:replace="context/potemplate/sourcepackageversion" />
+    </a><br />
+    <b>Translation Group:</b><br />
+    <tal:block condition="distro/translationgroup">
+      <a tal:content="distro/translationgroup/title"
+         tal:attributes="href
+           string:/rosetta/groups/${distro/translationgroup/name}/"
+           >Distro Translation Group</a>
+    </tal:block>
+    <tal:block condition="not: distro/translationgroup">
+      <i>None selected</i>
+    </tal:block>
+    <br />
+    </tal:block>
+    </tal:block>
+    <b>Permissions:</b>
+    <span tal:replace="context/translationpermission/title" /><br />
+    <b>Plural Forms:</b>
+    <span tal:replace="context/pluralforms">2</span><br />
+    <b>Plural Expression:</b><br />
+    <span tal:replace="view/pluralFormExpression">n=323</span><br />
+    <tal:block condition="context/potemplate/description">
+      <b>Template Description:</b><br />
+      <span tal:replace="context/potemplate/description" /><br />
+    </tal:block>
+
+  </div>
+
+  </div>
+
+</div>
+

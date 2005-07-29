@@ -85,13 +85,13 @@
             lp:url="/products/$Product.name/+series/$ProductSeries.name/+hctstatus-core" />
         <browser:page
             name="+portlet-actions"
-            template="../templates/portlet-productseries-actions.pt" />
+            template="../templates/productseries-portlet-actions.pt" />
         <browser:page
             name="+portlet-details"
             template="../templates/productseries-portlet-details.pt" />
         <browser:page
             name="+portlet-summary"
-            template="../templates/portlet-object-summary.pt"
+            template="../templates/object-portlet-summary.pt"
             />
         <browser:page
             name="+portlet-potemplates"
@@ -187,7 +187,7 @@
         keyword_arguments="potemplatename description iscurrent owner
                            path filename content"
         content_factory="canonical.launchpad.database.POTemplate"
-        permission="launchpad.Admin"
+        permission="launchpad.Append"
         template="../templates/potemplate-add.pt" >
         <browser:widget
           field="description"

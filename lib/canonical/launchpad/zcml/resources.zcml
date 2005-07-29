@@ -22,6 +22,7 @@
     <resource name="purple-bar.png" file="../images/purple-bar.png" />
     <resource name="bullet.gif" file="../images/bullet.gif" />
     <resource name="required.gif" file="../images/required.gif" />
+    <resource name="favorite_icon.gif" file="../images/favorite_icon.gif" />
 
     <resource name="info.gif" file="../images/info.gif" />
     <resource name="info.png" file="../images/info.png" />
