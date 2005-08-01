@@ -17,7 +17,6 @@ import urllib
 from zope.interface import implements
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
-from zope.app.publisher.browser import BrowserView
 from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
 
@@ -99,7 +98,7 @@ class BugTasksReportView:
         html = '<select name="minseverity">\n'
         for item in dbschema.BugTaskSeverity.items:
             html = html + '<option value="' + str(item.value) + '"'
-            if item.value==self.minseverity:
+            if item.value == self.minseverity:
                 html = html + ' selected="yes"'
             html = html + '>'
             html = html + str(item.title)
@@ -112,7 +111,7 @@ class BugTasksReportView:
         html = '<select name="minpriority">\n'
         for item in dbschema.BugTaskPriority.items:
             html = html + '<option value="' + str(item.value) + '"'
-            if item.value==self.minpriority:
+            if item.value == self.minpriority:
                 html = html + ' selected="yes"'
             html = html + '>'
             html = html + str(item.title)
@@ -171,6 +170,7 @@ class BugTaskViewBase:
 
 
 class BugTaskEditView(SQLObjectEditView, BugTaskViewBase):
+    """The view class used for the task +edit page"""
 
     def changed(self):
         """Redirect the browser to the bug page when we successfully update
@@ -179,7 +179,7 @@ class BugTaskEditView(SQLObjectEditView, BugTaskViewBase):
 
 
 class BugTaskDisplayView(BugTaskViewBase):
-    """Simple view class that makes bugtask portlets accessible."""
+    """The view class used for the default task information page."""
 
 
 class BugTaskSearchListingView:
@@ -424,7 +424,8 @@ class BugTaskSearchListingView:
             str(self.request.URL) +
             "?field.status%3Alist=New&field.status%3Alist=Accepted&" +
             "field.status-empty-marker=1&field.severity-empty-marker=1&" +
-            "field.assignee=&field.unassigned.used=&field.unassigned=on&search=Search")
+            "field.assignee=&field.unassigned.used=&field.unassigned=on&" +
+            "search=Search")
 
     @property
     def total_count(self):

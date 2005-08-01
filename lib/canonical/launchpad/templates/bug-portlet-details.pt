@@ -1,15 +1,23 @@
 <div class="portlet">
 
-  <h4>Malone Bug #<span tal:replace="context/id">3252543</span>:</h4>
+  <h4>Malone Bug Details</h4>
+
 
   <div class="portletBody portletContent">
+    <a href="#"
+       style="text-decoration: underline"
+       tal:attributes="href context/fmt:url">
+       Bug #<span tal:replace="context/id">3252543</span></a><br />
 
     <b>Initial Reporter:</b><br />
     <img src="/++resource++user.gif" />
-    <span tal:replace="context/owner/browsername">Foo Bar</span><br />
+    <a tal:attributes="href context/owner/fmt:url"
+      tal:content="context/owner/browsername"
+      style="text-decoration: underline"></a><br />
 
     <b>First reported:</b>
-    <span tal:replace="context/datecreated/fmt:date">12-12-2004</span><br />
+    <span tal:replace="context/datecreated/fmt:datetime">12-12-2004
+    20:44:00 UTC</span><br />
 
     <b>Secrecy:</b>
     <tal:block condition="context/private">
@@ -19,7 +27,7 @@
     <tal:block condition="not:context/private">
       Public<br />
     </tal:block>
-	
+
   </div>
 
 </div>

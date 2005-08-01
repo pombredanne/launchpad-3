@@ -5,11 +5,14 @@
       <ul>
         <li tal:repeat="task context/bugtasks">
           <a tal:attributes="href task/fmt:url">
-            #<span tal:replace="task/bug/id">42525</span> on
+            Bug #<span tal:replace="task/bug/id">42525</span> on
              <span tal:replace="task/contextname">task context name</span>
           </a>
         </li>
       </ul>
+      <span tal:condition="not: context/bugtasks">
+          There are currently no links to this bug watch.
+      </span>
     </div>
   </div>
 </div>

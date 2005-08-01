@@ -14,7 +14,7 @@
                              title ref/title"
              tal:content="ref/cveref"
              >CVE-2002-1342</a>
-             [<a tal:attributes="href string:$bug_url/cverefs/${ref/id}/+edit">Edit</a>]
+             <small>(<a tal:attributes="href string:$bug_url/cverefs/${ref/id}/+edit">edit</a>)</small>
         </li>
       </ul>
 

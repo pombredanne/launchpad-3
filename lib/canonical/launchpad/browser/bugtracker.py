@@ -9,12 +9,10 @@ __all__ = [
     'BugTrackerView',
     ]
 
-from zope.app.publisher.browser import BrowserView
 from zope.component import getUtility
 
 from canonical.lp.dbschema import BugTrackerType
 from canonical.launchpad.interfaces import IPerson, IBugTrackerSet
-from canonical.launchpad.webapp import canonical_url
 
 def newBugTracker(form, owner):
     """Process a form to create a new BugTracker Bug Tracking instance

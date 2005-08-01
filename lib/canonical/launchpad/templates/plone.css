@@ -155,7 +155,7 @@ li {
     margin-bottom: 1em;
 }
 dt {
-    font-weight: bold;    
+    font-weight: bold;
 }
 dt a {
     text-decoration: underline;
@@ -207,7 +207,7 @@ input {
     vertical-align: middle;
 }
 select {
-    border: 1px solid #8cacbb;  
+    border: 1px solid #8cacbb;
     color: Black;
     background-color: White;
     vertical-align: top;
@@ -816,7 +816,7 @@ del {
 .destructive,
 .documentEditable * .destructive {
     background: #ffce7b url(http://plone.org/linkTransparent.gif) 9px 1px no-repeat;
-    border: 1px solid #ffa500;  
+    border: 1px solid #ffa500;
     cursor: pointer;
     font-size: 85%;
     margin-bottom: 1em;
@@ -845,7 +845,7 @@ input.searchButton {
 }
 .notify,
 .documentEditable * .notify {
-    border: 1px solid #ffa500;  
+    border: 1px solid #ffa500;
 }
 
 /* The new form elements */
@@ -853,7 +853,7 @@ input.searchButton {
 .field {
     top: 0;
     left: 0;
-    margin: 0 1em 1em 0;    
+    margin: 0 1em 1em 0;
 }
 
 .field .field {

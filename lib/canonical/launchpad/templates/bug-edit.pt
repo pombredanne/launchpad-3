@@ -22,14 +22,14 @@
   <div metal:fill-slot="main">
 
     <div metal:use-macro="context/@@launchpad_editform/editform">
-    
+
       <p metal:fill-slot="extra_info">
-        Your changes will affect the bug description upstream, as well as in
-        all the distro packages where the bug has been recorded.
+        Note that your changes will be reflected in all contexts in
+        which this bug has been reported.
       </p>
 
     </div>
-    
+
   </div>
 
   </body>

@@ -1,17 +1,15 @@
-<div class="portlet">
-    <h4>Bug Subscribers:</h4>
+<div class="portlet" tal:condition="context/subscriptions">
+    <h4>Bug Subscriptions:</h4>
 
     <div class="portletBody"
          tal:define="bug_url context/fmt:url">
 
         <div class="portletContent even"
              tal:define="subscriptions context/subscriptions;
-                         bugtasks context/bugtasks">
-
-          <tal:subscriptions
-            tal:define="ccs view/getCCs;
-                        watches view/getWatches;
-                        ignores view/getIgnores">
+                         bugtasks context/bugtasks;
+                         ccs view/getCCs;
+                         watches view/getWatches;
+                         ignores view/getIgnores">
             <tal:cc condition="ccs">
               <b>Cc:</b><br />
               <ul class="people">
@@ -28,10 +26,10 @@
                     </small>
                   </li>
               </ul>
-              <br />
             </tal:cc>
 
             <tal:watch condition="watches">
+              <br />
               <b>Watch:</b>
               <ul class="people">
                   <li tal:repeat="sub watches" >
@@ -47,10 +45,10 @@
                     </small>
                   </li>
               </ul>
-              <br />
             </tal:watch>
 
             <tal:ignore condition="ignores">
+              <br />
               <b tal:condition="ignores">Ignore:</b>
               <ul class="people">
                   <li tal:repeat="sub ignores">
@@ -68,13 +66,11 @@
               </ul>
             </tal:ignore>
 
-          </tal:subscriptions>
-        <ul>
-          <li class="add"><a
-            title="Add a subscriber to this bug"
-            tal:attributes="href string:$bug_url/people/+new">
-            Add subscribers
-          </a></li>
-        </ul>
+            <ul style="text-align: right">
+              <li class="add"><a
+                tal:attributes="href string:$bug_url/people/+new">
+                Add</a></li>
+            </ul>
+        </div>
     </div>
 </div>

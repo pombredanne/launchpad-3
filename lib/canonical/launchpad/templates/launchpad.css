@@ -86,6 +86,10 @@ h3 {
   list-style-image: url(/++resource++bullet.gif);
 }
 
+label {
+  font-weight: bold;
+}
+
 .listingBar a,
 #portal-personaltools a,
 #portal-breadcrumbs a {
@@ -299,7 +303,8 @@ tr.rowLinkified a {
 
 .boardComment {
   border: 1px solid #364970;
-  margin-bottom: 1em;
+  margin-bottom: 1.5em;
+  margin-top: 1em;
   position: relative;
 }
 
@@ -346,7 +351,7 @@ tr.rowLinkified a {
 }
 
 .boardCommentPortrait {
-  float: right; 
+  float: right;
   margin-bottom: 1em;
 }
 
@@ -929,9 +934,9 @@ input {
 }
 /* this lines up text inputs so they don't look a mess */
 .textinput {
-  position: absolute; 
+  position: absolute;
   left: 250px;
-} 
+}
 /* radios had 1px left and right borders - don't know if intended
   but looked shit imo */
 .radios {

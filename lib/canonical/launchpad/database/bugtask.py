@@ -18,8 +18,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.lp.dbschema import (
     EnumCol, BugTaskPriority, BugTaskStatus, BugTaskSeverity, BugSubscription)
 
-from canonical.launchpad.interfaces import IBugTask
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import nowUTC
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.maintainership import Maintainership
@@ -27,8 +26,8 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.interfaces import (
-    IBugTasksReport, IBugTaskSet, IUpstreamBugTask, IDistroBugTask,
-    IDistroReleaseBugTask, ILaunchBag, IAuthorization)
+    IBugTask, IBugTasksReport, IBugTaskSet, IUpstreamBugTask,
+    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, IAuthorization)
 
 debbugsstatusmap = {'open': BugTaskStatus.NEW,
                     'forwarded': BugTaskStatus.ACCEPTED,
@@ -190,7 +189,6 @@ class BugTask(SQLBase):
         """Marks the task when it's created or fetched from the database."""
         SQLBase._init(self, *args, **kw)
 
-        user = getUtility(ILaunchBag).user
         if self.product is not None:
             # This is an upstream task.
             mark_task(self, IUpstreamBugTask)
@@ -234,12 +232,12 @@ class BugTaskSet:
     def __init__(self):
         self.title = 'A Set of Bug Tasks'
 
-    def __getitem__(self, id):
+    def __getitem__(self, task_id):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
         try:
-            task = BugTask.get(id)
+            task = BugTask.get(task_id)
         except SQLObjectNotFound:
-            raise KeyError, id
+            raise KeyError, task_id
         return task
 
     def __iter__(self):
@@ -247,12 +245,13 @@ class BugTaskSet:
         for task in BugTask.select():
             yield task
 
-    def get(self, id):
+    def get(self, task_id):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
         try:
-            bugtask = BugTask.get(id)
+            bugtask = BugTask.get(task_id)
         except SQLObjectNotFound:
-            raise NotFoundError("BugTask with ID %s does not exist" % str(id))
+            raise NotFoundError("BugTask with ID %s does not exist" % 
+                                str(task_id))
         return bugtask
 
     def search(self, bug=None, searchtext=None, status=None, priority=None,
@@ -334,6 +333,7 @@ class BugTaskSet:
         if query:
             query += " AND "
 
+        user = getUtility(ILaunchBag).user
         if user:
             query += "("
         query += "(BugTask.bug = Bug.id AND Bug.private = FALSE)"
@@ -484,7 +484,7 @@ def mark_task(obj, iface):
     directlyProvides(obj, iface + directlyProvidedBy(obj))
 
 def BugTaskFactory(context, **kw):
-    return BugTask(bugID = getUtility(ILaunchBag).bug.id, **kw)
+    return BugTask(bugID=getUtility(ILaunchBag).bug.id, **kw)
 
 
 class BugTasksReport:

@@ -8,10 +8,12 @@
   <thead>
 
     <tr>
-      <th>Needs fixing in...</th>
+      <th title="These are individual work items for each place the bug occurs in">  
+      <span class="explain">Needs fixing in</span></th>
       <th>Status</th>
       <th>Severity</th>
       <th>Assigned to</th>
+      <th></th>
     </tr>
 
   </thead>
@@ -48,7 +50,7 @@
         </tal:block>
       </td>
 
-      <td>
+      <td style="text-align:center">
         <tal:editabletask condition="bugtask/required:launchpad.Edit">
           [<a tal:attributes="href string:${bugtask/fmt:url}/+edit;
               title string:Click to edit status, assignee in ${bugtask/contextname}"

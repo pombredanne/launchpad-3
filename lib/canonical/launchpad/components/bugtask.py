@@ -18,7 +18,7 @@ class BugTaskDelta:
     def __init__(self, bugtask, product=None, sourcepackagename=None,
                  binarypackagename=None, status=None, severity=None,
                  priority=None, assignee=None, milestone=None,
-                 statusexplanation=None):
+                 statusexplanation=None, bugwatch=None):
         self.bugtask = bugtask
         self.product = product
         self.sourcepackagename = sourcepackagename
@@ -29,3 +29,5 @@ class BugTaskDelta:
         self.assignee = assignee
         self.target = milestone
         self.statusexplanation = statusexplanation
+        self.bugwatch = bugwatch
+

@@ -4,8 +4,6 @@ __metaclass__ = type
 __all__ = ['BugWatch', 'BugWatchSet', 'BugWatchFactory']
 
 import re
-import urllib
-from datetime import datetime
 
 from zope.interface import implements
 from zope.exceptions import NotFoundError
@@ -14,20 +12,21 @@ from zope.component import getUtility
 # SQL imports
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, MultipleJoin
 
+from canonical.lp.dbschema import BugTrackerType
+
+from canonical.database.sqlbase import SQLBase, flush_database_updates
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
+
 from canonical.launchpad.interfaces import (IBugWatch, IBugWatchSet,
     IBugTrackerSet)
 from canonical.launchpad.database.bugset import BugSetBase
-from canonical.launchpad.database.bugtracker import BugTracker
-from canonical.database.sqlbase import (SQLBase, quote,
-    flush_database_updates)
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.lp.dbschema import BugTrackerType
 
 bugzillaref = re.compile(r'(https?://.+/)show_bug.cgi.+id=(\d+).*')
 roundupref = re.compile(r'(https?://.+/)issue(\d+).*')
 
 class BugWatch(SQLBase):
+    """See canonical.launchpad.interfaces.IBugWatch."""
     implements(IBugWatch)
     _table = 'BugWatch'
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
@@ -46,23 +45,29 @@ class BugWatch(SQLBase):
 
     @property
     def title(self):
+        """See canonical.launchpad.interfaces.IBugWatch."""
         return "%s #%s" % (self.bugtracker.title, self.remotebug)
 
     @property
     def url(self):
+        """See canonical.launchpad.interfaces.IBugWatch."""
+        url_formats = {
+            # XXX 20050712 kiko: slash-suffixing the bugtracker baseurl
+            # protects us from the bugtracker baseurl not ending in
+            # slashes -- should we instead ensure when it is entered?
+            # Filed bug 1434.
+            BugTrackerType.BUGZILLA: '%s/show_bug.cgi?id=%s',
+            BugTrackerType.DEBBUGS:  '%s/cgi-bin/bugreport.cgi?bug=%s',
+            BugTrackerType.ROUNDUP:  '%s/issue%s'
+        }
         bt = self.bugtracker.bugtrackertype
-        if bt == BugTrackerType.BUGZILLA:
-            return '%sshow_bug.cgi?bug=%s' % (self.bugtracker.baseurl,
-                self.remotebug)
-        elif bt == BugTrackerType.DEBBUGS:
-            return '%scgi-bin/bugreport.cgi?bug=%s' % (self.bugtracker.baseurl, self.remotebug)
-        elif bt == BugTrackerType.ROUNDUP:
-            return '%s/issue%s' % (self.bugtracker.baseurl, self.remotebug)
-        # we only know about those types
-        raise AssertionError, 'Unknown bug tracker type %s' % bt
+        if not url_formats.has_key(bt):
+            raise AssertionError('Unknown bug tracker type %s' % bt)
+        return url_formats[bt] % (self.bugtracker.baseurl, self.remotebug)
 
     @property
     def needscheck(self):
+        """See canonical.launchpad.interfaces.IBugWatch."""
         return True
 
 class BugWatchSet(BugSetBase):
@@ -75,12 +80,12 @@ class BugWatchSet(BugSetBase):
         BugSetBase.__init__(self, bug)
         self.title = 'A Set of Bug Watches'
 
-    def get(self, id):
+    def get(self, watch_id):
         """See canonical.launchpad.interfaces.IBugWatchSet."""
         try:
-            return BugWatch.get(id)
+            return BugWatch.get(watch_id)
         except SQLObjectNotFound:
-            raise NotFoundError, id
+            raise NotFoundError, watch_id
 
     def _find_watches(self, pattern, trackertype, text, bug, owner):
         """Find the watches in a piece of text, based on a given pattern and
@@ -120,7 +125,7 @@ class BugWatchSet(BugSetBase):
         for pattern, trackertype in [
             (bugzillaref, BugTrackerType.BUGZILLA),
             (roundupref, BugTrackerType.ROUNDUP),]:
-            watches = watches.union(self._find_watches(pattern, 
+            watches = watches.union(self._find_watches(pattern,
                 trackertype, text, bug, owner))
         return sorted(watches, key=lambda a: (a.bugtracker.name,
             a.remotebug))
