@@ -1,5 +1,8 @@
 <div class="portlet">
-  <div class="portletBody portletContent"
+
+  <h4>actions:</h4>
+
+  <div class="portletBody portletContent odd"
        tal:define="bug_url context/fmt:url">
     <ul>
       <li class="edit">

@@ -18,7 +18,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.lp.dbschema import (
     EnumCol, BugTaskPriority, BugTaskStatus, BugTaskSeverity, BugSubscription)
 
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import nowUTC
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.maintainership import Maintainership
@@ -189,7 +189,6 @@ class BugTask(SQLBase):
         """Marks the task when it's created or fetched from the database."""
         SQLBase._init(self, *args, **kw)
 
-        user = getUtility(ILaunchBag).user
         if self.product is not None:
             # This is an upstream task.
             mark_task(self, IUpstreamBugTask)
@@ -251,7 +250,8 @@ class BugTaskSet:
         try:
             bugtask = BugTask.get(task_id)
         except SQLObjectNotFound:
-            raise NotFoundError("BugTask with ID %s does not exist" % str(id))
+            raise NotFoundError("BugTask with ID %s does not exist" % 
+                                str(task_id))
         return bugtask
 
     def search(self, bug=None, searchtext=None, status=None, priority=None,
