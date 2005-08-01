@@ -8,6 +8,10 @@
     <div tal:replace="structure context/@@+portlet-info" />
 </metal:leftportlets>
 
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
 <div metal:fill-slot="main">
 
   <p class="documentDescription">
@@ -21,7 +25,7 @@
     upstream bug changes state.
   </p>
 
-  <table class="listing">
+  <table class="sortable listing" id="trackers">
     <thead>
       <tr>
         <th>Title</th>
@@ -44,11 +48,6 @@
       </tr>
     </tbody>
   </table>
-
-  <div style="text-align: right;">
-    <img src="/++resource++add.gif" alt="Add" />
-    <a href="+newbugtracker">Register Your Bug Tracker</a>
-  </div>
 
 </div>
 
