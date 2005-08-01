@@ -16,12 +16,6 @@
         />
     </content>
 
-    <adapter
-        for="canonical.launchpad.interfaces.IProduct"
-        provides="canonical.launchpad.interfaces.IBugTaskSubset"
-        factory="canonical.launchpad.components.bugtask.ContextToBugTaskSubsetAdapter"
-        permission="zope.Public" />
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
         name="+index" />
@@ -31,11 +25,6 @@
         layer="canonical.launchpad.layers.MaloneLayer"
         name="+bugs" />
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProduct"
-        layer="canonical.launchpad.layers.RosettaLayer"
-        name="+translations" />
-
     <browser:menus
         module="canonical.launchpad.browser.product"
         classes="ProductFacets" />
@@ -43,11 +32,6 @@
     <browser:traverse
         for="canonical.launchpad.interfaces.IProduct"
         function="canonical.launchpad.browser.traversers.traverse_product" />
-
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IProduct"
-        layer="canonical.launchpad.layers.RosettaLayer"
-        getter="poTemplate" />
 
     <browser:url
         for="canonical.launchpad.interfaces.IProduct"
@@ -67,6 +51,18 @@
             name="+translations"
             template="../templates/product-translations.pt"
             lp:url="/products/evolution/+translations" />
+        <browser:page
+            name="+branches"
+            template="../templates/product-branches.pt"
+            />
+        <browser:page
+            name="+packages"
+            template="../templates/product-packages.pt"
+            />
+        <browser:page
+            name="+distributions"
+            template="../templates/product-distros.pt"
+            />
 	<!-- Products Portlets -->
         <browser:page
             name="+portlet-details"
@@ -74,8 +70,12 @@
             lp:url="/products/evolution/+portlet-details" />
         <browser:page
             name="+portlet-branches"
-            template="../templates/portlet-product-branches.pt"
+            template="../templates/product-portlet-branches.pt"
             lp:url="/products/evolution/+portlet-branches" />
+        <browser:page
+            name="+portlet-series"
+            template="../templates/product-portlet-series.pt"
+            lp:url="/products/evolution/+portlet-series" />
         <browser:page
             name="+portlet-translations"
             template="../templates/product-portlet-translations.pt"
@@ -90,7 +90,7 @@
             lp:url="/products/evolution/+portlet-actions" />
         <browser:page
             name="+portlet-latest-bugs"
-            template="../templates/portlet-product-latestbugs.pt"
+            template="../templates/product-portlet-latestbugs.pt"
             lp:url="/products/evolution/+portlet-latest-bugs" />
         <browser:page
             name="+portlet-bounties"
@@ -121,6 +121,24 @@
         name="+rdf"
         lp:url="/projects/$Product.name/+rdf"
         template="../templates/product-rdf.pt" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProduct"
+        class="canonical.launchpad.browser.BugTaskSearchListingView"
+        permission="zope.Public">
+        <browser:page
+            name="+bugs-only"
+            lp:url="/products/$Product.name/+bugs-only"
+            template="../templates/bugs-for-context.pt" />
+        <browser:page
+            name="+portlet-bugtasklist-actions"
+            template="../templates/bugtasklist-portlet-actions.pt"
+            lp:url="/products/$Product.name/+portlet-bugtasklist-actions" />
+        <browser:page
+            name="+portlet-bugtasklist-statsforcontext"
+            template="../templates/bug-portlet-statsforcontext.pt"
+            lp:url="/products/$Product.name/+portlet-bugtasklist-statsforcontext" />
+    </browser:pages>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
@@ -266,18 +284,6 @@
            extra="tabindex=3" />
     </browser:addform>
 
-    <browser:addform
-        name="+addpackage"
-        for="canonical.launchpad.interfaces.IProduct"
-        schema="canonical.launchpad.interfaces.IPackaging"
-        label="Distro Packaging Details"
-        fields="productseries sourcepackagename distrorelease packaging"
-        class="canonical.launchpad.browser.PackagingAddView"
-        permission="launchpad.Edit"
-        template="../templates/launchpad-addform.pt"
-        lp:url="/product/$Product.name/+package">
-    </browser:addform>
-
     <!-- ProductSet-->
     <content class="canonical.launchpad.database.ProductSet">
         <allow interface="canonical.launchpad.interfaces.IProductSet" />
@@ -316,7 +322,7 @@
             lp:url="/products/+all" />
         <browser:page
             name="+portlet-details"
-            template="../templates/portlet-productset-details.pt"
+            template="../templates/productset-portlet-details.pt"
             lp:url="/products/+portlet-details" />
     </browser:pages>
 

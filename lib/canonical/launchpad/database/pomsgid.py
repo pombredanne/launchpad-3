@@ -6,6 +6,7 @@ __all__ = ['POMsgID']
 from zope.interface import implements
 
 from sqlobject import StringCol, SQLObjectNotFound
+
 from canonical.database.sqlbase import SQLBase, quote
 
 from canonical.launchpad.interfaces import IPOMsgID

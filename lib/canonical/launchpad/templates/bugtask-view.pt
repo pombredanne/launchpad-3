@@ -8,6 +8,8 @@
     in the search page instead.
     <div tal:replace="structure view/bugStatsForContext" />
     -->
+    <div tal:replace="structure context/bug/@@+portlet-details" />
+    <div tal:replace="structure context/bug/@@+portlet-subscribers" />
     <div tal:replace="structure context/@@+portlet-status" />
     <div tal:replace="structure context/@@+portlet-alsoreportedin" />
   </metal:leftportlets>

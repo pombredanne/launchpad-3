@@ -7,7 +7,7 @@ Rosetta.
     >>> from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
     >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
 
-    >>> LaunchpadFunctionalTestSetup().setUp()
+    >>> LaunchpadFunctionalTestSetup(dbuser='poimport').setUp()
     >>> LibrarianTestSetup().setUp()
 
 
@@ -16,6 +16,7 @@ Here's some database classes we'll be using.
     >>> from canonical.launchpad.database import Person
     >>> from canonical.launchpad.database import POTemplate
     >>> from canonical.launchpad.database import POFile
+    >>> from canonical.launchpad.utilities import LaunchpadCelebrities
 
 We need this for the Librarian to work properly.
 
@@ -104,9 +105,18 @@ to make sure it's stored properly.
 
     >>> transaction.commit()
 
-Second, we tell the PO template to import from the file data it has.
+Second, we tell the PO template to import from the file data it has but first
+check the number of activities the 'person' has done to be sure that Karma is
+working.
 
+    >>> len(person.activities)
+    0
     >>> potemplate.doRawImport(FakeLogger())
+
+The number of activities should be higher.
+
+    >>> len(person.activities)
+    1
 
 Once we've done this, the correct message IDs should show up in the template.
 
@@ -172,6 +182,11 @@ template. Remember, we need to tell the system that this po file is a
     >>> pofile.attachRawFileData(pofile_with_errors, True, person)
     >>> transaction.commit()
     >>> pofile.doRawImport(FakeLogger())
+
+And the number of activities performed is...
+
+    >>> len(person.activities)
+    2
 
 Here's a current message set: i.e. it has a corresponding current message set
 in the PO template. It should not be publishedfuzzy.
@@ -259,6 +274,7 @@ Now, is time to check the notification email.
 
 Here are the contents of another file we'll be importing. It has no errros.
 
+    >>> rosetta_experts = LaunchpadCelebrities().rosetta_expert
     >>> pofile_without_errors = r'''
     ... msgid ""
     ... msgstr ""
@@ -270,7 +286,7 @@ Here are the contents of another file we'll be importing. It has no errros.
     ... msgid "foo"
     ... msgstr "blah"
     ... '''
-    >>> pofile.attachRawFileData(pofile_without_errors, True, person)
+    >>> pofile.attachRawFileData(pofile_without_errors, True, rosetta_experts)
     >>> transaction.commit()
     >>> pofile.doRawImport(FakeLogger())
 
@@ -286,7 +302,7 @@ Check the notification email about the success of this import without errors.
     >>> msg["Subject"]
     'Translation import - Welsh (cy) - firefox in Mozilla Firefox\n\tMilestone Releases'
     >>> print msg.get_payload(decode=True)
-    Hello Mark Shuttleworth,
+    Hello Rosetta Administrators,
     <BLANKLINE>
     ...
 
@@ -299,6 +315,11 @@ Now, is time to test a .pot import when we don't have any header.
     >>> potemplate.attachRawFileData(potemplate_contents, True, person)
     >>> transaction.commit()
     >>> potemplate.doRawImport(FakeLogger())
+
+And the number of activities performed is...
+
+    >>> len(person.activities)
+    3
 
 The header should be the old one as this one does not have any:
 
@@ -334,6 +355,11 @@ The rawimportstatus should be ignored.
     >>> from canonical.lp.dbschema import RosettaImportStatus
     >>> pofile.rawimportstatus == RosettaImportStatus.IGNORE
     True
+
+The number of activities shouldn't change as the import was rejected.
+
+    >>> len(person.activities)
+    3
 
 And the date should be the old one
 

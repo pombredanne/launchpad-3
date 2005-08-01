@@ -12,6 +12,10 @@
             set_schema="canonical.launchpad.interfaces.IBugWatch" />
     </content>
 
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBugWatch"
+        name="+edit" />
+
     <browser:addform
         name="+new"
         schema="canonical.launchpad.interfaces.IBugWatch"
@@ -41,10 +45,10 @@
         permission="launchpad.AnyPerson">
         <browser:page
             name="+portlet-bugtasks"
-            template="../templates/portlet-bugwatch-bugtasks.pt" />
+            template="../templates/bugwatch-portlet-bugtasks.pt" />
         <browser:page
             name="+portlet-details"
-            template="../templates/portlet-bugwatch-details.pt" />
+            template="../templates/bugwatch-portlet-details.pt" />
     </browser:pages>
 
     <!--BugWatchSet -->

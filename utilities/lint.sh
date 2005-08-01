@@ -50,14 +50,13 @@ if [ -z "$files" ]; then
 fi
 
 for file in $files; do
-    if grep -q -e '<<<<<<<' -e '>>>>>>>' $files; then
+    if grep -q -e '<<<<<<<' -e '>>>>>>>' $file; then
         echo "============================================================="
         echo "Conflict marker found in $file"
     fi
 done
 
-pyfiles=`echo files | grep '\.py$'`
-
+pyfiles=`echo "$files" | grep '.py$'`
 if [ -z "$pyfiles" ]; then
     exit
 fi

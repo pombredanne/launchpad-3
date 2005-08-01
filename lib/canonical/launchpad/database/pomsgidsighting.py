@@ -6,6 +6,7 @@ __all__ = ['POMsgIDSighting']
 from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, BoolCol
+
 from canonical.database.sqlbase import SQLBase
 from canonical.database.datetimecol import UtcDateTimeCol
 

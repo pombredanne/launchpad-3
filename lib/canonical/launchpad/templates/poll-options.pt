@@ -7,7 +7,7 @@
 <div metal:fill-slot="main">
 
   <h1>Options of Poll 
-    &#8220;<span tal:replace="context/poll/title" />&#8221;
+    &#8220;<span tal:replace="context/title" />&#8221;
   </h1>
 
   <table class="listing data">
@@ -16,9 +16,9 @@
       <th>Name</th>
       <th>Is Active?</th>
     </tr>
-    <tr tal:repeat="polloption context/getAll">
+    <tr tal:repeat="polloption context/getAllOptions">
       <td>
-        <a tal:attributes="href polloption/id">
+        <a tal:attributes="href polloption/fmt:url">
           <span tal:replace="polloption/shortname" />
         </a>
       </td>
@@ -32,7 +32,7 @@
     </tr>
   </table>
 
-  <p><a href="+new">Create a new Option for this Poll</a></p>
+  <p><a href="+newoption">Create a new Option for this Poll</a></p>
 
 </div>
 

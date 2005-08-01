@@ -11,7 +11,7 @@
 
       <h1 metal:fill-slot="heading">
         Create a new poll for team 
-        &#8220;<span tal:replace="context/team/browsername" />&#8221;
+        &#8220;<span tal:replace="context/browsername" />&#8221;
       </h1>
 
     </div>

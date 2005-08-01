@@ -877,7 +877,7 @@ def expand_rosetta_tabs(text):
     >>> expand_rosetta_tabs('foo\tbar')
     'foo[tab]bar'
 
-    Literal ocurrences of '[tab]' get escaped.
+    Literal occurrences of '[tab]' get escaped.
 
     >>> expand_rosetta_tabs('foo[tab]bar')
     'foo\\[tab]bar'

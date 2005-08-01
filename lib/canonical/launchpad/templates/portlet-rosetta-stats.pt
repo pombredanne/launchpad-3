@@ -18,7 +18,7 @@
 
       <p>
         Statistics are updated daily, and may understate the scale of
-        Rosetta. These stats were created on
+        Rosetta. They were last generated on
         <span tal:replace="context/statsdate/fmt:date">23-4-65</span> at
         <span tal:replace="context/statsdate/fmt:time">23-4-65</span>.
       </p>

@@ -16,9 +16,9 @@
         </li>
       </ul>
 
-      <ul>
+      <ul style="text-align: right">
         <li class="add">
-          <a tal:attributes="href string:$bug_url/references/+new">Add web link</a>
+          <a tal:attributes="href string:$bug_url/references/+new">Add</a>
         </li>
       </ul>
     </div>

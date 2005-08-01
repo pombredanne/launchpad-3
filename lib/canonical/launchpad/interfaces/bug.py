@@ -10,6 +10,7 @@ __all__ = [
     'IBugSet',
     'IBugDelta',
     'IBugAddForm',
+    'IBugTarget'
     ]
 
 from zope.i18nmessageid import MessageIDFactory
@@ -76,9 +77,11 @@ class IBug(Interface):
     private = Bool(
         title=_("Should this bug be kept confidential?"), required=False,
         description=_(
-        "Check this box if, for example, this bug exposes a security "
-        "vulnerability. If selected, this bug will be visible only to "
-        "its subscribers."),
+        "Check this box to make the bug secret. A secret bug is appropriate "
+        "if, for example, this bug exposes a security "
+        "vulnerability. If checked, this bug will only be visible to "
+        "subscribers. Before you set this, make sure you have subscribed "
+        "anybody who needs to see this bug."),
         default=False)
 
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
@@ -141,6 +144,23 @@ class IBug(Interface):
         exists, in which case we will just return that) for this bug.
         """
 
+
+class IBugTarget(Interface):
+    """An entity on which a bug can be reported.
+
+    Examples include an IDistribution, an IDistroRelease and an
+    IProduct.
+    """
+    def search(bug=None, searchtext=None, status=None, priority=None,
+               severity=None, milestone=None, assignee=None, owner=None,
+               orderby=None, statusexplanation=None, user=None):
+        """Search the IBugTasks reported on this entity.
+
+        Return an iterable of matching results.
+
+        Note: milestone is currently ignored for all IBugTargets
+        except IProduct.
+        """
 
 
 class IBugDelta(Interface):

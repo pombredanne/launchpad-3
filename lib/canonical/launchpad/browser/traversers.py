@@ -11,20 +11,21 @@ __all__ = [
     'traverse_distribution',
     'traverse_distrorelease',
     'traverse_person',
+    'traverse_potemplate',
     'traverse_team',
     'traverse_bug',
     'traverse_bugs',
     'traverse_poll',
     ]
 
-from zope.component import getUtility
+from zope.component import getUtility, queryView
 from zope.exceptions import NotFoundError
 
 from canonical.launchpad.interfaces import (
-    IBugSet, IBugTaskSet, IBugTaskSubset, IBugTasksReport, IDistributionSet,
-    IProjectSet, IProductSet, ISourcePackageSet, IBugTrackerSet, ILaunchBag,
+    IBugSet, IBugTaskSet, IBugTasksReport, IDistributionSet, IProjectSet,
+    IProductSet, ISourcePackageSet, IBugTrackerSet, ILaunchBag,
     ITeamMembershipSubset, ICalendarOwner, ILanguageSet, IPublishedPackageSet,
-    IPollSubset, IPollOptionSubset, IDistroReleaseLanguageSet)
+    IPollSet, IPollOptionSet, IDistroReleaseLanguageSet)
 from canonical.launchpad.database import (
     BugAttachmentSet, BugExternalRefSet, BugSubscriptionSet,
     BugWatchSet, BugTasksReport, CVERefSet, BugProductInfestationSet,
@@ -50,6 +51,15 @@ def traverse_malone_application(malone_application, request, name):
 
     return None
 
+def traverse_potemplate(potemplate, request, name):
+    user = getUtility(ILaunchBag).user
+    if request.method in ['GET', 'HEAD']:
+        return potemplate.getPOFileOrDummy(name, owner=user)
+    elif request.method == 'POST':
+        return potemplate.getOrCreatePOFile(name, owner=user)
+    else:
+        raise AssertionError('We only know about GET, HEAD, and POST')
+
 
 def traverse_project(project, request, name):
     """Traverse an IProject."""
@@ -66,7 +76,30 @@ def traverse_product(product, request, name):
     elif name == '+milestones':
         return ProductMilestoneSet(product=product)
     elif name == '+bugs':
-        return IBugTaskSubset(product)
+        travstack = request.getTraversalStack()
+        if len(travstack) == 0:
+            return queryView(product, "+bugs-only", request)
+        else:
+            # XXX, Brad Bollenbach, 2005-07-20: This
+            # request.setTraversalStack stuff is nasty. I've discussed
+            # this with SteveA, and will follow his recommendation to
+            # refactor this when his "nav stuff" lands.
+            nextstep = travstack.pop()
+            request._traversed_names.append(nextstep)
+            request.setTraversalStack(travstack)
+
+            if nextstep.isdigit():
+                # This looks like a bug ID; return the task for this
+                # context.
+                bugtaskset = getUtility(IBugTaskSet)
+                bugset = getUtility(IBugSet)
+
+                bug = bugset.get(nextstep)
+                bugtasks = bugtaskset.search(
+                    product=product, bug=bug, user=getUtility(ILaunchBag).user)
+
+                if bugtasks.count() == 1:
+                    return bugtasks[0]
     elif name == '+calendar':
         return ICalendarOwner(product).calendar
     else:
@@ -80,7 +113,31 @@ def traverse_distribution(distribution, request, name):
     if name == '+packages':
         return getUtility(IPublishedPackageSet)
     elif name == '+bugs':
-        return IBugTaskSubset(distribution)
+        # XXX, Brad Bollenbach, 2005-07-20: This
+        # request.setTraversalStack stuff is nasty. I've discussed
+        # this with SteveA, and will follow his recommendation to
+        # refactor this when his "nav stuff" lands.
+        travstack = request.getTraversalStack()
+        if len(travstack) == 0:
+            return queryView(distribution, "+bugs-only", request)
+        else:
+            nextstep = travstack.pop()
+            request._traversed_names.append(nextstep)
+            request.setTraversalStack(travstack)
+
+            if nextstep.isdigit():
+                # This looks like a bug ID; return the task for this
+                # context.
+                bugtaskset = getUtility(IBugTaskSet)
+                bugset = getUtility(IBugSet)
+
+                bug = bugset.get(nextstep)
+                bugtasks = bugtaskset.search(
+                    distribution=distribution, bug=bug,
+                    user=getUtility(ILaunchBag).user)
+
+                if bugtasks.count() == 1:
+                    return bugtasks[0]
     else:
         return getUtility(ILaunchBag).distribution[name]
 
@@ -92,21 +149,46 @@ def traverse_distrorelease(distrorelease, request, name):
     elif name  == '+packages':
         return getUtility(IPublishedPackageSet)
     elif name == '+bugs':
-        return IBugTaskSubset(distrorelease)
+        # XXX, Brad Bollenbach, 2005-07-20: This
+        # request.setTraversalStack stuff is nasty. I've discussed
+        # this with SteveA, and will follow his recommendation to
+        # refactor this when his "nav stuff" lands.
+        travstack = request.getTraversalStack()
+        if len(travstack) == 0:
+            return queryView(distrorelease, "+bugs-only", request)
+        else:
+            nextstep = travstack.pop()
+            request._traversed_names.append(nextstep)
+            request.setTraversalStack(travstack)
+
+            if nextstep.isdigit():
+                # This looks like a bug ID; return the task for this
+                # context.
+                bugtaskset = getUtility(IBugTaskSet)
+                bugset = getUtility(IBugSet)
+
+                bug = bugset.get(nextstep)
+                bugtasks = bugtaskset.search(
+                    distrorelease=distrorelease, bug=bug,
+                    user=getUtility(ILaunchBag).user)
+
+                if bugtasks.count() == 1:
+                    return bugtasks[0]
     elif name == '+lang':
         travstack = request.getTraversalStack()
         if len(travstack) == 0:
             # no lang code passed, we return None for a not found error
             return None
         langset = getUtility(ILanguageSet)
-        langcode = travstack[0]
+        langcode = travstack.pop()
+        request._traversed_names.append(langcode)
         try:
             lang = langset[langcode]
         except IndexError:
             # Unknown language code. Return None for a not found error
             return None
         drlang = distrorelease.getDistroReleaseLanguage(lang)
-        request.setTraversalStack(travstack[1:])
+        request.setTraversalStack(travstack)
         if drlang is not None:
             return drlang
         else:
@@ -115,6 +197,7 @@ def traverse_distrorelease(distrorelease, request, name):
     else:
         return distrorelease[name]
 
+
 def traverse_person(person, request, name):
     """Traverse an IPerson."""
     if name == '+calendar':
@@ -122,14 +205,24 @@ def traverse_person(person, request, name):
 
     return None
 
+
 def traverse_team(team, request, name):
     if name == '+members':
         return ITeamMembershipSubset(team)
     elif name == '+calendar':
         return ICalendarOwner(team).calendar
-    elif name == '+polls':
-        return IPollSubset(team)
-    
+    elif name == '+poll':
+        travstack = request.getTraversalStack()
+        if len(travstack) == 0:
+            # No option name given; returning None will raise a not found error
+            return None
+        # Consume the poll name from the traversal stack
+        pollname = travstack.pop()
+        poll = getUtility(IPollSet).getByTeamAndName(team, pollname)
+        request._traversed_names.append(pollname)
+        request.setTraversalStack(travstack)
+        return poll
+
     return None
 
 
@@ -176,7 +269,17 @@ def traverse_bugs(bugcontainer, request, name):
 
 
 def traverse_poll(poll, request, name):
-    if name == '+options':
-        return IPollOptionSubset(poll)
+    if name == '+option':
+        travstack = request.getTraversalStack()
+        if len(travstack) == 0:
+            # No option name given; returning None will raise a not found error
+            return None
+        optionset = getUtility(IPollOptionSet)
+        # Consume the option name from the traversal stack
+        optionid = travstack.pop()
+        option = getUtility(IPollOptionSet).getByPollAndId(poll, optionid)
+        request._traversed_names.append(optionid)
+        request.setTraversalStack(travstack)
+        return option
 
     return None

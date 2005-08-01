@@ -1,6 +1,8 @@
 We are going to test the ability to link a bug task with a bug watch. First,
 we render the bug page and show that we can see the bug watch:
 
+XXX: note the // between the hostname and the pagename; this is bug 1434
+
   >>> print http(r"""
   ... GET /malone/bugs/1/+index HTTP/1.1
   ... """)

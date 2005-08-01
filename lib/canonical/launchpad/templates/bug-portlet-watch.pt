@@ -17,14 +17,14 @@
                 [<span tal:content="watch/remotestatus" />]
               </tal:block>
               <small>
-                (<a tal:attributes="href string:$bug_url/watches/${watch/id}/+edit">edit</a>)
+                (<a tal:attributes="href string:$bug_url/watches/${watch/id}">edit</a>)
               </small>
             </li>
           </ul>
 
-         <ul>
+         <ul style="text-align: right">
           <li class="add"><a href="#" tal:attributes="href
-          string:$bug_url/watches/+new">Add bug watch</a></li>
+          string:$bug_url/watches/+new">Add</a></li>
         </ul>
     </div>
   </div>

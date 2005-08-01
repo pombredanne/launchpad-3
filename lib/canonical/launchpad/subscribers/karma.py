@@ -7,7 +7,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IPersonSet
 from canonical.launchpad.mailnotification import get_bug_delta, get_task_delta
-from canonical.lp.dbschema import BugTaskStatus, KarmaActionName
+from canonical.lp.dbschema import (BugTaskStatus, KarmaActionName,
+     RosettaImportStatus)
 
 
 def bug_created(bug, event):
@@ -52,3 +53,69 @@ def bugtask_modified(bugtask, event):
     if task_delta.status and task_delta.status['new'] == BugTaskStatus.FIXED:
         user.assignKarma(KarmaActionName.BUGFIXED)
 
+def potemplate_modified(template, event):
+    """Check changes made to <template> and assign karma to user if needed."""
+    user = event.user
+    old = event.object_before_modification
+    new = event.object
+
+    if old.description != new.description:
+        user.assignKarma(
+            KarmaActionName.TRANSLATIONTEMPLATEDESCRIPTIONCHANGED)
+
+    if (old.rawimportstatus != new.rawimportstatus and
+        new.rawimportstatus == RosettaImportStatus.IMPORTED):
+        # A new .pot file has been imported. The karma goes to the one that
+        # attached the file.
+        new.rawimporter.assignKarma(
+            KarmaActionName.TRANSLATIONTEMPLATEIMPORT)
+
+def pofile_modified(pofile, event):
+    """Check changes made to <pofile> and assign karma to user if needed."""
+    user = event.user
+    old = event.object_before_modification
+    new = event.object
+
+    if (old.rawimportstatus != new.rawimportstatus and
+        new.rawimportstatus == RosettaImportStatus.IMPORTED and
+        new.rawfilepublished):
+        # A new .po file from upstream has been imported. The karma goes to
+        # the one that attached the file.
+        new.rawimporter.assignKarma(
+            KarmaActionName.TRANSLATIONIMPORTUPSTREAM)
+
+def posubmission_created(submission, event):
+    """Assign karma to the user which created <submission>."""
+    if submission.person is not None:
+        submission.person.assignKarma(
+            KarmaActionName.TRANSLATIONSUGGESTIONADDED)
+
+
+def poselection_created(selection, event):
+    """Assign karma to the submission author and the reviewer."""
+    reviewer = event.user
+    active = selection.activesubmission
+
+    if (active is not None and
+        active.person is not None and
+        reviewer != active.person):
+        # Only add Karma when you are not reviewing your own translations.
+        active.person.assignKarma(KarmaActionName.TRANSLATIONSUGGESTIONAPPROVED)
+        reviewer.assignKarma(KarmaActionName.TRANSLATIONREVIEW)
+
+
+def poselection_modified(selection, event):
+    """Assign karma to the submission author and the reviewer."""
+    reviewer = event.user
+    old = event.object_before_modification
+    new = event.object
+
+    if (old.activesubmission != new.activesubmission and
+        new.activesubmission is not None and
+        new.activesubmission.person is not None and
+        reviewer != new.activesubmission.person):
+        # Only add Karma when you are not reviewing your own translations.
+        new.activesubmission.person.assignKarma(
+            KarmaActionName.TRANSLATIONSUGGESTIONAPPROVED)
+        if reviewer is not None:
+            reviewer.assignKarma(KarmaActionName.TRANSLATIONREVIEW)

@@ -22,7 +22,7 @@ specific domain. It is registered as a named utility providing
 IMailHandler. The name of the utility is the domain that's handled.
 
 Let's create some utilities which keep track of which mails they
-handle, and register them for some domains:    
+handle, and register them for some domains:
 
     >>> from canonical.launchpad.interfaces import IMailHandler
     >>> from zope.interface import implements
@@ -31,14 +31,14 @@ handle, and register them for some domains:
     ...     def __init__(self):
     ...         self.handledMails = []
     ...     def process(self, mail, to_addr, filealias):
-    ...         self.handledMails.append(mail['Message-Id']) 
+    ...         self.handledMails.append(mail['Message-Id'])
     ...         return True
 
     >>> from zope.app.tests import ztapi
     >>> foo_handler = MockHandler()
     >>> bar_handler = MockHandler()
-    >>> ztapi.provideUtility(IMailHandler, foo_handler, 'foo.com') 
-    >>> ztapi.provideUtility(IMailHandler, bar_handler, 'bar.com') 
+    >>> ztapi.provideUtility(IMailHandler, foo_handler, 'foo.com')
+    >>> ztapi.provideUtility(IMailHandler, bar_handler, 'bar.com')
 
 Now we send a few test mails to foo.com, bar.com, and baz.com:
 
@@ -66,7 +66,7 @@ mail will get filed in there:
     >>> LibrarianTestSetup().setUp()
 
     >>> handleMail()
-   
+
     >>> LibrarianTestSetup().tearDown()
 
 Now we can see that each handler handled that mails sent to its domain:

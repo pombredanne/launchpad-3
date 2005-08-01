@@ -7,9 +7,9 @@
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-people" />
-    <div tal:replace="structure context/@@+portlet-productinfestation" />
-    <div tal:replace="structure context/@@+portlet-packageinfestation" />
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-subscribers" />
+    <div tal:replace="structure context/@@+portlet-maintainers" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
@@ -29,9 +29,8 @@
       </h3>
 
       <p metal:fill-slot="extra_info">
-        Your changes will affect the bug description upstream,
-        as well as in all the distro packages
-        where the bug has been recorded.
+        Your changes will affect the bug description upstream, as well as in
+        all the distro packages where the bug has been recorded.
       </p>
 
     </div>

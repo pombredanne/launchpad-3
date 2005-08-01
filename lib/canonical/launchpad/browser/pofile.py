@@ -105,6 +105,12 @@ class BaseExportView:
 
 
 class POFileView:
+    """The View class for a POFile or a DummyPOFile. Note that the
+    DummyPOFile is presented if there is no POFile in the database, but the
+    user wants to render one. Check the traverse_potemplate function for
+    more information about when the user is looking at a POFile, or a
+    DummyPOFile.
+    """
 
     DEFAULT_COUNT = 10
     MAX_COUNT = 100

@@ -43,6 +43,7 @@
     <include file="karma.zcml" />
     <include file="language.zcml" />
     <include file="launchpad.zcml" />
+    <include file="launchpadstatistic.zcml" />
     <include file="librarian.zcml" />
     <include file="logintoken.zcml" />
     <include file="maintainership.zcml" />
@@ -102,6 +103,7 @@
     <include file="bug-events.zcml" />
     <include file="bugactivity-subscriptions.zcml" />
     <include file="product-events.zcml" />
+    <include file="translation-events.zcml" />
 
     <!-- Special Utilities -->
     <include file="geoip.zcml" />

@@ -43,10 +43,7 @@
 
 .collapsed {
   border-style: dashed none none none;
-}
-
-fieldset.message-strings {
-
+  margin-bottom: 0;
 }
 
 table.data input[type='text'] {
@@ -92,7 +89,6 @@ h3 {
 label {
   font-weight: bold;
 }
-
 
 .listingBar a,
 #portal-personaltools a,
@@ -307,8 +303,12 @@ tr.rowLinkified a {
 
 .boardComment {
   border: 1px solid #364970;
+<<<<<<< TREE
   margin-bottom: 1.5em;
   margin-top: 1em;
+=======
+  margin-bottom: 1em;
+>>>>>>> MERGE-SOURCE
   position: relative;
 }
 
@@ -324,11 +324,11 @@ tr.rowLinkified a {
   border: 1px solid #364970;
   border-style: none none solid none;
   background-color: #f7f9fa;
-  padding: 0.5em 1em;
+  padding: 0.25em 12px;
 }
 
 .boardCommentBody {
-  padding: 0.5em 1em;
+  padding: 0.5em 12px 0;
 }
 
 .boardCommentContent {
@@ -366,7 +366,8 @@ tr.rowLinkified a {
 
 /* used to mark dummy data with div entity */
 .dummy {
-  background-color: #cccccc;
+  background-color: #eeeeee;
+  color: #656565;
 }
 
 /* Various custom list formats: */
@@ -487,7 +488,8 @@ input.searchButton {
   background-image: url(/@@/search_icon.gif);
 }
 .fieldRequired {
-  background-image: url(/@@/required.gif);
+  background-image: none;
+  padding-left: 0;
 }
 .link-parent {
   background-image: url(/@@/arrowUp.gif);
@@ -643,9 +645,8 @@ abbr, address {
 	font-style: inherit;
 }
 
-label {
+label, .field label {
   font-family: sans-serif;
-  font-weight: normal;
   white-space: nowrap;
 }
 
@@ -654,6 +655,10 @@ caption {
   color: #666666;
   margin-top: 0;
   margin-bottom: 0;
+}
+
+legend {
+  font-weight: bold;
 }
 
 th {
@@ -711,7 +716,7 @@ body {
   list-style: none;
   padding: 0 0.75em 0 1.25em;
 }
-.facets :link, .facets :visited {
+.facets :link, .facets :visited, .facets .disabled {
   background: none;
   color: #dee7ec;
 }

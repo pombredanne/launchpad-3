@@ -262,6 +262,19 @@ class IEditPOTemplate(IPOTemplate):
         database.
         """
 
+    def getPOFileOrDummy(language_code, variant=None, owner=None):
+        """Get a POFile for the given language and optional variant, and if
+        none exists then return a DummyPOFile.
+
+        Raises LanguageNotFound if the language does not exist in the
+        database. This method is designed to be used by traversal code in
+        the case of a GET request (read-only). Instead of creating a PO file
+        just because someone is LOOKING at an empty pofile, we would just
+        show them the DummyPOFile. If they actually POST to the POFile then
+        the traversal code should use POTemplate.getOrCreatePOFile which
+        will create an empty POFile and return that instead of the Dummy.
+        """
+
     def createMessageSetFromMessageID(msgid):
         """Creates in the database a new message set.
 

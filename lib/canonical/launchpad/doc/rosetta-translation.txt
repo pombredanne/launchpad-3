@@ -184,7 +184,7 @@ to see a non-editor published submission.
     ...                               published=True)
     Traceback (most recent call last):
     ...
-    AssertionError: published translations are ALWAYS is_editor
+    AssertionError: published translations are ALWAYS from an editor
 
 Now let's try again, this time through the web:
 

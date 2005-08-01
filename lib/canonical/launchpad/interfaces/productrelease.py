@@ -13,9 +13,9 @@ from zope.schema import Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
+from canonical.launchpad import _
 from canonical.lp.dbschema import UpstreamFileType
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad.validators.version import sane_version
 
 
 class IProductRelease(Interface):
@@ -24,7 +24,8 @@ class IProductRelease(Interface):
     id = Int(title=_('ID'), required=True, readonly=True)
     datereleased = Datetime(title=_('Date Released'), required=True,
                             readonly=False)
-    version = TextLine(title=_('Version'), required=True, readonly=True)
+    version = TextLine(title=_('Version'), required=True, readonly=True,
+            constraint=sane_version)
     owner = Int(title=_('Owner'), required=True, readonly=True)
     productseries = Choice(title=_('ProductSeries'), required=True,
                            vocabulary='FilteredProductSeries')

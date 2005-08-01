@@ -4,21 +4,13 @@
   <div class="portletBody"
        tal:define="bug context/bug">
     <div class="portletContent odd">
-<!-- XXX: Brad Bollenbach, 2005-06-01: Remove this, says the sabdfl
-    <b>Visibility:</b><br />
-      <tal:publicbug tal:condition="not:bug/private">
-          Public<br />
-          <tal:block content="structure view/makeprivate_widget" />
-          <tal:block content="view/makeprivate_widget/label" />
-      </tal:publicbug>
--->
       <a href="#"
          style="text-decoration: underline"
          tal:attributes="href context/bug/fmt:url">
       <b>Bug #<span tal:replace="context/bug/id" /></b></a>
       <br />
 
-      <b>Occuring in:</b><br />
+      <b>Occurring in:</b><br />
       <a href="#"
          tal:attributes="href context/context/fmt:url"
          style="text-decoration: underline"
@@ -31,10 +23,12 @@
       <a tal:attributes="href context/owner/fmt:url"
         tal:content="context/owner/browsername"
         style="text-decoration: underline"></a><br />
-      
+
       <b>On the date:</b><br />
-      <tal:block content="context/datecreated/fmt:datetime" />
-            
+      <tal:block content="context/datecreated/fmt:datetime" /><br />
+
+      <a tal:attributes="href string:${context/fmt:url}/+edit">Edit this
+      task</a>
 
     </div>
   </div>

@@ -40,9 +40,10 @@ class DistroArchRelease(SQLBase):
 
     # for launchpad pages
     def title(self):
-        title = self.architecturetag + ' ('+self.processorfamily.name+') '
-        title += 'for ' + self.distrorelease.distribution.displayname
+        title = self.distrorelease.distribution.displayname
         title += ' ' + self.distrorelease.displayname
+        title += ' for the ' + self.architecturetag
+        title += ' ('+self.processorfamily.name+') architecture'
         return title
     title = property(title)
 
@@ -60,7 +61,7 @@ class DistroArchRelease(SQLBase):
     def getChroot(self, pocket=None, default=None):
         """See IDistroArchRelease"""
         if not pocket:
-            pocket = dbschema.PackagePublishingPocket.PLAIN
+            pocket = dbschema.PackagePublishingPocket.RELEASE
 
         pchroot = PocketChroot.selectOneBy(distroarchreleaseID=self.id,
                                            pocket=pocket)

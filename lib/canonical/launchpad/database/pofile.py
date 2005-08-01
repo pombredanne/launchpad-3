@@ -9,36 +9,38 @@ import datetime
 import os.path
 
 # Zope interfaces
-from zope.interface import implements
+from zope.interface import implements, providedBy
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
+from zope.event import notify
 
-# SQL imports
 from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
     SQLObjectNotFound)
+
 from canonical.database.sqlbase import (SQLBase, flush_database_updates,
     sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
-
-# canonical imports
-import canonical.launchpad
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import (IPOFileSet, IEditPOFile,
-    IRawFileData, ITeam, IPOTemplateExporter, ZeroLengthPOExportError,
-    ILibraryFileAliasSet, IPOFile)
-from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.components.poparser import POHeader
-from canonical.launchpad.components.poimport import import_po, OldPOImported
+
+from canonical.lp.dbschema import (EnumCol, RosettaImportStatus,
+    TranslationPermission, TranslationValidationStatus)
+
+import canonical.launchpad
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
+from canonical.launchpad.interfaces import (IPOFileSet, IEditPOFile,
+    IRawFileData, IPOTemplateExporter, ZeroLengthPOExportError,
+    ILibraryFileAliasSet, IPOFile, ILaunchpadCelebrities)
+
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgset import POMsgSet
-from canonical.launchpad.database.posubmission import POSubmission
-from canonical.lp.dbschema import (EnumCol, RosettaImportStatus,
-    TranslationPermission, TranslationValidationStatus)
+
+from canonical.launchpad.components.rosettastats import RosettaStats
+from canonical.launchpad.components.poimport import import_po, OldPOImported
 from canonical.launchpad.components.poparser import (POSyntaxError,
-    POInvalidInputError)
+    POHeader, POInvalidInputError)
+from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 
 class POFile(SQLBase, RosettaStats):
     implements(IEditPOFile, IRawFileData)
@@ -142,10 +144,15 @@ class POFile(SQLBase, RosettaStats):
 
     def canEditTranslations(self, person):
         """See IEditPOFile."""
-
         # If the person is None, then they cannot edit
         if person is None:
             return False
+
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+
+        if person.inTeam(rosetta_experts):
+            # Rosetta experts can edit translations always.
+            return True
 
         # have a look at the aplicable permission policy
         tperm = self.translationpermission
@@ -556,6 +563,10 @@ class POFile(SQLBase, RosettaStats):
 
         file = StringIO.StringIO(rawdata)
 
+        # Store the object status before the changes.
+        object_before_modification = helpers.Snapshot(
+            self, providing=providedBy(self))
+
         try:
             errors = import_po(self, file, self.rawfilepublished)
         except (POSyntaxError, POInvalidInputError):
@@ -657,6 +668,14 @@ class POFile(SQLBase, RosettaStats):
         # Now we update the statistics after this new import
         self.updateStatistics()
 
+        # List of fields that would be updated.
+        fields = ['header', 'topcomment', 'fuzzyheader', 'pluralforms',
+                  'rawimportstatus', 'currentcount', 'updatescount',
+                  'rosettacount']
+
+        # And finally, emit the modified event.
+        notify(SQLObjectModifiedEvent(self, object_before_modification, fields))
+
     def validExportCache(self):
         """See IPOFile."""
         if self.exportfile is None:
@@ -732,12 +751,24 @@ class DummyPOFile(RosettaStats):
     that language for this template.
     """
     implements(IPOFile)
-    def __init__(self, potemplate, language):
+    def __init__(self, potemplate, language, owner=None, header=''):
         self.potemplate = potemplate
         self.language = language
-        self.header = ''
+        self.owner = owner
+        self.header = header
         self.latestsubmission = None
         self.messageCount = len(potemplate)
+        self.pluralforms = language.pluralforms
+        self.translationpermission = self.potemplate.translationpermission
+        self.lasttranslator = None
+        self.contributors = []
+
+    @property
+    def title(self):
+        """See IPOFile."""
+        title = '%s translation of %s' % (
+            self.language.displayname, self.potemplate.displayname)
+        return title
 
     @property
     def translators(self):
@@ -750,7 +781,6 @@ class DummyPOFile(RosettaStats):
         return ret
 
     def canEditTranslations(self, person):
-
         tperm = self.potemplate.translationpermission
         if tperm == TranslationPermission.OPEN:
             # if the translation policy is "open", then yes
@@ -765,7 +795,7 @@ class DummyPOFile(RosettaStats):
                     if person.inTeam(translator):
                         return True
         else:
-            raise NotImplementedError, 'Unknown permission %s', tperm.name
+            raise NotImplementedError('Unknown permission %s' % tperm.name)
 
         # At this point you either got an OPEN (true) or you are not in the
         # designated translation group, so you can't edit them

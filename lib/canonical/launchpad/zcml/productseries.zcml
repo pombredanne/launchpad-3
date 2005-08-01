@@ -176,6 +176,25 @@
     </browser:editform>
 
     <browser:addform
+        name="+addpackage"
+        for="canonical.launchpad.interfaces.IProductSeries"
+        schema="canonical.launchpad.interfaces.IPackaging"
+        label="Add Distribution Packaging Record"
+        fields="productseries distrorelease sourcepackagename packaging
+                owner"
+        class="canonical.launchpad.browser.PackagingAddView"
+        permission="launchpad.Edit"
+        template="../templates/launchpad-addform.pt"
+        lp:url="/product/$Product.name/+series/$ProductSeries.name/+package">
+        <browser:widget
+            field="productseries"
+            class="canonical.widgets.ContextWidget" />
+        <browser:widget
+            field="owner"
+            class="canonical.widgets.OwnerWidget" />
+    </browser:addform>
+
+    <browser:addform
         name="+addpotemplate"
         for="canonical.launchpad.interfaces.IProductSeries"
         schema="canonical.launchpad.interfaces.IPOTemplateWithContent"
@@ -187,7 +206,7 @@
         keyword_arguments="potemplatename description iscurrent owner
                            path filename content"
         content_factory="canonical.launchpad.database.POTemplate"
-        permission="launchpad.Admin"
+        permission="launchpad.Append"
         template="../templates/potemplate-add.pt" >
         <browser:widget
           field="description"
