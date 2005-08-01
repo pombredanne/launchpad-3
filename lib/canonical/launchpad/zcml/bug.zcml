@@ -90,6 +90,7 @@
         name="+edit"
         schema="canonical.launchpad.interfaces.IBug"
         class="canonical.launchpad.browser.bug.BugEditView"
+        label="Edit Bug Description"
         permission="launchpad.Edit"
         template="../templates/bug-edit.pt"
         fields="title description summary name"

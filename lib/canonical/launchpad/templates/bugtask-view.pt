@@ -8,13 +8,12 @@
     in the search page instead.
     <div tal:replace="structure view/bugStatsForContext" />
     -->
-    <div tal:replace="structure context/bug/@@+portlet-details" />
-    <div tal:replace="structure context/bug/@@+portlet-subscribers" />
     <div tal:replace="structure context/@@+portlet-status" />
-    <div tal:replace="structure context/@@+portlet-alsoreportedin" />
+    <div tal:replace="structure context/bug/@@+portlet-details" />
   </metal:leftportlets>
   
   <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-alsoreportedin" />
     <div tal:condition="context/product" 
          tal:replace="structure context/product/@@+portlet-latest-bugs" />
   </metal:rightportlets>
@@ -26,6 +25,27 @@
         <a href="#"
            tal:attributes="href context/bug/duplicateof/fmt:url">bug
              #<span tal:replace="context/bug/duplicateof/id">42</span></a>
+      </p>
+      
+      <p tal:condition="not: context/required:launchpad.Edit"
+         class="portalMessage">
+        <span tal:condition="not: request/lp:person">
+          To <a href="+edit">change this status page</a> you need to be
+          logged in, and you must 
+          <span tal:condition="context/assignee">
+          be either <a href="#"
+                       tal:attributes="href context/assignee/fmt:url" 
+                       tal:content="context/assignee/displayname">
+          Scott James Remnant The Third</a> or 
+          </span>
+          be a maintainer of <span 
+                              tal:replace="context/contextname">product</span>.
+        </span>
+        <span tal:condition="request/lp:person">
+        You cannot change this status page: you are not the assignee or
+        a maintainer of <span
+        tal:replace="context/contextname">product</span>.
+        </span>
       </p>
 
       <div metal:define-macro="editform">
@@ -48,12 +68,6 @@
               tal:content="view/errors/count:len"
               i18n:name="num_errors">6</strong> input errors in the form
               below. Please correct them and resubmit the form.
-            </p>
-            <p tal:condition="not: context/required:launchpad.Edit"
-               class="portalMessage">
-              You are not the assignee, or the maintainer of
-              <span tal:replace="context/contextname">product</span> so you
-              cannot edit this status page.
             </p>
           </div>
 

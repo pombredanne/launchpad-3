@@ -31,21 +31,8 @@
        tal:content="string:bug #${context/duplicateof/id}">bug 42</a>
   </p>
 
-  <div class="discreet">
-
-    Malone <a href="#" tal:attributes="href context/fmt:url">
-    bug #<span tal:replace="context/id">33</span></a>
-    <tal:block condition="context/name">
-      ("<span tal:replace="context/name">$Bug.name</span>")
-    </tal:block>
-
-    , submitted on
-    <span tal:replace="context/datecreated/fmt:date">13 Sep 04
-    12:15</span>.
-    
-  </div>
-
   <p class="documentDescription"
+     tal:condition="context/summary"
      tal:content="context/summary">
      $bug.summary
   </p>

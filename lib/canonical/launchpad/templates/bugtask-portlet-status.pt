@@ -1,34 +1,19 @@
 <div class="portlet">
-  <h4>Task Status</h4>
+
+  <h4>Status in <span tal:replace="context/contextname" /></h4>
 
   <div class="portletBody"
        tal:define="bug context/bug">
     <div class="portletContent odd">
-      <a href="#"
-         style="text-decoration: underline"
-         tal:attributes="href context/bug/fmt:url">
-      <b>Bug #<span tal:replace="context/bug/id" /></b></a>
-      <br />
-
-      <b>Occurring in:</b><br />
-      <a href="#"
-         tal:attributes="href context/context/fmt:url"
-         style="text-decoration: underline"
-         tal:content="context/contextname">
-        Mozilla Bogosity
-      </a>
-      <br />
 
       <b>Reported by:</b><br />
+      <img src="/++resource++user.gif" />
       <a tal:attributes="href context/owner/fmt:url"
         tal:content="context/owner/browsername"
         style="text-decoration: underline"></a><br />
 
       <b>On the date:</b><br />
-      <tal:block content="context/datecreated/fmt:datetime" /><br />
-
-      <a tal:attributes="href string:${context/fmt:url}/+edit">Edit this
-      task</a>
+      <tal:block content="context/datecreated/fmt:datetime" />
 
     </div>
   </div>

@@ -75,13 +75,12 @@ class IBug(Interface):
     activitytimestamp = Datetime(
         title=_('Activity Timestamp'), required=True, readonly=True)
     private = Bool(
-        title=_("Should this bug be kept confidential?"), required=False,
+        title=_("Keep bug confidential"), required=False,
         description=_(
-        "Check this box to make the bug secret. A secret bug is appropriate "
-        "if, for example, this bug exposes a security "
-        "vulnerability. If checked, this bug will only be visible to "
-        "subscribers. Before you set this, make sure you have subscribed "
-        "anybody who needs to see this bug."),
+        "Select this to make the bug confidential; use it, for "
+        "example, if this bug exposes a security vulnerability. "
+        "Before you set this, make sure you have subscribed anybody "
+        "who needs to see this bug."),
         default=False)
 
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
