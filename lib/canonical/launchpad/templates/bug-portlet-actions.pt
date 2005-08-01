@@ -25,8 +25,7 @@
       </li>
       <li class="add">
         <a href="#" tal:attributes="href
-           string:$bug_url/cverefs/+new">Add <abbr title="Common
-           Vulnerabilities and Exposures Index">CVE</abbr> Reference</a>
+           string:$bug_url/cverefs/+new">Add <abbr title="Common Vulnerabilities and Exposures Index">CVE</abbr> Reference</a>
       </li>
       <li class="add">
         <a href="#"
