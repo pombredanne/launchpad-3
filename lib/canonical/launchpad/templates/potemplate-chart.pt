@@ -1,10 +1,12 @@
-<table class="listing" width="100%">
+<table class="sortable listing" id="language-chart" width="100%">
   <thead>
-    <th>Language</th>
-    <th>Todo</th>
-    <th>Status</th>
-    <th>Last Edited</th>
-    <th>By</th>
+    <tr>
+      <th>Language</th>
+      <th>Todo</th>
+      <th>Status</th>
+      <th>Last Edited</th>
+      <th>By</th>
+    </tr>
   </thead>
 
   <tbody>
