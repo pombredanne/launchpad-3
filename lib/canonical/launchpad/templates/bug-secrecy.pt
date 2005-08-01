@@ -9,14 +9,10 @@
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-subscribers" />
-    <div tal:replace="structure context/@@+portlet-maintainers" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-actions" />
-    <div tal:replace="structure context/@@+portlet-cve" />
-    <div tal:replace="structure context/@@+portlet-reference" />
-    <div tal:replace="structure context/@@+portlet-watch" />
   </metal:rightportlets>
 
   <div metal:fill-slot="main">
@@ -24,8 +20,12 @@
     <div metal:use-macro="context/@@launchpad_editform/editform">
     
       <p metal:fill-slot="extra_info">
-        Your changes will affect the bug description upstream, as well as in
-        all the distro packages where the bug has been recorded.
+        Malone supports "secret" bugs. These will only be visible to the
+        bug's subscribers. This feature is used to allow security teams to
+        track security bug resolution without disclosing the existence or
+        nature of the problem until they have a complete solution, in
+        compliance with the policies of security working groups like
+        VendorSec.
       </p>
 
     </div>

@@ -53,7 +53,7 @@ def main(options, target_section):
         pocket = getattr(PackagePublishingPocket, pocket.upper())
     else:
         log.error(
-            "Could not found a correspondent pocket schema for %s" % pocket
+            "Could not find a pocket schema for %s" % pocket
             )
         sys.exit(1)
 

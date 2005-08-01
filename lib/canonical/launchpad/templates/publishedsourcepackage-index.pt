@@ -1,0 +1,83 @@
+
+      <h2>Current Package Details</h2>
+
+      <ul>
+
+        <li><b>Current Version:</b><span tal:replace="current/version" /></li>
+
+        <li><b>Upload Date:</b><span tal:content="current/dateuploaded">
+            UPLOADDATE</span> UTC</li>
+
+        <li><b>Urgency:</b><span tal:content="current/urgency/title">
+               URGENCY</span></li>
+
+        <li><b>Component:</b><span tal:content="current/component/name">
+               Component</span></li>
+
+        <li><b>Download Packages</b>
+            <div tal:define="files current/files_url">
+              <ul tal:condition="files">
+                 <li tal:repeat="file files">
+                   <a tal:content="file/filename"
+                      tal:attributes="href file/fileurl" /> 
+                 </li>
+              </ul>
+              <i tal:condition="not:files">No files available for download.</i>
+            </div>
+        </li>
+      </ul>
+        <h2>Binary Packages<a tal:condition="current/changelog"
+                href="+changelog">(View Changelog)</a>
+               <span tal:condition="not:current/changelog" tal:omit-tag>
+                   No Changelog for this Source Release )
+               </span></h2>
+        
+
+
+        <ul tal:define="binaries view/binaries">
+           <li tal:condition="not:binaries">
+              <i>No binaries generated for this
+              SourcePackageRelease</i>
+           </li>
+           <li tal:repeat="bin binaries" >
+               <span tal:replace="bin" /> 
+                 <span tal:repeat="archtag python:binaries[bin]">
+                 (<a tal:content="archtag" tal:attributes="href 
+                          string:../../${archtag}/${bin}" />) 
+                 </span>
+            </li>
+        </ul>
+          <h2>Package Relationship</h2>
+
+       <table width="100%" valign="top">
+       <tr>
+       <td>
+       <h4>Build Dependencies</h4>
+       <ul>
+         <li tal:condition="not:view/builddepends">
+           No Build Dependencies</li>
+         <li tal:repeat="dep view/builddepends">
+           <a tal:content="dep/name"
+              tal:attributes="href string:../../i386/${dep/name}" />
+           <span tal:condition="dep/signal"
+                  tal:content="string:(${dep/signal} ${dep/version})" />
+         </li>
+       </ul>
+       </td>
+
+       <td>
+       <h4>Platform-independent Build Dependencies</h4>
+       <ul>
+       <li tal:condition="not:view/builddependsindep">
+            No Platform-independent Dependencies</li>
+         <li tal:repeat="dep view/builddependsindep">
+           <a tal:content="dep/name"
+              tal:attributes="href string:../../i386/${dep/name}" />
+           <span tal:condition="dep/signal"
+                  tal:content="string:(${dep/signal} ${dep/version})" />
+         </li>
+        </ul>
+        </td>
+        </tr>
+        </table>
+

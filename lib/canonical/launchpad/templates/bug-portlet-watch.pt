@@ -9,7 +9,7 @@
         <div class="portletContent odd">
 
           <tal:block repeat="watch context/watches">
-            <a tal:attributes="href string:$bug_url/watches/${watch/id}/+edit">
+            <a tal:attributes="href string:$bug_url/watches/${watch/id}/">
                 <img src="/++resource++search_icon.gif" alt="" />
                  <span tal:replace="watch/bugtracker/name" />
                 #<span tal:replace="watch/remotebug" />
@@ -18,12 +18,14 @@
             </a>
           </tal:block>
 
+          <div style="text-align: right;">
+            <img src="/++resource++add.gif" alt="Add">
+            <a href="#" tal:attributes="href
+            string:$bug_url/watches/+new">Add</a>
+          </div>
+
         </div>
 
-        <div class="portletContent even">
-            <img src="/++resource++add.gif" alt="Add">
-            <a href="#" tal:attributes="href string:$bug_url/watches/+new">Link to other bug tracker...</a>
-        </div>
     </div>
 
 </div>

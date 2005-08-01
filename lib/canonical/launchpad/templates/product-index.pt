@@ -7,11 +7,13 @@
 
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-series" />
     <div tal:replace="structure context/@@+portlet-translations" />
     <div tal:condition="context/required:launchpad.Edit"
          tal:replace="structure context/@@+portlet-milestones" />
     <div tal:condition="context/project"
          tal:replace="structure context/project/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-branches" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
@@ -45,15 +47,13 @@
 
     <tal:block repeat="series context/serieslist">
 
-      <h3>Product Series: <span tal:replace="series/name">seriesname</span>
+      <h2>Product Series: <span tal:replace="series/name">seriesname</span>
         (<span tal:replace="series/datecreated/fmt:date">4-12-45</span>)
-      </h3>
+      </h2>
       
       <p><span tal:replace="structure series/summary/fmt:text-to-html">
         A summary of the series
         details and status.</span>
-        [<a tal:attributes="href
-        string:+series/${series/name}">More</a>]
       </p>
             
       <div style="margin-left: 15px;" tal:condition="series/releases">

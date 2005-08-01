@@ -149,7 +149,7 @@ class BugTask(SQLBase):
           sourcepackagename.name
         * distribution.displayname distrorelease.displayname 
           sourcepackagename.name binarypackagename.name
-        * product.name
+        * upstream product.name
         """
         if self.distribution or self.distrorelease:
             if self.sourcepackagename is None:
@@ -173,7 +173,7 @@ class BugTask(SQLBase):
                 L.append(binarypackagename_name)
             return ' '.join(L)
         elif self.product:
-            return self.product.displayname
+            return 'upstream ' + self.product.name
         else:
             raise AssertionError
 

@@ -8,18 +8,18 @@
     <div metal:fill-slot="body">
       <h1>Help us improve</h1>
       <p>
-        Launchpad is a work in progress, and we welcome your feedback on how to make it better.
+        Launchpad is a work in progress, and we welcome your feedback on how
+        to make it better. File bugs, talk to us on the IRC channel
+        #launchpad on irc.freenode.net, or send us email. If you have ideas
+        for new features, take a look at the
+        <a href="https://wiki.launchpad.canonical.com/">Launchpad Wiki</a>
+        and add a specification, then work with us on #launchpad to get it
+        implemented.
       </p>
       <ul>
         <li>
           <p>
-            If a problem in Launchpad is preventing you from reporting bugs,
-            <a href="mailto:launchpad-error-reports@lists.canonical.com">tell us the problem by e-mail</a>.
-          </p>
-        </li>
-        <li>
-          <p>
-            Otherwise, the best way to report problems in Launchpad is in the Malone bug tracker. You can report bugs about:
+            The best way to report problems in Launchpad is in the Malone bug tracker. You can report bugs about:
           </p>
           <ul>
             <li>
@@ -41,6 +41,12 @@
               <a href="/products/launchpad/+bugs">any other aspect of Launchpad</a>.
             </li>
           </ul>
+        </li>
+        <li>
+          <p>
+            If a problem in Launchpad is preventing you from reporting bugs,
+            <a href="mailto:launchpad-error-reports@lists.canonical.com">tell us the problem by e-mail</a>.
+          </p>
         </li>
         <li>
           <p>

@@ -1,0 +1,30 @@
+
+There are two pages we want to be able to see. The first shows the packages
+by distribution:
+
+  >>> print http(r"""
+  ... GET /products/evolution/+distributions HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+    <h1>Packages - By Distribution</h1>
+  ...
+      <h2>Ubuntu Linux</h2>
+  ...
+
+And the second shows the packages by product series:
+
+  >>> print http(r"""
+  ... GET /products/evolution/+packages HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+    <h1>Distribution Packages</h1>
+  ...
+      <h2>Release Series: main</h2>
+  ...
+

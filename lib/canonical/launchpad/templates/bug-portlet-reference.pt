@@ -12,13 +12,13 @@
           <a tal:attributes="href ref/url;
                              title ref/title"
              tal:content="ref/url">http://www.wizardzz.com/path/to/data.html
-          </a>[<a tal:attributes="href string:$bug_url/references/${ref/id}/+edit">Edit</a>]
+          </a>&nbsp;[<a tal:attributes="href string:$bug_url/references/${ref/id}/+edit">Edit</a>]
         </li>
       </ul>
 
       <div style="text-align: right;">
         <img src="/++resource++add.gif" alt="Add">
-        <a tal:attributes="href string:$bug_url/references/+new">Add link...</a>
+        <a tal:attributes="href string:$bug_url/references/+new">Add</a>
       </div>
     </div>
   </div>

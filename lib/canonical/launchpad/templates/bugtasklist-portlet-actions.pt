@@ -1,10 +1,47 @@
 <h4>Actions:</h4>
-<ul>
-  <li>
+<ul class="info">
+  <li class="edit">
     <a href="#"
        tal:attributes="href string:${context/fmt:url}/+filebug">
-       File a bug
+       File New Bug
     </a>
-    <br />
+  </li>
+  <li>
+    <a href="#"
+       tal:content="string:Show Critical (${view/critical_count})"
+       tal:attributes="href view/critical_count_filter_url">
+       critical (2)
+    </a>
+  </li>
+  <li tal:condition="not: request/lp:person">
+    assigned to me
+  </li>
+  <li tal:condition="request/lp:person">
+    <a href="#"
+       tal:content="string:Show Assigned to Me (${view/assigned_to_me_count})"
+       tal:attributes="href view/assigned_to_me_count_filter_url">
+                assigned to me (14)
+    </a>
+  </li>
+  <li>
+    <a href=""
+       tal:content="string:Show Untriaged (${view/untriaged_count})"
+       tal:attributes="href view/untriaged_count_filter_url">
+       untriaged (18)
+    </a>
+  </li>
+  <li>
+    <a href=""
+       tal:content="string:Show Unassigned (${view/unassigned_count})"
+       tal:attributes="href view/unassigned_count_filter_url">
+       unassigned (25)
+    </a>
+  </li>
+  <li>
+    <a href=""
+       tal:content="string:Show All (${view/total_count})"
+       tal:attributes="href view/total_count_filter_url">
+       total (115)
+    </a>
   </li>
 </ul>

@@ -65,7 +65,8 @@ class Bug(SQLBase):
     activity = MultipleJoin('BugActivity', joinColumn='bug', orderBy='id')
     messages = RelatedJoin('Message', joinColumn='bug',
                            otherColumn='message',
-                           intermediateTable='BugMessage')
+                           intermediateTable='BugMessage',
+                           orderBy='datecreated')
     bugtasks = MultipleJoin('BugTask', joinColumn='bug', orderBy='id')
     productinfestations = MultipleJoin(
             'BugProductInfestation', joinColumn='bug', orderBy='id')

@@ -1,0 +1,26 @@
+<div class="portlet">
+    <h4>Related People:</h4>
+
+    <div class="portletBody"
+         tal:define="bug_url context/fmt:url">
+        <div class="portletContent even"
+             tal:define="subscriptions context/subscriptions;
+                         bugtasks context/bugtasks">
+
+            <b>Maintainers:</b><br />
+
+            <ul class="people" tal:repeat="task bugtasks">
+                <li tal:condition="task/maintainer">
+                <a href="."
+                   tal:content="task/maintainer/browsername"
+                   style="text-decoration: underline"
+                   tal:attributes="href string:/people/${task/maintainer/name}" />
+                </li>
+            </ul>
+
+            <br />
+
+        </div>
+    </div>
+</div>
+

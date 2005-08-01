@@ -1,0 +1,69 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-series" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Packages - By Distribution</h1>
+
+  <p class="documentDescription">
+    This page shows the way
+    <span tal:replace="context/displayname">Foomatic</span>
+    is packaged in different distributions.
+  </p>
+
+  <p class="portalMessage" tal:condition="not: context/serieslist">
+    No product branches registered for 
+    <span tal:replace="context/displayname">Foomatic</span>. Please
+    <a href="+addseries">register a branch</a> and then you will be able to
+    link it to distribution packages.
+  </p>
+
+  <tal:block repeat="distro view/distro_packaging">
+    
+    <h2 tal:content="distro/title">Ubuntu Linux</h2>
+
+    <table class="listing">
+      <thead>
+        <tr>
+          <th>Release</th>
+          <th>Source Package</th>
+          <th>Product Series</th>
+          <th>Package Version</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="pkging distro/packagings">
+          <td>
+            <span tal:replace="pkging/distrorelease/version">3.04</span>
+            (<span tal:replace="pkging/distrorelease/displayname">
+            Hoary</span>)</td>
+          <td tal:content="pkging/sourcepackagename/name">Apache</td>
+          <td tal:content="pkging/productseries/name">2.0</td>
+          <td><span tal:condition="pkging/sourcepackage/currentrelease"
+                    tal:replace="pkging/sourcepackage/currentrelease/version"
+                    >2.3.4-1</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+  </tal:block> <!-- /distribution -->
+
+  <p>To add a Packaging Record, visit the page for the specific release
+  series that has been packaged, and select "Link to Any Package".</p>
+
+</div> 
+</body>
+</html>

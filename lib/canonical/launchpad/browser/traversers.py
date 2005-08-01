@@ -57,7 +57,8 @@ def traverse_potemplate(potemplate, request, name):
         return potemplate.getPOFileOrDummy(name, owner=user)
     elif request.method == 'POST':
         return potemplate.getOrCreatePOFile(name, owner=user)
-    raise AssertionError('We only know about GET, HEAD, and POST')
+    else:
+        raise AssertionError('We only know about GET, HEAD, and POST')
 
 
 def traverse_project(project, request, name):

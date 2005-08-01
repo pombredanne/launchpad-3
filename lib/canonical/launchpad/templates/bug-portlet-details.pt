@@ -1,0 +1,25 @@
+<div class="portlet">
+
+  <h4>Malone Bug #<span tal:replace="context/id">3252543</span>:</h4>
+
+  <div class="portletBody portletContent">
+
+    <b>Initial Reporter:</b><br />
+    <img src="/++resource++user.gif" />
+    <span tal:replace="context/owner/browsername">Foo Bar</span><br />
+
+    <b>First reported:</b>
+    <span tal:replace="context/datecreated/fmt:date">12-12-2004</span><br />
+
+    <b>Secrecy:</b>
+    <tal:block condition="context/private">
+      Private<br />
+      Secret bugs can only be seen by bug subscribers.<br />
+    </tal:block>
+    <tal:block condition="not:context/private">
+      Public<br />
+    </tal:block>
+	
+  </div>
+
+</div>

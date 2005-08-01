@@ -6,7 +6,9 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-people" />
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-subscribers" />
+    <div tal:replace="structure context/@@+portlet-maintainers" />
     <div tal:replace="structure context/@@+portlet-productinfestation" />
     <div tal:replace="structure context/@@+portlet-packageinfestation" />
     <div tal:replace="structure context/@@+portlet-duplicates" />
@@ -62,17 +64,6 @@
       $Bug.description
     </tal:description>
 
-    <fieldset class="collapsible collapsed">
-      <legend>New comment on this bug</legend>
-        <form action="+messages/+new" method="post">
-          <b>Subject:</b>
-          <input name="field.subject" type="text" size="50" 
-                 tal:attributes="value context/followup_subject" /><br />
-          <b>Comment:</b> <textarea name="field.content" rows="10"></textarea>
-          <input type="submit" name="UPDATE_SUBMIT" value="Add" />
-        </form>
-    </fieldset>
-
   <tal:block repeat="message context/messages">
     <div class="boardComment"
          tal:condition="python:context.description!=message.contents">
@@ -97,6 +88,17 @@
 
     </div>
   </tal:block> <!-- repeating over message -->
+
+  <fieldset class="collapsible collapsed">
+    <legend>New comment on this bug</legend>
+      <form action="+messages/+new" method="post">
+        <b>Subject:</b>
+        <input name="field.subject" type="text" size="50" 
+               tal:attributes="value context/followup_subject" /><br />
+        <b>Comment:</b> <textarea name="field.content" rows="10"></textarea>
+      <input type="submit" name="UPDATE_SUBMIT" value="Add" />
+      </form>
+  </fieldset>
 
 </div>
 </body>
