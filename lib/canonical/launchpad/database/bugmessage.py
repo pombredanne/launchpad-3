@@ -46,3 +46,9 @@ class BugMessageSet:
     def get(self, bugmessageid):
         """See canonical.launchpad.interfaces.IBugMessageSet."""
         return BugMessage.get(bugmessageid)
+
+    def getByBugAndMessage(self, bug, message):
+        """See canonical.launchpad.interfaces.IBugMessageSet."""
+        # XXX: selectOneBy(bug=bug, message=message) doesn't work.
+        #      -- Bjorn Tillenius, 2005-07-18, Bug #1555
+        return BugMessage.selectOneBy(bugID=bug.id, messageID=message.id)
