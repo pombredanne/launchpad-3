@@ -8,6 +8,11 @@
        style="text-decoration: underline"
        tal:attributes="href context/fmt:url">
        Bug #<span tal:replace="context/id">3252543</span></a><br />
+   
+    <tal:nickname tal:condition="context/name">
+      <b>Nickname:</b><br />
+      <span tal:replace="context/name" /><br />
+    </tal:nickname>
 
     <b>Initial Reporter:</b><br />
     <img src="/++resource++user.gif" />
@@ -15,7 +20,7 @@
       tal:content="context/owner/browsername"
       style="text-decoration: underline"></a><br />
 
-    <b>First reported:</b>
+    <b>First reported:</b><br />
     <span tal:replace="context/datecreated/fmt:datetime">12-12-2004
     20:44:00 UTC</span><br />
 
