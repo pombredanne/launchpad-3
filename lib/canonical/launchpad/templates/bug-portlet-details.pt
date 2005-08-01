@@ -21,11 +21,10 @@
 
     <b>Secrecy:</b>
     <tal:block condition="context/private">
-      Private<br />
-      Secret bugs can only be seen by bug subscribers.<br />
+      <span class="explain" title="Secret bugs can only be seen by the bug subscribers explicitly listed.">Private</span>
     </tal:block>
     <tal:block condition="not:context/private">
-      Public<br />
+      Public
     </tal:block>
 
   </div>
