@@ -29,7 +29,7 @@ srchost=chinstrap.warthogs.hbd.com
 srcpath=/home/warthogs/archives/rocketfuel@canonical.com
 
 # Absolute path of the local mirror.
-dest=/home/david/home/{archives}/rocketfuel@canonical.com
+dest=$($BAZ whereis-archive rocketfuel@canonical.com)
 
 ### No user-serviceable parts below ###
 
