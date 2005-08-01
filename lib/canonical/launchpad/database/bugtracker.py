@@ -105,7 +105,7 @@ class BugTrackerSet:
             summary = ("This bugtracker was automatically created. Please "
                        "edit the details to get it correct!")
         if contactdetails is None:
-            contactdetails = 'No contactdetails provided.'
+            contactdetails = 'No contact details provided.'
         bugtracker = BugTracker(name=name,
             bugtrackertype=bugtrackertype,
             title=title, summary=summary, baseurl=baseurl,

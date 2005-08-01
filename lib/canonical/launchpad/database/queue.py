@@ -13,8 +13,8 @@ from canonical.database.sqlbase import SQLBase
 from canonical.lp.dbschema import EnumCol
 from canonical.lp.dbschema import DistroReleaseQueueStatus
 
-from canonical.launchpad.interfaces import \
-    IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource
+from canonical.launchpad.interfaces import (
+    IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource)
 
 
 class DistroReleaseQueue(SQLBase):

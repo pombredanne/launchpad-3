@@ -303,12 +303,8 @@ tr.rowLinkified a {
 
 .boardComment {
   border: 1px solid #364970;
-<<<<<<< TREE
   margin-bottom: 1.5em;
   margin-top: 1em;
-=======
-  margin-bottom: 1em;
->>>>>>> MERGE-SOURCE
   position: relative;
 }
 
