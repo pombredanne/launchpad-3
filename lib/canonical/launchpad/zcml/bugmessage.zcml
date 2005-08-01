@@ -15,4 +15,15 @@
         provides="canonical.launchpad.interfaces.message.IAddMessage"
         factory="canonical.launchpad.components.bugmessage.BugMessageToAddMessageAdapter" />
 
+    <!-- BugMessageSet -->
+    <content class="canonical.launchpad.database.BugMessageSet">
+        <allow interface="canonical.launchpad.interfaces.IBugMessageSet" />
+    </content>
+
+    <securedutility
+        provides="canonical.launchpad.interfaces.IBugMessageSet"
+        class="canonical.launchpad.database.BugMessageSet">
+        <allow interface="canonical.launchpad.interfaces.IBugMessageSet" />
+    </securedutility>
+
 </configure>

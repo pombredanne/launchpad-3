@@ -153,9 +153,9 @@ another to the person who made the request.
   >  * hr.po
   > 
   > The Rosetta team has been notified of this problem. Please
-  > reply to this email for further assistance. The files that
-  > were successfully exported can be downloaded from the
-  > following location:
+  > reply to this email for further assistance. Of the 2 files
+  > you requested, Rosetta successfully exported 1, which can
+  > be downloaded from the following location:
   > 
   >     http://localhost:58000/.../rosetta-pmount.tar.gz
   > 

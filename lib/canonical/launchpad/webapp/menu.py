@@ -8,6 +8,7 @@ __all__ = ['nearest_menu', 'FacetMenu', 'ExtraFacetMenu',
 
 import urlparse
 from zope.interface import implements
+from zope.component import getDefaultViewName
 from canonical.launchpad.interfaces import (
     IMenuBase, IFacetMenu, IExtraFacetMenu, IApplicationMenu,
     IExtraApplicationMenu, ILink, IDefaultLink
@@ -37,27 +38,27 @@ class Link:
     """General links that aren't default links."""
     implements(ILink)
 
-    def __init__(self, target, text, summary=None):
+    def __init__(self, target, text, summary=None, linked=True):
+        """Create a new link to 'target' with 'text' as the link text.
+
+        If the 'linked' argument is set to False, then the link will
+        be disabled.
+
+        If the 'linked' argument is set to True, then the link will be
+        enabled, provided that it does not point to the current page.
+        """
         self.target = target
         self.text = text
         self.summary = summary
         self.name = None
         self.selected = False
-        self.linked = True
+        self.linked = linked
         self.url = None
-        self._check_post_construction_state()
 
-    def _check_post_construction_state(self):
-        assert self.target, (
-            'A Link must have a target.  Use DefaultLink for an empty target.')
 
 class DefaultLink(Link):
     """Link that is selected when no other links are."""
     implements(IDefaultLink)
-
-    def _check_post_construction_state(self):
-        # Do not check that target is non-empty.
-        pass
 
 
 class MenuBase:
@@ -82,27 +83,36 @@ class MenuBase:
         if self.request is None:
             requesturlobj = None
         else:
-            requesturlobj = Url(self.request.getURL())
-
+            requesturlobj = Url(self.request.getURL(),
+                                self.request.get('QUERY_STRING'))
+            # If the default view name is being used, we will want the url
+            # without the default view name.
+            defaultviewname = getDefaultViewName(self.context, self.request)
+            if requesturlobj.pathnoslash.endswith(defaultviewname):
+                requesturlobj = Url(self.request.getURL(1),
+                                    self.request.get('QUERY_STRING'))
 
         output_links = []
         default_link = None
-        selected_link = None
+        selected_links = set()
 
         for linkname in self.links:
             method = getattr(self, linkname)
             link = method()
             link.name = linkname
-            link.url = '%s%s%s' % (
-                contexturlobj.host, contexturlobj.pathslash, link.target)
+            targeturlobj = Url(link.target)
+            if targeturlobj.addressingscheme:
+                link.url = link.target
+            elif link.target.startswith('/'):
+                link.url = '%s%s' % (contexturlobj.host, link.target)
+            else:
+                link.url = '%s%s%s' % (
+                    contexturlobj.host, contexturlobj.pathslash, link.target)
             isdefaultlink = IDefaultLink.providedBy(link)
             if requesturlobj is not None:
                 linkurlobj = Url(link.url)
-                if not isdefaultlink and requesturlobj.is_inside(linkurlobj):
-                    link.selected = True
-                    assert selected_link is None, (
-                        'There can be only one selected link')
-                    selected_link = link
+                if requesturlobj.is_inside(linkurlobj):
+                    selected_links.add(link)
                 if requesturlobj == linkurlobj:
                     link.linked = False
             if isdefaultlink:
@@ -110,10 +120,18 @@ class MenuBase:
                     'There can be only one DefaultLink')
                 default_link = link
             output_links.append(link)
-        if (selected_link is None and
-            default_link is not None and
-            requesturlobj is not None and
-            requesturlobj.is_inside(contexturlobj)):
+        # If we have many selected_links, make selected_link the one that
+        # is inside the rest.  If we have just one selected link, that's easy:
+        # that link is selected.  If we have no selected links, then use the
+        # default link.
+        L = sorted(selected_links, key=lambda link: link.url, reverse=True)
+        L = L[:1]
+        if L:
+            selected_link = L[0]
+            selected_link.selected = True
+        elif (default_link is not None and
+              requesturlobj is not None and
+              requesturlobj.is_inside(contexturlobj)):
             default_link.selected = True
         return iter(output_links)
 
@@ -153,16 +171,20 @@ class ExtraApplicationMenu(MenuBase):
 class Url:
     """A class for url operations."""
 
-    def __init__(self, url):
+    def __init__(self, url, query=None):
         self.url = url
-        urlparts = iter(urlparse.urlparse(url))
+        if query is not None:
+            self.url += '?%s' % query
+        urlparts = iter(urlparse.urlparse(self.url))
         self.addressingscheme = urlparts.next()
         self.networklocation = urlparts.next()
         self.path = urlparts.next()
         if self.path.endswith('/'):
             self.pathslash = self.path
+            self.pathnoslash = self.path[:-1]
         else:
             self.pathslash = self.path + '/'
+            self.pathnoslash = self.path
         self.parameters = urlparts.next()
         self.query = urlparts.next()
         self.fragmentids = urlparts.next()
@@ -176,10 +198,12 @@ class Url:
         return '<Url %s>' % self.url
 
     def is_inside(self, otherurl):
-        return self.pathslash.startswith(otherurl.pathslash)
+        return (self.host == otherurl.host and
+                self.pathslash.startswith(otherurl.pathslash))
 
     def __eq__(self, otherurl):
-        return (otherurl.pathslash == self.pathslash and
+        return (otherurl.host == self.host and
+                otherurl.pathslash == self.pathslash and
                 otherurl.query == self.query)
 
     def __ne__(self, otherurl):

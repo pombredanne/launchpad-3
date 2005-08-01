@@ -19,9 +19,11 @@ class SourcePackageName(SQLBase):
     implements(ISourcePackageName)
     _table = 'SourcePackageName'
 
-    name = StringCol(dbName='name', notNull=True, unique=True, alternateID=True)
+    name = StringCol(dbName='name', notNull=True, unique=True,
+        alternateID=True)
 
     potemplates = MultipleJoin('POTemplate', joinColumn='sourcepackagename')
+    packagings = MultipleJoin('Packaging', joinColumn='sourcepackagename')
 
     def __unicode__(self):
         return self.name
@@ -61,4 +63,13 @@ class SourcePackageNameSet:
         name = name.replace('%', '%%')
         query = ('name ILIKE %s' % quote('%%' +name+ '%%'))
         return SourcePackageName.select(query)
+
+    def new(self, name):
+        return SourcePackageName(name=name)
+
+    def getOrCreateByName(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            return self.new(name)
 

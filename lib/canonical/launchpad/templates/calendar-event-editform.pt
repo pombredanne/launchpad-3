@@ -1,0 +1,21 @@
+<tal:tag condition="view/update"/>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@launchpad_template/master"
+      i18n:domain="launchpad">
+
+  <body>
+
+  <div metal:fill-slot="main">
+
+    <div metal:use-macro="context/@@launchpad_editform/editform">
+
+      <h1 metal:fill-slot="heading">
+        Edit Event <q tal:content="context/title">Event title</q>
+      </h1>
+
+    </div>
+  </div>
+
+  </body>
+</html>

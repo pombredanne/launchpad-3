@@ -9,7 +9,8 @@
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-summary" />
-    <div tal:replace="structure context/@@+portlet-project" />
+    <div tal:condition="context/project"
+         tal:replace="structure context/project/@@+portlet-details" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">

@@ -1,8 +1,8 @@
 from zope.interface import Interface, Attribute
 
-__all__ = ['IGpgHandler', 'IPymeSignature', 'IPymeKey']
+__all__ = ['IGPGHandler', 'IPymeSignature', 'IPymeKey']
 
-class IGpgHandler(Interface):
+class IGPGHandler(Interface):
     """Handler to perform GPG operations."""
 
     def verifySignature(content, signature=None, key=None):
@@ -24,36 +24,41 @@ class IGpgHandler(Interface):
         See IPymeSignature for further info.
         """
 
-    def importPubKey(pubkey):
-        """Import the given public key. We assume it as the default keyring.
+    def importKey(content):
+        """Import the given public or secret key. We assume it as the
+        default keyring.
 
-        :param pubkey: public key content
+        :param content: public or secret key content ASCII armored
         
         :returns: a PymeKey instance
         """
 
-    def getKeyIndex(fingerprint):
-        """Retrieve Key Index Information from the KeyServer.
+    def encryptContent(content, fingerprint):
+        """Encrypt content for a given GPG key.
 
-        It user urllib to retrive the key information page
-        from 'pks' application, parse the content and instantiate
-        a respective PymeKey object.
+        :param content: data content
+        :param fingerprint: key fingerprint
 
-        Return None if not able to retrive the information
-
-        :param fingerprint: key fingerprint (no spaces)
-
-        :returns: info as [(size, type, id)] and uids as sorted list
+        :returns: encrypted data or None if failed
         """
 
-    def getPubKey(fingerprint):
-        """Retrieve GPG public key ASCII armored
+    def decryptContent(content, password):
+        """Decrypt content with the given password.
 
-        It also uses urllib to retrive a public key from PKS systems
+        :param content: encrypted data content
+        :param password: raw passwrod to unlock the secret key in question 
 
-        return None if not able to get the public key
+        :returns: decrypted data or None if failed
+        """
 
-        :param fingerprint: key fingerprint (no spaces)
+    def retrieveKey(fingerprint):
+        """Retrieve key information from the local keyring, if key isn't
+        present, import it from the key server before.
+
+        :param fingerprint: key fingerprint
+
+        :returns: operation result, PymeKey instance or Debug Info if result
+        is False
         """
 
 
@@ -71,5 +76,6 @@ class IPymeKey(Interface):
     algorithm = Attribute("Key Algorithm")
     revoked = Attribute("Key Revoked")
     keysize = Attribute("Key Size")
-    keyid = Attribute("Pseudo Key ID (fpr last 8 digits)")
+    keyid = Attribute("Pseudo Key ID, composed by last fingerprint 8 digits ")
     uids = Attribute("List containing only well formed and non-revoked UIDs")
+    displayname = Attribute("Key displayname: <size><type>/<keyid>")

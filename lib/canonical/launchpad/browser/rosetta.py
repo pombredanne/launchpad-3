@@ -11,8 +11,7 @@ from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
-    ILanguageSet, ILaunchBag, IGeoIP, IRequestPreferredLanguages, ICountry
-    )
+    ILanguageSet, ILaunchBag, IRequestPreferredLanguages, ICountry)
 from canonical.launchpad import helpers
 
 

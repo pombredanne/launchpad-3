@@ -14,6 +14,11 @@
         for="canonical.launchpad.interfaces.IDistroArchRelease"
         name="+index" />
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IDistroArchRelease"
+        path_expression="architecturetag"
+        attribute_to_parent="distrorelease" />
+
     <browser:traverse
         for="canonical.launchpad.database.DistroArchRelease" 
         getter="__getitem__" />
@@ -30,16 +35,13 @@
 
 	<browser:page
         name="+portlet-details"
-        template="../templates/portlet-distroarchrelease-details.pt"
-        lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+portlet-details"/>
-
+        template="../templates/distroarchrelease-portlet-details.pt" />
 	<browser:page
         name="+portlet-actions"
-        template="../templates/portlet-distroarchrelease-actions.pt"
-        lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+portlet-actions"/>
-    </browser:pages>
+        template="../templates/distroarchrelease-portlet-actions.pt" />
+  </browser:pages>
 
-    <browser:page
+  <browser:page
         for="canonical.launchpad.database.DistroArchRelease" 
         permission="zope.Public"
         name="+pkgsearch"

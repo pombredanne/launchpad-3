@@ -2,6 +2,9 @@
 #
 # arch-tag: d20d2ded-7987-4383-b5b8-4d8cd0c857ba
 
+__all__ = ['Poolifier', 'AlreadyInPool', 'NotInPool', 'DiskPoolEntry',
+           'DiskPool', 'POOL_DEBIAN']
+
 POOL_DEBIAN = object()
 
 from sets import Set

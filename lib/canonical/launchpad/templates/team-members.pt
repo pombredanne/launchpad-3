@@ -5,11 +5,14 @@
 
 <body>
 
-    <div metal:fill-slot="body">
-      <div
-        class="sidebar"
-        tal:content="structure context/team/@@+portlet-actions"
-      />
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
     <tal:block tal:define="activeMembersCount view/activeMembersCount;
                            inactiveMembersCount view/inactiveMembersCount;
                            proposedMembersCount view/proposedMembersCount">
@@ -54,7 +57,7 @@
                     >&ndash;</td>
                     <td
                       tal:condition="membership/dateexpires"
-                      talcontent="membership/dateexpires/fmt:date"
+                      tal:content="membership/dateexpires/fmt:date"
                     >2006-06-13</td>
                     <td tal:content="membership/statusname"></td>
                   </tal:block>
@@ -93,10 +96,10 @@
                 <tr>
               </tbody>
             </table>
-            <ul class="edit">
+            <ul class="edit" style="text-align: right;">
               <li>
                 <a href="+editproposed"
-                >Edit all proposed members&#8230;</a>
+                >Approve or decline members&#8230;</a>
               </li>
             </ul>
           </tal:block>
@@ -143,7 +146,7 @@
               </tbody>
             </table>
           </tal:block>
-          <ul class="add">
+          <ul class="add" style="text-align: right;">
             <li><a href="+add">Add a new member</a></li>
           </ul>
         </tal:block>

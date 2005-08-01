@@ -6,13 +6,15 @@ __all__ = ['Distribution', 'DistributionSet', 'DistroPackageFinder']
 from zope.interface import implements
 from zope.exceptions import NotFoundError
 
-from sqlobject import (RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey,
+from sqlobject import (
+    RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey,
     MultipleJoin)
 
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.launchpad.database.bug import BugTask
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.lp.dbschema import (EnumCol, BugTaskStatus,
     DistributionReleaseStatus, TranslationPermission)
 from canonical.launchpad.interfaces import (IDistribution, IDistributionSet,
@@ -26,11 +28,11 @@ class Distribution(SQLBase):
     _defaultOrder='name'
 
     name = StringCol(notNull=True, alternateID=True, unique=True)
-    displayname = StringCol()
-    title = StringCol()
-    summary = StringCol()
-    description = StringCol()
-    domainname = StringCol()
+    displayname = StringCol(notNull=True)
+    title = StringCol(notNull=True)
+    summary = StringCol(notNull=True)
+    description = StringCol(notNull=True)
+    domainname = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
     translationgroup = ForeignKey(dbName='translationgroup',
@@ -39,12 +41,28 @@ class Distribution(SQLBase):
         notNull=True, schema=TranslationPermission,
         default=TranslationPermission.OPEN)
     releases = MultipleJoin('DistroRelease', joinColumn='distribution',
-                            orderBy='-id')
+                            orderBy='id')
     bounties = RelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistroBounty')
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
-    lucilleconfig = StringCol()
+    lucilleconfig = StringCol(notNull=False, default=None)
+
+    def search(self, bug=None, searchtext=None, status=None, priority=None,
+               severity=None, milestone=None, assignee=None, owner=None,
+               orderby=None, statusexplanation=None, user=None):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        # As an initial refactoring, we're wrapping BugTaskSet.search.
+        # It's possible that the search code will live inside this
+        # method instead at some point.
+        #
+        # The implementor who would make such a change should be
+        # mindful of bug privacy.
+        return BugTaskSet().search(
+            distribution=self, bug=bug, searchtext=searchtext, status=status,
+            priority=priority, severity=severity, milestone=milestone,
+            assignee=assignee, owner=owner, orderby=orderby,
+            statusexplanation=statusexplanation, user=user)
 
     def currentrelease(self):
         # if we have a frozen one, return that
@@ -64,11 +82,6 @@ class Distribution(SQLBase):
             return self.releases[0]
         return None
     currentrelease = property(currentrelease)
-
-    def memberslist(self):
-        if not ITeam.providedBy(self.members):
-            return
-        return ITeamMembershipSubset(self.members).getActiveMemberships()
 
     def __getitem__(self, name):
         for release in self.releases:
@@ -154,6 +167,17 @@ class DistributionSet:
         """Returns a Distribution with name = name"""
         return self[name]
 
+    def new(self, name, displayname, title, description, summary, domainname,
+            members, owner):
+        return Distribution(
+            name=name,
+            displayname=displayname,
+            title=title,
+            description=description,
+            summary=summary,
+            domainname=domainname,
+            members=members,
+            owner=owner)
 
 class DistroPackageFinder:
 

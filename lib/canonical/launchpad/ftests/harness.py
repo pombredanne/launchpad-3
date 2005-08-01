@@ -23,6 +23,7 @@ __all__ = [
     'LaunchpadTestSetup', 'LaunchpadTestCase',
     'LaunchpadZopelessTestSetup',
     'LaunchpadFunctionalTestSetup', 'LaunchpadFunctionalTestCase',
+    '_disconnect_sqlos', '_reconnect_sqlos'
     ]
 
 def _disconnect_sqlos():

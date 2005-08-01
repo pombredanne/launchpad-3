@@ -18,20 +18,20 @@
     for="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
     permission="zope.Public"
     class="canonical.launchpad.browser.SourcePackageReleasePublishingView">
-   <browser:page
-     name="+index"
-     template="../templates/sourcepackagerelease-index.pt"
-     lp:url="/distros/ubuntu/hoary/+sources/+index" />
-
-   <!--    SourcePackageReleasePublishing portlets -->
-   <browser:page
-     name="+portlet-actions"
-     template="../templates/portlet-sourcepackagerelease-actions.pt"
-     lp:url="/distros/ubuntu/hoary/+sources/+portlet-actions" />
-   <browser:page
-     name="+portlet-lastversions"
-     template="../templates/portlet-sourcepackagerelease-lastversions.pt"
-     lp:url="/distros/ubuntu/hoary/+sources/+portlet-lastversions" />
-   </browser:pages>
+    <browser:page
+      name="+index"
+      template="../templates/sourcepackagerelease-index.pt"
+      lp:url="/distros/ubuntu/hoary/+sources/+index" />
+    <!--    SourcePackageReleasePublishing portlets -->
+    <browser:page
+      name="+portlet-actions"
+      template="../templates/sourcepackagerelease-portlet-actions.pt"
+      lp:url="/distros/ubuntu/hoary/+sources/+portlet-actions" />
+    <browser:page
+      name="+portlet-lastversions"
+      template="../templates/sourcepackagerelease-portlet-lastversions.pt"
+      lp:url="/distros/ubuntu/hoary/+sources/+portlet-lastversions" />
+  </browser:pages>
 
 </configure>
+

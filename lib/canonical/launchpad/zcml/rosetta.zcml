@@ -77,4 +77,13 @@
             lp:url="Rosetta/prefs" />
     </browser:pages>
 
+  <!-- Rosetta Stats Views -->
+  <browser:pages
+    for="canonical.launchpad.interfaces.IRosettaStats"
+    permission="zope.Public">
+    <browser:page
+      name="+barchart"
+      template="../templates/pofile-barchart.pt" />
+  </browser:pages>
+
 </configure>

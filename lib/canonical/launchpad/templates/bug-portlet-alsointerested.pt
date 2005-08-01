@@ -1,0 +1,17 @@
+<div class="portlet">
+  <h4>Also interested:</h4>
+  <div class="portletBody">
+    <div class="portletContent odd">
+      <ul>
+        <li tal:repeat="subscription view/getWatches">
+          <a href="." tal:content="subscription/person/browsername" />
+        </li>
+      </ul>
+      <br />
+      <div class="field">
+        <label tal:content="view/addwatch_widget/label">blah</label><br />
+        <tal:block content="structure view/addwatch_widget" />
+      </div>
+    </div>
+  </div>
+</div>

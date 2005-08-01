@@ -15,30 +15,66 @@
 #    along with this program; if not, write to the Free Software
 #    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-__all__ = ['ArchiveAlreadyRegistered', 'ArchiveNotRegistered',
-           'ArchiveLocationDoublyRegistered', 'RevisionNotRegistered',
-           'RevisionAlreadyRegistered', 'VersionNotRegistered',
-           'VersionAlreadyRegistered', 'BranchAlreadyRegistered',
-           'CategoryAlreadyRegistered', 'IBranch',
-           'NamespaceError',
-           'IArchive', 'IArchiveLocation',
-           'IArchiveCollection', 'INamespaceObject',
-           'ISourceTreeAPI', 'ISourceTreeFactory',
-           'IFileName', 'IArchiveItem', 'ICategoryItem',
-           'IRevisionFactory', 'IPatchlog',
-           'ICategoryFactory', 'ILogMessage', 
-           'IArchSourceTree', 'IDirName', 'IPathNameFactory',
-           'IBranchItem', 'IVersionItem', 'IBranchFactory',
-           'ISetupable', 'IPackage', 'IVersion', 'IRevision',
-           'IRevisionIterable', 'ICategoryIterable',
-           'IVersionIterable', 'IBranchIterable',
-           'ILogMessageFactory', 'IPathName'
-           ]
+__all__ = [
+    'ArchiveAlreadyRegistered',
+    'ArchiveLocationDoublyRegistered',
+    'ArchiveNotRegistered',
+    'BranchAlreadyRegistered',
+    'CategoryAlreadyRegistered',
+    'IArchive',
+    'IArchiveAPI',
+    'IArchiveCollection',
+    'IArchiveItem',
+    'IArchiveLocation',
+    'IArchSourceTree',
+    'IBranch',
+    'IBranchFactory',
+    'IBranchItem',
+    'IBranchIterable',
+    'ICategory',
+    'ICategoryFactory',
+    'ICategoryItem',
+    'ICategoryIterable',
+    'IChangeset',
+    'IChangesetAPI',
+    'IChangesetFactory',
+    'IDirName',
+    'IFileName',
+    'ILogMessage',
+    'ILogMessageFactory',
+    'INameParser',
+    'INameParserFactory',
+    'INamePartParser',
+    'INamespaceObject',
+    'IPackage',
+    'IPatchlog',
+    'IPatchlogFactory',
+    'IPathName',
+    'IPathNameFactory',
+    'IRevision',
+    'IRevisionFactory',
+    'IRevisionIterable',
+    'ISetupable',
+    'ISourceTreeAPI',
+    'ISourceTreeFactory',
+    'IUserAPI',
+    'IVersion',
+    'IVersionFactory',
+    'IVersionItem',
+    'IVersionIterable',
+    'IWorkingTree',
+    'NamespaceError',
+    'RevisionAlreadyRegistered',
+    'RevisionNotRegistered',
+    'TreeRootError',
+    'VersionAlreadyRegistered',
+    'VersionNotRegistered',
+    ]
 
 __docformat__ = "restructuredtext en"
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, Datetime, Int, Text, TextLine, Float
+from zope.schema import Int
 from canonical.launchpad.fields import Title
 
 from zope.i18nmessageid import MessageIDFactory

@@ -7,19 +7,20 @@
 
 <div metal:fill-slot="main">
 
-    <h1> <span tal:content="context/binarypackagerelease/name"/>
-	 <span tal:content="context/binarypackagerelease/version"/>
-    License</h1>
+      <h1>
+        <span tal:replace="context/binarypackagerelease/name"/>
+        <span tal:replace="context/binarypackagerelease/version"/>
+        license
+      </h1>
     
-    <pre>
-      <span tal:content="context/binarypackagerelease/licence" />
-    </pre>
+      <pre tal:content="context/binarypackagerelease/licence" />
+      </pre>
 
-
-    <h3>Back to <a href="./" 
+      <div>
+        Back to <a href="./" 
 	           tal:content="string:${context/binarypackagerelease/name} ${context/binarypackagerelease/version}">
 	           BIN</a> Page.
-
+      </div>
 </div>
 </body>
 </html>

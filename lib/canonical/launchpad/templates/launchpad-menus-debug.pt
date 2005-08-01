@@ -1,0 +1,37 @@
+<html>
+<head>
+  <title>
+    Launchpad menus debug information
+  </title>
+</head>
+<body>
+<h2>Request</h2>
+<ul>
+  <li tal:content="request/getURL"> </li>
+</ul>
+<h2>Facets</h2>
+<tal:block tal:define="menu context/menu:facet">
+  <metal:define metal:define-macro="show-menu">
+    <p tal:condition="not: menu">No links.</p>
+    <ul tal:condition="menu">
+      <li tal:repeat="link menu">
+      <strong tal:content="link/text" />
+        <ul>
+          <li>url: <span tal:content="link/url" /></li>
+          <li>target: <span tal:content="link/target" /></li>
+          <li>selected: <span tal:content="link/selected" /></li>
+          <li>linked: <span tal:content="link/linked" /></li>
+          <li>text: <span tal:content="link/text" /></li>
+          <li>summary: <span tal:content="link/summary" /></li>
+        </ul>
+      </li>
+    </ul>
+  </metal:define>
+</tal:block>
+
+<h2>Menus</h2>
+<tal:block tal:define="menu context/menu:application">
+  <metal:use metal:use-macro="template/macros/show-menu" />
+</tal:block>
+</body>
+</html>

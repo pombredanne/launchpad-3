@@ -17,6 +17,7 @@ class TestRow:
             'pofile': None,
             'variant': None,
             'isfuzzy': False,
+            'potheader': 'Project-Id-Version: foo\n',
             'poheader': 'Content-Type: text/plain; charset=UTF-8\n',
             'potopcomment': '',
             'pofuzzyheader': False,
@@ -315,7 +316,7 @@ class HeaderUpdateTest(ExportTest):
             datecreated = datetime.fromtimestamp(
                 1000000000, pytz.timezone('UTC')))
         mock_pofile = Mock(
-            latest_submission=mock_submission)
+            latestsubmission=mock_submission)
 
         # The existing header has both fields that should be preserved and
         # fields that need updating.
@@ -352,6 +353,42 @@ class HeaderUpdateTest(ExportTest):
 
         self.test_export([test_row], expected_pofiles)
 
+class DomainHeaderUpdateTest(ExportTest):
+    """Test that the Domain header gets copied into the PO file when it's
+    present in the PO template.
+    """
+
+    def runTest(self):
+        test_row = TestRow(
+            potemplate=1,
+            potsequence=1,
+            posequence=1,
+            language='es',
+            msgid='foo',
+            translation='bar',
+            msgidpluralform=0,
+            translationpluralform=0,
+            potheader=(
+                'Domain: blahdomain\n'),
+            poheader=(
+                'Project-Id-Version: foo\n'
+                'Content-Type: text/plain; charset=UTF-8\n'
+                'Language-Team: Spanish <es@li.org>\n'))
+
+        expected_pofiles = [[
+            'msgid ""',
+            'msgstr ""',
+            '"Project-Id-Version: foo\\n"',
+            '"Content-Type: text/plain; charset=UTF-8\\n"',
+            '"Language-Team: Spanish <es@li.org>\\n"',
+            '"Domain: blahdomain\\n"',
+            '',
+            'msgid "foo"',
+            'msgstr "bar"',
+        ]]
+
+        self.test_export([test_row], expected_pofiles)
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(BasicExportTest())
@@ -359,6 +396,7 @@ def test_suite():
     suite.addTest(IncompletePluralMessageTest())
     suite.addTest(InactiveTranslationTest())
     suite.addTest(HeaderUpdateTest())
+    suite.addTest(DomainHeaderUpdateTest())
     return suite
 
 if __name__ == '__main__':

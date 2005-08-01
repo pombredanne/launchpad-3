@@ -6,13 +6,12 @@ __all__ = ['TranslationGroup', 'TranslationGroupSet']
 from zope.interface import implements
 from zope.exceptions import NotFoundError
 
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
-from sqlobject import CurrencyCol
-from sqlobject import MultipleJoin, RelatedJoin
+from sqlobject import (DateTimeCol, ForeignKey, StringCol, MultipleJoin,
+                       RelatedJoin)
 from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import \
-    ITranslationGroup, ITranslationGroupSet, IAddFormCustomization
+    ITranslationGroup, ITranslationGroupSet
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT

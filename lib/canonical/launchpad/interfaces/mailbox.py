@@ -1,6 +1,13 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""Mail box interfaces."""
+
 __metaclass__ = type
+
+__all__ = [
+    'MailBoxError',
+    'IMailBox',
+    ]
 
 from zope.interface import Interface
 
@@ -12,11 +19,11 @@ class MailBoxError(Exception):
 class IMailBox(Interface):
     def open():
         """Opens the mail box.
-       
+
         Raises MailBoxError if the mail box can't be opened.
-        
+
         This method has to be called before any operations on the mail
-        box is performed. 
+        box is performed.
         """
 
     def items():
@@ -29,7 +36,7 @@ class IMailBox(Interface):
 
     def delete(id):
         """Deletes the mail with the given id.
-        
+
         Raises MailBoxError if the mail couldn't be deleted.
         """
 

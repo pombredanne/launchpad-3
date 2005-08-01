@@ -2,37 +2,37 @@
 
 __metaclass__ = type
 
-from datetime import datetime, timedelta
+__all__ = [
+    'TeamEditView',
+    'TeamEmailView',
+    'TeamAddView',
+    'TeamMembersView',
+    'ProposedTeamMembersEditView',
+    'AddTeamMemberView',
+    'TeamMembershipEditView',
+    ]
 
 import pytz
 
-# zope imports
-from zope.schema import TextLine
+from datetime import datetime
+
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from zope.component import getUtility
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-# interface import
-from canonical.launchpad.interfaces import IPersonSet, ILaunchBag, ITeam
-from canonical.launchpad.interfaces import IEmailAddressSet
-from canonical.launchpad.interfaces import ILoginTokenSet
-from canonical.launchpad.interfaces import ITeamMembershipSet
-from canonical.launchpad.interfaces import ITeamMembershipSubset
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
+from canonical.launchpad.interfaces import (
+    IPersonSet, ILaunchBag, IEmailAddressSet, ILoginTokenSet,
+    ITeamMembershipSet, ITeamMembershipSubset, ILaunchpadCelebrities)
 
 from canonical.config import config
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
-# lp imports
 from canonical.lp.dbschema import TeamMembershipStatus, LoginTokenType
-from canonical.lp.dbschema import TeamSubscriptionPolicy
 
 from canonical.database.sqlbase import flush_database_updates
 
@@ -41,7 +41,7 @@ class TeamEditView(SQLObjectEditView):
 
     def __init__(self, context, request):
         SQLObjectEditView.__init__(self, context, request)
-        self.team = self.context
+        self.team = context
 
 
 class TeamEmailView:
@@ -131,26 +131,9 @@ class TeamEmailView:
         appurl = self.request.getApplicationURL()
         sendEmailValidationRequest(self.team, email, appurl)
         self.feedback = (
-            "A new message was sent to '%s', please follow the instructions "
-            "on that message to validate the new contact email address of "
-            "this team." % email)
-
-
-class ITeamCreation(ITeam):
-    """An interface to be used by the team creation form.
-
-    We need this special interface so we can allow people to specify a contact
-    email address for a team upon its creation.
-    """
-
-    contactemail = TextLine(
-        title=_("Contact Email Address"), required=False, readonly=False,
-        description=_(
-            "This is the email address we'll send all notifications to this "
-            "team. If no contact address is chosen, notifications directed to "
-            "this team will be sent to all team members. After finishing the "
-            "team creation, a new message will be sent to this address with "
-            "instructions on how to finish its registration."))
+            "An e-mail message was sent to '%s'. Follow the "
+            "instructions in that message to confirm the new "
+            "contact address for this team." % email)
 
 
 class TeamAddView(AddView):
@@ -209,135 +192,6 @@ def sendEmailValidationRequest(team, email, appurl):
     simple_sendmail(fromaddress, token.email, subject, message)
 
 
-class TeamView:
-    """A simple View class to be used in Team's pages where we don't have
-    actions to process.
-    """
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.team = self.context
-
-    def activeMembersCount(self):
-        return len(self.context.activemembers)
-
-    def userIsOwner(self):
-        """Return True if the user is the owner of this Team."""
-        user = getUtility(ILaunchBag).user
-        if user is None:
-            return False
-
-        return user.inTeam(self.context.teamowner)
-
-    def userHasMembershipEntry(self):
-        """Return True if the logged in user has a TeamMembership entry for
-        this Team."""
-        return bool(self._getMembershipForUser())
-
-    def userIsActiveMember(self):
-        """Return True if the logged in user has a TeamParticipation entry
-        for this Team. This implies a membership status of either ADMIN or
-        APPROVED."""
-        user = getUtility(ILaunchBag).user
-        if user is None:
-            return False
-
-        return user.inTeam(self.context)
-
-    def membershipStatusDesc(self):
-        tm = self._getMembershipForUser()
-        assert tm is not None, (
-            'This method is not meant to be called for users which are not '
-            'members of this team.')
-
-        description = tm.status.description
-        if tm.status == TeamMembershipStatus.DEACTIVATED and tm.reviewercomment:
-            description += ("The reason for the deactivation is: '%s'"
-                            % tm.reviewercomment)
-        return description
-
-    def userCanRequestToLeave(self):
-        """Return true if the user can request to leave this team.
-
-        The user can request only if its subscription status is APPROVED or
-        ADMIN.
-        """
-        tm = self._getMembershipForUser()
-        if tm is None:
-            return False
-
-        allowed = [TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN]
-        if tm.status in allowed:
-            return True
-        else:
-            return False
-
-    def userCanRequestToJoin(self):
-        """Return true if the user can request to join this team.
-
-        The user can request if it never asked to join this team, if it
-        already asked and the subscription status is DECLINED or if the team's
-        subscriptionpolicy is OPEN and the user is not an APPROVED or ADMIN
-        member.
-        """
-        tm = self._getMembershipForUser()
-        if tm is None:
-            return True
-
-        adminOrApproved = [TeamMembershipStatus.APPROVED,
-                           TeamMembershipStatus.ADMIN]
-        open = TeamSubscriptionPolicy.OPEN
-        if tm.status == TeamMembershipStatus.DECLINED or (
-            tm.status not in adminOrApproved and
-            tm.team.subscriptionpolicy == open):
-            return True
-        else:
-            return False
-
-    def _getMembershipForUser(self):
-        user = getUtility(ILaunchBag).user
-        if user is None:
-            return None
-        tms = getUtility(ITeamMembershipSet)
-        return tms.getByPersonAndTeam(user.id, self.context.id)
-
-    def joinAllowed(self):
-        """Return True if this is not a restricted team."""
-        restricted = TeamSubscriptionPolicy.RESTRICTED
-        return self.context.subscriptionpolicy != restricted
-
-
-class TeamJoinView(TeamView):
-
-    def processForm(self):
-        if self.request.method != "POST" or not self.userCanRequestToJoin():
-            # Nothing to do
-            return
-
-        user = getUtility(ILaunchBag).user
-        if self.request.form.get('join'):
-            user.join(self.context)
-            appurl = self.request.getApplicationURL()
-            notify(JoinTeamRequestEvent(user, self.context, appurl))
-
-        self.request.response.redirect('./')
-
-
-class TeamLeaveView(TeamView):
-
-    def processForm(self):
-        if self.request.method != "POST" or not self.userCanRequestToLeave():
-            # Nothing to do
-            return
-
-        user = getUtility(ILaunchBag).user
-        if self.request.form.get('leave'):
-            user.leave(self.context)
-
-        self.request.response.redirect('./')
-
-
 class TeamMembersView:
 
     def __init__(self, context, request):
@@ -384,7 +238,6 @@ class ProposedTeamMembersEditView:
         expires = team.defaultexpirationdate
         for person in team.proposedmembers:
             action = self.request.form.get('action_%d' % person.id)
-            membership = _getMembership(person.id, team.id)
             if action == "approve":
                 status = TeamMembershipStatus.APPROVED
             elif action == "decline":

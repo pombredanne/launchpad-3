@@ -6,134 +6,138 @@
 <head>
     <tal:block metal:fill-slot="head_epilogue">
         <link rel="meta" type="application/rdf+xml" title="FOAF" href="+rdf"
-            tal:condition="context/preferredemail" />
+              tal:condition="context/preferredemail" />
     </tal:block>
 </head>
 
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-views" />
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-emails" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-actions" />
+    <div tal:replace="structure context/@@+portlet-calendar" />
 </metal:rightportlets>
 
-<div metal:fill-slot="main">
+  <div metal:fill-slot="main">
 
-      <h1><span tal:content="context/browsername">browsername</span>
-      <i tal:condition="context/ubuntite">(Ubuntite)</i></h1>
+      <table>
+        <tr tal:condition="context/wiki">
+          <th>Wiki:</th>
+          <td><a tal:content="context/wiki/wikiname" 
+                 tal:attributes="href context/wiki/url">WikiName</a>
+          </td>
+        </tr>
 
-      <br/>
+        <tr tal:condition="context/irc">
+          <th>IRC:</th>
+          <td><code style="font-size: 120%"
+                    tal:content="context/irc/nickname"/>
+              on network <code style="font-size: 120%"
+                               tal:content="context/irc/network" />
+          </td>
+        </tr> 
 
-        <table>
-          <tr>
-            <td>Name:</td>
-            <td tal:content="string:${context/browsername} 
-                            (${context/name})">NAME(NICK)</td>
-          </tr>
+        <tr tal:condition="context/jabber">
+          <th>Jabber:</th>
+          <td tal:content="context/jabber/jabberid"></td>
+        </tr> 
 
-          <tr tal:condition="context/teamowner">
-            <td>Owner:</td>
-            <td><a tal:attributes="href string:../${context/teamowner/name}"
-                   tal:content="context/teamowner/browsername"></a></td>
-          </tr>
+        <tr tal:condition="context/archuser">
+          <th>Arch User:</th>
+          <td tal:content="context/archuser/archuserid"></td>
+        </tr>
 
-          <tr tal:condition="context/teamdescription">
-            <td>Description:</td>
-            <td tal:content="context/teamdescription">DESCRIPTION</td>
-          </tr>
-               
-          <tal:dummy tal:condition="request/lp:person">
-          <tal:dummy tal:condition="context/preferredemail">
-          <tr>
-            <td>Email:</td>
-            <td><span tal:replace="structure view/htmlEmail"></span></td>
-          </tr>
-          </tal:dummy>
+        <tr tal:condition="view/gpgkeysCount">
+          <th>GPG Keys:</th>
+          <td>
+            <span tal:replace="view/gpgkeysCount">0</span> GPG key(s)
+          </td>
+        </tr>
 
-          <tal:dummy tal:condition="not: context/preferredemail">
-            <tal:dummy tal:condition="not: context/validatedemails">
-            <tr>
-              <td>Email:</td>
-              <td>0 validated email addresses 
-                [<a href="+emails">Add or validate emails</a>]</td>
-            </tr>
-            </tal:dummy>
+        <tr tal:condition="context/sshkeys">
+          <th>SSH Keys:</th>
+          <td>
+            <a href="+sshkey"><span tal:replace="view/sshkeysCount">0</span> SSH key(s)</a>
+          </td>
+        </tr>
 
-            <tal:dummy tal:condition="context/validatedemails">
-            <tr>
-              <td>Email:</td>
-              <td><span tal:content="context/validatedemails/count:len" />
-                  validated email addresses. [<a href="+emails">Add emails or
-                    set one of yours as preferred</a>]
-              </td>
-            </tal:dummy>
-          </tal:dummy>
-          </tal:dummy>
+      </table>
+     
+      <br />
 
-          <tr tal:condition="context/wiki">
-            <td>Wiki:</td>
-            <td><a tal:attributes="href string:${context/wiki/wiki}${context/wiki/wikiname}">Wiki</a>
-            </td>
-          </tr>
+      <!-- Members of this team -->
+      <tal:block condition="context/isTeam">
+        <h2>Team Members</h2>
 
-          <tr tal:condition="context/irc">
-            <td>IRC:</td>
-            <td><span tal:content="context/irc/nickname"/> at 
-                <span tal:content="context/irc/network"/>
-            </td>
-          </tr> 
+        <p><span tal:replace="context/browsername">Ubuntu Members</span>
+        is a team, and includes the following people (and teams) as
+        members:</p>
 
-          <tr tal:condition="context/jabber">
-            <td>Jabber:</td>
-            <td tal:content="context/jabber/jabberid"></td>
-          </tr> 
+        <ul>
+          <li tal:repeat="member context/members">
+            <a tal:content="member/person/browsername"
+               tal:attributes="href member/person/fmt:url">Joe Soap</a>
+              (<span tal:replace="member/status/title">Admin</span>)
+          </li>
+        </ul>
+      </tal:block>
 
-          <tr tal:condition="context/archuser">
-            <td>Arch User:</td>
-            <td tal:content="context/archuser/archuserid"></td>
-          </tr>
+      <!-- Teams which I'm a member -->
+      <tal:block condition="context/memberships">
+        <h2>Team Memberships</h2>
 
-          <tr tal:condition="context/karma">
-            <td>Karma:</td>
-            <td tal:content="context/karma"></td>
-          </tr>
+        <p tal:condition="context/isTeam">
+          Note: this is a team, which is in turn a member of the following
+          teams. That means that all the members of THIS team are also
+          members in the teams below.
+        </p>
 
-          <tr>
-            <td>GPG Keys:</td>
-            <td>
-              <span tal:replace="view/gpgkeysCount">0</span> GPG key(s)
-            </td>
-          </tr>
+        <p><span tal:replace="context/browsername">Foo Bar</span> is a
+        member of the following teams:</p>
+        
+        <ul>
+          <li class="person"
+              tal:repeat="membership context/memberships">
+            <a tal:attributes="href string:../${membership/team/name}"
+               tal:content="membership/team/browsername">foo</a>
+            (<span tal:replace="membership/statusname">
+              Administrator
+            </span>)
+          </li>
+        </ul>
+      </tal:block>
 
-          <tr tal:condition="context/sshkeys">
-            <td>SSH Keys:</td>
-            <td>
-              <a href="+sshkey"><span tal:replace="view/sshkeysCount">0</span> SSH key(s)</a>
-            </td>
-          </tr>
+      <tal:block condition="context/isTeam">
+        <h2>Your involvement</h2>
 
-        </table>
-
-
-        <!-- Teams which I'm a member of -->
-        <div tal:condition="context/memberships">
-          <fieldset>
-            <legend><span tal:replace="context/browsername"></span> is
-            </legend>
-            <table>
-              <tr tal:repeat="membership context/memberships">
-                <td>
-                  <span tal:replace="membership/statusname"></span> of 
-                  <a tal:attributes="href string:../${membership/team/name}"
-                     tal:content="membership/team/browsername">foo</a>
-                </td>
-            </tr>
-            </table>
-          </fieldset>
-        </div>
+        <p tal:condition="not: request/lp:person">
+          You must <a href="+login">log in</a>
+          before you can join or leave this team.
+        </p>
+        <tal:block condition="request/lp:person">
+          <tal:block condition="view/userIsOwner">
+            <p tal:condition="view/userIsActiveMember">
+              You are the owner of this team.
+            </p>
+            <p tal:condition="not: view/userIsActiveMember">
+              You are the owner of this team,
+              but not currently an active member.
+            </p>
+          </tal:block>
+          <tal:block condition="not: view/userIsOwner">
+            <p tal:condition="view/userIsActiveMember">
+              You are a member of this team.
+            </p>
+            <p tal:condition="not: view/userIsActiveMember">
+              You are not a member of this team.
+            </p>
+          </tal:block>
+        </tal:block>
+      </tal:block>
 
     </div> 
 </body>

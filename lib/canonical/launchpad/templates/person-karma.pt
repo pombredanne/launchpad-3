@@ -5,16 +5,16 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-views" />
+  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
+  <div tal:replace="structure context/@@+portlet-actions" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-  <h1>Activities Performed in Launchpad</h1>
+  <h1>Launchpad Karma</h1>
 
   <p>This is a summary of all activities performed by <span
     tal:replace="context/browsername" /> in Launchpad, organized per activity
@@ -28,15 +28,18 @@
           <span tal:replace="actionCategory/title" />
 
           <table class="listing data">
-            <tr>
-              <th>Action</th>
-              <th>Number of times performed</th>
-            </tr>
-            
-            <tr tal:repeat="action actions">
-              <td><span tal:replace="action/name/title" /></td>
-              <td><span tal:replace="python:view.actionsCount(action)" /></td>
-            </tr>
+            <thead>
+              <tr>
+                <th>Action</th>
+                <th>Number of times performed</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr tal:repeat="action actions">
+                <td><span tal:replace="action/name/title" /></td>
+                <td><span tal:replace="python:view.actionsCount(action)" /></td>
+              </tr>
+            </tbody>
           </table>
         </li>
         <br />

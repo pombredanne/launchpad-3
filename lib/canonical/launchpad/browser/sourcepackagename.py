@@ -1,21 +1,19 @@
-# Python imports
-import re
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-# zope imports
+__metaclass__ = type
+
+__all__ = [
+    'SourcePackageNameSetView',
+    'SourcePackageNameAddView',
+    ]
+
 from zope.component import getUtility
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form.browser.add import AddView
-from zope.app.form.interfaces import WidgetsError
-from zope.app.form.browser import SequenceWidget, ObjectWidget
-from zope.app.form import CustomWidgetFactory
 
-# launchpad import
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
-
-# launchpad database and interfaces import
-from canonical.launchpad.database import SourcePackageName
-from canonical.launchpad.interfaces import ISourcePackageName
+from canonical.launchpad.interfaces import (
+    ISourcePackageName, ISourcePackageNameSet)
 
 BATCH_SIZE = 40
 
@@ -45,11 +43,6 @@ class SourcePackageNameAddView(AddView):
 
     __used_for__ = ISourcePackageName
 
-    ow = CustomWidgetFactory(ObjectWidget, SourcePackageName)
-    sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
-    options_widget = sw
-
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -58,8 +51,9 @@ class SourcePackageNameAddView(AddView):
 
     def createAndAdd(self, data):
         self.name = data['name']
-        SourcePackageName.ensure(self.name)
-        self._nextURL = '.?name=%s'%self.name
+        name_set = getUtility(ISourcePackageNameSet)
+        name_set.getOrCreateByName(self.name)
+        self._nextURL = '.?name=%s' % self.name
 
     def nextURL(self):
         return self._nextURL

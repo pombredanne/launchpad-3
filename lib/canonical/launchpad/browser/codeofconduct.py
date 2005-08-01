@@ -1,50 +1,42 @@
-"""
-Zope View Classes to handle Signed Code of Conducts.
-Copyright 2004 Canonical Ltd.  All rights reserved.
-"""
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""View classes to handle signed Codes of Conduct."""
 
 __metaclass__ = type
 
-# zope imports
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser import SequenceWidget, ObjectWidget
+__all__ = [
+    'CodeOfConductView',
+    'CodeOfConductDownloadView',
+    'CodeOfConductSetView',
+    'SignedCodeOfConductAddView',
+    'SignedCodeOfConductAckView',
+    'SignedCodeOfConductView',
+    'SignedCodeOfConductAdminView',
+    'SignedCodeOfConductActiveView',
+    'SignedCodeOfConductDeactiveView',
+    ]
+
 from zope.app.form.browser.add import AddView, EditView
-from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 from zope.component import getUtility
+from zope.app.form.interfaces import WidgetsError
 from zope.exceptions import NotFoundError
 import zope.security.interfaces
 
 from canonical.database.constants import UTC_NOW
 
-# lp imports
-from canonical.lp import dbschema                       
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
-
 # interface import
-from canonical.launchpad.interfaces import IPerson, ILaunchBag,\
-                                           ICodeOfConduct,\
-                                           ISignedCodeOfConduct,\
-                                           ISignedCodeOfConductSet
-
-
-# python
-from datetime import datetime
-
-# XXX: cprov 20050224
-# Avoid the use of Content classes here !
-from canonical.launchpad.database import SignedCodeOfConduct
+from canonical.launchpad.interfaces import (
+    IPerson, ILaunchBag, ICodeOfConduct, ISignedCodeOfConduct,
+    ISignedCodeOfConductSet)
 
 
 class CodeOfConductView(object):
     """Simple view class for CoC page."""
-    
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
-
+        self.bag = getUtility(ILaunchBag)
 
 class CodeOfConductDownloadView(object):
     """Download view class for CoC page.
@@ -68,7 +60,7 @@ class CodeOfConductDownloadView(object):
         # Build a fancy filename:
         # - Use title with no spaces and append '.txt'
         filename = self.context.title.replace(' ', '') + '.txt'
-        
+
         self.request.response.setHeader('Content-Type', 'application/text')
         self.request.response.setHeader('Content-Length', len(content))
         self.request.response.setHeader('Content-Disposition',
@@ -78,7 +70,7 @@ class CodeOfConductDownloadView(object):
 
 class CodeOfConductSetView(object):
     """Simple view class for CoCSet page."""
-    
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -89,16 +81,11 @@ class SignedCodeOfConductAddView(AddView):
 
     __used_for__ = ICodeOfConduct
 
-    ow = CustomWidgetFactory(ObjectWidget, SignedCodeOfConduct)
-    sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
-    options_widget = sw
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.bag = getUtility(ILaunchBag)
         self.page_title = self.label
-        self._nextURL = '.'
         AddView.__init__(self, context, request)
 
     def createAndAdd(self, data):
@@ -116,10 +103,11 @@ class SignedCodeOfConductAddView(AddView):
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         info = sCoC_util.verifyAndStore(**kw)
 
-        # xxx cprov 20050328
-        # raising wrong exception 
-        if info != None:
-            raise NotFoundError(info)
+        if info:
+            self.errors = info
+            raise WidgetsError([self.errors])
+        
+        self._nextURL = '/people/%s/+codesofconduct' % owner.name
         
     def nextURL(self):
         return self._nextURL
@@ -129,10 +117,6 @@ class SignedCodeOfConductAckView(AddView):
     """Acknowledge a Paper Submitted CoC."""
 
     __used_for__ = ICodeOfConduct
-
-    ow = CustomWidgetFactory(ObjectWidget, SignedCodeOfConduct)
-    sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
-    options_widget = sw
 
     def __init__(self, context, request):
         self.context = context
@@ -145,7 +129,7 @@ class SignedCodeOfConductAckView(AddView):
     def createAndAdd(self, data):
         """Verify and Add the Acknowledge SignedCoC entry."""
         kw = {}
-        
+
         for key, value in data.items():
             kw[str(key)] = value
 
@@ -154,9 +138,9 @@ class SignedCodeOfConductAckView(AddView):
         kw['user'] = kw['owner']
         del kw['owner']
 
-        recipient = IPerson(self.request.principal, None)
+        recipient = getUtility(ILaunchBag).user
         kw['recipient'] = recipient
-        
+
         # use utility to store it in the database
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         sCoC_util.acknowledgeSignature(**kw)
@@ -167,12 +151,12 @@ class SignedCodeOfConductAckView(AddView):
 
 class SignedCodeOfConductView(object):
     """Simple view class for SignedCoC page."""
-    
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        
-    
+
+
 class SignedCodeOfConductAdminView(object):
     """Admin Console for SignedCodeOfConduct Entries."""
 
@@ -181,7 +165,7 @@ class SignedCodeOfConductAdminView(object):
         self.request = request
         self.bag = getUtility(ILaunchBag)
         self.results = None
-        
+
     def search(self):
         """Search Signed CoC by Owner Displayname"""
         name = self.request.form.get('name')
@@ -200,36 +184,6 @@ class SignedCodeOfConductAdminView(object):
 
             return True
 
-        
-class SignedCodeOfConductEditView(EditView):
-    """Edit a SignedCodeOfConduct Entry.
-    When edited:
-     * set new datecreated,
-     * clear recipient,
-     * clear admincomment,
-     * clear active.
-    """
-
-    __used_for__ = ISignedCodeOfConduct
-
-    ow = CustomWidgetFactory(ObjectWidget, SignedCodeOfConduct)
-    sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
-    options_widget = sw
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.page_title = self.label
-        EditView.__init__(self, context, request)
-
-    def changed(self):
-        self.context.datecreated = UTC_NOW
-        self.context.recipient = None
-        self.context.admincomment = None
-        self.context.active = None
-        # now redirect to view the SignedCoC
-        self.request.response.redirect(self.request.URL[-1])
-
 
 class SignedCodeOfConductActiveView(EditView):
     """Active a SignedCodeOfConduct Entry.
@@ -240,10 +194,6 @@ class SignedCodeOfConductActiveView(EditView):
     """
 
     __used_for__ = ISignedCodeOfConduct
-
-    ow = CustomWidgetFactory(ObjectWidget, SignedCodeOfConduct)
-    sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
-    options_widget = sw
 
     def __init__(self, context, request):
         self.context = context
@@ -263,7 +213,7 @@ class SignedCodeOfConductActiveView(EditView):
             kw['admincomment'] = admincomment
             kw['sign_id'] = self.context.id
             kw['state'] = True
-            
+
             # use utility to active it in the database
             sCoC_util = getUtility(ISignedCodeOfConductSet)
             sCoC_util.modifySignature(**kw)
@@ -283,10 +233,6 @@ class SignedCodeOfConductDeactiveView(EditView):
     """
 
     __used_for__ = ISignedCodeOfConduct
-
-    ow = CustomWidgetFactory(ObjectWidget, SignedCodeOfConduct)
-    sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
-    options_widget = sw
 
     def __init__(self, context, request):
         self.context = context
@@ -315,7 +261,7 @@ class SignedCodeOfConductDeactiveView(EditView):
             # now redirect to view the SignedCoC
             self.request.response.redirect(self.request.URL[-1])
 
-            
+
         # XXX: cprov 20050226
         # How to proceed with no admincomment ?
 

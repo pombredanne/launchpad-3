@@ -1,29 +1,31 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-# Zope schema imports
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
-from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+"""Module docstring goes here."""
 
-from canonical.launchpad.fields import Title, Summary, Description
+__metaclass__ = type
 
 __all__ = [
     'IMaintainership',
     'IMaintainershipSet'
     ]
 
+from zope.schema import Choice, TextLine
+from zope.interface import Interface, Attribute
+from zope.i18nmessageid import MessageIDFactory
+
+_ = MessageIDFactory('launchpad')
+
 class IMaintainership(Interface):
     """
     Maintainership is responsibility for a particular source package
     (identified by name) in a distribution.
     """
-    
+
     distribution = Choice(title=_('Distribution'), required=False,
-                     vocabulary='Distribution', 
+                     vocabulary='Distribution',
                      description=_("""The distribution in which this
                      maintainership applies."""))
-    
+
     sourcepackagename = TextLine(title=_('Source Package Name'),
         description=_("""The name of the source package being maintained by
         this maintainer."""))
@@ -43,7 +45,7 @@ class IMaintainershipSet(Interface):
 
     def __init__(distribution=None):
         """Instantiate a MaintainershipSet, restricting it optionally to the
-        distribution passed as a parameter.""" 
+        distribution passed as a parameter."""
 
     def __iter__():
         """Return an iterator over all the maintainerships in this

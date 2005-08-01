@@ -4,9 +4,9 @@
 
 Use them like this:
 
-  from canonical.lp.dbschema import BugSeverity
+  from canonical.lp.dbschema import BugTaskSeverity
 
-  print "SELECT * FROM Bug WHERE Bug.severity='%d'" % BugSeverity.CRITICAL
+  print "SELECT * FROM Bug WHERE Bug.severity='%d'" % BugTaskSeverity.CRITICAL
 
 """
 __metaclass__ = type
@@ -20,30 +20,37 @@ __metaclass__ = type
 # work properly, and the thing/lp:SchemaClass will not work properly.
 
 # The DBSchema subclasses should be in alphabetical order, listed after
-# EnumCol.  Please keep it that way.
+# EnumCol and Item.  Please keep it that way.
 __all__ = (
 'EnumCol',
+'Item',
+'DBSchema',
 # DBSchema types follow.
 'ArchArchiveType',
+'PollAlgorithm',
+'PollSecrecy',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
 'BinaryPackagePriority',
 'BountySubscription',
 'BranchRelationships',
 'BugTaskStatus',
+'BugTrackerType',
 'BugExternalReferenceType',
 'BugInfestationStatus',
-'BugPriority',
+'BugTaskPriority',
 'BugRelationship',
-'BugSeverity',
+'BugTaskSeverity',
 'BugSubscription',
 'BuildStatus',
 'CodereleaseRelationships',
+'CVEState',
 'DistributionReleaseStatus',
 'EmailAddressStatus',
 'HashAlgorithm',
 'ImportTestStatus',
 'KarmaActionCategory',
+'KarmaActionName',
 'LoginTokenType',
 'ManifestEntryType',
 'PackagePublishingPriority',
@@ -71,6 +78,7 @@ __all__ = (
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
 'MirrorFreshness',
+'RosettaFileFormat',
 )
 
 from zope.interface.advice import addClassAdvisor
@@ -80,6 +88,7 @@ import warnings
 from sqlobject.col import SOCol, Col
 from sqlobject.include import validators
 import sqlobject.constraints as consts
+
 
 class SODBSchemaEnumCol(SOCol):
 
@@ -97,8 +106,10 @@ class SODBSchemaEnumCol(SOCol):
     def _sqlType(self):
         return 'INT'
 
+
 class DBSchemaEnumCol(Col):
     baseClass = SODBSchemaEnumCol
+
 
 class DBSchemaValidator(validators.Validator):
 
@@ -197,6 +208,7 @@ def docstring_to_title_descr(string):
     descr = '\n'.join([line[indent:] for line in descrlines])
     return title, descr
 
+
 class OrderedMapping:
 
     def __init__(self, mapping):
@@ -229,6 +241,7 @@ class Item:
 
     An item has a name, title and description.  It also has an integer value.
     """
+
     def __init__(self, value, title, description=None):
         frame = sys._getframe(1)
         locals = frame.f_locals
@@ -332,6 +345,60 @@ class ImportTestStatus(DBSchema):
         Succeeded
 
         The sourcesource was successfully imported by the autotester.
+        """)
+
+class BugTrackerType(DBSchema):
+    """The Types of BugTracker Supported by Launchpad
+
+    This enum is used to differentiate between the different types of Bug
+    Tracker that are supported by Malone in the Launchpad.
+    """
+
+    BUGZILLA = Item(1, """
+        Bugzilla
+
+        The godfather of open source bug tracking, the Bugzilla system was
+        developed for the Mozilla project and is now in widespread use. It
+        is big and ugly but also comprehensive.
+        """)
+
+    DEBBUGS = Item(2, """
+        Debbugs
+
+        The debbugs tracker is email based, and allows you to treat every
+        bug like a small mailing list.
+        """)
+
+    ROUNDUP = Item(3, """
+        Roundup
+
+        Roundup is a lightweight, customisable and fast web/email based bug
+        tracker written in Python.
+        """)
+
+
+class CVEState(DBSchema):
+    """The Status of this item in the CVE Database
+
+    When a potential problem is reported to the CVE authorities they assign
+    a CAN number to it. At a later stage, that may be converted into a CVE
+    number. This indicator tells us whether or not the issue is believed to
+    be a CAN or a CVE.
+    """
+
+    CAN = Item(1, """
+        CAN
+
+        The vulnerability is a candidate, it has not yet been confirmed and
+        given a CVE number.
+        """)
+
+    CVE = Item(2, """
+        CVE
+
+        This vulnerability or threat has been assigned a CVE number, and is
+        fully documented. It has been through the full CVE verification
+        process.
         """)
 
 class ProjectStatus(DBSchema):
@@ -626,14 +693,14 @@ class TeamMembershipStatus(DBSchema):
     """
 
     PROPOSED = Item(1, """
-        Proposed Member
+        Proposed
 
         You are a proposed member of this team. To become an active member your
         subscription has to bo approved by one of the team's administrators.
         """)
 
     APPROVED = Item(2, """
-        Approved Member
+        Approved
 
         You are an active member of this team.
         """)
@@ -645,19 +712,19 @@ class TeamMembershipStatus(DBSchema):
         """)
 
     DEACTIVATED = Item(4, """
-        Deactivated Member
+        Deactivated
 
         Your subscription to this team has been deactivated.
         """)
 
     EXPIRED = Item(5, """
-        Expired Member
+        Expired
 
         Your subscription to this team is expired.
         """)
 
     DECLINED = Item(6, """
-        Declined Member
+        Declined
 
         Your proposed subscription to this team has been declined.
         """)
@@ -1610,45 +1677,46 @@ class RemoteBugStatus(DBSchema):
         The remote bug status cannot be determined.
         """)
 
-class BugPriority(DBSchema):
-    """Bug Priority
+class BugTaskPriority(DBSchema):
+    """Bug Task Priority
 
-    Each bug in Malone can be assigned a priority by the maintainer of
-    the bug. The priority is an indication of the maintainer's desire
-    to fix the bug. This schema documents the priorities Malone allows.
+    Each bug task in Malone can be assigned a priority by the
+    maintainer of the bug. The priority is an indication of the
+    maintainer's desire to fix the task. This schema documents the
+    priorities Malone allows.
     """
 
     HIGH = Item(40, """
         High
 
-        This is a high priority bug for the maintainer.
+        This is a high priority task for the maintainer.
         """)
 
     MEDIUM = Item(30, """
         Medium
 
-        This is a medium priority bug for the maintainer.
+        This is a medium priority task for the maintainer.
         """)
 
     LOW = Item(20, """
         Low
 
-        This is a low priority bug for the maintainer.
+        This is a low priority task for the maintainer.
         """)
 
     WONTFIX = Item(10, """
         Wontfix
 
-        The maintainer does not intend to fix this bug.
+        The maintainer does not intend to fix this task.
         """)
 
 
-class BugSeverity(DBSchema):
-    """Bug Severity
+class BugTaskSeverity(DBSchema):
+    """Bug Task Severity
 
     A bug task has a severity, which is an indication of the
     extent to which the bug impairs the stability and security of
-    the distribution.
+    the distribution or upstream in which it was reported.
     """
 
     CRITICAL = Item(50, """
@@ -1891,27 +1959,27 @@ class BugSubscription(DBSchema):
 
 
 class RosettaTranslationOrigin(DBSchema):
-     """Rosetta Translation Origin
+    """Rosetta Translation Origin
 
-     Translation sightings in Rosetta can come from a variety
-     of sources. We might see a translation for the first time
-     in CVS, or we might get it through the web, for example.
-     This schema documents those options.
-     """
+    Translation sightings in Rosetta can come from a variety
+    of sources. We might see a translation for the first time
+    in CVS, or we might get it through the web, for example.
+    This schema documents those options.
+    """
 
-     SCM = Item(1, """
-         Source Control Management Source
+    SCM = Item(1, """
+        Source Control Management Source
 
-         This translation sighting came from a PO File we
-         analysed in a source control managements sytem first.
-         """)
+        This translation sighting came from a PO File we
+        analysed in a source control managements sytem first.
+        """)
 
-     ROSETTAWEB = Item(2, """
-         Rosetta Web Source
+    ROSETTAWEB = Item(2, """
+        Rosetta Web Source
 
-         This translation was presented to Rosetta via
-       the community web site.
-         """)
+        This translation was presented to Rosetta via
+        the community web site.
+        """)
 
 
 class RosettaImportStatus(DBSchema):
@@ -1961,50 +2029,80 @@ class KarmaActionName(DBSchema):
 
     BUGCOMMENTADDED = Item(2, """
         New Comment
-     
+
         New Comment
         """)
 
     BUGTITLECHANGED = Item(3, """
         Bug Title Changed
-      
+
         Bug Title Changed
         """)
 
     BUGSUMMARYCHANGED = Item(4, """
         Bug Summary Changed
-       
+
         Bug Summary Changed
         """)
 
     BUGDESCRIPTIONCHANGED = Item(5, """
         Bug Description Changed
-        
+
         Bug Description Changed
         """)
 
     BUGEXTREFCHANGED = Item(6, """
         Bug External Reference Changed
-  
+
         Bug External Reference Changed
         """)
 
     BUGCVEREFCHANGED = Item(7, """
         Bug CVE Reference Changed
-   
+
         Bug CVE Reference Changed
         """)
 
     BUGFIXED = Item(8, """
         Bug Status Changed to FIXED
-    
+
         Bug Status Changed to FIXED
         """)
 
     BUGTASKCREATED = Item(9, """
         New Bug Task Created
-     
+
         New Bug Task Created
+        """)
+
+    TRANSLATIONTEMPLATEIMPORT = Item(10, """
+        Translation Template Import
+
+        """)
+
+    TRANSLATIONIMPORTUPSTREAM = Item(11, """
+        Import Upstream Translation
+
+        """)
+
+    TRANSLATIONTEMPLATEDESCRIPTIONCHANGED = Item(12, """
+        Translation Template Description Changed
+
+        """)
+
+    TRANSLATIONSUGGESTIONADDED = Item(13, """
+        Translation Suggestion Added
+
+        """)
+
+    TRANSLATIONSUGGESTIONAPPROVED = Item(14, """
+        Translation Suggestion Approved
+
+        """)
+
+    TRANSLATIONREVIEW = Item(15, """
+        Translation Review
+
         """)
 
 
@@ -2111,11 +2209,11 @@ class LoginTokenType(DBSchema):
         address for the team, but this address need to be validated first.
         """)
 
-    VALIDATEGPGUID = Item(6, """
-        Validate GPG key User ID
+    VALIDATEGPG = Item(6, """
+        Validate GPG key 
 
-        A user has submited a new GPG key and , consequently, its User.ids
-        as new email addresses to his account and they need to be validated.
+        A user has submited a new GPG key to his account and it need to
+        be validated.
         """)
 
 
@@ -2181,6 +2279,46 @@ class MirrorFreshness(DBSchema):
 
         The Freshness was never verified and is unknown.
         """)
+
+
+class PollSecrecy(DBSchema):
+    """The secrecy of a given Poll."""
+
+    OPEN = Item(1, """
+        Public Votes (Anyone can see a person's vote)
+
+        Everyone who wants will be able to see a person's vote.
+        """)
+
+    ADMIN = Item(2, """
+        Semi-secret Votes (Only team administrators can see a person's vote)
+
+        All team owners and administrators will be able to see a person's vote.
+        """)
+
+    SECRET = Item(3, """
+        Secret Votes (It's impossible to track a person's vote)
+
+        We don't store the option a person voted in our database,
+        """)
+
+
+class PollAlgorithm(DBSchema):
+    """The algorithm used to accept and calculate the results."""
+
+    SIMPLE = Item(1, """
+        Simple Voting
+
+        The most simple method for voting; you just choose a single option.
+        """)
+
+    CONDORCET = Item(2, """
+        Condorcet Voting
+
+        One of various methods used for calculating preferential votes. See
+        http://www.electionmethods.org/CondorcetEx.htm for more information.
+        """)
+
 
 class RosettaFileFormat(DBSchema):
     """Rosetta File Format

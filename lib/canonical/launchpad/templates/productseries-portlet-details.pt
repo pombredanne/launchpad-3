@@ -1,0 +1,12 @@
+<div class="portlet">
+  <h4 tal:content="context/title">product series title</h4>
+
+  <div class="portletBody portletContent">
+    <b>Product:</b>
+    <span tal:replace="context/product/name">product</span><br />
+
+    <b>Branch name:</b>
+    <span tal:replace="context/name">name</span><br />
+
+  </div>
+</div>

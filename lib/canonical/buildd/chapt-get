@@ -1,0 +1,28 @@
+#!/bin/sh
+case $1 in
+    */*)	chroot=$1;;
+    chroot-*)	chroot=$1;;
+    -*)		chroot=chroot-breezy
+    		[ ! -d ${chroot} ] && chroot=build-breezy/chroot-breezy
+    		[ ! -d ${chroot} ] && chroot=build/chroot-breezy
+		;;
+    *)		dist=$1; chroot=chroot-$dist
+    		[ ! -d ${chroot} ] && chroot=build-$dist/chroot-$dist
+    		[ ! -d ${chroot} ] && chroot=build/chroot-$dist
+		;;
+esac
+shift
+[ ${chroot#/} = ${chroot} ] && chroot=$(pwd)/${chroot}
+
+# -o APT::GPGV::TrustedKeyring=${chroot}/etc/apt/trusted.gpg
+
+export TTY=unknown
+exec /usr/bin/apt-get --purge \
+    -o Dir::State=${chroot}/var/lib/apt \
+    -o Dir::State::status=${chroot}/var/lib/dpkg/status \
+    -o Dir::Cache=${chroot}/var/cache/apt \
+    -o Dir::Etc=${chroot}/etc/apt \
+    -o DPkg::Options::=--root=${chroot} \
+    -o DPkg::Run-Directory=${chroot} \
+    -o DPkg::Options::=--force-confold \
+    "$@"

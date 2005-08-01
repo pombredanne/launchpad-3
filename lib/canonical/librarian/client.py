@@ -1,13 +1,15 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 #
 
-from socket import socket, SOCK_STREAM, AF_INET
-from select import select
+__metaclass__ = type
 
 import sha
 import urllib
 import urllib2
 import warnings
+from socket import socket, SOCK_STREAM, AF_INET
+from select import select
+from urlparse import urljoin
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
@@ -20,9 +22,9 @@ from canonical.librarian.interfaces import UploadFailed, DownloadFailed
 
 import warnings
 
-__all__ = ['FileUploadClient', 'FileDownloadClient']
+__all__ = ['FileUploadClient', 'FileDownloadClient', 'LibrarianClient']
 
-class FileUploadClient(object):
+class FileUploadClient:
     """Simple blocking client for uploading to the librarian."""
 
     def connect(self, *args, **kw):
@@ -155,7 +157,7 @@ def quote(s):
     return urllib.quote(s).replace('/', '%2F')
 
 
-class _File(object):
+class _File:
     """A wrapper around a file like object that has security assertions"""
 
     def __init__(self, file):
@@ -171,7 +173,7 @@ class _File(object):
         return self.file.close()
 
 
-class FileDownloadClient(object):
+class FileDownloadClient:
     """A simple client to download files from the librarian"""
 
     _logger = None
@@ -203,10 +205,9 @@ class FileDownloadClient(object):
                 'be removed. Use LibraryClient.getFileByAlias',
                 DeprecationWarning, stacklevel=2
                 )
-        host = config.librarian.download_host
-        port = config.librarian.download_port
-        url = ('http://%s:%d/%s/%s/%s'
-               % (host, port, fileID, aliasID, quote(filename)))
+        base = config.librarian.download_url
+        path = '/%s/%s/%s' % (fileID, aliasID, quote(filename))
+        url = urljoin(base, path)
         return urllib2.urlopen(url)
 
     def _findByDigest(self, hexdigest):
@@ -291,11 +292,9 @@ class FileDownloadClient(object):
 
         :returns: String URL
         """
-        host = config.librarian.download_host
-        port = config.librarian.download_port
-        l = self._getPathForAlias(aliasID)
-        url = ('http://%s:%d%s' % (host, port, l))
-        return url
+        base = config.librarian.download_url
+        path = self._getPathForAlias(aliasID)
+        return urljoin(base, path)
 
     def getFileByAlias(self, aliasID):
         """Returns a fd to read the file from

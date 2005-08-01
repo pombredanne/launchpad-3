@@ -87,8 +87,225 @@ Test the 'fmt:' namespace where the context is a string.
     ['<pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;word-',
      'wrap: break-word;">hello &amp; goodbye</pre>']
 
+    >>> text = ('This is a paragraph.\n'
+    ...         '\n'
+    ...         'This is another paragraph.')
+    >>> test_tales('foo/fmt:text-to-html', foo=text)
+    '<p>This is a paragraph.</p>\n<p>This is another paragraph.</p>'
 
-Test the 'fmt:' namespace where the context is a dict.
+    >>> text = ('This is a line.\n'
+    ...         'This is another line.')
+    >>> test_tales('foo/fmt:text-to-html', foo=text)
+    '<div>This is a line.</div>\n<div>This is another line.</div>'
+
+    >>> text = (
+    ...     'This is a paragraph that has been hard-wrapped by an e-mail'
+    ...     ' application.\n'
+    ...     'When copied and pasted into Launchpad, it should nevertheless'
+    ...     ' still display\n'
+    ...     'as a single paragraph. This helps these people:\n'
+    ...     '* Fabio\n'
+    ...     '* Asa'
+    ...     )
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>This is a paragraph that has been hard-wrapped by an e-mail application. When copied and pasted into Launchpad, it should nevertheless still display as a single paragraph. This helps these people:</p>
+    <div>* Fabio</div>
+    <div>* Asa</div>
+
+    >>> text = (
+    ...     " 1. And here's an opposite example\n"
+    ...     ' 2. where a list is followed by a paragraph.\n'
+    ...     '   Leading spaces in a line or paragraph are '
+    ...     'presented, which means converting\n'
+    ...     'them to &nbsp;. Trailing spaces are passed through '
+    ...     'as-is, which means\n'
+    ...     "browsers will ignore them, but that's fine, "
+    ...     "they're not important anyway.\n"
+    ...     '\n'
+    ...     '   That last line was between 60 and 80 characters '
+    ...     'long, but it was still treated as a paragraph '
+    ...     'because it was followed by two newlines.'
+    ...     )
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <div>&nbsp;1. And here's an opposite example</div>
+    <div>&nbsp;2. where a list is followed by a paragraph.</div>
+    <p>&nbsp;&nbsp;&nbsp;Leading spaces in a line or paragraph are presented, which means converting them to &amp;nbsp;. Trailing spaces are passed through as-is, which means browsers will ignore them, but that's fine, they're not important anyway.</p>
+    <p>&nbsp;&nbsp;&nbsp;That last line was between 60 and 80 characters long, but it was still treated as a paragraph because it was followed by two newlines.</p>
+
+    >>> text = (
+    ...     'This is a little paragraph all by itself. How cute!'
+    ...     )
+    >>> test_tales('foo/fmt:text-to-html', foo=text)
+    '<p>This is a little paragraph all by itself. How cute!</p>'
+
+The first line in the example below is 61 characters long, excluding the
+newline.
+
+    >>> text = (
+    ...     'Here are two paragraphs with lots of whitespace between them.\n'
+    ...     '\n'
+    ...     '\n'
+    ...     '\n'
+    ...     '\n'
+    ...     'But they\'re still just two paragraphs.')
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>Here are two paragraphs with lots of whitespace between them.</p>
+    <p>But they're still just two paragraphs.</p>
+
+Linkifying the text.  First, converting references to bugs into links.
+
+    >>> text = (
+    ...     'bug 123\n'
+    ...     'bug    123\n'
+    ...     'bug #123\n'
+    ...     'bug number 123\n'
+    ...     'bug number. 123\n'
+    ...     'bug num 123\n'
+    ...     'bug num. 123\n'
+    ...     'bug no 123\n'
+    ...     'bug no. 123\n'
+    ...     'bug#123\n')
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <div><a href="/malone/bugs/123" title="No such bug">bug 123</a></div>
+    <div><a href="/malone/bugs/123" title="No such bug">bug    123</a></div>
+    <div><a href="/malone/bugs/123" title="No such bug">bug #123</a></div>
+    <div><a href="/malone/bugs/123" title="No such bug">bug number 123</a></div>
+    <div><a href="/malone/bugs/123" title="No such bug">bug number. 123</a></div>
+    <div><a href="/malone/bugs/123" title="No such bug">bug num 123</a></div>
+    <div><a href="/malone/bugs/123" title="No such bug">bug num. 123</a></div>
+    <div><a href="/malone/bugs/123" title="No such bug">bug no 123</a></div>
+    <div><a href="/malone/bugs/123" title="No such bug">bug no. 123</a></div>
+    <div>bug#123</div>
+
+    >>> text = (
+    ...     'bug 123\n'
+    ...     'bug 123\n')
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <div><a href="/malone/bugs/123" title="No such bug">bug 123</a></div>
+    <div><a href="/malone/bugs/123" title="No such bug">bug 123</a></div>
+
+    >>> text = (
+    ...     'bug 1234\n'
+    ...     'bug 123\n')
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <div><a href="/malone/bugs/1234" title="No such bug">bug 1234</a></div>
+    <div><a href="/malone/bugs/123" title="No such bug">bug 123</a></div>
+
+    >>> text = 'bug 0123\n'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a href="/malone/bugs/123" title="No such bug">bug 0123</a></p>
+
+    >>> text = 'bug 2\n'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a href="/malone/bugs/2" title="Blackhole Trash folder">bug 2</a></p>
+
+To check a private bug, we need to log in and set a bug to be private.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bugset = getUtility(IBugSet)
+    >>> firefox_crashes = bugset.get(6)
+    >>> login("test@canonical.com")
+    >>> firefox_crashes.private = True
+
+A private bug has a title "private bug".
+
+    >>> text = 'bug 6\n'
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p><a href="/malone/bugs/6" title="private bug">bug 6</a></p>
+
+Testing a bunch of URL links.
+
+    >>> text = (
+    ...     'https://launchpad.net/ is the new Launchpad site\n'
+    ...     'http://example.com/something?foo=bar&hum=baz\n'
+    ...     'You can check the PPC md5sums at '
+    ...     'ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc'
+    ...     '/current/images/MD5SUMS\n'
+    ...     'irc://irc.freenode.net/#launchpad\n'
+    ...     '\n'
+    ...     'I have a Jabber account (jabber:foo@jabber.example.com)\n'
+    ...     'Foo Bar <mailto:foo.bar@example.net>')
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <div><a rel="nofollow" href="https://launchpad.net/">https://launchpad.net/</a> is the new Launchpad site</div>
+    <div><a rel="nofollow" href="http://example.com/something?foo=bar&amp;hum=baz">http://example.com/something?foo=bar&amp;hum=baz</a></div>
+    <div>You can check the PPC md5sums at <a rel="nofollow" href="ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc/current/images/MD5SUMS">ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc/current/images/MD5SUMS</a></div>
+    <p><a rel="nofollow" href="irc://irc.freenode.net/#launchpad">irc://irc.freenode.net/#launchpad</a></p>
+    <p>I have a Jabber account (<a rel="nofollow" href="jabber:foo@jabber.example.com">jabber:foo@jabber.example.com</a>)</p>
+    <div>Foo Bar &lt;<a rel="nofollow" href="mailto:foo.bar@example.net">mailto:foo.bar@example.net</a>&gt;</div>
+
+
+=== regex helper functions ===
+
+The _substitute_matchgroup_for_spaces() static method is part of the
+fmt:text-to-html code.  It is a helper for writing regular expressions where
+we want to replace a variable number of spaces with the same number of
+&nbsp; entities.
+
+    >>> from canonical.launchpad.webapp.tales import FormattersAPI
+    >>> import re
+    >>> matchobj = re.match('foo(.*)bar', 'fooX Ybar')
+    >>> matchobj.groups()
+    ('X Y',)
+    >>> FormattersAPI._substitute_matchgroup_for_spaces(matchobj)
+    '&nbsp;&nbsp;&nbsp;'
+
+The _linkify_substitution() static method is used for converting bug references
+or URLs into links.  It uses the named matchgroups 'bug' and 'bugnum' when it
+is dealing with bugs, and 'url' when it is dealing with URLs.
+
+First, let's try a match of nothing it understands.  This is a bug, so we get
+an AssertionError.
+
+    >>> matchobj = re.match('(?P<bug>xxx)?(?P<url>yyy)?', 'fish')
+    >>> sorted(matchobj.groupdict().items())
+    [('bug', None), ('url', None)]
+    >>> FormattersAPI._linkify_substitution(matchobj)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Unknown pattern matched.
+
+When we have a URL, the URL is made into a link.  A quote is added to the
+url to demonstrate quoting in the HTML attribute.
+
+    >>> matchobj = re.match('(?P<bug>xxx)?(?P<url>y"y)?', 'y"y')
+    >>> sorted(matchobj.groupdict().items())
+    [('bug', None), ('url', 'y"y')]
+    >>> FormattersAPI._linkify_substitution(matchobj)
+    '<a rel="nofollow" href="y&quot;y">y"y</a>'
+
+When we have a bug reference, the 'bug' group is used as the text of the link,
+and the 'bugnum' is used to look up the bug.
+
+    >>> matchobj = re.match(
+    ...     '(?P<bug>xxxx)?(?P<bugnum>2)?(?P<url>yyy)?', 'xxxx2')
+    >>> sorted(matchobj.groupdict().items())
+    [('bug', 'xxxx'), ('bugnum', '2'), ('url', None)]
+    >>> FormattersAPI._linkify_substitution(matchobj)
+    u'<a href="/malone/bugs/2" title="Blackhole Trash folder">xxxx</a>'
+
+When the bugnum doesn't match any bug, we still get a link, but get a message
+in the link's title.
+
+    >>> matchobj = re.match(
+    ...     '(?P<bug>xxxx)?(?P<bugnum>2000)?(?P<url>yyy)?', 'xxxx2000')
+    >>> sorted(matchobj.groupdict().items())
+    [('bug', 'xxxx'), ('bugnum', '2000'), ('url', None)]
+    >>> FormattersAPI._linkify_substitution(matchobj)
+    '<a href="/malone/bugs/2000" title="No such bug">xxxx</a>'
+
+When the bug is private, we still get a link, but get a message in the link's
+title.
+
+    >>> matchobj = re.match(
+    ...     '(?P<bug>xxxx)?(?P<bugnum>6)?(?P<url>yyy)?', 'xxxx6')
+    >>> sorted(matchobj.groupdict().items())
+    [('bug', 'xxxx'), ('bugnum', '6'), ('url', None)]
+    >>> FormattersAPI._linkify_substitution(matchobj)
+    '<a href="/malone/bugs/6" title="private bug">xxxx</a>'
+
+
+== Test the 'fmt:' namespace where the context is a dict. ==
 
 fmt:pagetitle takes a page template CONTEXTS dict, and gives you a string
 for use in the <title> element of a page.
@@ -143,7 +360,13 @@ Make a mock-up IBrowserRequest, and use this as the interaction.
     'https://mandrill.example.org:23/bonobo/saki'
 
 
-Test the 'fmt:' namespace where the context is None.
+Test the 'fmt:' namespace where the context is None. In general, these
+will return an empty string.  They are provided for ease of handling
+NULL values from the database, which become None values for attributes
+in content classes.
+
+Everything you can do with 'something/fmt:foo', you should be able to
+do with 'None/fmt:foo'.
 
     >>> test_tales('foo/fmt:shorten', foo=None)
     Traceback (most recent call last):
@@ -166,8 +389,13 @@ Test the 'fmt:' namespace where the context is None.
     ''
     >>> test_tales('foo/fmt:pagetitle', foo=None)
     ''
+    >>> test_tales('foo/fmt:text-to-html', foo=None)
+    ''
     >>> test_tales('foo/fmt:url', foo=None)
     ''
+    >>> test_tales('foo/fmt:exactduration', foo=None)
+    ''
+
 
 Test the 'required:' namespace.  We're already logged in as the anonymous user,
 and anonymous users can't edit any person:

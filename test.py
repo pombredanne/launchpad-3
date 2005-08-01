@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.3
+#!/usr/bin/env python2.4
 ##############################################################################
 #
 # Copyright (c) 2004 Zope Corporation and Contributors.
@@ -16,7 +16,15 @@
 
 $Id: test.py 25177 2004-06-02 13:17:31Z jim $
 """
-import sys, os, psycopg
+import sys, os, psycopg, time
+
+os.setpgrp() # So test_on_merge.py can reap its children
+
+# Make tests run in a timezone no launchpad developers live in.
+# Our tests need to run in any timezone.
+# (No longer actually required, as PQM does this)
+os.environ['TZ'] = 'Asia/Calcutta'
+time.tzset()
 
 here = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.join(here, 'lib'))
@@ -24,40 +32,16 @@ sys.path.insert(0, os.path.join(here, 'lib'))
 # Set PYTHONPATH environment variable for spawned processes
 os.environ['PYTHONPATH'] = ':'.join(sys.path)
 
-# Import fascist.  We set this up early to try to intercept as many imports as
-# possible.
-import __builtin__
-import atexit
+# Install the import fascist import hook and atexit handler.
+import importfascist
+importfascist.install_import_fascist()
 
-original_import = __builtin__.__import__
-database_root = 'canonical.launchpad.database'
-browser_root = 'canonical.launchpad.browser'
-naughty_imports = set()
+# Install the warning handler hook and atexit handler.
+import warninghandler
+warninghandler.install_warning_handler()
 
-class JackbootError(ImportError):
-    """Import Fascist says you can't make this import."""
 
-def import_fascist(name, globals={}, locals={}, fromlist=[]):
-    import_into = globals.get('__name__', '')
-    if name.startswith(database_root) and import_into.startswith(browser_root):
-        # We'll eventually disallow these imports altogether.  For now we just
-        # warn about it.
-        naughty_imports.add((name, import_into))
-        #raise JackbootError("ImportFascist says you cannot import %s into %s"
-        #                    % (name, import_into))
-    return original_import(name, globals, locals, fromlist)
-
-__builtin__.__import__ = import_fascist
-
-def report_naughty_imports():
-    if naughty_imports:
-        print
-        print '** %d import policy violations **' % len(naughty_imports)
-        for name, import_into in sorted(naughty_imports):
-            print "You should not import %s into %s" % (name, import_into)
-atexit.register(report_naughty_imports)
-
-# Tell canonical.config to use the test config file, not launchpad.conf
+# Tell canonical.config to use the test config section in launchpad.conf
 from canonical.config import config
 config.setDefaultSection('testrunner')
 

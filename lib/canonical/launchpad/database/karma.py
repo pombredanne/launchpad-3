@@ -99,6 +99,7 @@ class KarmaAction(SQLBase):
     implements(IKarmaAction)
 
     _table = 'KarmaAction'
+    _defaulOrder = ['category', 'name']
 
     name = EnumCol(dbName='name', schema=KarmaActionName, alternateID=True)
     category = EnumCol(
@@ -109,6 +110,8 @@ class KarmaAction(SQLBase):
 class KarmaActionSet:
     """See IKarmaActionSet."""
     implements(IKarmaActionSet)
+
+    _defaultOrder = KarmaAction._defaultOrder
 
     def getByName(self, name, default=None):
         """See IKarmaActionSet."""
@@ -121,12 +124,15 @@ class KarmaActionSet:
         """See IKarmaActionSet."""
         return KarmaAction.selectBy(category=category)
 
-    def selectByCategoryAndPerson(self, category, person):
+    def selectByCategoryAndPerson(self, category, person, orderBy=None):
         """See IKarmaActionSet."""
+        if orderBy is None:
+            orderBy = self._defaultOrder
         query = ('KarmaAction.category = %s '
                  'AND Karma.action = KarmaAction.id '
                  'AND Karma.person = %s' % sqlvalues(category, person.id))
-        return KarmaAction.select(query, clauseTables=['Karma'])
+        return KarmaAction.select(
+                query, clauseTables=['Karma'], distinct=True, orderBy=orderBy)
 
 
 class KarmaCache(SQLBase):

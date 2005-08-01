@@ -5,22 +5,22 @@
 
 <body>
 
-  <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure context/@@+portlet-views" />
-  </metal:leftportlets>
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
 
-  <metal:rightportlets fill-slot="portlets_two">
-      <div tal:replace="structure context/@@+portlet-actions" />
-  </metal:rightportlets>
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
 
   <div metal:fill-slot="main">
 
     <h1>SSH Key Management</h1> 
 
     <p>You need to register an SSH key with Launchpad to be able to publish
-    your Bazaar code branches in the Bazaar supermirror. This is a more
-    efficient way to share code than the traditional CVS system, as anybody
-    can branch and merge code without needing access to a central server.</p>
+    your Bazaar code branches in the Bazaar supermirror. For more
+    information, read about <a href="/bazaar/">The Bazaar</a>.
+    </p>
 
     <div tal:define="msg view/form_action" tal:condition="msg">
       <p class="portalMessage" tal:content="msg">Something happened.</p>

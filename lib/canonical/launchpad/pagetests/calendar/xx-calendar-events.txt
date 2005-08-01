@@ -1,0 +1,226 @@
+
+
+When viewing a calendar item for a calendar we don't have permission
+to edit (e.g. when not logged in), we get redirected to an event
+display page:
+
+  >>> print http(r"""
+  ... GET /people/name12/+calendar/events/1/ HTTP/1.1
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: +display
+  <BLANKLINE>
+  ...
+
+When we have write access, we get redirected to an event view page
+instead.
+
+  >>> print http(r"""
+  ... GET /people/name12/+calendar/events/1/ HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: +edit
+  <BLANKLINE>
+  ...
+
+
+The event display page, when not logged in:
+
+  >>> print http(r"""
+  ... GET /people/name12/+calendar/events/1/+display HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+      <title>Event "Event 1"</title>
+  ...
+  ...<h1>
+  ...Event
+  ...<q>Event 1</q>
+  ...</h1>
+  ...
+              <label>Title</label>
+  ...
+                  <div>Event 1</div>
+  ...
+              <label>Description</label>
+  ...
+                  <div>Desc 1</div>
+  ...
+              <label>Start</label>
+  ...
+                  <div>2005-01-03 08:00:00 UTC</div>
+  ...
+
+
+
+The event display page, when logged in (notice that the start time has
+been adjusted to the user's local time zone):
+
+  >>> print http(r"""
+  ... GET /people/name12/+calendar/events/1/+display HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+      <title>Event "Event 1"</title>
+  ...
+              <label>Start</label>
+  ...
+                  <div>2005-01-03 16:00:00 WST</div>
+  ...
+
+
+The event edit page:
+
+  >>> print http(r"""
+  ... GET /people/name12/+calendar/events/1/+edit HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+      <title>Edit Event "Event 1"</title>
+  ...
+          Edit Event <q>Event 1</q>
+  ...
+              <label>Title</label>
+  ...
+                  <div><input ... name="field.title" ... value="Event 1"  ...
+  ...
+              <label>Description</label>
+  ...
+                  <div><textarea ... name="field.description" ... >Desc 1</textarea></div>
+  ...
+              <label>Start</label>
+  ...
+                  <div><input ... name="field.dtstart" ... value="2005-01-03 16:00:00" ...
+  ...
+
+
+
+The "+add" page is used to add events to the calendar.  "Add" links
+on the calendar view pages include a date in the query string:
+
+  >>> print http(r"""
+  ... GET /people/name12/+calendar/+add?field.dtstart=2005-04-01%2008:00:00 HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+      <title>Add Event to Calendar "Sample Person's Calendar"</title>
+  ...
+      <form action=".../people/name12/+calendar/+add"
+  ...
+              <label>Title</label>
+  ...
+                  <div><input ... name="field.title" ... value="" ...
+  ...
+              <label>Description</label>
+  ...
+                  <div><textarea ... name="field.description" ... ></textarea></div>
+  ...
+              <label>Start</label>
+  ...
+                  <div><input ... name="field.dtstart" ... value="2005-04-01 08:00:00" ...
+  ...
+
+
+  >>> print http(r"""
+  ... POST /people/name12/+calendar/+add HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 952
+  ... Content-Type: multipart/form-data; boundary=---------------------------105231308720623733461092412455
+  ... 
+  ... -----------------------------105231308720623733461092412455
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... April Fools
+  ... -----------------------------105231308720623733461092412455
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... fool people
+  ... -----------------------------105231308720623733461092412455
+  ... Content-Disposition: form-data; name="field.location"
+  ... 
+  ... 
+  ... -----------------------------105231308720623733461092412455
+  ... Content-Disposition: form-data; name="field.dtstart"
+  ... 
+  ... 2005-04-01 09:00:00
+  ... -----------------------------105231308720623733461092412455
+  ... Content-Disposition: form-data; name="field.duration"
+  ... 
+  ... 3
+  ... -----------------------------105231308720623733461092412455
+  ... Content-Disposition: form-data; name="field.duration.unit"
+  ... 
+  ... h
+  ... -----------------------------105231308720623733461092412455
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------105231308720623733461092412455--
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: .
+  <BLANKLINE>
+  ...
+
+
+
+The start time for the new event is interpreted according to the
+user's preferred time zone:
+
+  >>> print http(r"""
+  ... GET /people/name12/+calendar/2005-04-01 HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+      <title>Sample Person's Calendar - 1 April 2005</title>
+  ...
+                        <a href="../events/.../">
+                        09:00
+                        -
+                        April Fools
+                        </a>
+  ...
+
+
+  >>> print http(r"""
+  ... GET /people/name12/+calendar/2005-04-01 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+      <title>Sample Person's Calendar - 1 April 2005</title>
+  ...
+                        <a href="../events/.../">
+                        01:00
+                        -
+                        April Fools
+                        </a>
+  ...

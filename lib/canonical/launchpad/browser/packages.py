@@ -1,16 +1,25 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 __metaclass__ = type
+
+__all__ = [
+    'SourcePackageView',
+    'DistroSourcesView',
+    'DistrosReleaseBinariesSearchView',
+    'SourcePackageBugsView',
+    'BinaryPackageView',
+    ]
 
 from apt_pkg import ParseDepends
 
 from urllib import quote as urlquote
 
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
-from canonical.lp.dbschema import BugSeverity
+from canonical.lp.dbschema import BugTaskSeverity
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
-from canonical.launchpad.interfaces import IPerson, ILaunchBag
+from canonical.launchpad.interfaces import ILaunchBag
 
 # XXX: Daniel Debonzi
 # Importing stuff from Soyuz directory
@@ -19,7 +28,7 @@ from canonical.launchpad.interfaces import IPerson, ILaunchBag
 from canonical.soyuz.generalapp import builddepsSet
 
 ##XXX: (batch_size+global) cprov 20041003
-## really crap constant definition for BatchPages 
+## really crap constant definition for BatchPages
 BATCH_SIZE = 40
 
 class SourcePackageView:
@@ -31,12 +40,12 @@ class SourcePackageView:
         '''Return a list of [BinaryPackage, {severity -> count}]'''
         m = {}
         sevdef = {}
-        for i in BugSeverity.items:
+        for i in BugTaskSeverity.items:
             sevdef[i.name] = 0
         for bugtask in self.context.bugtasks:
             binarypackage = bugtask.binarypackage
             if binarypackage:
-                severity = BugSeverity.items[i].name
+                severity = BugTaskSeverity.items[i].name
                 stats = m.setdefault(binarypackage, sevdef.copy())
                 m[binarypackage][severity] += 1
         rv = m.items()
@@ -57,7 +66,7 @@ class DistroSourcesView:
         name = urlquote(request.get("name", ""))
         if release and name:
             redirect = request.response.redirect
-            redirect("%s/%s?name=%s" % (request.get('PATH_INFO'), 
+            redirect("%s/%s?name=%s" % (request.get('PATH_INFO'),
                                         release, name))
 
 #
@@ -69,8 +78,8 @@ class DistrosReleaseBinariesSearchView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        
-    def searchBinariesBatchNavigator(self):        
+
+    def searchBinariesBatchNavigator(self):
 
         name = self.request.get("name", "")
 
@@ -117,7 +126,7 @@ class BinaryPackageView(object):
             packs = ParseDepends(packages)
             for pack in packs:
                 blist.append(builddepsSet(*pack[0]))
-                                          
+
         return blist
 
     def depends(self):
@@ -138,7 +147,7 @@ class BinaryPackageView(object):
     def provides(self):
         return self._buildList(self.context.provides)
 
-    
+
 ################################################################
 
 # these are here because there is a bug in sqlobject that stub is fixing,

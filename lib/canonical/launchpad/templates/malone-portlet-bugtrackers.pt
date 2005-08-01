@@ -1,0 +1,21 @@
+
+<div class="portlet">
+  <h4>Top Bug Trackers</h4>
+  <div class="portletBody portletContent">
+    The top bug trackers in Malone (by remote bug watches):
+    <ul class="webref">
+      <li tal:repeat="tracker context/top_bugtrackers">
+        <a tal:content="tracker/name"
+           tal:attributes="href tracker/fmt:url">malone.org</a>
+        (<span tal:replace="tracker/watchcount">56</span>)
+      </li>
+    </ul>
+
+    <div style="text-align: right;">
+      <img src="/++resource++add.gif">
+      <a href="/malone/bugtrackers/">See all 
+        <span tal:replace="context/bugtracker_count">15</span>...</a>
+    </div>
+  </div>
+</div>
+

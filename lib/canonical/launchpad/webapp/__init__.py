@@ -5,8 +5,8 @@ This module also has an API for use by the application.
 """
 
 __all__ = ['Link', 'DefaultLink', 'FacetMenu', 'ExtraFacetMenu',
-           'ExtraApplicationMenu', 'nearest_menu', 'canonical_url', 'nearest',
-           'StandardLaunchpadFacets']
+           'ApplicationMenu', 'ExtraApplicationMenu', 'nearest_menu',
+           'canonical_url', 'nearest', 'StandardLaunchpadFacets']
 
 from canonical.launchpad.webapp.menu import (
     Link, DefaultLink, FacetMenu, ExtraFacetMenu,
@@ -20,7 +20,7 @@ class StandardLaunchpadFacets(FacetMenu):
     # provide your own 'usedfor' in subclasses.
     #   usedfor = IWhatever
 
-    links = ['overview', 'translations', 'bugs']
+    links = ['overview', 'bugs', 'translations', 'calendar']
 
     def overview(self):
         target = ''
@@ -37,3 +37,8 @@ class StandardLaunchpadFacets(FacetMenu):
         text = 'Bugs'
         return Link(target, text)
 
+    def calendar(self):
+        """Disabled calendar link."""
+        target = '+calendar'
+        text = 'Calendar'
+        return Link(target, text, linked=False)

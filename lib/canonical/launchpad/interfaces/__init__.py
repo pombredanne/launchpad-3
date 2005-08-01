@@ -33,19 +33,19 @@ from canonical.launchpad.interfaces.cveref import *
 from canonical.launchpad.interfaces.distribution import *
 from canonical.launchpad.interfaces.distroarchrelease import *
 from canonical.launchpad.interfaces.distrorelease import *
-from canonical.launchpad.interfaces.distrotool import *
+from canonical.launchpad.interfaces.distroreleaselanguage import *
 from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.general import *
 from canonical.launchpad.interfaces.geoip import *
 from canonical.launchpad.interfaces.gpg import *
 from canonical.launchpad.interfaces.gpghandler import *
-from canonical.launchpad.interfaces.idatetime import *
 from canonical.launchpad.interfaces.infestation import *
 from canonical.launchpad.interfaces.irc import *
 from canonical.launchpad.interfaces.jabber import *
 from canonical.launchpad.interfaces.karma import *
 from canonical.launchpad.interfaces.language import *
 from canonical.launchpad.interfaces.launchpad import *
+from canonical.launchpad.interfaces.launchpadstatistic import *
 from canonical.launchpad.interfaces.librarian import *
 from canonical.launchpad.interfaces.logintoken import *
 from canonical.launchpad.interfaces.mail import *
@@ -61,6 +61,7 @@ from canonical.launchpad.interfaces.pathlookup import *
 from canonical.launchpad.interfaces.person import *
 from canonical.launchpad.interfaces.poexport import *
 from canonical.launchpad.interfaces.pofile import *
+from canonical.launchpad.interfaces.poll import *
 from canonical.launchpad.interfaces.pomsgid import *
 from canonical.launchpad.interfaces.pomsgidsighting import *
 from canonical.launchpad.interfaces.pomsgset import *
@@ -90,13 +91,14 @@ from canonical.launchpad.interfaces.sourcepackagename import *
 from canonical.launchpad.interfaces.sourcepackagerelease import *
 from canonical.launchpad.interfaces.spokenin import *
 from canonical.launchpad.interfaces.ssh import *
-from canonical.launchpad.interfaces.translationeffort import *
 from canonical.launchpad.interfaces.translationgroup import *
 from canonical.launchpad.interfaces.translator import *
 from canonical.launchpad.interfaces.vpoexport import *
 from canonical.launchpad.interfaces.vsourcepackagereleasepublishing import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
+
+from canonical.launchpad.interfaces.cal import *
 
 # XXX sabdfl 29/03/05 given the comments at the top of the file, should
 # these not be elsewhere?

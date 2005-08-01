@@ -10,35 +10,32 @@
 
 <div metal:fill-slot="main">
 
-  <h1><span tal:replace="context/title" /> Binary Packages </h1>
+      <h1>
+        <span tal:replace="context/title">smegconf</span>
+        binary packages for current releases
+      </h1>
+      <fieldset repeat="release context">
+        <legend>
+          <a tal:content="release/title" tal:attributes="href release/name">Release name</a>
+          (<span tal:replace="release/state">status</span>)
+        </legend>
+        <p class="field"> 
+          <span tal:content="release/summary">Summary.</span>
+        </p>
 
-  <h2>Current Releases</h2>
-
-  <span:block tal:repeat="release context" tal:omit-tag>
-  <fieldset>
-
-  <legend>
-    <a tal:content="release/title" tal:attributes="href release/name"> RELEASENAME </a>
-    (Status: <span tal:content="release/state"> STATUS </span>)
-  </legend>
-
-  <div class="field"> 
-    <span tal:content="release/summary">SHORTDESC</span>
-  </div>
-
-  <div class="field"> 
-    <span tal:content="release/binarycount">COUNTER</span> Binary Packages Available
-  </div>
-
-    <form name="search" method="POST" tal:attributes="action string:${release/name}/+search">
-     <div class="formHelp">Find Binary Package: </div>
+        <form name="search" method="POST"
+          tal:attributes="action string:${release/name}/+search"
+        >
+          <div>
+            Find binary package from the
+            <span tal:replace="release/binarycount">12</span>
+            available:
+          </div>
      <input type="text" name="name" tal:attributes="value request/name|nothing" />
     <input type="submit" value="Search"/>
     </form>
 
   </fieldset>
-
-  </span:block>
 
 </div>
 

@@ -5,6 +5,10 @@
     <include files="package-includes/*-meta.zcml" />
     <includeOverrides file="override-meta.zcml" />
 
+    <!-- Add a hook to configure the email stuff using ZCML stored outside
+        of the launchpad tree -->
+    <include files="../+*.zcml" />
+
     <!-- package-includes/*-configure.zcml contains package configuration
         shared between a normal launchpad instance and the test suite.
         package-includes/*-configure-normal.zcml and 

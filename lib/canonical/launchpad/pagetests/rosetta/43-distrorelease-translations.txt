@@ -1,0 +1,57 @@
+
+First, we need to ensure that we can see the distrorelease translations
+page, and that it has all the data we are expecting, in terms of languages.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+translations HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+    <h1>Translation Status</h1>
+  ...Catalan...
+  ...Xhosa...
+  ...
+
+We also should see any personal language that is not already translated, but
+which is in the personal pref list. In this example, we tell the system that
+our browser speaks Afrihili, and since the user is anonymous the system will
+put Afrihili into the list of "preferred languages".
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+translations HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.7,afh;q=0.3
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+    <h1>Translation Status</h1>
+  ...Afrihili...
+  ...
+
+If we select Croatian, we would expect to see the list of source package
+templates, and in the sample data we should have a croatian pofile for
+pmount.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+lang/hr HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+      <h2>Croatian...</h2>
+  ...
+    <h1>Application Translation Statuses</h1>
+  ...
+  ...pmount...
+  ...pmount...
+  ...Edgar Bursic...
+  ...
+
+

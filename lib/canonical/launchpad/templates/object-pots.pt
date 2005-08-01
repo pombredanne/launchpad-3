@@ -26,7 +26,7 @@
       translate. Note that you can set your preferred languages when you are
       logged in at <a href="/rosetta/prefs/">this page</a>.</p>
 
-      <table class="listing rowNavigation">
+      <table class="listing">
         <thead>
           <tr>
             <th>template name and title</th>
@@ -35,8 +35,8 @@
         <tbody>
           <tr tal:repeat="potview view/templateviews"
               tal:attributes="onclick
-                 string:window.location='${potview/URL}'">
-            <td><a tal:attributes="href potview/URL"
+                 string:window.location='${potview/context/fmt:url}'">
+            <td><a tal:attributes="href potview/context/fmt:url"
                    tal:content="potview/context/name">name</a>: 
                 <span tal:replace="potview/context/title">title</span>
             </td>
@@ -52,7 +52,7 @@
       <div tal:condition="not: view/languages">
         <ul>
           <li tal:repeat="potview view/templateviews">
-            <a tal:attributes="href potview/URL"
+            <a tal:attributes="href potview/context/fmt:url"
               tal:content="potview/context/title">template</a>
           </li>
         </ul>
@@ -77,7 +77,8 @@
         <div tal:replace="structure potview/context/@@+chart" />
 
         <div align="right">
-          [ <a tal:attributes="href potview/URL">More...</a> ]
+          [ <a tal:attributes="href potview/context/fmt:url">View Template
+          &amp; All Languages...</a> ]
         </div>
 
       </div>

@@ -5,26 +5,40 @@ __all__ = ['LaunchpadCelebrities']
 
 from zope.interface import implements
 from zope.component import getUtility
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
-from canonical.launchpad.interfaces import IPersonSet
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.interfaces import (ILaunchpadCelebrities,
+    IPersonSet, IDistributionSet, IBugTrackerSet)
 
 class LaunchpadCelebrities:
 
     implements(ILaunchpadCelebrities)
 
+    @property
     def buttsource(self):
+        """See ILaunchpadCelebrities."""
         return getUtility(IPersonSet).getByName('buttsource')
-    buttsource = property(buttsource)
 
+    @property
     def admin(self):
+        """See ILaunchpadCelebrities."""
         return getUtility(IPersonSet).getByName('admins')
-    admin = property(admin)
 
+    @property
     def ubuntu(self):
+        """See ILaunchpadCelebrities."""
         return getUtility(IDistributionSet).getByName('ubuntu')
-    ubuntu = property(ubuntu)
 
+    @property
+    def debian(self):
+        """See ILaunchpadCelebrities."""
+        return getUtility(IDistributionSet).getByName('debian')
+
+    @property
     def rosetta_expert(self):
+        """See ILaunchpadCelebrities."""
         return getUtility(IPersonSet).getByName('rosetta-admins')
-    rosetta_expert = property(rosetta_expert)
+
+    @property
+    def debbugs(self):
+        """See ILaunchpadCelebrities."""
+        return getUtility(IBugTrackerSet)['debbugs']
+

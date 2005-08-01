@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 """This module is used by the Launchpad webapp to determine titles for pages.
 
 See https://wiki.launchpad.canonical.com/LaunchpadTitles
@@ -31,9 +32,23 @@ after the helpers.
 """
 __metaclass__ = type
 
+from canonical.launchpad.interfaces import (
+    IProduct, IDistribution, IDistroRelease)
+
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
 # Helpers.
+
+class BugPageTitle:
+    def __call__(self, context, view):
+        return "Bug #%d - %s" % (context.id, context.title)
+
+
+class BugTaskPageTitle:
+    def __call__(self, context, view):
+        return "Bug #%d in %s - %s" % (
+            context.bug.id, context.contextname, context.bug.title)
+
 
 class SubstitutionHelper:
     def __init__(self, text):
@@ -44,9 +59,6 @@ class SubstitutionHelper:
 
 
 class ContextDisplayName(SubstitutionHelper):
-    # XXX: salgado, 2005-06-02: This should not be used for persons because
-    # they can have a NULL displayname. Maybe the right solution is to create
-    # a ContextBrowserName and use it for persons.
     def __call__(self, context, view):
         return self.text % context.displayname
 
@@ -71,15 +83,14 @@ attachment_index = ContextTitle('Malone Bug Attachment: %s')
 
 attachments_index = 'Malone Bug Attachments'
 
-auth_index = 'Launchpad Password Reminder'
-
 bazaar_index = 'The Launchpad Bazaar'
 
-bazaar_sync_review = 'The Bazaar Upstream-Sync Review'
+bazaar_sync_review = 'Review upstream repositories for Launchpad Bazaar syncing'
 
 binary_index = 'Binary Packages'
 
-binarypackage_index = 'Binary Package Details'
+def binarypackage_index(context, view):
+    return "%s binary package in Launchpad" % context.title
 
 binarypackage_search = 'Search Binary Package Database'
 
@@ -99,24 +110,42 @@ bounty = ContextTitle('Launchpad Bounty: %s')
 
 branch_index = ContextTitle('Bazaar Branch: %s')
 
-bug_activity = ContextId('Activity History of Malone Bug # %s')
+bug_activity = ContextId('Bug #%s: Activity Log')
 
-bug_add = 'Malone: Add a New Bug'
+def bug_add(context, view):
+    # XXX, Brad Bollenbach, 2005-07-15: This is a hack until our fancy
+    # new page title machinery allows for two different pages that use
+    # the same template to have different titles (the way ZCML does.)
+    # See https://launchpad.ubuntu.com/malone/bugs/1376
+    product_context = IProduct(context, None)
+    distro_context = IDistribution(context, None)
+    distrorelease_context = IDistroRelease(context, None)
+
+    if product_context or distro_context or distrorelease_context is not None:
+        context_title = ContextTitle('Report a bug in %s')
+        return context_title(context, view)
+    else:
+        return "Malone: Report a Bug"
 
 bug_attachments = ContextId('Malone Bug Attachments for Bug #%s')
 
-bug_edit = ContextId('Malone: Edit Bug #%s')
+bug_edit = BugPageTitle()
 
-bug_index = ContextId('Malone: Bug #%s')
+bug_index = BugPageTitle()
 
 bug_references = ContextId('External References for Malone Bug #%s')
+
+bugwatch_editform = ContextTitle('Edit the Watch on %s')
 
 # bugpackageinfestations_index is a redirect
 
 # bugproductinfestations_index is a redirect
 
 def bugs_assigned(context, view):
-    return 'Malone Bugs assigned to %s' % view.user.browsername
+    if view.user:
+        return 'Malone Bugs assigned to %s' % view.user.browsername
+    else:
+        return 'No user to display Malone Bugs for'
 
 bugs_createdby_index = 'Malone Bug Report by Creator'
 
@@ -126,13 +155,9 @@ bugs_index = 'Malone Master Bug List'
 
 bugsubscription_edit = 'Modify Your Bug Subscription'
 
-def bugtask_display(context, view):
-    return 'Bug #%s in %s: %s' % (
-      context.bug.id, context.contextname, context.bug.title)
+bugtask_view = BugTaskPageTitle()
 
-def bugtask_editform(context, view):
-    return 'Editing bug #%s in %s: %s' % (
-      context.bug.id, context.contextname, context.bug.title)
+bugtask_edit = BugTaskPageTitle()
 
 # bugtask_search_listing contains only macros
 # bugtasks_index is a redirect
@@ -145,11 +170,30 @@ bugtracker_new = 'Create Malone Bugtracker'
 
 bugtrackers_index = 'Malone-Registered Bug Trackers'
 
-codeofconduct_admin = 'Code of Conduct Admin Console'
+calendar = ContextTitle('%s')
 
-codeofconduct_index = 'Code of Conduct Release'
+calendar_event_addform = ContextTitle('Add Event to Calendar "%s"')
 
-codeofconduct_list = 'Launchpad Code of Conduct'
+calendar_event_display = ContextTitle('Event "%s"')
+
+calendar_event_editform = ContextTitle('Edit Event "%s"')
+
+calendar_subscribe = ContextTitle('Subscribe to "%s"')
+
+calendar_subscriptions = 'Calendar Subscriptions'
+
+def calendar_view(context, view):
+    return '%s - %s' % (context.calendar.title, view.datestring)
+calendar_view_day = calendar_view
+calendar_view_week = calendar_view
+calendar_view_month = calendar_view
+calendar_view_year = calendar_view
+
+codeofconduct_admin = 'Administer codes of conduct in Launchpad'
+
+codeofconduct_index = ContextTitle('%s')
+
+codeofconduct_list = 'Codes of Conduct in Launchpad'
 
 def cvereference_index(context, view):
     return 'Malone Bug #%s CVE Reference' % context.bug.id
@@ -170,7 +214,11 @@ default_editform = 'Default "Edit" Page'
 
 default_error = 'System Error'
 
-distribution_bugs = ContextTitle('Release %s: Bugs')
+distribution_members = ContextTitle('%s distribution members')
+
+distribution_memberteam = ContextTitle("Change %s's distribution team")
+
+distribution_translators = 'Appoint Distribution Translation Group'
 
 distro_add = 'Adding New Distribution'
 
@@ -178,20 +226,11 @@ distro_edit = 'Create a new Distribution in Launchpad'
 
 distribution = ContextTitle('Launchpad Distribution Summary: %s')
 
-distro_members = ContextTitle('Distribution Members: %s')
-
-distro_search = 'Search Distributions'
-
 # distro_sources.pt.OBSELETE
 # <title metal:fill-slot="title"><span tal:replace="context/title" />: Source
 # Packages</title>
 
-def distroarchrelease_index(context, view):
-    return '%s %s %s' % (
-        context.distrorelease.distribution.displayname,
-        context.distrorelease.displayname,
-        context.title
-        )
+distroarchrelease_index = ContextTitle('%s overview')
 
 distroarchrelease_pkgsearch = 'Binary Package Search'
 
@@ -204,7 +243,7 @@ def distrorelease_edit(context, view):
     return 'Edit %s Details' % context.release.displayname
 
 def distrorelease_index(context, view):
-    return '%s: Releases' % context.distribution.title
+    return '%s: %s' % (context.distribution.title, context.title)
 
 def distrorelease_new(context, view):
     return 'Create New Release of %s' % context.distribution.title
@@ -220,17 +259,19 @@ def distrorelease_sources(context, view):
 distrorelease_translations = ContextTitle(
     'Rosetta Translation Templates for %s')
 
+distroreleaselanguage = ContextTitle('%s')
+
 distros_index = 'Overview of Distributions in Launchpad'
 
-doap_about = 'About the Launchpad DOAP registry'
+doap_about = 'About the Launchpad Registry'
 
 doap_dashboard = 'Launchpad Project & Product Dashboard'
 
-doap_index = 'The DOAP Network: Project and Product Registration in Launchpad'
+doap_index = 'Project and Product Registration in Launchpad'
 
 doap_listall = 'Launchpad: Complete List'
 
-doap_review = 'DOAP Content Review'
+doap_review = 'Launchpad Content Review'
 
 doap_to_do = 'Launchpad To-Do List'
 
@@ -268,6 +309,12 @@ foaf_validateemail = 'Validate email address'
 
 foaf_validateteamemail = 'Validate email address'
 
+foaf_validategpg = 'Validate GPG Key'
+
+karmaaction_index = 'Karma Actions'
+
+karmaaction_edit = 'Edit Karma Action'
+
 # launchpad_debug doesn't need a title.
 
 def launchpad_addform(context, view):
@@ -275,6 +322,8 @@ def launchpad_addform(context, view):
     return getattr(view, 'page_title', None)
 
 launchpad_editform = launchpad_addform
+
+launchpad_feedback = 'Help us improve Launchpad'
 
 launchpad_forbidden = 'Forbidden'
 
@@ -306,7 +355,7 @@ malone_distro_index = ContextTitle('Malone Distribution Manager: %s')
 
 malone_distros_index = 'File a Bug in a Distribution'
 
-malone_index = 'About Malone'
+malone_index = 'Malone: Collaborative Open Source Bug Management'
 
 # malone_people_index is a redirect
 
@@ -330,6 +379,8 @@ notfound = 'Launchpad Page Not Found'
 
 object_potemplatenames = ContextDisplayName('Template names for %s')
 
+object_reassignment = ContextTitle('Reassign %s')
+
 def package_bugs(context, view):
     return 'Package Bug Listing for %s' % context.name
 
@@ -345,6 +396,8 @@ person_assignedbugs = ContextDisplayName('Bugs Assigned To %s')
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
+person_branches = ContextDisplayName("%s's code branches in Launchpad")
+
 person_codesofconduct = ContextDisplayName('%s Signed Codes of Conduct')
 
 person_edit = ContextDisplayName('Edit %s Information')
@@ -355,7 +408,7 @@ person_emails = ContextDisplayName('Edit %s Email Addresses')
 
 person_gpgkey = ContextDisplayName('%s GPG Keys')
 
-person_index = ContextDisplayName('%s Personal Information')
+person_index = ContextDisplayName('%s: Launchpad Overview')
 
 person_karma = ContextDisplayName('Karma for %s')
 
@@ -365,13 +418,19 @@ person_packages = ContextDisplayName('Packages Maintained By %s')
 
 person_reportedbugs = ContextDisplayName('Bugs Reported By %s')
 
+person_review = ContextDisplayName("Review %s' Information")
+
 person_sshkey = ContextDisplayName('%s SSH Keys')
+
+person_timezone = ContextDisplayName('Time Zone for %s')
 
 person_translations = ContextDisplayName('Translations Made By %s')
 
 # plone.css is a css file
 
 pofile_edit = 'Rosetta: Edit PO file details'
+
+pofile_export = ContextTitle('%s file exports')
 
 def pofile_index(context, view):
     return 'Rosetta: %s: %s' % (
@@ -385,6 +444,18 @@ def pofile_translate(context, view):
 pofile_upload = ContextTitle('%s upload in Rosetta')
 
 # portlet_* are portlets
+
+poll_edit = ContextTitle('Edit poll %s')
+
+poll_index = ContextTitle('%s')
+
+poll_newoption = ContextTitle('Create a new Option in poll %s')
+
+def poll_new(context, view):
+    return 'Create a new Poll in team %s' % context.team.displayname
+
+def polloption_edit(context, view):
+    return 'Edit option %s' % context.shortname
 
 potemplage_admin = ContextTitle('%s admin in Rosetta')
 
@@ -425,8 +496,10 @@ def productrelease_edit(context, view):
 def productrelease_new(context, view):
     return 'Register a new release of %s' % view.product.displayname
 
-productrelease_translations = ContextTitle(
+productseries_translations = ContextTitle(
     'Rosetta Translation Templates for %s')
+
+productseries_ubuntupkg = 'Ubuntu Source Package'
 
 products_index = 'Products in Launchpad'
 
@@ -478,7 +551,7 @@ rosetta_preferences = 'Rosetta: Preferences'
 def series_edit(context, view):
     return 'Edit %s %s Details' % (context.product.displayname, context.name)
 
-series_new = ContextDisplayName('Register a new Release Series for %s')
+series_new = ContextDisplayName('Register a new %s release series')
 
 def series_review(context, view):
     return 'Review %s %s Details' % (context.product.displayname, context.name)
@@ -487,7 +560,15 @@ def series(context, view):
     return '%s Release Series: %s' % (
         context.product.displayname, context.displayname)
 
-signedcodeofconduct_index = 'Signed Code of Conduct Entry'
+signedcodeofconduct_index = ContextDisplayName('%s')
+
+signedcodeofconduct_add = ContextTitle('Sign %s')
+
+signedcodeofconduct_acknowledge = 'Acknowledge Code of Conduct Signature'
+
+signedcodeofconduct_activate = ContextDisplayName('Activating %s')
+
+signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 
 sourcepackage_buildlog = 'Source Package Build Log'
 
@@ -547,6 +628,10 @@ def team_members(context, view):
 def teammembership_index(context, view):
     return '%s: Member of %s' % (
         context.person.browsername, context.team.browsername)
+
+team_newpoll = ContextTitle('Create a new Poll in team %s')
+
+team_polls = ContextTitle('Polls in team %s')
 
 template_auto_add = 'Launchpad Auto-Add Form'
 

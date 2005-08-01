@@ -8,29 +8,33 @@ for launchpad use -->
         <metal:block define-macro="launchpad_widget_row">
         
           <div class="field">
+              
+            <div tal:attributes="class python:error and 'portalError' or None"
+                 tal:define="error widget/error">
 
-            <label tal:content="widget/label">The Label</label>
+              <label tal:content="widget/label">The Label</label>
 
-            <span
-                tal:condition="widget/required"
-                class="fieldRequired"
-                title="Required">(Required)</span>
+              <span tal:condition="widget/required"
+                    class="fieldRequired"
+                    title="Required">(Required)</span>
 
-            
-                <div tal:content="structure widget">
-                    <input type="text" style="width:100%"/>
-                </div>
+              <div tal:content="structure widget">
+                  <input type="text" style="width:100%"/>
+              </div>
+               
+              <div tal:condition="error">
+                <img src="/++resource++info_icon.gif" />
+                <span tal:replace="structure error">
+                      An Error Message</span>
+              </div>
+
+            </div>
 
             <p class="formHelp"
                 tal:condition="widget/hint"
                 tal:content="widget/hint">Some Help Text
             </p>
-            
-            <div class="portalMessage"
-                tal:define="error widget/error"
-                tal:condition="error"
-                tal:content="structure error">An Error Message</div>
-            
+             
           </div>
 
         </metal:block>

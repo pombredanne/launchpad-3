@@ -53,7 +53,7 @@
     </pre>
 
     <p tal:condition="entry/tb_text">
-      <a href="" 
+      <a href="." 
          tal:attributes="href string:showTextTBEntry.html?id=${entry/id}" 
          i18n:translate="">Display traceback as text</a>
     </p>

@@ -2,18 +2,11 @@ Check to be sure that listing available resources to translate for a product
 is working from the old /rosetta URL.
 
   >>> print http(r"""
-  ... GET /rosetta/products/evolution HTTP/1.1
+  ... GET /products/evolution/+translations HTTP/1.1
   ... Accept-Language: en-gb,en;q=0.5
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <title>Rosetta Translations for The Evolution Groupware Application</title>
-  ...
-      <tr onclick="window.location='/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+translate'">
-  <BLANKLINE>
-          <td>
-            <a href="/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+translate">Afrikaans</a>
-          </td>
-  <BLANKLINE>
-          <td>22</td>
+  ...Rosetta Translations for The Evolution Groupware Application...
+  ...+sources/evolution/+pots/evolution-2.2/af/+translate...
   ...

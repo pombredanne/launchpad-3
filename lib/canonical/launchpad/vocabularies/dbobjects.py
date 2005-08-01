@@ -8,6 +8,35 @@ docstring in __init__.py for details.
 
 __metaclass__ = type
 
+__all__ = [
+    'IHugeVocabulary',
+    'SQLObjectVocabularyBase',
+    'NamedSQLObjectVocabulary',
+    'BinaryPackageNameVocabulary',
+    'ProductVocabulary',
+    'ProjectVocabulary',
+    'BinaryPackageVocabulary',
+    'BugTrackerVocabulary',
+    'LanguageVocabulary',
+    'TranslationGroupVocabulary',
+    'BasePersonVocabulary',
+    'PersonAccountToMergeVocabulary',
+    'ValidPersonOrTeamVocabulary',
+    'ValidTeamMemberVocabulary',
+    'ValidTeamOwnerVocabulary',
+    'ProductReleaseVocabulary',
+    'ProductSeriesVocabulary',
+    'FilteredProductSeriesVocabulary',
+    'MilestoneVocabulary',
+    'BugWatchVocabulary',
+    'PackageReleaseVocabulary',
+    'SourcePackageNameVocabulary',
+    'DistributionVocabulary',
+    'DistroReleaseVocabulary',
+    'POTemplateNameVocabulary',
+    'SchemaVocabulary',
+    ]
+
 from zope.component import getUtility
 from zope.interface import implements, Interface
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
@@ -23,8 +52,9 @@ from canonical.launchpad.database import (
     SourcePackageRelease, SourcePackageName, BinaryPackage, BugWatch,
     BinaryPackageName, BugTracker, Language, Milestone, Product,
     Project, ProductRelease, ProductSeries, TranslationGroup, BugTracker,
-    POTemplateName, EmailAddress)
-from canonical.launchpad.interfaces import ILaunchBag, ITeam
+    POTemplateName, EmailAddress, Schema)
+from canonical.launchpad.interfaces import (
+    ILaunchBag, ITeam, ITeamMembershipSubset)
 
 class IHugeVocabulary(IVocabulary):
     """Interface for huge vocabularies.
@@ -134,7 +164,8 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
         """Return terms where query is a subtring of the name"""
         if query:
             objs = self._table.select(
-                CONTAINSSTRING(self._table.q.name, query)
+                CONTAINSSTRING(self._table.q.name, query),
+                orderBy=self._orderBy
                 )
             for o in objs:
                 yield self._toTerm(o)
@@ -357,14 +388,43 @@ class ValidPersonOrTeamVocabulary(BasePersonVocabulary):
     """
 
     _validpersons = ("""
-        teamowner IS NULL AND password IS NOT NULL AND merged IS NULL AND
-        emailaddress.person = person.id AND
+        Person.teamowner IS NULL AND 
+        Person.password IS NOT NULL AND 
+        Person.merged IS NULL AND
+        emailaddress.person = Person.id AND
         emailaddress.status = %s
         """ % sqlvalues(EmailAddressStatus.PREFERRED))
-    _validteams = ('teamowner IS NOT NULL')
+    _validteams = ('Person.teamowner IS NOT NULL')
 
     _basequery = '(%s) OR (%s)' % (_validpersons, _validteams)
     _clauseTables = ['EmailAddress']
+
+
+class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
+    """The set of valid members of a given team.
+
+    With the exception of all teams that have this team as a member and the
+    team itself, all valid persons and teams are valid members.
+    """
+
+    def __init__(self, context):
+        if not context:
+            raise ValueError('ValidTeamMemberVocabulary needs a context.')
+        if ITeamMembershipSubset.providedBy(context):
+            self.team = context.team
+        elif ITeam.providedBy(context):
+            self.team = context
+        else:
+            raise ValueError(
+                "ValidTeamMemberVocabulary's context must implement ITeam or "
+                "ITeamMembershipSubset. Got %s" % str(context))
+
+        ValidPersonOrTeamVocabulary.__init__(self, context)
+        extraclause = """
+            Person.id not in (SELECT team from TeamParticipation WHERE
+                                  person = %d) AND Person.id != %d
+            """ % (self.team.id, self.team.id)
+        self._basequery = '(%s) AND (%s)' % (self._basequery, extraclause)
 
 
 class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
@@ -402,8 +462,9 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
 
     def __iter__(self):
         for obj in self._table.select(
-            ProductRelease.q.productseries == ProductSeries.q.id,
-            ProductSeries.q.productID == Product.q.id,
+            AND (ProductRelease.q.productseriesID == ProductSeries.q.id,
+                 ProductSeries.q.productID == Product.q.id
+                ),
             orderBy=self._orderBy,
             clauseTables=self._clauseTables,
             ):
@@ -429,10 +490,14 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
         except ValueError:
             raise LookupError, token
 
-        obj = ProductRelease.selectOne(AND(Product.q.name == productname,
+        obj = ProductRelease.selectOne(
+            AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
+                ProductSeries.q.productID == Product.q.id,
+                Product.q.name == productname,
                 ProductSeries.q.name == productseriesname,
                 ProductRelease.q.version == productreleaseversion
-                ))
+                )
+            )
         try:
             return self._toTerm(obj)
         except IndexError:
@@ -488,13 +553,15 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
         except ValueError:
             raise LookupError, token
 
-        objs = ProductSeries.select(AND(Product.q.name == productname,
-                ProductSeries.q.name == productseriesname
-                ))
-        try:
-            return self._toTerm(objs[0])
-        except IndexError:
-            raise LookupError, token
+        result = ProductSeries.selectOne('''
+                    Product.id = ProductSeries.product AND
+                    Product.name = %s AND
+                    ProductSeries.name = %s
+                    ''' % sqlvalues(productname, productseriesname),
+                    clauseTables=['Product'])
+        if result is not None:
+            return self._toTerm(result)
+        raise LookupError, token
 
     def search(self, query):
         """Return terms where query is a substring of the name"""
@@ -612,7 +679,6 @@ class DistributionVocabulary(NamedSQLObjectVocabulary):
 
         return []
 
-
 class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
     implements(IHugeVocabulary)
 
@@ -682,3 +748,10 @@ class POTemplateNameVocabulary(NamedSQLObjectVocabulary):
 
             for o in objs:
                 yield self._toTerm(o)
+
+
+class SchemaVocabulary(NamedSQLObjectVocabulary):
+    """See NamedSQLObjectVocabulary."""
+    implements(IHugeVocabulary)
+
+    _table = Schema

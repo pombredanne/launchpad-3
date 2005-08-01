@@ -31,11 +31,11 @@ Heres various sets of things that we'll need.
     >>> from canonical.launchpad.interfaces import IPOTemplateSet
     >>> potemplate_set = getUtility(IPOTemplateSet)
 
-Here are Carlos and Daf. Carlos manages the translation group for Evolution,
-and Daf is a translator.
+Here are Carlos and Foo. Carlos manages the translation group for Evolution,
+and Foo is a translator.
 
     >>> carlos = person_set.getByName('carlos')
-    >>> daf = person_set.getByName('daf')
+    >>> foo = person_set.getByName('name16')
 
 Here's our translation group.
 
@@ -57,25 +57,25 @@ Let's only allow translators from that group to translate.
 
 Daf isn't allowed to translate into Welsh.
 
-   >>> release = evolution.getSeries('main').getRelease('2.1.6')
-   >>> subset = potemplate_set.getSubset(productrelease=release)
+   >>> series = evolution.getSeries('main')
+   >>> subset = potemplate_set.getSubset(productseries=series)
    >>> potemplate = subset['evolution-2.2']
    >>> pofile = potemplate.getOrCreatePOFile('cy')
-   >>> pofile.canEditTranslations(daf)
+   >>> pofile.canEditTranslations(foo)
    False
 
 Let's add him to the group.
 
     >>> welsh = language_set['cy']
 
-    >>> daf_translator = translator_set.new(
+    >>> foo_translator = translator_set.new(
     ...     translationgroup=group,
     ...     language=welsh,
-    ...     translator=daf)
+    ...     translator=foo)
 
 Daf *is* allowed to translate into Welsh.
 
-    >>> pofile.canEditTranslations(daf)
+    >>> pofile.canEditTranslations(foo)
     True
 
     >>> LaunchpadFunctionalTestSetup().tearDown()

@@ -1,10 +1,20 @@
 # Copyright 2004 Canonical Ltd
+
+__metaclass__ = type
+
+__all__ = [
+    'LoginTokenView',
+    'ResetPasswordView',
+    'ValidateEmailView',
+    'NewAccountView',
+    'MergePeopleView',
+    ]
+
 import urllib
 
 from zope.component import getUtility
 from zope.event import notify
 from zope.app.form.browser.add import AddView
-from zope.app.form.interfaces import WidgetsError
 from zope.app.event.objectevent import ObjectCreatedEvent
 
 from canonical.database.sqlbase import flush_database_updates
@@ -12,14 +22,13 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.lp.dbschema import EmailAddressStatus, LoginTokenType
 from canonical.lp.dbschema import GPGKeyAlgorithm
 
-from canonical.foaf.nickname import generate_nick, generate_wikiname
-
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logInPerson
+from canonical.launchpad.webapp import canonical_url
 
-from canonical.launchpad.interfaces import (IPersonSet, IEmailAddressSet,
-    IPasswordEncryptor, IEmailAddressSet, ILoginTokenSet, IGPGKeySet,
-    IGpgHandler, IWikiNameSet, UBUNTU_WIKI_URL)
+from canonical.launchpad.interfaces import (
+    IPersonSet, IEmailAddressSet, IPasswordEncryptor, ILoginTokenSet,
+    IGPGKeySet, IGPGHandler, ILaunchBag)
 
 
 class LoginTokenView(object):
@@ -35,7 +44,7 @@ class LoginTokenView(object):
              LoginTokenType.NEWACCOUNT: '+newaccount',
              LoginTokenType.VALIDATEEMAIL: '+validateemail',
              LoginTokenType.VALIDATETEAMEMAIL: '+validateteamemail',
-             LoginTokenType.VALIDATEGPGUID: '+validateuid'}
+             LoginTokenType.VALIDATEGPG: '+validategpg'}
 
     def __init__(self, context, request):
         self.context = context
@@ -116,6 +125,7 @@ class ValidateEmailView(object):
         self.request = request
         self.context = context
         self.errormessage = ""
+        self.infomessage = ""
         self.formProcessed = False
 
     def successfullyProcessed(self):
@@ -132,8 +142,8 @@ class ValidateEmailView(object):
             self.validatePersonEmail()
         elif self.context.tokentype == LoginTokenType.VALIDATETEAMEMAIL:
             self.validateTeamEmail()
-        elif self.context.tokentype == LoginTokenType.VALIDATEGPGUID:
-            self.validateGpgUid()
+        elif self.context.tokentype == LoginTokenType.VALIDATEGPG:
+            self.validateGpg()
 
     def validateTeamEmail(self):
         """Set the new email address as the team's contact email address."""
@@ -171,13 +181,139 @@ class ValidateEmailView(object):
         logintokenset = getUtility(ILoginTokenSet)
         logintokenset.deleteByEmailAndRequester(self.context.email, requester)
 
-    def validateGpgUid(self):
-        """Check the password and validate a gpg key UID.
-        Validate it as normal email account then insert the gpg key if
-        needed.
+    def validateGpg(self):
+        """Check the password and validate a gpg key."""
+        requester = self.context.requester
+        password = self.request.form.get("password")
+        encryptor = getUtility(IPasswordEncryptor)
+        if not encryptor.validate(password, requester.password):
+            self.errormessage = "Wrong password. Please check and try again."
+            return
+
+        fingerprint = self.context.fingerprint
+
+        gpgkeyset = getUtility(IGPGKeySet)
+        logintokenset = getUtility(ILoginTokenSet)
+        # No fingerprint, is it plausible ??
+        if fingerprint == None:
+            self.errormessage = (
+                "Launchpad could not register this token because it has no "
+                "fingerprint information. Check you entered it correctly, "
+                "and try again.")
+            return
+
+        # retrieve respective key info
+        gpghandler = getUtility(IGPGHandler)
+        result, key = gpghandler.retrieveKey(fingerprint)
+
+        if not result:
+            self.errormessage = (
+                "Launchpad could not import GPG key, the reason was: %s ."
+                "Check if you published it correctly in the global key ring "
+                "(using <kbd>gpg --send-keys KEY</kbd>) and that you add "
+                "entered the fingerprint correctly (as produced by <kbd>"
+                "gpg --fingerprint YOU</kdb>). Try later or <a href=\"/people"
+                "/%s/+editgpgkey\">cancel your request</a>."
+                % (key, requester.name))
+            return        
+
+        # Is it a revalidation ?
+        lpkey = gpgkeyset.getByFingerprint(fingerprint)
+        
+        if lpkey:            
+            # if key is globally revoked skip import and remove token
+            if key.revoked:
+                self.errormessage = (
+                    "The key %s cannot be revalidated, because it has been"
+                    "publicly revoked. You will need to generate a new key"
+                    "(using <kbd>gpg --genkey</kbd>) and repeat the previous "
+                    "process to <a href=\"/people/%s/+editgpgkey\">find and "
+                    "import</a> the new key."% (lpkey.displayname,
+                                                requester.name))
+            else:
+                gpgkeyset.activateGpgKey(lpkey.id)
+                self.infomessage = (
+                    "The key %s was successfully revalidated. <a href=\"/"
+                    "people/%s/+editgpgkey\">See more Information</a>"
+                    % (lpkey.displayname, requester.name))
+                self.formProcessed = True
+
+            logintokenset.deleteByFingerprintAndRequester(fingerprint,
+                                                          requester)
+            
+            return
+
+        # Otherwise prepare to add
+        ownerID = self.context.requester.id
+        fingerprint = key.fingerprint
+        keyid = key.keyid
+        keysize = key.keysize
+        algorithm = GPGKeyAlgorithm.items[key.algorithm]
+
+        # Add new key in DB. See IGPGKeySet for further information
+        lpkey = gpgkeyset.new(ownerID, keyid, fingerprint, keysize, algorithm)
+
+        logintokenset.deleteByFingerprintAndRequester(fingerprint, requester)
+
+        self.infomessage = (
+            "The key %s was successfully validated. " % (lpkey.displayname))
+
+        self.formProcessed = True
+
+        guessed, hijacked = self._guessGpgEmails(key.uids)
+
+        if len(guessed):
+            # build email list
+            emails = ' '.join([email.email for email in guessed]) 
+
+            self.infomessage += (
+                "<p>Some e-mail addresses were found in your key but are "
+                "not registered with Launchpad:<code>%s</code>. If you "
+                "want to use these addressess with Launchpad, you need to "
+                "<a href=\"/people/%s/+emails\">confirm them</a>.</p>"
+                % (emails, requester.name))
+
+        if len(hijacked):
+            # build email list
+            emails = ' '.join([email.email for email in hijacked]) 
+            self.infomessage += (
+                "<p>Also some of them were registered into another "
+                "account(s):<code>%s</code>. Those accounts, probably "
+                "already belong to you, in this case you should be able to "
+                "<a href=\"/people/+requestmerge\">merge them</a> into your "
+                "current account.</p>"
+                % emails
+                )
+
+    def _guessGpgEmails(self, uids):
+        """Figure out which emails from the GPG UIDs are unknown in LP
+        context, add them as NEW EmailAddresses (guessed) and return a
+        list containing the just added address for UI feedback.
         """
-        self.validatePersonEmail()
-        self._ensureGPG()   
+        emailset = getUtility(IEmailAddressSet)
+        requester = self.context.requester
+        # build a list of already validated and preferred emailaddress
+        # in lowercase for comparision reasons
+        emails = set(email.email.lower() for email in
+                     requester.validatedemails)
+        emails.add(requester.preferredemail.email.lower())
+
+        guessed = []
+        hijacked = []
+        # iter through UIDs
+        for uid in uids:
+            # if UID isn't validated/preferred, append it to list
+            if uid.lower() not in emails:
+                # verify if the email isn't owned by other person.
+                lpemail = emailset.getByEmail(uid)
+                if lpemail:
+                    hijacked.append(lpemail)
+                    continue
+                # store guessed email address with status NEW
+                email = emailset.new(uid, requester.id)
+                guessed.append(email)                    
+                                
+        return guessed, hijacked
 
     def _ensureEmail(self, emailaddress):
         """Make sure self.requester has <emailaddress> as one of its email
@@ -212,50 +348,6 @@ class ValidateEmailView(object):
         # table.
         email = emailset.new(emailaddress, requester.id)
         return email
-
-    def _ensureGPG(self):
-        """Ensure the correspondent GPGKey entry for the UID."""
-        fingerprint = self.context.fingerprint        
-        gpgkeyset = getUtility(IGPGKeySet)
-        
-        # No fingerprint, is it plausible ??
-        if fingerprint == None:
-            self.errormessage = ('No fingerprint information attached to '
-                                 'this Token.') 
-            return
-        
-        # GPG was already inserted 
-        if gpgkeyset.getByFingerprint(fingerprint):
-            self.errormessage = ('The GPG Key in question was already '
-                                 'imported to the Launchpad Context.') 
-            return
-
-        # Import the respective public key
-        gpghandler = getUtility(IGpgHandler)
-
-        result, pubkey = gpghandler.getPubKey(fingerprint)
-        
-        if not result:
-            self.errormessage = ('Could not get GPG key: %' % pubkey)
-            return
-
-        key = gpghandler.importPubKey(pubkey)
-
-        if not key:
-            self.errormessage = ('Could not Import GPG key')
-            return
-        
-        # Otherwise prepare to add
-        ownerID = self.context.requester.id
-        fingerprint = key.fingerprint
-        keyid = key.keyid
-        keysize = key.keysize
-        algorithm = GPGKeyAlgorithm.items[key.algorithm]
-        revoked = key.revoked
-        
-        # Add new key in DB. See IGPGKeySet for further information
-        gpgkeyset.new(ownerID, keyid, fingerprint, keysize, algorithm, revoked)
-        self.errormessage = ('GPG key %s successfully imported' % fingerprint)
         
 
 class NewAccountView(AddView):
@@ -278,24 +370,16 @@ class NewAccountView(AddView):
         for key, value in data.items():
             kw[str(key)] = value
 
-        kw['name'] = generate_nick(self.context.email)
-        person = getUtility(IPersonSet).newPerson(**kw)
+        person, email = getUtility(IPersonSet).createPersonAndEmail(
+                self.context.email, displayname=kw['displayname'], 
+                givenname=kw['givenname'], familyname=kw['familyname'],
+                password=kw['password'], passwordEncrypted=True)
+
         notify(ObjectCreatedEvent(person))
-
-        # XXX: duplication of canonical.launchpad.database.person.createPerson!
-        #       -- Andrew Bennetts, 2005-06-14
-        emailset = getUtility(IEmailAddressSet)
-        email = emailset.new(self.context.email, person.id)
         notify(ObjectCreatedEvent(email))
+
         person.validateAndEnsurePreferredEmail(email)
-
-        # XXX: duplication of canonical.launchpad.database.person.createPerson!
-        #       -- Andrew Bennetts, 2005-06-14
-        wikinameset = getUtility(IWikiNameSet)
-        wikiname = generate_wikiname(kw['displayname'], wikinameset.exists)
-        wikinameset.new(person.id, UBUNTU_WIKI_URL, wikiname)
-
-        self._nextURL = '/people/%s' % person.name
+        self._nextURL = canonical_url(person)
         self.context.destroySelf()
 
         loginsource = getUtility(IPlacelessLoginSource)

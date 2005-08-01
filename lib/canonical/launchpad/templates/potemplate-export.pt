@@ -7,7 +7,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Export Translations</h1>
+    <h1>Download translations</h1>
 
     <tal:thing content="view/processForm" />
 
@@ -19,20 +19,14 @@
 
     <tal:block condition="view/formProcessed">
         <p>
-        Your export request has been received. The results should arrive by
-        email shortly.
+        Your download request has been received.
+        The results should arrive by email shortly.
         </p>
     </tal:block>
 
     <tal:block condition="not: view/formProcessed">
 
-        <p>
-        The files you request will be exported shortly, and a notification
-        will be sent to your email address <strong
-        tal:content="view/user/preferredemail/email">user@domain</strong>.
-        </p>
-
-        <h2>Select Files for Exporting</h2>
+        <h2>Select files to download</h2>
 
         <form action="" method="POST">
 
@@ -47,19 +41,18 @@
             <div class="field">
                 <label>
                     <input name="what" type="radio" value="some" />
-                    Selected files
+                    Selected files:
                 </label>
 
-                <div class="multi_select"
-                     style="margin-left: 2em; margin-bottom: 1em;">
-                    <div class="field">
+                <div class="listbox" style="margin-left: 1.5em;">
+                    <div>
                         <label>
                             <input type="checkbox" name="potemplate" />
                             The PO template
                         </label>
                     </div>
                     <tal:thing repeat="pofile view/pofiles">
-                        <div class="field">
+                        <div>
                             <label>
                                 <input type="checkbox"
                                     tal:attributes="name pofile/value" />
@@ -82,8 +75,16 @@
                 </label>
             </div>
 
-            <div class="formControls" style="clear: left">
-                <input type="submit" value="Request Export" />
+          <p>
+            When the files you have selected are ready,
+            a message will be sent to
+            <code tal:content="view/user/preferredemail/email">user@domain</code>
+            containing a link to download them.
+          </p>
+
+
+            <div class="formControls">
+                <input type="submit" value="Request Download" />
             </div>
 
         </form>

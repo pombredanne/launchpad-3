@@ -6,8 +6,12 @@ https://wiki.launchpad.canonical.com/CodeOfConduct
 
 __metaclass__ = type
 __all__ = ['CodeOfConduct', 'CodeOfConductSet', 'CodeOfConductConf',
-           'SignedCodeOfConduct', 'SignedCodeOfConductSet',
-           'sendAdvertisementEmail']
+           'SignedCodeOfConduct', 'SignedCodeOfConductSet']
+
+import os
+import errno
+from sha import sha
+from datetime import datetime
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -20,18 +24,11 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
-from canonical.launchpad.interfaces import ICodeOfConduct, ICodeOfConductSet
-from canonical.launchpad.interfaces import ICodeOfConductConf
-from canonical.launchpad.interfaces import ISignedCodeOfConduct
-from canonical.launchpad.interfaces import ISignedCodeOfConductSet, IGpgHandler
-from canonical.launchpad.interfaces import IPersonSet
-from canonical.launchpad.interfaces import IGPGKeySet
-from canonical.launchpad.interfaces import IGpgHandler
-
-# Python
-import os
-from datetime import datetime
-from sha import sha
+from canonical.launchpad.interfaces import (
+    ICodeOfConduct, ICodeOfConductSet, ICodeOfConductConf,
+    ISignedCodeOfConduct, ISignedCodeOfConductSet, IGPGHandler,
+    IGPGKeySet
+    )
 
 class CodeOfConduct:
     """CoC class model.
@@ -45,6 +42,7 @@ class CodeOfConduct:
     def __init__(self, version):
         self.version = version
 
+    @property
     def title(self):
         """Return preformatted title (config_prefix + version)."""
 
@@ -55,9 +53,9 @@ class CodeOfConduct:
         prefix = getUtility(ICodeOfConductConf).prefix
 
         # Build a fancy title
-        return prefix + self.version 
-    title = property(title)
+        return '%s' % prefix + self.version
 
+    @property
     def content(self):
         """Return the content of the CoC file."""
         # Recover the path for CoC from a Component
@@ -80,20 +78,19 @@ class CodeOfConduct:
             fp.close()
 
         return data
-    content = property(content)
 
+    @property
     def current(self):
         """Is this the current release of the Code of Conduct?"""
-        return getUtility(ICodeOfConductConf).current == self.version
-    current = property(current)
+        return getUtility(ICodeOfConductConf).currentrelease == self.version
 
-
+    
 class CodeOfConductSet:
     """A set of CodeOfConducts."""
 
     implements(ICodeOfConductSet)
 
-    title = 'Codes of Conduct Page'
+    title = 'Launchpad Codes of Conduct'
 
     def __getitem__(self, version):
         """See ICodeOfConductSet."""
@@ -121,7 +118,7 @@ class CodeOfConductSet:
 
         # Return the available list of CoCs objects
         return iter(releases)
-
+        
 
 class CodeOfConductConf:
     """Abstract Component to store the current CoC configuration."""
@@ -134,8 +131,8 @@ class CodeOfConductConf:
 
     path = 'lib/canonical/launchpad/codesofconduct/'
     prefix = 'Ubuntu Code of Conduct - '
-    current = '1.0'
-
+    currentrelease = '1.0'
+    datereleased = '2005/04/12'
 
 class SignedCodeOfConduct(SQLBase):
     """Code of Conduct."""
@@ -162,28 +159,33 @@ class SignedCodeOfConduct(SQLBase):
 
     active = BoolCol(dbName='active', notNull=False, default=False)
 
-    def displayName(self):
+    @property
+    def displayname(self):
         """Build a Fancy Title for CoC."""
-        # XXX: cprov 20040224
-        # We need the proposed field 'version'
-        displayname = '%s' % self.owner.browsername
+        displayname = self.datecreated.strftime('%Y-%m-%d')
 
         if self.signingkey:
-            displayname += '(%s)' % self.signingkey.keyid
+            displayname += (' (DIGITALLY SIGNED by %s)'
+                            % self.signingkey.displayname)
         else:
-            displayname += '(PAPER)'
-
-        if self.active:
-            displayname += '[ACTIVE]'
-        else:
-            displayname += '[DEACTIVE]'
+            displayname += (' (PAPER SUBMITTED by %s)'
+                            % self.recipient.browsername)
 
         return displayname
-    displayname = property(displayName)
 
-    # XXX cprov 20050301
-    # Might be replace for something similar to displayname
-    title = 'Signed Code of Conduct Page'
+    def sendAdvertisementEmail(self, subject, content):
+        """See ISignedCodeOfConduct."""
+        # XXX cprov 20050705
+        # Until when it will be necessary ?
+        assert self.owner.preferredemail
+        template = open('lib/canonical/launchpad/emailtemplates/'
+                        'signedcoc-acknowledge.txt').read()
+        fromaddress = "Launchpad Code Of Conduct System <noreply@ubuntu.com>"
+        replacements = {'user': self.owner.browsername,
+                        'content': content}
+        message = template % replacements
+        simple_sendmail(fromaddress, self.owner.preferredemail.email, subject,
+                        message)
 
 
 class SignedCodeOfConductSet:
@@ -191,9 +193,7 @@ class SignedCodeOfConductSet:
 
     implements(ISignedCodeOfConductSet)
 
-    # XXX cprov 20050301
-    # Might be replace for something similar to displayname
-    title = 'Signed Codes of Conduct Set Page'
+    title = 'Code of Conduct Administrator Page'
 
     def __getitem__(self, id):
         """Get a Signed CoC Entry."""
@@ -220,28 +220,40 @@ class SignedCodeOfConductSet:
         # * CoC was signed (correctly) by the GPGkey.
 
         # use a utility to perform the GPG operations
-        gpghandler = getUtility(IGpgHandler)
-
+        gpghandler = getUtility(IGPGHandler)
         sig = gpghandler.verifySignature(signedcode)
 
+        if sig is None:
+            return 'Signature has invalid format'
+
         if not sig.fingerprint:
-            return 'Failed to verify the signature'
+            return ('Failed to verify the signature, check if the GPG key '
+                    'you used to sign is correctly published in the global '
+                    'key ring.')
 
         gpgkeyset = getUtility(IGPGKeySet)
 
         gpg = gpgkeyset.getByFingerprint(sig.fingerprint)
 
         if not gpg:
-            return 'Not valid key: %s' % sig.fingerprint
+            return ('The key you used to sign, which fingerprint is <kbd>%s'
+                    '</kbd>, is not properly registered in launchpad. Please '
+                    'access <a href="/people/%s/+editgpgkey">Edit GPG Keys'
+                    '</a> and follow the instructions.' % (sig.fingerprint,
+                                                           user.name))
 
         if gpg.owner.id != user.id:
-            return 'Signature Onwer and User mismatch'
+            return ('GPG key onwer (%s) and current Launchpad user (%s) '
+                    'does not match.' % (gpg.owner.displayname,
+                                         user.displayname))
         
         if gpg.revoked:
-            return  'Signed with a revoked Key.'
+            return ('The GPG key used to sign (%s) is revoked. Please repair '
+                    'it in the global keyring before proceed.'
+                    % gpg.displayname)
 
         # recover the current CoC release
-        coc = CodeOfConduct(getUtility(ICodeOfConductConf).current)
+        coc = CodeOfConduct(getUtility(ICodeOfConductConf).currentrelease)
         current = coc.content
 
         # calculate text digest 
@@ -249,21 +261,18 @@ class SignedCodeOfConductSet:
         current_dig = sha(current).hexdigest()
 
         if plain_dig != current_dig:
-            return ('CoCs digest do not match: %s vs. %s'
+            return ('Code of Conduct digest do not match: %s vs. %s'
                      % (plain_dig, current_dig))
 
-        subject = 'Launchpad: Code of Conduct Signature Acknowledge'
-        content = ('Digitally Signed by %s\n\n'
-                   '----- Signed Code Of Conduct -----\n'
-                   '%s\n'
-                   '-------------- End ---------------\n'
-                   % (sig.fingerprint, sig.plain_data))
-        # Send Advertisement Email
-        sendAdvertisementEmail(user, subject, content)
-
         # Store the signature 
-        SignedCodeOfConduct(owner=user.id, signingkey=gpg.id,
-                            signedcode=signedcode, active=True)
+        signed = SignedCodeOfConduct(owner=user.id, signingkey=gpg.id,
+                                     signedcode=signedcode, active=True)
+
+        # Send Advertisement Email
+        subject = 'Launchpad: Code of Conduct Signature Acknowledge'
+        content = ('Digitally Signed by %s\n' % sig.fingerprint)
+        signed.sendAdvertisementEmail(subject, content)
+
 
     def searchByDisplayname(self, displayname, searchfor=None):
         """See ISignedCodeOfConductSet."""
@@ -296,9 +305,10 @@ class SignedCodeOfConductSet:
         return SignedCodeOfConduct.select(query, clauseTables=clauseTables,
                                           orderBy='SignedCodeOfConduct.active')
 
-    def searchByUser(self, user_id):
+    def searchByUser(self, user_id, active=True):
         """See ISignedCodeOfConductSet."""
-        return list(SignedCodeOfConduct.selectBy(ownerID=user_id))
+        return SignedCodeOfConduct.selectBy(ownerID=user_id,
+                                            active=active)
 
     def modifySignature(self, sign_id, recipient, admincomment, state):
         """See ISignedCodeOfConductSet."""
@@ -313,9 +323,7 @@ class SignedCodeOfConductSet:
                    'Modified by %s'
                     % (state, admincomment, recipient.browsername))
 
-        # Send Advertisement Email if preferredemail is set.
-        if sign.owner.preferredemail:
-            sendAdvertisementEmail(sign.owner, subject, content)
+        sign.sendAdvertisementEmail(subject, content)
 
         flush_database_updates()
 
@@ -326,23 +334,13 @@ class SignedCodeOfConductSet:
         subject = 'Launchpad: Code Of Conduct Signature Acknowledge'
         content = 'Paper Submitted acknowledge by %s' % recipient.browsername
 
-        # Send Advertisement Email if preferredemail is set
-        if user.preferredemail:
-            sendAdvertisementEmail(user, subject, content)
+        sign.sendAdvertisementEmail(subject, content)
 
         SignedCodeOfConduct(owner=user.id, recipient=recipient.id,
                             active=active)
 
-def sendAdvertisementEmail(user, subject, content):
-    template = open('lib/canonical/launchpad/emailtemplates/'
-                    'signedcoc-acknowledge.txt').read()
-
-    fromaddress = "Launchpad Code Of Conduct System <noreply@ubuntu.com>"
-
-    replacements = {'user': user.browsername,
-                    'content': content}
-
-    message = template % replacements
-
-    simple_sendmail(fromaddress, user.preferredemail.email, subject, message)
-
+    def getLastAcceptedDate(self):
+        """See ISignegCodeOfConductSet."""
+        conf = getUtility(ICodeOfConductConf)
+        return datetime(
+            *[int(item) for item in conf.datereleased.strip().split('/')])

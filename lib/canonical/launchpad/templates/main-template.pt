@@ -13,64 +13,103 @@
         media="screen">@import url(/@@/launchpad.css);</style>
     <!-- Launchpad JS code -->
     <script type="text/javascript" src="/@@/launchpad.js"></script>
+    <script type="text/javascript" src="/@@/sorttable.js"></script>
     <link rel="shortcut icon" href="/@@/defaultFavicon.gif" />
 
     <metal:block define-slot="head_epilogue"></metal:block>
 </head>
 
-<body>
-    <div class="page-header">
-        <div class="page-header-ribbon">
-            <div tal:replace="structure context/@@login_status" />
-            <address>
-               <span tal:replace="structure request/fmt:breadcrumbs" />
-            </address>
-        </div>
-        <div class="visualClear">
-            <a href="/">
-                <img src="/@@/launchpad.png" alt="Launchpad Home" />
-            </a>
-          <h2><metal:block define-slot="titleheader"
-                           tal:content="context/title | default"
-               >The Launchpad</metal:block></h2>
-        </div>
-
-    </div><!-- class="page-header"-->
+  <body>
+    <img
+      style="position: relative; float: left; left: -12px; top: 1em;"
+      src="/@@/launchpad.png"
+      alt=""
+    />
+    <div class="header">
+      <div
+        class="login"
+        tal:replace="structure context/@@login_status"
+      >
+        Logged in or logged out
+      </div>
+      <div
+        class="hierarchy"
+        tal:content="structure request/fmt:breadcrumbs"
+      />
+      <ul
+        class="facets"
+        tal:define="facetmenu context/menu:facet"
+      >
+        <tal:block condition="facetmenu">
+          <tal:block repeat="link facetmenu">
+            <li
+              tal:condition="link/selected"
+              class="current"
+            >
+              <strong tal:condition="link/linked">
+                <a
+                  tal:attributes="href link/url"
+                  tal:content="link/text"
+                >abc</a>
+              </strong>
+              <strong
+                tal:condition="not: link/linked"
+                tal:content="link/text"
+              >def</strong>
+            </li>
+            <li tal:condition="not: link/selected">
+              <a
+                tal:condition="link/linked"
+                tal:attributes="href link/url"
+                tal:content="link/text"
+              >ghi</a>
+              <span
+                class="disabled"
+                tal:condition="not: link/linked"
+                tal:content="link/text"
+              >jkl</span>
+            </li>
+          </tal:block>
+        </tal:block>
+      </ul>
+    </div>
+    <h2><metal:block
+        define-slot="titleheader"
+        tal:content="context/title | default"
+    >Launchpad</metal:block></h2>
+    <ul
+      tal:define="appmenu context/menu:application"
+      tal:condition="appmenu"
+      class="app"
+    >
+      <tal:block repeat="link appmenu">
+        <li
+          tal:condition="link/selected"
+          class="current"
+        >
+          <tal:block condition="link/linked">
+            <strong>
+              <a 
+                tal:attributes="href link/url"
+                tal:content="link/text"
+              >link text</a>
+            </strong>
+          </tal:block>
+          <tal:block condition="not: link/linked">
+            <strong tal:content="link/text">link text</strong>
+          </tal:block>
+        </li>
+        <li tal:condition="not: link/selected">
+          <a
+            tal:attributes="href link/url"
+            tal:content="link/text"
+          >link text</a>
+        </li>
+      </tal:block>
+    </ul>
 
     <!-- Menus -->
 
-    <div style="clear: left; margin-bottom: 1em"
-            tal:define="
-                facetmenu context/menu:facet;
-                appmenu context/menu:application">
-        <ul tal:condition="facetmenu" class="app navigation"
-                style="margin-bottom: 0">
-            <li tal:repeat="link facetmenu">
-                <span tal:condition="link/selected">
-                    <strong tal:content="link/text">link text</strong>
-                </span>
-
-                <span tal:condition="not: link/selected">
-                    <a tal:attributes="href link/url" tal:content="link/text"
-                        >link text</a>
-                </span>
-            </li>
-        </ul>
-
-        <ul tal:condition="appmenu" class="app navigation"
-                style="margin-left: 3em">
-            <li tal:repeat="link appmenu">
-                <span tal:condition="link/selected">
-                    <strong tal:content="link/text">link text</strong>
-                </span>
-
-                <span tal:condition="not: link/selected">
-                    <a tal:attributes="href link/url" tal:content="link/text"
-                        >link text</a>
-                </span>
-            </li>
-        </ul>
-    </div>
 
     <div class="visualClear" id="body">
       <metal:block define-slot="body">
@@ -113,9 +152,13 @@
 
     <div class="visualClear">&nbsp;</div>
 
-    <div id="portal-footer">
-        Copyright 2004-2005 Canonical Ltd. &ndash;  <a href="/legal">Legalese</a>
-    </div>
-</body>
-</html>
+
+      <div class="footer">
+        Copyright 2004-2005 Canonical Ltd. &ndash;
+        <a href="/legal">Copyright&nbsp;terms</a>
+        &ndash;
+        <a href="/feedback">Help&nbsp;us&nbsp;improve</a>
+      </div>
+    </body>
+  </html>
 </metal:page>

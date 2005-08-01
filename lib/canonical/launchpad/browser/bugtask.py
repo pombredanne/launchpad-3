@@ -2,25 +2,33 @@
 
 __metaclass__ = type
 
-import urllib
+__all__ = [
+    'BugTasksReportView',
+    'ViewWithBugTaskContext',
+    'BugTaskViewBase',
+    'BugTaskEditView',
+    'BugTaskDisplayView',
+    'BugTaskSearchListingView',
+    'BugTaskAnorakSearchPageBegoneView',
+    ]
 
-from xml.sax.saxutils import escape
+import urllib
 
 from zope.interface import implements
 from zope.component import getUtility
+from zope.exceptions import NotFoundError
 from zope.app.publisher.browser import BrowserView
 from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from canonical.lp import dbschema
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
     IPersonSet, ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch,
-    IBugSet, IProduct, IDistribution, IDistroRelease, IUpstreamBugTask,
-    IDistroBugTask, IBugTask, IBugTaskSet, IDistroReleaseSet)
-from canonical.lp import dbschema
+    IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask, IBugTaskSet,
+    IDistroReleaseSet)
 from canonical.launchpad.interfaces import IBugTaskSearchListingView
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
@@ -69,9 +77,11 @@ class BugTasksReportView:
 
     # TODO: replace this with a smart vocabulary and widget
     def userSelector(self):
-        return '<input type="text" name="name" value="%s"/>\n' % (
-                self.user.name,
-                )
+        if self.user:
+            name = self.user.name
+        else:
+            name = ""
+        return '<input type="text" name="name" value="%s"/>\n' % name
         # Don't do this - when you have 60000+ people it tends to kill
         # the production server.
         # html = '<select name="name">\n'
@@ -87,7 +97,7 @@ class BugTasksReportView:
     # TODO: replace this with a smart vocabulary and widget
     def severitySelector(self):
         html = '<select name="minseverity">\n'
-        for item in dbschema.BugSeverity.items:
+        for item in dbschema.BugTaskSeverity.items:
             html = html + '<option value="' + str(item.value) + '"'
             if item.value==self.minseverity:
                 html = html + ' selected="yes"'
@@ -100,7 +110,7 @@ class BugTasksReportView:
     # TODO: replace this with a smart vocabulary and widget
     def prioritySelector(self):
         html = '<select name="minpriority">\n'
-        for item in dbschema.BugPriority.items:
+        for item in dbschema.BugTaskPriority.items:
             html = html + '<option value="' + str(item.value) + '"'
             if item.value==self.minpriority:
                 html = html + ' selected="yes"'
@@ -161,7 +171,11 @@ class BugTaskViewBase:
 
 
 class BugTaskEditView(SQLObjectEditView, BugTaskViewBase):
-    pass
+
+    def changed(self):
+        """Redirect the browser to the bug page when we successfully update
+        the bug task."""
+        self.request.response.redirect(canonical_url(self.context.bug))
 
 
 class BugTaskDisplayView(BugTaskViewBase):
@@ -175,14 +189,14 @@ class BugTaskSearchListingView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.is_maintainer = helpers.is_maintainer(self.context.context)
+        self.is_maintainer = helpers.is_maintainer(self.context)
 
         if self._upstreamContext():
             self.search_form_schema = IUpstreamBugTaskSearch
         elif self._distributionContext() or self._distroReleaseContext():
             self.search_form_schema = IDistroBugTaskSearch
         else:
-            raise TypeError("Unknown context: %s" % repr(self.context.context))
+            raise TypeError("Unknown context: %s" % repr(self.context))
 
         setUpWidgets(self, self.search_form_schema, IInputWidget)
 
@@ -197,8 +211,12 @@ class BugTaskSearchListingView:
         if searchtext:
             if searchtext.isdigit():
                 # The user wants to jump to a bug with a specific id.
-                bug = getUtility(IBugSet).get(int(searchtext))
-                self.request.response.redirect(canonical_url(bug))
+                try:
+                    bug = getUtility(IBugSet).get(int(searchtext))
+                except NotFoundError:
+                    pass
+                else:
+                    self.request.response.redirect(canonical_url(bug))
             else:
                 # The user wants to filter on certain text.
                 search_params["searchtext"] = searchtext
@@ -237,6 +255,8 @@ class BugTaskSearchListingView:
         search_params["statusexplanation"] = form_params.get(
                 "statusexplanation")
 
+        search_params["user"] = getUtility(ILaunchBag).user
+
         # make this search context-sensitive
         tasks = self.context.search(**search_params)
 
@@ -253,7 +273,7 @@ class BugTaskSearchListingView:
             # there's nothing to do here.
             return
 
-        if helpers.is_maintainer(self.context.context):
+        if helpers.is_maintainer(self.context):
             form_params = getWidgetsData(self, self.search_form_schema)
 
             milestone_assignment = form_params.get('milestone_assignment')
@@ -273,10 +293,9 @@ class BugTaskSearchListingView:
 
     def task_columns(self):
         """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
-        bugtask_subset = self.context
-        upstream_context = IProduct(bugtask_subset.context, None)
-        distribution_context = IDistribution(bugtask_subset.context, None)
-        distrorelease_context = IDistroRelease(bugtask_subset.context, None)
+        upstream_context = self._upstreamContext()
+        distribution_context = self._distributionContext()
+        distrorelease_context = self._distroReleaseContext()
 
         if upstream_context:
             return [
@@ -307,14 +326,13 @@ class BugTaskSearchListingView:
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
-        bugtask_subset = self.context
-
         status_new = dbschema.BugTaskStatus.NEW
         status_accepted = dbschema.BugTaskStatus.ACCEPTED
 
-        critical_tasks = bugtask_subset.search(
-            severity=dbschema.BugSeverity.CRITICAL,
-            status=any(status_new, status_accepted))
+        critical_tasks = self.context.search(
+            severity=dbschema.BugTaskSeverity.CRITICAL,
+            status=any(status_new, status_accepted),
+            user=getUtility(ILaunchBag).user)
 
         return critical_tasks.count()
 
@@ -336,13 +354,13 @@ class BugTaskSearchListingView:
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
-        bugtask_subset = self.context
         status_new = dbschema.BugTaskStatus.NEW
         status_accepted = dbschema.BugTaskStatus.ACCEPTED
 
-        tasks_assigned_to_user = bugtask_subset.search(
+        tasks_assigned_to_user = self.context.search(
             assignee=getUtility(ILaunchBag).user,
-            status=any(status_new, status_accepted))
+            status=any(status_new, status_accepted),
+            user=getUtility(ILaunchBag).user)
 
         return tasks_assigned_to_user.count()
 
@@ -367,10 +385,8 @@ class BugTaskSearchListingView:
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
-        bugtask_subset = self.context
-
-        untriaged_tasks = bugtask_subset.search(
-            status=dbschema.BugTaskStatus.NEW)
+        untriaged_tasks = self.context.search(
+            status=dbschema.BugTaskStatus.NEW, user=getUtility(ILaunchBag).user)
 
         return untriaged_tasks.count()
 
@@ -389,12 +405,12 @@ class BugTaskSearchListingView:
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
-        bugtask_subset = self.context
         status_new = dbschema.BugTaskStatus.NEW
         status_accepted = dbschema.BugTaskStatus.ACCEPTED
 
-        unassigned_tasks = bugtask_subset.search(
-            assignee=NULL, status=any(status_new, status_accepted))
+        unassigned_tasks = self.context.search(
+            assignee=NULL, status=any(status_new, status_accepted),
+            user=getUtility(ILaunchBag).user)
 
         return unassigned_tasks.count()
 
@@ -417,9 +433,7 @@ class BugTaskSearchListingView:
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
-        bugtask_subset = self.context
-
-        total_bugs = bugtask_subset.search()
+        total_bugs = self.context.search(user=getUtility(ILaunchBag).user)
 
         return total_bugs.count()
 
@@ -444,9 +458,8 @@ class BugTaskSearchListingView:
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
-        bugtask_subset = self.context
-        distribution_context = IDistribution(bugtask_subset.context, None)
-        distrorelease_context = IDistroRelease(bugtask_subset.context, None)
+        distribution_context = self._distributionContext()
+        distrorelease_context = self._distroReleaseContext()
 
         releases = []
 
@@ -461,11 +474,11 @@ class BugTaskSearchListingView:
 
         release_bugs = []
         for release in releases:
-            open_release_bugs = getUtility(IBugTaskSet).search(
-                distrorelease=release,
+            open_release_bugs = release.search(
                 status=any(
                     dbschema.BugTaskStatus.NEW,
-                    dbschema.BugTaskStatus.ACCEPTED))
+                    dbschema.BugTaskStatus.ACCEPTED),
+                user=getUtility(ILaunchBag).user)
             release_bugs.append({
                 "releasename" : release.name,
                 "bugcount" : open_release_bugs.count(),
@@ -524,43 +537,21 @@ class BugTaskSearchListingView:
 
         Return the IProduct if yes, otherwise return None.
         """
-        return IProduct(self.context.context, None)
+        return IProduct(self.context, None)
 
     def _distributionContext(self):
         """Is this page being viewed in a distribution context?
 
         Return the IDistribution if yes, otherwise return None.
         """
-        return IDistribution(self.context.context, None)
+        return IDistribution(self.context, None)
 
     def _distroReleaseContext(self):
         """Is this page being viewed in a distrorelease context?
 
         Return the IDistroRelease if yes, otherwise return None.
         """
-        return IDistroRelease(self.context.context, None)
-
-
-class BugTaskAbsoluteURL(BrowserView):
-    """The view for an absolute URL of a bug task."""
-    def __str__(self):
-        urlpath = ""
-        task = self.context
-        if task.product is not None:
-            # This is an upstream task.
-            urlpath = "/products/%s/+bugs/" % task.product.name
-        elif task.distribution is not None:
-            # This is a distribution task.
-            urlpath = "/distros/%s/+bugs/" % task.distribution.name
-        elif task.distrorelease is not None:
-            # This is a distrorelease task.
-            urlpath = "/distros/%s/%s/+bugs/" % (
-                task.distrorelease.distribution.name,
-                task.distrorelease.name)
-
-        return "%s%s%d" % (
-            self.request.getApplicationURL(),
-            urlpath, task.bug.id)
+        return IDistroRelease(self.context, None)
 
 
 class BugTaskAnorakSearchPageBegoneView:

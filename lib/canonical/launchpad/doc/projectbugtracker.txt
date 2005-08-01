@@ -1,0 +1,14 @@
+
+Project Bug Trackers
+--------------------
+
+A project bug tracker links a project to a bug tracker.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IProjectBugTrackerSet
+    >>> pbt_set = getUtility(IProjectBugTrackerSet)
+
+    >>> from zope.interface.verify import verifyObject
+    >>> verifyObject(IProjectBugTrackerSet, pbt_set)
+    True
+

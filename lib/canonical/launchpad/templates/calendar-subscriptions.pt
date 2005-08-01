@@ -1,0 +1,76 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/tal/i18n"
+      xml:lang="en" lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+  <body>
+
+    <div metal:fill-slot="main">
+      <h1>Calendar Subscriptions</h1>
+
+      <div tal:content="view/submit" />
+
+      <p class="formHelp">
+      To subscribe to a calendar not
+      listed here, go to the corresponding person, project or
+      package page.</p>
+
+      <form action="." tal:attributes="action request/URL" method="post">
+        <table>
+          <thead>
+            <tr>
+              <th>Calendar</th>
+              <th>Subscribed</th>
+              <th>Colour</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="sub view/subscriptions">
+              <td tal:content="sub/title">Calendar name</td>
+              <td>
+                <label tal:attributes="for string:sub.${sub/id}-yes">
+                  <input type="radio"
+                         value="yes"
+                         tal:attributes="name string:sub.${sub/id};
+                                         id string:sub.${sub/id}-yes;
+                                         checked python:sub['subscribed'] and 'checked' or None" />
+                  Yes
+                </label>
+                <label tal:attributes="for string:sub.${sub/id}-no">
+                  <input type="radio"
+                         value="no"
+                         tal:attributes="name string:sub.${sub/id};
+                                         id string:sub.${sub/id}-no;
+                                         checked python:not sub['subscribed'] and 'checked' or None" />
+                  No
+                </label>
+              </td>
+              <td>
+                <select tal:attributes="name string:colour.${sub/id}">
+                  <option tal:repeat="colour view/colours"
+                          tal:attributes="value colour/code;
+                                          selected python:sub['colour'] == colour['code'] and 'selected' or None;
+                                          style string:background-color: ${colour/code}"
+                          tal:content="colour/name">
+                    Colour name
+                  </option>
+                </select>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="row">
+          <div class="controls"><hr />
+            <input type='submit' value='Submit'
+              name='UPDATE_SUBMIT' style="float: right;"
+              i18n:attributes='value submit-button' />
+          </div>
+        </div>
+             
+      </form>
+    </div>
+  </body>
+</html>

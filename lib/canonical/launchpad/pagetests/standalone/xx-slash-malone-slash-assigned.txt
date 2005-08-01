@@ -1,8 +1,47 @@
-Check that /malone/assigned doesn't give an error when accessed anonymously.
+To access /malone/assigned we have to be logged in.
 
   >>> print http(r"""
   ... GET /malone/assigned HTTP/1.1
   ... """)
-  HTTP/1.1  303 See Other
+  HTTP/1.1 303 See Other
   ...
+  Location: http://localhost:9000/malone/assigned/+index/+login
+  <BLANKLINE>
 
+
+When we're logged in as Sample Person we can see our own bugs.
+
+  >>> print http(r"""
+  ... GET /malone/assigned/+index HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Malone Bugs assigned to Foo Bar...
+
+We can also see bugs assigned to other people.
+
+  >>> print http(r"""
+  ... POST /malone/assigned/ HTTP/1.1
+  ... Content-Length: 41
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... 
+  ... name=name12&minseverity=10&minpriority=10""")
+  HTTP/1.1 200 Ok
+  ...Malone Bugs assigned to Sample Person...
+
+
+If we specify a name that doesn't exist in Launchpad, we get a page
+telling us that.
+
+  >>> print http(r"""
+  ... POST /malone/assigned/ HTTP/1.1
+  ... Content-Length: 41
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... 
+  ... name=name42&minseverity=10&minpriority=10""")
+  HTTP/1.1 200 Ok
+  ...
+          The user "name42" is not registered in Launchpad.
+  ...

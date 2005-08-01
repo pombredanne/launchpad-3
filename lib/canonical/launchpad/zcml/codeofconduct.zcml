@@ -48,7 +48,7 @@
         fields="signedcode"
         class="canonical.launchpad.browser.SignedCodeOfConductAddView"
         permission="launchpad.AnyPerson"
-        template="../templates/launchpad-addform.pt"
+        template="../templates/signedcodeofconduct-add.pt"
         lp:url="codeofconduct/$release/+sign">
     </browser:addform>
 
@@ -123,45 +123,33 @@
             name="+index"
             lp:url="codeofconduct/console/$signed.id/+index" />
         <browser:page
-            template="../templates/portlet-signedcodeofconduct-actions.pt"
+            template="../templates/signedcodeofconduct-portlet-actions.pt"
             name="+portlet-actions"
             lp:url="codeofconduct/console/$signed.id/+portlet-actions" />
     </browser:pages>
 
     <browser:editform
-        name="+edit"
-        for="canonical.launchpad.interfaces.ISignedCodeOfConduct"
-        schema="canonical.launchpad.interfaces.ISignedCodeOfConduct"
-        class="canonical.launchpad.browser.SignedCodeOfConductEditView"
-        label="Edit Code of Conduct Signature:"
-        fields="signingkey signedcode"
-        permission="launchpad.Admin"
-        template="../templates/launchpad-editform.pt"
-        lp:url="foaf/$person.name/cocs/$signed.id/+edit">
-    </browser:editform>
-
-    <browser:editform
-        name="+active"
+        name="+activate"
         for="canonical.launchpad.interfaces.ISignedCodeOfConduct"
         schema="canonical.launchpad.interfaces.ISignedCodeOfConduct"
         class="canonical.launchpad.browser.SignedCodeOfConductActiveView"
-        label="Active Code of Conduct Signature:"
+        label="Activate Code of Conduct Signature:"
         fields="admincomment"
         permission="launchpad.Admin"
-        template="../templates/launchpad-editform.pt"
-        lp:url="foaf/$person.name/cocs/$signed.id/+active">
+        template="../templates/signedcodeofconduct-activate.pt"
+        lp:url="foaf/$person.name/cocs/$signed.id/+activate">
     </browser:editform>
 
     <browser:editform
-        name="+deactive"
+        name="+deactivate"
         for="canonical.launchpad.interfaces.ISignedCodeOfConduct"
         schema="canonical.launchpad.interfaces.ISignedCodeOfConduct"
         class="canonical.launchpad.browser.SignedCodeOfConductDeactiveView"
-        label="Deactive Code of Conduct Signature:"
+        label="Deactivate Code of Conduct Signature:"
         fields="admincomment"
         permission="launchpad.Admin"
-        template="../templates/launchpad-editform.pt"
-        lp:url="foaf/$person.name/cocs/$signed.id/+deactive">
+        template="../templates/signedcodeofconduct-deactivate.pt"
+        lp:url="foaf/$person.name/cocs/$signed.id/+deactivate">
     </browser:editform>
 
     <!-- SignedCodeOfConductSet -->
@@ -191,6 +179,10 @@
             template="../templates/codeofconduct-admin.pt"
             name="+index"
             lp:url="codeofconduct/console/+index" />
+        <browser:page
+            template="../templates/portlet-signedcodeofconductset-actions.pt"
+            name="+portlet-actions"
+            lp:url="codeofconduct/console/+portlet-actions" />
     </browser:pages>
 
 
@@ -202,7 +194,7 @@
         fields="owner"
         class="canonical.launchpad.browser.SignedCodeOfConductAckView"
         permission="launchpad.Admin"
-        template="../templates/launchpad-addform.pt"
+        template="../templates/signedcodeofconduct-acknowledge.pt"
         lp:url="codeofconduct/console/+acknowledge">
     </browser:addform>
 

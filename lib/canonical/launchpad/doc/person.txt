@@ -26,9 +26,9 @@ True
 Access to people (Persons or Teams) is done through the IPersonSet
 utility:
 
-You can create a new person using the createPerson method of IPersonSet. All
-you need for that is a valid email address.
->>> p = personset.createPerson('randomuser@randomhost.com')
+You can create a new person using the createPersonAndEmail method of 
+IPersonSet. All you need for that is a valid email address.
+>>> p, email = personset.createPersonAndEmail('randomuser@randomhost.com')
 >>> p.teamowner is None
 True
 
@@ -75,6 +75,32 @@ False
 True
 
 
+Renaming
+--------
+
+All persons have a unique name in launchpad, so to allow them to change their
+names, we must make sure that name is not already in use by someone else.
+
+>>> from canonical.launchpad.interfaces.person import PersonNameField
+>>> field = PersonNameField(__name__='name', title=u'Unique name',
+...                         description=u'', readonly=False, required=True)
+>>> field = field.bind(lifeless)
+>>> field.context == lifeless
+True
+
+You can always use your own name.
+>>> field.validate(lifeless.name)
+
+Or a name that is not already in use.
+>>> field.validate(u'namenotinuse')
+
+But you can't use Mark's name, of course. ;)
+>>> field.validate(u'sabdfl')
+Traceback (most recent call last):
+...
+NameAlreadyTaken: sabdfl
+
+
 Merging
 -------
 
@@ -99,16 +125,19 @@ TypeError: ...
 
 Nor can we merge an account that still has email addresses attached to it
 
->>> personset.merge(foo, sample)
+>>> nonempty, email = personset.createPersonAndEmail('empty@somehost.com')
+>>> personset.merge(nonempty, sample)
 Traceback (most recent call last):
 ...
 ValueError: ...
 
+Now we remove the only email address nonempty had.
+
+>>> email.destroySelf()
+>>> empty = nonempty
 
 Must login as 'sabdfl' cause he's the owner of the Ubuntu Team.
 >>> login('mark@hbd.com')
->>> kw = {'name': 'empty', 'displayname': 'Empty Person'}
->>> empty = personset.newPerson(**kw)
 >>> ubuntu_team = personset.getByName('name17')
 >>> ubuntu_team.teamowner = empty
 >>> personset.merge(empty, sample)

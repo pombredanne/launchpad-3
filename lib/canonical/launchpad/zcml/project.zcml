@@ -8,6 +8,7 @@
     <!-- Project -->
     <content class="canonical.launchpad.database.Project">
         <allow interface="canonical.launchpad.interfaces.IProject" />
+        <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IProject"
@@ -16,7 +17,11 @@
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IProject"
-        getter="getProduct" />
+        function="canonical.launchpad.browser.traversers.traverse_project" />
+
+    <browser:menus
+        module="canonical.launchpad.browser.project"
+        classes="ProjectFacets" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
@@ -60,25 +65,24 @@
        <!-- Projects portlets -->
        <browser:page
             name="+portlet-languages"
-            template="../templates/portlet-project-languages.pt"
+            template="../templates/project-portlet-languages.pt"
             lp:url="Rosetta/projects/$Project.name/+portlet-languages" />
        <browser:page
-            name="+portlet-related-bounties"
-            template="../templates/portlet-related-bounties.pt"
-            lp:url="Rosetta/projects/$Project.name/+portlet-related-bounties" />
+            name="+portlet-bounties"
+            template="../templates/object-portlet-bounties.pt"
+            lp:url="Rosetta/projects/$Project.name/+portlet-bounties" />
        <browser:page
             name="+portlet-trackers"
-            template="../templates/portlet-project-trackers.pt"
+            template="../templates/project-portlet-trackers.pt"
             lp:url="Rosetta/projects/$Project.name/+portlet-trackers" />
        <browser:page
             name="+portlet-details"
-            template="../templates/portlet-project-details.pt"
+            template="../templates/project-portlet-details.pt"
             lp:url="Rosetta/projects/$Project.name/+portlet-details" />
        <browser:page
             name="+portlet-actions"
-            template="../templates/portlet-project-actions.pt"
+            template="../templates/project-portlet-actions.pt"
             lp:url="Rosetta/projects/$Project.name/+portlet-actions" />
-
     </browser:pages>
 
     <browser:page
@@ -245,5 +249,12 @@
             template="../templates/projects-request.pt"
             lp:url="Rosetta/projects/+request" />
     </browser:pages>
+
+    <securedutility
+        class="canonical.launchpad.database.ProjectBugTrackerSet"
+        provides="canonical.launchpad.interfaces.IProjectBugTrackerSet">
+        <allow interface="canonical.launchpad.interfaces.IProjectBugTrackerSet"
+            />
+    </securedutility>
 
 </configure>

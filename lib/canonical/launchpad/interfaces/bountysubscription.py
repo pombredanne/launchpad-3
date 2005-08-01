@@ -1,7 +1,18 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Bounty subscription interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IBountySubscription',
+    'IBountySubscriptionSet',
+    ]
+
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, Bytes, Choice, Datetime, \
-    Int, Text, TextLine
+from zope.schema import Choice, Int
 from zope.i18nmessageid import MessageIDFactory
+
 _ = MessageIDFactory('launchpad')
 
 class IBountySubscription(Interface):

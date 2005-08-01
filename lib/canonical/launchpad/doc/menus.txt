@@ -83,10 +83,16 @@ IFacetMenu.  Another way would be to provide an adapter.
 
 == The Link class ==
 
-When you define a menu using class based on FacetMenu, you return Link objects
-from its methods.  The Link class is very simple.  You provide it with a
-target, some text and a summary, and it makes these available as attributes.
-The summary is optional, and defaults to None.
+When you define a menu using class based on FacetMenu, you return Link
+objects from its methods.  The Link class is very simple.  You provide
+it with a target, some text, a summary and the linked status, and it
+makes these available as attributes.  The summary is optional, and
+defaults to None.
+
+The `linked` argument is optional says whether the link ought to be
+available as a clickable hyperlink.  Links default to being linked.
+The `linked` attribute can be manipulated after the link has been
+constructed.
 
     >>> from canonical.launchpad.webapp import Link
     >>> link = Link('target', 'text', 'summary')
@@ -98,12 +104,18 @@ The summary is optional, and defaults to None.
     'text'
     >>> link.summary
     'summary'
+    >>> link.linked
+    True
 
     >>> no_summary_link = Link('target', 'text')
     >>> no_summary_link.summary is None
     True
 
-There are three more attributes that Link provides.  These can be both read
+    >>> disabled_link = Link('target', 'text', linked=False)
+    >>> disabled_link.linked
+    False
+
+There are two more attributes that Link provides.  These can be both read
 and set.
 
 The attribute `link.name` is the method name that returned the link.  As it
@@ -119,11 +131,6 @@ a set.  Links default to being unselected.
     >>> link.selected
     False
 
-The attribute `link.linked` says whether the link ought to be available as
-a clickable hyperlink.  Links default to being linked.
-
-    >>> link.linked
-    True
 
 The attribute `link.url` gives the canonical url to the link's target.  It
 defaults to None, and is set by the facetmenu.
@@ -149,13 +156,12 @@ Let's check we can set these attributes.
 Link.linked, Link.selected and Link.url are set by the Menu when it gives its
 links for presentation.
 
+A Link target can be the empty string.
 
-A Link target cannot be the empty string.
+    >>> link = Link('', 'empty target link')
+    >>> link.target
+    ''
 
-    >>> Link('', 'empty target link')
-    Traceback (most recent call last):
-    ...
-    AssertionError: A Link must have a target.  Use DefaultLink for an empty target.
 
 == The FacetMenu class ==
 
@@ -230,16 +236,37 @@ canonical_url of its menu's context.
 
 To test this, we need a dummy request object that provides `getURL()`.
 
+    >>> # Needed for getApplicationURL()
     >>> from zope.publisher.interfaces.http import IHTTPApplicationRequest
+    >>> # Needed for registering a default view name.
+    >>> from zope.publisher.interfaces.browser import IBrowserRequest
     >>> class DummyRequest:
-    ...     implements(IHTTPApplicationRequest)
-    ...     def __init__(self, url):
+    ...     implements(IHTTPApplicationRequest, IBrowserRequest)
+    ...
+    ...     def __init__(self, url, query=None, url1=None):
     ...         self.url = url
-    ...     def getURL(self):
-    ...         return self.url
+    ...         self.query = query
+    ...         self.url1 = url1  # returned from getURL(1)
+    ...
+    ...     def getURL(self, level=0):
+    ...         assert 0 <= level <=1, 'level must be 0 or 1'
+    ...         if level == 0:
+    ...             return self.url
+    ...         else:
+    ...             assert self.url1 is not None, (
+    ...                 'Must set url1 in DummyRequest')
+    ...             return self.url1
+    ...
     ...     def getApplicationURL(self):
     ...         # Just the http://place:port part, so stop at the 3rd slash.
     ...         return '/'.join(self.url.split('/', 3)[:3])
+    ...
+    ...     def get(self, key, default=None):
+    ...         assert key == 'QUERY_STRING', 'we handle only QUERY_STRING'
+    ...         if self.query is None:
+    ...             return default
+    ...         else:
+    ...             return self.query
 
 Let's remind ourselves of the canonical url for the example object `street`.
 
@@ -314,7 +341,8 @@ menu links for 'sesamestreet'.  So, all links will be linked.
 This next request is for +foo, but with a query string.  So, both links will
 still be linked.
 
-    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+foo?123')
+    >>> request = DummyRequest(
+    ...     'http://localhost:8086/sesamestreet/+foo', query="123")
     >>> facets = Facets(street, request)
     >>> for link in facets:
     ...     print link.url, link.linked
@@ -340,6 +368,93 @@ linked.
     http://localhost:8086/sesamestreet/+foo True
     http://localhost:8086/sesamestreet/+bar False
 
+When a menu has two links, one of which is inside the other, and the request
+is inside both, then the most inside link will be selected.
+
+    >>> class LinkInsideTheOtherFacets(FacetMenu):
+    ...     links = ['outside', 'inside', 'other']
+    ...
+    ...     def outside(self):
+    ...         target = '+outside'
+    ...         text = 'Outside'
+    ...         return Link(target, text)
+    ...
+    ...     def inside(self):
+    ...         target = '+outside/whatever/inside'
+    ...         text = 'Inside'
+    ...         return Link(target, text)
+    ...
+    ...     def other(self):
+    ...         target = '+other'
+    ...         text = 'Other'
+    ...         return Link(target, text)
+
+    >>> request = DummyRequest(
+    ...     'http://localhost:8086/sesamestreet/+outside/whatever/inside/xyz')
+    >>> facets = LinkInsideTheOtherFacets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected
+    http://localhost:8086/sesamestreet/+outside False
+    http://localhost:8086/sesamestreet/+outside/whatever/inside True
+    http://localhost:8086/sesamestreet/+other False
+
+
+== How are disabled links handled? ==
+
+Disabled links are not linked even if they would otherwise be:
+
+    >>> class DisabledLinkInFacets(FacetMenu):
+    ...     links = ['foo', 'bar', 'disabled']
+    ...
+    ...     def foo(self):
+    ...         target = '+foo'
+    ...         text = 'Foo'
+    ...         return Link(target, text)
+    ...
+    ...     def bar(self):
+    ...         target = '+bar'
+    ...         text = 'Bar'
+    ...         return Link(target, text)
+    ...
+    ...     def disabled(self):
+    ...         target = '+disabled'
+    ...         text = 'Disabled'
+    ...         return Link(target, text, linked=False)
+
+
+This next request is for +foo, but with a query string.  So, the first
+link is disabled because we are at that URL, the second link is
+enabled, and the third is disabled due to starting out unlinked.
+
+    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+foo')
+    >>> facets = DisabledLinkInFacets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected, link.linked
+    http://localhost:8086/sesamestreet/+foo True False
+    http://localhost:8086/sesamestreet/+bar False True
+    http://localhost:8086/sesamestreet/+disabled False False
+
+
+Usually a disabled facet will either be unavailable or require
+permissions the user does not have.  However, the disabled link stays
+unlinked if the request is pointed at it or under it.
+
+    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+disabled')
+    >>> facets = DisabledLinkInFacets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected, link.linked
+    http://localhost:8086/sesamestreet/+foo False True
+    http://localhost:8086/sesamestreet/+bar False True
+    http://localhost:8086/sesamestreet/+disabled True False
+
+    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+disabled/foo')
+    >>> facets = DisabledLinkInFacets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected, link.linked
+    http://localhost:8086/sesamestreet/+foo False True
+    http://localhost:8086/sesamestreet/+bar False True
+    http://localhost:8086/sesamestreet/+disabled True False
+
 
 == DefaultLink ==
 
@@ -350,9 +465,9 @@ by another link in that same menu.
     >>> from canonical.launchpad.webapp import DefaultLink
 
 A DefaultLink works the same as a Link, but it provides the marker interface
-IDefaultLink, and it may have an empty string as its target.
+IDefaultLink.
 
-    >>> defaultlink = DefaultLink('', 'text', 'summary')
+    >>> defaultlink = DefaultLink('', 'a default link')
     >>> IDefaultLink.providedBy(defaultlink)
     True
 
@@ -452,8 +567,8 @@ using that hostname.
     http://mandrill.example.com:9999/sesamestreet/+bar False
     http://mandrill.example.com:9999/sesamestreet/+baz False
 
-We need to test the case when we have a default link with a blank target.  This
-will be the common case for default links.
+We need to test the case when we have a default link with a blank target.
+This will be the common case for default links.
 
     >>> class BlankTargetTestFacets(Facets):
     ...
@@ -490,10 +605,111 @@ will be the common case for default links.
     http://mandrill.example.com:9999/sesamestreet/+baz False
 
 
+Sometimes, we need to take into account the default view name for an object.
+Let's say that the default view name for an IStreet is '+foo'.  This is
+the common case where the overview link is the default view name.
+
+    >>> class IStreet(Interface):
+    ...     """A street."""
+    >>> directlyProvides(street, IStreet)
+    >>> from zope.app.tests import ztapi
+    >>> ztapi.setDefaultViewName(IStreet, '+foo')
+    >>> from zope.component import getDefaultViewName
+    >>> getDefaultViewName(street, request)
+    '+foo'
+
+So, in this example, the first link should not be 'linked' because it is
+equivalent to the default view name for a street.
+
+    >>> request = DummyRequest(
+    ...     'http://localhost:8086/sesamestreet/+foo',
+    ...     url1='http://localhost:8086/sesamestreet')
+    >>> facets = BlankTargetTestFacets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.linked
+    http://localhost:8086/sesamestreet/ False
+    http://localhost:8086/sesamestreet/+bar True
+    http://localhost:8086/sesamestreet/+baz True
+
+
 We may want to add some special behaviour to DefaultLink in the future.  That
 is, to have a special kind of DefaultLink for facet menus that makes its
 target the target of the first menu item for that facet's menu.  However,
 we'll keep DefaultLink with an explicit target for now, and see how it goes.
+
+
+=== Absolute url targets ===
+
+We will want to make links with absolute urls as targets.
+
+Absolute urls can be made with a full url, including the host part, or as
+a url path beginning with '/'.
+
+Sometimes the target will be within Launchpad.  Other times, the link will be
+to an external site.
+
+When the link is to an external site, we'll want to note that as an attribute
+of the Link.  That will come as a future enhancement.  External links will
+always be linked.
+
+When the link is to a page in Launchpad, we need to treat it the same as
+a normal relative link.  That is, we need to compute 'linked' and 'selected'
+as for relative links.  The usual use-case is computing an absolute link
+to a page inside launchpad using canonical_url.  In this case, the host and
+protocol part of the url will be the same for the canonical_url as for the
+current request.  This is what we will use to see if we have a link to a
+page within Launchpad.
+
+    >>> class AbsoluteUrlTargetTestFacets(FacetMenu):
+    ...
+    ...     links = ['foo', 'bar', 'baz', 'spoo']
+    ...
+    ...     def foo(self):
+    ...         target = ''
+    ...         text = 'Foo'
+    ...         return DefaultLink(target, text)
+    ...
+    ...     def bar(self):
+    ...         target = 'ftp://barlink.example.com/barbarbar'
+    ...         text = 'External bar'
+    ...         return Link(target, text)
+    ...
+    ...     def baz(self):
+    ...         target = 'http://localhost:8086/sesamestreet/+baz'
+    ...         text = 'Baz'
+    ...         return Link(target, text)
+    ...
+    ...     def spoo(self):
+    ...         target = '/sesamestreet/+spoo'
+    ...         text = 'Spoo'
+    ...         return Link(target, text)
+
+The url1 is needed because we still have the defaultViewName registered from
+earlier in this doctest.
+
+    >>> request = DummyRequest(
+    ...     'http://localhost:8086/sesamestreet/+foo',
+    ...     url1='http://localhost:8086/sesamestreet')
+    >>> facets = AbsoluteUrlTargetTestFacets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.linked, link.selected
+    http://localhost:8086/sesamestreet/ False True
+    ftp://barlink.example.com/barbarbar True False
+    http://localhost:8086/sesamestreet/+baz True False
+    http://localhost:8086/sesamestreet/+spoo True False
+
+Now, show that a request for page '+baz' means that the baz link is selected.
+
+    >>> request = DummyRequest(
+    ...     'http://localhost:8086/sesamestreet/+baz',
+    ...     url1='http://localhost:8086/sesamestreet')
+    >>> facets = AbsoluteUrlTargetTestFacets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.linked, link.selected
+    http://localhost:8086/sesamestreet/ True False
+    ftp://barlink.example.com/barbarbar True False
+    http://localhost:8086/sesamestreet/+baz False True
+    http://localhost:8086/sesamestreet/+spoo True False
 
 
 == Extra facets ==
@@ -877,6 +1093,60 @@ When there is no menu for a thing, we get an empty iterator.
     >>> menu = test_tales('thing/menu:extraapplication', thing=root)
     >>> list(menu)
     []
+
+
+=== Fixing the bug Daf reported ===
+
+This is a test specifically of a bug that Daf reported.  The issue was that
+DefaultLink links were being excluded from the list of selected links.
+
+So, when we had two links that could be potentially selected when considered
+on their own, but the most "inside" one is a DefaultLink, the wrong link
+would be chosen.  This edge-case doesn't really belong in the overall
+narrative of the documentation.  It only came about in the code because of
+the history of how the menus code was developed.  I've left it in here to
+provide coverage of this edge case.
+
+    >>> class DummyContext:
+    ...
+    ...     implements(ICanonicalUrlData)
+    ...
+    ...     inside = None
+    ...     path = (
+    ...        'http://localhost:8086/products/evolution/2.1.6/'
+    ...         '+pots/evolution-2.2/')
+
+    >>> class DafFacets(FacetMenu):
+    ...
+    ...     links = ['overview', 'translations', 'bugs']
+    ...
+    ...     def overview(self):
+    ...         target = 'http://localhost:8086/products/evolution/2.1.6'
+    ...         text = 'Overview'
+    ...         return Link(target, text)
+    ...
+    ...     def translations(self):
+    ...         target = (
+    ...             'http://localhost:8086/products/evolution/2.1.6/'
+    ...             '+pots/evolution-2.2/')
+    ...         text = 'Translations'
+    ...         return DefaultLink(target, text)
+    ...
+    ...     def bugs(self):
+    ...         target = 'http://localhost:8086/products/evolution/2.1.6/+bugs'
+    ...         text = 'Bugs'
+    ...         return Link(target, text)
+
+    >>> request = DummyRequest(
+    ...     'http://localhost:8086/products/evolution/2.1.6/'
+    ...     '+pots/evolution-2.2/+index')
+    >>> context = DummyContext()
+    >>> facets = DafFacets(context, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected
+    http://localhost:8086/products/evolution/2.1.6 False
+    http://localhost:8086/products/evolution/2.1.6/+pots/evolution-2.2/ True
+    http://localhost:8086/products/evolution/2.1.6/+bugs False
 
 
 == Cleaning up ==

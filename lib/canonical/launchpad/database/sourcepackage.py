@@ -6,24 +6,34 @@ __all__ = ['SourcePackage', 'SourcePackageSet']
 import sets
 
 from zope.interface import implements
+from zope.component import getUtility
 
-from canonical.database.sqlbase import quote, sqlvalues
+from canonical.database.sqlbase import (quote, sqlvalues,
+    flush_database_updates)
+from canonical.database.constants import UTC_NOW
 
-from canonical.lp.dbschema import \
-    BugTaskStatus, BugSeverity, PackagePublishingStatus, PackagingType
+from canonical.lp.dbschema import (
+    BugTaskStatus, BugTaskSeverity, PackagePublishingStatus, PackagingType)
 
-from canonical.launchpad.interfaces import ISourcePackage, ISourcePackageSet
+from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.interfaces import (ISourcePackage,
+    ISourcePackageSet, ILaunchpadCelebrities)
+
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.vsourcepackagereleasepublishing import \
-    VSourcePackageReleasePublishing
-from canonical.launchpad.database.sourcepackageindistro import \
-    SourcePackageInDistro
-from canonical.launchpad.database.sourcepackagerelease import \
-    SourcePackageRelease
-from canonical.launchpad.database.sourcepackagename import \
-    SourcePackageName
+from canonical.launchpad.database.maintainership import Maintainership
+from canonical.launchpad.database.vsourcepackagereleasepublishing import (
+    VSourcePackageReleasePublishing)
+from canonical.launchpad.database.sourcepackageindistro import (
+    SourcePackageInDistro)
+from canonical.launchpad.database.publishing import SourcePackagePublishing
+from canonical.launchpad.database.publishedpackage import PublishedPackage
+from canonical.launchpad.database.sourcepackagerelease import (
+    SourcePackageRelease)
+from canonical.launchpad.database.binarypackagename import BinaryPackageName
+from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.validators.name import valid_name
 from sourcerer.deb.version import Version
 
 
@@ -63,14 +73,20 @@ class SourcePackage:
                     "Distro '%s' has no current release" % distribution.name)
         # Set self.currentrelease based on current published sourcepackage
         # with this name in the distrorelease.  If none is published, leave
-        # self.currentrelease as None/
-        r = SourcePackageInDistro.selectOneBy(
-                sourcepackagenameID=sourcepackagename.id,
-                distroreleaseID = self.distrorelease.id)
-        if r is None:
+        # self.currentrelease as None
+        package = SourcePackageInDistro.selectOneBy(
+                    sourcepackagenameID=sourcepackagename.id,
+                    distroreleaseID = self.distrorelease.id)
+        if package is None:
             self.currentrelease = None
         else:
-            self.currentrelease = SourcePackageRelease.get(r.id)
+            self.currentrelease = SourcePackageRelease.get(package.id)
+
+    def _get_ubuntu(self):
+        """This is a temporary measure while
+        getUtility(IlaunchpadCelebrities) is bustificated here."""
+        from canonical.launchpad.database.distribution import Distribution
+        return Distribution.byName('ubuntu')
 
     @property
     def displayname(self):
@@ -95,10 +111,14 @@ class SourcePackage:
 
     @property
     def format(self):
+        if not self.currentrelease:
+            return None
         return self.currentrelease.format
 
     @property
     def changelog(self):
+        if not self.currentrelease:
+            return None
         return self.currentrelease.changelog
 
     @property
@@ -108,6 +128,8 @@ class SourcePackage:
         distrorelease. In future, we might have a separate table for the
         current working copy of the manifest for a source package.
         """
+        if not self.currentrelease:
+            return None
         return self.currentrelease.manifest
 
     @property
@@ -118,20 +140,14 @@ class SourcePackage:
 
     @property
     def releases(self):
-        """For the moment, we will return all releases with the same name.
-        Clearly, this is wrong, because it will mix different flavors of a
-        sourcepackage as well as releases of entirely different
-        sourcepackages (say, from RedHat and Ubuntu) that have the same
-        name. Later, we want to use the PublishingMorgue spec to get a
-        proper set of sourcepackage releases specific to this
-        distrorelease. Please update this when PublishingMorgue is
-        implemented. Note that the releases are sorted by debian
-        version number sorting.
-        """
-        ret = SourcePackageRelease.select(
-                      "sourcepackagename = %d" % self.sourcepackagename.id,
-                      orderBy=["version"],
-                      distinct=True)
+        """See ISourcePackage."""
+        ret = SourcePackageRelease.select('''
+            SourcePackageRelease.sourcepackagename = %d AND
+            SourcePackagePublishingHistory.distrorelease = %d AND
+            SourcePackagePublishingHistory.sourcepackagerelease = 
+                SourcePackageRelease.id
+            ''' % (self.sourcepackagename.id, self.distrorelease.id),
+            clauseTables=['SourcePackagePublishingHistory'])
         # sort by debian version number
         L = [(Version(item.version), item) for item in ret]
         L.sort()
@@ -140,15 +156,16 @@ class SourcePackage:
 
     @property
     def releasehistory(self):
-        """This is just like .releases but it spans ALL the distroreleases
-        for this distribution. So it is a full history of all the releases
-        ever published in this distribution. Again, it needs to be fixed
-        when PublishingMorgue is implemented.
-        """
-        ret = SourcePackageRelease.select(
-                      "sourcepackagename = %d" % self.sourcepackagename.id,
-                      orderBy=["version"],
-                      distinct=True)
+        """See ISourcePackage."""
+        ret = SourcePackageRelease.select('''
+            SourcePackageRelease.sourcepackagename = %d AND
+            SourcePackagePublishingHistory.distrorelease = 
+                DistroRelease.id AND
+            DistroRelease.distribution = %d
+            SourcePackagePublishingHistory.sourcepackagerelease = 
+                SourcePackageRelease.id
+            ''' % (self.sourcepackagename.id, self.distribution.id),
+            clauseTables=['SourcePackagePublishingHistory'])
         # sort by debian version number
         L = [(Version(item.version), item) for item in ret]
         L.sort()
@@ -191,12 +208,15 @@ class SourcePackage:
 
     @property
     def productseries(self):
-        # First we look to see if there is packaging data for this
-        # distrorelease and sourcepackagename. If not, we look up through
-        # parent distroreleases, and when we hit Ubuntu, we look backwards in
-        # time through Ubuntu releases till we find packaging information or
-        # blow past the Warty Warthog.
+        # See if we can find a relevant packaging record
+        packaging = self.packaging
+        if packaging is None:
+            return None
+        return packaging.productseries
 
+    @property
+    def direct_packaging(self):
+        """See ISourcePackage."""
         # get any packagings matching this sourcepackage
         packagings = Packaging.selectBy(
             sourcepackagenameID=self.sourcepackagename.id,
@@ -205,37 +225,49 @@ class SourcePackage:
         # now, return any Primary Packaging's found
         for pkging in packagings:
             if pkging.packaging == PackagingType.PRIME:
-                return pkging.productseries
+                return pkging
         # ok, we're scraping the bottom of the barrel, send the first
         # packaging we have
         if packagings.count() > 0:
-            return packagings[0].productseries
+            return packagings[0]
+        # capitulate
+        return None
+
+    @property
+    def packaging(self):
+        """See ISourcePackage.packaging"""
+        # First we look to see if there is packaging data for this
+        # distrorelease and sourcepackagename. If not, we look up through
+        # parent distroreleases, and when we hit Ubuntu, we look backwards in
+        # time through Ubuntu releases till we find packaging information or
+        # blow past the Warty Warthog.
+
+        # see if there is a direct packaging
+        result = self.direct_packaging
+        if result is not None:
+            return result
+
+        # ubuntu is used as a special case below
+        #ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        ubuntu = self._get_ubuntu()
+
         # if we are an ubuntu sourcepackage, try the previous release of
         # ubuntu
-        if self.distribution.name == 'ubuntu':
-            datereleased = self.distrorelease.datereleased
-            # if this one is unreleased, use the last released one
-            if not datereleased:
-                datereleased = 'NOW'
-            from canonical.launchpad.database.distrorelease import \
-                    DistroRelease
-            ubuntureleases = DistroRelease.select(
-                "distribution = %d AND "
-                "datereleased < %s " % ( self.distribution.id,
-                                         quote(datereleased) ),
-                orderBy=['-datereleased'])
+        if self.distribution == ubuntu:
+            ubuntureleases = self.distrorelease.previous_releases
             if ubuntureleases.count() > 0:
                 previous_ubuntu_release = ubuntureleases[0]
                 sp = SourcePackage(sourcepackagename=self.sourcepackagename,
                                    distrorelease=previous_ubuntu_release)
-                return sp.productseries
+                return sp.packaging
         # if we have a parent distrorelease, try that
         if self.distrorelease.parentrelease is not None:
             sp = SourcePackage(sourcepackagename=self.sourcepackagename,
                                distrorelease=self.distrorelease.parentrelease)
-            return sp.productseries
+            return sp.packaging
         # capitulate
         return None
+        
 
     @property
     def shouldimport(self):
@@ -244,23 +276,44 @@ class SourcePackage:
         knows that we should only import packages where the upstream
         revision control is in place and working.
         """
-        if self.distribution.name <> "ubuntu":
+
+        # ubuntu is used as a special case below
+        #ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        ubuntu = self._get_ubuntu()
+
+        if self.distribution <> ubuntu:
             return False
         ps = self.productseries
         if ps is None:
             return False
         return ps.branch is not None
 
+    def setPackaging(self, productseries, user):
+        target = self.direct_packaging
+        if target is not None:
+            # we should update the current packaging
+            target.productseries = productseries
+            target.owner = user
+            target.datecreated = UTC_NOW
+        else:
+            # ok, we need to create a new one
+            Packaging(distrorelease=self.distrorelease,
+            sourcepackagename=self.sourcepackagename,
+            productseries=productseries, owner=user,
+            packaging=PackagingType.PRIME)
+        # and make sure this change is immediately available
+        flush_database_updates()
+
     def bugsCounter(self):
         from canonical.launchpad.database.bugtask import BugTask
 
         ret = [len(self.bugs)]
         severities = [
-            BugSeverity.CRITICAL,
-            BugSeverity.MAJOR,
-            BugSeverity.NORMAL,
-            BugSeverity.MINOR,
-            BugSeverity.WISHLIST,
+            BugTaskSeverity.CRITICAL,
+            BugTaskSeverity.MAJOR,
+            BugTaskSeverity.NORMAL,
+            BugTaskSeverity.MINOR,
+            BugTaskSeverity.WISHLIST,
             BugTaskStatus.FIXED,
             BugTaskStatus.ACCEPTED,
             ]
@@ -375,4 +428,67 @@ class SourcePackageSet(object):
         return [SourcePackage(sourcepackagename=sourcepackagename,
                               distribution=self.distribution)
                 for sourcepackagename in pkgset]
+
+    def getPackageNames(self, pkgname):
+        """See ISourcePackageset.getPackagenames"""
+
+        # we should only ever get a pkgname as a string
+        assert isinstance(pkgname, str), "Only ever call this with a string"
+
+        # clean it up and make sure it's a valid package name
+        pkgname = pkgname.strip().lower()
+        if not valid_name(pkgname):
+            raise ValueError('Invalid package name: %s' % pkgname)
+ 
+        # ubuntu is used as a special case below
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        #ubuntu = self._get_ubuntu()
+
+        # first, we try assuming it's a binary package. let's try and find
+        # a binarypackagename for it
+        binarypackagename = BinaryPackageName.selectOneBy(name=pkgname)
+        if binarypackagename is None:
+            # maybe it's a sourcepackagename?
+            sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
+            if sourcepackagename is not None:
+                # it's definitely only a sourcepackagename. let's make sure it
+                # is published in the target ubuntu release
+                publishing = SourcePackagePublishing.select('''
+                    SourcePackagePublishing.distrorelease = %s AND
+                    SourcePackagePublishing.sourcepackagerelease =
+                        SourcePackageRelease.id AND
+                    SourcePackageRelease.sourcepackagename = %s
+                    ''' % sqlvalues(ubuntu.currentrelease.id,
+                        sourcepackagename.id),
+                    clauseTables=['SourcePackageRelease'],
+                    distinct=True).count()
+                if publishing == 0:
+                    # yes, it's a sourcepackage, but we don't know about it in
+                    # ubuntu
+                    raise ValueError('Unpublished source package: %s' % pkgname)
+                return (sourcepackagename, None)
+            # it's neither a sourcepackage, nor a binary package name
+            raise ValueError('Unknown package: %s' % pkgname)
+ 
+        # ok, so we have a binarypackage with that name. let's see if it's
+        # published, and what it's sourcepackagename is
+        publishings = PublishedPackage.selectBy(
+            binarypackagename=binarypackagename.name, 
+            distrorelease=ubuntu.currentrelease.id,
+            orderBy=['id'])
+        if publishings.count() == 0:
+            # ok, we have a binary package name, but it's not published in the
+            # target ubuntu release. let's see if it's published anywhere
+            publishings = PublishedPackage.selectBy(
+                binarypackagename=binarypackagename.name,
+                orderBy=['id'])
+            if publishings.count() == 0:
+                # no publishing records anywhere for this beast, sadly
+                raise ValueError('Unpublished binary package: %s' % pkgname)
+        # PublishedPackageView uses the actual text names
+        for p in publishings:
+            sourcepackagenametxt = p.sourcepackagename
+            break
+        sourcepackagename = SourcePackageName.byName(sourcepackagenametxt)
+        return (sourcepackagename, binarypackagename)
 

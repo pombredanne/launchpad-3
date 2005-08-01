@@ -19,8 +19,8 @@ email.
   ... Content-Length: 78
   ... Content-Type: application/x-www-form-urlencoded
   ... Referer: http://localhost:9000/malone/bugs/2
-  ... 
-  ... field.title=test+comment+subject&field.content=test+comment&UPDATE_SUBMIT=Add""")
+  ...
+  ... field.subject=test+comment+subject&field.content=test+comment&UPDATE_SUBMIT=Add""")
   HTTP/1.1 303 See Other
   ...
           <h1>Add a Comment</h1>
@@ -41,4 +41,4 @@ email.
 After the comment has been submitted, the notification email is sent:
 
   >>> len(stub.test_emails)
-  1
+  4

@@ -5,8 +5,17 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
 <div metal:fill-slot="main"> 
-  <tal:dummy tal:condition="view/processForm" />
+<tal:dummy tal:condition="view/processForm" />
 
   <h1>Contact Email Address</h1>
 
@@ -14,14 +23,14 @@
 
     <tal:block tal:condition="not: context/preferredemail">
       <p>This team has no contact email address. This means that Launchpad
-      notifications directed to this team will be sent to each one of its members.
-      If you prefer, you can add a contact email address and that will be used for
-      notifications sent to this team.</p>
+      notifications directed to this team will be sent to each one of its
+      members.  If you prefer, you can add a contact email address and that
+      will be used for notifications sent to this team.</p>
 
-      <div tal:condition="view/errormessage" tal:content="view/errormessage"
+      <p tal:condition="view/errormessage" tal:content="view/errormessage"
            class="portalMessage" />
 
-      <div tal:condition="view/feedback" tal:content="view/feedback"
+      <p tal:condition="view/feedback" tal:content="view/feedback"
            class="portalMessage" />
 
       <table>
@@ -38,10 +47,10 @@
       <p>All notifications directed to this team will go to its contact email
       address.</p>
 
-      <div tal:condition="view/errormessage" tal:content="view/errormessage"
+      <p tal:condition="view/errormessage" tal:content="view/errormessage"
            class="portalMessage" />
 
-      <div tal:condition="view/feedback" tal:content="view/feedback"
+      <p tal:condition="view/feedback" tal:content="view/feedback"
            class="portalMessage" />
 
       <table>

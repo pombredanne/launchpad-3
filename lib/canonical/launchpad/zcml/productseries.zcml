@@ -33,9 +33,32 @@
         for="canonical.launchpad.interfaces.IProductSeries"
         function="canonical.launchpad.browser.traverseProductSeries" />
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IProductSeries"
+        path_expression="string:+series/${name}"
+        attribute_to_parent="product"
+        />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProductSeries"
         name="+index" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProductSeries"
+        permission="zope.Public">
+        <browser:page
+            name="+portlet-source"
+            template="../templates/productseries-portlet-source.pt"
+            lp:url="/products/$Product.name/+series/$ProductSeries.name/+portlet-source" />
+        <browser:page
+            name="+portlet-packages"
+            template="../templates/productseries-portlet-packages.pt"
+            lp:url="/products/$Product.name/+series/$ProductSeries.name/+portlet-packages" />
+        <browser:page
+            name="+portlet-releases"
+            template="../templates/productseries-portlet-releases.pt"
+            lp:url="/products/$Product.name/+series/$ProductSeries.name/+portlet-releases" />
+    </browser:pages>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -46,9 +69,51 @@
             template="../templates/series.pt"
             lp:url="/products/$Product.name/+series/$ProductSeries.name/" />
         <browser:page
+            name="+translations"
+            template="../templates/productseries-translations.pt"
+            lp:url="/products/evolution/+series/main/+translations" />
+        <browser:page
+            name="+potlist"
+            template="../templates/object-pots.pt" />
+        <browser:page
+            name="+ubuntupkg"
+            template="../templates/productseries-ubuntupkg.pt"
+            lp:url="/products/$Product.name/+series/$ProductSeries.name/+ubuntupkg" />
+        <browser:page
+            name="+hctstatus-core"
+            template="../templates/productseries-hctstatus-core.pt"
+            lp:url="/products/$Product.name/+series/$ProductSeries.name/+hctstatus-core" />
+        <browser:page
             name="+portlet-actions"
-            template="../templates/portlet-productseries-actions.pt" />
-
+            template="../templates/productseries-portlet-actions.pt" />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/productseries-portlet-details.pt" />
+        <browser:page
+            name="+portlet-summary"
+            template="../templates/object-portlet-summary.pt"
+            />
+        <browser:page
+            name="+portlet-potemplates"
+            template="../templates/object-portlet-potemplates.pt"
+            />
+        <browser:page
+            name="+portlet-status-legend"
+            template="../templates/portlet-rosetta-status-legend.pt"
+            />
+        <browser:page
+            name="+portlet-pref-langs"
+            template="../templates/portlet-pref-langs.pt"
+            />
+        <browser:page
+            name="+portlet-country"
+            template="../templates/portlet-country-langs.pt"
+            />
+        <browser:page
+            name="+portlet-browser-langs"
+            template="../templates/portlet-browser-langs.pt"
+            lp:url="/products/evolution/2.1.6/+portlet-browser-langs"
+            />
     </browser:pages>
 
     <browser:page
@@ -63,7 +128,6 @@
         for="canonical.launchpad.interfaces.IProductSeries"
         class="canonical.launchpad.browser.ProductSeriesView"
         permission="launchpad.AnyPerson">
-
         <browser:page
             name="+edit"
             template="../templates/series-edit.pt"
@@ -96,7 +160,6 @@
             />
     </browser:pages>
     
-
     <browser:editform
         name="+review"
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -111,6 +174,27 @@
             class="zope.app.form.browser.TextWidget"
             displayWidth="20" />
     </browser:editform>
+
+    <browser:addform
+        name="+addpotemplate"
+        for="canonical.launchpad.interfaces.IProductSeries"
+        schema="canonical.launchpad.interfaces.IPOTemplateWithContent"
+        class="canonical.launchpad.browser.POTemplateAddView"
+        label="Add a new Translation Template"
+        fields="potemplatename description iscurrent owner path filename
+                content"
+        arguments=""
+        keyword_arguments="potemplatename description iscurrent owner
+                           path filename content"
+        content_factory="canonical.launchpad.database.POTemplate"
+        permission="launchpad.Append"
+        template="../templates/potemplate-add.pt" >
+        <browser:widget
+          field="description"
+          class="zope.app.form.browser.TextAreaWidget"
+          displayWidth="50"
+          height="5" />
+    </browser:addform>
 
     <!-- ProductSeriesSet -->
     <content class="canonical.launchpad.database.ProductSeriesSet">

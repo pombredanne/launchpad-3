@@ -1,0 +1,22 @@
+<div class="portlet">
+  <h4>Releases from this Branch:</h4>
+
+  <div class="portletBody portletContent ">
+    <tal:block condition="context/releases">
+      The following releases have been made from this branch:
+      <ul>
+        <li tal:repeat="release context/releases">
+           <a tal:attributes="href string:${release/version}">
+             <span tal:replace="release/version">2.1.6</span>
+           </a>
+        </li>
+      </ul>
+    </tal:block>
+
+    <tal:block condition="not: context/releases">
+      No releases have yet been registered from this branch. You can
+      <a href="+addrelease">register a release here</a>.
+    </tal:block>
+
+  </div>
+</div>

@@ -10,10 +10,10 @@ evolution in hoary. They should both have a message with the msgid we have
 chosen. We will be working with the Spanish (ef) language.
 
 >>> upstream_evo = POTemplate.get(1)
->>> upstream_evo.productrelease is not None
+>>> upstream_evo.productseries is not None
 True
 
->>> upstream_evo.productrelease.product.name
+>>> upstream_evo.productseries.product.name
 u'evolution'
 
 >>> hoary_evo = POTemplate.get(4)

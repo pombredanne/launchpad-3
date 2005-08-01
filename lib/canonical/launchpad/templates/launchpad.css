@@ -5,7 +5,6 @@
 }
 
 #portal-column-one {
-  padding: 0 0 0 1em;
   vertical-align: top;
   width: 16em;
 }
@@ -16,7 +15,6 @@
 }
 
 #portal-column-two {
-  padding: 0 1em 0 0;
   vertical-align: top;
   width: 16em;
 }
@@ -45,10 +43,7 @@
 
 .collapsed {
   border-style: dashed none none none;
-}
-
-fieldset.message-strings {
-
+  margin-bottom: 0;
 }
 
 table.data input[type='text'] {
@@ -64,6 +59,21 @@ fieldset.two-column {
   margin-right: 1em;
 }
 
+/* Classes for error indication in forms */
+.portalError {
+    background-color: #ffc9c9;
+    border: 1px solid #ddb0b0;
+    color: Black;
+    margin: 0em 0em 0em 0em;
+    padding: 0.3em 0.3em 0.3em 0.3em;
+}
+
+.portalError .error {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 85%;
+}
 
 
 /* Plone elements that should be changed */
@@ -76,15 +86,9 @@ h3 {
   list-style-image: url(/++resource++bullet.gif);
 }
 
-label {
-  font-weight: bold;    
-}
-
-
 .listingBar a,
 #portal-personaltools a,
-#portal-breadcrumbs a,
-#portal-footer a {
+#portal-breadcrumbs a {
   text-decoration: none;
   text-transform: lowercase;
   font-size: 80%;
@@ -212,6 +216,13 @@ table.rowNavigation>thead>tr:hover {
   cursor: default;
 }
 
+/* highlight specific table entry */
+
+tr.highlight {
+    border: 1px solid #ffa500;
+    background-color: #ffce7b;
+}
+
 /* Display links as blocks, so we can make the whole row clickable */
 
 tr.rowLinkified a {
@@ -246,7 +257,7 @@ tr.rowLinkified a {
 .batchnav td {
   text-align: center;
   border-top: 1px solid #364970;
-  vertical-align: bottom;>
+  vertical-align: bottom;
 }
 
 /* Bug status markers */
@@ -267,7 +278,7 @@ tr.rowLinkified a {
 
 /* Bug Severity markers */
 .severityCritical { color: Red; }
-.severityMajor    { color: Orange; }
+.severityMajor    { color: #ff6600; }
 .severityNormal   { color: Green; }
 .severityMinor    { color: Black; }
 .severityWishlist { color: Blue; }
@@ -288,7 +299,7 @@ tr.rowLinkified a {
 
 .boardComment {
   border: 1px solid #364970;
-  margin-bottom: 1.5em;
+  margin-bottom: 1em;
   position: relative;
 }
 
@@ -304,11 +315,11 @@ tr.rowLinkified a {
   border: 1px solid #364970;
   border-style: none none solid none;
   background-color: #f7f9fa;
-  padding: 0.5em 1em;
+  padding: 0.25em 12px;
 }
 
 .boardCommentBody {
-  padding: 0.5em 1em;
+  padding: 0.5em 12px 0;
 }
 
 .boardCommentContent {
@@ -331,7 +342,7 @@ tr.rowLinkified a {
 }
 
 .boardCommentActions {
-  right: 1em:
+  right: 1em;
 }
 
 .boardCommentPortrait {
@@ -346,13 +357,17 @@ tr.rowLinkified a {
 
 /* used to mark dummy data with div entity */
 .dummy {
-  background-color: #cccccc;
+  background-color: #eeeeee;
+  color: #656565;
 }
 
 /* Various custom list formats: */
 
 ul.add>li, li.add {
   list-style-image: url(/++resource++add.gif);
+}
+ul.document>li, li.document {
+  list-style-image: url(/++resource++document_icon.gif);
 }
 ul.download>li, li.download {
   list-style-image: url(/++resource++download.png);
@@ -374,6 +389,12 @@ ul.mail>li, li.mail {
 }
 ul.person>li, li.person, ul.people>li, li.people {
   list-style-image: url(/++resource++user.gif);
+}
+ul.webref>li, li.webref {
+    list-style-image: url(/++resource++link_icon.gif);
+}
+ul.cveref>li, li.cveref {
+    list-style-image: url(/++resource++cve.ico);
 }
 ul.packages>li, li.packages, ul.products>li, li.products {
   list-style-image: url(/++resource++product_icon.gif);
@@ -458,7 +479,8 @@ input.searchButton {
   background-image: url(/@@/search_icon.gif);
 }
 .fieldRequired {
-  background-image: url(/@@/required.gif);
+  background-image: none;
+  padding-left: 0;
 }
 .link-parent {
   background-image: url(/@@/arrowUp.gif);
@@ -480,6 +502,9 @@ input.searchButton {
 }
 .link-irc, .link-comment {
   background-image: url(http://plone.org/discussionitem_icon.gif);
+}
+.link-document {
+  background-image: url(http://plone.org/document_icon.gif);
 }
 .link-callto {
   background-image: url(http://plone.org/phone_icon.gif);
@@ -509,7 +534,7 @@ code {
   border: none;
   padding: inherit;
 }
-pre {
+pre, textarea {
   font-family: monospace;
   font-size: 100%;
 }
@@ -545,6 +570,7 @@ table.listing th {
 table.listing>tr>td, table.listing>tbody>tr>td {
   border: dotted #8cacbb;
   border-width: 1px 0;
+  font-size: 90%;
 }
 table.listing>thead>tr>th, table.listing>thead>tr>td {
   border: 1px solid #8cacbb;
@@ -564,7 +590,19 @@ dt dfn {
   font-weight: bold;
 }
 
+/* -- Q!: -- */
+
+q {
+  font-family: inherit;
+  font-style: inherit;
+  font-size: inherit;
+}
+
 /* -- Other bugs: -- */
+
+.documentContent {
+  background: none;
+}
 
 .formHelp, .formHelp:hover {
   color: #666666;
@@ -575,6 +613,9 @@ dt dfn {
   font-size: smaller;
 }
 
+legend {
+  background: none;
+}
 li {
   margin-bottom: 0 !important;
 }
@@ -595,7 +636,7 @@ abbr, address {
 	font-style: inherit;
 }
 
-label {
+label, .field label {
   font-family: sans-serif;
   font-weight: normal;
   white-space: nowrap;
@@ -606,6 +647,10 @@ caption {
   color: #666666;
   margin-top: 0;
   margin-bottom: 0;
+}
+
+legend {
+  font-weight: bold;
 }
 
 th {
@@ -619,6 +664,83 @@ thead {
 }
 
 /* -- Launchpad-wide -- */
+
+body {
+  background-color: #fcfcfc;
+  padding: 0.25em 0.75em 0.5em 0.75em;
+}
+.header, .footer {
+  font-family: "Lucida Grande", "Charcoal", sans-serif;
+}
+.header {
+  font-size: 0.875em;
+  margin-bottom: 0.5em;
+}
+.footer {
+  font-size: smaller;
+  text-align: center;
+}
+.login {
+  text-align: right;
+  min-height: 1.75em;
+}
+.login input[type="submit"] {
+  padding: 0;
+}
+.hierarchy, .facets, .footer {
+  padding: 0.25em;
+}
+.hierarchy, .footer, ul.app>li {
+  background-color: #dee7ec;
+  color: inherit;
+}
+.facets {
+  background-color: #8cacbb;
+  color: white;
+  font-weight: bold;
+  margin: 0;
+  min-height: 1.5em;
+}
+.facets li {
+  background: url(/++resource++bullet.gif) no-repeat;
+  background-position: 0.25em 50%;
+  display : inline;
+  list-style: none;
+  padding: 0 0.75em 0 1.25em;
+}
+.facets :link, .facets :visited, .facets .disabled {
+  background: none;
+  color: #dee7ec;
+}
+.facets .current a {
+  background: none;
+  color: white;
+}
+ul.app {
+  clear: both;
+  padding: 0;
+  margin: 1em 0 1em;
+  border-bottom: 1px solid #8cacbb;
+  font: bold 1em sans-serif;
+}
+ul.app li
+{
+  border: 1px solid #8cacbb;
+  border-bottom: none;
+  display: inline;
+  list-style: none;
+  margin: 0 0 0 0.75em;
+}
+ul.app>li>a, ul.app>li>strong {
+  padding: 0 0.5em;
+}
+ul.app a {
+  text-decoration: none;
+}
+ul.app>li.current {
+  background: #fcfcfc;
+  border-bottom: 1px solid #fcfcfc;
+}
 
 #body {
   padding: 0 1em;
@@ -635,9 +757,12 @@ thead {
   margin-left: 2%;
   width: 48%;
 }
+
 .sidebar {
   background-color: #f7f9fa;
   border: 1px solid #8cacbb;
+  border-top: none;
+  padding-bottom: 1em;
   clear: right;
   float: right;
   font-size: smaller;
@@ -645,8 +770,23 @@ thead {
   width: 25%;
   min-width: 8em;
   max-width: 50%;
-  padding: 0.25em 0.5em;
 }
+
+.sidebar > h4 { /* plone.css .portlet h4 paste-o */
+    background-color: #dee7ec;
+    border-top: 1px solid #8cacbb;
+    border-bottom: 1px solid #8cacbb;
+    padding: 0em 0.3em 0em 1em;
+    text-transform: lowercase;
+    display: block;
+    font-size: 1em;
+    font-weight: normal;
+}
+
+.sidebar > ul {
+    margin-left: 2.5em;
+}
+
 .debug {
   background-color: #ffddee;
 }
@@ -684,16 +824,7 @@ h2 {
 }
 h3, h4, h5, h6 {
 	font-size: 1em;
-}
-/* temporary while page-header exists: */
-.page-header h2 {
-  clear: none;
-  margin: 0;
-  text-transform: none;
-  font-size: 1.5em;
-}
-h3, h4, h5, h6 {
-	margin-bottom: 0;
+  margin-bottom: 0;
 }
 ul {
   margin-left: 24px;
@@ -743,31 +874,11 @@ tr {
   text-align: right;
 }
 
-.user {
-	float: right;
-}
-
-address.app, .apps {
-	font-family: "Lucida Grande", sans-serif;
-}
-address.app {
-	font-size: 2em;
-}
 .apps {
 	clear: right;
 	float: right;
 	margin-top: 0.5em;
 }
-.page-header {
-	width: 100%;
-}
-.page-header img {
-	float: left;
-}
-.page-header h2 {
-    padding-top: 0.75em;
-}
-
 .navigation li {
 	display: inline;
 	padding: 0.25em 0.5em;
@@ -783,32 +894,6 @@ address.app {
 	margin: 0;
 	padding-top: 1em;
 	width: 100%;
-}
-
-.page-header-ribbon {
-  /* Bar with personalized menu (user preferences, favorites etc) */
-  background-color: #dee7ec;
-  border-top-color: #8cacbb;
-  border-top-style: solid;
-  border-top-width: 1px;
-  border-bottom-color: #8cacbb;
-  border-bottom-style: solid;
-  border-bottom-width: 1px;
-  line-height: 1.3em;
-  color: Black;
-  padding: 0em 1em 0em 0em;
-  margin: 0;
-  list-style: none;
-}
-
-.page-header-ribbon address {
-  width: 75%;
-}
-
-.launchpad-apps {
-  float: right;
-}
-.launchpad-apps td {
 }
 
 /* -- Malone: -- */
@@ -859,17 +944,140 @@ input {
   color: #999999
 }
 
-/* 
-This style is used for multi-select widgets. These get a scrollbar if they
-expand above a certain size. The box is floated in order to allow it to shrink
-to the smallest appropriate width; this may mean that it will be necessary to
-use the 'clear' attribute on other elemtens surrounding the multi-select box.
-*/
-
-.multi_select {
-    max-height: 20em;
-    overflow: auto;
-    float: left;
-    padding: 0 1em;
+/* A listbox is a scrolling list of checkboxes or radio buttons. */
+.listbox {
+  border: 1px solid #8cacbb;
+  display: inline-block;
+  max-height: 12em;
+  overflow: auto;
+  overflow: -moz-scrollbars-vertical;
+}
+.listbox label {
+  background-color: #f6f6f6;
+  border: solid white;
+  border-width: 0 0 1px 0;
+  display: block;
 }
 
+/*
+  Sortable tables
+*/
+
+table.sortable a.sortheader {
+    color:#666666;
+    font-weight: bold;
+    text-decoration: none;
+    display: block;
+}
+
+table.sortable img.sortarrow {
+    padding-left: 2px;
+}
+
+/*
+Calendar stuff.
+*/
+.cal-navigation {
+  width: 100%;
+  margin: 1em;
+}
+
+.cal-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cal-table th {
+  text-align: center;
+  color: black;
+  background-color: #eee;
+  border: 1px solid black;
+}
+
+.cal-daycell {
+  border: 1px solid black;
+}
+
+.cal-dayhead {
+  text-align: right;
+  border-bottom: 1px dashed #999;
+
+}
+.cal-dayhead a {
+  display: block;
+  color: black;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.cal-freeday, .cal-busyday {
+  display: block;
+  text-align: right;
+}
+.cal-busyday {
+  font-weight: bold;
+  background-color: #ff9;
+}
+
+.cal-addlink {
+  text-align: right;
+  font-size: smaller;
+}
+
+.cal-event-list {
+  margin: 0px;
+  padding: 0px;
+}
+
+.cal-event-list li {
+  list-style: none;
+  border: 1px solid #4b6982;
+  background: #9db8d2;
+  margin: 0.24em;
+}
+
+#calendar-view-day {
+  border: #aaaaaa 1px solid;
+  border-top: none;
+  position: relative;
+  padding: 0;
+}
+
+#calendar-view-day .hour {
+  border-top: #4b6983 1px solid;
+  border-top: 1px #bab5ab solid;
+  width: 100%;
+  position: absolute;
+  height: 4em;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#calendar-view-day .even {
+  background: #eae8e3;
+}
+
+#calendar-view-day .events {
+  position: absolute;
+  margin-left: 5em;
+  left: 0;
+  top: 0;
+  width: 100%;
+}
+
+#calendar-view-day .event {
+  display: block;
+  position: absolute;
+  margin-left: 5em;
+  width: 20em;
+  min-width: 20em;
+  border: 1px #4b6983 solid;
+  background: #9db8d2;
+  opacity: 0.85;
+  z-index: 1;
+}
+
+#calendar-view-day .other {
+  background: #e0b6af;
+  border: 1px #884631 solid;
+}

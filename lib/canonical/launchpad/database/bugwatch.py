@@ -3,20 +3,29 @@
 __metaclass__ = type
 __all__ = ['BugWatch', 'BugWatchSet', 'BugWatchFactory']
 
+import re
+import urllib
 from datetime import datetime
 
 from zope.interface import implements
 from zope.exceptions import NotFoundError
+from zope.component import getUtility
 
 # SQL imports
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound, MultipleJoin
 
-from canonical.launchpad.interfaces import IBugWatch, IBugWatchSet
-from canonical.launchpad.database.bug import BugSetBase
-from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.interfaces import (IBugWatch, IBugWatchSet,
+    IBugTrackerSet)
+from canonical.launchpad.database.bugset import BugSetBase
+from canonical.launchpad.database.bugtracker import BugTracker
+from canonical.database.sqlbase import (SQLBase, quote,
+    flush_database_updates)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.lp.dbschema import BugTrackerType
 
+bugzillaref = re.compile(r'(https?://.+/)show_bug.cgi.+id=(\d+).*')
+roundupref = re.compile(r'(https?://.+/)issue(\d+).*')
 
 class BugWatch(SQLBase):
     implements(IBugWatch)
@@ -39,6 +48,22 @@ class BugWatch(SQLBase):
     def title(self):
         return "%s #%s" % (self.bugtracker.title, self.remotebug)
 
+    @property
+    def url(self):
+        bt = self.bugtracker.bugtrackertype
+        if bt == BugTrackerType.BUGZILLA:
+            return '%sshow_bug.cgi?bug=%s' % (self.bugtracker.baseurl,
+                self.remotebug)
+        elif bt == BugTrackerType.DEBBUGS:
+            return '%scgi-bin/bugreport.cgi?bug=%s' % (self.bugtracker.baseurl, self.remotebug)
+        elif bt == BugTrackerType.ROUNDUP:
+            return '%s/issue%s' % (self.bugtracker.baseurl, self.remotebug)
+        # we only know about those types
+        raise AssertionError, 'Unknown bug tracker type %s' % bt
+
+    @property
+    def needscheck(self):
+        return True
 
 class BugWatchSet(BugSetBase):
     """A set for BugWatch"""
@@ -56,6 +81,66 @@ class BugWatchSet(BugSetBase):
             return BugWatch.get(id)
         except SQLObjectNotFound:
             raise NotFoundError, id
+
+    def _find_watches(self, pattern, trackertype, text, bug, owner):
+        """Find the watches in a piece of text, based on a given pattern and
+        tracker type."""
+        newwatches = []
+        # let's look for matching entries
+        matches = pattern.findall(text)
+        if len(matches) == 0:
+            return []
+        for match in matches:
+            # let's see if we already know about this bugtracker
+            bugtrackerset = getUtility(IBugTrackerSet)
+            baseurl = match[0]
+            remotebug = match[1]
+            # make sure we have a bugtracker
+            bugtracker = bugtrackerset.ensureBugTracker(baseurl, owner,
+                trackertype)
+            # see if there is a bugwatch for this remote bug on this bug
+            bugwatch = None
+            for watch in bug.watches:
+                if (watch.bugtracker == bugtracker and
+                    watch.remotebug == remotebug):
+                    bugwatch = watch
+                    break
+            if bugwatch is None:
+                bugwatch = BugWatch(bugtracker=bugtracker, bug=bug,
+                    remotebug=remotebug, owner=owner)
+                newwatches.append(bugwatch)
+                if len(newwatches) > 0:
+                    flush_database_updates()
+        return newwatches
+
+    def fromText(self, text, bug, owner):
+        """See IBugTrackerSet.fromText."""
+        # XXX sabdfl this should also look for sourceforge
+        watches = set([])
+        for pattern, trackertype in [
+            (bugzillaref, BugTrackerType.BUGZILLA),
+            (roundupref, BugTrackerType.ROUNDUP),]:
+            watches = watches.union(self._find_watches(pattern, 
+                trackertype, text, bug, owner))
+        return sorted(watches, key=lambda a: (a.bugtracker.name,
+            a.remotebug))
+
+    def fromMessage(self, message, bug):
+        """See IBugWatchSet."""
+        watches = set()
+        for messagechunk in message:
+            if messagechunk.blob is not None:
+                # we don't process attachments
+                continue
+            elif messagechunk.content is not None:
+                # look for potential BugWatch URL's and create the trackers
+                # and watches as needed
+                watches = watches.union(self.fromText(messagechunk.content,
+                    bug, message.owner))
+            else:
+                raise AssertionError('MessageChunk without content or blob.')
+        return sorted(watches, key=lambda a: a.remotebug)
+
 
 def BugWatchFactory(context, **kw):
     bug = context.context.bug

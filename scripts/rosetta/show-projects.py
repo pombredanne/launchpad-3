@@ -2,8 +2,6 @@
 #
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
-import sys
-
 import canonical.lp
 from canonical.launchpad.database import Project
 

@@ -1,0 +1,32 @@
+Buildd Slave
+============
+
+Buildd Slave is an application independent of Launchpad Database, so
+it has its own configuration file and depends only of sbuild package
+
+It consists basically of an wrapper of sbuild process through an XMLRPC
+Server interface. It requires read access to the current Librarian machine 
+to download needed files for the build job.
+
+See more initialization details in canonical/buildd/ftests/harness.py
+
+  >>> from canonical.buildd.ftests import BuilddSlaveTestSetup
+   
+  >>> BuilddSlaveTestSetup().setUp()
+
+Use simple xmlrpclib client to certify the BuildSlave is running
+
+  >>> import xmlrpclib
+  >>> s = xmlrpclib.Server('http://localhost:8221/')
+  >>> s.echo('Hello World')
+  ['Hello World']
+
+Tested, time to shutdown
+
+  >>> BuilddSlaveTestSetup().tearDown()
+
+
+# XXX cprov 20050630
+# As soon as we have better control of the environment we can try to
+# simulate the some certified build job, maybe the historical 'at'
+# that build even 'under the water'.

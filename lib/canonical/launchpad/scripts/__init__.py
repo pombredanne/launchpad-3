@@ -10,6 +10,7 @@ import atexit
 import sys
 import re
 import logging
+import time
 from optparse import OptionParser
 
 import zope.app.appsetup
@@ -45,8 +46,10 @@ class NullItem:
     def finish(self):
         pass
 
+
 def NullFactory(context, data, info):
     return NullItem(context, data, info)
+
 
 class CustomMachine(ConfigurationMachine):
 
@@ -54,12 +57,17 @@ class CustomMachine(ConfigurationMachine):
         # Hackery to remove 'browser:xxx' directives from being processed.
         # This is needed to avoid page directives, which screw up when you
         # parse the zcml from a cwd that isn't the launchpad root.
+        # XXX: I added a workaround so that browser:url directives get
+        #      processed, though. SteveA said he will fix it better when
+        #      he lands the navigation stuff.
+        #      -- Bjorn Tillenius, 2005-07-14
         ns, simplename = name
-        if ns == u'http://namespaces.zope.org/browser':
+        if ns == u'http://namespaces.zope.org/browser' and simplename != 'url':
             return NullFactory
         else:
             f = ConfigurationMachine.factory(self, context, name)
             return f
+
 
 def execute_zcml_for_scripts(use_web_security=False):
     """Execute the zcml rooted at launchpad/script.zcml
@@ -111,6 +119,7 @@ def execute_zcml_for_scripts(use_web_security=False):
     from canonical.launchpad.ftests import login
     login('launchpad.anonymous')
 
+
 def logger_options(parser, default=logging.INFO):
     """Add the --verbose and --quiet options to an optparse.OptionParser.
 
@@ -127,6 +136,9 @@ def logger_options(parser, default=logging.INFO):
     >>> options.loglevel == logging.INFO
     True
 
+    As part of the options parsing, the 'log' global variable is updated.
+    This can be used by code too lazy to pass it around as a variable.
+
     """
 
     # Raise an exception if the constants have changed. If they change we
@@ -141,6 +153,9 @@ def logger_options(parser, default=logging.INFO):
         parser.values.loglevel = (
                 getattr(parser.values, 'loglevel', default) + inc
                 )
+        # Reset the global log
+        global log
+        log._log = _logger(parser.values.loglevel)
 
     parser.add_option(
             "-v", "--verbose", dest="loglevel", default=default,
@@ -153,11 +168,16 @@ def logger_options(parser, default=logging.INFO):
             help="Decrease verbosity. May be specified multiple times."
             )
 
+    # Set the global log
+    global log
+    log._log = _logger(default)
+
+
 def logger(options=None, name=None):
     """Return a logging instance with standard setup.
 
-    If options is not passed, the command line is parsed for the standard
-    options specified by logger_options().
+    options should be the options as returned by an option parser that
+    has been initilized with logger_options(parser)
 
     >>> from optparse import OptionParser
     >>> parser = OptionParser()
@@ -171,12 +191,19 @@ def logger(options=None, name=None):
         logger_options(parser)
         options, args = parser.parse_args()
 
+    return _logger(options.loglevel, name)
+
+
+def _logger(level, name=None):
+    """Create the actual logger instance, logging at the given level
+
+    if name is None, it will get args[0] without the extension (e.g. gina).
+    """
+
     if name is None:
         # Determine the logger name from the script name
         name = sys.argv[0]
         name = re.sub('.py[oc]?$', '', name)
-
-    level = options.loglevel
 
     # Clamp the loglevel
     if level < logging.DEBUG:
@@ -187,17 +214,56 @@ def logger(options=None, name=None):
     # Create our logger
     logger = logging.getLogger(name)
 
+    # Trash any existing handlers
+    for hdlr in logger.handlers[:]:
+        logger.removeHandler(hdlr)
+
     # Make it print output in a standard format, suitable for 
     # both command line tools and cron jobs (command line tools often end
     # up being run from inside cron, so this is a good thing).
     hdlr = logging.StreamHandler(strm=sys.stderr)
-    hdlr.setFormatter(logging.Formatter(
-        fmt='%(asctime)s %(levelname)s %(message)s'
-        ))
+    # TODO: Hmm... not sure about the '-7s' daf suggested. Maybe it will
+    # grow on me -- StuartBishop 20050705
+    formatter = logging.Formatter(
+        fmt='%(asctime)s %(levelname)-7s %(message)s',
+        # Put date back if we need it, but I think just time is fine and
+        # saves space.
+        datefmt="%H:%M:%S",
+        )
+    formatter.converter = time.gmtime # Output should be UTC
+    hdlr.setFormatter(formatter)
     logger.addHandler(hdlr)
     logger.setLevel(level)
 
+    global log
+    log._log = logger
+
     return logger
+
+
+class _LogWrapper:
+    """Changes the logger instance.
+
+    Other modules will do 'from canonical.launchpad.scripts import log'.
+    This wrapper allows us to change the logger instance these other modules
+    use, by replacing the _log attribute. This is done each call to logger()
+    """
+
+    def __init__(self, log):
+        self._log = log
+
+    def __getattr__(self, key):
+        return getattr(self._log, key)
+
+    def __setattr__(self, key, value):
+        if key == '_log':
+            self.__dict__['_log'] = value
+            return value
+        else:
+            return setattr(self._log, key, value)
+
+log = _LogWrapper(logging.getLogger())
+
 
 def db_options(parser):
     """Add and handle default database connection options on the command line

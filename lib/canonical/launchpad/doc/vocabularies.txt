@@ -53,7 +53,7 @@ constant:
     >>> from canonical.lp import dbschema
     >>> from canonical.launchpad.vocabularies import vocab_factory
     >>> PackagingVocabulary = vocab_factory(dbschema.PackagingType)
-    
+
 The right place to do it is in the file vocabularies/dbschema.py.
 Note: don't forget to registry your brand new instance for zope lookup
 in configure.zcml.
@@ -116,6 +116,19 @@ o ProductVocabulary - the list of selectable products. Results are
     >>> arch.title 
     u'Arch archive mirrors'
 
+o ProductReleaseVocabulary - the list of selectable products releases.
+
+    >>> productrelease_vocabulary = vocabulary_registry.get(None,
+    ...                                                     "ProductRelease")
+    >>> list(productrelease_vocabulary.search(None))
+    []
+    >>> evolution_releases = productrelease_vocabulary.search("evolution")
+    >>> l = [release_term.title for release_term in evolution_releases]
+    >>> release = productrelease_vocabulary.getTermByToken(
+    ...     "evolution/main/2.1.6")
+    >>> release.title
+    u'evolution main 2.1.6'
+
 o PersonAccountToMergeVocabulary - all non-merged people. This vocabulary
   is meant to be used only in the people merge form.
 
@@ -141,8 +154,9 @@ o PersonAccountToMergeVocabulary - all non-merged people. This vocabulary
     ['foo.bar@canonical.com']
 
     Any person without a single email address is not part of the vocabulary.
-    >>> fooperson = getUtility(IPersonSet).newPerson(
-    ...     name='foobaz', displayname='foo baz')
+    >>> fooperson, email = getUtility(IPersonSet).createPersonAndEmail(
+    ...     'foobaz@bar.com', name='foobaz', displayname='foo baz')
+    >>> email.destroySelf()
     >>> fooperson in vocab
     False
 
@@ -172,7 +186,7 @@ o ValidPersonOrTeam - all 'valid' persons or teams. This is currently defined
     Almost all teams have the word 'team' as part of their names, so a search
     for 'team' should give us some of them.
     >>> [t.token for t in vocab.search('team')]
-    ['name21', 'name18', 'support@ubuntu.com', 'name19', 'name20']
+    ['name21', 'name18', 'support@ubuntu.com', 'name19', 'name20', 'testing-spanish-team']
 
     Stuart hasn't validated his email address; he's not a valid Person.
     >>> [t.token for t in vocab.search('bishop')]
@@ -191,35 +205,78 @@ o ValidOwner - all valid persons and teams are also valid owners.
     Almost all teams have the word 'team' as part of their names, so a search
     for 'team' should give us some of them.
     >>> [t.token for t in vocab.search('team')]
-    ['name21', 'name18', 'support@ubuntu.com', 'name19', 'name20']
+    ['name21', 'name18', 'support@ubuntu.com', 'name19', 'name20', 'testing-spanish-team']
+
+o ValidTeamMember - With the exception of all teams that have this team as a
+  member and the team itself, all valid persons and teams are valid
+  members.
+
+    >>> from canonical.launchpad.interfaces import ITeamMembershipSubset
+    >>> team = getUtility(IPersonSet).getByName('name17')
+    >>> team2 = getUtility(IPersonSet).getByName('guadamen')
+    >>> person = getUtility(IPersonSet).getByName('name16')
+    >>> tms = ITeamMembershipSubset(team)
+
+    ValidTeamMember needs a context.
+    >>> vocab = vocabulary_registry.get(None, "ValidTeamMember")
+    Traceback (most recent call last):
+    ...
+    ValueError: ...
+
+    ValidTeamMember's context must implement ITeam or ITeamMembershipSubset.
+    >>> vocab = vocabulary_registry.get(person, "ValidTeamMember")
+    Traceback (most recent call last):
+    ...
+    ValueError: ...
+ 
+    'name16' is a valid member for 'name17'
+    >>> vocab = vocabulary_registry.get(tms, "ValidTeamMember")
+    >>> person in vocab
+    True
+
+    'name17' is not a valid member for itself
+    >>> team in vocab
+    False
+
+    'name17' is a member of 'guadamen', so 'guadamen' can't be a member of
+    'name17'.
+    >>> team2 in vocab
+    False
 
 o ValidTeamOwner - With the exception of the team itself and all teams owned
   by that team, all valid persons and teams are valid owners for the team 
   in context.
 
-  >>> team = getUtility(IPersonSet).getByName('name17')
-  >>> person = getUtility(IPersonSet).getByName('name16')
+    ValidTeamOwner needs a context.
+    >>> vocab = vocabulary_registry.get(None, "ValidTeamOwner")
+    Traceback (most recent call last):
+    ...
+    ValueError: ...
+ 
+    ValidTeamOwner's context must be a team.
+    >>> vocab = vocabulary_registry.get(person, "ValidTeamOwner")
+    Traceback (most recent call last):
+    ...
+    ValueError: ...
+ 
+    'name17' is not a valid owner for itself.
+    >>> vocab = vocabulary_registry.get(team, "ValidTeamOwner")
+    >>> team in vocab
+    False
+ 
+    'name16' is a valid owner for 'name17'.
+    >>> vocab = vocabulary_registry.get(team, "ValidTeamOwner")
+    >>> person in vocab
+    True
 
-  ValidTeamOwner needs a context.
-  >>> vocab = vocabulary_registry.get(None, "ValidTeamOwner")
-  Traceback (most recent call last):
-  ...
-  ValueError: ...
+o SchemaVocabulary - launchpad Schema Vocabulary..
 
-  ValidTeamOwner's context must be a team.
-  >>> vocab = vocabulary_registry.get(person, "ValidTeamOwner")
-  Traceback (most recent call last):
-  ...
-  ValueError: ...
-
-  'name17' is not a valid owner for itself.
-  >>> vocab = vocabulary_registry.get(team, "ValidTeamOwner")
-  >>> team in vocab
-  False
-
-  'name16' is a valid owner for 'name17'.
-  >>> vocab = vocabulary_registry.get(team, "ValidTeamOwner")
-  >>> person in vocab
-  True
+    >>> vocabulary = vocabulary_registry.get(None,"Schema")
+    >>> list(vocabulary.search(None))
+    []
+    >>> schemas_vocabulary = vocabulary.search("m")
+    >>> schemas = [schema.title for schema in schemas_vocabulary]
+    >>> schemas
+    [u'enema', u'mark', u'schema', u'trema']
 
 XXX: document more vocabularies here, particularly when they break!

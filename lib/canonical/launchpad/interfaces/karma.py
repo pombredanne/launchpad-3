@@ -1,13 +1,26 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
+"""Karma interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IKarma',
+    'IKarmaSet',
+    'IKarmaAction',
+    'IKarmaActionSet',
+    'IKarmaCache',
+    'IKarmaCacheSet',
+    ]
+
 from zope.app.form.browser.interfaces import IAddFormCustomization
-from zope.schema import Int, Datetime, Choice, TextLine
+from zope.schema import Int, Datetime, Choice
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
 from canonical.lp.dbschema import KarmaActionCategory
 
+_ = MessageIDFactory('launchpad')
 
 class IKarma(Interface):
     """The Karma of a Person."""
@@ -95,9 +108,15 @@ class IKarmaActionSet(IAddFormCustomization):
     def selectByCategory(category):
         """Return all KarmaAction objects of the given category."""
 
-    def selectByCategoryAndPerson(category, person):
+    def selectByCategoryAndPerson(category, person, orderBy=None):
         """Return all KarmaAction objects of the given category if <person>
-        performed these actions at least once."""
+        performed these actions at least once.
+
+        <orderBy> can be either a string with the column name you want to sort
+        or a list of column names as strings.
+        If no orderBy is specified the results will be ordered using the
+        default ordering specified in KarmaAction._defaultOrder.
+        """
 
 
 class IKarmaCache(Interface):

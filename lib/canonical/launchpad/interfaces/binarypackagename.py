@@ -1,16 +1,21 @@
-# Imports from zope
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Binary package name interfaces."""
+
+__metaclass__ = type
+
+__all__ = [
+    'IBinaryPackageName',
+    'IBinaryPackageNameSet',
+    ]
+
 from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
-
-# launchpad imports
 from canonical.launchpad.validators.name import valid_name
 
-#
-#
-#
+_ = MessageIDFactory('launchpad')
 
 class IBinaryPackageName(Interface):
     id = Int(title=_('ID'), required=True)
@@ -43,3 +48,15 @@ class IBinaryPackageNameSet(Interface):
         """Return the binary package names for packages that match the given
         criteria."""
 
+    def new(name):
+        """Create a new binary package name."""
+
+    def getOrCreateByName(name):
+        """Get a binary package by name, creating it if necessary."""
+
+    def ensure(name):
+        """Ensure that the given BinaryPackageName exists, creating it
+        if necessary.
+
+        Returns the BinaryPackageName
+        """

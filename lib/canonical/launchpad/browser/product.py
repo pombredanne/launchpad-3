@@ -1,46 +1,73 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
-"""Browser views and traversal functions for products."""
+"""Browser views for products."""
 
 __metaclass__ = type
 
-import sets
 from warnings import warn
 from urllib import quote as urlquote
 
 import zope.security.interfaces
-from zope.interface import implements
-from zope.component import getUtility, getAdapter
+from zope.component import getUtility
 from zope.event import notify
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.app.form import CustomWidgetFactory
+from zope.exceptions import NotFoundError
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
-from zope.app.traversing.browser.absoluteurl import absoluteURL
 
-from sqlobject.sqlbuilder import AND, IN, ISNULL
-
-from canonical.lp import dbschema
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
-from canonical.database.sqlbase import quote
-
-from canonical.launchpad.searchbuilder import any, NULL
-from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary, \
-     MilestoneVocabulary
-
-from canonical.launchpad.database import (
-    Product, BugFactory, Milestone, Person)
 from canonical.launchpad.interfaces import (
-    IPerson, IProduct, IProductSet, IBugTaskSet, IAging, ILaunchBag,
-    IProductRelease, ISourcePackage, IBugTaskSearchListingView, ICountry)
+    IPerson, IProduct, IProductSet, IBugTaskSet, IProductSeries,
+    ISourcePackage, ICountry, IBugSet, ICalendarOwner, ILaunchBag)
 from canonical.launchpad.browser.productrelease import newProductRelease
-from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, Link, DefaultLink, canonical_url)
+
+__all__ = ['ProductFacets', 'ProductView', 'ProductEditView',
+           'ProductFileBugView', 'ProductRdfView', 'ProductSetView',
+           'ProductSetAddView', 'ProductSeriesAddView']
+
+class ProductFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for
+    an IProduct.
+    """
+
+    usedfor = IProduct
+
+    # These links are inherited from StandardLaunchpadFacets.
+    # The items in the list refer to method names, and
+    # will appear on the page in the order they appear
+    # in the list.
+    # links = ['overview', 'bugs', 'translations']
+
+    def overview(self):
+        target = ''
+        text = 'Overview'
+        summary = 'General information about %s' % self.context.displayname
+        return DefaultLink(target, text, summary)
+
+    def bugs(self):
+        target = '+bugs'
+        text = 'Bugs'
+        summary = 'Bugs reported about %s' % self.context.displayname
+        return Link(target, text, summary)
+
+    def translations(self):
+        target = '+translations'
+        text = 'Translations'
+        summary = 'Translations of %s in Rosetta' % self.context.displayname
+        return Link(target, text, summary)
+
+    def calendar(self):
+        target = '+calendar'
+        text = 'Calendar'
+        # only link to the calendar if it has been created
+        linked = ICalendarOwner(self.context).calendar is not None
+        return Link(target, text, linked=linked)
+
 
 # A View Class for Product
 class ProductView:
@@ -56,8 +83,6 @@ class ProductView:
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(request)
         self.status_message = None
-        # Whether there is more than one PO template.
-        self.has_multiple_templates = len(context.potemplates()) > 1
 
     def primary_translatable(self):
         """Return a dictionary with the info for a primary translatable.
@@ -84,19 +109,19 @@ class ProductView:
                         sourcepackage.name)
                     }
 
-            elif IProductRelease.providedBy(translatable):
-                productrelease = translatable
+            elif IProductSeries.providedBy(translatable):
+                productseries = translatable
 
                 object_translatable = {
-                    'title': productrelease.title,
-                    'potemplates': productrelease.potemplates,
-                    'base_url': '/products/%s/%s' %(
+                    'title': productseries.title,
+                    'potemplates': productseries.potemplates,
+                    'base_url': '/products/%s/+series/%s' %(
                         self.context.name,
-                        productrelease.version)
+                        productseries.name)
                     }
             else:
                 # The translatable object does not implements an
-                # ISourcePackage nor a IProductRelease. As it's not a critical
+                # ISourcePackage nor a IProductSeries. As it's not a critical
                 # failure, we log only it instead of raise an exception.
                 warn("Got an unknown type object as primary translatable",
                      RuntimeWarning)
@@ -108,8 +133,11 @@ class ProductView:
             return None
 
     def templateviews(self):
+        target = self.context.primary_translatable
+        if target is None:
+            return []
         return [POTemplateView(template, self.request)
-                for template in self.context.potemplates()]
+                for template in target.potemplates]
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -118,11 +146,12 @@ class ProductView:
         return helpers.browserLanguages(self.request)
 
     def projproducts(self):
-        """Return a list of other products from the same project."""
+        """Return a list of other products from the same project as this
+        product, excluding this product"""
         if self.context.project is None:
             return []
         return [product for product in self.context.project.products
-                        if product.id <> self.context.id]
+                        if product.id != self.context.id]
 
     def edit(self):
         """
@@ -149,56 +178,32 @@ class ProductView:
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
 
-    def projproducts(self):
-        """Return a list of other products from the same project as this
-        product, excluding this product"""
-        if self.context.project is None:
-            return []
-        return [p for p in self.context.project.products \
-                    if p.id <> self.context.id]
-
     def newProductRelease(self):
         # default owner is the logged in user
         owner = IPerson(self.request.principal)
         #XXX: cprov 20050112
-        # Avoid passing obscure arguments as self.form
-        pr = newProductRelease(self.form, self.context, owner)
-
-    def newseries(self):
-        """Handle a request to create a new series for this product.
-        The code needs to extract all the relevant form elements,
-        then call the ProductSeries creation methods."""
-        if not self.form.get("Register") == "Register Series":
-            return
-        if not self.request.method == "POST":
-            return
-        # Make sure series name is lowercase
-        self.form["name"] = self.form['name'].lower()
-        #XXX: cprov 20050112
-        # Avoid passing obscure arguments as self.form
-        # XXX sabdfl 16/04/05 we REALLY should not be passing this form to
-        # the context object
-        series = self.context.newseries(self.form)
-        # now redirect to view the page
-        self.request.response.redirect('+series/'+series.name)
+        # Avoid passing obscure arguments such as self.form
+        newProductRelease(self.form, self.context, owner)
 
     def latestBugTasks(self, quantity=5):
         """Return <quantity> latest bugs reported against this product."""
         bugtaskset = getUtility(IBugTaskSet)
-        tasklist = bugtaskset.search(product = self.context, orderby = "-datecreated")
+
+        tasklist = bugtaskset.search(
+            product=self.context, orderby="-datecreated",
+            user=getUtility(ILaunchBag).user)
+
         return tasklist[:quantity]
 
     def potemplatenames(self):
-        potemplatenames = []
+        potemplatenames = set([])
 
-        for potemplate in self.context.potemplates():
-            potemplatenames.append(potemplate.potemplatename)
-
-        # Remove the duplicates
-        S = sets.Set(potemplatenames)
-        potemplatenames = list(S)
+        for series in self.context.serieslist:
+            for potemplate in series.potemplates:
+                potemplatenames.add(potemplate.potemplatename)
 
         return sorted(potemplatenames, key=lambda item: item.name)
+
 
 class ProductEditView(ProductView, SQLObjectEditView):
     """View class that lets you edit a Product object."""
@@ -211,6 +216,26 @@ class ProductEditView(ProductView, SQLObjectEditView):
         # If the name changed then the URL changed, so redirect:
         self.request.response.redirect(
             '../%s/+edit' % urlquote(self.context.name))
+
+
+class ProductSeriesAddView(AddView):
+    """Generates a form to add new product release series"""
+    series = None
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.form = request.form
+        AddView.__init__(self, context, request)
+
+    def createAndAdd(self, data):
+        """Handle a request to create a new series for this product."""
+        # Ensure series name is lowercase
+        self.series = self.context.newSeries(data["name"], data["displayname"],
+                                             data["summary"])
+
+    def nextURL(self):
+        assert self.series
+        return '+series/%s' % self.series.name
 
 
 class ProductFileBugView(SQLObjectAddView):
@@ -236,13 +261,13 @@ class ProductFileBugView(SQLObjectAddView):
         # XXX cprov 20050112
         # Try to avoid passing **kw, it is unreadable
         # Pass the keyword explicitly ...
-        bug = BugFactory(**kw)
+        bug = getUtility(IBugSet).createBug(**kw)
         notify(SQLObjectCreatedEvent(bug))
         self.addedBug = bug
         return bug
 
     def nextURL(self):
-        return absoluteURL(self.addedBug, self.request)
+        return canonical_url(self.addedBug, self.request)
 
 
 class ProductRdfView(object):
@@ -270,6 +295,9 @@ class ProductSetView:
         self.malone = form.get('malone')
         self.bazaar = form.get('bazaar')
         self.text = form.get('text')
+        self.matches = 0
+        self.results = None
+
         self.searchrequested = False
         if (self.text is not None or
             self.bazaar is not None or
@@ -277,8 +305,17 @@ class ProductSetView:
             self.rosetta is not None or
             self.soyuz is not None):
             self.searchrequested = True
-        self.results = None
-        self.matches = 0
+
+        if form.get('exact_name'):
+            # If exact_name is supplied, we try and locate this name in
+            # the ProductSet -- if we find it, bingo, redirect. This
+            # argument can be optionally supplied by callers.
+            try:
+                product = self.context[self.text]
+            except NotFoundError:
+                product = None
+            if product is not None:
+                self.request.response.redirect(product.name)
 
     def searchresults(self):
         """Use searchtext to find the list of Products that match

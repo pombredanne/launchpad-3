@@ -29,9 +29,9 @@
             lp:url="distros/$Distro/$Distrorelease/$Archtag/$Bin/+index"/>
 
         <browser:page
-            name="+portlet-lastversions"
-            template="../templates/portlet-binarypackage-lastversions.pt"
-            lp:url="distros/$Distro/$Distrorelease/$Archtag/$Bin/+portlet-lastversions"/>
+            name="+portlet-latestversions"
+            template="../templates/binarypackage-portlet-latestversions.pt"
+            lp:url="distros/$Distro/$Distrorelease/$Archtag/$Bin/+portlet-latestversions"/>
    </browser:pages>
 
 

@@ -10,9 +10,12 @@ information from an archive pool.
 
 __all__ = ['ArchiveFilesystemInfo', 'ArchiveComponentItems', 'PackagesMap']
 
-import apt_pkg, tempfile, os
+import apt_pkg
+import tempfile
+import os
 from string import split
 
+from canonical.launchpad.scripts.gina import call
 
 class ArchiveFilesystemInfo:
     """Archive information files holder
@@ -43,15 +46,16 @@ class ArchiveFilesystemInfo:
 
         # Extract the files
         srcfd, sources_tagfile = tempfile.mkstemp()
-        os.system("gzip -dc %s > %s" % (sources_zipped, sources_tagfile))
+        call("gzip -dc %s > %s" % (sources_zipped, sources_tagfile))
         srcfile = os.fdopen(srcfd)
         
         binfd, binaries_tagfile = tempfile.mkstemp()
-        os.system("gzip -dc %s > %s" % (binaries_zipped, binaries_tagfile))
+        call("gzip -dc %s > %s" % (binaries_zipped, binaries_tagfile))
         binfile = os.fdopen(binfd)
     
         difd, di_tagfile = tempfile.mkstemp()
-        os.system("gzip -dc %s > %s" % (di_zipped, di_tagfile))
+        if os.path.exists(di_zipped):
+            call("gzip -dc %s > %s" % (di_zipped, di_tagfile))
         difile = os.fdopen(difd)
 
         # Holds the opened files and its names.
@@ -122,7 +126,7 @@ class PackagesMap:
             if self.bin_map.has_key(info_set.arch):
                 tmpbin_map = self.bin_map[info_set.arch]
             else:
-                tmpbin_map = {}           
+                tmpbin_map = {}
             # Get a apt_pkg handler for the binaries
             binaries = apt_pkg.ParseTagFile(info_set.binfile)
 

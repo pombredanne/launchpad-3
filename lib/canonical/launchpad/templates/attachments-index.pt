@@ -8,10 +8,13 @@
 <div metal:fill-slot="main">
   <h1>Attachments List</h1>
   <table class="listing">
+    <thead>
     <tr>
       <th>Title</th>
       <th>Description</th>
     </tr>
+    </thead>
+    <tbody>
     <tr tal:repeat="attach context">
       <td>
         <a tal:attributes="href attach/id"
@@ -19,6 +22,7 @@
       </td>
       <td tal:content="attach/description">Description</td>
     </tr>
+    </tbody>
   </table>
   <input type="submit" value="Add" onclick="window.open('+new','_top')" />
 </div>

@@ -42,11 +42,11 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
-        name="+validateuid"
+        name="+validategpg"
         permission="zope.Public"
         class="canonical.launchpad.browser.ValidateEmailView"
-        template="../templates/foaf-validateuid.pt"
-        lp:url="token/$token/+validateuid" />
+        template="../templates/foaf-validategpg.pt"
+        lp:url="token/$token/+validategpg" />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"

@@ -13,11 +13,11 @@ from canonical.launchpad.webapp import (
 
 class LaunchpadRootFacets(StandardLaunchpadFacets):
     usedfor = ILaunchpadRoot
-    links = ['overview', 'translations', 'bugs']
+    links = ['overview', 'bugs', 'translations', 'calendar']
 
     def overview(self):
         target = ''
-        text = 'Launchpad'
+        text = 'Overview'
         return DefaultLink(target, text)
 
     def translations(self):
@@ -30,20 +30,40 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         text = 'Bugs'
         return Link(target, text)
 
+    def calendar(self):
+        target = 'calendar'
+        text = 'Calendar'
+        return Link(target, text)
+
 
 class RosettaAppMenus(ApplicationMenu):
     usedfor = IRosettaApplication
     facet = 'translations'
-    links = ['overview', 'about']
+    links = ['overview', 'about', 'preferences']
 
     def overview(self):
         target = ''
-        text = 'Overview'
+        text = 'Translations'
         return DefaultLink(target, text)
+
+    def upload(self):
+        target = '+upload'
+        text = 'Upload'
+        return Link(target, text)
+
+    def download(self):
+        target = '+export'
+        text = 'Download'
+        return Link(target, text)
 
     def about(self):
         target = '+about'
         text = 'About Rosetta'
+        return Link(target, text)
+
+    def preferences(self):
+        target = 'prefs'
+        text = 'Preferences'
         return Link(target, text)
 
 
@@ -108,4 +128,3 @@ class LoginStatus:
         if full_url.endswith(logout_url_end):
             full_url = full_url[:-len(logout_url_end)]
         return '%s/+login%s' % (full_url, query_string)
-

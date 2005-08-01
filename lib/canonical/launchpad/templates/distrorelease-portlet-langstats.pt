@@ -1,0 +1,18 @@
+<div class="portlet">
+
+  <h4><span tal:replace="context/displayname">Warty
+      </span> Translation Statistics:</h4>
+
+  <div class="portletBody portletContent">
+
+    <tal:block repeat="drlang view/requestDistroLangs">
+
+      <span tal:replace="drlang/language/englishname">Latin</span>:<br />
+      <a tal:attributes="href drlang/fmt:url"
+        ><div tal:replace="structure drlang/@@+barchart" /></a><br />
+
+    </tal:block>
+	
+  </div>
+
+</div>
