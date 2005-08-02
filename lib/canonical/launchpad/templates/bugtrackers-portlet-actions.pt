@@ -6,7 +6,7 @@
     <div class="portletContent odd">
 
       <ul>
-        <li class="edit"><a href="+edit">Edit BugTracker Details</a></li>
+        <li class="add"><a href="+newbugtracker">Add Tracker</a></li>
       </ul>
 
     </div>

@@ -227,6 +227,10 @@ tr.highlight {
     background-color: #ffce7b;
 }
 
+tr.amount, td.amount {
+    text-align: right;
+}
+
 /* Display links as blocks, so we can make the whole row clickable */
 
 tr.rowLinkified a {

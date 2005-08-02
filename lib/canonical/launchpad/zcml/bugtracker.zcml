@@ -82,6 +82,10 @@
             name="+portlet-info"
             template="../templates/bugtrackers-portlet-info.pt"
             lp:url="malone/bugtrackers/+portlet-info" />
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/bugtrackers-portlet-actions.pt"
+            lp:url="/malone/bugtrackers/+portlet-actions" />
     </browser:pages>
 
     <browser:pages
