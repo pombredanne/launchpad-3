@@ -22,7 +22,8 @@
 
     <b>First reported:</b><br />
     <span tal:replace="context/datecreated/fmt:datetime">12-12-2004
-    20:44:00 UTC</span><br />
+    20:44:00 UTC</span>
+    <br />
 
     <b>Secrecy:</b>
     <tal:block condition="context/private">

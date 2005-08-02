@@ -41,8 +41,13 @@
   background-color: #7090a0;
 }
 
+.collapsible {
+    padding: 0;
+    margin: 0;
+}
+
 .collapsed {
-  border-style: dashed none none none;
+  border: none;
   margin-bottom: 0;
 }
 
