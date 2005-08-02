@@ -134,6 +134,11 @@
         name="Subscription"
         factory="canonical.launchpad.vocabularies.SubscriptionVocabulary"
         />
+    
+    <vocabulary
+        name="BugAttachmentType"
+        factory="canonical.launchpad.vocabularies.BugAttachmentTypeVocabulary"
+        />
 
     <vocabulary
         name="BugRef"

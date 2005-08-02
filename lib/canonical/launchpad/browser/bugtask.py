@@ -255,6 +255,10 @@ class BugTaskSearchListingView:
         search_params["statusexplanation"] = form_params.get(
                 "statusexplanation")
 
+        attachmenttype = form_params.get("attachmenttype")
+        if attachmenttype:
+            search_params["attachmenttype"] = any(*attachmenttype)
+
         search_params["user"] = getUtility(ILaunchBag).user
 
         # make this search context-sensitive

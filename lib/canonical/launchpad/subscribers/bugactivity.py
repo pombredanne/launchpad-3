@@ -241,3 +241,14 @@ def record_bugsubscription_edited(bugsubscription_edited,
                 newvalue=newvalue)
 
 
+def record_bug_attachment_added(attachment, created_event):
+    """Record that an attachment was added."""
+    getUtility(IBugActivitySet).new(
+        bug=attachment.bug,
+        datechanged=UTC_NOW,
+        person=created_event.user,
+        whatchanged='bug',
+        message="added attachment '%s' (%s)" % (
+            attachment.libraryfile.filename, attachment.title))
+
+

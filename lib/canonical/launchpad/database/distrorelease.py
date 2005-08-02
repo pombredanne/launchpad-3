@@ -148,7 +148,8 @@ class DistroRelease(SQLBase):
 
     def search(self, bug=None, searchtext=None, status=None, priority=None,
                severity=None, milestone=None, assignee=None, owner=None,
-               orderby=None, statusexplanation=None, user=None):
+               statusexplanation=None, attachmenttype=None, user=None,
+               orderby=None):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # As an initial refactoring, we're wrapping BugTaskSet.search.
         # It's possible that the search code will live inside this

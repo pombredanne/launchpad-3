@@ -83,6 +83,10 @@
             name="+portlet-actions"
             template="../templates/bug-portlet-actions.pt"
             lp:url="malone/bugs/$Bug.id/+portlet-actions" />
+        <browser:page
+            name="+portlet-attachment"
+            template="../templates/portlet-bug-attachment.pt"
+            lp:url="malone/bugs/$Bug.id/+portlet-attachment" />
     </browser:pages>
 
     <!-- Bug -->

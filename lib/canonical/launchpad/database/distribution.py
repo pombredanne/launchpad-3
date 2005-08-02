@@ -50,7 +50,8 @@ class Distribution(SQLBase):
 
     def search(self, bug=None, searchtext=None, status=None, priority=None,
                severity=None, milestone=None, assignee=None, owner=None,
-               orderby=None, statusexplanation=None, user=None):
+               statusexplanation=None, attachmenttype=None, user=None,
+               orderby=None):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # As an initial refactoring, we're wrapping BugTaskSet.search.
         # It's possible that the search code will live inside this
@@ -61,8 +62,8 @@ class Distribution(SQLBase):
         return BugTaskSet().search(
             distribution=self, bug=bug, searchtext=searchtext, status=status,
             priority=priority, severity=severity, milestone=milestone,
-            assignee=assignee, owner=owner, orderby=orderby,
-            statusexplanation=statusexplanation, user=user)
+            assignee=assignee, owner=owner, attachmenttype=attachmenttype,
+            statusexplanation=statusexplanation, user=user, orderby=orderby)
 
     def currentrelease(self):
         # if we have a frozen one, return that

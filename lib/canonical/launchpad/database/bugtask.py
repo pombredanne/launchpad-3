@@ -256,9 +256,10 @@ class BugTaskSet:
 
     def search(self, bug=None, searchtext=None, status=None, priority=None,
                severity=None, product=None, distribution=None,
-               distrorelease=None, milestone=None, assignee=None, owner=None,
-               orderby=None, sourcepackagename=None, binarypackagename=None,
-               statusexplanation=None, user=None):
+               distrorelease=None, milestone=None, assignee=None,
+               sourcepackagename=None, binarypackagename=None,
+               owner=None, statusexplanation=None, attachmenttype=None,
+               user=None, orderby=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
 
         # A dict of search argument names and values that will be
@@ -277,6 +278,7 @@ class BugTaskSet:
             'sourcepackagename': sourcepackagename,
             'binarypackagename': binarypackagename
         }
+        clauseTables = ['BugTask', 'Bug']
 
         query = ""
 
@@ -317,6 +319,19 @@ class BugTaskSet:
                     else:
                         query += "BugTask.%s = %d" % (
                             arg_name, int(arg_value.value))
+
+        # Build the part of the query for attachment type.
+        if attachmenttype is not None:
+            clauseTables.append('BugAttachment')
+            if isinstance(attachmenttype, any):
+                where_cond = "BugAttachment.type IN (%s)" % ", ".join(
+                    sqlvalues(*attachmenttype.query_values))
+            else:
+                where_cond = "BugAttachment.type = %s" % sqlvalues(
+                    attachmenttype)
+            if query:
+                query += " AND "
+            query += "((BugAttachment.bug = BugTask.bug) AND (%s))" % where_cond
 
         if searchtext:
             if query:
@@ -380,7 +395,7 @@ class BugTaskSet:
         orderby_arg.append('BugTask.id')
 
         bugtasks = BugTask.select(
-            query, clauseTables=["Bug", "BugTask"], orderBy=orderby_arg)
+            query, clauseTables=clauseTables, orderBy=orderby_arg)
 
         return bugtasks
 

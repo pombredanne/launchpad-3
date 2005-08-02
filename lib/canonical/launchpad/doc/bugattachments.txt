@@ -1,0 +1,170 @@
+Bug Attachments
+===============
+
+Files can be added to a bug as an attachment. There are two types of
+attachment, Patch and Unspecified. A Patch is mostly a direct proposed
+fix to a bug, while Unspecified is mostly some more information about
+the bug, like a log file or a screenshot.
+
+Let's take a look at a bug. It currently has no attachments at all:
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugSet, IBugAttachmentSet, IBugAttachment, ILibraryFileAliasSet)
+    >>> bugset = getUtility(IBugSet)
+    >>> bug_one = bugset.get(1)
+    >>> len(bug_one.attachments)
+    0
+
+Create attachments
+------------------
+
+So let's create an attachment. First we have to create the file itself,
+and upload it to the Librarian:
+
+    >>> from StringIO import StringIO
+    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+    >>> LibrarianTestSetup().setUp()
+    >>> filecontent = 'Some useful information.'
+    >>> filealias = getUtility(ILibraryFileAliasSet).create(
+    ...     name='foo.txt', size=len(filecontent),
+    ...     file=StringIO(filecontent), contentType='text/plain')
+
+Now we can create the bug attachment:
+
+    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> message = getUtility(IMessageSet).fromText(
+    ...     subject="title", content="added an attachment.")
+    >>> attachmentset = getUtility(IBugAttachmentSet)
+    >>> attachment = attachmentset.create(
+    ...     bug=bug_one, filealias=filealias, title='Some info.',
+    ...     message=message)
+    >>> len(bug_one.attachments)
+    1
+
+    >>> attachment.type.title
+    'Unspecified'
+    >>> bug_one.attachments[0] == attachment
+    True
+
+
+Security
+--------
+
+If a user can view/edit the bug the attachment is attached to, he can
+also view/edit the attachment. At the moment the bug_one is public, so
+anonymous can read the attachment's attributes, but he can't set them:
+
+    >>> login(ANONYMOUS)
+    >>> attachment.title
+    u'Some info.'
+    >>> attachment.title = 'Better Title'
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ('title',...
+
+Both Sample Person and Foo Bar can access and set the attributes, though:
+
+    >>> login('test@canonical.com')
+    >>> attachment.title
+    u'Some info.'
+    >>> attachment.title = 'Better Title'
+
+    >>> login('foo.bar@canonical.com')
+    >>> attachment.title
+    u'Better Title'
+    >>> attachment.title = 'Even Better Title'
+
+Now let's make the bug private instead:
+
+    >>> bug_one.private = True
+
+Since Foo Bar isn't explicitly subscribed to the bug, he can't access
+or set the attachment's attributes:
+
+    >>> attachment.title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ('title',...
+    >>> attachment.title = 'Better Title'
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ('title',...
+
+Of course, anonymous is also not allowed to access or set the them:
+
+    >>> login(ANONYMOUS)
+    >>> attachment.title
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ('title',...
+    >>> attachment.title = 'Some info.'
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ('title',...
+
+Sample Person is explicitly subscribed, so he can both access and set
+the attributes:
+
+    >>> login('test@canonical.com')
+    >>> attachment.title
+    u'Even Better Title'
+    >>> attachment.title = 'Better Title'
+
+
+Let's make the bug public again:
+
+    >>> bug_one.private = False
+
+
+Search for attachments
+----------------------
+
+We can search for attachment of a specific types:
+
+    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from canonical.lp.dbschema import BugAttachmentType
+    >>> bugtaskset = getUtility(IBugTaskSet)
+    >>> bugtasks = bugtaskset.search(
+    ...     attachmenttype=BugAttachmentType.UNSPECIFIED)
+    >>> bugs = set([bugtask.bug for bugtask in bugtasks])
+    >>> bugs = list(bugs)
+    >>> len(bugs)
+    1
+    >>> bugs[0].id
+    1
+
+    >>> from canonical.launchpad.searchbuilder import any
+    >>> bugtasks = bugtaskset.search(
+    ...     attachmenttype=any(*BugAttachmentType.items))
+    >>> bugs = set([bugtask.bug for bugtask in bugtasks])
+    >>> bugs = list(bugs)
+    >>> len(bugs)
+    1
+    >>> bugs[0].id
+    1
+
+There are no patches attached to any bugs:
+
+    >>> bugtasks = bugtaskset.search(
+    ...     attachmenttype=BugAttachmentType.PATCH)
+    >>> bugs = set([bugtask.bug for bugtask in bugtasks])
+    >>> bugs = list(bugs)
+    >>> len(bugs)
+    0
+
+Let's make our attachment a patch and search again:
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> login('test@canonical.com')
+    >>> attachment.type = BugAttachmentType.PATCH
+    >>> flush_database_updates()
+    >>> bugtasks = bugtaskset.search(
+    ...     attachmenttype=BugAttachmentType.PATCH)
+    >>> bugs = set([bugtask.bug for bugtask in bugtasks])
+    >>> bugs = list(bugs)
+    >>> len(bugs)
+    1
+    >>> bugs[0].id
+    1
+
+    >>> LibrarianTestSetup().tearDown()
