@@ -151,8 +151,10 @@
         <key name="root" datatype="string" required="yes" />
         <key name="launch" datatype="boolean" required="no" default="no" />
         <key name="spew" datatype="boolean" required="no" default="no" />
-        <key name="upstream_url" datatype="canonical.config.urlbase"
+        <key name="upstream_host" datatype="ipaddr-or-hostname"
             required="no" />
+        <key name="upstream_port" datatype="port-number" required="no"
+            default="80" />
         <key name="logfile" datatype="string" required="no" default="-" />
     </sectiontype>
 

@@ -1,0 +1,3049 @@
+##############################################################################
+#
+# Copyright (c) 2003-2004 Zope Corporation and Contributors.
+# All Rights Reserved.
+#
+# This software is subject to the provisions of the Zope Public License,
+# Version 2.1 (ZPL).  A copy of the ZPL should accompany this distribution.
+# THIS SOFTWARE IS PROVIDED "AS IS" AND ANY AND ALL EXPRESS OR IMPLIED
+# WARRANTIES ARE DISCLAIMED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF TITLE, MERCHANTABILITY, AGAINST INFRINGEMENT, AND FITNESS
+# FOR A PARTICULAR PURPOSE.
+#
+##############################################################################
+msgid ""
+msgstr ""
+"Project-Id-Version: Development/Unknown\n"
+"POT-Creation-Date: Tue Aug  2 13:22:02 2005\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Zope 3 Developers <zope3-dev@zope.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: zope/app/locales/extract.py\n"
+
+#: d/browser/cal.py:505
+msgid "Week %d, %04d"
+msgstr ""
+
+#: d/browser/cal.py:57
+msgid "Monday"
+msgstr ""
+
+#: d/browser/cal.py:58
+msgid "Tuesday"
+msgstr ""
+
+#: d/browser/cal.py:59
+msgid "Wednesday"
+msgstr ""
+
+#: d/browser/cal.py:60
+msgid "Thursday"
+msgstr ""
+
+#: d/browser/cal.py:61
+msgid "Friday"
+msgstr ""
+
+#: d/browser/cal.py:62
+msgid "Saturday"
+msgstr ""
+
+#: d/browser/cal.py:63
+msgid "Sunday"
+msgstr ""
+
+#: d/browser/cal.py:66
+msgid "January"
+msgstr ""
+
+#: d/browser/cal.py:67
+msgid "February"
+msgstr ""
+
+#: d/browser/cal.py:68
+msgid "March"
+msgstr ""
+
+#: d/browser/cal.py:69
+msgid "April"
+msgstr ""
+
+#: d/browser/cal.py:70
+msgid "May"
+msgstr ""
+
+#: d/browser/cal.py:71
+msgid "June"
+msgstr ""
+
+#: d/browser/cal.py:72
+msgid "July"
+msgstr ""
+
+#: d/browser/cal.py:73
+msgid "August"
+msgstr ""
+
+#: d/browser/cal.py:74
+msgid "September"
+msgstr ""
+
+#: d/browser/cal.py:75
+msgid "October"
+msgstr ""
+
+#: d/browser/cal.py:76
+msgid "November"
+msgstr ""
+
+#: d/browser/cal.py:77
+msgid "December"
+msgstr ""
+
+#: d/browser/cal.py:81
+msgid "White"
+msgstr ""
+
+#: d/browser/cal.py:82
+msgid "Green"
+msgstr ""
+
+#: d/browser/cal.py:83
+msgid "Blue"
+msgstr ""
+
+#: d/browser/cal.py:84
+msgid "Purple"
+msgstr ""
+
+#: d/browser/cal.py:85
+msgid "Yellow"
+msgstr ""
+
+#: d/browser/cal.py:86
+msgid "Grey"
+msgstr ""
+
+#: d/browser/calendarwidgets.py:162
+msgid "minutes"
+msgstr ""
+
+#: d/browser/calendarwidgets.py:163
+msgid "hours"
+msgstr ""
+
+#: d/browser/calendarwidgets.py:164
+msgid "days"
+msgstr ""
+
+#: d/browser/calendarwidgets.py:165
+msgid "weeks"
+msgstr ""
+
+#: d/browser/editview.py:87
+msgid "An error occurred."
+msgstr ""
+
+#: d/browser/editview.py:96
+#: d/browser/potemplate.py:214
+#: d/browser/potemplatename.py:93
+msgid "Updated on ${date_time}"
+msgstr ""
+
+#: d/components/cal.py:50
+msgid "Merged Calendar for %s"
+msgstr ""
+
+#: d/database/bug.py:89
+msgid "Person with ID %d is already subscribed to this bug"
+msgstr ""
+
+#: d/interfaces/archuser.py:21
+#: d/interfaces/irc.py:20
+#: d/interfaces/jabber.py:20
+#: d/interfaces/karma.py:30
+#: d/interfaces/karma.py:80
+#: d/interfaces/karma.py:127
+#: d/interfaces/ssh.py:21
+#: d/interfaces/wikiname.py:19
+msgid "Database ID"
+msgstr ""
+
+#: d/interfaces/archuser.py:22
+#: d/interfaces/bounty.py:82
+#: d/interfaces/bug.py:60
+#: d/interfaces/bug.py:219
+#: d/interfaces/bugextref.py:48
+#: d/interfaces/bugtracker.py:27
+#: d/interfaces/bugwatch.py:35
+#: d/interfaces/codeofconduct.py:42
+#: d/interfaces/cveref.py:51
+#: d/interfaces/distribution.py:69
+#: d/interfaces/gpg.py:21
+#: d/interfaces/irc.py:21
+#: d/interfaces/jabber.py:21
+#: d/interfaces/mirror.py:21
+#: d/interfaces/person.py:693
+#: d/interfaces/person.py:699
+#: d/interfaces/potemplate.py:64
+#: d/interfaces/product.py:44
+#: d/interfaces/productrelease.py:29
+#: d/interfaces/project.py:31
+#: d/interfaces/project.py:196
+#: d/interfaces/ssh.py:22
+#: d/interfaces/translationgroup.py:52
+#: d/interfaces/wikiname.py:20
+msgid "Owner"
+msgstr ""
+
+#: d/interfaces/archuser.py:23
+msgid "ARCH user ID"
+msgstr ""
+
+#: d/interfaces/binarypackage.py:22
+#: d/interfaces/binarypackagename.py:21
+#: d/interfaces/bountysubscription.py:21
+#: d/interfaces/bugattachment.py:24
+#: d/interfaces/bugextref.py:29
+#: d/interfaces/bugsubscription.py:21
+#: d/interfaces/bugtracker.py:21
+#: d/interfaces/bugwatch.py:21
+#: d/interfaces/cal.py:35
+#: d/interfaces/cveref.py:29
+#: d/interfaces/files.py:22
+#: d/interfaces/files.py:42
+#: d/interfaces/logintoken.py:25
+#: d/interfaces/message.py:34
+#: d/interfaces/message.py:107
+#: d/interfaces/person.py:59
+#: d/interfaces/person.py:518
+#: d/interfaces/person.py:563
+#: d/interfaces/person.py:676
+#: d/interfaces/productrelease.py:24
+#: d/interfaces/productseries.py:27
+#: d/interfaces/project.py:28
+#: d/interfaces/project.py:195
+#: d/interfaces/publishing.py:28
+#: d/interfaces/publishing.py:72
+#: d/interfaces/publishing.py:323
+#: d/interfaces/queue.py:23
+#: d/interfaces/queue.py:38
+#: d/interfaces/queue.py:55
+#: d/interfaces/sourcepackageindistro.py:20
+#: d/interfaces/sourcepackagename.py:30
+#: d/interfaces/vsourcepackagereleasepublishing.py:26
+msgid "ID"
+msgstr ""
+
+#: d/interfaces/binarypackagename.py:23
+msgid "Valid Binary package name"
+msgstr ""
+
+#: d/interfaces/bounty.py:29
+#: d/interfaces/bountysubscription.py:26
+msgid "Bounty ID"
+msgstr ""
+
+#: d/interfaces/bounty.py:32
+#: d/interfaces/bugattachment.py:31
+#: d/interfaces/bugtracker.py:23
+#: d/interfaces/cal.py:102
+#: d/interfaces/cal.py:121
+#: d/interfaces/cal.py:137
+#: d/interfaces/cal.py:153
+#: d/interfaces/distribution.py:26
+#: d/interfaces/distrorelease.py:26
+#: d/interfaces/karma.py:83
+#: d/interfaces/milestone.py:26
+#: d/interfaces/mirror.py:28
+#: d/interfaces/person.py:62
+#: d/interfaces/product.py:51
+#: d/interfaces/productseries.py:31
+#: d/interfaces/project.py:38
+#: d/interfaces/sourcepackageindistro.py:21
+#: d/interfaces/translationgroup.py:30
+msgid "Name"
+msgstr ""
+
+#: d/interfaces/bounty.py:33
+msgid ""
+"Keep this name very short, unique, and\n"
+"            descriptive, because it will be used in URLs. Examples:\n"
+"            mozilla-type-ahead-find, postgres-smart-serial."
+msgstr ""
+
+#: d/interfaces/bounty.py:39
+#: d/interfaces/bug.py:49
+#: d/interfaces/bugextref.py:40
+#: d/interfaces/bugtracker.py:24
+#: d/interfaces/cveref.py:44
+#: d/interfaces/distribution.py:33
+#: d/interfaces/distrorelease.py:35
+#: d/interfaces/milestone.py:27
+#: d/interfaces/product.py:65
+#: d/interfaces/productrelease.py:32
+#: d/interfaces/project.py:56
+#: d/interfaces/sourcepackageindistro.py:24
+#: d/interfaces/translationgroup.py:37
+msgid "Title"
+msgstr ""
+
+#: d/interfaces/bounty.py:40
+msgid ""
+"Describe the task as clearly as\n"
+"            possible in up to 70 characters. This title is\n"
+"            displayed in every bounty list or report."
+msgstr ""
+
+#: d/interfaces/bounty.py:45
+#: d/interfaces/bug.py:52
+#: d/interfaces/bugtracker.py:25
+#: d/interfaces/distribution.py:36
+#: d/interfaces/distrorelease.py:38
+#: d/interfaces/product.py:69
+#: d/interfaces/productrelease.py:33
+#: d/interfaces/productseries.py:48
+#: d/interfaces/translationgroup.py:43
+msgid "Summary"
+msgstr ""
+
+#: d/interfaces/bounty.py:46
+msgid ""
+"A single-paragraph description of the\n"
+"            bounty. This will also be displayed in most\n"
+"            bounty listings."
+msgstr ""
+
+#: d/interfaces/bounty.py:51
+#: d/interfaces/bug.py:57
+#: d/interfaces/bug.py:220
+#: d/interfaces/bugattachment.py:34
+#: d/interfaces/country.py:39
+#: d/interfaces/distribution.py:42
+#: d/interfaces/distrorelease.py:42
+#: d/interfaces/mirror.py:31
+#: d/interfaces/potemplate.py:41
+#: d/interfaces/product.py:73
+#: d/interfaces/productrelease.py:34
+#: d/interfaces/project.py:68
+#: d/interfaces/sourcepackageindistro.py:25
+#: d/interfaces/sourcepackageindistro.py:26
+msgid "Description"
+msgstr ""
+
+#: d/interfaces/bounty.py:52
+msgid ""
+"A detailed description. Include exact\n"
+"            results that will be acceptable to the bounty owner and\n"
+"            reviewer."
+msgstr ""
+
+#: d/interfaces/bounty.py:57
+msgid "Estimated value (US dollars)"
+msgstr ""
+
+#: d/interfaces/bounty.py:58
+msgid ""
+"In some cases the\n"
+"            bounty may have been offered in a variety of\n"
+"            currencies, so this USD value is an estimate based\n"
+"            on recent currency rates."
+msgstr ""
+
+#: d/interfaces/bounty.py:64
+msgid "Difficulty"
+msgstr ""
+
+#: d/interfaces/bounty.py:65
+msgid ""
+"From 1 (easiest) to 100\n"
+"            (most difficult). An example of\n"
+"            an extremely difficult bounty would be something that requires\n"
+"            extensive and rare knowledge, such as a kernel memory management\n"
+"            subsystem."
+msgstr ""
+
+#: d/interfaces/bounty.py:72
+msgid "Duration"
+msgstr ""
+
+#: d/interfaces/bounty.py:73
+msgid ""
+"The expected time required to\n"
+"            complete this bounty work, given the necessary skills."
+msgstr ""
+
+#: d/interfaces/bounty.py:77
+#: d/interfaces/person.py:566
+msgid "Reviewer"
+msgstr ""
+
+#: d/interfaces/bounty.py:79
+#: d/interfaces/bug.py:41
+#: d/interfaces/bugextref.py:45
+#: d/interfaces/bugwatch.py:34
+#: d/interfaces/codeofconduct.py:59
+#: d/interfaces/cveref.py:49
+#: d/interfaces/infestation.py:36
+#: d/interfaces/infestation.py:59
+#: d/interfaces/karma.py:41
+#: d/interfaces/manifest.py:25
+#: d/interfaces/message.py:37
+#: d/interfaces/packaging.py:45
+#: d/interfaces/person.py:95
+#: d/interfaces/product.py:78
+#: d/interfaces/productrelease.py:36
+#: d/interfaces/productseries.py:55
+#: d/interfaces/project.py:74
+#: d/interfaces/translationgroup.py:49
+#: d/interfaces/translator.py:23
+msgid "Date Created"
+msgstr ""
+
+#: d/interfaces/bountysubscription.py:23
+#: d/interfaces/bugsubscription.py:23
+msgid "Person ID"
+msgstr ""
+
+#: d/interfaces/bountysubscription.py:28
+#: d/interfaces/bugsubscription.py:28
+msgid "Subscription"
+msgstr ""
+
+#: d/interfaces/bountysubscription.py:29
+msgid ""
+"Your subscription to a bounty can be one of\n"
+"            \"watch\", \"cc\" or \"none\". If you \"watch\" a bounty then it will\n"
+"            show up on your reports, but you won't normally receive bounty\n"
+"            mail. If you \"cc\" yourself on a bounty you will receive a copy of\n"
+"            all bounty update notifications by email.\n"
+"            "
+msgstr ""
+
+#: d/interfaces/bug.py:199
+#: d/interfaces/bugtask.py:39
+msgid "Bug #"
+msgstr ""
+
+#: d/interfaces/bug.py:201
+#: d/interfaces/bugtask.py:40
+#: d/interfaces/bugtask.py:249
+#: d/interfaces/milestone.py:23
+#: d/interfaces/productseries.py:29
+msgid "Product"
+msgstr ""
+
+#: d/interfaces/bug.py:202
+msgid ""
+"The thing you found this bug in,\n"
+"            which was installed by something other than apt-get, rpm,\n"
+"            emerge or similar"
+msgstr ""
+
+#: d/interfaces/bug.py:207
+#: d/interfaces/bugtask.py:42
+#: d/interfaces/bugtask.py:255
+#: d/interfaces/bugtask.py:267
+#: d/interfaces/maintainership.py:29
+#: d/interfaces/packaging.py:36
+#: d/interfaces/potemplate.py:84
+msgid "Source Package Name"
+msgstr ""
+
+#: d/interfaces/bug.py:208
+msgid ""
+"The distribution package you found\n"
+"            this bug in, which was installed via apt-get, rpm,\n"
+"            emerge or similar."
+msgstr ""
+
+#: d/interfaces/bug.py:213
+msgid "Linux Distribution"
+msgstr ""
+
+#: d/interfaces/bug.py:214
+msgid "Ubuntu, Debian, Gentoo, etc."
+msgstr ""
+
+#: d/interfaces/bug.py:217
+#: d/interfaces/potemplate.py:95
+msgid "Binary Package"
+msgstr ""
+
+#: d/interfaces/bug.py:221
+msgid ""
+"A detailed description of the problem you are\n"
+"            seeing."
+msgstr ""
+
+#: d/interfaces/bug.py:225
+msgid "Check this box if, for example, this bug exposes a security vulnerability. If you select this option, you must manually CC the people to whom this bug should be visible."
+msgstr ""
+
+#: d/interfaces/bug.py:39
+#: d/interfaces/bugactivity.py:21
+#: d/interfaces/bugextref.py:32
+#: d/interfaces/bugmessage.py:18
+#: d/interfaces/bugsubscription.py:26
+#: d/interfaces/bugwatch.py:22
+#: d/interfaces/cveref.py:30
+#: d/interfaces/infestation.py:30
+#: d/interfaces/infestation.py:53
+msgid "Bug ID"
+msgstr ""
+
+#: d/interfaces/bug.py:43
+#: d/interfaces/irc.py:23
+msgid "Nickname"
+msgstr ""
+
+#: d/interfaces/bug.py:44
+msgid ""
+"A short and unique name for this bug.\n"
+"        Add a nickname only if you often need to retype the URL\n"
+"        but have trouble remembering the bug number."
+msgstr ""
+
+#: d/interfaces/bug.py:50
+msgid "A one-line summary of the problem."
+msgstr ""
+
+#: d/interfaces/bug.py:53
+msgid ""
+"A single paragraph\n"
+"        description that should capture the essence of the bug, where it\n"
+"        has been observed, and what triggers it."
+msgstr ""
+
+#: d/interfaces/bug.py:58
+msgid ""
+"A detailed description of the problem,\n"
+"        including the steps required to reproduce it."
+msgstr ""
+
+#: d/interfaces/bug.py:63
+msgid "Duplicate Of"
+msgstr ""
+
+#: d/interfaces/bug.py:65
+msgid "Community Score"
+msgstr ""
+
+#: d/interfaces/bug.py:68
+msgid "Community Timestamp"
+msgstr ""
+
+#: d/interfaces/bug.py:70
+msgid "Hits"
+msgstr ""
+
+#: d/interfaces/bug.py:72
+msgid "Hits Timestamp"
+msgstr ""
+
+#: d/interfaces/bug.py:74
+msgid "Activity Score"
+msgstr ""
+
+#: d/interfaces/bug.py:77
+msgid "Activity Timestamp"
+msgstr ""
+
+#: d/interfaces/bug.py:79
+#: d/interfaces/bug.py:224
+msgid "Should this bug be kept confidential?"
+msgstr ""
+
+#: d/interfaces/bug.py:80
+msgid "Check this box if, for example, this bug exposes a security vulnerability. If selected, this bug will be visible only to its subscribers."
+msgstr ""
+
+#: d/interfaces/bugactivity.py:22
+msgid "Date Changed"
+msgstr ""
+
+#: d/interfaces/bugactivity.py:23
+#: d/interfaces/karma.py:33
+#: d/interfaces/karma.py:130
+#: d/interfaces/message.py:43
+#: d/interfaces/person.py:521
+msgid "Person"
+msgstr ""
+
+#: d/interfaces/bugactivity.py:24
+msgid "What Changed"
+msgstr ""
+
+#: d/interfaces/bugactivity.py:25
+msgid "Old Value"
+msgstr ""
+
+#: d/interfaces/bugactivity.py:26
+msgid "New Value"
+msgstr ""
+
+#: d/interfaces/bugactivity.py:27
+#: d/interfaces/message.py:108
+msgid "Message"
+msgstr ""
+
+#: d/interfaces/bugattachment.py:27
+#: d/interfaces/bugmessage.py:19
+msgid "Message ID"
+msgstr ""
+
+#: d/interfaces/bugattachment.py:37
+msgid "Library File"
+msgstr ""
+
+#: d/interfaces/bugattachment.py:40
+msgid "Date deactivated"
+msgstr ""
+
+#: d/interfaces/bugattachment.py:46
+#: d/interfaces/bugextref.py:55
+#: d/interfaces/bugwatch.py:59
+#: d/interfaces/cveref.py:61
+#: d/interfaces/infestation.py:74
+#: d/interfaces/infestation.py:87
+msgid "Bug id"
+msgstr ""
+
+#: d/interfaces/bugextref.py:35
+msgid "URL"
+msgstr ""
+
+#: d/interfaces/bugextref.py:36
+msgid ""
+"The url of the content that is related to\n"
+"            this bug."
+msgstr ""
+
+#: d/interfaces/bugextref.py:41
+msgid ""
+"A brief description of the content that is\n"
+"            being linked to."
+msgstr ""
+
+#: d/interfaces/bugsubscription.py:29
+msgid ""
+"Your subscription to a bug can be one of\n"
+"            \"watch\", \"cc\" or \"ignore\". If you \"watch\" a bug then it will\n"
+"            show up on your reports, but you won't normally receive bug\n"
+"            mail. If you \"cc\" yourself on a bug you will receive a copy of\n"
+"            all bug update notifications by email. If you \"ignore\" a bug\n"
+"            then you will not receive notifications from that bug even if\n"
+"            they are directly addressed to you as a maintainer or assignee."
+msgstr ""
+
+#: d/interfaces/bugtask.py:111
+msgid "Bug ID or Keywords"
+msgstr ""
+
+#: d/interfaces/bugtask.py:113
+msgid "Bug Status"
+msgstr ""
+
+#: d/interfaces/bugtask.py:123
+msgid "show only unassigned bugs"
+msgstr ""
+
+#: d/interfaces/bugtask.py:125
+msgid "Status notes"
+msgstr ""
+
+#: d/interfaces/bugtask.py:38
+msgid "Bug Task #"
+msgstr ""
+
+#: d/interfaces/bugtask.py:391
+msgid "The user for whom this report will be generated"
+msgstr ""
+
+#: d/interfaces/bugtask.py:393
+msgid "The minimum severity of tasks to display in this report."
+msgstr ""
+
+#: d/interfaces/bugtask.py:396
+msgid "The minimum priority of bug fixing tasks to display in this report."
+msgstr ""
+
+#: d/interfaces/bugtask.py:400
+msgid "Whether or not to show closed bugs on this report."
+msgstr ""
+
+#: d/interfaces/bugtask.py:45
+#: d/interfaces/bugtask.py:261
+#: d/interfaces/distrorelease.py:49
+#: d/interfaces/maintainership.py:24
+#: d/interfaces/message.py:49
+#: d/interfaces/publishing.py:112
+#: d/interfaces/publishing.py:153
+#: d/interfaces/sourcepackageindistro.py:28
+msgid "Distribution"
+msgstr ""
+
+#: d/interfaces/bugtask.py:47
+#: d/interfaces/bugtask.py:273
+#: d/interfaces/packaging.py:39
+#: d/interfaces/potemplate.py:79
+msgid "Distribution Release"
+msgstr ""
+
+#: d/interfaces/bugtask.py:50
+#: d/interfaces/bugtask.py:131
+#: d/interfaces/bugtask.py:133
+msgid "Target"
+msgstr ""
+
+#: d/interfaces/bugtask.py:52
+msgid "Status"
+msgstr ""
+
+#: d/interfaces/bugtask.py:55
+msgid "Status notes (optional)"
+msgstr ""
+
+#: d/interfaces/bugtask.py:57
+#: d/interfaces/publishing.py:236
+msgid "Priority"
+msgstr ""
+
+#: d/interfaces/bugtask.py:60
+#: d/interfaces/bugtask.py:118
+msgid "Severity"
+msgstr ""
+
+#: d/interfaces/bugtask.py:63
+#: d/interfaces/bugtask.py:122
+msgid "Assignee"
+msgstr ""
+
+#: d/interfaces/bugtask.py:65
+#: d/interfaces/bugtask.py:258
+#: d/interfaces/bugtask.py:270
+msgid "Binary PackageName"
+msgstr ""
+
+#: d/interfaces/bugtask.py:67
+msgid "Remote Bug Details"
+msgstr ""
+
+#: d/interfaces/bugtask.py:68
+msgid "Select the bug watch that represents this task in the relevant bug tracker. If none of the bug watches represents this particular bug task, leave it as (None). Linking the remote bug watch with the task in this way means that a change in the remote bug status will change the status of this bug task in Malone."
+msgstr ""
+
+#: d/interfaces/bugtask.py:78
+#: d/interfaces/bugtask.py:80
+#: d/interfaces/maintainership.py:33
+#: d/interfaces/sourcepackageindistro.py:23
+msgid "Maintainer"
+msgstr ""
+
+#: d/interfaces/bugtracker.py:22
+msgid "Bug Tracker Type"
+msgstr ""
+
+#: d/interfaces/bugtracker.py:26
+#: d/interfaces/mirror.py:23
+msgid "Base URL"
+msgstr ""
+
+#: d/interfaces/bugtracker.py:28
+msgid "Contact details"
+msgstr ""
+
+#: d/interfaces/bugtracker.py:29
+msgid "The remote watches on this bug tracker."
+msgstr ""
+
+#: d/interfaces/bugwatch.py:23
+msgid "Bug System"
+msgstr ""
+
+#: d/interfaces/bugwatch.py:24
+msgid "The bug tracker in which the remote bug is found. Choose from the list. You can register additional bug trackers from the Malone home page."
+msgstr ""
+
+#: d/interfaces/bugwatch.py:27
+msgid "Remote Bug"
+msgstr ""
+
+#: d/interfaces/bugwatch.py:28
+msgid "The bug number of this bug in the remote bug system. Please take care to enter it exactly."
+msgstr ""
+
+#: d/interfaces/bugwatch.py:30
+msgid "Remote Status"
+msgstr ""
+
+#: d/interfaces/bugwatch.py:31
+msgid "Last Changed"
+msgstr ""
+
+#: d/interfaces/bugwatch.py:32
+msgid "Last Checked"
+msgstr ""
+
+#: d/interfaces/cal.py:100
+#: d/interfaces/cal.py:119
+#: d/interfaces/cal.py:135
+#: d/interfaces/cal.py:151
+msgid "The calendar"
+msgstr ""
+
+#: d/interfaces/cal.py:103
+msgid "A string describing the day"
+msgstr ""
+
+#: d/interfaces/cal.py:105
+#: d/interfaces/cal.py:124
+#: d/interfaces/cal.py:140
+#: d/interfaces/cal.py:156
+msgid "Year"
+msgstr ""
+
+#: d/interfaces/cal.py:106
+#: d/interfaces/cal.py:125
+#: d/interfaces/cal.py:141
+#: d/interfaces/cal.py:157
+msgid "The year to display."
+msgstr ""
+
+#: d/interfaces/cal.py:108
+#: d/interfaces/cal.py:143
+msgid "Month"
+msgstr ""
+
+#: d/interfaces/cal.py:109
+#: d/interfaces/cal.py:144
+msgid "The month number to display."
+msgstr ""
+
+#: d/interfaces/cal.py:111
+msgid "Day"
+msgstr ""
+
+#: d/interfaces/cal.py:112
+msgid "The day number to display."
+msgstr ""
+
+#: d/interfaces/cal.py:122
+msgid "A string describing the week"
+msgstr ""
+
+#: d/interfaces/cal.py:127
+msgid "Week"
+msgstr ""
+
+#: d/interfaces/cal.py:128
+msgid "The ISO week number to display."
+msgstr ""
+
+#: d/interfaces/cal.py:138
+msgid "A string describing the month"
+msgstr ""
+
+#: d/interfaces/cal.py:154
+msgid "A string describing the year"
+msgstr ""
+
+#: d/interfaces/cal.py:38
+msgid "Calendar title"
+msgstr ""
+
+#: d/interfaces/cal.py:39
+msgid ""
+"The title of the calendar is a short\n"
+"        description of the calendar that can be used to\n"
+"        identify a specific calendar."
+msgstr ""
+
+#: d/interfaces/cal.py:44
+msgid "Revision"
+msgstr ""
+
+#: d/interfaces/cal.py:45
+msgid ""
+"The calendar revision is incremented\n"
+"        each time the calendar is changed."
+msgstr ""
+
+#: d/interfaces/cal.py:48
+msgid "The parent object that owns the calendar."
+msgstr ""
+
+#: d/interfaces/cal.py:57
+#: d/interfaces/cal.py:98
+#: d/interfaces/cal.py:117
+#: d/interfaces/cal.py:133
+#: d/interfaces/cal.py:149
+msgid "Calendar"
+msgstr ""
+
+#: d/interfaces/cal.py:59
+msgid "The calendar for this object."
+msgstr ""
+
+#: d/interfaces/cal.py:74
+msgid "The owner of the subscriptions"
+msgstr ""
+
+#: d/interfaces/codeofconduct.py:36
+msgid "Signed CoC ID"
+msgstr ""
+
+#: d/interfaces/codeofconduct.py:43
+msgid "The owner of the signature. This must be a valid Person."
+msgstr ""
+
+#: d/interfaces/codeofconduct.py:46
+msgid "Signed Code"
+msgstr ""
+
+#: d/interfaces/codeofconduct.py:47
+msgid ""
+"GPG Signed Code of Conduct.\n"
+"                      It should contain a clearsigned copy of current\n"
+"                      Code of Conduct version (use: `gpg --clearsign`)."
+msgstr ""
+
+#: d/interfaces/codeofconduct.py:52
+msgid "Signing GPG Key"
+msgstr ""
+
+#: d/interfaces/codeofconduct.py:53
+msgid ""
+"GPG key ID used to sign the document,\n"
+"                        it must be a valid inside Launchpad context."
+msgstr ""
+
+#: d/interfaces/codeofconduct.py:60
+msgid "Original Request Timestamp"
+msgstr ""
+
+#: d/interfaces/codeofconduct.py:63
+msgid "Recipient"
+msgstr ""
+
+#: d/interfaces/codeofconduct.py:64
+msgid "Person Authorizing."
+msgstr ""
+
+#: d/interfaces/codeofconduct.py:68
+msgid "Admin Comment"
+msgstr ""
+
+#: d/interfaces/codeofconduct.py:69
+msgid "Admin comment, to e.g. describe the reasons why this registration was approved or rejected."
+msgstr ""
+
+#: d/interfaces/codeofconduct.py:73
+#: d/interfaces/gpg.py:29
+#: d/interfaces/product.py:144
+#: d/interfaces/project.py:128
+msgid "Active"
+msgstr ""
+
+#: d/interfaces/codeofconduct.py:74
+msgid "Whether or not this Signed CoCis considered active."
+msgstr ""
+
+#: d/interfaces/country.py:25
+msgid "Country ID"
+msgstr ""
+
+#: d/interfaces/country.py:27
+msgid "iso3166code2"
+msgstr ""
+
+#: d/interfaces/country.py:29
+msgid "iso3166code3"
+msgstr ""
+
+#: d/interfaces/country.py:32
+msgid "Country name"
+msgstr ""
+
+#: d/interfaces/country.py:36
+msgid "Country title"
+msgstr ""
+
+#: d/interfaces/cveref.py:32
+msgid "CVE Reference"
+msgstr ""
+
+#: d/interfaces/cveref.py:33
+msgid "The CVE reference number related to this bug. It should take the form of XXXX-XXXX, all digits. Below, you should indicate whether it is a CANdidate or an actual CVE number."
+msgstr ""
+
+#: d/interfaces/cveref.py:38
+msgid "Current CVE State"
+msgstr ""
+
+#: d/interfaces/cveref.py:39
+msgid "Whether or not the vulnerability has been reviewed and assigned a full CVE number, or is still considered a CANdidated."
+msgstr ""
+
+#: d/interfaces/cveref.py:45
+msgid "A brief summary of the CVE issue. This will be displayed on the bug page."
+msgstr ""
+
+#: d/interfaces/distribution.py:27
+msgid "The distro's name."
+msgstr ""
+
+#: d/interfaces/distribution.py:29
+#: d/interfaces/person.py:70
+#: d/interfaces/product.py:60
+#: d/interfaces/productseries.py:40
+#: d/interfaces/project.py:48
+msgid "Display Name"
+msgstr ""
+
+#: d/interfaces/distribution.py:30
+msgid "The displayable name of the distribution."
+msgstr ""
+
+#: d/interfaces/distribution.py:34
+msgid "The distro's title."
+msgstr ""
+
+#: d/interfaces/distribution.py:37
+msgid "The distribution summary. A short paragraphdescribing the goals and highlights of the distro."
+msgstr ""
+
+#: d/interfaces/distribution.py:43
+msgid "The distro's description."
+msgstr ""
+
+#: d/interfaces/distribution.py:46
+msgid "Domain name"
+msgstr ""
+
+#: d/interfaces/distribution.py:47
+msgid "The distro's domain name."
+msgstr ""
+
+#: d/interfaces/distribution.py:49
+#: d/interfaces/product.py:119
+#: d/interfaces/project.py:107
+msgid "Translation group"
+msgstr ""
+
+#: d/interfaces/distribution.py:50
+#: d/interfaces/product.py:120
+#: d/interfaces/project.py:108
+msgid "The translation group for this product. This group is made up of a set of translators for all the languages approved by the group manager. These translators then have permission to edit the groups translation files, based on the permission system selected below."
+msgstr ""
+
+#: d/interfaces/distribution.py:58
+#: d/interfaces/product.py:129
+#: d/interfaces/project.py:117
+msgid "Translation Permission System"
+msgstr ""
+
+#: d/interfaces/distribution.py:59
+#: d/interfaces/product.py:130
+#: d/interfaces/project.py:118
+msgid "The permissions this group requires for translators. If 'Open', then anybody can edit translations in any language. If 'Reviewed', then anybody can make suggestions but only the designated translators can edit or confirm translations. And if 'Closed' then only the designated translation group will be able to touch the translation files at all."
+msgstr ""
+
+#: d/interfaces/distribution.py:70
+msgid "The distro's owner."
+msgstr ""
+
+#: d/interfaces/distribution.py:72
+msgid "Members"
+msgstr ""
+
+#: d/interfaces/distribution.py:73
+msgid "The distro's members team."
+msgstr ""
+
+#: d/interfaces/distribution.py:76
+msgid "Lucille Config"
+msgstr ""
+
+#: d/interfaces/distribution.py:77
+msgid "The Lucille Config."
+msgstr ""
+
+#: d/interfaces/distribution.py:80
+msgid "The bounties that are related to this distro."
+msgstr ""
+
+#: d/interfaces/distrorelease.py:27
+msgid "The name of this distribution release."
+msgstr ""
+
+#: d/interfaces/distrorelease.py:29
+msgid "Display name"
+msgstr ""
+
+#: d/interfaces/distrorelease.py:30
+msgid "The release's displayname."
+msgstr ""
+
+#: d/interfaces/distrorelease.py:32
+msgid "Release name"
+msgstr ""
+
+#: d/interfaces/distrorelease.py:33
+msgid "The release's full name, e.g. Ubuntu Warty"
+msgstr ""
+
+#: d/interfaces/distrorelease.py:36
+msgid ""
+"The title of this release. It should be distinctive \n"
+"                      and designed to look good at the top of a page."
+msgstr ""
+
+#: d/interfaces/distrorelease.py:39
+msgid "A brief summary of the highlights of this release. It should be no longer than a single paragraph, up to 200 words."
+msgstr ""
+
+#: d/interfaces/distrorelease.py:43
+msgid "A detailed description of this release, with information on the architectures covered, the availability of security updates and any other relevant information."
+msgstr ""
+
+#: d/interfaces/distrorelease.py:47
+#: d/interfaces/productrelease.py:27
+msgid "Version"
+msgstr ""
+
+#: d/interfaces/distrorelease.py:48
+msgid "The version string for this release."
+msgstr ""
+
+#: d/interfaces/distrorelease.py:50
+msgid "The distribution for which this is a release."
+msgstr ""
+
+#: d/interfaces/distrorelease.py:53
+msgid "Components"
+msgstr ""
+
+#: d/interfaces/distrorelease.py:54
+msgid "The release components."
+msgstr ""
+
+#: d/interfaces/distrorelease.py:57
+msgid "Section"
+msgstr ""
+
+#: d/interfaces/distrorelease.py:58
+msgid "The release sections."
+msgstr ""
+
+#: d/interfaces/distrorelease.py:65
+msgid "Parent Release"
+msgstr ""
+
+#: d/interfaces/distrorelease.py:66
+msgid "The Parente Distribution Release."
+msgstr ""
+
+#: d/interfaces/files.py:25
+#: d/interfaces/publishing.py:31
+#: d/interfaces/publishing.py:326
+msgid "The binary package being published"
+msgstr ""
+
+#: d/interfaces/files.py:30
+msgid "The library file alias for this .deb"
+msgstr ""
+
+#: d/interfaces/files.py:35
+#: d/interfaces/files.py:55
+msgid "The type of this file"
+msgstr ""
+
+#: d/interfaces/files.py:45
+msgid "The sourcepackagerelease being published"
+msgstr ""
+
+#: d/interfaces/files.py:50
+msgid "The library file alias for this file"
+msgstr ""
+
+#: d/interfaces/gpg.py:20
+msgid "Database id"
+msgstr ""
+
+#: d/interfaces/gpg.py:22
+msgid "Keysize"
+msgstr ""
+
+#: d/interfaces/gpg.py:23
+msgid "Algorithm"
+msgstr ""
+
+#: d/interfaces/gpg.py:25
+msgid "GPG KeyID"
+msgstr ""
+
+#: d/interfaces/gpg.py:27
+msgid "User Fingerprint"
+msgstr ""
+
+#: d/interfaces/infestation.py:28
+msgid "Bug Product Infestation ID"
+msgstr ""
+
+#: d/interfaces/infestation.py:31
+#: d/interfaces/infestation.py:56
+msgid "Explicitly Created by a Human"
+msgstr ""
+
+#: d/interfaces/infestation.py:32
+msgid "Product Release"
+msgstr ""
+
+#: d/interfaces/infestation.py:34
+#: d/interfaces/infestation.py:57
+msgid "Infestation Status"
+msgstr ""
+
+#: d/interfaces/infestation.py:37
+#: d/interfaces/infestation.py:60
+#: d/interfaces/packaging.py:46
+msgid "Creator"
+msgstr ""
+
+#: d/interfaces/infestation.py:38
+#: d/interfaces/infestation.py:61
+msgid "Date Verified"
+msgstr ""
+
+#: d/interfaces/infestation.py:39
+#: d/interfaces/infestation.py:62
+msgid "Verified By"
+msgstr ""
+
+#: d/interfaces/infestation.py:40
+#: d/interfaces/infestation.py:63
+msgid "Last Modified"
+msgstr ""
+
+#: d/interfaces/infestation.py:41
+#: d/interfaces/infestation.py:64
+msgid "Last Modified By"
+msgstr ""
+
+#: d/interfaces/infestation.py:52
+msgid "Bug Package Infestation ID"
+msgstr ""
+
+#: d/interfaces/infestation.py:54
+msgid "Package Release"
+msgstr ""
+
+#: d/interfaces/irc.py:22
+msgid "IRC network"
+msgstr ""
+
+#: d/interfaces/jabber.py:22
+msgid "Jabber user ID"
+msgstr ""
+
+#: d/interfaces/karma.py:131
+msgid "The person which performed the actions of this category, and thus got the karma."
+msgstr ""
+
+#: d/interfaces/karma.py:137
+msgid "The category of the actions."
+msgstr ""
+
+#: d/interfaces/karma.py:140
+msgid "Karma"
+msgstr ""
+
+#: d/interfaces/karma.py:141
+msgid "The karma points of all actions of this category performed by this person."
+msgstr ""
+
+#: d/interfaces/karma.py:34
+msgid "The user which this karma is assigned to."
+msgstr ""
+
+#: d/interfaces/karma.py:37
+msgid "Action"
+msgstr ""
+
+#: d/interfaces/karma.py:38
+msgid "The action which gives the karma to the user."
+msgstr ""
+
+#: d/interfaces/karma.py:42
+msgid "The date this karma was assigned to the user."
+msgstr ""
+
+#: d/interfaces/karma.py:84
+msgid "The name of this KarmaAction. A dbschema value."
+msgstr ""
+
+#: d/interfaces/karma.py:87
+#: d/interfaces/karma.py:135
+msgid "Category"
+msgstr ""
+
+#: d/interfaces/karma.py:89
+msgid "The category of this action."
+msgstr ""
+
+#: d/interfaces/karma.py:92
+msgid "Points"
+msgstr ""
+
+#: d/interfaces/karma.py:93
+msgid "The number of points we give to a user which performs this action."
+msgstr ""
+
+#: d/interfaces/launchpadstatistic.py:22
+msgid "Field Name"
+msgstr ""
+
+#: d/interfaces/launchpadstatistic.py:23
+msgid "Value"
+msgstr ""
+
+#: d/interfaces/librarian.py:21
+msgid "Library File Alias ID"
+msgstr ""
+
+#: d/interfaces/librarian.py:25
+msgid "Filename"
+msgstr ""
+
+#: d/interfaces/librarian.py:28
+msgid "MIME type"
+msgstr ""
+
+#: d/interfaces/librarian.py:31
+msgid "The URL to this file"
+msgstr ""
+
+#: d/interfaces/librarian.py:52
+msgid "Library File Content ID"
+msgstr ""
+
+#: d/interfaces/librarian.py:55
+msgid "Date created"
+msgstr ""
+
+#: d/interfaces/librarian.py:58
+msgid "Date mirrored"
+msgstr ""
+
+#: d/interfaces/librarian.py:61
+msgid "File size"
+msgstr ""
+
+#: d/interfaces/librarian.py:64
+msgid "SHA-1 hash"
+msgstr ""
+
+#: d/interfaces/logintoken.py:28
+msgid "The email address that this request was sent to."
+msgstr ""
+
+#: d/interfaces/logintoken.py:32
+msgid "The Person that made this request."
+msgstr ""
+
+#: d/interfaces/logintoken.py:35
+msgid "The email address that was used to login when making this request."
+msgstr ""
+
+#: d/interfaces/logintoken.py:39
+msgid "The timestamp that this request was made."
+msgstr ""
+
+#: d/interfaces/logintoken.py:42
+msgid "The type of request, as per dbschema.TokenType."
+msgstr ""
+
+#: d/interfaces/logintoken.py:46
+msgid "The token (not the URL) emailed used to uniquely identify this request."
+msgstr ""
+
+#: d/interfaces/logintoken.py:50
+msgid "GPG Key fingerprint used to retrive key information when necessary."
+msgstr ""
+
+#: d/interfaces/mail.py:28
+msgid "Signed Content"
+msgstr ""
+
+#: d/interfaces/mail.py:29
+msgid "The text that was signed."
+msgstr ""
+
+#: d/interfaces/mail.py:31
+msgid "Signature"
+msgstr ""
+
+#: d/interfaces/mail.py:32
+msgid "The GPG signature used to sign the email"
+msgstr ""
+
+#: d/interfaces/maintainership.py:26
+msgid ""
+"The distribution in which this\n"
+"                     maintainership applies."
+msgstr ""
+
+#: d/interfaces/maintainership.py:30
+msgid ""
+"The name of the source package being maintained by\n"
+"        this maintainer."
+msgstr ""
+
+#: d/interfaces/maintainership.py:35
+msgid ""
+"The person who is the maintainer of this\n"
+"                   source package in this distribution."
+msgstr ""
+
+#: d/interfaces/manifest.py:23
+msgid "Manifest ID"
+msgstr ""
+
+#: d/interfaces/manifest.py:25
+msgid ""
+"The\n"
+"        date this manifest was created."
+msgstr ""
+
+#: d/interfaces/manifest.py:28
+msgid "Universally Unique ID"
+msgstr ""
+
+#: d/interfaces/manifest.py:28
+msgid ""
+"A UUID\n"
+"        that is guaranteed to identify this manifest uniquely."
+msgstr ""
+
+#: d/interfaces/manifest.py:32
+msgid ""
+"List of entries in this manifest, sorted in\n"
+"    sequence order."
+msgstr ""
+
+#: d/interfaces/message.py:109
+msgid "Sequence order"
+msgstr ""
+
+#: d/interfaces/message.py:110
+msgid "Text content"
+msgstr ""
+
+#: d/interfaces/message.py:111
+msgid "Binary content"
+msgstr ""
+
+#: d/interfaces/message.py:117
+msgid "Body"
+msgstr ""
+
+#: d/interfaces/message.py:40
+#: d/interfaces/message.py:116
+msgid "Subject"
+msgstr ""
+
+#: d/interfaces/message.py:46
+msgid "Parent"
+msgstr ""
+
+#: d/interfaces/message.py:52
+msgid "RFC822 Msg ID"
+msgstr ""
+
+#: d/interfaces/message.py:55
+msgid "Original unmodified email"
+msgstr ""
+
+#: d/interfaces/message.py:58
+msgid "Bug List"
+msgstr ""
+
+#: d/interfaces/message.py:59
+msgid "Message pieces"
+msgstr ""
+
+#: d/interfaces/message.py:60
+msgid "Full message contents as plain text"
+msgstr ""
+
+#: d/interfaces/message.py:61
+msgid "Candidate title for a followup message."
+msgstr ""
+
+#: d/interfaces/message.py:62
+msgid "The message title, usually just the subject."
+msgstr ""
+
+#: d/interfaces/milestone.py:21
+msgid "Id"
+msgstr ""
+
+#: d/interfaces/milestone.py:24
+msgid "The product to which this milestone is associated"
+msgstr ""
+
+#: d/interfaces/mirror.py:22
+msgid "The Mirror Owner."
+msgstr ""
+
+#: d/interfaces/mirror.py:24
+msgid "The mirror url base."
+msgstr ""
+
+#: d/interfaces/mirror.py:26
+#: d/interfaces/spokenin.py:25
+msgid "Country"
+msgstr ""
+
+#: d/interfaces/mirror.py:27
+msgid "Country where the mirror is located."
+msgstr ""
+
+#: d/interfaces/mirror.py:29
+msgid "Mirror valid name."
+msgstr ""
+
+#: d/interfaces/mirror.py:32
+msgid "A detailed description of this mirror."
+msgstr ""
+
+#: d/interfaces/mirror.py:34
+msgid "Freshness"
+msgstr ""
+
+#: d/interfaces/mirror.py:35
+msgid "LastCheckedDate"
+msgstr ""
+
+#: d/interfaces/mirror.py:36
+msgid "Approved"
+msgstr ""
+
+#: d/interfaces/mirrorcontent.py:18
+#: d/interfaces/mirrorsourcecontent.py:20
+msgid "Mirror"
+msgstr ""
+
+#: d/interfaces/mirrorcontent.py:19
+#: d/interfaces/mirrorsourcecontent.py:21
+msgid "The Mirror where this content is."
+msgstr ""
+
+#: d/interfaces/mirrorcontent.py:20
+msgid "Distroarchrelease"
+msgstr ""
+
+#: d/interfaces/mirrorcontent.py:21
+msgid "The content's Distro Arch Release"
+msgstr ""
+
+#: d/interfaces/mirrorcontent.py:22
+#: d/interfaces/mirrorsourcecontent.py:24
+msgid "Component"
+msgstr ""
+
+#: d/interfaces/mirrorcontent.py:23
+#: d/interfaces/mirrorsourcecontent.py:25
+msgid "The content's Component"
+msgstr ""
+
+#: d/interfaces/mirrorsourcecontent.py:22
+msgid "Distrorelease"
+msgstr ""
+
+#: d/interfaces/mirrorsourcecontent.py:23
+msgid "The content's Distro Release"
+msgstr ""
+
+#: d/interfaces/packaging.py:25
+msgid "Packaging ID"
+msgstr ""
+
+#: d/interfaces/packaging.py:27
+msgid "Product Series"
+msgstr ""
+
+#: d/interfaces/packaging.py:28
+msgid "The branch or \"product series\" that this is a packaging of. We expressly need to know the branch because you might have packages of two different branches of a product in the same release of a distribution, if for example you have packages of both GiMP 2.0 and GiMP 2.1 in the distro, it is important to make sure this link is to the correct branch."
+msgstr ""
+
+#: d/interfaces/packaging.py:42
+msgid "Packaging"
+msgstr ""
+
+#: d/interfaces/person.py:103
+msgid "List of SSH keys"
+msgstr ""
+
+#: d/interfaces/person.py:105
+msgid "Timezone Name"
+msgstr ""
+
+#: d/interfaces/person.py:153
+msgid "Team Owner"
+msgstr ""
+
+#: d/interfaces/person.py:155
+msgid "The Team Owner's ID or None"
+msgstr ""
+
+#: d/interfaces/person.py:157
+msgid "Team Description"
+msgstr ""
+
+#: d/interfaces/person.py:161
+msgid "Preferred Email Address"
+msgstr ""
+
+#: d/interfaces/person.py:161
+msgid "The preferred email address for this person. The one we'll use to communicate with them."
+msgstr ""
+
+#: d/interfaces/person.py:165
+msgid "SHA-1 Hash of Preferred Email"
+msgstr ""
+
+#: d/interfaces/person.py:166
+msgid "The SHA-1 hash of the preferred email address as a hexadecimal string. This is used as a key by FOAF RDF spec"
+msgstr ""
+
+#: d/interfaces/person.py:171
+msgid "Number of days a subscription lasts"
+msgstr ""
+
+#: d/interfaces/person.py:172
+msgid "The number of days a new subscription lasts before expiring. You can customize the length of an individual subscription when approving it. A value of 0 means subscriptions never expire."
+msgstr ""
+
+#: d/interfaces/person.py:180
+msgid "Number of days a renewed subscription lasts"
+msgstr ""
+
+#: d/interfaces/person.py:182
+msgid "The number of days a subscription lasts after being renewed. You can customize the lengths of individual renewals. A value of 0 means renewals last as long as new memberships."
+msgstr ""
+
+#: d/interfaces/person.py:198
+msgid "Subscription Policy"
+msgstr ""
+
+#: d/interfaces/person.py:201
+msgid "\"Moderated\" means all subscriptions must be approved. \"Open\" means any user can join without approval. \"Restricted\" means new members can be added only by a team administrator."
+msgstr ""
+
+#: d/interfaces/person.py:209
+msgid "Merged Into"
+msgstr ""
+
+#: d/interfaces/person.py:210
+msgid "When a Person is merged into another Person, this attribute is set on the Person referencing the destination Person. If this is set to None, then this Person has not been merged into another and is still valid"
+msgstr ""
+
+#: d/interfaces/person.py:38
+msgid "This name is already in use"
+msgstr ""
+
+#: d/interfaces/person.py:519
+msgid "Email Address"
+msgstr ""
+
+#: d/interfaces/person.py:520
+msgid "Email Address Status"
+msgstr ""
+
+#: d/interfaces/person.py:564
+msgid "Team"
+msgstr ""
+
+#: d/interfaces/person.py:565
+msgid "Member"
+msgstr ""
+
+#: d/interfaces/person.py:568
+msgid "Date Joined"
+msgstr ""
+
+#: d/interfaces/person.py:569
+msgid "Date Expires"
+msgstr ""
+
+#: d/interfaces/person.py:570
+msgid "Reviewer Comment"
+msgstr ""
+
+#: d/interfaces/person.py:572
+msgid "If Membership was approved or not"
+msgstr ""
+
+#: d/interfaces/person.py:632
+msgid "New member"
+msgstr ""
+
+#: d/interfaces/person.py:634
+msgid "The user or team which is going to be added as the new member of this team."
+msgstr ""
+
+#: d/interfaces/person.py:637
+msgid "The team for which this subset is for."
+msgstr ""
+
+#: d/interfaces/person.py:64
+#: d/interfaces/poll.py:28
+msgid "A short unique name, beginning with a lower-case letter or number, and containing only letters, numbers, dots, hyphens, or plus signs."
+msgstr ""
+
+#: d/interfaces/person.py:677
+msgid "The team"
+msgstr ""
+
+#: d/interfaces/person.py:678
+msgid "The member"
+msgstr ""
+
+#: d/interfaces/person.py:684
+msgid "Duplicated Account"
+msgstr ""
+
+#: d/interfaces/person.py:686
+msgid "The duplicated account you found in Launchpad"
+msgstr ""
+
+#: d/interfaces/person.py:71
+msgid "Your name as you would like it displayed throughout Launchpad. Most people use their full name here."
+msgstr ""
+
+#: d/interfaces/person.py:710
+msgid "Contact Email Address"
+msgstr ""
+
+#: d/interfaces/person.py:711
+msgid "This is the email address we'll send all notifications to this team. If no contact address is chosen, notifications directed to this team will be sent to all team members. After finishing the team creation, a new message will be sent to this address with instructions on how to finish its registration."
+msgstr ""
+
+#: d/interfaces/person.py:76
+msgid "Given Name"
+msgstr ""
+
+#: d/interfaces/person.py:77
+msgid "Your first name or given name, such as Mark, or Richard, or Joanna."
+msgstr ""
+
+#: d/interfaces/person.py:81
+msgid "Family Name"
+msgstr ""
+
+#: d/interfaces/person.py:82
+msgid "Your family name, the name you acquire from your parents."
+msgstr ""
+
+#: d/interfaces/person.py:86
+msgid "Password"
+msgstr ""
+
+#: d/interfaces/person.py:87
+msgid "The password you will use to access Launchpad services. "
+msgstr ""
+
+#: d/interfaces/person.py:90
+msgid "List of languages known by this person"
+msgstr ""
+
+#: d/interfaces/poll.py:124
+msgid "The team of these polls."
+msgstr ""
+
+#: d/interfaces/poll.py:172
+msgid "The Poll to which this option refers to."
+msgstr ""
+
+#: d/interfaces/poll.py:176
+msgid "The name of this option."
+msgstr ""
+
+#: d/interfaces/poll.py:179
+msgid "The short name of this option. If not specified, this will be the same as the name"
+msgstr ""
+
+#: d/interfaces/poll.py:184
+msgid "Is this option active?"
+msgstr ""
+
+#: d/interfaces/poll.py:20
+#: d/interfaces/poll.py:169
+#: d/interfaces/poll.py:236
+#: d/interfaces/poll.py:254
+msgid "The unique ID"
+msgstr ""
+
+#: d/interfaces/poll.py:213
+msgid "The poll to which all PollOptions refer to."
+msgstr ""
+
+#: d/interfaces/poll.py:23
+msgid "The team that this poll refers to."
+msgstr ""
+
+#: d/interfaces/poll.py:239
+#: d/interfaces/poll.py:257
+msgid "The Person that voted."
+msgstr ""
+
+#: d/interfaces/poll.py:242
+#: d/interfaces/poll.py:260
+msgid "The Poll in which the person voted."
+msgstr ""
+
+#: d/interfaces/poll.py:264
+msgid "The PollOption choosen."
+msgstr ""
+
+#: d/interfaces/poll.py:267
+msgid "The preference of the choosen PollOption"
+msgstr ""
+
+#: d/interfaces/poll.py:27
+msgid "The unique name of this poll."
+msgstr ""
+
+#: d/interfaces/poll.py:271
+msgid "The token we give to the user."
+msgstr ""
+
+#: d/interfaces/poll.py:34
+msgid "The title of this poll."
+msgstr ""
+
+#: d/interfaces/poll.py:37
+msgid "The date and time when this poll opens."
+msgstr ""
+
+#: d/interfaces/poll.py:41
+msgid "The date and time when this poll closes."
+msgstr ""
+
+#: d/interfaces/poll.py:45
+msgid "The proposition that is going to be voted."
+msgstr ""
+
+#: d/interfaces/poll.py:49
+msgid "The type of this poll."
+msgstr ""
+
+#: d/interfaces/poll.py:54
+msgid "Users can spoil their votes?"
+msgstr ""
+
+#: d/interfaces/poll.py:58
+msgid "The secrecy of the Poll."
+msgstr ""
+
+#: d/interfaces/potemplate.py:103
+msgid "Include translations for this template in language packs?"
+msgstr ""
+
+#: d/interfaces/potemplate.py:104
+msgid "Check this box if this template is part of a language pack soits translations should be exported that way."
+msgstr ""
+
+#: d/interfaces/potemplate.py:111
+msgid "Path of the template in the source tree"
+msgstr ""
+
+#: d/interfaces/potemplate.py:115
+msgid "Filename of template in the source tree"
+msgstr ""
+
+#: d/interfaces/potemplate.py:27
+msgid "Template Name"
+msgstr ""
+
+#: d/interfaces/potemplate.py:28
+msgid "The name of this PO template, for example 'evolution-2.2'. Each translation template has a unique name in its package. It's important to get this correct, because Rosetta will recommend alternative translations based on the name."
+msgstr ""
+
+#: d/interfaces/potemplate.py:343
+msgid "PO Template File to Import"
+msgstr ""
+
+#: d/interfaces/potemplate.py:37
+msgid "Template name"
+msgstr ""
+
+#: d/interfaces/potemplate.py:42
+msgid "Please provide a brief description of the content of this translation template, for example, telling translators if this template contains strings for end-users or other developers."
+msgstr ""
+
+#: d/interfaces/potemplate.py:49
+msgid "Header"
+msgstr ""
+
+#: d/interfaces/potemplate.py:50
+msgid "The standard template header as gettext creates it. It's used to get some default values when creating a new PO file."
+msgstr ""
+
+#: d/interfaces/potemplate.py:56
+msgid "Accept translations?"
+msgstr ""
+
+#: d/interfaces/potemplate.py:57
+msgid "If unchecked, people can no longer change the template's translations."
+msgstr ""
+
+#: d/interfaces/potemplate.py:66
+msgid "The owner of the template in Rosetta can edit the template and change it's status, and can also upload new versions of the template when a new release is made or when the translation strings have been changed during development."
+msgstr ""
+
+#: d/interfaces/potemplate.py:74
+msgid "Product Branch or Series"
+msgstr ""
+
+#: d/interfaces/potemplate.py:85
+msgid "The source package this template comes from."
+msgstr ""
+
+#: d/interfaces/potemplate.py:91
+msgid "Source Package Version"
+msgstr ""
+
+#: d/interfaces/potemplate.py:96
+msgid "The package in which this template's translations are installed."
+msgstr ""
+
+#: d/interfaces/potemplatename.py:58
+msgid "PO Template Name"
+msgstr ""
+
+#: d/interfaces/potemplatename.py:59
+msgid "For example 'nautilus'."
+msgstr ""
+
+#: d/interfaces/potemplatename.py:63
+msgid "PO Template Name Title"
+msgstr ""
+
+#: d/interfaces/potemplatename.py:64
+msgid "The title to use while rendering a page related only with this template name."
+msgstr ""
+
+#: d/interfaces/potemplatename.py:70
+msgid "PO Template Name Description"
+msgstr ""
+
+#: d/interfaces/potemplatename.py:71
+msgid "A brief description of the template name."
+msgstr ""
+
+#: d/interfaces/potemplatename.py:75
+msgid "PO Template Translation Domain"
+msgstr ""
+
+#: d/interfaces/potemplatename.py:76
+msgid "Used by gettext to get translations from the related templates. Usually the same as the name."
+msgstr ""
+
+#: d/interfaces/product.py:100
+msgid "Download URL"
+msgstr ""
+
+#: d/interfaces/product.py:104
+msgid "Programming Language"
+msgstr ""
+
+#: d/interfaces/product.py:106
+msgid ""
+"A comma delimited list of programming\n"
+"            languages used to produce this product."
+msgstr ""
+
+#: d/interfaces/product.py:109
+msgid "Sourceforge Project"
+msgstr ""
+
+#: d/interfaces/product.py:111
+msgid ""
+"The SourceForge project name for\n"
+"            this product, if it is in sourceforge."
+msgstr ""
+
+#: d/interfaces/product.py:114
+msgid "Freshmeat Project"
+msgstr ""
+
+#: d/interfaces/product.py:115
+msgid ""
+"The Freshmeat project name for\n"
+"            this product, if it is in freshmeat."
+msgstr ""
+
+#: d/interfaces/product.py:140
+msgid "Automatic update"
+msgstr ""
+
+#: d/interfaces/product.py:141
+msgid ""
+"Whether or not this product's attributes are\n"
+"        updated automatically."
+msgstr ""
+
+#: d/interfaces/product.py:144
+msgid ""
+"Whether or not\n"
+"        this product is considered active."
+msgstr ""
+
+#: d/interfaces/product.py:147
+msgid ""
+"Whether or not\n"
+"        this product has been reviewed."
+msgstr ""
+
+#: d/interfaces/product.py:147
+#: d/interfaces/project.py:131
+msgid "Reviewed"
+msgstr ""
+
+#: d/interfaces/product.py:150
+msgid "List of distribution packages for this         product"
+msgstr ""
+
+#: d/interfaces/product.py:156
+msgid ""
+"An iterator over the ProductSeries for this\n"
+"        product"
+msgstr ""
+
+#: d/interfaces/product.py:159
+msgid ""
+"An iterator over the ProductReleases for this\n"
+"        product."
+msgstr ""
+
+#: d/interfaces/product.py:162
+msgid ""
+"A matrix by bug severity and status of the\n"
+"        number of bugs of that severity and status assigned to this\n"
+"        product."
+msgstr ""
+
+#: d/interfaces/product.py:166
+msgid ""
+"An iterator over the Bazaar branches that are\n"
+"    related to this product."
+msgstr ""
+
+#: d/interfaces/product.py:169
+msgid ""
+"The release milestones associated with this product, useful in\n"
+"        particular to the maintainer, for organizing which bugs will be fixed\n"
+"        when."
+msgstr ""
+
+#: d/interfaces/product.py:174
+msgid "The bounties that are related to this product."
+msgstr ""
+
+#: d/interfaces/product.py:200
+msgid "The URL of the root directory for the product used when the series doesn't supply one."
+msgstr ""
+
+#: d/interfaces/product.py:34
+msgid "The Product ID"
+msgstr ""
+
+#: d/interfaces/product.py:37
+msgid "Project"
+msgstr ""
+
+#: d/interfaces/product.py:40
+msgid ""
+"Optional related Project.\n"
+"            Used to group similar products in a coherent way."
+msgstr ""
+
+#: d/interfaces/product.py:47
+msgid ""
+"Product owner, it can either a valid Person or Team\n"
+"            inside Launchpad context."
+msgstr ""
+
+#: d/interfaces/product.py:53
+msgid ""
+"The short name of this product, which must be\n"
+"            unique among all the products. It should be at least one\n"
+"            lowercase letters or number followed by one or more chars,\n"
+"            numbers, plusses, dots or hyphens and will be part of the url\n"
+"            to this product in the Launchpad."
+msgstr ""
+
+#: d/interfaces/product.py:61
+msgid ""
+"The display name of this product is the name of\n"
+"            this product as it would appear in a paragraph of text."
+msgstr ""
+
+#: d/interfaces/product.py:66
+msgid "The product title. Should be just a few words."
+msgstr ""
+
+#: d/interfaces/product.py:70
+msgid "The summary should be a single short paragraph."
+msgstr ""
+
+#: d/interfaces/product.py:74
+msgid ""
+"The product description, may be several paragraphs\n"
+"            of text, giving the product highlights and details."
+msgstr ""
+
+#: d/interfaces/product.py:79
+msgid "The date this product was created in Launchpad."
+msgstr ""
+
+#: d/interfaces/product.py:82
+#: d/interfaces/project.py:78
+msgid "Homepage URL"
+msgstr ""
+
+#: d/interfaces/product.py:84
+msgid ""
+"The product home page. Please include \n"
+"            the http://"
+msgstr ""
+
+#: d/interfaces/product.py:88
+#: d/interfaces/project.py:82
+msgid "Wiki URL"
+msgstr ""
+
+#: d/interfaces/product.py:90
+msgid ""
+"The URL of this product's wiki, if it has one.\n"
+"            Please include the http://"
+msgstr ""
+
+#: d/interfaces/product.py:94
+msgid "Screenshots URL"
+msgstr ""
+
+#: d/interfaces/product.py:96
+msgid ""
+"The location of screenshots of this product.\n"
+"            Please include the http://"
+msgstr ""
+
+#: d/interfaces/productrelease.py:25
+msgid "Date Released"
+msgstr ""
+
+#: d/interfaces/productrelease.py:30
+msgid "ProductSeries"
+msgstr ""
+
+#: d/interfaces/productrelease.py:35
+msgid "Changelog"
+msgstr ""
+
+#: d/interfaces/productrelease.py:37
+msgid "The date this productrelease was created in Launchpad."
+msgstr ""
+
+#: d/interfaces/productrelease.py:39
+msgid "Constructed displayname for a productrelease."
+msgstr ""
+
+#: d/interfaces/productrelease.py:40
+msgid "Manifest Information."
+msgstr ""
+
+#: d/interfaces/productrelease.py:41
+msgid "The upstream product of this release."
+msgstr ""
+
+#: d/interfaces/productrelease.py:42
+msgid "Iterable of product release files."
+msgstr ""
+
+#: d/interfaces/productseries.py:113
+msgid "Type of Revision"
+msgstr ""
+
+#: d/interfaces/productseries.py:114
+msgid "The type of revision control used for the upstream branch of this series. Can be CVS, SVN, BK or Arch."
+msgstr ""
+
+#: d/interfaces/productseries.py:117
+msgid "The CVS server root at which the upstream code for this branch can be found."
+msgstr ""
+
+#: d/interfaces/productseries.py:119
+msgid "The CVS module for this branch."
+msgstr ""
+
+#: d/interfaces/productseries.py:120
+msgid "A URL where a tarball of the CVS repository can be found. This can sometimes be faster than trying to query the server for commit-by-commit data."
+msgstr ""
+
+#: d/interfaces/productseries.py:123
+msgid "The branch of this module that represents the upstream branch for this series."
+msgstr ""
+
+#: d/interfaces/productseries.py:125
+msgid "The URL for the SVN branch where the upstream code for this series can be found."
+msgstr ""
+
+#: d/interfaces/productseries.py:128
+msgid "The URL of the root directory for releases made as part of this series."
+msgstr ""
+
+#: d/interfaces/productseries.py:130
+msgid "A pattern-matching 'glob' expression that should match all the releases made as part of this series. For example, if release tarball filenames take the form 'apache-2.0.35.tar.gz' then the glob would be 'apache-2.0.*.tar.gz'."
+msgstr ""
+
+#: d/interfaces/productseries.py:138
+msgid "The Arch archive into which we will publish this code as a Bazaar branch."
+msgstr ""
+
+#: d/interfaces/productseries.py:140
+msgid "The Arch category name to use for this upstream when we publish it as a Bazaar branch."
+msgstr ""
+
+#: d/interfaces/productseries.py:142
+msgid "The Arch branch name for this upstream code, used when we publish the code as a Bazaar branch."
+msgstr ""
+
+#: d/interfaces/productseries.py:144
+msgid "The Arch version name to use when we publish this code as a Bazaar branch."
+msgstr ""
+
+#: d/interfaces/productseries.py:32
+msgid "The name of the series is a short, unique name that identifies it, being used in URLs.It must be all lowercase, with no special characters. For example, \"2.0\" or \"trunk\"."
+msgstr ""
+
+#: d/interfaces/productseries.py:37
+msgid "Date Registered"
+msgstr ""
+
+#: d/interfaces/productseries.py:41
+msgid "The \"display name\" of the Series is a short, capitalized name. It should make sense as part of a paragraph of text. For example, \"2.0 (Stable)\" or \"MAIN (development)\" or \"1.3 (Obsolete)\"."
+msgstr ""
+
+#: d/interfaces/productseries.py:49
+msgid "A single paragraph introduction or overview of this series. For example: \"The 2.0 series of Apache represents the current stable series, and is recommended for all new deployments\"."
+msgstr ""
+
+#: d/interfaces/productseries.py:55
+msgid ""
+"The\n"
+"        date this productseries was created in Launchpad."
+msgstr ""
+
+#: d/interfaces/productseries.py:61
+msgid "Return an iterator over this productrelease's PO templates."
+msgstr ""
+
+#: d/interfaces/productseries.py:62
+msgid "The number of POTemplates for this Product Series."
+msgstr ""
+
+#: d/interfaces/productseries.py:67
+msgid "List of distribution packages for this product series"
+msgstr ""
+
+#: d/interfaces/project.py:101
+msgid "Freshmeat Project Name"
+msgstr ""
+
+#: d/interfaces/project.py:102
+msgid ""
+"The Freshmeat project name for this project,\n"
+"            if it is in freshmeat."
+msgstr ""
+
+#: d/interfaces/project.py:129
+msgid "Whether or not this project is considered active."
+msgstr ""
+
+#: d/interfaces/project.py:132
+msgid "Whether or not this project has been reviewed."
+msgstr ""
+
+#: d/interfaces/project.py:134
+msgid "The bounties that are related to this project."
+msgstr ""
+
+#: d/interfaces/project.py:197
+msgid "Bug Tracker"
+msgstr ""
+
+#: d/interfaces/project.py:34
+msgid ""
+"Project owner, it can either a valid\n"
+"            Person or Team inside Launchpad context."
+msgstr ""
+
+#: d/interfaces/project.py:40
+msgid ""
+"The short\n"
+"            name of this project, which must be unique among all the products.\n"
+"            It should be at least one lowercase letters or number followed by\n"
+"            one or more chars, numbers, plusses, dots or hyphens and will be\n"
+"            part of the url to this project in the Launchpad."
+msgstr ""
+
+#: d/interfaces/project.py:49
+msgid ""
+"The display name of the project is a short name,\n"
+"            appropriately capitalised, for this product. For example,\n"
+"            if you were referring to this project in a paragraph of text,\n"
+"            you would use this name. Examples: the Apache Project, the\n"
+"            Mozilla Project, the GIMP Project."
+msgstr ""
+
+#: d/interfaces/project.py:57
+msgid ""
+"This is the full title of the project, can contain\n"
+"            spaces, special characters etc.  This is what you would imagine\n"
+"            seeing at the top of a page about the project. For example,\n"
+"            The Apache Project, The Mozilla Project."
+msgstr ""
+
+#: d/interfaces/project.py:63
+msgid "Project Summary"
+msgstr ""
+
+#: d/interfaces/project.py:64
+msgid ""
+"A summary of the project, in a single\n"
+"            short paragraph."
+msgstr ""
+
+#: d/interfaces/project.py:69
+msgid ""
+"A couple of paragraphs describing the project\n"
+"            in more detail, from the history of the project to current\n"
+"            organisational structure, goals and release strategy."
+msgstr ""
+
+#: d/interfaces/project.py:75
+msgid "The date this project was created in Launchpad."
+msgstr ""
+
+#: d/interfaces/project.py:79
+msgid "The project home page. Please include the http://"
+msgstr ""
+
+#: d/interfaces/project.py:84
+msgid ""
+"The URL of this project's wiki, if it has one.\n"
+"            Please include the http://"
+msgstr ""
+
+#: d/interfaces/project.py:88
+msgid "Last-parsed DOAP fragment"
+msgstr ""
+
+#: d/interfaces/project.py:89
+msgid ""
+"The last DOAP fragment for this\n"
+"           entity that we received and parsed, or\n"
+"           generated."
+msgstr ""
+
+#: d/interfaces/project.py:95
+msgid "SourceForge Project Name"
+msgstr ""
+
+#: d/interfaces/project.py:96
+msgid ""
+"The SourceForge project name for this project,\n"
+"            if it is in sourceforge."
+msgstr ""
+
+#: d/interfaces/publishing.py:116
+msgid "Sourcepackage publishing record id"
+msgstr ""
+
+#: d/interfaces/publishing.py:121
+msgid "Sourcepackage release file alias"
+msgstr ""
+
+#: d/interfaces/publishing.py:126
+#: d/interfaces/publishing.py:167
+msgid "File name"
+msgstr ""
+
+#: d/interfaces/publishing.py:130
+#: d/interfaces/publishing.py:171
+#: d/interfaces/publishing.py:205
+#: d/interfaces/publishing.py:229
+msgid "Component name"
+msgstr ""
+
+#: d/interfaces/publishing.py:134
+#: d/interfaces/publishing.py:175
+msgid "Source package name"
+msgstr ""
+
+#: d/interfaces/publishing.py:138
+#: d/interfaces/publishing.py:179
+msgid "Distribution release name"
+msgstr ""
+
+#: d/interfaces/publishing.py:142
+#: d/interfaces/publishing.py:183
+#: d/interfaces/publishing.py:216
+#: d/interfaces/publishing.py:244
+msgid "Package publishing status"
+msgstr ""
+
+#: d/interfaces/publishing.py:146
+#: d/interfaces/publishing.py:192
+msgid "Pocket"
+msgstr ""
+
+#: d/interfaces/publishing.py:157
+msgid "Package publishing record id"
+msgstr ""
+
+#: d/interfaces/publishing.py:162
+msgid "Binarypackage file alias"
+msgstr ""
+
+#: d/interfaces/publishing.py:187
+msgid "Architecture tag. As per dpkg's use"
+msgstr ""
+
+#: d/interfaces/publishing.py:199
+#: d/interfaces/publishing.py:223
+msgid "Distro Release name"
+msgstr ""
+
+#: d/interfaces/publishing.py:202
+#: d/interfaces/publishing.py:226
+msgid "Binary package name"
+msgstr ""
+
+#: d/interfaces/publishing.py:208
+#: d/interfaces/publishing.py:232
+msgid "Section name"
+msgstr ""
+
+#: d/interfaces/publishing.py:212
+#: d/interfaces/publishing.py:240
+msgid "Distribution ID"
+msgstr ""
+
+#: d/interfaces/publishing.py:255
+msgid "The status of this publishing history record"
+msgstr ""
+
+#: d/interfaces/publishing.py:280
+#: d/interfaces/publishing.py:359
+msgid "The date on which this record was created"
+msgstr ""
+
+#: d/interfaces/publishing.py:285
+#: d/interfaces/publishing.py:364
+msgid "The date on which this record was marked superseded"
+msgstr ""
+
+#: d/interfaces/publishing.py:290
+msgid "The sourcepackagerelease which superseded this one"
+msgstr ""
+
+#: d/interfaces/publishing.py:295
+#: d/interfaces/publishing.py:374
+msgid "The date on which this record was set as pending removal"
+msgstr ""
+
+#: d/interfaces/publishing.py:300
+#: d/interfaces/publishing.py:379
+msgid "The date on which this record was removed from the published set"
+msgstr ""
+
+#: d/interfaces/publishing.py:310
+#: d/interfaces/publishing.py:389
+msgid "Whether or not this record is under embargo"
+msgstr ""
+
+#: d/interfaces/publishing.py:315
+msgid "The date on which this record had its embargo lifted"
+msgstr ""
+
+#: d/interfaces/publishing.py:35
+#: d/interfaces/publishing.py:330
+msgid "The distroarchrelease being published into"
+msgstr ""
+
+#: d/interfaces/publishing.py:369
+msgid "The build which superseded this one"
+msgstr ""
+
+#: d/interfaces/publishing.py:39
+#: d/interfaces/publishing.py:87
+#: d/interfaces/publishing.py:263
+#: d/interfaces/publishing.py:334
+msgid "The component being published into"
+msgstr ""
+
+#: d/interfaces/publishing.py:394
+msgid "The date and time at which this record had its embargo lifted"
+msgstr ""
+
+#: d/interfaces/publishing.py:43
+#: d/interfaces/publishing.py:91
+#: d/interfaces/publishing.py:267
+#: d/interfaces/publishing.py:338
+msgid "The section being published into"
+msgstr ""
+
+#: d/interfaces/publishing.py:47
+#: d/interfaces/publishing.py:342
+msgid "The priority being published into"
+msgstr ""
+
+#: d/interfaces/publishing.py:51
+#: d/interfaces/publishing.py:95
+#: d/interfaces/publishing.py:271
+#: d/interfaces/publishing.py:346
+msgid "The date on which this record was published"
+msgstr ""
+
+#: d/interfaces/publishing.py:55
+#: d/interfaces/publishing.py:99
+#: d/interfaces/publishing.py:275
+#: d/interfaces/publishing.py:350
+msgid "The date on which this record is scheduled for deletion"
+msgstr ""
+
+#: d/interfaces/publishing.py:59
+#: d/interfaces/publishing.py:79
+#: d/interfaces/publishing.py:354
+msgid "The status of this publishing record"
+msgstr ""
+
+#: d/interfaces/publishing.py:64
+#: d/interfaces/publishing.py:104
+#: d/interfaces/publishing.py:305
+#: d/interfaces/publishing.py:384
+msgid "The pocket into which this entry is published"
+msgstr ""
+
+#: d/interfaces/publishing.py:75
+#: d/interfaces/publishing.py:251
+msgid "The source package release being published"
+msgstr ""
+
+#: d/interfaces/publishing.py:83
+#: d/interfaces/publishing.py:259
+msgid "The distrorelease being published into"
+msgstr ""
+
+#: d/interfaces/pyarch.py:534
+msgid "The database identifier for this branch."
+msgstr ""
+
+#: d/interfaces/pyarch.py:536
+msgid "Branch Title"
+msgstr ""
+
+#: d/interfaces/pyarch.py:537
+msgid ""
+"The title of the Branch. This will be\n"
+"                  displayed on any report listing different branches. It\n"
+"                  should be a very brief (one line, less than 70 characters)\n"
+"                  title describing the purpose of the branch."
+msgstr ""
+
+#: d/interfaces/pyarch.py:541
+msgid "The ArchNameSpace object for this branch"
+msgstr ""
+
+#: d/interfaces/queue.py:27
+msgid "Queue status"
+msgstr ""
+
+#: d/interfaces/queue.py:31
+msgid "Distribution release"
+msgstr ""
+
+#: d/interfaces/queue.py:43
+#: d/interfaces/queue.py:60
+msgid "Distribution release queue"
+msgstr ""
+
+#: d/interfaces/queue.py:48
+msgid "The related build"
+msgstr ""
+
+#: d/interfaces/queue.py:65
+msgid "The related source package release"
+msgstr ""
+
+#: d/interfaces/sourcepackageindistro.py:22
+msgid "DistroRelease"
+msgstr ""
+
+#: d/interfaces/sourcepackageindistro.py:27
+msgid "Manifest"
+msgstr ""
+
+#: d/interfaces/sourcepackageindistro.py:29
+msgid "SourcePackage Name"
+msgstr ""
+
+#: d/interfaces/sourcepackagename.py:31
+msgid "Valid Source package name"
+msgstr ""
+
+#: d/interfaces/sourcepackagerelease.py:24
+msgid "A version string"
+msgstr ""
+
+#: d/interfaces/spokenin.py:22
+msgid "SpokenInID"
+msgstr ""
+
+#: d/interfaces/spokenin.py:27
+#: d/interfaces/translator.py:28
+msgid "Language"
+msgstr ""
+
+#: d/interfaces/ssh.py:23
+msgid "Key type"
+msgstr ""
+
+#: d/interfaces/ssh.py:24
+msgid "Key text"
+msgstr ""
+
+#: d/interfaces/ssh.py:25
+msgid "Comment describing this key"
+msgstr ""
+
+#: d/interfaces/translationgroup.py:27
+msgid "Translation Group ID"
+msgstr ""
+
+#: d/interfaces/translationgroup.py:31
+msgid ""
+"Keep this name very short, unique, and\n"
+"            descriptive, because it will be used in URLs. Examples:\n"
+"            gnome-translation-project, ubuntu-translators."
+msgstr ""
+
+#: d/interfaces/translationgroup.py:38
+msgid ""
+"The title of the Translation Group.\n"
+"            This title is displayed at the top of the Translation Group page\n"
+"            and in lists or reports of translation groups."
+msgstr ""
+
+#: d/interfaces/translationgroup.py:44
+msgid ""
+"A single-paragraph description of the\n"
+"            group. This will also be displayed in most\n"
+"            translation group listings."
+msgstr ""
+
+#: d/interfaces/translator.py:20
+msgid "Translator ID"
+msgstr ""
+
+#: d/interfaces/translator.py:25
+msgid "Translation Group"
+msgstr ""
+
+#: d/interfaces/translator.py:26
+msgid "The translation group in which the translator is being appointed."
+msgstr ""
+
+#: d/interfaces/translator.py:29
+msgid "The language of the translator."
+msgstr ""
+
+#: d/interfaces/translator.py:31
+msgid "Translator"
+msgstr ""
+
+#: d/interfaces/translator.py:33
+msgid "The translator who will be responsible for the language in this group."
+msgstr ""
+
+#: d/interfaces/wikiname.py:21
+msgid "Wiki host"
+msgstr ""
+
+#: d/interfaces/wikiname.py:22
+msgid "Wikiname"
+msgstr ""
+
+#: d/templates/bugtask-edit.pt:49
+#: d/templates/bugtask-view.pt:44
+msgid "There are ${num_errors} input errors in the form below. Please correct them and resubmit the form."
+msgstr ""
+
+#: d/templates/default-addform.pt:30
+#: d/templates/default-editform.pt:29
+#: d/templates/foaf-requestmerge.pt:44
+#: d/templates/team-edit.pt:33
+msgid "There are ${num_errors} input errors."
+msgstr ""
+
+#: d/templates/default-addform.pt:62
+# Default: "Refresh"
+msgid "refresh-button"
+msgstr ""
+
+#: d/templates/default-addform.pt:64
+#: d/templates/foaf-requestmerge.pt:81
+#: d/templates/launchpad-addform.pt:62
+# Default: "Add"
+msgid "add-button"
+msgstr ""
+
+#: d/templates/default-editform.pt:60
+#: d/templates/bugtask-edit.pt:165
+#: d/templates/launchpad-editform.pt:62
+#: d/templates/team-edit.pt:42
+#: d/templates/sourcepackage-packaging.pt:81
+# Default: "Change"
+msgid "submit-button"
+msgstr ""
+
+#: d/templates/distrorelease-potemplates.pt:22
+#: d/templates/sourcepackage-translations.pt:17
+msgid "Translation Templates"
+msgstr ""
+
+#: d/templates/distrorelease-translations.pt:23
+msgid "Translation Status"
+msgstr ""
+
+#: d/templates/product-translations.pt:24
+msgid "Rosetta Translation Overview for ${product_name}"
+msgstr ""
+
+#: d/templates/product-translations.pt:33
+msgid "Translation Setup Required"
+msgstr ""
+
+#: d/templates/product-translations.pt:35
+msgid "Administrator help needed"
+msgstr ""
+
+#: d/templates/product-translations.pt:41
+msgid "${product_name} has not yet been setup for translation through Rosetta. If you have the latest PO Template for ${product_name} then you should ask administrators to set it up by sending an email to <a href=\"mailto:rosetta-users@lists.ubuntu.com\">the Rosetta mailing list</a>. You should give them the URL to the .pot and .po files. As soon as that has been done you will be able to start translating."
+msgstr ""
+
+#: d/zcml/binarypackagename.zcml:39
+msgid "Create a new Binary Package Name"
+msgstr ""
+
+#: d/zcml/bounty.zcml:102
+msgid "Create A New Bounty"
+msgstr ""
+
+#: d/zcml/bounty.zcml:62
+msgid "Modify Bounty:"
+msgstr ""
+
+#: d/zcml/bug.zcml:150
+msgid "File a Bug on a Product"
+msgstr ""
+
+#: d/zcml/bug.zcml:174
+msgid "File a Bug on a Package"
+msgstr ""
+
+#: d/zcml/bug.zcml:81
+msgid "Change Bug Information"
+msgstr ""
+
+#: d/zcml/bug.zcml:96
+msgid "Mark as Duplicate Bug Report"
+msgstr ""
+
+#: d/zcml/bugattachment.zcml:29
+msgid "Add a Bug Attachment"
+msgstr ""
+
+#: d/zcml/bugattachment.zcml:43
+msgid "Change Bug Attachment Information"
+msgstr ""
+
+#: d/zcml/bugextref.zcml:33
+msgid "Add External Reference"
+msgstr ""
+
+#: d/zcml/bugextref.zcml:52
+msgid "Modify Web Reference"
+msgstr ""
+
+#: d/zcml/buginfestation.zcml:17
+msgid "Add Infested Product Release"
+msgstr ""
+
+#: d/zcml/buginfestation.zcml:30
+msgid "Edit Infested Product Release"
+msgstr ""
+
+#: d/zcml/bugpackageinfestation.zcml:54
+msgid "Add Infested Package Release"
+msgstr ""
+
+#: d/zcml/bugpackageinfestation.zcml:67
+msgid "Edit Infested Package Release"
+msgstr ""
+
+#: d/zcml/bugsubscription.zcml:17
+msgid "Add Person"
+msgstr ""
+
+#: d/zcml/bugsubscription.zcml:31
+msgid "Modify Bug Subscription"
+msgstr ""
+
+#: d/zcml/bugtask.zcml:108
+msgid "Edit Product Bug Task"
+msgstr ""
+
+#: d/zcml/bugtask.zcml:125
+msgid "Product Bug Task"
+msgstr ""
+
+#: d/zcml/bugtask.zcml:142
+msgid "Request a fix in a distribution"
+msgstr ""
+
+#: d/zcml/bugtask.zcml:160
+#: d/zcml/bugtask.zcml:210
+msgid "Edit SourcePackage Bug Task"
+msgstr ""
+
+#: d/zcml/bugtask.zcml:177
+#: d/zcml/bugtask.zcml:227
+msgid "Source Package Bug Task"
+msgstr ""
+
+#: d/zcml/bugtask.zcml:194
+msgid "Request a fix in a distribution release"
+msgstr ""
+
+#: d/zcml/bugtask.zcml:92
+msgid "Request a fix in an upstream product"
+msgstr ""
+
+#: d/zcml/bugwatch.zcml:15
+msgid "Add Watch"
+msgstr ""
+
+#: d/zcml/bugwatch.zcml:29
+msgid "Change Bug Watch"
+msgstr ""
+
+#: d/zcml/calendar.zcml:217
+msgid "New Calendar Event"
+msgstr ""
+
+#: d/zcml/calendar.zcml:265
+msgid "Calendar Event"
+msgstr ""
+
+#: d/zcml/calendar.zcml:275
+msgid "Edit Event"
+msgstr ""
+
+#: d/zcml/codeofconduct.zcml:131
+msgid "Activate Code of Conduct Signature:"
+msgstr ""
+
+#: d/zcml/codeofconduct.zcml:143
+msgid "Deactivate Code of Conduct Signature:"
+msgstr ""
+
+#: d/zcml/codeofconduct.zcml:189
+msgid "Acknowledge a Paper Submitted Code of Conduct"
+msgstr ""
+
+#: d/zcml/codeofconduct.zcml:43
+msgid "Sign a Code of Conduct"
+msgstr ""
+
+#: d/zcml/cveref.zcml:34
+msgid "New CVE Reference"
+msgstr ""
+
+#: d/zcml/cveref.zcml:53
+msgid "Edit CVE Reference"
+msgstr ""
+
+#: d/zcml/distribution.zcml:110
+msgid "Create a New Distribution Release in Soyuz"
+msgstr ""
+
+#: d/zcml/distribution.zcml:128
+msgid "Report Bug in a Linux Distribution"
+msgstr ""
+
+#: d/zcml/distribution.zcml:161
+msgid "Select A New Distribution Members Team"
+msgstr ""
+
+#: d/zcml/distribution.zcml:171
+#: d/zcml/product.zcml:214
+#: d/zcml/project.zcml:142
+msgid "Select A New Translation Group"
+msgstr ""
+
+#: d/zcml/distribution.zcml:239
+msgid "Create a New Distribution in Soyuz"
+msgstr ""
+
+#: d/zcml/karma.zcml:46
+msgid "Edit KarmaAction Information"
+msgstr ""
+
+#: d/zcml/malone.zcml:33
+msgid "Menu for Malone-related actions."
+msgstr ""
+
+#: d/zcml/malone.zcml:37
+msgid "Bugs"
+msgstr ""
+
+#: d/zcml/malone.zcml:38
+msgid "Report a Bug"
+msgstr ""
+
+#: d/zcml/malone.zcml:39
+msgid "Advanced Search"
+msgstr ""
+
+#: d/zcml/malone.zcml:40
+msgid "Admin"
+msgstr ""
+
+#: d/zcml/message.zcml:29
+msgid "Add a Comment"
+msgstr ""
+
+#: d/zcml/milestone.zcml:40
+msgid "Add a Milestone for this Product"
+msgstr ""
+
+#: d/zcml/milestone.zcml:58
+msgid "Edit Product Milestone"
+msgstr ""
+
+#: d/zcml/person.zcml:248
+msgid "Create a New Poll"
+msgstr ""
+
+#: d/zcml/person.zcml:340
+msgid "Request Merge of User Accounts"
+msgstr ""
+
+#: d/zcml/person.zcml:36
+msgid "Person Review"
+msgstr ""
+
+#: d/zcml/poll.zcml:49
+#: d/zcml/poll.zcml:92
+msgid "Edit Poll Details"
+msgstr ""
+
+#: d/zcml/poll.zcml:62
+msgid "Create a New Option for a Poll"
+msgstr ""
+
+#: d/zcml/potemplate.zcml:82
+msgid "Change PO template Information"
+msgstr ""
+
+#: d/zcml/potemplate.zcml:92
+msgid "Administer PO Template"
+msgstr ""
+
+#: d/zcml/potemplatename.zcml:30
+msgid "Change PO Template Name Information"
+msgstr ""
+
+#: d/zcml/potemplatename.zcml:69
+msgid "Add a new PO Template Name"
+msgstr ""
+
+#: d/zcml/product.zcml:170
+msgid "Edit Upstream Product Details:"
+msgstr ""
+
+#: d/zcml/product.zcml:200
+msgid "Review Upstream Product Details:"
+msgstr ""
+
+#: d/zcml/product.zcml:224
+msgid "Report Bug on Upstream Product"
+msgstr ""
+
+#: d/zcml/product.zcml:275
+msgid "Distro Packaging Details"
+msgstr ""
+
+#: d/zcml/product.zcml:339
+msgid "Register an Open Source (Upstream) Product"
+msgstr ""
+
+#: d/zcml/productrelease.zcml:104
+msgid "Review Product Release Details:"
+msgstr ""
+
+#: d/zcml/productseries.zcml:163
+msgid "Review Product Series Details:"
+msgstr ""
+
+#: d/zcml/productseries.zcml:178
+msgid "Add a new Translation Template"
+msgstr ""
+
+#: d/zcml/project.zcml:116
+msgid "Edit Open Source Project Details:"
+msgstr ""
+
+#: d/zcml/project.zcml:129
+msgid "Review Upstream Project Details:"
+msgstr ""
+
+#: d/zcml/project.zcml:152
+msgid "Add a Product to this Project"
+msgstr ""
+
+#: d/zcml/sourcepackagename.zcml:40
+msgid "Create a new Source Package Name"
+msgstr ""
+
+#: d/zcml/translationgroup.zcml:106
+msgid "Create A New Translation Group"
+msgstr ""
+
+#: d/zcml/translationgroup.zcml:54
+msgid "Modify Translation Group Details:"
+msgstr ""
+
+#: d/zcml/translator.zcml:28
+msgid "Change Translator"
+msgstr ""
+
