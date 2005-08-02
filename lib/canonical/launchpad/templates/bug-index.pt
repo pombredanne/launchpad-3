@@ -79,7 +79,7 @@
           <input name="field.subject" type="text" size="50" 
                  tal:attributes="value context/followup_subject" /><br />
           <b>Comment:</b> <textarea name="field.content" rows="10"></textarea>
-        <input type="submit" name="UPDATE_SUBMIT" value="Add" />
+        <input type="submit" name="UPDATE_SUBMIT" value="Post Comment" />
         </form>
     </fieldset>
   </tal:logged-in>
