@@ -95,8 +95,11 @@
 
       <ul>
         <li tal:repeat="branch context/branches">
-          http://bazaar.ubuntu.com/<span tal:content="branch/getPackageName">
+          <a tal:attributes="href
+            string:http://bazaar.ubuntu.com/${branch/getPackageName}">
+            http://bazaar.ubuntu.com/&#8203;<span tal:content="branch/getPackageName">
             url</span>
+          </a>
         </li>
       </ul>
 
