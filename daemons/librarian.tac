@@ -11,11 +11,11 @@ from twisted.web import server
 from canonical.database.sqlbase import SQLBase
 from canonical.lp import initZopeless
 from canonical.config import config
+from canonical.launchpad.daemons import tachandler
 
 from canonical.librarian.libraryprotocol import FileUploadFactory
 from canonical.librarian import storage, db
 from canonical.librarian import web as fatweb
-
 
 # Connect to database
 initZopeless(
@@ -27,6 +27,9 @@ initZopeless(
 
 application = service.Application('Librarian')
 librarianService = service.IServiceCollection(application)
+
+# Service that announces when the daemon is ready
+tachandler.ReadyService().setServiceParent(librarianService)
 
 path = config.librarian.server.root
 storage = storage.LibrarianStorage(path, db.Library())
