@@ -134,10 +134,6 @@
             name="+portlet-bugtasklist-actions"
             template="../templates/bugtasklist-portlet-actions.pt"
             lp:url="/products/$Product.name/+portlet-bugtasklist-actions" />
-        <browser:page
-            name="+portlet-bugtasklist-statsforcontext"
-            template="../templates/bug-portlet-statsforcontext.pt"
-            lp:url="/products/$Product.name/+portlet-bugtasklist-statsforcontext" />
     </browser:pages>
 
     <browser:pages

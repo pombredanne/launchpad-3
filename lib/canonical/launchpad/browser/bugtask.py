@@ -257,8 +257,17 @@ class BugTaskSearchListingView:
 
         search_params["user"] = getUtility(ILaunchBag).user
 
-        # make this search context-sensitive
-        tasks = self.context.search(**search_params)
+        # This reversal with include_dupes and omit_dupes is a bit odd;
+        # the reason to do this is that from the search UI's viewpoint,
+        # including a dupe is the special case, whereas a
+        # BugTaskSet.search() method that omitted dupes silently would
+        # be a source of surprising bugs.
+        if form_params.get("include_dupes"):
+            search_params["omit_dupes"] = False
+        else:
+            search_params["omit_dupes"] = True
+
+        tasks = self.context.searchBugs(**search_params)
 
         return BatchNavigator(
             batch=Batch(tasks, int(self.request.get('batch_start', 0))),
@@ -329,10 +338,10 @@ class BugTaskSearchListingView:
         status_new = dbschema.BugTaskStatus.NEW
         status_accepted = dbschema.BugTaskStatus.ACCEPTED
 
-        critical_tasks = self.context.search(
+        critical_tasks = self.context.searchBugs(
             severity=dbschema.BugTaskSeverity.CRITICAL,
             status=any(status_new, status_accepted),
-            user=getUtility(ILaunchBag).user)
+            user=getUtility(ILaunchBag).user, omit_dupes=True)
 
         return critical_tasks.count()
 
@@ -357,10 +366,10 @@ class BugTaskSearchListingView:
         status_new = dbschema.BugTaskStatus.NEW
         status_accepted = dbschema.BugTaskStatus.ACCEPTED
 
-        tasks_assigned_to_user = self.context.search(
+        tasks_assigned_to_user = self.context.searchBugs(
             assignee=getUtility(ILaunchBag).user,
             status=any(status_new, status_accepted),
-            user=getUtility(ILaunchBag).user)
+            user=getUtility(ILaunchBag).user, omit_dupes=True)
 
         return tasks_assigned_to_user.count()
 
@@ -385,8 +394,9 @@ class BugTaskSearchListingView:
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
-        untriaged_tasks = self.context.search(
-            status=dbschema.BugTaskStatus.NEW, user=getUtility(ILaunchBag).user)
+        untriaged_tasks = self.context.searchBugs(
+            status=dbschema.BugTaskStatus.NEW,
+            user=getUtility(ILaunchBag).user, omit_dupes=True)
 
         return untriaged_tasks.count()
 
@@ -408,9 +418,9 @@ class BugTaskSearchListingView:
         status_new = dbschema.BugTaskStatus.NEW
         status_accepted = dbschema.BugTaskStatus.ACCEPTED
 
-        unassigned_tasks = self.context.search(
+        unassigned_tasks = self.context.searchBugs(
             assignee=NULL, status=any(status_new, status_accepted),
-            user=getUtility(ILaunchBag).user)
+            user=getUtility(ILaunchBag).user, omit_dupes=True)
 
         return unassigned_tasks.count()
 
@@ -434,7 +444,8 @@ class BugTaskSearchListingView:
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
-        total_bugs = self.context.search(user=getUtility(ILaunchBag).user)
+        user = getUtility(ILaunchBag).user
+        total_bugs = self.context.searchBugs(user=user, omit_dupes=True)
 
         return total_bugs.count()
 
@@ -475,13 +486,13 @@ class BugTaskSearchListingView:
 
         release_bugs = []
         for release in releases:
-            open_release_bugs = release.search(
+            open_release_bugs = release.searchBugs(
                 status=any(
                     dbschema.BugTaskStatus.NEW,
                     dbschema.BugTaskStatus.ACCEPTED),
-                user=getUtility(ILaunchBag).user)
+                user=getUtility(ILaunchBag).user, omit_dupes=True)
             release_bugs.append({
-                "releasename" : release.name,
+                "releasename" : release.displayname,
                 "bugcount" : open_release_bugs.count(),
                 "url" : canonical_url(release) + '/+bugs'})
 
@@ -568,3 +579,4 @@ class BugTaskAnorakSearchPageBegoneView:
         self.context = context
         self.request = request
         self.request.response.redirect("/malone")
+

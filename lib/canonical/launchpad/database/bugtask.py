@@ -258,7 +258,7 @@ class BugTaskSet:
                severity=None, product=None, distribution=None,
                distrorelease=None, milestone=None, assignee=None, owner=None,
                orderby=None, sourcepackagename=None, binarypackagename=None,
-               statusexplanation=None, user=None):
+               statusexplanation=None, user=None, omit_dupes=False):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
 
         # A dict of search argument names and values that will be
@@ -278,8 +278,7 @@ class BugTaskSet:
             'binarypackagename': binarypackagename
         }
 
-        query = ""
-
+        extra_clauses = []
         # Loop through the search arguments and build the appropriate
         # SQL WHERE clause. Note that arg_value will be one of:
         #
@@ -295,48 +294,38 @@ class BugTaskSet:
         # * None (meaning no filter criteria specified for that arg_name)
         for arg_name, arg_value in search_args.items():
             if arg_value is not None:
-                if query:
-                    query += " AND "
-
                 if zope_isinstance(arg_value, any):
                     # The argument value is a list of acceptable
                     # filter values.
                     arg_values = sqlvalues(*arg_value.query_values)
                     where_arg = ", ".join(arg_values)
-                    query += "BugTask.%s IN (%s)" % (arg_name, where_arg)
+                    clause = "BugTask.%s IN (%s)" % (arg_name, where_arg)
                 elif arg_value is NULL:
                     # The argument value indicates we should match
                     # only NULL values for the column named by
                     # arg_name.
-                    query += "BugTask.%s IS NULL" % arg_name
+                    clause = "BugTask.%s IS NULL" % arg_name
                 else:
                     # We have either an ISQLObject, or a dbschema value.
                     is_sqlobject = ISQLObject(arg_value, None)
                     if is_sqlobject:
-                        query += "BugTask.%s = %d" % (arg_name, arg_value.id)
+                        clause = "BugTask.%s = %d" % (arg_name, arg_value.id)
                     else:
-                        query += "BugTask.%s = %d" % (
-                            arg_name, int(arg_value.value))
+                        clause = "BugTask.%s = %d" % (arg_name, 
+                                                      int(arg_value.value))
+                extra_clauses.append(clause)
+
+        if omit_dupes:
+            extra_clauses.append("Bug.duplicateof is NULL")
 
         if searchtext:
-            if query:
-                query += " AND "
-            query += (
-                "(Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s))" % sqlvalues(
-                    searchtext, searchtext))
+            extra_clauses.append(
+                "(Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s))" % 
+                sqlvalues(searchtext, searchtext))
 
         if statusexplanation:
-            if query:
-                query += " AND "
-            query += "BugTask.fti @@ ftq(%s)" % sqlvalues(statusexplanation)
-
-        if query:
-            query += " AND "
-
-        user = getUtility(ILaunchBag).user
-        if user:
-            query += "("
-        query += "(BugTask.bug = Bug.id AND Bug.private = FALSE)"
+            extra_clauses.append("BugTask.fti @@ ftq(%s)" % 
+                                 sqlvalues(statusexplanation))
 
         if user:
             # This part of the query includes private bugs that the
@@ -347,19 +336,24 @@ class BugTaskSet:
             # part of the WHERE condition (i.e. the bit below.) The
             # other half of this condition (see code above) does not
             # use TeamParticipation at all.
-            query += ("""
-                OR ((BugTask.bug = Bug.id AND Bug.private = TRUE) AND
-                    (Bug.id in (
-                        SELECT Bug.id
-                        FROM Bug, BugSubscription, TeamParticipation
-                        WHERE (Bug.id = BugSubscription.bug) AND
-                              (BugSubscription.person = TeamParticipation.team) AND
-                              (TeamParticipation.person = %(personid)s) AND
-                              (BugSubscription.subscription IN
-                                  (%(cc)s, %(watch)s))))))""" %
-                sqlvalues(personid=user.id,
-                          cc=BugSubscription.CC,
-                          watch=BugSubscription.WATCH))
+            clause = ("""
+                      ((BugTask.bug = Bug.id AND Bug.private = FALSE) OR
+                       (BugTask.bug = Bug.id AND Bug.private = TRUE AND
+                        Bug.id in (
+                          SELECT Bug.id
+                          FROM Bug, BugSubscription, TeamParticipation
+                          WHERE Bug.id = BugSubscription.bug AND
+                                TeamParticipation.person = %(personid)s AND
+                                BugSubscription.person = 
+                                  TeamParticipation.team AND
+                                BugSubscription.subscription IN
+                                    (%(cc)s, %(watch)s))))""" %
+                      sqlvalues(personid=user.id,
+                                cc=BugSubscription.CC,
+                                watch=BugSubscription.WATCH))
+        else:
+            clause = "BugTask.bug = Bug.id AND Bug.private = FALSE"
+        extra_clauses.append(clause)
 
         if orderby is None:
             orderby = []
@@ -379,6 +373,7 @@ class BugTaskSet:
         # Make sure that the result always is ordered.
         orderby_arg.append('BugTask.id')
 
+        query = " AND ".join(extra_clauses)
         bugtasks = BugTask.select(
             query, clauseTables=["Bug", "BugTask"], orderBy=orderby_arg)
 

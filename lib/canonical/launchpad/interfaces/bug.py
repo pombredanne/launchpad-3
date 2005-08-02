@@ -149,9 +149,10 @@ class IBugTarget(Interface):
     Examples include an IDistribution, an IDistroRelease and an
     IProduct.
     """
-    def search(bug=None, searchtext=None, status=None, priority=None,
-               severity=None, milestone=None, assignee=None, owner=None,
-               orderby=None, statusexplanation=None, user=None):
+    def searchBugs(bug=None, searchtext=None, status=None, priority=None,
+                   severity=None, milestone=None, assignee=None,
+                   owner=None, orderby=None, statusexplanation=None,
+                   user=None, omit_dupes=False):
         """Search the IBugTasks reported on this entity.
 
         Return an iterable of matching results.

@@ -18,14 +18,14 @@ from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.lp.dbschema import (EnumCol, BugTaskStatus,
     DistributionReleaseStatus, TranslationPermission)
 from canonical.launchpad.interfaces import (IDistribution, IDistributionSet,
-    IDistroPackageFinder, ITeamMembershipSubset, ITeam)
+    IDistroPackageFinder)
 
 
 class Distribution(SQLBase):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(IDistribution)
 
-    _defaultOrder='name'
+    _defaultOrder = 'name'
 
     name = StringCol(notNull=True, alternateID=True, unique=True)
     displayname = StringCol(notNull=True)
@@ -48,9 +48,11 @@ class Distribution(SQLBase):
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
     lucilleconfig = StringCol(notNull=False, default=None)
 
-    def search(self, bug=None, searchtext=None, status=None, priority=None,
-               severity=None, milestone=None, assignee=None, owner=None,
-               orderby=None, statusexplanation=None, user=None):
+    def searchBugs(self, bug=None, searchtext=None, status=None,
+                   priority=None, severity=None, milestone=None,
+                   assignee=None, owner=None, orderby=None,
+                   statusexplanation=None, user=None,
+                   omit_dupes=False):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # As an initial refactoring, we're wrapping BugTaskSet.search.
         # It's possible that the search code will live inside this
@@ -62,7 +64,8 @@ class Distribution(SQLBase):
             distribution=self, bug=bug, searchtext=searchtext, status=status,
             priority=priority, severity=severity, milestone=milestone,
             assignee=assignee, owner=owner, orderby=orderby,
-            statusexplanation=statusexplanation, user=user)
+            statusexplanation=statusexplanation, user=user,
+            omit_dupes=omit_dupes)
 
     def currentrelease(self):
         # if we have a frozen one, return that

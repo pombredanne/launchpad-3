@@ -307,7 +307,7 @@ class IBugTaskSet(Interface):
                distrorelease=None, milestone=None, assignee=None,
                owner=None, orderby=None, sourcepackagename=None,
                binarypackagename=None, statusexplanation=None,
-               user=None):
+               user=None, omit_dupes=False):
         """Return a set of IBugTasks that satisfy the query arguments.
 
         user is an object that provides IPerson, and represents the
