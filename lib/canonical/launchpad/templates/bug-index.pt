@@ -71,7 +71,7 @@
   </tal:block> <!-- repeating over message -->
 
   <tal:logged-in condition="request/lp:person">
-    <fieldset class="collapsible collapsed" style="width: 100%">
+    <fieldset class="collapsible collapsed">
       <legend>Add comment to this bug</legend>
         <form action="+messages/+new" method="post">
           <b>Subject:</b>
