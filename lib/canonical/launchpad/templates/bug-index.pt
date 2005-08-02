@@ -70,16 +70,23 @@
     </div>
   </tal:block> <!-- repeating over message -->
 
-  <fieldset class="collapsible collapsed">
-    <legend>New comment on this bug</legend>
-      <form action="+messages/+new" method="post">
-        <b>Subject:</b>
-        <input name="field.subject" type="text" size="50" 
-               tal:attributes="value context/followup_subject" /><br />
-        <b>Comment:</b> <textarea name="field.content" rows="10"></textarea>
-      <input type="submit" name="UPDATE_SUBMIT" value="Add" />
-      </form>
-  </fieldset>
+  <tal:logged-in condition="request/lp:person">
+    <fieldset class="collapsible collapsed" style="width: 100%">
+      <legend>Add comment to this bug</legend>
+        <form action="+messages/+new" method="post">
+          <b>Subject:</b>
+          <input name="field.subject" type="text" size="50" 
+                 tal:attributes="value context/followup_subject" /><br />
+          <b>Comment:</b> <textarea name="field.content" rows="10"></textarea>
+        <input type="submit" name="UPDATE_SUBMIT" value="Add" />
+        </form>
+    </fieldset>
+  </tal:logged-in>
+  <tal:not-logged-in condition="not: request/lp:person">
+    <div align="center">
+      To post a comment you <a href="+login">must be logged in</a>.
+    </div>
+  </tal:not-logged-in>
 
 </div>
 </body>
