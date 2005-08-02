@@ -14,7 +14,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Development/Unknown\n"
-"POT-Creation-Date: Tue Aug  2 13:22:02 2005\n"
+"POT-Creation-Date: Tue Aug  2 18:55:47 2005\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: Zope 3 Developers <zope3-dev@zope.org>\n"
@@ -2748,6 +2748,110 @@ msgstr ""
 
 #: d/templates/product-translations.pt:41
 msgid "${product_name} has not yet been setup for translation through Rosetta. If you have the latest PO Template for ${product_name} then you should ask administrators to set it up by sending an email to <a href=\"mailto:rosetta-users@lists.ubuntu.com\">the Rosetta mailing list</a>. You should give them the URL to the .pot and .po files. As soon as that has been done you will be able to start translating."
+msgstr ""
+
+#: d/templates/root-index.pt:10
+msgid "The Launchpad is a collection of services for projects in the open source universe. Here you can register your project, and collaborate with your community on translations, bug squashing and the code you write."
+msgstr ""
+
+#: d/templates/root-index.pt:15
+#: d/templates/root-index.pt:15
+#: d/templates/root-index.pt:25
+msgid "Rosetta"
+msgstr ""
+
+#: d/templates/root-index.pt:25
+# Default: ""
+"Rosetta is a\n"
+"        <b>web-based translation portal</b>.\n"
+"        If your application uses the open source standard <i>gettext</i>\n"
+"        system for software internationalisation, then you can easily have\n"
+"        users contribute translations for your software through Rosetta.\n"
+"        You simply upload the existing translations, point your community\n"
+"        at Rosetta and then download their translations before you make\n"
+"        your release. <a title=\"x\" href=\"rosetta\">x</a>"
+msgid "rosetta-blurb"
+msgstr ""
+
+#: d/templates/root-index.pt:25
+msgid "Translate now!"
+msgstr ""
+
+#: d/templates/root-index.pt:28
+#: d/templates/root-index.pt:28
+#: d/templates/root-index.pt:37
+msgid "Malone"
+msgstr ""
+
+#: d/templates/root-index.pt:37
+# Default: ""
+"Malone is a\n"
+"        <b>web-based global bug tracking</b>\n"
+"        tool. It is designed to track bugs across the whole open source\n"
+"        process: it understands that the same code is re-used upstream\n"
+"        and in different distributions, and allows us to have a single\n"
+"        bug number for any bug, and track where it has been fixed and\n"
+"        where it is still a problem. <a title=\"x\"\n"
+"    href=\"malone\">x</a>"
+msgid "malone-blurb"
+msgstr ""
+
+#: d/templates/root-index.pt:37
+msgid "Track bugs now!"
+msgstr ""
+
+#: d/templates/root-index.pt:40
+#: d/templates/root-index.pt:40
+#: d/templates/root-index.pt:49
+msgid "Registry"
+msgstr ""
+
+#: d/templates/root-index.pt:49
+# Default: ""
+"A key part of the Launchpad is its\n"
+"        <b>registry of open source and related projects</b>. This registry,\n"
+"        inspired by the DOAP framework, allows us to keep track of all the\n"
+"        open source software which uses the Launchpad for translations,\n"
+"        bug management and distributed code management. You can register\n"
+"        individual open source applications, or whole projects, and track\n"
+"        the relationships between them. <a title=\"x\"\n"
+"    href=\"doap\">x</a>"
+msgid "registry-blurb"
+msgstr ""
+
+#: d/templates/root-index.pt:49
+msgid "Find or register apps now!"
+msgstr ""
+
+#: d/templates/root-index.pt:53
+msgid "Soyuz - Distribution Management"
+msgstr ""
+
+#: d/templates/root-index.pt:53
+msgid "Soyuz"
+msgstr ""
+
+#: d/templates/root-index.pt:60
+msgid "Soyuz Distribution Interface"
+msgstr ""
+
+#: d/templates/root-index.pt:60
+# Default: ""
+"The Launchpad also keeps track of\n"
+"        software in the Ubuntu distribution as well as other Linux\n"
+"        distributions. Using this aspect of Launchpad, which we call\n"
+"        Soyuz, you can see which versions of a package are published\n"
+"        in the distribution at any time. <a title=\"x\"\n"
+"    href=\"/distros/\">x</a>"
+msgid "soyuz-blurb"
+msgstr ""
+
+#: d/templates/root-index.pt:60
+msgid "Explore Soyuz Now!"
+msgstr ""
+
+#: d/templates/root-index.pt:8
+msgid "Welcome to The Launchpad!"
 msgstr ""
 
 #: d/zcml/binarypackagename.zcml:39
