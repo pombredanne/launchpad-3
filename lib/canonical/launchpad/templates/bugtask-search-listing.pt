@@ -249,7 +249,7 @@
                     </label>
                     <br />
                     <tal:block content="structure view/include_dupes_widget" />
-                    <label
+                    <label style="font-weight: normal;"
                         tal:attributes="for view/include_dupes_widget/name"
                         tal:content="structure view/include_dupes_widget/label">
                       include duplicate bugs
