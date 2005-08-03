@@ -25,6 +25,7 @@ else
     # R0915 (Too many statements)
     # W0511 (XXX and TODO listings)
     # W0302 (Too many lines in module)
+    # R0902 (Too many instance attributes)
     PYLINTOFF="$PYLINTOFF,W0131,R0912,R0913,R0914,R0915,W0511,W0302"
 fi
 
