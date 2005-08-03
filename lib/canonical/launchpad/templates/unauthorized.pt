@@ -3,10 +3,7 @@
 <html metal:use-macro="context/@@standard_macros/page">
 
 <div xmetal:fill-slot="body">
-
-<h1 i18n:translate="">Unauthorized</h1>
-<p tal:content="context"/>
-
+    <h1 i18n:translate="">Unauthorized</h1>
+    <p tal:content="context"/>
 </div>
-</body>
 </html>

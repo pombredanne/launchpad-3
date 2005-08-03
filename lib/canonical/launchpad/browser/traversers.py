@@ -24,10 +24,11 @@ from zope.exceptions import NotFoundError
 from canonical.launchpad.interfaces import (
     IBugSet, IBugTaskSet, IBugTasksReport, IDistributionSet, IProjectSet,
     IProductSet, ISourcePackageSet, IBugTrackerSet, ILaunchBag,
-    ITeamMembershipSubset, ICalendarOwner, ILanguageSet, IPublishedPackageSet,
-    IPollSet, IPollOptionSet, IDistroReleaseLanguageSet)
+    ITeamMembershipSubset, ICalendarOwner, ILanguageSet, IBugAttachmentSet,
+    IPublishedPackageSet, IPollSet, IPollOptionSet,
+    IDistroReleaseLanguageSet)
 from canonical.launchpad.database import (
-    BugAttachmentSet, BugExternalRefSet, BugSubscriptionSet,
+    BugExternalRefSet, BugSubscriptionSet,
     BugWatchSet, BugTasksReport, CVERefSet, BugProductInfestationSet,
     BugPackageInfestationSet, ProductSeriesSet, ProductMilestoneSet,
     SourcePackageSet)
@@ -57,7 +58,8 @@ def traverse_potemplate(potemplate, request, name):
         return potemplate.getPOFileOrDummy(name, owner=user)
     elif request.method == 'POST':
         return potemplate.getOrCreatePOFile(name, owner=user)
-    raise AssertionError('We only know about GET, HEAD, and POST')
+    else:
+        raise AssertionError('We only know about GET, HEAD, and POST')
 
 
 def traverse_project(project, request, name):
@@ -234,7 +236,7 @@ def traverse_team(team, request, name):
 def traverse_bug(bug, request, name):
     """Traverse an IBug."""
     if name == 'attachments':
-        return BugAttachmentSet(bug=bug.id)
+        return getUtility(IBugAttachmentSet)
     elif name == 'references':
         return BugExternalRefSet(bug=bug.id)
     elif name == 'cverefs':

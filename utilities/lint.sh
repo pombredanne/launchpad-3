@@ -34,7 +34,8 @@ PYLINTOPTS="--reports=n --enable-metrics=n --include-ids=y
 # Disables:
 # E0213 (Method doesn't have "self" as first argument)
 # E0211 (Method has no argument)
-PYLINTOPTS_INT="$PYLINTOPTS,E0213,E0211"
+# W0613 (Unused argument)
+PYLINTOPTS_INT="$PYLINTOPTS,E0213,E0211,W0613"
 
 export PYTHONPATH=lib:$PYTHONPATH
 

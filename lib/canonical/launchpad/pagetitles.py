@@ -135,6 +135,8 @@ bug_index = BugPageTitle()
 
 bug_references = ContextId('External References for Malone Bug #%s')
 
+bugattachment_add = 'Add an Attachment'
+
 bugwatch_editform = ContextTitle('Edit the Watch on %s')
 
 # bugpackageinfestations_index is a redirect

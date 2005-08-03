@@ -223,9 +223,10 @@ let's hang a bug onto the ILaunchBag utility.
     and are fixed there then bubble back down (via patches) to the various
     distros via patches.
 
-    >>> firefox_crashes_upstream = BugTaskFactory(
-    ...     None, product = firefox.id, owner = bug_submitter.id)
-    >>> notify(SQLObjectCreatedEvent(firefox_crashes_upstream))
+    >>> evolution = getUtility(IProductSet).get(5)
+    >>> evolution_crashes_too = BugTaskFactory(
+    ...     None, product = evolution.id, owner = bug_submitter.id)
+    >>> notify(SQLObjectCreatedEvent(evolution_crashes_too))
 
     >>> transaction.commit()
 
@@ -616,7 +617,7 @@ don't want to do until after Nukesourcepackage is implemented, because
 the SourcePackage table is going to be blown away anyway.
 
     >>> applets = getUtility(IProductSet).get(9)
-    >>> firefox_crashes_upstream = BugTaskFactory(
+    >>> applets_crashes_too = BugTaskFactory(
     ...     None, product = applets.id, owner = bug_submitter.id)
 
 Normally, you might expect to see the maintainer of applets (Foo Bar,
@@ -625,7 +626,7 @@ that will get notified of changes on this bug. Because the bug is
 private, and Foo Bar is not an explicit subscriber to the bug, he will
 *not* be included in the list of recipients!
 
-    >>> notify(SQLObjectCreatedEvent(firefox_crashes_upstream))
+    >>> notify(SQLObjectCreatedEvent(applets_crashes_too))
 
     >>> transaction.commit()
 
@@ -673,7 +674,7 @@ recipient addresses:
     ...         return MockBugNoRecipientAddresses(self.bugtask.bug)
     ...     bug = property(bug)
 
-    >>> task_with_no_subscribers = MockBugTask(firefox_crashes_upstream)
+    >>> task_with_no_subscribers = MockBugTask(evolution_crashes_too)
     >>> notify(SQLObjectCreatedEvent(task_with_no_subscribers))
 
     >>> transaction.commit()

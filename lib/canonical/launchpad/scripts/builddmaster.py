@@ -494,7 +494,7 @@ class BuilddMaster:
         """Setting up a workable DistroArchRelease for this session."""
         # ensure we have a pocket
         if not pocket:
-            pocket = PackagePublishingPocket.PLAIN
+            pocket = PackagePublishingPocket.RELEASE
 
         self._logger.info("Adding DistroArchRelease %s/%s/%s/%s"
                           % (archrelease.distrorelease.distribution.name,
@@ -744,7 +744,7 @@ class BuilddMaster:
         """Dispach Jobs according specific procesor and pocket """
         # ensure we have a pocket
         if not pocket:
-            pocket = PackagePublishingPocket.PLAIN
+            pocket = PackagePublishingPocket.RELEASE
         
         self.getLogger().debug("dispatchByProcessor(%s, %d queueItem(s), %s)"
                                % (proc.name, len(queueItems), pocket.title))

@@ -18,8 +18,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.lp.dbschema import (
     EnumCol, BugTaskPriority, BugTaskStatus, BugTaskSeverity, BugSubscription)
 
-from canonical.launchpad.interfaces import IBugTask
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import nowUTC
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.maintainership import Maintainership
@@ -27,8 +26,8 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.interfaces import (
-    IBugTasksReport, IBugTaskSet, IUpstreamBugTask, IDistroBugTask,
-    IDistroReleaseBugTask, ILaunchBag, IAuthorization)
+    IBugTask, IBugTasksReport, IBugTaskSet, IUpstreamBugTask,
+    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, IAuthorization)
 
 debbugsstatusmap = {'open': BugTaskStatus.NEW,
                     'forwarded': BugTaskStatus.ACCEPTED,
@@ -149,7 +148,7 @@ class BugTask(SQLBase):
           sourcepackagename.name
         * distribution.displayname distrorelease.displayname 
           sourcepackagename.name binarypackagename.name
-        * product.name
+        * upstream product.name
         """
         if self.distribution or self.distrorelease:
             if self.sourcepackagename is None:
@@ -173,7 +172,7 @@ class BugTask(SQLBase):
                 L.append(binarypackagename_name)
             return ' '.join(L)
         elif self.product:
-            return self.product.displayname
+            return 'upstream ' + self.product.name
         else:
             raise AssertionError
 
@@ -190,7 +189,6 @@ class BugTask(SQLBase):
         """Marks the task when it's created or fetched from the database."""
         SQLBase._init(self, *args, **kw)
 
-        user = getUtility(ILaunchBag).user
         if self.product is not None:
             # This is an upstream task.
             mark_task(self, IUpstreamBugTask)
@@ -234,12 +232,12 @@ class BugTaskSet:
     def __init__(self):
         self.title = 'A Set of Bug Tasks'
 
-    def __getitem__(self, id):
+    def __getitem__(self, task_id):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
         try:
-            task = BugTask.get(id)
+            task = BugTask.get(task_id)
         except SQLObjectNotFound:
-            raise KeyError, id
+            raise KeyError, task_id
         return task
 
     def __iter__(self):
@@ -247,19 +245,21 @@ class BugTaskSet:
         for task in BugTask.select():
             yield task
 
-    def get(self, id):
+    def get(self, task_id):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
         try:
-            bugtask = BugTask.get(id)
+            bugtask = BugTask.get(task_id)
         except SQLObjectNotFound:
-            raise NotFoundError("BugTask with ID %s does not exist" % str(id))
+            raise NotFoundError("BugTask with ID %s does not exist" % 
+                                str(task_id))
         return bugtask
 
     def search(self, bug=None, searchtext=None, status=None, priority=None,
                severity=None, product=None, distribution=None,
-               distrorelease=None, milestone=None, assignee=None, owner=None,
-               orderby=None, sourcepackagename=None, binarypackagename=None,
-               statusexplanation=None, user=None):
+               distrorelease=None, milestone=None, assignee=None,
+               sourcepackagename=None, binarypackagename=None,
+               owner=None, statusexplanation=None, attachmenttype=None,
+               user=None, orderby=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
 
         # A dict of search argument names and values that will be
@@ -278,6 +278,7 @@ class BugTaskSet:
             'sourcepackagename': sourcepackagename,
             'binarypackagename': binarypackagename
         }
+        clauseTables = ['BugTask', 'Bug']
 
         query = ""
 
@@ -319,6 +320,19 @@ class BugTaskSet:
                         query += "BugTask.%s = %d" % (
                             arg_name, int(arg_value.value))
 
+        # Build the part of the query for attachment type.
+        if attachmenttype is not None:
+            clauseTables.append('BugAttachment')
+            if isinstance(attachmenttype, any):
+                where_cond = "BugAttachment.type IN (%s)" % ", ".join(
+                    sqlvalues(*attachmenttype.query_values))
+            else:
+                where_cond = "BugAttachment.type = %s" % sqlvalues(
+                    attachmenttype)
+            if query:
+                query += " AND "
+            query += "((BugAttachment.bug = BugTask.bug) AND (%s))" % where_cond
+
         if searchtext:
             if query:
                 query += " AND "
@@ -334,6 +348,7 @@ class BugTaskSet:
         if query:
             query += " AND "
 
+        user = getUtility(ILaunchBag).user
         if user:
             query += "("
         query += "(BugTask.bug = Bug.id AND Bug.private = FALSE)"
@@ -380,7 +395,7 @@ class BugTaskSet:
         orderby_arg.append('BugTask.id')
 
         bugtasks = BugTask.select(
-            query, clauseTables=["Bug", "BugTask"], orderBy=orderby_arg)
+            query, clauseTables=clauseTables, orderBy=orderby_arg)
 
         return bugtasks
 
@@ -484,7 +499,7 @@ def mark_task(obj, iface):
     directlyProvides(obj, iface + directlyProvidedBy(obj))
 
 def BugTaskFactory(context, **kw):
-    return BugTask(bugID = getUtility(ILaunchBag).bug.id, **kw)
+    return BugTask(bugID=getUtility(ILaunchBag).bug.id, **kw)
 
 
 class BugTasksReport:

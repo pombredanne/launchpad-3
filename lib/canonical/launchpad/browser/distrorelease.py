@@ -40,6 +40,11 @@ class DistroReleaseView:
         self.languages = helpers.request_languages(self.request)
 
     def requestDistroLangs(self):
+        """Produce a set of DistroReleaseLanguage and
+        DummyDistroReleaseLanguage objects for the languages the user
+        currently is interested in (or which the users location and browser
+        language prefs indicate might be interesting.
+        """
         drlangs = []
         drlangset = getUtility(IDistroReleaseLanguageSet)
         for language in self.languages:

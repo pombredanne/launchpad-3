@@ -35,6 +35,7 @@ __all__ = (
 'BountySubscription',
 'BranchRelationships',
 'BugTaskStatus',
+'BugAttachmentType',
 'BugTrackerType',
 'BugExternalReferenceType',
 'BugInfestationStatus',
@@ -1341,29 +1342,41 @@ class PackagePublishingPocket(DBSchema):
     tools.
     """
 
-    PLAIN = Item(0, """
-        Plain
+    RELEASE = Item(0, """
+        Release
 
-        This pocket indicates a lack of suffix. It is the default pocket and
-        by default will be the only one supported by a distrorelease.
-
-        If a distrorelease is FROZEN CURRENT or STABLE then this pocket is
-        considered an immutable set.
+        This is the "release" pocket, it contains the versions of the
+        packages that were published when the release was made. For releases
+        that are still under development, this is the only pocket into which
+        packages will be published.
         """)
 
-    UPDATES = Item(1, """
-        Updates
-
-        This pocket indicates the '-updates' suffix. This is the common pocket
-        into which uploads might go when a distrorelease is FROZEN or CURRENT.
-        """)
-
-    SECURITY = Item(2, """
+    SECURITY = Item(10, """
         Security
 
-        This pocket indicates the '-security' suffix. It also enforces initial
-        embargos and similar security related behaviour. The Security pocket is
-        commonly not used until a distrorelease is in CURRENT or STABLE.
+        This is the pocket into which we publish only security fixes to the
+        released distribution. It is highly advisable to ensure that your
+        system has the security pocket enabled.
+        """)
+
+    UPDATES = Item(20, """
+        Updates
+
+        This is the pocket into which we publish packages with new
+        functionality after a release has been made. It is usually
+        enabled by default after a fresh install.
+        """)
+
+    PROPOSED = Item(30, """
+        Proposed
+
+        This is the pocket into which we publish packages with new
+        functionality after a release has been made, which we would like to
+        have widely tested but not yet made part of a default installation.
+        People who "live on the edge" will have enabled the "proposed"
+        pocket, and so will start testing these packages. Once they are
+        proven safe for wider deployment they will go into the updates
+        pocket.
         """)
 
 class SourcePackageRelationships(DBSchema):
@@ -1795,6 +1808,28 @@ class BugRelationship(DBSchema):
         This indicates that the subject and object bugs are related in
         some way. The order does not matter. When displaying one bug, it
         would be appropriate to list the other bugs which are related to it.
+        """)
+
+
+class BugAttachmentType(DBSchema):
+    """Bug Attachment Type.
+
+    An attachment to a bug can be of different types, since for example
+    a patch is more important than a screenshot. This schema describes the
+    different types. 
+    """
+
+    PATCH = Item(1, """
+        Patch
+
+        This is a patch that potentially fixes the bug.
+        """)
+
+    UNSPECIFIED = Item(2, """
+        Unspecified
+
+        This is everything else. It can be a screenshot, a log file, a core
+        dump, etc. Basically anything that adds more information to the bug.
         """)
 
 

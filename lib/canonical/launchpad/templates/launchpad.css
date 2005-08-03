@@ -41,8 +41,13 @@
   background-color: #7090a0;
 }
 
+.collapsible {
+    padding: 0;
+    margin: 0;
+}
+
 .collapsed {
-  border-style: dashed none none none;
+  border: none;
   margin-bottom: 0;
 }
 
@@ -84,6 +89,10 @@ h1, h2, h3, h4, h5, h6 {
 
 h3 {
   list-style-image: url(/++resource++bullet.gif);
+}
+
+label {
+  font-weight: bold;
 }
 
 .listingBar a,
@@ -223,6 +232,10 @@ tr.highlight {
     background-color: #ffce7b;
 }
 
+tr.amount, td.amount {
+    text-align: right;
+}
+
 /* Display links as blocks, so we can make the whole row clickable */
 
 tr.rowLinkified a {
@@ -299,7 +312,8 @@ tr.rowLinkified a {
 
 .boardComment {
   border: 1px solid #364970;
-  margin-bottom: 1em;
+  margin-bottom: 1.5em;
+  margin-top: 1em;
   position: relative;
 }
 
@@ -346,7 +360,7 @@ tr.rowLinkified a {
 }
 
 .boardCommentPortrait {
-  float: right; 
+  float: right;
   margin-bottom: 1em;
 }
 
@@ -638,7 +652,6 @@ abbr, address {
 
 label, .field label {
   font-family: sans-serif;
-  font-weight: normal;
   white-space: nowrap;
 }
 
@@ -930,9 +943,9 @@ input {
 }
 /* this lines up text inputs so they don't look a mess */
 .textinput {
-  position: absolute; 
+  position: absolute;
   left: 250px;
-} 
+}
 /* radios had 1px left and right borders - don't know if intended
   but looked shit imo */
 .radios {

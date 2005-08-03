@@ -49,10 +49,11 @@ class PackagingUtil:
     implements(IPackagingUtil)
 
     def createPackaging(self, productseries, sourcepackagename,
-                              distrorelease, packaging):
+                              distrorelease, packaging, owner):
         """Create new Packaging entry."""
         Packaging(productseries=productseries,
                   sourcepackagename=sourcepackagename,
                   distrorelease=distrorelease,
-                  packaging=packaging)
+                  packaging=packaging,
+                  owner=owner)
 

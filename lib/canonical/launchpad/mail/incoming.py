@@ -10,11 +10,9 @@ import email.Errors
 
 import transaction
 from zope.component import getUtility, queryUtility
-from zope.component.exceptions import ComponentLookupError
 
 from canonical.launchpad.interfaces import (IPerson, IGPGHandler, 
     IMailHandler, IMailBox, ILibraryFileAliasSet)
-from canonical.launchpad.utilities import GPGHandler
 from canonical.launchpad.helpers import (setupInteraction,
     get_filename_from_message_id)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
@@ -37,7 +35,7 @@ def authenticateEmail(mail):
     name, email_addr = parseaddr(mail['From'])
     authutil = getUtility(IPlacelessAuthUtility)
     principal = authutil.getPrincipalByLogin(email_addr)
-    
+
     # Check that sender is registered in Launchpad and the email is signed.
     if principal is None:
         setupInteraction(authutil.unauthenticatedPrincipal())
@@ -49,7 +47,7 @@ def authenticateEmail(mail):
         #     adapter. -- Bjorn Tillenius, 2005-06-06
         setupInteraction(principal, email_addr)
         return principal
-        
+
     person = IPerson(principal)
     gpghandler = getUtility(IGPGHandler)
     sig = gpghandler.verifySignature(signed_content, signature)
@@ -81,7 +79,7 @@ def handleMail(trans=transaction):
             log = getLogger('canonical.launchpad.mail')
             log.warn( "Couldn't convert email to email.Message", exc_info=True)
             continue
-            
+
         # File the raw_mail in the Librarian
         file_name = get_filename_from_message_id(mail['Message-Id'])
         file_alias = getUtility(ILibraryFileAliasSet).create(
@@ -96,9 +94,13 @@ def handleMail(trans=transaction):
 
         try:
             principal = authenticateEmail(mail)
-        except InvalidSignature:
+        except InvalidSignature, error:
+            mailbox.delete(mail_id)
             notify_errors_list(
-                "Invalid signature: %s" % mail['From'], file_alias)
+                "Invalid signature for %s:\n    %s" % (mail['From'],
+                                                       str(error)),
+                file_alias)
+            continue
         if principal is None:
             mailbox.delete(mail_id)
             notify_errors_list('Unknown user: %s ' % mail['From'], file_alias) 
@@ -118,7 +120,7 @@ def handleMail(trans=transaction):
             to = mail.get_all('to') or []
             names_addresses = getaddresses(to + cc)
             addresses = [addr for name, addr in names_addresses]
-        
+
         handler = None
         for email_addr in addresses:
             user, domain = email_addr.split('@')

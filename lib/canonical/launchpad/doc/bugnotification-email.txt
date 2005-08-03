@@ -55,7 +55,7 @@ Let's take a look at what the notification email looks like:
     Public bug reported:
     http://.../malone/bugs/4
     <BLANKLINE>
-    Affects: Mozilla Firefox
+    Affects: upstream firefox
            Severity: Normal
            Priority: Medium
              Status: New

@@ -76,7 +76,7 @@
         <browser:page name="+portlet-status"
             template="../templates/bugtask-portlet-status.pt"
             lp:url="malone/tasks/+portlet-status" />
-
+        
     </browser:pages>
 
     <!-- XXX: Brad Bollenbach, 2005-01-18: We need to sort out the +upstreamtask
@@ -94,7 +94,7 @@
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         for="canonical.launchpad.interfaces.IBug"
         class="canonical.launchpad.browser.bug.BugAddingView"
-        label="Request a fix in an upstream product"
+        label="Indicate Bug Occurs in Upstream Product"
         fields="product status priority severity assignee owner"
         content_factory="canonical.launchpad.database.BugTaskFactory"
         arguments=""
@@ -144,7 +144,7 @@
         schema="canonical.launchpad.interfaces.IDistroBugTask"
         for="canonical.launchpad.interfaces.IBug"
         class="canonical.launchpad.browser.bug.BugAddingView"
-        label="Request a fix in a distribution"
+        label="Indicate Bug Occurs in Distribution"
         fields="distribution sourcepackagename owner"
         content_factory="canonical.launchpad.database.BugTaskFactory"
         keyword_arguments="distribution sourcepackagename owner"

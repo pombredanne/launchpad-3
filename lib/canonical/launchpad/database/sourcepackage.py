@@ -13,7 +13,8 @@ from canonical.database.sqlbase import (quote, sqlvalues,
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
-    BugTaskStatus, BugTaskSeverity, PackagePublishingStatus, PackagingType)
+    BugTaskStatus, BugTaskSeverity, PackagePublishingStatus, PackagingType,
+    PackagePublishingPocket)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (ISourcePackage,
@@ -287,6 +288,27 @@ class SourcePackage:
         if ps is None:
             return False
         return ps.branch is not None
+
+    @property
+    def published_by_pocket(self):
+        """See ISourcePackage."""
+        result = SourcePackagePublishing.select("""
+            SourcePackagePublishing.distrorelease = %s AND
+            SourcePackagePublishing.sourcepackagerelease =
+                SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename = %s
+            """ % sqlvalues(
+                self.distrorelease.id,
+                self.sourcepackagename.id),
+            clauseTables=['SourcePackageRelease'])
+        # create the dictionary with the set of pockets as keys
+        thedict = {}
+        for pocket in PackagePublishingPocket.items:
+            thedict[pocket] = []
+        # add all the sourcepackagereleases in the right place
+        for spr in result:
+            thedict[spr.pocket].append(spr.sourcepackagerelease)
+        return thedict
 
     def setPackaging(self, productseries, user):
         target = self.direct_packaging

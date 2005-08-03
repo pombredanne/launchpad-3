@@ -2,27 +2,24 @@
 
 __metaclass__ = type
 
-import email
-
 import transaction
 from zope.component import getUtility
-from zope.interface import Interface, implements
+from zope.interface import implements
 from zope.event import notify
 from zope.exceptions import NotFoundError
-from zope.publisher.interfaces.browser import IBrowserRequest
 
-from canonical.config import config
 from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IBugSet, IBugTask, IProduct, IDistribution, IMessageSet,
-    IBugEmailCommand, IBugTaskSet, IBug, IMailHandler,
-    BugCreationConstraintsError)
+    ILaunchBag, IMessageSet, IBugEmailCommand, IBug, IMailHandler,
+    IBugMessageSet, BugCreationConstraintsError)
 from canonical.launchpad.mail.commands import emailcommands
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
 
-from canonical.launchpad.event import SQLObjectModifiedEvent
-from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
+from canonical.launchpad.event import (
+    SQLObjectModifiedEvent, SQLObjectCreatedEvent)
+from canonical.launchpad.event.interfaces import (
+    ISQLObjectModifiedEvent, ISQLObjectCreatedEvent)
 
 
 def get_main_body(signed_msg):
@@ -127,6 +124,14 @@ class MaloneHandler:
                             bug_event = None
 
                         bug, bug_event = command.execute(message)
+                        if not ISQLObjectCreatedEvent.providedBy(bug_event):
+                            # If it's a comment to an existing bug, we
+                            # need to generate a created event for the
+                            # comment.
+                            bugmessageset = getUtility(IBugMessageSet)
+                            bugmessage = bugmessageset.getByBugAndMessage(
+                                bug, message)
+                            notify(SQLObjectCreatedEvent(bugmessage))
                         bug_snapshot = Snapshot(bug, providing=IBug)
                     else:
                         ob, ob_event = command.execute(bug, bug_event)

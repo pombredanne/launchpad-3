@@ -119,10 +119,11 @@ class POMsgSet(SQLBase):
     # IEditPOMsgSet
 
     def updateTranslationSet(self, person, new_translations, fuzzy,
-        published, ignore_errors=False):
+        published, ignore_errors=False, force_edition_rights=False):
         """See IEditPOMsgSet."""
         # Is the person allowed to edit translations?
-        is_editor = self.pofile.canEditTranslations(person)
+        is_editor = (force_edition_rights or
+                     self.pofile.canEditTranslations(person))
 
         # First, check that the translations are correct.
         pot_set = self.potmsgset
@@ -179,7 +180,8 @@ class POMsgSet(SQLBase):
                 text=newtran,
                 pluralform=index,
                 published=published,
-                validation_status=validation_status)
+                validation_status=validation_status,
+                force_edition_rights=is_editor)
 
         # We set the fuzzy flag first, and completeness flags as needed:
         if published and is_editor:
@@ -193,9 +195,11 @@ class POMsgSet(SQLBase):
         self.updateStatistics()
 
     def makeSubmission(self, person, text, pluralform, published,
-            validation_status=TranslationValidationStatus.UNKNOWN):
+            validation_status=TranslationValidationStatus.UNKNOWN,
+            force_edition_rights=False):
         # Is the person allowed to edit translations?
-        is_editor = self.pofile.canEditTranslations(person)
+        is_editor = (force_edition_rights or
+                     self.pofile.canEditTranslations(person))
 
         # this is THE KEY method in the whole of rosetta. It deals with the
         # sighting or submission of a translation for a pomsgset and plural

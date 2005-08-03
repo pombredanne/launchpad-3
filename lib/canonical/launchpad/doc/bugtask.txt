@@ -126,13 +126,13 @@ task. It concatenates the display names of the distribution,
 
     >>> bugtask = bugtaskset.get(1)
     >>> bugtask.contextname
-    u'Ubuntu'
+    u'upstream ubuntu'
 
 distro release, or product;
 
     >>> bugtask = bugtaskset.get(2)
     >>> bugtask.contextname
-    u'Mozilla Firefox'
+    u'upstream firefox'
 
 the name of the source package (if any); and the name of the binary
 package (but only if it's named differently from the source
@@ -171,7 +171,7 @@ Product alone:
 
     >>> bugtask.product = NamedThing('product')
     >>> bugtask.contextname()
-    '[product.displayname]'
+    'upstream [product.name]'
 
 Put things back the way they were.
 

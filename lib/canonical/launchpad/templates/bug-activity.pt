@@ -6,7 +6,8 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-people" />
+    <div tal:replace="structure context/@@+portlet-subscribers" />
+    <div tal:replace="structure context/@@+portlet-maintainers" />
     <div tal:replace="structure context/@@+portlet-productinfestation" />
     <div tal:replace="structure context/@@+portlet-packageinfestation" />
 </metal:leftportlets>

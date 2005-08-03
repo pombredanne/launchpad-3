@@ -5,8 +5,9 @@
   <div class="portletBody">
     <div class="portletContent odd">
 
-      <img src="/++resource++edit.gif" alt="Edit">
-      <a href="+edit">Edit BugTracker Details</a><br />
+      <ul>
+        <li class="edit"><a href="+edit">Edit BugTracker Details</a></li>
+      </ul>
 
     </div>
   </div>

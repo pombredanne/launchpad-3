@@ -4,8 +4,8 @@ __metaclass__ = type
 __all__ = ['Poll', 'PollSet', 'PollOption', 'PollOptionSet',
            'VoteCast', 'Vote']
 
-from datetime import datetime
 import pytz
+from datetime import datetime
 
 from zope.interface import implements
 
@@ -158,12 +158,12 @@ class PollOptionSet:
         """See IPollOptionSet."""
         query = PollOption.q.pollID == poll.id
         if only_active:
-            query = AND(query, PollOption.q.active==True)
+            query = AND(query, PollOption.q.active == True)
         return PollOption.select(query)
 
     def getByPollAndId(self, poll, option_id, default=None):
         """See IPollOptionSet."""
-        query = AND(PollOption.q.pollID == poll.id, 
+        query = AND(PollOption.q.pollID == poll.id,
                     PollOption.q.id == option_id)
         try:
             return PollOption.selectOne(query)

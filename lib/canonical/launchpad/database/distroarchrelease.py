@@ -61,7 +61,7 @@ class DistroArchRelease(SQLBase):
     def getChroot(self, pocket=None, default=None):
         """See IDistroArchRelease"""
         if not pocket:
-            pocket = dbschema.PackagePublishingPocket.PLAIN
+            pocket = dbschema.PackagePublishingPocket.RELEASE
 
         pchroot = PocketChroot.selectOneBy(distroarchreleaseID=self.id,
                                            pocket=pocket)

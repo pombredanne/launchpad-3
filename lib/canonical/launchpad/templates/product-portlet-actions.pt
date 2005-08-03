@@ -6,6 +6,12 @@
 
             <ul>
                 <li class="add">
+                  <a href="+distributions">Show Distributions</a>
+                </li>
+                <li class="add">
+                  <a href="+packages">Show Packages</a>
+                </li>
+                <li class="add">
                   <a href="+branches">Show Branches</a>
                 </li>
                 <li class="edit">
@@ -14,14 +20,16 @@
                 <li class="edit">
                     <a href="+reassign">Change Maintainer</a>
                 </li>
-                <li class="add">
-                  <a href="+addpackage">Link To Package</a>
+                <li class="edit">
+                  <a href="+filebug">File New Bug</a>
                 </li>
-                <li class="add"><a href="+addseries">Add Branch</a></li>
+                <li class="edit">
+                  <a href="+addseries">Add Branch</a>
+                </li>
                 <li class="edit">
                   <a href="+changetranslators">Change Translators</a>
                 </li>
-                <li class="add">
+                <li class="edit">
                   <a href="+milestone">Add Milestone</a>
                 </li>
                 <li class="download">

@@ -52,7 +52,7 @@ to sign each email, we'll create a class which fakes a signed email:
     ...     def signedMessage(self):
     ...         return self
     ...     signedMessage = property(signedMessage) 
-        
+
 And since we'll pass the email directly to the correct handler,
 we'll have to authenticate the user manually:
 
@@ -201,12 +201,20 @@ a reply to the notification.
     >>> added_message.parent == bug_message
     True
 
+A notification gets sent out just like when adding a comment via the
+web UI.
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    >>> notification = email.message_from_string(raw_message)
+    >>> print notification.get_payload()
+    Public bug report changed:
+    ...
+    Comment:
+    This is a reply to an existing comment.
 
 XXX: Write explanation and fix this test when BugNotificationsThreading
      has been completed. -- Bjorn Tilllenius, 2005-05-31
     
-    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
-    >>> notification = email.message_from_string(raw_message)
 
     >>> notification_reply = """From: test@canonical.com
     ... To: 1@malone
