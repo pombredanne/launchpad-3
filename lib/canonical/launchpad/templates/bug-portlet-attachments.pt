@@ -17,11 +17,10 @@
           </small>
         </li>
       </ul>
-      <ul>
+      <ul style="text-align: right">
         <li class="add">
-          <a title="Add an attachment to this bug"
-             tal:attributes="href string:$bug_url/attachments/+new">
-            Attach another file
+          <a tal:attributes="href string:$bug_url/attachments/+new">
+            Add
           </a>
         </li>
       </ul>
