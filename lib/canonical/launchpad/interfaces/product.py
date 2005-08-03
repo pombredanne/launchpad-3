@@ -15,7 +15,7 @@ from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import IHasOwner, IBugTarget
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import name_validator
 
 _ = MessageIDFactory('launchpad')
 
@@ -49,7 +49,7 @@ class IProduct(IHasOwner, IBugTarget):
 
     name = TextLine(
         title=_('Name'),
-        constraint=valid_name,
+        constraint=name_validator,
         description=_("""The short name of this product, which must be
             unique among all the products. It should be at least one
             lowercase letters or number followed by one or more chars,

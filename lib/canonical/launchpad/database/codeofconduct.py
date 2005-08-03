@@ -221,7 +221,13 @@ class SignedCodeOfConductSet:
 
         # use a utility to perform the GPG operations
         gpghandler = getUtility(IGPGHandler)
-        sig = gpghandler.verifySignature(signedcode)
+
+        try:
+            sane_signedcode = signedcode.encode('utf-8')
+        except UnicodeEncodeError:
+            raise TypeError('Signed Code Could not be encoded as UTF-8')
+            
+        sig = gpghandler.verifySignature(sane_signedcode)
 
         if sig is None:
             return 'Signature has invalid format'
@@ -330,14 +336,14 @@ class SignedCodeOfConductSet:
     def acknowledgeSignature(self, user, recipient):
         """See ISignedCodeOfConductSet."""
         active = True
-
+        sign = SignedCodeOfConduct(owner=user.id, recipient=recipient.id,
+                                   active=active)
+        
         subject = 'Launchpad: Code Of Conduct Signature Acknowledge'
         content = 'Paper Submitted acknowledge by %s' % recipient.browsername
 
         sign.sendAdvertisementEmail(subject, content)
 
-        SignedCodeOfConduct(owner=user.id, recipient=recipient.id,
-                            active=active)
 
     def getLastAcceptedDate(self):
         """See ISignegCodeOfConductSet."""
