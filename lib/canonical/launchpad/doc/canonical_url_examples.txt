@@ -182,7 +182,7 @@ An IDistroBugTask.
 An IDistroReleaseBugTask.
 
     >>> canonical_url(getUtility(IBugTaskSet).get(16))
-    u'http://localhost:8086/distros/ubuntu/warty/+bugs/6'
+    u'http://localhost:8086/distros/ubuntu/warty/+bugs/5'
 
 An IBugSubset.
 

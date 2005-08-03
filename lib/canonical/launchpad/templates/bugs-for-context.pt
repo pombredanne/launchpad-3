@@ -10,10 +10,7 @@
 
   <div class="sidebar">
     <tal:block content="structure context/@@+portlet-bugtasklist-actions" />
-    <br />
-    <tal:block content="structure context/@@+portlet-bugtasklist-statsforcontext" />
     <tal:releasebugs condition="context/@@+portlet-bugtasklist-releasebugs|nothing">
-      <br />
       <tal:block content="structure context/@@+portlet-bugtasklist-releasebugs" />
     </tal:releasebugs>
   </div>

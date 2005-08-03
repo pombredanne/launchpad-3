@@ -26,7 +26,6 @@ from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtask import BugTaskSet
-from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
@@ -75,10 +74,10 @@ class Product(SQLBase):
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
 
-    def search(self, bug=None, searchtext=None, status=None, priority=None,
-               severity=None, milestone=None, assignee=None, owner=None,
-               statusexplanation=None, attachmenttype=None, user=None,
-               orderby=None):
+    def searchBugs(self, bug=None, searchtext=None, status=None, priority=None,
+                   severity=None, milestone=None, assignee=None, owner=None,
+                   statusexplanation=None, attachmenttype=None, user=None,
+                   orderby=None, omit_dupes=False):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # As an initial refactoring, we're wrapping BugTaskSet.search.
         # It's possible that the search code will live inside this
@@ -90,7 +89,8 @@ class Product(SQLBase):
             product=self, bug=bug, searchtext=searchtext, status=status,
             priority=priority, severity=severity, milestone=milestone,
             assignee=assignee, owner=owner, attachmenttype=attachmenttype,
-            statusexplanation=statusexplanation, user=user, orderby=orderby)
+            statusexplanation=statusexplanation, user=user, orderby=orderby,
+            omit_dupes=omit_dupes)
 
     def getOrCreateCalendar(self):
         if not self.calendar:
@@ -410,6 +410,8 @@ class ProductSet:
 
     def translatables(self, translationProject=None):
         """See IProductSet"""
+
+        # XXX kiko: translationProject is unused. Why?
 
         translatable_set = set()
         upstream = Product.select('''

@@ -2,8 +2,9 @@
 
 __metaclass__ = type
 
-import sys, os, os.path, shutil, time
-from signal import SIGTERM
+import os
+import shutil
+
 import canonical
 
 from canonical.launchpad.daemons.tachandler import TacTestSetup

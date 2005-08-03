@@ -138,7 +138,7 @@ def handleMail(trans=transaction):
         try:
             handled = handler.process(mail, email_addr, file_alias)
         except Exception, error:
-            # The handler shouldn't raise any exceptions. It it
+            # The handler shouldn't raise any exceptions. If it
             # does, it's a programming error.
             mailbox.delete(mail_id)
             notify_errors_list(

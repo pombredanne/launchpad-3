@@ -38,21 +38,25 @@ class BugAttachmentSet:
 
     implements(IBugAttachmentSet)
 
-    def __getitem__(self, id):
+    def __getitem__(self, attach_id):
         """See IBugAttachmentSet."""
         try:
-            id = int(id)
+            attach_id = int(attach_id)
         except ValueError:
-            raise NotFoundError(id)
+            raise NotFoundError(attach_id)
         try:
-            item = BugAttachment.get(id)
+            item = BugAttachment.get(attach_id)
         except SQLObjectNotFound:
-            raise NotFoundError(id)
+            raise NotFoundError(attach_id)
         return item
 
     def create(self, bug, filealias, title, message,
-               type=IBugAttachment['type'].default):
+               attach_type=None):
         """See IBugAttachmentSet."""
+        if attach_type is None:
+            # XXX kiko: this should use DEFAULT; depends on bug 1659
+            attach_type = IBugAttachment['type'].default
         return BugAttachment(
-            bug=bug, libraryfile=filealias, type=type, title=title,
+            bug=bug, libraryfile=filealias, type=attach_type, title=title,
             message=message)
+

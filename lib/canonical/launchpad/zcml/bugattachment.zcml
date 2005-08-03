@@ -16,23 +16,11 @@
             />
     </content>
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IBugAttachment"
-        name="index" />
-
     <browser:url
         for="canonical.launchpad.interfaces.IBugAttachment"
         path_expression="string:attachments/${id}"
         attribute_to_parent="bug"
         />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IBugAttachment"
-        permission="zope.Public"
-        lp:url="malone/bugs/$Bugs.id/attachments/$Attachment.id">
-        <browser:page name="+index"
-            template="../templates/attachment-index.pt" />
-    </browser:pages>
 
     <browser:addform
         name="+new"
@@ -58,6 +46,7 @@
         template="../templates/default-editform.pt"
         lp:url="malone/bugs/$Bug.id/attachments/$BugAttachment.id/+edit"
         />
+
     <adapter
         for="canonical.launchpad.interfaces.IBugAttachment"
         provides="canonical.launchpad.interfaces.IBugAttachmentEditForm"

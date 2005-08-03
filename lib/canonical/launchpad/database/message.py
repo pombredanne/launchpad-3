@@ -23,15 +23,13 @@ import pytz
 
 from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
-from canonical.launchpad.interfaces import \
-    IMessage, IMessageSet, IMessageChunk, IPersonSet, \
-    ILibraryFileAliasSet, UnknownSender, MissingSubject, \
-    DuplicateMessageId, InvalidEmailMessage
+from canonical.launchpad.interfaces import (
+    IMessage, IMessageSet, IMessageChunk, IPersonSet, ILibraryFileAliasSet, 
+    UnknownSender, DuplicateMessageId, InvalidEmailMessage)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.foaf.nickname import NicknameGenerationError
 
 # this is a hard limit on the size of email we will be willing to store in
 # the database.
@@ -170,6 +168,7 @@ class MessageSet:
                 rfc822msgid, len(email_message), MAX_EMAIL_SIZE))
 
         # Handle duplicate Message-Id
+        # XXX kiko: shouldn't we be using DuplicateMessageId here?
         try:
             existing_msgs = self.get(rfc822msgid=rfc822msgid)
         except LookupError:

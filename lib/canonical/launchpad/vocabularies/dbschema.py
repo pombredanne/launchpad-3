@@ -41,6 +41,7 @@ def vocab_factory(schema):
     """
     def factory(context, schema=schema):
         """Adapt IDBSchema to IVocabulary."""
+        # XXX kiko: we should use sort's built-in DSU here.
         items = [(item.value, item.title, item) for item in schema.items]
         items.sort()
         items = [(title, value) for sortkey, title, value in items]

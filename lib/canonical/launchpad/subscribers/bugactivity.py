@@ -2,8 +2,6 @@
 
 __metaclass__ = type
 
-from datetime import datetime
-
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from zope.proxy import isProxy
@@ -38,7 +36,7 @@ def get_string_representation(obj):
         return obj
 
     return None
-    
+
 
 def what_changed(sqlobject_modified_event):
     before = sqlobject_modified_event.object_before_modification
@@ -92,17 +90,16 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
                 message = "")
 
 def record_bug_task_added(bug_task, object_created_event):
-    activity_message = ""
     if bug_task.product:
-        activity_message = 'assigned to upstream ' + bug_task.product.name
+        msg = 'assigned to upstream ' + bug_task.product.name
     else:
-        activity_message = 'assigned to source package ' + bug_task.sourcepackagename.name
+        msg = 'assigned to source package ' + bug_task.sourcepackagename.name
     getUtility(IBugActivitySet).new(
         bug=bug_task.bugID,
         datechanged=UTC_NOW,
         person=object_created_event.user,
         whatchanged='bug',
-        message=activity_message)
+        message=msg)
 
 def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
     """Make an activity note that a bug task was edited."""
@@ -146,14 +143,14 @@ def record_product_task_added(product_task, object_created_event):
 def record_product_task_edited(product_task_edited, sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
     if changes:
-        product_name = sqlobject_modified_event.object_before_modification.product.name
+        product = sqlobject_modified_event.object_before_modification.product
         for changed_field in changes.keys():
             oldvalue, newvalue = changes[changed_field]
             getUtility(IBugActivitySet).new(
                 bug=product_task_edited.bug,
                 datechanged=UTC_NOW,
                 person=sqlobject_modified_event.user,
-                whatchanged="%s: %s" % (product_name, changed_field),
+                whatchanged="%s: %s" % (product.name, changed_field),
                 oldvalue=oldvalue,
                 newvalue=newvalue,
                 message='XXX: not yet implemented')
@@ -169,18 +166,20 @@ def record_package_infestation_added(package_infestation, object_created_event):
         whatchanged="bug",
         message="added infestation of package release " + package_release_name)
 
-def record_package_infestation_edited(package_infestation_edited, sqlobject_modified_event):
+def record_package_infestation_edited(package_infestation_edited, 
+                                      sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
     if changes:
+        event = sqlobject_modified_event
+        srcpkgrelease = event.object_before_modification.sourcepackagerelease
         package_release_name = "%s %s" % (
-            sqlobject_modified_event.object_before_modification.sourcepackagerelease.sourcepackagename.name,
-            sqlobject_modified_event.object_before_modification.sourcepackagerelease.version)
+            srcpkgrelease.sourcepackagename.name, srcpkgrelease.version)
         for changed_field in changes.keys():
             oldvalue, newvalue = changes[changed_field]
             getUtility(IBugActivitySet).new(
                 bug=package_infestation_edited.bug.id,
                 datechanged=UTC_NOW,
-                person=sqlobject_modified_event.user,
+                person=event.user,
                 whatchanged="%s: %s" % (package_release_name, changed_field),
                 oldvalue=oldvalue,
                 newvalue=newvalue,
@@ -197,18 +196,20 @@ def record_product_infestation_added(product_infestation, object_created_event):
         whatchanged="bug",
         message="added infestation of product release " + product_release_name)
 
-def record_product_infestation_edited(product_infestation_edited, sqlobject_modified_event):
+def record_product_infestation_edited(product_infestation_edited, 
+                                      sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
     if changes:
-        product_release_name = "%s %s" % (
-            sqlobject_modified_event.object_before_modification.productrelease.product.name,
-            sqlobject_modified_event.object_before_modification.productrelease.version)
+        event = sqlobject_modified_event
+        productrelease = event.object_before_modification.productrelease
+        product_release_name = "%s %s" % (productrelease.product.name,
+                                          productrelease.version)
         for changed_field in changes.keys():
             oldvalue, newvalue = changes[changed_field]
             getUtility(IBugActivitySet).new(
                 bug=product_infestation_edited.bug.id,
                 datechanged=UTC_NOW,
-                person=sqlobject_modified_event.user,
+                person=event.user,
                 whatchanged="%s: %s" % (product_release_name, changed_field),
                 oldvalue=oldvalue,
                 newvalue=newvalue,
