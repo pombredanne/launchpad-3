@@ -6,7 +6,7 @@ __metaclass__ = type
 
 __all__ = ['TacTestSetup']
 
-import sys, os, os.path, shutil, time
+import sys, os, time
 from signal import SIGTERM
 
 from twisted.application import service
@@ -18,7 +18,7 @@ LOG_MAGIC = 'daemon ready!'
 
 class TacTestSetup:
     """Setup an TAC file as daemon for use by functional tests.
-    
+
     You can override setUpRoot to set up a root directory for the daemon.
     """
     def setUp(self, spew=False):
@@ -59,7 +59,7 @@ class TacTestSetup:
                     time.sleep(0.1)
                 except OSError:
                     break
-        
+
     def setUpRoot(self):
         """Override this.
 
@@ -73,7 +73,7 @@ class TacTestSetup:
     # We don't really need those information as property,
     # they can be implmented as simple attributes since they
     # store static information. Sort it out soon.
-    
+
     @property
     def root(self):
         raise NotImplementedError
@@ -97,5 +97,4 @@ class ReadyService(service.Service):
         from twisted.internet import reactor
         reactor.addSystemEventTrigger('after', 'startup', log.msg, LOG_MAGIC)
         service.Service.startService(self)
-            
 
