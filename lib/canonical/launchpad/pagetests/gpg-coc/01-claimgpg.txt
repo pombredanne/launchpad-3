@@ -1,10 +1,11 @@
- Setup the stub KeyServer
+
+Setup the stub KeyServer
 
   >>> from canonical.zeca.ftests.harness import ZecaTestSetup
   >>> z = ZecaTestSetup()
   >>> z.setUp()
   
- Clean page
+Clean page
 
   >>> print http(r"""
   ... GET /foaf/people/name12/+editgpgkey HTTP/1.1
@@ -18,7 +19,7 @@
       <title>Sample Person GPG Keys</title>
   ...
 
-  Claim GPG Key
+Claim GPG Key
 
   >>> print http(r"""
   ... POST /people/name12/+editgpgkey HTTP/1.1
@@ -34,14 +35,14 @@
   ...1024D/DFD20543...
   ...  
 
-  Recover Token URL
+Recover Token URL
 
   >>> import email, re
   >>> from canonical.launchpad.mail import stub
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> msg = email.message_from_string(raw_msg)
 
-  decode the content, originally encoded in 'base-64' or 'quoted-printable'
+Decode the content, originally encoded in 'base-64' or 'quoted-printable'
   
   >>> cipher_body = msg.get_payload(decode=True)
 
@@ -52,28 +53,30 @@
   >>> from zope.component import getUtility
   >>> gpghandler = getUtility(IGPGHandler)
 
-  Import the secret keys need for this test
+Import the secret keys need for this test
 
   >>> from canonical.launchpad.ftests import import_secret_test_key
   >>> import_secret_test_key()
 
-  'cipher_body' is a message encrypted to the just imported 1024D/DFD20543
-  gpg key, we need to access the current IGpghandler instance to
-  access this key and decrypt the message.
+'cipher_body' is a message encrypted to the just imported 1024D/DFD20543
+gpg key, we need to access the current IGpghandler instance to
+access this key and decrypt the message.
 
   >>> body = gpghandler.decryptContent(cipher_body, 'test')
 
   >>> from zope.security.management import endInteraction
   >>> endInteraction()
 
-  Do the usual procedure to extract the token URL
+Do the usual procedure to extract the token URL
  
   >>> link = re.findall(r'http.*/token/.*', body)[0]
   >>> token = re.sub(r'.*token/', '', link)
-  >>> base_path = '/token/%s' % token
 
+Ensure token is ascii to avoid utf-8 mess in URL  
 
-  Go to the link sent by email, to validate the email address.
+  >>> base_path = '/token/%s' % token.encode('ascii')
+
+Go to the link sent by email, to validate the email address.
 
   >>> print http(r"""
   ... GET %s HTTP/1.1
@@ -86,7 +89,7 @@
   ...<h1>You're being redirected</h1>
   ...
 
-  Get Redirected
+Get Redirected
 
   >>> path = '%s/+validategpg' % base_path
   >>> print http(r"""
@@ -98,7 +101,7 @@
   Content-Type: text/html;charset=utf-8
   ...
 
-  Validate UID and consequently import the Key.
+Validate UID and consequently import the Key.
 
   >>> print http(r"""
   ... POST %s HTTP/1.1
@@ -114,7 +117,7 @@
   ...1024D/DFD20543...
   ...
 
- Certify the key is imported
+Certify the key is imported
 
   >>> print http(r"""
   ... GET /foaf/people/name12/+editgpgkey HTTP/1.1
@@ -129,10 +132,8 @@
   ...
   ...1024D/DFD20543...
 
-
-  Attempt to the fact the revoked uid present in the key in question
-  wasn't added.
-
+Attempt to the fact the revoked uid present in the key in question
+wasn't added.
 
   >>> print http(r"""
   ... GET /foaf/people/name12/+emails HTTP/1.1
@@ -177,6 +178,6 @@
       <input type="submit" value="Confirm" name="VALIDATE" />
   ... 
 
-  Kill stub KeyServer
+Kill stub KeyServer
   
   >>> z.tearDown()
