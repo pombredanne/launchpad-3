@@ -2,7 +2,9 @@
 
 __metaclass__ = type
 
-import os, shutil
+import os
+import shutil
+
 import canonical
 
 from canonical.launchpad.daemons.tachandler import TacTestSetup

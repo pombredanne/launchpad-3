@@ -295,27 +295,27 @@ class BugTaskSet:
         #
         # * None (meaning no filter criteria specified for that arg_name)
         for arg_name, arg_value in search_args.items():
-            if arg_value is not None:
-                if zope_isinstance(arg_value, any):
-                    # The argument value is a list of acceptable
-                    # filter values.
-                    arg_values = sqlvalues(*arg_value.query_values)
-                    where_arg = ", ".join(arg_values)
-                    clause = "BugTask.%s IN (%s)" % (arg_name, where_arg)
-                elif arg_value is NULL:
-                    # The argument value indicates we should match
-                    # only NULL values for the column named by
-                    # arg_name.
-                    clause = "BugTask.%s IS NULL" % arg_name
+            if arg_value is None:
+                continue
+            if zope_isinstance(arg_value, any):
+                # The argument value is a list of acceptable
+                # filter values.
+                arg_values = sqlvalues(*arg_value.query_values)
+                where_arg = ", ".join(arg_values)
+                clause = "BugTask.%s IN (%s)" % (arg_name, where_arg)
+            elif arg_value is NULL:
+                # The argument value indicates we should match
+                # only NULL values for the column named by
+                # arg_name.
+                clause = "BugTask.%s IS NULL" % arg_name
+            else:
+                # We have either an ISQLObject, or a dbschema value.
+                is_sqlobject = ISQLObject(arg_value, None)
+                if is_sqlobject:
+                    clause = "BugTask.%s = %d" % (arg_name, arg_value.id)
                 else:
-                    # We have either an ISQLObject, or a dbschema value.
-                    is_sqlobject = ISQLObject(arg_value, None)
-                    if is_sqlobject:
-                        clause = "BugTask.%s = %d" % (arg_name, arg_value.id)
-                    else:
-                        clause = "BugTask.%s = %d" % (arg_name, 
-                                                      int(arg_value.value))
-                extra_clauses.append(clause)
+                    clause = "BugTask.%s = %d" % (arg_name, int(arg_value.value))
+            extra_clauses.append(clause)
 
         if omit_dupes:
             extra_clauses.append("Bug.duplicateof is NULL")

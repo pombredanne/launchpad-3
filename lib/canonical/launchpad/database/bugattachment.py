@@ -51,7 +51,7 @@ class BugAttachmentSet:
         return item
 
     def create(self, bug, filealias, title, message,
-               attach_type=IBugAttachment['type'].default):
+               attach_type=None):
         """See IBugAttachmentSet."""
         return BugAttachment(
             bug=bug, libraryfile=filealias, type=attach_type, title=title,

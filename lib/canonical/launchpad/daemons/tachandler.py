@@ -6,7 +6,9 @@ __metaclass__ = type
 
 __all__ = ['TacTestSetup']
 
-import sys, os, time
+import sys
+import os
+import time
 from signal import SIGTERM
 
 from twisted.application import service
