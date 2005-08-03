@@ -650,6 +650,14 @@ abbr, address {
 	font-style: inherit;
 }
 
+kbd {
+  border: 1px solid;
+  border-color: white gray gray white;
+  color: black;
+  background-color: #ccc;
+  min-width: 1em;
+}
+
 label, .field label {
   font-family: sans-serif;
   white-space: nowrap;
