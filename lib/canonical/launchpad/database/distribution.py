@@ -187,4 +187,5 @@ class DistroPackageFinder:
 
     def __init__(self, distribution=None, processorfamily=None):
         self.distribution = distribution
+        # XXX kiko: and what about processorfamily?
 

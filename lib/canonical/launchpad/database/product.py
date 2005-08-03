@@ -411,6 +411,8 @@ class ProductSet:
     def translatables(self, translationProject=None):
         """See IProductSet"""
 
+        # XXX kiko: translationProject is unused. Why?
+
         translatable_set = set()
         upstream = Product.select('''
             Product.id = ProductSeries.product AND

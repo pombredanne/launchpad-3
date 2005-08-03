@@ -292,7 +292,6 @@ class DistroReleaseSet:
     def search(self, distribution=None, isreleased=None, orderBy=None):
         """See IDistroReleaseSet."""
         where_clause = ""
-        order_by_param = None
         if distribution is not None:
             where_clause += "distribution = %s" % sqlvalues(distribution.id)
         if isreleased is not None:

@@ -254,8 +254,8 @@ class POMsgSet(SQLBase):
                 selection.publishedsubmission = None
             elif (is_editor and
                   validation_status == TranslationValidationStatus.OK):
-                # activesubmission is updated only if the translation is valid and
-                # it's an editor.
+                # activesubmission is updated only if the translation is
+                # valid and it's an editor.
                 selection.activesubmission = None
 
         # If nothing was submitted, return None
