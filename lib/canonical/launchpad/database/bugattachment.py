@@ -53,6 +53,9 @@ class BugAttachmentSet:
     def create(self, bug, filealias, title, message,
                attach_type=None):
         """See IBugAttachmentSet."""
+        if attach_type is None:
+            # XXX kiko: this should use DEFAULT; depends on bug 1659
+            attach_type = IBugAttachment['type'].default
         return BugAttachment(
             bug=bug, libraryfile=filealias, type=attach_type, title=title,
             message=message)
