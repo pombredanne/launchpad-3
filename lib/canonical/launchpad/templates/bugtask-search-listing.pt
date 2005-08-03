@@ -239,6 +239,13 @@
                         tal:content="structure view/unassigned_widget/label">
                       show only unassigned bugs
                     </label>
+                    <br />
+                    <tal:block content="structure view/include_dupes_widget" />
+                    <label
+                        tal:attributes="for view/include_dupes_widget/name"
+                        tal:content="structure view/include_dupes_widget/label">
+                      include duplicate bugs
+                    </label>
                     <br /><br />
                   </tal:block>
                   <tal:block condition="view/statusexplanation_widget">
