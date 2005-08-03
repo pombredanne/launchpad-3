@@ -1,6 +1,6 @@
 <metal:page define-macro="buglisting">
   <tal:tag condition="view/assign_to_milestones|nothing"/>
-  <form action="." method="GET"
+  <form name="bugtask_search" action="" method="GET"
      tal:define="listing_columns view/task_columns;
                  logged_in request/lp:person;
                  task_batch_navigator view/search;
