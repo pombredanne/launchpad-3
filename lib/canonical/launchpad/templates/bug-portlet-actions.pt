@@ -29,6 +29,11 @@
       </li>
       <li class="add">
         <a href="#"
+           tal:attributes="href string:$bug_url/attachments/+new"
+           >Add Attachment</a>
+      </li>
+      <li class="add">
+        <a href="#"
            tal:attributes="href string:$bug_url/references/+new">Link to
            Web Page</a>
       </li>

@@ -11,10 +11,9 @@
 
     <div tal:condition="context/gpg"> 
     <fieldset> 
-    <legend>GPG Key Information </legend>
-    <div>
+    <legend>GPG Key Information</legend>
     <table>
-    <tr><td>Key ID : </td>
+    <tr><td>Key ID : </td></tr>
     <td tal:content="string:${context/gpg/keysize}${context/gpg/algorithmname}/${context/gpg/keyid}"></td>
     <tr><td>Fingerprint :</td>
         <td tal:content="context/gpg/fingerprint">FINGERPRINT</td></tr>
@@ -22,8 +21,8 @@
         <td tal:condition="context/gpg/revoked">YES</td>
         <td tal:condition="not:context/gpg/revoked">NO</td></tr>
     </table>
-    </div>
     </fieldset>
+    </div>
 
     <h3>Back to 
     <a href="./" tal:content="context/browsername">PERSON</a>

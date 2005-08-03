@@ -91,8 +91,9 @@ class IBug(Interface):
     externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
     cverefs = Attribute('CVE references for this bug')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
-    duplicates = Attribute('MultiJoin of the bugs which are dups of this '
-        'one')
+    duplicates = Attribute(
+        'MultiJoin of the bugs which are dups of this one')
+    attachments = Attribute("List of bug attachments.")
 
     def followup_subject():
         """Return a candidate subject for a followup message."""
@@ -150,9 +151,9 @@ class IBugTarget(Interface):
     IProduct.
     """
     def searchBugs(bug=None, searchtext=None, status=None, priority=None,
-                   severity=None, milestone=None, assignee=None,
-                   owner=None, orderby=None, statusexplanation=None,
-                   user=None, omit_dupes=False):
+                   severity=None, milestone=None, assignee=None, owner=None,
+                   statusexplanation=None, attachmenttype=None, user=None,
+                   orderby=None, omit_dupes=False):
         """Search the IBugTasks reported on this entity.
 
         Return an iterable of matching results.
@@ -188,6 +189,9 @@ class IBugDelta(Interface):
     cveref = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
         "ICVERef's.")
+    attachment = Attribute(
+        "A dict with two keys, 'old' and 'new', or None. Key values are "
+        "IBugAttachment's.")
     added_bugtasks = Attribute(
         "A list or tuple of IBugTasks, one IBugTask, or None.")
     bugtask_deltas = Attribute(

@@ -35,6 +35,7 @@ __all__ = (
 'BountySubscription',
 'BranchRelationships',
 'BugTaskStatus',
+'BugAttachmentType',
 'BugTrackerType',
 'BugExternalReferenceType',
 'BugInfestationStatus',
@@ -1807,6 +1808,28 @@ class BugRelationship(DBSchema):
         This indicates that the subject and object bugs are related in
         some way. The order does not matter. When displaying one bug, it
         would be appropriate to list the other bugs which are related to it.
+        """)
+
+
+class BugAttachmentType(DBSchema):
+    """Bug Attachment Type.
+
+    An attachment to a bug can be of different types, since for example
+    a patch is more important than a screenshot. This schema describes the
+    different types. 
+    """
+
+    PATCH = Item(1, """
+        Patch
+
+        This is a patch that potentially fixes the bug.
+        """)
+
+    UNSPECIFIED = Item(2, """
+        Unspecified
+
+        This is everything else. It can be a screenshot, a log file, a core
+        dump, etc. Basically anything that adds more information to the bug.
         """)
 
 

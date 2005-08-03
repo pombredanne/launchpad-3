@@ -7,6 +7,7 @@
 
 from twisted.application import service, strports
 from canonical.buildd import XMLRPCBuildDSlave, DebianBuildManager
+from canonical.launchpad.daemons import tachandler
 
 from twisted.web import server
 from ConfigParser import ConfigParser
@@ -23,6 +24,9 @@ slave.registerBuilder(DebianBuildManager,"debian")
 
 application = service.Application('BuildDSlave')
 builddslaveService = service.IServiceCollection(application)
+
+# Service that announces when the daemon is ready
+tachandler.ReadyService().setServiceParent(builddslaveService)
 
 slavesite = server.Site(slave)
 

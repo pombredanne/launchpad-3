@@ -28,7 +28,8 @@ from zope.schema import (
 from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
-from canonical.launchpad.interfaces import IHasDateCreated
+from canonical.launchpad.interfaces.launchpad import IHasDateCreated
+from canonical.launchpad.interfaces.bugattachment import IBugAttachment
 
 _ = MessageIDFactory('launchpad')
 
@@ -124,6 +125,10 @@ class IBugTaskSearch(Interface):
     include_dupes = Bool(title=_('include duplicate bugs'), required=False)
     statusexplanation = TextLine(
         title=_("Status notes"), required=False)
+    attachmenttype = List(
+        title=_('Attachment'),
+        value_type=IBugAttachment['type'],
+        required=False)
 
 
 class IUpstreamBugTaskSearch(IBugTaskSearch):
@@ -166,6 +171,11 @@ class IBugTaskSearchListingView(IView):
     statusexplanation_widget = Attribute("""The widget for searching in status
                                      notes. None if the widget is not to
                                      be shown.""")
+
+    attachmenttype_widget = Attribute("""The widget for searching
+                                         selecting attachment types to filter
+                                         on. None if the widget is not to be
+                                         shown.""")
 
     def task_columns():
         """Returns a sequence of column names to be shown in the listing.
@@ -306,9 +316,9 @@ class IBugTaskSet(Interface):
     def search(bug=None, searchtext=None, status=None, priority=None,
                severity=None, product=None, distribution=None,
                distrorelease=None, milestone=None, assignee=None,
-               owner=None, orderby=None, sourcepackagename=None,
-               binarypackagename=None, statusexplanation=None,
-               user=None, omit_dupes=False):
+               sourcepackagename=None, binarypackagename=None,
+               owner=None, statusexplanation=None, attachmenttype=None,
+               user=None, orderby=None, omit_dupes=False):
         """Return a set of IBugTasks that satisfy the query arguments.
 
         user is an object that provides IPerson, and represents the

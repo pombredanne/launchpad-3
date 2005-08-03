@@ -147,10 +147,10 @@ class DistroRelease(SQLBase):
         return "%s %s" % (
             self.distribution.name.capitalize(), self.name.capitalize())
 
-    def searchBugs(self, bug=None, searchtext=None, status=None,
-                   priority=None, severity=None, milestone=None,
-                   assignee=None, owner=None, orderby=None,
-                   statusexplanation=None, user=None, omit_dupes=False):
+    def searchBugs(self, bug=None, searchtext=None, status=None, priority=None,
+                   severity=None, milestone=None, assignee=None, owner=None,
+                   statusexplanation=None, attachmenttype=None, user=None,
+                   orderby=None, omit_dupes=False):
         """See canonical.launchpad.interfaces.IBugTarget."""
         # As an initial refactoring, we're wrapping BugTaskSet.search.
         # It's possible that the search code will live inside this
@@ -161,8 +161,8 @@ class DistroRelease(SQLBase):
         return BugTaskSet().search(
             distrorelease=self, bug=bug, searchtext=searchtext, status=status,
             priority=priority, severity=severity, milestone=milestone,
-            assignee=assignee, owner=owner, orderby=orderby,
-            statusexplanation=statusexplanation, user=user,
+            assignee=assignee, owner=owner, attachmenttype=attachmenttype,
+            statusexplanation=statusexplanation, user=user, orderby=orderby,
             omit_dupes=omit_dupes)
 
     def getBugSourcePackages(self):

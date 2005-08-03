@@ -5,9 +5,6 @@
 __metaclass__ = type
 
 from zope.interface import implements
-from zope.component import getUtility
-
-from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import IBugTaskDelta
 

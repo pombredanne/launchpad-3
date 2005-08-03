@@ -202,6 +202,16 @@ def generate_bug_edit_email(bug_delta):
             body += u"    - %s [%s]\n" % (
                 old_cveref.displayname, old_cveref.title)
 
+    if bug_delta.attachment is not None:
+        body += "    - Changed attachments:\n"
+        body += "        Added: %s\n" % (
+            bug_delta.attachment['new'].title)
+        body += "           %s\n" % (
+            bug_delta.attachment['new'].libraryfile.url)
+        old_attachment = bug_delta.attachment.get('old')
+        if old_attachment:
+            body += "      Removed: %s\n" % old_attachment.title
+
     if bug_delta.bugtask_deltas is not None:
         bugtask_deltas = bug_delta.bugtask_deltas
         # Use zope_isinstance, to ensure that this Just Works with
@@ -982,6 +992,28 @@ def notify_bug_cveref_edited(edited_cveref, event):
             send_bug_edit_notification(
                 get_bugmail_from_address(new.id, event.user),
                 to_addrs, bug_delta)
+
+
+def notify_bug_attachment_added(bugattachment, event):
+    """Notify CC'd list that a new attachment has been added.
+
+    bugattachment must be an IBugAttachment. event must be an
+    ISQLObjectCreatedEvent.
+    """
+    bug = bugattachment.bug
+    notification_recipient_emails = get_cc_list(bug)
+
+    if notification_recipient_emails:
+        bug_delta = BugDelta(
+            bug=bug,
+            bugurl=canonical_url(bug),
+            user=event.user,
+            attachment={'new' : bugattachment})
+
+        send_bug_edit_notification(
+            get_bugmail_from_address(bug.id, event.user),
+            notification_recipient_emails,
+            bug_delta)
 
 
 def notify_join_request(event):

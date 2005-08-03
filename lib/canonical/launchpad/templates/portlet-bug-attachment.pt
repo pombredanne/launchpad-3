@@ -1,0 +1,30 @@
+<div class="portlet" tal:condition="context/attachments"
+     tal:define="bug_url context/fmt:url">
+
+  <h4>Bug Attachments:</h4>
+
+  <div class="portletBody">
+    <div class="portletContent even">
+      <ul>
+        <li class="download"
+            tal:repeat="attachment context/attachments">
+          <a tal:attributes="href attachment/libraryfile/url"
+             tal:content="attachment/title">
+            Attachment Title
+          </a>
+          <small>
+            (<a tal:attributes="href string:${attachment/fmt:url}/+edit">edit</a>)
+          </small>
+        </li>
+      </ul>
+      <ul>
+        <li class="add">
+          <a title="Add an attachment to this bug"
+             tal:attributes="href string:$bug_url/attachments/+new">
+            Attach another file
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>

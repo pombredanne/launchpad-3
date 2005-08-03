@@ -256,9 +256,10 @@ class BugTaskSet:
 
     def search(self, bug=None, searchtext=None, status=None, priority=None,
                severity=None, product=None, distribution=None,
-               distrorelease=None, milestone=None, assignee=None, owner=None,
-               orderby=None, sourcepackagename=None, binarypackagename=None,
-               statusexplanation=None, user=None, omit_dupes=False):
+               distrorelease=None, milestone=None, assignee=None,
+               sourcepackagename=None, binarypackagename=None,
+               owner=None, statusexplanation=None, attachmenttype=None,
+               user=None, orderby=None, omit_dupes=False):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
 
         # A dict of search argument names and values that will be
@@ -277,6 +278,7 @@ class BugTaskSet:
             'sourcepackagename': sourcepackagename,
             'binarypackagename': binarypackagename
         }
+        clauseTables = ['BugTask', 'Bug']
 
         extra_clauses = []
         # Loop through the search arguments and build the appropriate
@@ -317,6 +319,18 @@ class BugTaskSet:
 
         if omit_dupes:
             extra_clauses.append("Bug.duplicateof is NULL")
+
+        # Build the part of the query for attachment type.
+        if attachmenttype is not None:
+            clauseTables.append('BugAttachment')
+            if isinstance(attachmenttype, any):
+                where_cond = "BugAttachment.type IN (%s)" % ", ".join(
+                    sqlvalues(*attachmenttype.query_values))
+            else:
+                where_cond = "BugAttachment.type = %s" % sqlvalues(
+                    attachmenttype)
+            extra_clauses.append("BugAttachment.bug = BugTask.bug")
+            extra_clauses.append(where_cond)
 
         if searchtext:
             extra_clauses.append(
@@ -375,7 +389,7 @@ class BugTaskSet:
 
         query = " AND ".join(extra_clauses)
         bugtasks = BugTask.select(
-            query, clauseTables=["Bug", "BugTask"], orderBy=orderby_arg)
+            query, clauseTables=clauseTables, orderBy=orderby_arg)
 
         return bugtasks
 
@@ -479,6 +493,7 @@ def mark_task(obj, iface):
     directlyProvides(obj, iface + directlyProvidedBy(obj))
 
 def BugTaskFactory(context, **kw):
+    # XXX kiko: WTF, context is ignored?! LaunchBag? ARGH!
     return BugTask(bugID=getUtility(ILaunchBag).bug.id, **kw)
 
 

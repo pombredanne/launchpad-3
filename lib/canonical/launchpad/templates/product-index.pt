@@ -91,25 +91,17 @@
 
     <h3>Bazaar Branches</h3>
 
-    <div style="margin-left: 15px;">
+    <div>
 
-      <table class="listing">
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Url</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr tal:repeat="branch context/branches">
-              <td tal:content="branch/title">title</td>
-              <td> http://bazaar.ubuntu.com/<span 
-                  tal:content="branch/getPackageName">category
-                </span>
-              </td>
-          </tr>
-        </tbody>
-      </table>
+      <ul>
+        <li tal:repeat="branch context/branches">
+          <a tal:attributes="href
+            string:http://bazaar.ubuntu.com/${branch/getPackageName}">
+            http://bazaar.ubuntu.com/&#8203;<span tal:content="branch/getPackageName">
+            url</span>
+          </a>
+        </li>
+      </ul>
 
     </div>
 

@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'vocab_factory',
     'SubscriptionVocabulary',
+    'BugAttachmentTypeVocabulary',
     'BugTaskStatusVocabulary',
     'BugTaskPriorityVocabulary',
     'BugTaskSeverityVocabulary',
@@ -49,6 +50,7 @@ def vocab_factory(schema):
 # DB Schema Vocabularies
 
 SubscriptionVocabulary = vocab_factory(dbschema.BugSubscription)
+BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugTaskStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
 BugTaskPriorityVocabulary = vocab_factory(dbschema.BugTaskPriority)
 BugTaskSeverityVocabulary = vocab_factory(dbschema.BugTaskSeverity)

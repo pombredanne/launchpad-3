@@ -7,7 +7,7 @@ from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 import email
-from email.Utils import parseaddr, parsedate_tz, mktime_tz
+from email.Utils import parseaddr, make_msgid, parsedate_tz, mktime_tz
 from cStringIO import StringIO as cStringIO
 from datetime import datetime
 
@@ -125,6 +125,13 @@ class MessageSet:
         if len(messages) == 0:
             raise NotFoundError(rfc822msgid)
         return messages
+
+    def fromText(self, subject, content, owner=None):
+        """See IMessageSet."""
+        rfc822msgid = make_msgid("launchpad")
+        message = Message(subject=subject, rfc822msgid=rfc822msgid, owner=owner)
+        chunk = MessageChunk(message=message, sequence=1, content=content)
+        return message
 
     def _decode_header(self, header):
         """Decode an encoded header possibly containing Unicode."""

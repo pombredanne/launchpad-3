@@ -79,6 +79,7 @@ class Bug(SQLBase):
     subscriptions = MultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id')
     duplicates = MultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
+    attachments = MultipleJoin('BugAttachment', joinColumn='bug', orderBy='id')
 
     def followup_subject(self):
         return 'Re: '+ self.title
