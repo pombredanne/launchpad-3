@@ -582,7 +582,7 @@ class SourcePackageReleaseHandler:
         name = self.ensureSourcePackageName(src.package)
 
         if not valid_debian_version(src.version):
-            log.warn('%s has an invalid version %s', name, src.version)
+            log.warn('%s has an invalid version %s', name.name, src.version)
             return None
 
         spr = SourcePackageRelease(sourcepackagename=name.id,
