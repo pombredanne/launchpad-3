@@ -54,6 +54,14 @@ class BugTasksReportView:
         self.minpriority = int(form.get('minpriority', 0))
         self.showclosed = form.get('showclosed') == 'yes'
 
+    def productColumns(self):
+        return ['id', 'product', 'title', 'severity', 'priority', 'assignee',
+                'status', 'target', 'assignedto']
+
+    def packageColumns(self):
+        return ['id', 'package', 'title', 'severity', 'priority',
+                'assignee', 'status', 'target', 'assignedto']
+
     def maintainedPackageBugs(self):
         return self.context.maintainedPackageBugs(
             self.user, self.minseverity, self.minpriority, self.showclosed)

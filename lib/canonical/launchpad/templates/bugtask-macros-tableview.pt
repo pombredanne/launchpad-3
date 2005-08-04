@@ -1,0 +1,228 @@
+<metal:header define-macro="batched-table">
+  <tal:comment replace="nothing">
+  This macro expects the following variables defined:
+      :task_batch_navigator: an IBatchNavigator 
+      :listing_columns: a list of strings specifying columns to display
+  Optional:
+      :mass_edit_allowed: specifies whether a column for selection should
+                         be included
+  </tal:comment>
+
+  <table class="listing data" width="67%" 
+         tal:define=" tasks task_batch_navigator/batch;">
+    <thead>
+      <tr metal:use-macro="context/@@+bugtask-macros-tableview/batching-header" />
+      <tr metal:use-macro="context/@@+bugtask-macros-tableview/sortable-header" />
+    </thead>
+    <tbody>
+      <tr tal:repeat="task tasks">
+        <metal:item use-macro="context/@@+bugtask-macros-tableview/item" />
+      </tr>
+    </tbody>
+  </table>
+</metal:header>
+
+<metal:header define-macro="table">
+  <tal:comment replace="nothing">
+  This macro expects the following variables defined:
+      :tasks: a list of task instances
+      :listing_columns: a list of strings specifying columns to display
+  Optional:
+      :mass_edit_allowed: specifies whether a column for selection should
+                         be included
+  </tal:comment>
+
+  <table class="sortable listing" id="bugtask-table" width="67%">
+    <thead>
+      <tr metal:use-macro="context/@@+bugtask-macros-tableview/header" />
+    </thead>
+    <tbody>
+      <tr tal:repeat="task tasks">
+        <metal:item use-macro="context/@@+bugtask-macros-tableview/item" />
+      </tr>
+    </tbody>
+  </table>
+</metal:header>
+
+<metal:header define-macro="batching-header">
+  <tr class="results" tal:define="task_batch task_batch_navigator/batch">
+    <td
+      tal:attributes="colspan python: len(listing_columns) + 
+                                      int(mass_edit_allowed|0)"
+      tal:define="startno task_batch/startNumber;
+                  endno task_batch/endNumber;
+                  total task_batch/total">
+      <div
+        class="navigation"
+        tal:define="prev_page_url task_batch_navigator/prevBatchURL;
+                    next_page_url task_batch_navigator/nextBatchURL">
+        <a tal:condition="prev_page_url"
+           tal:attributes="href prev_page_url"
+           rel="previous">
+           &laquo; previous
+        </a>
+        <span tal:omit-tag=""
+              tal:repeat="page_url task_batch_navigator/batchPageURLs">
+          <a href="."
+             tal:content="python:page_url.keys()[0]"
+             tal:attributes="href python:page_url.values()[0]">[1]</a>
+        </span>
+        <a tal:condition="next_page_url"
+           tal:attributes="href next_page_url"
+           rel="next">
+           next &raquo;
+        </a>
+      </div>
+
+      <strong tal:content="startno">1</strong>
+      &rarr;
+      <strong tal:content="endno">10</strong> 
+      of 
+      <tal:comment replace="nothing">
+        XXX: The spacing in the following line is very tricky -- get it
+        wrong and tests will fail.
+      </tal:comment>
+      <span tal:replace="total">42</span> <span tal:omit-tag="" tal:condition="python: 1 == total">result</span><span tal:omit-tag="" tal:condition="python: 1 != total">results</span>
+    </td>
+  </tr>
+</metal:header>
+
+<metal:header define-macro="sortable-header">
+  <tr>
+    <th tal:condition="mass_edit_allowed|nothing">
+      Select
+    </th>
+    <th tal:condition="python:'id' in listing_columns">
+      <a href="#" tal:attributes="href python:view.getSortLink('id')">ID</a>
+    </th>
+    <th tal:condition="python:'title' in listing_columns">
+       <a href="#" tal:attributes="href python:view.getSortLink('title')">Title</a>
+    </th>
+    <th tal:condition="python:'package' in listing_columns">
+      <a href="#" tal:attributes="href python:view.getSortLink('sourcepackagename')">Package</a>
+    </th>
+    <th tal:condition="python:'severity' in listing_columns">
+      <a href="#" tal:attributes="href python:view.getSortLink('severity')">Severity</a>
+    </th>
+    <th tal:condition="python:'priority' in listing_columns">
+      <a href="#" tal:attributes="href python:view.getSortLink('priority')">Priority</a>
+    </th>
+    <th tal:condition="python:'assignedto' in listing_columns">
+      <a href="#" tal:attributes="href python:view.getSortLink('assignee')">Assignee</a>
+    </th>
+    <th tal:condition="python:'status' in listing_columns">
+       <a href="#" tal:attributes="href python:view.getSortLink('status')">Status</a>
+    </th>
+    <th tal:condition="python:'milestone' in listing_columns">
+       <a href="#" tal:attributes="href python:view.getSortLink('milestone')">Target</a>
+    </th>
+    <th tal:condition="python:'submittedon' in listing_columns">
+      <a href="#" tal:attributes="href python:view.getSortLink('datecreated')">Reported</a>
+    </th>
+    <th tal:condition="python:'submittedby' in listing_columns">
+      <a href="#" tal:attributes="href python:view.getSortLink('owner')">Reporter</a>
+    </th>
+  </tr>
+</metal:header>
+
+<metal:header define-macro="header">
+  <tr>
+    <th tal:condition="mass_edit_allowed|nothing">
+      Select
+    </th>
+    <th tal:condition="python:'id' in listing_columns">
+      ID
+    </th>
+    <th tal:condition="python:'title' in listing_columns">
+       Title
+    </th>
+    <th tal:condition="python:'package' in listing_columns">
+      Package
+    </th>
+    <th tal:condition="python:'product' in listing_columns">
+      Product
+    </th>
+    <th tal:condition="python:'severity' in listing_columns">
+      Severity
+    </th>
+    <th tal:condition="python:'priority' in listing_columns">
+      Priority
+    </th>
+    <th tal:condition="python:'assignedto' in listing_columns">
+      Assignee
+    </th>
+    <th tal:condition="python:'status' in listing_columns">
+       Status
+    </th>
+    <th tal:condition="python:'milestone' in listing_columns">
+       Target
+    </th>
+    <th tal:condition="python:'submittedon' in listing_columns">
+      Reported
+    </th>
+    <th tal:condition="python:'submittedby' in listing_columns">
+      Reporter
+    </th>
+  </tr>
+</metal:header>
+
+<metal:header define-macro="item"
+    tal:define="product_name task/product/name|nothing;
+                project_name task/product/project/name|nothing;
+                package_name task/sourcepackagename/name|nothing">
+  <td tal:condition="mass_edit_allowed|nothing">
+    <input type="checkbox" name="task" value="" 
+           tal:attributes="value task/id" />
+  </td>
+  <td tal:condition="python:'id' in listing_columns">
+      <a tal:attributes="href task/bug/fmt:url"
+         tal:content="string:#${task/bug/id}"
+         style="text-decoration: underline">42</a>
+  </td>
+  <td tal:condition="python:'title' in listing_columns"
+       tal:content="task/bug/title">
+       title
+  </td>
+  <td tal:condition="python:'package' in listing_columns"
+      tal:content="python:package_name and package_name or '(none)'">
+       (none)
+  </td>
+  <td tal:condition="python:('product' in listing_columns) and product_name"
+      tal:content="python: (project_name == product_name) and product_name or
+                           (project_name + ' ' + product_name)"
+      style="white-space: nowrap" >
+      product
+  </td>
+  <td tal:condition="python:'severity' in listing_columns"
+      tal:content="task/severity/title"
+      tal:attributes="class string:severity${task/severity/title}">
+      Medium
+  </td>
+  <td tal:condition="python:'priority' in listing_columns"
+      tal:content="task/priority/title"
+      tal:attributes="class string:priority${task/priority/title}">
+      High
+  </td>
+  <td tal:condition="python:'assignedto' in listing_columns"
+       tal:content="task/assignee/browsername|string:-">
+      somebody
+  </td>
+  <td tal:condition="python:'status' in listing_columns"
+       tal:content="task/status/title"
+       tal:attributes="class string:status${task/status/title}">
+       New
+  </td>
+  <td tal:condition="python:'milestone' in listing_columns"
+       tal:content="task/milestone/name|string:-">
+       milestone
+  </td>
+  <td tal:condition="python:'submittedon' in listing_columns"
+       tal:content="task/datecreated/strftime/fmt:date">
+       date
+  </td>
+  <td tal:condition="python:'submittedby' in listing_columns"
+       tal:content="task/owner/browsername|string:-">
+       name
+  </td>
+</metal:header>
+
