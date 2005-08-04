@@ -131,9 +131,13 @@ class POFileView:
         self.alerts = []
         potemplate = context.potemplate
         self.is_editor = context.canEditTranslations(self.user)
-        self.second_lang_pofile = None
         self.second_lang_code = self.form.get('alt', None)
-        if self.second_lang_code:
+        if self.second_lang_code is None:
+            second_lang = self.context.language.alt_suggestion_language
+            if second_lang is not None:
+                self.second_lang_code = second_lang.code
+        self.second_lang_pofile = None
+        if self.second_lang_code is not None:
             self.second_lang_pofile = potemplate.queryPOFileByLang(self.second_lang_code)
         self.submitted = False
         self.errorcount = 0
@@ -166,15 +170,15 @@ class POFileView:
 
     def lang_selector(self):
         second_lang_code = self.second_lang_code
-        all_languages = getUtility(ILanguageSet)
+        langset = getUtility(ILanguageSet)
         html = '<select name="alt" title="Make suggestions from...">\n<option value=""'
         if self.second_lang_pofile is None:
             html += ' selected="yes"'
         html += '></option>\n'
-        for lang in all_languages:
+        for lang in langset.common_languages:
             html += '<option value="' + lang.code + '"'
             if second_lang_code == lang.code:
-                html += ' selected=""'
+                html += ' selected="yes"'
             html += '>' + lang.englishname + '</option>\n'
         html += '</select>\n'
         return html

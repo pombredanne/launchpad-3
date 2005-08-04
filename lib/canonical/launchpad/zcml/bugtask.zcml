@@ -69,11 +69,16 @@
         permission="zope.Public">
 
         <!-- BugTask Portlets -->
-        <browser:page name="+portlet-alsoreportedin"
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/bugtask-portlet-actions.pt"
+            lp:url="malone/tasks/+portlet-actions" />
+        <browser:page
+            name="+portlet-alsoreportedin"
             template="../templates/bugtask-portlet-alsoreportedin.pt"
             lp:url="malone/tasks/+portlet-alsoreportedin" />
-
-        <browser:page name="+portlet-status"
+        <browser:page
+            name="+portlet-status"
             template="../templates/bugtask-portlet-status.pt"
             lp:url="malone/tasks/+portlet-status" />
         

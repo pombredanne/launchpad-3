@@ -13,7 +13,7 @@
             Attachment Title
           </a>
           <small>
-            (<a tal:attributes="href string:${attachment/fmt:url}/+edit">edit</a>)
+            (<a tal:attributes="href attachment/fmt:url">edit</a>)
           </small>
         </li>
       </ul>

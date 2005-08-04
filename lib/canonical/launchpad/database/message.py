@@ -57,6 +57,7 @@ class Message(SQLBase):
                        intermediateTable='BugMessage')
     chunks = MultipleJoin('MessageChunk', joinColumn='message')
     raw = ForeignKey(foreignKey='LibraryFileAlias', dbName='raw', default=None)
+    bugattachments = MultipleJoin('BugAttachment', joinColumn='message')
 
     def __iter__(self):
         """See IMessage.__iter__"""

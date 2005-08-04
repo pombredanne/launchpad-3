@@ -303,15 +303,15 @@ tr.rowLinkified a {
 .severityWishlist { color: Blue; }
 
 .severityCriticalRow { background-color: #E1A1A1; }
-.severityMajorRow { background-color: #D9C08F; }
-.severityNormalRow { background-color: #9FD98F; }
-.severityMinorRow { background-color: #A5AFC8; }
+.severityMajorRow    { background-color: #D9C08F; }
+.severityNormalRow   { background-color: #9FD98F; }
+.severityMinorRow    { background-color: #A5AFC8; }
 .severityWishlistRow { background-color: #8FA9D9; }
 
 .priorityHigh    { color: Red; }
 .priorityMedium  { color: Orange; }
 .priorityLow     { color: Black; }
-.priorityWontFix { color: Gray; }
+.priorityWontfix { color: Gray; }
 
 /* Board-like comment CSS */
 
@@ -393,6 +393,9 @@ ul.download>li, li.download {
 }
 ul.edit>li, li.edit {
   list-style-image: url(/++resource++edit.gif);
+}
+ul.alert>li, li.alert {
+  list-style-image: url(/++resource++alert_icon.gif);
 }
 ul.info>li, li.info {
   list-style-image: url(/++resource++info_icon.gif);

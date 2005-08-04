@@ -4,15 +4,12 @@
       i18n:domain="launchpad">
   <body>
   <metal:leftportlets fill-slot="portlets_one">
-    <!-- XXX, Brad Bollenbach, 2005-05-31: This might belong
-    in the search page instead.
-    <div tal:replace="structure view/bugStatsForContext" />
-    -->
     <div tal:replace="structure context/@@+portlet-status" />
     <div tal:replace="structure context/bug/@@+portlet-details" />
   </metal:leftportlets>
   
   <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-actions" />
     <div tal:replace="structure context/@@+portlet-alsoreportedin" />
     <div tal:condition="context/product" 
          tal:replace="structure context/product/@@+portlet-latest-bugs" />
@@ -97,7 +94,7 @@
                   Priority
                 </label>
               </td>
-              <td tal:condition="context/product">
+              <td tal:condition="context/milestone">
                 <label tal:attributes="for view/milestone_widget/name"
                        tal:content="view/milestone_widget/label">
                   Target
@@ -105,11 +102,30 @@
               </td>
             </tr>
             <tr>
-              <td tal:content="structure view/status_widget" />
-              <td tal:content="structure view/severity_widget" />
-              <td tal:content="structure view/priority_widget" />
-              <td tal:condition="context/product"
-                  tal:content="structure view/milestone_widget" />
+              <td>
+                <span tal:content="context/status/title"
+                      tal:attributes="class
+                      string:status${context/status/title}">
+                  New
+                </span>
+              </td>
+              <td>
+                <span tal:content="context/severity/title"
+                      tal:attributes="class
+                      string:severity${context/severity/title}">
+                  Critical
+                </span>
+              </td>
+              <td>
+                <span tal:content="context/priority/title"
+                      tal:attributes="class
+                      string:priority${context/priority/title}">
+                  Wontfix
+                </span>
+              </td>
+              <td tal:condition="context/milestone"
+                  tal:content="context/milestone/name">
+              </td>
             </tr>
             <tr tal:condition="python:context.distribution or
                                       context.distrorelease">
@@ -133,23 +149,31 @@
                 </label>
               </td>
               <td colspan="2">
-                <label tal:attributes="for view/bugwatch_widget/name"
-                       tal:content="view/bugwatch_widget/label"
-                       style="white-space: nowrap">
-                  Remote Watch
-                </label>
+                <tal:block condition="context/bugwatch">
+                  <label tal:attributes="for view/bugwatch_widget/name"
+                         tal:content="view/bugwatch_widget/label"
+                         style="white-space: nowrap">
+                    Remote Watch
+                  </label>
+                </tal:block>
               </td>
             </tr>
             <tr>
-              <td nowrap tal:content="structure view/assignee_widget"
-                  colspan="2" />
+              <td nowrap colspan="2">
+                <span tal:replace="structure view/assignee_widget">
+                  Scott James Remnant
+                </span>
+                <tal:block condition="not:context/assignee">
+                  <i>not assigned</i>
+                </tal:block>
+              </td>
               <td nowrap tal:content="structure view/bugwatch_widget"
                   colspan="2" />
             </tr>
             </table>
           </div>
 
-          <div class="field">
+          <div class="field" tal:condition="context/statusexplanation">
             <div>
               <label tal:attributes="for view/statusexplanation_widget/name"
                      tal:content="view/statusexplanation_widget/label" />
