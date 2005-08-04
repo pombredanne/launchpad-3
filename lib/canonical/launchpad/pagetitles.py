@@ -135,6 +135,8 @@ bug_index = BugPageTitle()
 
 bug_references = ContextId('External References for Malone Bug #%s')
 
+bug_secrecy = ContextId('Make Malone Bug #%d Public or Secret')
+
 bugattachment_add = 'Add an Attachment'
 
 bugwatch_editform = ContextTitle('Edit the Watch on %s')
@@ -215,6 +217,8 @@ default_addform = 'Default "Add" Page'
 default_editform = 'Default "Edit" Page'
 
 default_error = 'System Error'
+
+distribution_cvereport = ContextTitle('CVE Reports for %s')
 
 distribution_members = ContextTitle('%s distribution members')
 
@@ -481,9 +485,13 @@ product_add = 'Register a new Product with the Launchpad'
 
 product_bugs = ContextDisplayName('%s upstream bug reports')
 
+product_distros = ContextDisplayName('Distribution Packaging of %s')
+
 product_edit = ContextTitle('Edit Upstream Details: %s')
 
 product_index = ContextTitle('Product: %s')
+
+product_packages = ContextDisplayName('Packages of %s')
 
 product_translations = ContextTitle('Rosetta Translations for %s')
 

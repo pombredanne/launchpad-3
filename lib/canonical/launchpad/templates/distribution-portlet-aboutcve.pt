@@ -1,0 +1,15 @@
+<div class="portlet">
+
+  <h4>About CVE Tracking:</h4>
+
+  <div class="portletBody portletContent">
+
+    <img src="/++resource++info_icon.gif">
+    You can see the status of each registered CVE issue in this distribution
+    on this page. CVE stands for "Common Vulnerabilities and Exposures" and
+    is a global registry of security problems affecting different operating
+    systems.
+	
+  </div>
+
+</div>

@@ -1,7 +1,8 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BugTask', 'BugTaskSet', 'BugTaskFactory', 'BugTasksReport']
+__all__ = ['BugTask', 'BugTaskSet', 'BugTaskFactory', 'BugTasksReport',
+           'bugtask_sort_key']
 
 from sets import Set
 
@@ -42,10 +43,42 @@ debbugsseveritymap = {'wishlist': BugTaskSeverity.WISHLIST,
                       'grave': BugTaskSeverity.MAJOR,
                       'critical': BugTaskSeverity.CRITICAL}
 
+def bugtask_sort_key(bugtask):
+    """A sort key for a set of bugtasks. We want:
+          
+          - products first
+          - distro tasks, followed by their distrorelease tasks
+          - ubuntu first among the distros
+    """
+    if bugtask.product:
+        product = bugtask.product.name
+    else:
+        product = None
+    if bugtask.distribution:
+        distribution = bugtask.distribution.name
+    else:
+        distribution = None
+    if bugtask.distrorelease:
+        distrorelease = bugtask.distrorelease.version
+        distribution = bugtask.distrorelease.distribution.name
+    else:
+        distrorelease = None
+    if bugtask.sourcepackagename:
+        sourcepackagename = bugtask.sourcepackagename.name
+    else:
+        sourcepackagename = None
+    # and move ubuntu to the top
+    if distribution == 'ubuntu':
+        distribution = '-'
+    return (bugtask.bug, distribution, product, distrorelease,
+            sourcepackagename)
+
+
 class BugTask(SQLBase):
     implements(IBugTask)
     _table = "BugTask"
-    _defaultOrder = "-bug"
+    _defaultOrder = ['distribution', 'product', 'distrorelease',
+                     'milestone', 'sourcepackagename']
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug')
     product = ForeignKey(

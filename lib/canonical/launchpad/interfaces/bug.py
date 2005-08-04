@@ -84,7 +84,8 @@ class IBug(Interface):
 
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
     messages = Attribute('SQLObject.RelatedJoin of IMessages')
-    bugtasks = Attribute('SQLObject.Multijoin of IBugTask')
+    bugtasks = Attribute('BugTasks on this bug, sorted upstream, then '
+        'ubuntu, then other distroreleases.')
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')

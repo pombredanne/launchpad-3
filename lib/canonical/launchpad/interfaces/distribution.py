@@ -89,6 +89,14 @@ class IDistribution(IHasOwner, IBugTarget):
         "interpret that query in the context of the currentrelease."
         )
 
+    open_cve_bugtasks = Attribute(
+        "Any bugtasks on this distribution that are for bugs with "
+        "CVE references, and are still open.")
+
+    resolved_cve_bugtasks = Attribute(
+        "Any bugtasks on this distribution that are for bugs with "
+        "CVE references, and are resolved.")
+
     def traverse(name):
         """Traverse the distribution. Check for special names, and return
         appropriately, otherwise use __getitem__"""

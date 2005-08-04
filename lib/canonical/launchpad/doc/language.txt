@@ -27,3 +27,30 @@ standard form and unknown codes will be ignored.
     >>> [language.englishname for language in languages]
     [u'Spanish', u'Portuguese (Brazil)']
 
+
+Suggestion Source Languages
+---------------------------
+
+In some languages, you could reasonably expect to find good suggestions in a
+second language. They might not be perfect but they are useful nonetheless.
+
+pt_BR is not a descendent of pt:
+
+    >>> pt_BR = language_set['pt_BR']
+    >>> print pt_BR.alt_suggestion_language
+    None
+
+However, es_MX would find es useful:
+
+    >>> print language_set['es_MX'].alt_suggestion_language.code
+    es
+
+And Nynorsk and Bokmal have a special relationship:
+
+    >>> print language_set['nn'].alt_suggestion_language.code
+    nb
+    
+    >>> print language_set['nb'].alt_suggestion_language.code
+    nn
+
+

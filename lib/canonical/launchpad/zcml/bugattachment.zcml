@@ -22,6 +22,11 @@
         attribute_to_parent="bug"
         />
 
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBugAttachment"
+        name="+edit"
+        />
+
     <browser:addform
         name="+new"
         schema="canonical.launchpad.interfaces.IBugAttachmentAddForm"

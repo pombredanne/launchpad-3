@@ -39,9 +39,15 @@ class ILanguage(Interface):
     displayname = Attribute(
         "The displayname of the language (a constructed value)")
 
+    alt_suggestion_language = Attribute("A language which can reasonably "
+        "be expected to have good suggestions for translations in this "
+        "language.")
 
 class ILanguageSet(Interface):
     """The collection of languages."""
+
+    common_languages = Attribute("An iterator over languages that are "
+        "not hidden.")
 
     def __iter__():
         """Returns an iterator over all languages."""

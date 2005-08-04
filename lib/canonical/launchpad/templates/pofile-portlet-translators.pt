@@ -2,32 +2,34 @@
   <h4><span tal:replace="context/language/englishname">Spanish</span>
   Translators:</h4>
 
-  <div class="portletBody">
-    <div class="portletContent even">
+  <div class="portletBody portletContent">
 
-      <tal:block repeat="translator context/translators">
-        <b tal:content="translator/translationgroup/title">Ubuntu
-        Translation Group</b>:<br />
-        <img src="/++resource++user.gif" />
-        <a tal:content="translator/translator/browsername"
-           tal:attributes="href
-             string:/people/${translator/translator/name}/">Ubuntu
-        Afrikaans Team</a><br />
-        <tal:block condition="translator/translator/isTeam">
-          Members:<br />
-          <tal:block repeat="person translator/translator/allmembers">
-            <img src="/++resource++user.gif" />
-            <a tal:content="person/browsername"
+      <ul>
+        <tal:block repeat="translator context/translators">
+          <li class="languages">
+            <b tal:content="translator/translationgroup/title">Ubuntu
+            Translation Group</b>:</li>
+          <li class="person">
+            <a tal:content="translator/translator/browsername"
                tal:attributes="href
-                 string:/people/${person/name}/" >Mark Shuttleworth</a>
+                 string:/people/${translator/translator/name}/">Ubuntu
+            Afrikaans Team</a></li>
+          <tal:block condition="translator/translator/isTeam">
+            <ul>
+              <li class="person"
+                  tal:repeat="person translator/translator/allmembers">
+                <a tal:content="person/browsername"
+                   tal:attributes="href string:/people/${person/name}/"
+                   >Mark Shuttleworth</a>
+              </li>
+            </ul>
           </tal:block>
         </tal:block>
-      </tal:block>
+      </ul>
 
       <tal:block condition="not: view/has_translators">
         No translators currently designated for this PO file.
       </tal:block>  
 
-    </div>
   </div>
 </div>

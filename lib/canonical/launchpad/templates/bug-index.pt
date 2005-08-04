@@ -57,7 +57,14 @@
                               tal:content="message/owner/browsername|string:(none)">
           $Person.browsername</a>
         at <span tal:replace="message/datecreated/fmt:datetime">Thursday 
-                                                                13:21</span>
+        13:21</span>
+        <tal:block condition="message/bugattachments">
+        - with attachments:
+          <tal:block repeat="attachment message/bugattachments">
+            <a tal:attributes="href attachment/fmt:url"
+               tal:content="attachment/libraryfile/filename">foo.txt</a>
+          </tal:block>
+        </tal:block>
       </div>
 
       <div class="boardCommentBody">
@@ -85,7 +92,7 @@
   </tal:logged-in>
   <tal:not-logged-in condition="not: request/lp:person">
     <div align="center">
-      To post a comment you <a href="+login">must be logged in</a>.
+      To post a comment you must <a href="+login">log in</a>.
     </div>
   </tal:not-logged-in>
 

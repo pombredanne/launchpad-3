@@ -289,7 +289,13 @@ tr.rowLinkified a {
   padding: 0 0.25em;
 }
 
-/* Bug Severity markers */
+/* Bug Status, Severity, Priority markers */
+.statusNew           { color: Orange; }
+.statusAccepted      { color: Red; }
+.statusPendingUpload { color: Black; }
+.statusFixed         { color: Green; }
+.statusRejected      { color: Gray; }
+
 .severityCritical { color: Red; }
 .severityMajor    { color: #ff6600; }
 .severityNormal   { color: Green; }
@@ -297,16 +303,15 @@ tr.rowLinkified a {
 .severityWishlist { color: Blue; }
 
 .severityCriticalRow { background-color: #E1A1A1; }
-.severityMajorRow { background-color: #D9C08F; }
-.severityNormalRow { background-color: #9FD98F; }
-.severityMinorRow { background-color: #A5AFC8; }
+.severityMajorRow    { background-color: #D9C08F; }
+.severityNormalRow   { background-color: #9FD98F; }
+.severityMinorRow    { background-color: #A5AFC8; }
 .severityWishlistRow { background-color: #8FA9D9; }
 
-/* Priority markers */
 .priorityHigh    { color: Red; }
 .priorityMedium  { color: Orange; }
 .priorityLow     { color: Black; }
-.priorityWontFix { color: Gray; }
+.priorityWontfix { color: Gray; }
 
 /* Board-like comment CSS */
 
@@ -328,7 +333,7 @@ tr.rowLinkified a {
   font-size: 80%;
   border: 1px solid #364970;
   border-style: none none solid none;
-  background-color: #f7f9fa;
+  background-color: #d7d9da;
   padding: 0.25em 12px;
 }
 
@@ -388,6 +393,9 @@ ul.download>li, li.download {
 }
 ul.edit>li, li.edit {
   list-style-image: url(/++resource++edit.gif);
+}
+ul.alert>li, li.alert {
+  list-style-image: url(/++resource++alert_icon.gif);
 }
 ul.info>li, li.info {
   list-style-image: url(/++resource++info_icon.gif);

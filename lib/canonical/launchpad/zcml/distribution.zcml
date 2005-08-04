@@ -70,6 +70,10 @@
             name="+members"
             template="../templates/distribution-members.pt"
             lp:url="/distros/$Distribution.name/+members" />
+        <browser:page
+            name="+cve"
+            template="../templates/distribution-cvereport.pt"
+            lp:url="/distros/$Distribution.name/+cve" />
     </browser:pages>
     
     <browser:pages
@@ -91,6 +95,10 @@
             name="+portlet-bounties"
             template="../templates/object-portlet-bounties.pt"
             lp:url="/distros/$Distribution.name/+portlet-bounties" />
+        <browser:page
+            name="+portlet-aboutcve"
+            template="../templates/distribution-portlet-aboutcve.pt"
+            lp:url="/distros/$Distribution.name/+portlet-aboutcve" />
     </browser:pages>
 
     <browser:pages

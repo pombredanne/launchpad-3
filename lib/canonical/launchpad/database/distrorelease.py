@@ -45,6 +45,8 @@ class DistroRelease(SQLBase):
     implements(IDistroRelease)
 
     _table = 'DistroRelease'
+    _defaultOrder = ['distribution', 'version']
+
     distribution = ForeignKey(dbName='distribution',
                               foreignKey='Distribution', notNull=True)
     bugtasks = MultipleJoin('BugTask', joinColumn='distrorelease')

@@ -24,7 +24,7 @@ from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.message import (
     Message, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
-from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.bugtask import BugTask, bugtask_sort_key
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.maintainership import Maintainership
@@ -67,7 +67,6 @@ class Bug(SQLBase):
                            otherColumn='message',
                            intermediateTable='BugMessage',
                            orderBy='datecreated')
-    bugtasks = MultipleJoin('BugTask', joinColumn='bug', orderBy='id')
     productinfestations = MultipleJoin(
             'BugProductInfestation', joinColumn='bug', orderBy='id')
     packageinfestations = MultipleJoin(
@@ -80,6 +79,12 @@ class Bug(SQLBase):
             'BugSubscription', joinColumn='bug', orderBy='id')
     duplicates = MultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
     attachments = MultipleJoin('BugAttachment', joinColumn='bug', orderBy='id')
+
+    @property
+    def bugtasks(self):
+        """See IBug."""
+        result = BugTask.select("bug=%s" % sqlvalues(self.id))
+        return sorted(result, key=bugtask_sort_key)
 
     def followup_subject(self):
         return 'Re: '+ self.title
