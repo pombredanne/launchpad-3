@@ -50,12 +50,6 @@
 
       <div metal:define-macro="editform">
           <div metal:define-macro="formbody">
-            <!-- XXX: Brad Bollenbach, 2005-06-02: Implement this after
-                  merging initial task page changes.
-            <p class="portalMessage">
-              Updated: status, assignee, status explanation
-            </p>
-            -->
             <p class="portalMessage"
                tal:define="status view/update|nothing"
                tal:condition="status"
@@ -77,11 +71,10 @@
              Bug summary goes here if it exists.
           </div>
 
-          <tal:description
-            content="structure context/bug/description/fmt:text-to-html"
-          >
-            $Bug.description
-          </tal:description>
+          <h2>Status of 
+            <span tal:replace="context/contextname">upstream
+            firefox</span> bug
+            #<span tal:replace="context/bug/id">3224</span></h2>
 
           <div class="field">
             <table>
@@ -165,6 +158,14 @@
               <tal:block replace="structure view/statusexplanation_widget" />
             </div>
           </div>
+
+          <h2>Bug Description</h2>
+
+          <tal:description
+            content="structure context/bug/description/fmt:text-to-html"
+          >
+            $Bug.description
+          </tal:description>
 
       </div>
     </div>

@@ -52,4 +52,25 @@ You can list development distroreleases:
     ...     print devdist.name
     hoary
 
+
+CVE BugTasks on a Distribution
+------------------------------
+
+A distribution should know what CVE-related bug tasks exist on it, and what
+state they are in. We should be able to find open, and closed, bugtasks,
+using this API. Based on the sample data we know the following about Ubuntu:
+
+    >>> tasks = ubuntu.open_cve_bugtasks
+    >>> for task in tasks:
+    ...     print task.id
+    17
+
+There should be NO resolved CVE tasks:
+
+    >>> tasks = ubuntu.resolved_cve_bugtasks
+    >>> print len(tasks)
+    0
+
 [1] https://wiki.launchpad.canonical.com/DerivationOverview
+
+

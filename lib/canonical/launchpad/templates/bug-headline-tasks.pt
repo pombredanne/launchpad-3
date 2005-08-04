@@ -1,12 +1,10 @@
 
-<div tal:omit-tag
-     tal:define="bug_url string:/malone/bugs/${context/id}">
+<tal:block define="bug_url context/fmt:url">
 
 <table class="listing"
-       style="width: 100%; margin-bottom: 1px; margin-top: 2px; font-size: 90%;">
-
+       style="width: 100%; margin-bottom: 1px; margin-top: 2px;
+              font-size: 90%;">
   <thead>
-
     <tr>
       <th title="These are individual work items for each place the bug occurs in">  
       <span class="explain">Needs fixing in</span></th>
@@ -15,7 +13,6 @@
       <th>Assigned to</th>
       <th></th>
     </tr>
-
   </thead>
 
   <tbody>
@@ -30,10 +27,9 @@
              title="This Task is linked to a Bug Watch" />
       </td>
 
-      <td>
-        <span tal:replace="bugtask/status/title">
+      <td tal:content="bugtask/status/title"
+          tal:attributes="class string:status${bugtask/status/title}">
           $BugTask.status
-        </span>
       </td>
 
       <td tal:content="bugtask/severity/title"
@@ -68,12 +64,12 @@
 
 </table>
 
-</div>
+</tal:block>
 
 <div style="font-size: 80%; text-align: right; clear: both;
             margin-bottom:1em; text-decoration: none;">
 
-  Indicate bug also exists:
+  Request fix:
   <span style="white-space: nowrap">
       <img src="/++resource++add.gif" alt="+" />
       <a href="+upstreamtask"
@@ -86,7 +82,7 @@
       <img src="/++resource++add.gif" alt="+" />
       <a href="+distrotask"
          title="Mark this bug as occurring in a distro package">
-        In Distro
+        In Distribution
       </a>
   </span>
 

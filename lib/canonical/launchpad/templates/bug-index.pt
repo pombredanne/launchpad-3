@@ -85,7 +85,7 @@
   </tal:logged-in>
   <tal:not-logged-in condition="not: request/lp:person">
     <div align="center">
-      To post a comment you <a href="+login">must be logged in</a>.
+      To post a comment you must <a href="+login">log in</a>.
     </div>
   </tal:not-logged-in>
 

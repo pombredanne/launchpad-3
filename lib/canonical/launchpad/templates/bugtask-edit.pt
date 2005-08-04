@@ -61,16 +61,12 @@
             </p>
           </div>
 
-          <p tal:condition="context/bug/summary"
+          <p class="documentDescription"
+             tal:condition="context/bug/summary"
              tal:content="context/bug/summary">
              Bug summary goes here if it exists.
           </p>
           
-          <div
-             tal:content="structure context/bug/description/fmt:text-to-html">
-             $Bug.description
-          </div>
-
           <div class="field">
             <table>
             <tr>
@@ -177,6 +173,13 @@
               i18n:attributes="value submit-button" />
           </div>
         </form>
+
+        <h2>Bug Description</h2>
+
+        <div tal:content="structure context/bug/description/fmt:text-to-html">
+          $Bug.description
+        </div>
+
       </div>
     </div>
   </body>

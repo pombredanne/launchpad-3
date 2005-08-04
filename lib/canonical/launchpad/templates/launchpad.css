@@ -289,7 +289,13 @@ tr.rowLinkified a {
   padding: 0 0.25em;
 }
 
-/* Bug Severity markers */
+/* Bug Status, Severity, Priority markers */
+.statusNew           { color: Orange; }
+.statusAccepted      { color: Red; }
+.statusPendingUpload { color: Black; }
+.statusFixed         { color: Green; }
+.statusRejected      { color: Gray; }
+
 .severityCritical { color: Red; }
 .severityMajor    { color: #ff6600; }
 .severityNormal   { color: Green; }
@@ -302,7 +308,6 @@ tr.rowLinkified a {
 .severityMinorRow { background-color: #A5AFC8; }
 .severityWishlistRow { background-color: #8FA9D9; }
 
-/* Priority markers */
 .priorityHigh    { color: Red; }
 .priorityMedium  { color: Orange; }
 .priorityLow     { color: Black; }
@@ -328,7 +333,7 @@ tr.rowLinkified a {
   font-size: 80%;
   border: 1px solid #364970;
   border-style: none none solid none;
-  background-color: #f7f9fa;
+  background-color: #d7d9da;
   padding: 0.25em 12px;
 }
 
