@@ -696,8 +696,18 @@ thead {
 
 body {
   background-color: #fcfcfc;
+  color: black;
   padding: 0.25em 0.75em 0.5em 0.75em;
 }
+:visited {
+  background: none;
+  color: #8888bb;
+}
+:link, .hierarchy :visited, .footer :visited {
+  background: none;
+	color: #000088;
+}
+
 .header, .footer {
   font-family: "Lucida Grande", "Charcoal", sans-serif;
 }
@@ -840,8 +850,9 @@ ul.app>li.current {
 }
 
 h1, h2, h3, h4, h5, h6 {
+  background: none;
   clear: left;
-	color: #000066;
+	color: #708a96;
 	font-family: "Lucida Grande", sans-serif;
 	font-weight: normal;
 	margin-top: 0;
