@@ -15,6 +15,7 @@
   <div tal:replace="structure context/@@+portlet-actions" />
   <div tal:replace="structure context/@@+portlet-translations" /> 
   <div tal:replace="structure context/@@+portlet-langstats" /> 
+  <div tal:replace="structure context/@@+portlet-latest-bugs" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main" tal:define="distro context/distribution">

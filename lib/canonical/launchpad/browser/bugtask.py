@@ -9,7 +9,6 @@ __all__ = [
     'BugTaskEditView',
     'BugTaskDisplayView',
     'BugTaskSearchListingView',
-    'BugTaskAnorakSearchPageBegoneView',
     ]
 
 import urllib
@@ -577,18 +576,4 @@ class BugTaskSearchListingView:
         """
         return IDistroRelease(self.context, None)
 
-
-class BugTaskAnorakSearchPageBegoneView:
-    """This view simply kicks the user somewhere else.
-
-    Despite being a bit dirty, it's better for /malone/bugs to kick
-    the user somewhere else (and *not* the old, scary Anorak search
-    page) until we've clearly defined what /malone/bugs would actually
-    look like (though that URL might be completely gone before we even
-    get to thinking about it. :)
-    """
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.request.response.redirect("/malone")
 

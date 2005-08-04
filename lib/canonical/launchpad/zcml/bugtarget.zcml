@@ -11,4 +11,11 @@
         permission="zope.Public"
         template="../templates/bugtask-search-listing.pt"
         />
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugTarget"
+        class="canonical.launchpad.browser.BugTargetView"
+        name="+portlet-latest-bugs"
+        permission="zope.Public"
+        template="../templates/bugtarget-portlet-latestbugs.pt"
+        lp:url="/.../+portlet-latest-bugs" />
 </configure>

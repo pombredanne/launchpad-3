@@ -89,10 +89,6 @@
             template="../templates/product-portlet-actions.pt"
             lp:url="/products/evolution/+portlet-actions" />
         <browser:page
-            name="+portlet-latest-bugs"
-            template="../templates/product-portlet-latestbugs.pt"
-            lp:url="/products/evolution/+portlet-latest-bugs" />
-        <browser:page
             name="+portlet-bounties"
             template="../templates/object-portlet-bounties.pt"
             lp:url="/products/evolution/+portlet-bounties" />
