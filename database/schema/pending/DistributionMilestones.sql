@@ -1,5 +1,7 @@
 SET client_min_messages=ERROR;
 
+CREATE INDEX bugattachment_message_idx ON BugAttachment(message);
+
 ALTER TABLE Milestone DROP COLUMN title;
 ALTER TABLE Milestone ALTER COLUMN product DROP NOT NULL;
 ALTER TABLE Milestone ADD COLUMN distribution
@@ -30,10 +32,17 @@ ALTER TABLE BugTask ADD CONSTRAINT bugtask_distribution_milestone_fk
     FOREIGN KEY (distribution, milestone)
     REFERENCES Milestone (distribution, id);
 
+--- XXX MarkShuttleworth - I don't think you can require product or distro
+/*
 ALTER TABLE BugTask ADD CONSTRAINT valid_milestone
     CHECK (milestone IS NULL OR
         (milestone IS NOT NULL AND
             (product IS NOT NULL OR distribution IS NOT NULL)));
+*/
+
+COMMENT ON COLUMN Milestone.distribution IS 'The distribution to which this milestone belongs, if it is a distro milestone.';
+COMMENT ON COLUMN Milestone.datetargeted IS 'If set, the date on which we expect this milestone to be delivered. This alloes for some optional sorting by date.';
+COMMENT ON COLUMN Milestone.visible IS 'Whether or not this milestone should be displayed in general listings. All milestones will be visible on the "page of milestones for product foo", but we want to be able to screen out obviously old milestones over time, for the general listings and vocabularies.';
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (25,10,0);
 

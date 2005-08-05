@@ -32,14 +32,15 @@ class ICVERef(Interface):
         title=_('CVE Reference'),
         description=_('The CVE reference number related to this bug. '
             'It should take the form of XXXX-XXXX, all digits. Below, '
-            'you should indicate whether it is a CANdidate or an actual '
-            'CVE number.'),
+            'you should indicate whether it is a Candidate, an Entry or '
+            'a deprecated CVE number. We will poll the CVE site to update '
+            'that status every now and then, automatically.'),
         required=True, readonly=False, constraint=valid_cve)
     cvestate = Choice(title=_('Current CVE State'), 
-        default=CVEState.CAN, description=_("Whether or not the "
+        default=CVEState.CANDIDATE, description=_("Whether or not the "
         "vulnerability has been reviewed and assigned a full CVE number, "
-        "or is still considered a CANdidated."), required=True,
-        vocabulary='CVEState')
+        "or is still considered a Candidate, or is deprecatd."),
+        required=True, vocabulary='CVEState')
     title = TextLine(
         title=_('Title'),
         description=_('A brief summary of the CVE issue. This will be '
