@@ -256,7 +256,7 @@ class BugTaskSet:
         "severity" : "BugTask.severity",
         "priority" : "BugTask.priority",
         "assignee": "BugTask.assignee",
-        "sourcepackagename" : "SourcePackageName.name",
+        "sourcepackagename" : "BugTask.sourcepackagename",
         "status" : "BugTask.status",
         "title" : "Bug.title",
         "milestone" : "BugTask.milestone",
