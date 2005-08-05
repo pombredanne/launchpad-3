@@ -315,11 +315,15 @@ Now, is time to test a .pot import when we don't have any header.
     >>> potemplate.attachRawFileData(potemplate_contents, True, person)
     >>> transaction.commit()
     >>> potemplate.doRawImport(FakeLogger())
+    log> We got an error importing %s Template "firefox" in Mozilla Firefox Milestone Releases
+    ...
+    log> POSyntaxError: All pofiles should have a header
+
 
 And the number of activities performed is...
 
     >>> len(person.activities)
-    3
+    2
 
 The header should be the old one as this one does not have any:
 
@@ -359,7 +363,7 @@ The rawimportstatus should be ignored.
 The number of activities shouldn't change as the import was rejected.
 
     >>> len(person.activities)
-    3
+    2
 
 And the date should be the old one
 

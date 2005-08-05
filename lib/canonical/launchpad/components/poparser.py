@@ -22,10 +22,13 @@ from zope.app.datetimeutils import SyntaxError, DateError, DateTimeError, \
 
 class POSyntaxError(Exception):
     """ Syntax error in a po file """
-    def __init__(self, lno=None):
+    def __init__(self, lno=None, msg=None):
         self.lno = lno
+        self.msg = msg
 
     def __str__(self):
+        if self.msg:
+            return self.msg
         if self.lno is None:
             return 'PO file: syntax error on an unknown line'
         else:
@@ -696,7 +699,7 @@ class POParser(object):
         if not self.header:
             # XXX kiko: it may be that we need to run a _make_header() here
             # to ensure we have one, but I'm not guessing.
-            raise POSyntaxError("All pofiles should have a header")
+            raise POSyntaxError(msg="All pofiles should have a header")
 
 
 # convenience function to parse "assignment" expressions like
