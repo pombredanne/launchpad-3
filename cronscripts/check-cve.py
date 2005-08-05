@@ -1,12 +1,18 @@
 #!/usr/bin/env python
-"""
-Cron job to run daily to check all of the BugWatches
-"""
 
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""A cron script that updates the status and title of the CVERefs registered
+in Launchpad."""
+
+__metaclass__ = type
+
+import re
 import sys
 import urllib2
-from xml.dom import minidom
 import _pythonpath
+
+from BeautifulSoup import BeautifulSoup
 
 from optparse import OptionParser
 
@@ -21,6 +27,9 @@ from canonical.launchpad import scripts
 
 _default_lock_file = '/var/lock/launchpad-checkcve.lock'
 
+_cve_data_table_pat = re.compile('<table border=2 cellpadding=2>.*</table>',
+    re.DOTALL)
+
 versioncache = {}
 
 class CVEServiceConnectError(Exception):
@@ -34,6 +43,7 @@ class CVEServiceConnectError(Exception):
 
 
 def parse_options():
+    """Parse command line arguments."""
     parser = OptionParser()
     scripts.logger_options(parser)
     parser.add_option("-l", "--lockfile", dest="lockfilename",
@@ -44,64 +54,39 @@ def parse_options():
 
     return options
 
-def find_element_with_value(node, value):
-    if node.nodeValue == value:
-        return node
-    for child in node.childNodes:
-        candidate = find_element_with_value(child, value)
-        if candidate is not None:
-            return candidate
-    return None
-
 def check_one_cve(cve):
+    """Check the state of a single CVE item."""
     log.info("Checking CVE-%s", cve.cveref)
-    #try:
-    #    url = urllib2.urlopen(cve.url)
-    #except (urllib2.HTTPError, urllib2.URLError), val:
-    #    raise CVEServiceConnectError(cve.url, val)
-    #ret = url.read()
-    ret = """
-<div style="margin-left:4em">
-  <table border="0" cellspacing="0" cellpadding="5">
-
-    <tr valign="top">
-      <td align="right"><b>CVE Name:</b></td>
-      <td>CVE-1999-0067</td>
-    </tr>
-    <tr valign="top">
-      <td align="right"><b>Status:</b></td>
-      <td>Entry</td>
-
-    </tr>
-    <tr valign="top">
-      <td align="right"><b>Description:</b></td>
-      <td>CGI phf program allows remote command execution through shell metacharacters.</td>
-    </tr>
-    <tr valign="top">
-      <td align="right"><b>References:</b></td>
-
-      <td>&#8226; CERT:CA-96.06.cgi_example_code<br />
-&#8226; XF:http-cgi-phf<br />
-&#8226; BID:629<br />
-&#8226; OSVDB:136      </td>
-    </tr>
-  </table>
-
-  </div>
-"""
-    document = minidom.parseString(ret)
-    statuslabelnode = find_element_with_value(document, 'Status:')
-    if statuslabelnode is None:
-        log.error("Unable to find Status: CVE-%s" % cve.cveref)
+    try:
+        url = urllib2.urlopen(cve.url)
+    except (urllib2.HTTPError, urllib2.URLError), val:
+        log.error('Unable to connect for %s' % cve.cveref)
         return
-    tr = statuslabelnode.parentNode.parentNode.parentNode
-    status = tr.getElementsByTagName('td')[1].firstChild.nodeValue
-    descriptionlabelnode = find_element_with_value(document, 'Description:')
-    if descriptionlabelnode is None:
+    cvepage = url.read()
+    # find the CVE description
+    soup = BeautifulSoup(cvepage)
+    description_node = soup.firstText('Description')
+    if description_node is None:
         log.error("Unable to find Description: CVE-%s" % cve.cveref)
         return
-    tr = descriptionlabelnode.parentNode.parentNode.parentNode
-    description = tr.getElementsByTagName('td')[1].firstChild.nodeValue
+    description = str(description_node.findNext('font').string)
+    if not description:
+        log.error("Unable to find a description for CVE-%s" % cve.cveref)
+        return
+    # find out if the CVE is a candidate or an entry
+    try:
+        title_status = soup.html.head.title.string[:3]
+    except IndexError:
+        log.error('Unable to find page title for CVE-%s' % cve.cveref)
+        return
+    if title_status == 'CAN':
+        status = 'Candidate'
+    elif title_status == 'CVE':
+        status = 'Entry'
+    else:
+        log.error('Unknown status for %s' % cve.cveref)
+        return
+    # update the CVE if needed
     if status not in ['Candidate', 'Entry', 'Deprecated']:
         log.error('Unknown status: %r' % status)
         return
