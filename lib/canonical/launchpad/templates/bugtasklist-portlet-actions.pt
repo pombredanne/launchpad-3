@@ -1,47 +1,49 @@
 <h4>Actions:</h4>
-<ul class="info">
-  <li class="edit">
+<ul>
+  <li class="add">
     <a href="#"
        tal:attributes="href string:${context/fmt:url}/+filebug">
        File New Bug
     </a>
   </li>
-  <li>
+  <li class="info" tal:condition="not: request/lp:person">
+    Show Bugs Assigned to Me <br />(requires 
     <a href="#"
-       tal:content="string:Show Critical (${view/critical_count})"
-       tal:attributes="href view/critical_count_filter_url">
-       critical (2)
-    </a>
+       style="text-decoration: underline" 
+       tal:attributes="href string:${request/URL}/+login">logging in</a>)
   </li>
-  <li tal:condition="not: request/lp:person">
-    assigned to me
-  </li>
-  <li tal:condition="request/lp:person">
+  <li class="info" tal:condition="request/lp:person">
     <a href="#"
-       tal:content="string:Show Assigned to Me (${view/assigned_to_me_count})"
        tal:attributes="href view/assigned_to_me_count_filter_url">
-                assigned to me (14)
-    </a>
+                Show Bugs Assigned to Me</a>
+    (<span tal:replace="view/assigned_to_me_count">14</span>)
   </li>
-  <li>
-    <a href=""
-       tal:content="string:Show Untriaged (${view/untriaged_count})"
+  <li class="info">
+    <a href="#"
+       tal:attributes="href view/critical_count_filter_url">
+       Show Critical Bugs
+    </a>
+    (<span tal:replace="view/critical_count">2</span>)
+  </li>
+  <li class="info">
+    <a href="#"
        tal:attributes="href view/untriaged_count_filter_url">
-       untriaged (18)
+       Show Untriaged Bugs
     </a>
+    (<span tal:replace="view/untriaged_count">14</span>)
   </li>
-  <li>
-    <a href=""
-       tal:content="string:Show Unassigned (${view/unassigned_count})"
+  <li class="info">
+    <a href="#"
        tal:attributes="href view/unassigned_count_filter_url">
-       unassigned (25)
+       Show Unassigned Bugs
     </a>
+    (<span tal:replace="view/unassigned_count">12</span>)
   </li>
-  <li>
-    <a href=""
-       tal:content="string:Show All (${view/total_count})"
+  <li class="info">
+    <a href="#"
        tal:attributes="href view/total_count_filter_url">
-       total (115)
+       Show All Bugs
     </a>
+    (<span tal:replace="view/total_count">115</span>)
   </li>
 </ul>

@@ -37,11 +37,11 @@ class BugAttachmentAddView(SQLObjectAddView):
         filename = fileupload.filename
 
         if patch:
-            type = BugAttachmentType.PATCH
+            attach_type = BugAttachmentType.PATCH
         else:
-            type = BugAttachmentType.UNSPECIFIED
+            attach_type = BugAttachmentType.UNSPECIFIED
 
-        if type == BugAttachmentType.PATCH:
+        if attach_type == BugAttachmentType.PATCH:
             # Patches are always text.
             content_type = 'text/plain'
         else:
@@ -60,7 +60,7 @@ class BugAttachmentAddView(SQLObjectAddView):
         bug.linkMessage(add_comment) 
 
         return getUtility(IBugAttachmentSet).create(
-            bug=bug, filealias=filealias, type=type, title=title,
+            bug=bug, filealias=filealias, attach_type=attach_type, title=title,
             message=add_comment)
 
     def nextURL(self):

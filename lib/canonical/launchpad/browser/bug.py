@@ -9,13 +9,16 @@ __all__ = [
     'BugAddView',
     'BugAddingView',
     'BugAddForm',
+    'BugTargetView',
     ]
 
 from zope.interface import implements
+from zope.component import getUtility
 
 from canonical.lp import dbschema, decorates, Passthrough
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.interfaces import IBugAddForm, IBug
+from canonical.launchpad.interfaces import (IBugAddForm, IBug,
+                                            ILaunchBag, IBugTaskSet)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
@@ -102,4 +105,14 @@ class BugAddForm:
         self.bug = bug
         self.bugtask = bug.bugtasks[0]
         self.comment = bug.messages[0]
+
+class BugTargetView:
+    """Used whenever you have a bug target; used by the latest bugs portlet"""
+    def latestBugTasks(self, quantity=5):
+        """Return <quantity> latest bugs reported against this target."""
+        bugtaskset = getUtility(IBugTaskSet)
+        tasklist = self.context.searchBugs(
+            orderby="-datecreated", user=getUtility(ILaunchBag).user)
+
+        return tasklist[:quantity]
 

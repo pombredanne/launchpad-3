@@ -4,18 +4,14 @@
       i18n:domain="launchpad">
   <body>
   <metal:leftportlets fill-slot="portlets_one">
-    <!-- XXX, Brad Bollenbach, 2005-05-31: This might belong
-    in the search page instead.
-    <div tal:replace="structure view/bugStatsForContext" />
-    -->
     <div tal:replace="structure context/@@+portlet-status" />
     <div tal:replace="structure context/bug/@@+portlet-details" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-actions" />
     <div tal:replace="structure context/@@+portlet-alsoreportedin" />
-    <div tal:condition="context/product" 
-         tal:replace="structure context/product/@@+portlet-latest-bugs" />
+    <div tal:replace="structure context/context/@@+portlet-latest-bugs" />
   </metal:rightportlets>
 
     <div metal:fill-slot="main">
@@ -61,16 +57,12 @@
             </p>
           </div>
 
-          <p tal:condition="context/bug/summary"
+          <p class="documentDescription"
+             tal:condition="context/bug/summary"
              tal:content="context/bug/summary">
              Bug summary goes here if it exists.
           </p>
           
-          <div
-             tal:content="structure context/bug/description/fmt:text-to-html">
-             $Bug.description
-          </div>
-
           <div class="field">
             <table>
             <tr>
@@ -177,6 +169,13 @@
               i18n:attributes="value submit-button" />
           </div>
         </form>
+
+        <h2>Bug Description</h2>
+
+        <div tal:content="structure context/bug/description/fmt:text-to-html">
+          $Bug.description
+        </div>
+
       </div>
     </div>
   </body>

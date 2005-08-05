@@ -1,275 +1,131 @@
 <metal:page define-macro="buglisting">
   <tal:tag condition="view/assign_to_milestones|nothing"/>
-  <form action="." method="GET"
+  <form name="bugtask_search" action="" method="GET"
      tal:define="listing_columns view/task_columns;
-                 logged_in request/lp:person;
                  task_batch_navigator view/search;
-                 task_batch task_batch_navigator/batch;
-                 mass_edit_allowed python: 'select' in listing_columns and view.is_maintainer">
+                 mass_edit_allowed python: 'select' in listing_columns and 
+                                           view.is_maintainer">
+
     <p>
       <label tal:content="view/searchtext_widget/label">
         Bug id or text:
       </label>
       <tal:searchtext content="structure view/searchtext_widget" />
       <input type="submit" name="search" value="Search" />
-    <input
-        tal:condition="not:view/advanced"
-        type="submit" name="advanced" value="Advanced" />
-    <input
-        tal:condition="view/advanced"
-        type="submit" name="simple_submit" value="Simple" />
-    <input type="hidden"
-        name="advanced" tal:attributes="value request/advanced|nothing" />
+      <input
+          tal:condition="not:view/advanced"
+          type="submit" name="advanced" value="Advanced" />
+      <input
+          tal:condition="view/advanced"
+          type="submit" name="simple_submit" value="Simple" />
+      <input type="hidden"
+          name="advanced" tal:attributes="value request/advanced|nothing" />
     </p>
-    <table class="listing data" width="67%">
-      <thead>
-        <tr class="results">
-          <td
-            tal:attributes="colspan python: len(listing_columns) + int(mass_edit_allowed)"
-            tal:define="startno task_batch/startNumber;
-                        endno task_batch/endNumber;
-                        total task_batch/total">
-            <div
-              class="navigation"
-              tal:define="prev_page_url task_batch_navigator/prevBatchURL;
-                          next_page_url task_batch_navigator/nextBatchURL">
-              <a tal:condition="prev_page_url"
-                 tal:attributes="href prev_page_url"
-                 rel="previous">
-                 &laquo; previous
-              </a>
-              <span tal:omit-tag=""
-                    tal:repeat="page_url task_batch_navigator/batchPageURLs">
-                <a href="."
-                   tal:content="python:page_url.keys()[0]"
-                   tal:attributes="href python:page_url.values()[0]">[1]</a>
-              </span>
-              <a tal:condition="next_page_url"
-                 tal:attributes="href next_page_url"
-                 rel="next">
-                 next &raquo;
-              </a>
-            </div>
 
-            <strong tal:content="startno">1</strong>
-            &rarr;
-            <strong tal:content="endno">10</strong>
-            of
-            <span tal:replace="total">42</span>
-            <span tal:omit-tag=""
-                  tal:condition="python: 1 == total">
-                result
-            </span>
-            <span tal:omit-tag=""
-                  tal:condition="python: 1 != total">
-                results
-            </span>
-          </td>
-        </tr>
+    <table metal:use-macro="context/@@+bugtask-macros-tableview/batched-table" />
 
-    <tr>
-      <th tal:condition="python:('select' in listing_columns) and mass_edit_allowed">
-        Select
-      </th>
-      <th tal:condition="python:'id' in listing_columns">
-        <a href="#" tal:attributes="href python:view.getSortLink('id')">ID</a>
-      </th>
-      <th tal:condition="python:'severity' in listing_columns">
-        <a href="#" tal:attributes="href python:view.getSortLink('severity')">Severity</a>
-      </th>
-      <th tal:condition="python:'priority' in listing_columns">
-        <a href="#" tal:attributes="href python:view.getSortLink('priority')">Priority</a>
-      </th>
-      <th tal:condition="python:'assignedto' in listing_columns">
-        <a href="#" tal:attributes="href python:view.getSortLink('assignee')">Assignee</a>
-      </th>
-      <th tal:condition="python:'package' in listing_columns">
-        <a href="#" tal:attributes="href python:view.getSortLink('sourcepackagename')">Package</a>
-      </th>
-      <th tal:condition="python:'status' in listing_columns">
-         <a href="#" tal:attributes="href python:view.getSortLink('status')">Status</a>
-      </th>
-      <th tal:condition="python:'title' in listing_columns">
-         <a href="#" tal:attributes="href python:view.getSortLink('title')">Title</a>
-      </th>
-      <th tal:condition="python:'milestone' in listing_columns">
-         <a href="#" tal:attributes="href python:view.getSortLink('milestone')">Target</a>
-      </th>
-      <th tal:condition="python:'submittedon' in listing_columns">
-        <a href="#" tal:attributes="href python:view.getSortLink('datecreated')">Reported</a>
-      </th>
-      <th tal:condition="python:'submittedby' in listing_columns">
-        <a href="#" tal:attributes="href python:view.getSortLink('owner')">Reporter</a>
-      </th>
-    </tr>
+    <div tal:condition="mass_edit_allowed">
+      <tal:milestone condition="context/context/milestones|nothing">
+        <tal:block content="structure view/milestone_assignment_widget" />
+        <input type="submit" name="assign_to_milestone" 
+               value="Assign to Milestone" />
+      </tal:milestone>
+    </div>
 
-      </thead>
-      <tbody>
-
-    <tr tal:repeat="task task_batch">
-      <span tal:omit-tag=""
-            tal:define="bugid task/bug/id;
-                        assid task/id;
-                        product_name task/product/name|nothing;
-                        project_name task/product/project/name|nothing;
-                        package_name task/sourcepackagename/name|nothing;
-                        bug_link task/bug/fmt:url;
-                        ass_owner task/owner/name|nothing;
-                        potential_assignee logged_in/browsername|nothing;
-                        status task/status/title;
-                        assignee task/assignee/name|python:'';
-                        priority task/priority/title;
-                        severity task/severity/title;
-                        statusid string:status${repeat/task/number};
-                        assigneeid string:assignee${repeat/task/number};">
-          <td tal:condition="mass_edit_allowed">
-            <input type="checkbox" name="task" value="" tal:attributes="value task/id" />
-          </td>
-          <td tal:condition="python:'id' in listing_columns">
-              <a tal:attributes="href bug_link"
-                 tal:content="bugid"
-                 style="text-decoration: underline">42</a>
-          </td>
-          <td tal:condition="python:'severity' in listing_columns"
-              tal:content="severity">
-              Medium
-          </td>
-          <td tal:condition="python:'priority' in listing_columns"
-              tal:content="priority">
-              High
-          </td>
-          <td tal:condition="python:'assignedto' in listing_columns"
-               tal:content="task/assignee/browsername|string:-">
-              somebody
-          </td>
-          <td tal:condition="python:('product' in listing_columns) and product_name"
-              tal:content="python: (project_name == product_name) and product_name or (project_name + ' ' + product_name)">
-              product
-          </td>
-          <td tal:condition="python:'package' in listing_columns"
-               tal:content="python:package_name and package_name or '-'">
-               -
-          </td>
-          <td tal:condition="python:'status' in listing_columns"
-               tal:content="status">
-               New
-          </td>
-          <td tal:condition="python:'title' in listing_columns"
-               tal:content="task/bug/title">
-               title
-          </td>
-          <td tal:condition="python:'milestone' in listing_columns"
-               tal:content="task/milestone/name|string:-">
-               milestone
-          </td>
-          <td tal:condition="python:'submittedon' in listing_columns"
-               tal:content="task/datecreated/strftime/fmt:date">
-               date
-          </td>
-          <td tal:condition="python:'submittedby' in listing_columns"
-               tal:content="task/owner/browsername|string:-">
-               name
-          </td>
-      </span>
-    </tr>
-
-      </tbody>
-    </table>
-
-  <div tal:condition="mass_edit_allowed">
-    <tal:milestone condition="context/context/milestones|nothing">
-      <tal:block content="structure view/milestone_assignment_widget" />
-      <input type="submit" name="assign_to_milestone" value="Assign to Milestone" />
-    </tal:milestone>
-  </div>
-
-  <tal:x condition="not:view/advanced">
-      <input type="hidden" name="status" value="10" />
-      <input type="hidden" name="status" value="20" />
-      <input type="hidden" name="assignee" value="all" />
-  </tal:x>
+    <tal:search-defaults condition="not:view/advanced">
+        <input type="hidden" name="status" value="10" />
+        <input type="hidden" name="status" value="20" />
+        <input type="hidden" name="assignee" value="all" />
+    </tal:search-defaults>
 
     <tal:block condition="view/advanced">
       <h2>Advanced Search Criteria</h2>
+      <div class="row">
+        <div class="field">
+          <table width="67%">
 
-        <div class="row">
-          <div class="field">
-            <table width="67%">
-              <tr>
-                <td tal:condition="view/status_widget|nothing">
-                  <label tal:attributes="for view/status_widget/name"
-                         tal:content="view/status_widget/label">
-                    Status:
-                  </label>
-                </td>
-                <td tal:condition="view/severity_widget|nothing">
-                  <label tal:attributes="for view/severity_widget/name"
-                         tal:content="view/severity_widget/label">
-                    Severity:
-                  </label>
-                </td>
-                <td tal:condition="view/attachmenttype_widget|nothing">
-                  <label tal:attributes="for view/attachmenttype_widget/name"
-                         tal:content="view/attachmenttype_widget/label">
-                    Attachment:
-                  </label>
-                </td>
-                <td tal:condition="python: view.assignee_widget or
-                                           view.statusexplanation_widget">
-                  <label tal:attributes="for view/assignee_widget/name"
-                         tal:condition="view/assignee_widget|nothing"
-                         tal:content="view/assignee_widget/label">
-                    Assignee:
-                  </label>
-                </td>
-                <td tal:condition="view/milestone_widget|nothing">
-                  <label tal:attributes="for view/milestone_widget/name"
-                         tal:content="view/milestone_widget/label">
-                    Target:
-                  </label>
-                </td>
+            <tr>
+              <td tal:condition="view/status_widget|nothing">
+                <label tal:attributes="for view/status_widget/name"
+                       tal:content="view/status_widget/label">
+                  Status:
+                </label>
+              </td>
+              <td tal:condition="view/severity_widget|nothing">
+                <label tal:attributes="for view/severity_widget/name"
+                       tal:content="view/severity_widget/label">
+                  Severity:
+                </label>
+              </td>
+              <td tal:condition="view/attachmenttype_widget|nothing">
+                <label tal:attributes="for view/attachmenttype_widget/name"
+                       tal:content="view/attachmenttype_widget/label">
+                  Attachment:
+                </label>
+              </td>
+              <td tal:condition="python: view.assignee_widget or
+                                         view.statusexplanation_widget">
+                <label tal:attributes="for view/assignee_widget/name"
+                       tal:condition="view/assignee_widget|nothing"
+                       tal:content="view/assignee_widget/label">
+                  Assignee:
+                </label>
+              </td>
+            </tr>
 
-              </tr>
-              <tr>
-                <td tal:condition="view/status_widget"
-                    tal:content="structure view/status_widget" />
-                <td tal:condition="view/severity_widget"
-                    tal:content="structure view/severity_widget" />
-                <td tal:condition="view/attachmenttype_widget"
-                    tal:content="structure view/attachmenttype_widget" />
-                <td tal:condition="python: view.assignee_widget or
-                                           view.statusexplanation_widget">
-                  <tal:block condition="view/assignee_widget">
-                    <tal:block content="structure view/assignee_widget" /><br />
-                    <tal:block content="structure view/unassigned_widget" />
-                    <label style="font-weight: normal;"
-                        tal:attributes="for view/unassigned_widget/name"
-                        tal:content="structure view/unassigned_widget/label">
-                      show only unassigned bugs
-                    </label>
-                    <br /><br />
-                  </tal:block>
-                  <tal:block condition="view/statusexplanation_widget">
-                    <label
-                        tal:attributes="for view/statusexplanation_widget/name"
-                        tal:content="view/statusexplanation_widget/label">
-                      Status notes:
-                    </label>
-                    <br />
-                    <tal:block content="structure view/statusexplanation_widget" />
-                  </tal:block>
-                </td>
-                <td tal:condition="view/milestone_widget|nothing"
-                    tal:content="structure view/milestone_widget" />
-              </tr>
-              <tr>
-                <td>
-                <input type="submit" name="search" value="Search" />
-                </td>
-              </tr>
-            </table>
-          </div>
+            <tr>
+              <td tal:condition="view/status_widget"
+                  tal:content="structure view/status_widget" />
+              <td tal:condition="view/severity_widget"
+                  tal:content="structure view/severity_widget" />
+              <td tal:condition="view/attachmenttype_widget"
+                  tal:content="structure view/attachmenttype_widget" />
+              <td tal:condition="python: view.assignee_widget or
+                                         view.statusexplanation_widget">
+
+                <tal:block condition="view/assignee_widget">
+                  <tal:block content="structure view/assignee_widget" /><br />
+                  <tal:block content="structure view/unassigned_widget" />
+                  <label style="font-weight: normal;"
+                      tal:attributes="for view/unassigned_widget/name"
+                      tal:content="structure view/unassigned_widget/label">
+                    show only unassigned bugs
+                  </label>
+                  <br />
+                  <tal:block content="structure view/include_dupes_widget" />
+                  <label style="font-weight: normal;"
+                      tal:attributes="for view/include_dupes_widget/name"
+                      tal:content="structure view/include_dupes_widget/label">
+                    include duplicate bugs
+                  </label>
+                  <br /><br />
+                </tal:block>
+
+                <tal:block condition="view/statusexplanation_widget">
+                  <label
+                      tal:attributes="for view/statusexplanation_widget/name"
+                      tal:content="view/statusexplanation_widget/label">
+                    Status notes:
+                  </label>
+                  <br />
+                  <tal:block content="structure view/statusexplanation_widget" />
+                </tal:block>
+
+              </td>
+              <td tal:condition="view/milestone_widget|nothing"
+                  tal:content="structure view/milestone_widget" />
+            </tr>
+
+            <tr>
+              <td>
+              <input type="submit" name="search" value="Search" />
+              </td>
+            </tr>
+
+          </table>
         </div>
+      </div>
     </tal:block>
+
   </form>
 </metal:page>

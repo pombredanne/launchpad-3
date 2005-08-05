@@ -122,6 +122,7 @@ class IBugTaskSearch(Interface):
     assignee = Choice(
         title=_('Assignee'), vocabulary='ValidAssignee', required=False)
     unassigned = Bool(title=_('show only unassigned bugs'), required=False)
+    include_dupes = Bool(title=_('include duplicate bugs'), required=False)
     statusexplanation = TextLine(
         title=_("Status notes"), required=False)
     attachmenttype = List(
@@ -298,13 +299,13 @@ class IBugTaskSet(Interface):
 
     title = Attribute('Title')
 
-    def __getitem__(key):
+    def __getitem__(task_id):
         """Get an IBugTask."""
 
     def __iter__():
         """Iterate through IBugTasks for a given bug."""
 
-    def get(id):
+    def get(task_id):
         """Retrieve a BugTask with the given id.
 
         Raise a zope.exceptions.NotFoundError if there is no IBugTask
@@ -317,7 +318,7 @@ class IBugTaskSet(Interface):
                distrorelease=None, milestone=None, assignee=None,
                sourcepackagename=None, binarypackagename=None,
                owner=None, statusexplanation=None, attachmenttype=None,
-               user=None, orderby=None):
+               user=None, orderby=None, omit_dupes=False):
         """Return a set of IBugTasks that satisfy the query arguments.
 
         user is an object that provides IPerson, and represents the

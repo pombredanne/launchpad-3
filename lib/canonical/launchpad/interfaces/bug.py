@@ -84,7 +84,8 @@ class IBug(Interface):
 
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
     messages = Attribute('SQLObject.RelatedJoin of IMessages')
-    bugtasks = Attribute('SQLObject.Multijoin of IBugTask')
+    bugtasks = Attribute('BugTasks on this bug, sorted upstream, then '
+        'ubuntu, then other distroreleases.')
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
@@ -150,10 +151,10 @@ class IBugTarget(Interface):
     Examples include an IDistribution, an IDistroRelease and an
     IProduct.
     """
-    def search(bug=None, searchtext=None, status=None, priority=None,
-               severity=None, milestone=None, assignee=None, owner=None,
-               statusexplanation=None, attachmenttype=None, user=None,
-               orderby=None):
+    def searchBugs(bug=None, searchtext=None, status=None, priority=None,
+                   severity=None, milestone=None, assignee=None, owner=None,
+                   statusexplanation=None, attachmenttype=None, user=None,
+                   orderby=None, omit_dupes=False):
         """Search the IBugTasks reported on this entity.
 
         Return an iterable of matching results.

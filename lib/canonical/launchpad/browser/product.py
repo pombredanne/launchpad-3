@@ -15,8 +15,8 @@ from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 
 from canonical.launchpad.interfaces import (
-    IPerson, IProduct, IProductSet, IBugTaskSet, IProductSeries,
-    ISourcePackage, ICountry, IBugSet, ICalendarOwner, ILaunchBag)
+    IPerson, IProduct, IProductSet, IProductSeries, ISourcePackage,
+    ICountry, IBugSet, ICalendarOwner)
 from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -226,16 +226,6 @@ class ProductView:
         #XXX: cprov 20050112
         # Avoid passing obscure arguments such as self.form
         newProductRelease(self.form, self.context, owner)
-
-    def latestBugTasks(self, quantity=5):
-        """Return <quantity> latest bugs reported against this product."""
-        bugtaskset = getUtility(IBugTaskSet)
-
-        tasklist = bugtaskset.search(
-            product=self.context, orderby="-datecreated",
-            user=getUtility(ILaunchBag).user)
-
-        return tasklist[:quantity]
 
     def potemplatenames(self):
         potemplatenames = set([])

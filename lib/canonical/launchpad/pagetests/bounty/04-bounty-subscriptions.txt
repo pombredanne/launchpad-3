@@ -25,14 +25,14 @@
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
+      <p class="portalMessage">Your subscription to this bounty has been updated.</p>
+  ...
               <h5>watch:</h5>
               <ul class="people">
                   <li>
                     <a href="/people/name16">Foo Bar</a>
                   </li>
               </ul>
-  ...
-      <p class="portalMessage">Your subscription to this bounty has been updated.</p>
   ...
 
 

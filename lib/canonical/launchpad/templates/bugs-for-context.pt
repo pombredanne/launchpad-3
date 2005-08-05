@@ -10,15 +10,12 @@
 
   <div class="sidebar">
     <tal:block content="structure context/@@+portlet-bugtasklist-actions" />
-    <br />
-    <tal:block content="structure context/@@+portlet-bugtasklist-statsforcontext" />
     <tal:releasebugs condition="context/@@+portlet-bugtasklist-releasebugs|nothing">
-      <br />
       <tal:block content="structure context/@@+portlet-bugtasklist-releasebugs" />
     </tal:releasebugs>
   </div>
 
-  <div metal:use-macro="context/@@bugtask_search_listing/buglisting" />
+  <div metal:use-macro="context/@@+bugtask-search-listing/buglisting" />
   <script>
   <!--
   document.forms[0].elements['field.searchtext'].focus();

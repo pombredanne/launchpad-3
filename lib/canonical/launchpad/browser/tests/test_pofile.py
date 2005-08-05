@@ -17,6 +17,7 @@ class DummyLanguage:
         self.code = code
         self.pluralforms = pluralforms
         self.englishname = 'Gobbledegook'
+        self.alt_suggestion_language = None
 
 
 class DummyLanguageSet:

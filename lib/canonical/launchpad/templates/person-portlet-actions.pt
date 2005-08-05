@@ -9,7 +9,7 @@
       <li class="mail" tal:condition="not: context/isTeam">
         <a href="+emails">E-mail Addresses</a>
       </li>
-      <li class="info"><a href="+packages">Packages</a></li>
+      <li class="packages"><a href="+packages">Packages</a></li>
       <li class="info"><a href="+bounties">Bounties</a></li>
       <li class="info"><a href="+branches">Code</a></li>
       <li class="info"><a href="+karma">Karma</a></li>

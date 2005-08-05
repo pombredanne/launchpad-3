@@ -10,6 +10,10 @@
         <tal:block condition="not:other_occurrences">
             <i>No other known occurrences.</i>
         </tal:block>
+        <tal:block condition="other_occurrences">
+          This bug is also targetted for fixing in...
+        </tal:block>
+
 
         <ul tal:condition="other_occurrences">
           <li tal:repeat="task other_occurrences"><a href="#"
@@ -21,7 +25,7 @@
                  tal:attributes="href string:${task/fmt:url}/+edit"
                  tal:content="task/contextname"
                  style="text-decoration: underline">Firefox</a>
-
+                 <br />
                  [<span tal:replace="task/status/title">Pending</span>]
 
           </li>

@@ -1,6 +1,20 @@
 The bugtask search facility supports searching on a simple text
 string.
 
+When we visit the bug listing page, we expect a search form.
+
+  >>> print http(r"""
+  ... GET /distros/debian/+bugs HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...<form name="bugtask_search" action="" method="GET">...
+  ...
+
+The URL produced by the above form action is required to produce the expected
+search result.
+
   >>> print http(r"""
   ... GET /distros/debian/+bugs?field.searchtext=blackhole&search=Search&advanced=&status=10&status=20&assignee=all HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -8,5 +22,5 @@ string.
   HTTP/1.1 200 Ok
   ...1...result...
   ...
-              <a href="...">2</a>
+              <a href="...">#2</a>
   ...
