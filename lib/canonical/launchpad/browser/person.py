@@ -44,7 +44,7 @@ from canonical.launchpad.interfaces import (
     IPasswordEncryptor, ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler,
     IKarmaActionSet, IKarmaSet, UBUNTU_WIKI_URL, ITeamMembershipSet,
     IObjectReassignment, ITeamReassignment, IPollSubset, IPerson,
-    ICalendarOwner)
+    ICalendarOwner, BugTaskSearchParams)
 
 from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
@@ -315,13 +315,16 @@ class PersonView:
 
     def reportedBugTasks(self):
         """Return up to 30 bug tasks reported recently by this person."""
-        return getUtility(IBugTaskSet).search(
-            owner=self.context, user=self.user, orderby='-datecreated')[:30]
+        search_params = BugTaskSearchParams(owner=self.context, user=self.user,
+                                            orderby="-datecreated")
+        return getUtility(IBugTaskSet).search(search_params)[:30]
 
     def assignedBugTasks(self):
         """Return up to 10 bug tasks recently assigned to this person."""
-        return getUtility(IBugTaskSet).search(
-            assignee=self.context, user=self.user, orderby='-dateassigned')[:10]
+        search_params = BugTaskSearchParams(assignee=self.context,
+                                            user=self.user,
+                                            orderby="-dateassigned")
+        return getUtility(IBugTaskSet).search(search_params)[:10]
 
     def mostRecentMaintainedBugTasks(self):
         """Return up to 10 bug tasks (ordered by date assigned) reported on

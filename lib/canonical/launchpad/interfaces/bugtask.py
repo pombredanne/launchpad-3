@@ -17,6 +17,7 @@ __all__ = [
     'ISelectResultsSlicable',
     'IBugTaskSet',
     'IBugTasksReport',
+    'BugTaskSearchParams',
     ]
 
 from zope.component.interfaces import IView
@@ -295,6 +296,98 @@ class ISelectResultsSlicable(ISelectResults):
         """Called to implement evaluation of self[i:j]."""
 
 
+class BugTaskSearchParams:
+    """Encapsulates search parameters for BugTask.search()
+
+    Details:
+
+      user is an object that provides IPerson, and represents the
+      person performing the query (which is important to know for,
+      for example, privacy-aware results.)
+
+      product, distribution and distrorelease (IBugTargets) should /not/
+      be supplied to BugTaskSearchParams; instead, IBugTarget's
+      searchTasks() method should be invoked with a single search_params
+      argument.
+
+      Keyword arguments should always be used. The argument passing
+      semantics are as follows:
+
+        * BugTaskSearchParams(arg='foo', user=bar): Match all IBugTasks
+          where IBugTask.arg == 'foo' for user bar.
+
+        * BugTaskSearchParams(arg=any('foo', 'bar')): Match all
+          IBugTasks where IBugTask.arg == 'foo' or IBugTask.arg ==
+          'bar'. In this case, no user was passed, so all private bugs
+          are excluded from the search results.
+
+        * BugTaskSearchParams(arg1='foo', arg2='bar'): Match all
+          IBugTasks where IBugTask.arg1 == 'foo' and IBugTask.arg2 ==
+          'bar'
+
+    The set will be ordered primarily by the column specified in orderby,
+    and then by bugtask id.
+
+    For a more thorough treatment, check out:
+
+        lib/canonical/launchpad/doc/bugtask.txt
+    """
+
+    product = None
+    distribution = None
+    distrorelease = None
+    def __init__(self, user, bug=None, searchtext=None, status=None,
+                 priority=None, severity=None, milestone=None,
+                 assignee=None, sourcepackagename=None,
+                 binarypackagename=None, owner=None,
+                 statusexplanation=None, attachmenttype=None,
+                 orderby=None, omit_dupes=False):
+        self.bug = bug
+        self.searchtext = searchtext
+        self.status = status
+        self.priority = priority
+        self.severity = severity
+        self.milestone = milestone
+        self.assignee = assignee
+        self.sourcepackagename = sourcepackagename
+        self.binarypackagename = binarypackagename
+        self.owner = owner
+        self.statusexplanation = statusexplanation
+        self.attachmenttype = attachmenttype
+        self.user = user
+        self.orderby = orderby
+        self.omit_dupes = omit_dupes
+
+        self._has_context = False
+
+    def setProduct(self, product):
+        """Sets the product to search on.
+
+        This should only be called by Product
+        """
+        assert not self._has_context
+        self.product = product
+        self._has_context = True
+
+    def setDistribution(self, distribution):
+        """Sets the distribution to search on
+
+        This should only be called by Distribution
+        """
+        assert not self._has_context
+        self.distribution = distribution
+        self._has_context = True
+
+    def setDistributionRelease(self, distrorelease):
+        """Sets the distribution release to search on
+
+        This should only be called by DistroRelease
+        """
+        assert not self._has_context
+        self.distrorelease = distrorelease
+        self._has_context = True
+
+
 class IBugTaskSet(Interface):
 
     title = Attribute('Title')
@@ -313,40 +406,15 @@ class IBugTaskSet(Interface):
         if the user doesn't have the permission to view this bug.
         """
 
-    def search(bug=None, searchtext=None, status=None, priority=None,
-               severity=None, product=None, distribution=None,
-               distrorelease=None, milestone=None, assignee=None,
-               sourcepackagename=None, binarypackagename=None,
-               owner=None, statusexplanation=None, attachmenttype=None,
-               user=None, orderby=None, omit_dupes=False):
-        """Return a set of IBugTasks that satisfy the query arguments.
+    def search(params):
+        """Return a set of IBugTasks.
 
-        user is an object that provides IPerson, and represents the
-        person performing the query (which is important to know for,
-        for example, privacy-aware results.)
-
-        Keyword arguments should always be used. The argument passing
-        semantics are as follows:
-
-        * BugTaskSet.search(arg='foo', user=bar): Match all IBugTasks
-          where IBugTask.arg == 'foo' for user bar.
-
-        * BugTaskSet.search(arg=any('foo', 'bar')): Match all
-          IBugTasks where IBugTask.arg == 'foo' or IBugTask.arg ==
-          'bar'. In this case, no user was passed, so all private bugs
-          are excluded from the search results.
-
-        * BugTaskSet.search(arg1='foo', arg2='bar'): Match all
-          IBugTasks where IBugTask.arg1 == 'foo' and IBugTask.arg2 ==
-          'bar'
-
-        The set is always ordered by the bugtasks' id. Meaning that if
-        you set orderby to 'severity', it will first be ordered by severity,
-        then by bugtask id.
-
-        For a more thorough treatment, check out:
-
-            lib/canonical/launchpad/doc/bugtask.txt
+        Note: only use this method of BugTaskSet if you want to query
+        tasks across multiple IBugTargets; otherwise, use the
+        IBugTarget's searchTasks() method.
+        
+        search() returns the tasks that satisfy the query specified in
+        the BugTaskSearchParams argument supplied.
         """
 
     def createTask(bug, product=None, distribution=None, distrorelease=None,

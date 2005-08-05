@@ -10,14 +10,12 @@ import sets
 
 from contrib.docwrapper import DocWrapper
 
-from zope.component import getUtility
 from zope.security.proxy import isinstance as zope_isinstance
 
 import canonical.launchpad
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IBugDelta, IBugTaskSet, IUpstreamBugTask, IDistroBugTask,
-    IDistroReleaseBugTask)
+    IBugDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.components.bugtask import BugTaskDelta
@@ -95,8 +93,7 @@ def generate_bug_add_email(bug):
             % {'visibility' : visibility, 'bugurl' : canonical_url(bug)})
 
     # Add information about the affected upstreams and packages.
-    bugtasks = getUtility(IBugTaskSet).search(bug=bug, orderby="datecreated")
-    for bugtask in bugtasks:
+    for bugtask in bug.bugtasks:
         body += u"Affects: %s\n" % bugtask.contextname
         body += u"       Severity: %s\n" % bugtask.severity.title
         body += u"       Priority: %s\n" % bugtask.priority.title
@@ -222,8 +219,6 @@ def generate_bug_edit_email(bug_delta):
             if not body[-2:] == u"\n\n":
                 body += u"\n"
 
-            what = None
-            where = None
             if IUpstreamBugTask.providedBy(bugtask_delta.bugtask):
                 body += u"Changed in: %s (upstream)\n" % (
                     bugtask_delta.bugtask.product.displayname)
@@ -598,16 +593,6 @@ def notify_bug_added(bug, event):
     to_addrs = get_cc_list(bug)
 
     if to_addrs:
-        owner = "(no owner)"
-        spname = "(none)"
-        pname = "(none)"
-        if bug.owner:
-            owner = bug.owner.browsername
-        if bug.bugtasks[0].sourcepackagename:
-            spname = bug.bugtasks[0].sourcepackagename.name
-        if bug.bugtasks[0].product:
-            pname = bug.bugtasks[0].product.displayname
-
         subject, body = generate_bug_add_email(bug)
 
         for to_addr in to_addrs:
@@ -722,7 +707,8 @@ Infestation: %(infestation)s
             msg)
 
 
-def notify_bug_product_infestation_modified(modified_product_infestation, event):
+def notify_bug_product_infestation_modified(modified_product_infestation, 
+                                            event):
     """Notify CC'd list that this product infestation has been edited.
 
     modified_product_infestation must be an IBugProductInfestation. event must
@@ -740,6 +726,7 @@ def notify_bug_product_infestation_modified(modified_product_infestation, event)
                 ("infestationstatus", lambda v: v.title)))
 
         bug = modified_product_infestation.bug
+        productrelease = event.object_before_modification.productrelease
         send_bug_edit_notification(
             bug=bug,
             from_addr=get_bugmail_from_address(bug.id, event.user),
@@ -747,8 +734,8 @@ def notify_bug_product_infestation_modified(modified_product_infestation, event)
             subject="[Bug %d] %s" % (bug.id, bug.title),
             edit_header_line=(
                 "Edited infested product: %s" %
-                event.object_before_modification.productrelease.product.displayname + " " +
-                event.object_before_modification.productrelease.version),
+                productrelease.product.displayname + " " +
+                productrelease.version),
             changes=changes, user=event.user)
 
 
@@ -799,6 +786,7 @@ def notify_bug_package_infestation_modified(modified_package_infestation, event)
                 ("infestationstatus", lambda v: v.title)))
 
         bug = modified_package_infestation.bug
+        packagerelease = event.object_before_modification.sourcepackagerelease
         send_bug_edit_notification(
             bug=bug,
             from_addr=get_bugmail_from_address(bug.id, event.user),
@@ -806,8 +794,8 @@ def notify_bug_package_infestation_modified(modified_package_infestation, event)
             subject="[Bug %d] %s" % (bug.id, bug.title),
             edit_header_line=(
                 "Edited infested package: %s" %
-                event.object_before_modification.sourcepackagerelease.sourcepackagename.name + " " +
-                event.object_before_modification.sourcepackagerelease.version),
+                packagerelease.sourcepackagename.name + " " +
+                packagerelease.version),
             changes=changes, user=event.user)
 
 

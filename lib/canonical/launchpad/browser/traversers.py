@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces import (
     IBugSet, IBugTaskSet, IBugTasksReport, IDistributionSet, IProjectSet,
     IProductSet, ISourcePackageSet, IBugTrackerSet, ILaunchBag,
     ITeamMembershipSubset, ICalendarOwner, ILanguageSet, IBugAttachmentSet,
-    IPublishedPackageSet, IPollSet, IPollOptionSet,
+    IPublishedPackageSet, IPollSet, IPollOptionSet, BugTaskSearchParams,
     IDistroReleaseLanguageSet)
 from canonical.launchpad.database import (
     BugExternalRefSet, BugSubscriptionSet,
@@ -90,17 +90,9 @@ def traverse_product(product, request, name):
             request.setTraversalStack(travstack)
 
             if nextstep.isdigit():
-                # This looks like a bug ID; return the task for this
-                # context.
-                bugtaskset = getUtility(IBugTaskSet)
-                bugset = getUtility(IBugSet)
+                bug = getUtility(IBugSet).get(nextstep)
+                return _get_task_for_context(bug, product)
 
-                bug = bugset.get(nextstep)
-                bugtasks = bugtaskset.search(
-                    product=product, bug=bug, user=getUtility(ILaunchBag).user)
-
-                if bugtasks.count() == 1:
-                    return bugtasks[0]
     elif name == '+calendar':
         return ICalendarOwner(product).calendar
     else:
@@ -127,21 +119,10 @@ def traverse_distribution(distribution, request, name):
             request.setTraversalStack(travstack)
 
             if nextstep.isdigit():
-                # This looks like a bug ID; return the task for this
-                # context.
-                bugtaskset = getUtility(IBugTaskSet)
-                bugset = getUtility(IBugSet)
-
-                bug = bugset.get(nextstep)
-                bugtasks = bugtaskset.search(
-                    distribution=distribution, bug=bug,
-                    user=getUtility(ILaunchBag).user)
-
-                if bugtasks.count() == 1:
-                    return bugtasks[0]
+                bug = getUtility(IBugSet).get(nextstep)
+                return _get_task_for_context(bug, distribution)
     else:
         return getUtility(ILaunchBag).distribution[name]
-
 
 def traverse_distrorelease(distrorelease, request, name):
     """Traverse an IDistroRelease."""
@@ -163,18 +144,9 @@ def traverse_distrorelease(distrorelease, request, name):
             request.setTraversalStack(travstack)
 
             if nextstep.isdigit():
-                # This looks like a bug ID; return the task for this
-                # context.
-                bugtaskset = getUtility(IBugTaskSet)
-                bugset = getUtility(IBugSet)
+                bug = getUtility(IBugSet).get(nextstep)
+                return _get_task_for_context(bug, distrorelease)
 
-                bug = bugset.get(nextstep)
-                bugtasks = bugtaskset.search(
-                    distrorelease=distrorelease, bug=bug,
-                    user=getUtility(ILaunchBag).user)
-
-                if bugtasks.count() == 1:
-                    return bugtasks[0]
     elif name == '+lang':
         travstack = request.getTraversalStack()
         if len(travstack) == 0:
@@ -197,6 +169,14 @@ def traverse_distrorelease(distrorelease, request, name):
             return drlangset.getDummy(distrorelease, lang)
     else:
         return distrorelease[name]
+
+
+def _get_task_for_context(bug, context):
+    user = getUtility(ILaunchBag).user
+    search_params = BugTaskSearchParams(bug=bug, user=user)
+    bugtasks = context.searchTasks(search_params)
+    assert bugtasks.count() == 1
+    return bugtasks[0]
 
 
 def traverse_person(person, request, name):
@@ -275,7 +255,6 @@ def traverse_poll(poll, request, name):
         if len(travstack) == 0:
             # No option name given; returning None will raise a not found error
             return None
-        optionset = getUtility(IPollOptionSet)
         # Consume the option name from the traversal stack
         optionid = travstack.pop()
         option = getUtility(IPollOptionSet).getByPollAndId(poll, optionid)

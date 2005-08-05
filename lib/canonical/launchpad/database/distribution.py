@@ -48,23 +48,10 @@ class Distribution(SQLBase):
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
     lucilleconfig = StringCol(notNull=False, default=None)
 
-    def searchBugs(self, bug=None, searchtext=None, status=None, priority=None,
-                   severity=None, milestone=None, assignee=None, owner=None,
-                   statusexplanation=None, attachmenttype=None, user=None,
-                   orderby=None, omit_dupes=False):
+    def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
-        # As an initial refactoring, we're wrapping BugTaskSet.search.
-        # It's possible that the search code will live inside this
-        # method instead at some point.
-        #
-        # The implementor who would make such a change should be
-        # mindful of bug privacy.
-        return BugTaskSet().search(
-            distribution=self, bug=bug, searchtext=searchtext, status=status,
-            priority=priority, severity=severity, milestone=milestone,
-            assignee=assignee, owner=owner, attachmenttype=attachmenttype,
-            statusexplanation=statusexplanation, user=user, orderby=orderby,
-            omit_dupes=omit_dupes)
+        search_params.setDistribution(self)
+        return BugTaskSet().search(search_params)
 
     @property
     def open_cve_bugtasks(self):
