@@ -133,7 +133,9 @@ bug_edit = BugPageTitle()
 
 bug_index = BugPageTitle()
 
-bug_references = ContextId('External References for Malone Bug #%s')
+bug_references = ContextId('External references for bug #%s')
+
+bug_secrecy = ContextId('Set secrecy for bug #%s')
 
 bug_secrecy = ContextId('Make Malone Bug #%d Public or Secret')
 
@@ -463,7 +465,7 @@ def poll_new(context, view):
 def polloption_edit(context, view):
     return 'Edit option %s' % context.shortname
 
-potemplage_admin = ContextTitle('%s admin in Rosetta')
+potemplate_add = 'Add a new template to Rosetta'
 
 # potemplate_chart is a fragment
 
@@ -485,7 +487,7 @@ product_add = 'Register a new Product with the Launchpad'
 
 product_bugs = ContextDisplayName('%s upstream bug reports')
 
-product_distros = ContextDisplayName('Distribution Packaging of %s')
+product_distros = ContextDisplayName('%s packages: Comparison of distributions')
 
 product_edit = ContextTitle('Edit Upstream Details: %s')
 

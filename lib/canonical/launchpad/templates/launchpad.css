@@ -11,10 +11,11 @@
 
 #portal-column-content {
   vertical-align: top;
-  padding: 0 1em;
+  padding: 2px 1em 1em 1em;
 }
 
 #portal-column-two {
+  padding-top: 3px;
   vertical-align: top;
   width: 16em;
 }
