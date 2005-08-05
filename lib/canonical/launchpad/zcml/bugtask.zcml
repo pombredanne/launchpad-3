@@ -84,9 +84,9 @@
             template="../templates/bugtask-portlet-alsoreportedin.pt"
             lp:url="malone/tasks/+portlet-alsoreportedin" />
         <browser:page
-            name="+portlet-status"
-            template="../templates/bugtask-portlet-status.pt"
-            lp:url="malone/tasks/+portlet-status" />
+            name="+portlet-details"
+            template="../templates/bugtask-portlet-details.pt"
+            lp:url="malone/tasks/+portlet-details" />
         
     </browser:pages>
 
@@ -173,7 +173,7 @@
         for="canonical.launchpad.interfaces.IDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename
+        fields="sourcepackagename binarypackagename milestone
                 status priority severity assignee bugwatch statusexplanation"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
@@ -223,7 +223,7 @@
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename
+        fields="sourcepackagename binarypackagename milestone
                 status priority severity assignee bugwatch statusexplanation"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"

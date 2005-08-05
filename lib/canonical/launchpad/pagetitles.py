@@ -371,6 +371,12 @@ malone_index = 'Malone: Collaborative Open Source Bug Management'
 
 malone_to_do = 'Malone ToDo'
 
+milestone_add = ContextDisplayName('Add Milestone for %s')
+
+milestone_bugs = ContextTitle('Bugs Targeted to %s')
+
+milestone_edit = ContextTitle('Edit %s')
+
 # messagechunk_snippet is a fragment
 
 # messages_index is a redirect

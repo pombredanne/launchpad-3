@@ -201,7 +201,12 @@ class IProduct(IHasOwner, IBugTarget):
         "used when the series doesn't supply one."))
 
     def getPackage(distrorelease):
-        """return a package in that distrorelease for this product."""
+        """Return a package in that distrorelease for this product."""
+
+    def getMilestone(name):
+        """Return a milestone with the given name for this product, or
+        raise NotFoundError.
+        """
 
     def potemplates():
         """Returns an iterator over this product's PO templates."""

@@ -86,13 +86,16 @@ class EditSeriesSourceByButtSource(AuthorizationBase):
         return False
 
 
-class EditMilestoneByProductMaintainer(AuthorizationBase):
+class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IMilestone
 
     def checkAuthenticated(self, user):
-        """Authorize the product maintainer."""
-        return user.inTeam(self.obj.product.owner)
+        """Authorize the product or distribution owner."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(admins):
+            return True
+        return user.inTeam(self.obj.target.owner)
 
 
 class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):

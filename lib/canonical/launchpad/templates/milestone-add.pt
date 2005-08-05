@@ -5,7 +5,16 @@
     metal:use-macro="context/@@malone_template/master"
     i18n:domain="launchpad">
 
-  <body>
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-milestones" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
 
   <!-- This page uses the launchpad-addform.pt METAL -->
 
@@ -13,14 +22,11 @@
 
       <div metal:use-macro="context/@@launchpad_addform/addform">
 
-        <h1 tal:condition="view/label"
-            tal:content="view/label"
-            metal:fill-slot="heading">Heading from ZCML label="xxx"</h1>
-
         <div metal:fill-slot="extra_info" class="documentDescription">
-            Please the introductory paragraph here. It will be displayed in
-            bold text below the form title. It should be a single paragraph
-            giving an overview of what is being added.
+            A Milestone is a way of targeting a bunch of features and bug
+            fixes during your development cycle. Give a simple but
+            descriptive name, and if you have a date in mind, fill that in
+            below too.
         </div>
 
         <div class="row" metal:fill-slot="extra_top" tal:replace="nothing">

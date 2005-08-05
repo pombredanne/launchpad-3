@@ -610,11 +610,15 @@ class MilestoneVocabulary(NamedSQLObjectVocabulary):
 
     def __iter__(self):
         product = getUtility(ILaunchBag).product
-        if product is None:
-            product = self.context.product
-
         if product is not None:
-            for ms in product.milestones:
+            target = product
+
+        distribution = getUtility(ILaunchBag).distribution
+        if distribution is not None:
+            target = distribution
+
+        if target is not None:
+            for ms in target.milestones:
                 yield SimpleTerm(ms, ms.name, ms.name)
 
 class BugWatchVocabulary(SQLObjectVocabularyBase):

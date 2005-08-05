@@ -1,0 +1,52 @@
+
+First, let's see if Foo Bar can view the page to add a milestone to the
+Ubuntu distribution.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+addmilestone HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...<h1>Add a Milestone</h1>...
+
+
+Now, if we post to that form, we should see a success, and the page should
+redirect to the Ubuntu page showing the milestone we added.
+
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+addmilestone HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 434
+  ... Content-Type: multipart/form-data; boundary=---------------------------114216684419655310401202000685
+  ... 
+  ... -----------------------------114216684419655310401202000685
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... sounder01
+  ... -----------------------------114216684419655310401202000685
+  ... Content-Disposition: form-data; name="field.dateexpected"
+  ... 
+  ... 
+  ... -----------------------------114216684419655310401202000685
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------114216684419655310401202000685--
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: .
+  ...
+
+
+Let's see if it does show the sounder01 milestone.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/ HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...<li class="milestone">...sounder01...
+
+

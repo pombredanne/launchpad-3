@@ -27,6 +27,7 @@ from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner)
@@ -119,6 +120,7 @@ class Product(SQLBase):
                 for r in ret]
 
     def getPackage(self, distrorelease):
+        """See IProduct."""
         if isinstance(distrorelease, Distribution):
             distrorelease = distrorelease.currentrelease
         for pkg in self.sourcepackages:
@@ -126,6 +128,16 @@ class Product(SQLBase):
                 return pkg
         else:
             raise NotFoundError(distrorelease)
+
+    def getMilestone(self, name):
+        """See IProduct."""
+        milestone = Milestone.selectOne("""
+            product = %s AND
+            name = %s
+            """ % sqlvalues(self.id, name))
+        if milestone is None:
+            raise NotFoundError(name)
+        return milestone
 
     @property
     def translatable_packages(self):

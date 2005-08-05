@@ -1,6 +1,6 @@
 <div class="portlet">
 
-  <h4>Status in <span tal:replace="context/contextname" /></h4>
+  <h4>details:</h4>
 
   <div class="portletBody"
        tal:define="bug context/bug">
@@ -12,8 +12,12 @@
         tal:content="context/owner/browsername"
         style="text-decoration: underline"></a><br />
 
-      <b>On the date:</b><br />
-      <tal:block content="context/datecreated/fmt:datetime" />
+      <b>On:</b>
+      <a tal:content="context/contextname"
+         tal:attributes="href context/context/fmt:url">ubuntu</a><br />
+
+      <b>Date:</b>
+      <tal:block content="context/datecreated/fmt:date" />
 
     </div>
   </div>

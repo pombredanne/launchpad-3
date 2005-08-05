@@ -5851,7 +5851,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'milestone'::pg_catalog.regclass;
 
-INSERT INTO milestone (id, product, name, title) VALUES (1, 4, '1.0', 'one dot zero');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible) VALUES (1, 4, '1.0', NULL, NULL, true);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'milestone'::pg_catalog.regclass;

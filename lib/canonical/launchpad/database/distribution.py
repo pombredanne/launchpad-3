@@ -46,6 +46,7 @@ class Distribution(SQLBase):
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistroBounty')
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
+    milestones = MultipleJoin('Milestone', joinColumn='distribution')
     lucilleconfig = StringCol(notNull=False, default=None)
 
     def searchTasks(self, search_params):
@@ -155,6 +156,16 @@ class Distribution(SQLBase):
     def getSourcePackage(self, name):
         """See IDistribution."""
         return SourcePackage(name, self.currentrelease)
+
+    def getMilestone(self, name):
+        """See IDistribution."""
+        milestone = Milestone.selectOne("""
+            distribution = %s AND
+            name = %s
+            """ % sqlvalues(self.id, name))
+        if milestone is None:
+            raise NotFoundError(name)
+        return milestone
 
 
 class DistributionSet:

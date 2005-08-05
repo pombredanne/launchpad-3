@@ -19,7 +19,7 @@ ALTER TABLE Milestone ADD CONSTRAINT milestone_distribution_id_key
 ALTER TABLE Milestone DROP CONSTRAINT milestone_product_key;
 ALTER TABLE Milestone ADD CONSTRAINT milestone_name_product_key
     UNIQUE (name, product);
-ALTER TABLE Milestone ADD CONSTRAINT milestonne_name_distribution_key
+ALTER TABLE Milestone ADD CONSTRAINT milestone_name_distribution_key
     UNIQUE (name, distribution);
 ALTER TABLE Milestone ADD CONSTRAINT valid_target CHECK (
     NOT (product IS NULL AND distribution IS NULL));
@@ -39,10 +39,6 @@ ALTER TABLE BugTask ADD CONSTRAINT valid_milestone
         (milestone IS NOT NULL AND
             (product IS NOT NULL OR distribution IS NOT NULL)));
 */
-
-COMMENT ON COLUMN Milestone.distribution IS 'The distribution to which this milestone belongs, if it is a distro milestone.';
-COMMENT ON COLUMN Milestone.datetargeted IS 'If set, the date on which we expect this milestone to be delivered. This alloes for some optional sorting by date.';
-COMMENT ON COLUMN Milestone.visible IS 'Whether or not this milestone should be displayed in general listings. All milestones will be visible on the "page of milestones for product foo", but we want to be able to screen out obviously old milestones over time, for the general listings and vocabularies.';
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (25,10,0);
 

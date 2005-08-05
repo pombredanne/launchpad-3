@@ -30,8 +30,16 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database import (
     BugExternalRefSet, BugSubscriptionSet,
     BugWatchSet, BugTasksReport, CVERefSet, BugProductInfestationSet,
-    BugPackageInfestationSet, ProductSeriesSet, ProductMilestoneSet,
-    SourcePackageSet)
+    BugPackageInfestationSet, ProductSeriesSet, SourcePackageSet)
+
+def _skip_one(context, request):
+    travstack = request.getTraversalStack()
+    if len(travstack) == 0:
+        return
+    name = travstack.pop()
+    request._traversed_names.append(name)
+    request.setTraversalStack(travstack)
+    return name
 
 def traverse_malone_application(malone_application, request, name):
     """Traverse the Malone application object."""
@@ -74,8 +82,12 @@ def traverse_product(product, request, name):
     """Traverse an IProduct."""
     if name == '+series':
         return ProductSeriesSet(product=product)
-    elif name == '+milestones':
-        return ProductMilestoneSet(product=product)
+    elif name == '+milestone':
+        milestone_name = _skip_one(product, request)
+        try:
+            return product.getMilestone(milestone_name)
+        except NotFoundError:
+            return None
     elif name == '+bugs':
         travstack = request.getTraversalStack()
         if len(travstack) == 0:
@@ -105,6 +117,12 @@ def traverse_distribution(distribution, request, name):
     """Traverse an IDistribution."""
     if name == '+packages':
         return getUtility(IPublishedPackageSet)
+    elif name == '+milestone':
+        milestone_name = _skip_one(distribution, request)
+        try:
+            return distribution.getMilestone(milestone_name)
+        except NotFoundError:
+            return None
     elif name == '+bugs':
         # XXX, Brad Bollenbach, 2005-07-20: This
         # request.setTraversalStack stuff is nasty. I've discussed

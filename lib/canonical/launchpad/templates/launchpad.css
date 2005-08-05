@@ -425,7 +425,8 @@ ul.webref>li, li.webref {
 ul.cveref>li, li.cveref {
     list-style-image: url(/++resource++cve.ico);
 }
-ul.packages>li, li.packages, ul.products>li, li.products {
+ul.packages>li, li.packages, ul.products>li, li.products,
+ul.milestones>li, li.milestones, li.milestone {
   list-style-image: url(/++resource++product_icon.gif);
 }
 ul.translations>li, li.translations {

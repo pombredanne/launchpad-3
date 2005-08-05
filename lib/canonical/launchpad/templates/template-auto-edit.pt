@@ -12,10 +12,10 @@
 
       <div metal:use-macro="context/@@launchpad_editform/editform">
 
-          <h3 tal:condition="view/label"
+          <h1 tal:condition="view/label"
               tal:content="view/label"
               metal:fill-slot="heading"
-              >Form Label will come from ZCML label="xxx"</h3>
+              >Form Label will come from ZCML label="xxx"</h1>
 
           <div metal:fill-slot="extra_info"
             class="documentDescription">

@@ -539,13 +539,6 @@ def get_task_delta(old_task, new_task):
             changes["product"] = {}
             changes["product"]["old"] = old_task.product
             changes["product"]["new"] = new_task.product
-        # milestone is only used by upstream (and is a hack that was
-        # done for upstream in lieu of a "todo" application that
-        # handles this sort of functionality.)
-        if old_task.milestone != new_task.milestone:
-            changes["milestone"] = {}
-            changes["milestone"]["old"] = old_task.milestone
-            changes["milestone"]["new"] = new_task.milestone
     elif ((IDistroBugTask.providedBy(old_task) and
            IDistroBugTask.providedBy(new_task)) or
           (IDistroReleaseBugTask.providedBy(old_task) and
@@ -566,7 +559,7 @@ def get_task_delta(old_task, new_task):
     # calculate the differences in the fields that both types of tasks
     # have in common
     for field_name in ("status", "severity", "priority",
-                       "assignee", "bugwatch"):
+                       "assignee", "bugwatch", "milestone"):
         old_val = getattr(old_task, field_name)
         new_val = getattr(new_task, field_name)
         if old_val != new_val:

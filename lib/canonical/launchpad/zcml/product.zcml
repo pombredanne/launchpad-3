@@ -82,7 +82,7 @@
             lp:url="/products/evolution/+portlet-translations" />
         <browser:page
             name="+portlet-milestones"
-            template="../templates/product-portlet-milestones.pt"
+            template="../templates/object-portlet-milestones.pt"
             lp:url="/products/evolution/+portlet-milestones" />
         <browser:page
             name="+portlet-actions"
@@ -247,6 +247,19 @@
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"
            width="62" />
+    </browser:addform>
+
+    <browser:addform
+        name="+addmilestone"
+        for="canonical.launchpad.interfaces.IProduct"
+        schema="canonical.launchpad.interfaces.IMilestone"
+        class="canonical.launchpad.browser.milestone.MilestoneAddView"
+        label="Add a Milestone"
+        fields="name dateexpected"
+        keyword_arguments="name dateexpected"
+        permission="launchpad.Edit"
+        template="../templates/milestone-add.pt"
+        lp:url="/products/$Product.name/+addmilestone">
     </browser:addform>
 
     <browser:addform
