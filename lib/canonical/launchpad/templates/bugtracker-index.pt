@@ -39,7 +39,9 @@
 
     <tbody>
       <tr tal:repeat="watch context/latestwatches">
-        <td><a href="#" tal:attributes="href watch/bug/fmt:url">
+        <td>
+        <img alt="" src="/++resource++bug" />
+        <a href="#" tal:attributes="href watch/bug/fmt:url">
         #<span tal:content="watch/bug/id">34</span>:
         <span tal:content="watch/bug/title">Malone Bug Title</span></a></td>
         <td><a tal:content="watch/remotebug"

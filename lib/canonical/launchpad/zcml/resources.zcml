@@ -21,6 +21,8 @@
     <resource name="red-bar.png" file="../images/red-bar.png" />
     <resource name="purple-bar.png" file="../images/purple-bar.png" />
     <resource name="bullet.gif" file="../images/bullet.gif" />
+    <resource name="bug" file="../images/bug.png" />
+    <resource name="bugs" file="../images/bugs.png" />
     <resource name="required.gif" file="../images/required.gif" />
     <resource name="favorite_icon.gif" file="../images/favorite_icon.gif" />
 

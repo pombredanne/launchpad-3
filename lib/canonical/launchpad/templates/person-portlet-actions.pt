@@ -14,7 +14,7 @@
       <tal:block condition="not: context/isTeam">
         <!-- these are not for teams -->
         <li class="info"><a href="+karma">Karma</a></li>
-        <li class="info"><a href="+reportedbugs">Show Bugs Reported</a></li>
+        <li class="bugs"><a href="+reportedbugs">Show Bugs Reported</a></li>
         <li class="edit"><a href="+editsshkey">Edit SSH Keys</a></li>
         <li class="edit"><a href="+editgpgkey">Edit GPG Keys</a></li>
         <li class="edit"><a href="+codesofconduct">Code of Conduct</a></li>

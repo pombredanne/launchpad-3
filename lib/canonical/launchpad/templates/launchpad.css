@@ -386,6 +386,12 @@ tr.rowLinkified a {
 ul.add>li, li.add {
   list-style-image: url(/++resource++add.gif);
 }
+ul.bug>li, li.bug {
+  list-style-image: url(/++resource++bug);
+}
+ul.bugs>li, li.bugs {
+  list-style-image: url(/++resource++bugs);
+}
 ul.document>li, li.document {
   list-style-image: url(/++resource++document_icon.gif);
 }
@@ -704,7 +710,8 @@ body {
   background: none;
   color: #8888bb;
 }
-:link, .hierarchy :visited, .footer :visited {
+:link, .hierarchy :visited, .footer :visited,
+.sidebar :visited, .portlet :visited {
   background: none;
 	color: #000088;
 }
