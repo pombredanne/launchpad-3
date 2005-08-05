@@ -47,13 +47,9 @@
                  tal:define="oddrow repeat/hour/odd"
                  tal:attributes="style python:'top: ' + str(top) + 'em';
                                  class python:oddrow and 'hour odd' or 'hour even'">
-              <a href="../+add"
-                 tal:condition="context/calendar/required:launchpad.Edit"
-                 tal:content="hour/title"
-                 tal:attributes="href hour/addURL">08:00</a>
-              <span
-                 tal:condition="not:context/calendar/required:launchpad.Edit"
-                 tal:content="hour/title">08:00</span>
+              <span tal:content="hour/title">08:00</span><br />
+              <a href="../+add" class="cal-addlink"
+                 tal:attributes="href hour/addURL">(add)</a>
             </div>
           </metal:block>
         </tal:loop>
