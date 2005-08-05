@@ -476,8 +476,8 @@ class POHeader(dict, POMessage):
         else:
             try:
                 date = parseDatetimetz(date_string)
-            except (SyntaxError, DateError, DateTimeError):
-                # The date format is not valid.
+            except (SyntaxError, DateError, DateTimeError, ValueError):
+                # invalid date format
                 date = None
 
         return (date_string, date)
@@ -622,11 +622,14 @@ class POParser(object):
         elif l.startswith('msgstr'):
             self._section = 'msgstr'
             l = l[6:]
-            if l[0] == '[':
+            # XXX kiko: if l is empty, it means we got an msgstr
+            # followed by a newline; that may be critical, but who knows?
+            if l and l[0] == '[':
                 # plural case
                 new_plural_case, l = l[1:].split(']', 1)
                 new_plural_case = int(new_plural_case)
-                if (self._plural_case is not None) and (new_plural_case != self._plural_case + 1):
+                if (self._plural_case is not None) and (new_plural_case != 
+                                                        self._plural_case + 1):
                     logging.warning(POSyntaxWarning(self._lineno,
                                                   'bad plural case number'))
                 if new_plural_case != self._plural_case:
@@ -690,6 +693,10 @@ class POParser(object):
                 # header is last entry... in practice this should
                 # only happen when the file is empty
                 self._make_header()
+        if not self.header:
+            # XXX kiko: it may be that we need to run a _make_header() here
+            # to ensure we have one, but I'm not guessing.
+            raise POSyntaxError("All pofiles should have a header")
 
 
 # convenience function to parse "assignment" expressions like
