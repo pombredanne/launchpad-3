@@ -16,9 +16,9 @@
 
   <div metal:fill-slot="main">
 
-    <tal:block condition="view/setUpBugTasksToShow" />
+    <tal:block condition="view/setUpAssignedBugTasksToShow" />
 
-    <h1>Bugs Assigned</h1>
+    <h1>Bugs Assigned to <span tal:replace="context/browsername" /></h1>
 
     <p tal:condition="not: view/assignedBugsToShow">No bugs have been 
     assigned to <span tal:replace="context/browsername" /> or to any 
@@ -26,30 +26,32 @@
 
     <tal:block tal:condition="view/assignedBugsToShow">
 
-    <div class="formHelp">This page is a summary of the most recent/prioritized
-      bugs assigned to <span tal:replace="context/displayname" />.
+    <div class="formHelp">This page is a summary of the most recent bugs
+      assigned to <span tal:replace="context/displayname" />.
       You can also see the
       <a tal:attributes="href string:/malone/assigned/?name=${context/name}">
         whole list</a> of bugs assigned to him(her) if you want to.
     </div>
     <br />
 
-    <div tal:condition="view/recentBugTasks">The most recent bugs assigned
-    directly to <span tal:replace="context/browsername" /> or to one of the
-    packages/products (s)he maintains.</div>
+    <div tal:condition="view/assignedTasks">The most recent bugs assigned
+      directly to <span tal:replace="context/browsername" />.
+    </div>
 
-    <table tal:condition="view/recentBugTasks"
+    <table tal:condition="view/assignedTasks"
            class="listing lpListing rowNavigation" width="90%">
-      <tr>
-        <th>#</th>
-        <th>title</th>
-        <th>upstream / package</th>
-        <th>status</th>
-        <th>priority</th>
-        <th>severity</th>
-      </tr>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>title</th>
+          <th>upstream / package</th>
+          <th>status</th>
+          <th>priority</th>
+          <th>severity</th>
+        </tr>
+      </thead>
 
-      <tr tal:repeat="bugtask view/recentBugTasks" class="rowLinkified">
+      <tr tal:repeat="bugtask view/assignedTasks" class="rowLinkified">
         <tal:block tal:define="url bugtask/bug/fmt:url">
         <td><a tal:attributes="href url"><span tal:replace="bugtask/bug/id" /></a></td>
         <td tal:attributes="title bugtask/bug/summary">
@@ -67,23 +69,25 @@
     </table>
     <br />
 
-    <div tal:condition="view/importantBugTasks">The bugs with greater priority 
-    assigned directly to <span tal:replace="context/browsername" /> or to one
-    of the packages/products (s)he maintains.</div>
+    <div tal:condition="view/recentBugTasks">The most recent bugs assigned
+      to one of the packages/products maintained by
+      <span tal:replace="context/browsername" />.
+    </div>
 
-    <table tal:condition="view/importantBugTasks"
+    <table tal:condition="view/recentBugTasks"
            class="listing lpListing rowNavigation" width="90%">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>title</th>
+          <th>upstream / package</th>
+          <th>status</th>
+          <th>priority</th>
+          <th>severity</th>
+        </tr>
+      </thead>
 
-      <tr>
-        <th>#</th>
-        <th>title</th>
-        <th>upstream / package</th>
-        <th>status</th>
-        <th>priority</th>
-        <th>severity</th>
-      </tr>
-
-      <tr tal:repeat="bugtask view/importantBugTasks" class="rowLinkified">
+      <tr tal:repeat="bugtask view/recentBugTasks" class="rowLinkified">
         <tal:block tal:define="url bugtask/bug/fmt:url">
         <td><a tal:attributes="href url"><span tal:replace="bugtask/bug/id" /></a></td>
         <td tal:attributes="title bugtask/bug/summary">
@@ -98,7 +102,6 @@
                tal:content="bugtask/severity/title|default">-</a></td>
         </tal:block>
       </tr>
-
     </table>
     <br />
 

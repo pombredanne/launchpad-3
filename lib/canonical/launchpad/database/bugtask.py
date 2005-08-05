@@ -260,6 +260,7 @@ class BugTaskSet:
         "status" : "BugTask.status",
         "title" : "Bug.title",
         "milestone" : "BugTask.milestone",
+        "dateassigned" : "BugTask.dateassigned",
         "datecreated" : "BugTask.datecreated"}
 
     def __init__(self):
@@ -448,7 +449,7 @@ class BugTaskSet:
             owner=owner,
             milestone=milestone)
 
-    def assignedBugTasks(self, person, minseverity=None, minpriority=None,
+    def maintainedBugTasks(self, person, minseverity=None, minpriority=None,
                          showclosed=False, orderBy=None, user=None):
         if showclosed:
             showclosed = ""
@@ -504,21 +505,13 @@ class BugTaskSet:
             maintainedProductBugTasksQuery + filters,
             clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
 
-        assignedBugTasksQuery = ('''
-            BugTask.assignee = TeamParticipation.team AND
-            TeamParticipation.person = %s''' % person.id)
-
-        assignedBugTasks = BugTask.select(
-            assignedBugTasksQuery + filters,
-            clauseTables=['TeamParticipation', 'BugTask', 'Bug'])
-
-        results = assignedBugTasks.union(maintainedProductBugTasks)
-        return results.union(maintainedPackageBugTasks, orderBy=orderBy)
+        return maintainedProductBugTasks.union(
+            maintainedPackageBugTasks, orderBy=orderBy)
 
     def bugTasksWithSharedInterest(self, person1, person2, orderBy=None,
                                    user=None):
-        person1Tasks = self.assignedBugTasks(person1, user=user)
-        person2Tasks = self.assignedBugTasks(person2, user=user)
+        person1Tasks = self.maintainedBugTasks(person1, user=user)
+        person2Tasks = self.maintainedBugTasks(person2, user=user)
         return person1Tasks.intersect(person2Tasks, orderBy=orderBy)
 
 

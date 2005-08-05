@@ -358,10 +358,10 @@ class IBugTaskSet(Interface):
         Exactly one of product, distribution or distrorelease must be provided.
         """
 
-    def assignedBugTasks(person, minseverity=None, minpriority=None,
+    def maintainedBugTasks(person, minseverity=None, minpriority=None,
                          showclosed=None, orderby=None, user=None):
-        """Return all bug tasks assigned to the given person or to a
-        package/product this person maintains.
+        """Return all bug tasks assigned to a package/product maintained by
+        :person:.
 
         By default, closed (FIXED, REJECTED) tasks are not returned. If you
         want closed tasks too, just pass showclosed=True.
@@ -383,8 +383,7 @@ class IBugTaskSet(Interface):
         """Return all bug tasks which person1 and person2 share some interest.
 
         We assume they share some interest if they're both members of the
-        maintainer or if one is the maintainer and the task is directly
-        assigned to the other.
+        maintainer of a given product/package. 
 
         If you want the results ordered, you have to explicitly specify an
         <orderBy>. Otherwise the order used is not predictable.

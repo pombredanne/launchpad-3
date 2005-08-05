@@ -56,8 +56,7 @@ from canonical.launchpad.webapp import (
 
 
 class PersonFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for an IPerson.
-    """
+    """The links that will appear in the facet menu for an IPerson."""
 
     usedfor = IPerson
 
@@ -67,6 +66,9 @@ class PersonFacets(StandardLaunchpadFacets):
         return DefaultLink(target, text)
 
     def bugs(self):
+        # XXX: Soon the +assignedbugs and +reportedbugs pages of IPerson will
+        # be merged into a single +bugs page, and I'll fix the target here.
+        # -- GuilhermeSalgado, 2005-07-29
         target = '+assignedbugs'
         text = 'Bugs'
         return Link(target, text)
@@ -209,6 +211,7 @@ class PersonView:
             self.context.reviewerBounties or
             self.context.subscribedBounties or
             self.context.claimedBounties)
+
     def activeMembersCount(self):
         return len(self.context.activemembers)
 
@@ -299,41 +302,34 @@ class PersonView:
         karmaset = getUtility(IKarmaSet)
         return len(karmaset.selectByPersonAndAction(self.context, action))
 
-    def setUpBugTasksToShow(self):
+    def setUpAssignedBugTasksToShow(self):
         """Setup the bugtasks we will always show."""
-        self.recentBugTasks = self.mostRecentBugTasks()
-        self.importantBugTasks = self.mostImportantBugTasks()
+        self.recentBugTasks = self.mostRecentMaintainedBugTasks()
+        self.assignedTasks = self.assignedBugTasks()
         # XXX: Because of the following 2 lines, a warning is going to be 
         # raised saying that we're getting a slice of an unordered set, and
         # this means we probably have a bug hiding somewhere, because both
         # sets are ordered here.
         self.assignedBugsToShow = bool(
-            self.recentBugTasks or self.importantBugTasks)
+            self.recentBugTasks or self.assignedTasks)
 
-    def mostRecentBugTasks(self):
-        """Return up to 10 bug tasks (ordered by date assigned) that are 
-        assigned to this person.
+    def reportedBugTasks(self):
+        """Return up to 30 bug tasks reported recently by this person."""
+        return getUtility(IBugTaskSet).search(
+            owner=self.context, user=self.user, orderby='-datecreated')[:30]
 
-        These bug tasks are either the ones reported on packages/products this
-        person is the maintainer or the ones assigned directly to him.
-        """
+    def assignedBugTasks(self):
+        """Return up to 10 bug tasks recently assigned to this person."""
+        return getUtility(IBugTaskSet).search(
+            assignee=self.context, user=self.user, orderby='-dateassigned')[:10]
+
+    def mostRecentMaintainedBugTasks(self):
+        """Return up to 10 bug tasks (ordered by date assigned) reported on
+        any package/product maintained by this person."""
         bts = getUtility(IBugTaskSet)
         orderBy = ('-dateassigned', '-priority', '-severity')
-        results = bts.assignedBugTasks(
-                        self.context, orderBy=orderBy, user=self.user)
-        return results[:10]
-
-    def mostImportantBugTasks(self):
-        """Return up to 10 bug tasks (ordered by priority and severity) that
-        are assigned to this person.
-
-        These bug tasks are either the ones reported on packages/products this
-        person is the maintainer or the ones assigned directly to him.
-        """
-        bts = getUtility(IBugTaskSet)
-        orderBy = ('-priority', '-severity', '-dateassigned')
-        results = bts.assignedBugTasks(
-                        self.context, orderBy=orderBy, user=self.user)
+        results = bts.maintainedBugTasks(
+            self.context, orderBy=orderBy, user=self.user)
         return results[:10]
 
     def bugTasksWithSharedInterest(self):
@@ -352,7 +348,7 @@ class PersonView:
         bts = getUtility(IBugTaskSet)
         orderBy = ('-dateassigned', '-priority', '-severity')
         results = bts.bugTasksWithSharedInterest(
-                self.context, self.user, user=self.user, orderBy=orderBy)
+            self.context, self.user, user=self.user, orderBy=orderBy)
         return results[:10]
 
     def obfuscatedEmail(self):
@@ -458,7 +454,6 @@ class PersonView:
                 'the key <code>%s<code>. To confirm the key is yours, decrypt '
                 'the message and follow the link inside.'
                 % (self.context.preferredemail.email, key.displayname))
-
 
     def deactivate_gpg(self):
         keyids = self.request.form.get('DEACTIVATE_GPGKEY')

@@ -24,8 +24,7 @@ from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
-from canonical.database.sqlbase import (SQLBase, quote, cursor, sqlvalues,
-    )
+from canonical.database.sqlbase import SQLBase, quote, cursor, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
@@ -39,7 +38,6 @@ from canonical.launchpad.interfaces import (
     ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
     ILoginTokenSet, IBugTaskSet)
 
-from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
@@ -575,11 +573,6 @@ class Person(SQLBase):
     def guessedemails(self):
         """See IPerson."""
         return self._getEmailsByStatus(EmailAddressStatus.NEW)
-
-    @property
-    def reportedbugs(self):
-        """See IPerson."""
-        return getUtility(IBugTaskSet).search(owner=self)
 
     @property
     def activities(self):

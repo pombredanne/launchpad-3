@@ -115,7 +115,6 @@ class IPerson(Interface):
     pendinggpgkeys = Attribute("Set of GPG fingerprints pending validation")
     inactivegpgkeys = Attribute("List of inactive GPG keys in LP Context")
     irc = Attribute("IRC")
-    reportedbugs = Attribute("All Bugs reported by this Person.")
     wiki = Attribute("Wiki")
     jabber = Attribute("Jabber")
     archuser = Attribute("Arch user")
