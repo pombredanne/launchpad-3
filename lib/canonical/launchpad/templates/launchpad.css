@@ -386,8 +386,23 @@ tr.rowLinkified a {
 ul.add>li, li.add {
   list-style-image: url(/++resource++add.gif);
 }
+ul.alert>li, li.alert {
+  list-style-image: url(/++resource++alert_icon.gif);
+}
 ul.bug>li, li.bug {
   list-style-image: url(/++resource++bug);
+}
+ul.bug.high>li, li.bug.high {
+  list-style-image: url(/++resource++bug-high);
+}
+ul.bug.medium>li, li.bug.medium {
+  list-style-image: url(/++resource++bug-medium);
+}
+ul.bug.low>li, li.bug.low {
+  list-style-image: url(/++resource++bug-low);
+}
+ul.bug.remote>li, li.bug.remote {
+  list-style-image: url(/++resource++bug-remote);
 }
 ul.bugs>li, li.bugs {
   list-style-image: url(/++resource++bugs);
@@ -401,9 +416,6 @@ ul.download>li, li.download {
 ul.edit>li, li.edit {
   list-style-image: url(/++resource++edit.gif);
 }
-ul.alert>li, li.alert {
-  list-style-image: url(/++resource++alert_icon.gif);
-}
 ul.info>li, li.info {
   list-style-image: url(/++resource++info_icon.gif);
 }
@@ -415,6 +427,9 @@ ul.locked>li, li.locked {
 }
 ul.mail>li, li.mail {
   list-style-image: url(/++resource++mail_icon.gif);
+}
+ul.milestone>li, li.milestone {
+  list-style-image: url(/++resource++target);
 }
 ul.person>li, li.person, ul.people>li, li.people {
   list-style-image: url(/++resource++user.gif);
@@ -790,9 +805,6 @@ ul.app>li.current {
   border-bottom: 1px solid #fcfcfc;
 }
 
-#body {
-  padding: 0 1em;
-}
 .personal {
   clear: left;
   float: left;

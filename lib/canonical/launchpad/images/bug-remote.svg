@@ -9,8 +9,8 @@
    sodipodi:version="0.32"
    inkscape:version="0.40"
    sodipodi:docbase="/home/mpt/ubuntu/launchpad/lib/canonical/launchpad/images"
-   sodipodi:docname="bug.svg"
-   inkscape:export-filename="/home/mpt/ubuntu/launchpad/lib/canonical/launchpad/images/bug.png"
+   sodipodi:docname="bug-remote.svg"
+   inkscape:export-filename="/home/mpt/ubuntu/launchpad/lib/canonical/launchpad/images/bug-remote.png"
    inkscape:export-xdpi="72.000000"
    inkscape:export-ydpi="72.000000"
    xmlns="http://www.w3.org/2000/svg"
@@ -29,7 +29,7 @@
          offset="0.0000000"
          id="stop2307" />
       <stop
-         style="stop-color:#646464;stop-opacity:1.0000000;"
+         style="stop-color:#0038d8;stop-opacity:1.0000000;"
          offset="1.0000000"
          id="stop2308" />
     </linearGradient>
@@ -76,8 +76,8 @@
      gridoriginx="0.0000000pt"
      inkscape:window-width="673"
      inkscape:window-height="541"
-     inkscape:window-x="2"
-     inkscape:window-y="50" />
+     inkscape:window-x="101"
+     inkscape:window-y="97" />
   <metadata
      id="metadata4">
     <rdf:RDF

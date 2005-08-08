@@ -7,8 +7,8 @@
 
     <div class="portletBody">
         <div class="portletContent odd">
-          <ul>
-            <li tal:repeat="watch context/watches" class="search">
+          <ul class="remote bug">
+            <li tal:repeat="watch context/watches">
               <a tal:attributes="href watch/url">
                   <span tal:replace="watch/bugtracker/name" />
                   #<span tal:replace="watch/remotebug" />
