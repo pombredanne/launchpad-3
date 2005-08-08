@@ -666,7 +666,7 @@ class CalendarEventAddView(AddView):
 
         dtstart = event.dtstart.astimezone(
             getUtility(ILaunchBag).timezone)
-        self._nextURL = canonical_url(CalendarDay(calendar, dtstart))
+        self._nextURL = canonical_url(CalendarWeek(calendar, dtstart))
 
     def nextURL(self):
         return self._nextURL
