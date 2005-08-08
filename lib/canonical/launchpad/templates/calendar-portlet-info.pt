@@ -3,7 +3,7 @@
 
   <div class="portletBody">
     <div class="portletContent even">
-      <h5 tal:content="view/month">January 2005</h5>
+      <b tal:content="view/month">January 2005</b>
       <table class="cal-table">
         <tr>
           <th tal:repeat="day view/daynames"
