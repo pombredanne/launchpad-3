@@ -141,8 +141,8 @@ on the calendar view pages include a date in the query string:
   ...
 
 
-When we add the event, we get redirected to the day view page
-containing the event start date:
+When we add the event, we get redirected to the week view page
+containing the event's start date:
 
   >>> print http(r"""
   ... POST /people/name12/+calendar/+add HTTP/1.1
@@ -183,7 +183,7 @@ containing the event start date:
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  Location: .../people/name12/+calendar/2005-04-01
+  Location: .../people/name12/+calendar/2005-W13
   <BLANKLINE>
   ...
 
