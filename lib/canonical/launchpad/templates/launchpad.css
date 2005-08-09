@@ -389,6 +389,9 @@ ul.add>li, li.add {
 ul.alert>li, li.alert {
   list-style-image: url(/++resource++alert_icon.gif);
 }
+ul.architecture>li, li.architecture {
+  list-style-image: url(/++resource++architecture);
+}
 ul.bug>li, li.bug {
   list-style-image: url(/++resource++bug);
 }
@@ -440,8 +443,7 @@ ul.webref>li, li.webref {
 ul.cveref>li, li.cveref {
     list-style-image: url(/++resource++cve.ico);
 }
-ul.packages>li, li.packages, ul.products>li, li.products,
-ul.milestones>li, li.milestones, li.milestone {
+ul.packages>li, li.packages, ul.products>li, li.products {
   list-style-image: url(/++resource++product_icon.gif);
 }
 ul.translations>li, li.translations {
@@ -454,9 +456,6 @@ ul.search>li, li.search {
   list-style-image: url(/++resource++search_icon.gif);
 }
 
-ul.architecture>li, li.architecture {
-    list-style-image: url(/++resource++document_icon.gif);
-}
 
 /* Translation template stuff: */
 
