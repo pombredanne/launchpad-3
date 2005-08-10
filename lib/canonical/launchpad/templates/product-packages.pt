@@ -1,0 +1,76 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Distribution Packages</h1>
+
+  <p class="documentDescription">This page lists any distribution packages
+    that are known for the different release series of
+    <span tal:replace="context/displayname">Foomatic</span>.
+  </p>
+
+  <p class="portalMessage" tal:condition="not: context/serieslist">
+    No product branches registered for 
+    <span tal:replace="context/displayname">Foomatic</span>. Please
+    <a href="+addseries">register a branch</a> and then you will be able to
+    link it to distribution packages.
+  </p>
+
+  <tal:block repeat="series context/serieslist">
+    
+    <h2>Release Series: <span tal:replace="series/name">main</span></h2>
+
+    <table class="listing" tal:condition="series/packagings">
+      <thead>
+        <tr>
+          <th>Distribution</th>
+          <th>Release</th>
+          <th>Source Package</th>
+          <th>Version</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="pkging series/packagings">
+          <td tal:content="pkging/distrorelease/distribution/displayname">Ubuntu</td>
+          <td><span tal:replace="pkging/distrorelease/version">4.05</span>
+              (<span tal:replace="pkging/distrorelease/name">hoary</span>)</td>
+          <td tal:content="pkging/sourcepackagename/name">Apache</td>
+          <td><span tal:condition="pkging/sourcepackage/currentrelease"
+                    tal:replace="pkging/sourcepackage/currentrelease/version"
+                    >2.3.4-1</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="text-align: right;" tal:condition="series/packagings">
+      <img src="/++resource++add.gif" />
+      <a tal:attributes="href string:${series/product/fmt:url}/+addpackage">
+      Add Packaging Record</a>
+    </div>
+
+    <p class="portalMessage" tal:condition="not: series/packagings">
+      No packages are registered for this branch or release series of
+      <span tal:replace="context/displayname">Foomatic</span>. If you know
+      that this series is in fact in an Ubuntu release, please
+      <a tal:attributes="href string:${series/product/fmt:url}/+addpackage">
+      register it now.</a>
+    </p>
+
+  </tal:block> <!-- /series -->
+
+</div> 
+</body>
+</html>

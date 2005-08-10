@@ -49,10 +49,6 @@
             template="../templates/bugtasklist-portlet-actions.pt"
             lp:url="/distros/$Distribution.name/+portlet-bugtasklist-actions" />
         <browser:page
-            name="+portlet-bugtasklist-statsforcontext"
-            template="../templates/bug-portlet-statsforcontext.pt"
-            lp:url="/distros/$Distribution.name/+portlet-bugtasklist-statsforcontext" />
-        <browser:page
             name="+portlet-bugtasklist-releasebugs"
             template="../templates/bugtask-portlet-releasebugs.pt"
             lp:url="/distros/$Distribution.name/+portlet-bugtasklist-releasebugs" />
@@ -74,6 +70,10 @@
             name="+members"
             template="../templates/distribution-members.pt"
             lp:url="/distros/$Distribution.name/+members" />
+        <browser:page
+            name="+cve"
+            template="../templates/distribution-cvereport.pt"
+            lp:url="/distros/$Distribution.name/+cve" />
     </browser:pages>
     
     <browser:pages
@@ -92,9 +92,17 @@
             template="../templates/distribution-portlet-releases.pt"
             lp:url="/distros/$Distribution.name/+portlet-releases" />
         <browser:page
+            name="+portlet-milestones"
+            template="../templates/object-portlet-milestones.pt"
+            lp:url="/distros/$Distribution.name/+portlet-milestones" />
+        <browser:page
             name="+portlet-bounties"
             template="../templates/object-portlet-bounties.pt"
             lp:url="/distros/$Distribution.name/+portlet-bounties" />
+        <browser:page
+            name="+portlet-aboutcve"
+            template="../templates/distribution-portlet-aboutcve.pt"
+            lp:url="/distros/$Distribution.name/+portlet-aboutcve" />
     </browser:pages>
 
     <browser:pages
@@ -124,6 +132,18 @@
             class="canonical.widgets.OwnerWidget" />
     </browser:addform>
 
+    <browser:addform
+        name="+addmilestone"
+        for="canonical.launchpad.interfaces.IDistribution"
+        schema="canonical.launchpad.interfaces.IMilestone"
+        class="canonical.launchpad.browser.milestone.MilestoneAddView"
+        label="Add a Milestone"
+        fields="name dateexpected"
+        keyword_arguments="name dateexpected"
+        permission="launchpad.Edit"
+        template="../templates/milestone-add.pt"
+        lp:url="/distros/$Distribution.name/+addmilestone">
+    </browser:addform>
 
     <browser:addform
         name="+filebug"

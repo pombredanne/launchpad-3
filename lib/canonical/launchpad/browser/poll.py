@@ -2,30 +2,14 @@
 
 __metaclass__ = type
 
-__all__ = ['PollListView', 'PollView', 'PollAddView', 'PollOptionListView',
-           'PollOptionAddView']
+__all__ = ['PollView', 'PollAddView', 'PollOptionAddView']
 
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 
 from canonical.launchpad.webapp import canonical_url
-
-
-class PollListView:
-    """A view class to display all polls of a given team."""
-    
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.openpolls = self.context.getOpenPolls()
-        self.closedpolls = self.context.getClosedPolls()
-        self.notyetopenedpolls = self.context.getNotYetOpenedPolls()
-
-    def hasCurrentPolls(self):
-        """Return True if this team has any poll that is already open or that
-        is not yet opened."""
-        return bool(len(self.openpolls) or len(self.notyetopenedpolls))
+from canonical.launchpad.interfaces import IPollSubset, IPollOptionSubset
 
 
 class PollView:
@@ -35,7 +19,10 @@ class PollView:
     to vote if the poll is not closed or the results of the poll if it's
     already closed.
     """
-    pass
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
 
 
 class PollAddView(AddView):
@@ -47,20 +34,13 @@ class PollAddView(AddView):
         return self._nextURL
 
     def createAndAdd(self, data):
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-
-        poll = self.context.new(
-            kw['name'], kw['title'], kw['proposition'], kw['dateopens'],
-            kw['datecloses'], kw['type'], kw['secrecy'], kw['allowspoilt'])
+        pollsubset = IPollSubset(self.context)
+        poll = pollsubset.new(
+            data['name'], data['title'], data['proposition'],
+            data['dateopens'], data['datecloses'], data['type'],
+            data['secrecy'], data['allowspoilt'])
         self._nextURL = canonical_url(poll)
         notify(ObjectCreatedEvent(poll))
-
-
-class PollOptionListView:
-    """A view class to display all options of a given poll."""
-    pass
 
 
 class PollOptionAddView(AddView):
@@ -72,11 +52,8 @@ class PollOptionAddView(AddView):
         return self._nextURL
 
     def createAndAdd(self, data):
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-
-        polloption = self.context.new(kw['name'], kw['shortname'])
+        optionsubset = IPollOptionSubset(self.context)
+        polloption = optionsubset.new(data['name'], data['shortname'])
         self._nextURL = canonical_url(polloption.poll)
         notify(ObjectCreatedEvent(polloption))
 

@@ -30,7 +30,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.interfaces import (IPOFileSet, IEditPOFile,
     IRawFileData, IPOTemplateExporter, ZeroLengthPOExportError,
-    ILibraryFileAliasSet, IPOFile)
+    ILibraryFileAliasSet, IPOFile, ILaunchpadCelebrities)
 
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -144,10 +144,15 @@ class POFile(SQLBase, RosettaStats):
 
     def canEditTranslations(self, person):
         """See IEditPOFile."""
-
         # If the person is None, then they cannot edit
         if person is None:
             return False
+
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+
+        if person.inTeam(rosetta_experts):
+            # Rosetta experts can edit translations always.
+            return True
 
         # have a look at the aplicable permission policy
         tperm = self.translationpermission
@@ -373,6 +378,15 @@ class POFile(SQLBase, RosettaStats):
     def rosettaCount(self, language=None):
         """See IRosettaStats."""
         return self.rosettacount
+
+    @property
+    def fuzzy_count(self):
+        """See IPOFile."""
+        return POMsgSet.select("""
+            pofile = %s AND
+            isfuzzy IS TRUE AND
+            sequence > 0
+            """ % sqlvalues(self.id)).count()
 
     # IEditPOFile
     def expireAllMessages(self):
@@ -746,17 +760,20 @@ class DummyPOFile(RosettaStats):
     that language for this template.
     """
     implements(IPOFile)
+
     def __init__(self, potemplate, language, owner=None, header=''):
         self.potemplate = potemplate
         self.language = language
         self.owner = owner
         self.header = header
         self.latestsubmission = None
-        self.messageCount = len(potemplate)
         self.pluralforms = language.pluralforms
         self.translationpermission = self.potemplate.translationpermission
         self.lasttranslator = None
         self.contributors = []
+
+    def messageCount(self):
+        return len(self.potemplate)
 
     @property
     def title(self):
@@ -812,7 +829,7 @@ class DummyPOFile(RosettaStats):
         return 0
 
     def untranslatedCount(self):
-        return self.messageCount
+        return self.messageCount()
 
     def currentPercentage(self):
         return 0.0

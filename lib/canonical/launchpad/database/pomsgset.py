@@ -119,10 +119,11 @@ class POMsgSet(SQLBase):
     # IEditPOMsgSet
 
     def updateTranslationSet(self, person, new_translations, fuzzy,
-        published, ignore_errors=False):
+        published, ignore_errors=False, force_edition_rights=False):
         """See IEditPOMsgSet."""
         # Is the person allowed to edit translations?
-        is_editor = self.pofile.canEditTranslations(person)
+        is_editor = (force_edition_rights or
+                     self.pofile.canEditTranslations(person))
 
         # First, check that the translations are correct.
         pot_set = self.potmsgset
@@ -179,7 +180,8 @@ class POMsgSet(SQLBase):
                 text=newtran,
                 pluralform=index,
                 published=published,
-                validation_status=validation_status)
+                validation_status=validation_status,
+                force_edition_rights=is_editor)
 
         # We set the fuzzy flag first, and completeness flags as needed:
         if published and is_editor:
@@ -193,9 +195,11 @@ class POMsgSet(SQLBase):
         self.updateStatistics()
 
     def makeSubmission(self, person, text, pluralform, published,
-            validation_status=TranslationValidationStatus.UNKNOWN):
+            validation_status=TranslationValidationStatus.UNKNOWN,
+            force_edition_rights=False):
         # Is the person allowed to edit translations?
-        is_editor = self.pofile.canEditTranslations(person)
+        is_editor = (force_edition_rights or
+                     self.pofile.canEditTranslations(person))
 
         # this is THE KEY method in the whole of rosetta. It deals with the
         # sighting or submission of a translation for a pomsgset and plural
@@ -223,7 +227,8 @@ class POMsgSet(SQLBase):
         # It makes no sense to have a "published" submission from someone
         # who is not an editor, so let's sanity check that first
         if published and not is_editor:
-            raise AssertionError('published translations are ALWAYS is_editor')
+            raise AssertionError(
+                'published translations are ALWAYS from an editor')
 
         # first we must deal with the situation where someone has submitted
         # a NULL translation. This only affects the published or active data
@@ -249,8 +254,8 @@ class POMsgSet(SQLBase):
                 selection.publishedsubmission = None
             elif (is_editor and
                   validation_status == TranslationValidationStatus.OK):
-                # activesubmission is updated only if the translation is valid and
-                # it's an editor.
+                # activesubmission is updated only if the translation is
+                # valid and it's an editor.
                 selection.activesubmission = None
 
         # If nothing was submitted, return None

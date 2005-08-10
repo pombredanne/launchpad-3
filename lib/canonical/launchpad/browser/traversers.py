@@ -24,13 +24,22 @@ from zope.exceptions import NotFoundError
 from canonical.launchpad.interfaces import (
     IBugSet, IBugTaskSet, IBugTasksReport, IDistributionSet, IProjectSet,
     IProductSet, ISourcePackageSet, IBugTrackerSet, ILaunchBag,
-    ITeamMembershipSubset, ICalendarOwner, ILanguageSet, IPublishedPackageSet,
-    IPollSubset, IPollOptionSubset, IDistroReleaseLanguageSet)
+    ITeamMembershipSubset, ICalendarOwner, ILanguageSet, IBugAttachmentSet,
+    IPublishedPackageSet, IPollSet, IPollOptionSet, BugTaskSearchParams,
+    IDistroReleaseLanguageSet)
 from canonical.launchpad.database import (
-    BugAttachmentSet, BugExternalRefSet, BugSubscriptionSet,
+    BugExternalRefSet, BugSubscriptionSet,
     BugWatchSet, BugTasksReport, CVERefSet, BugProductInfestationSet,
-    BugPackageInfestationSet, ProductSeriesSet, ProductMilestoneSet,
-    SourcePackageSet)
+    BugPackageInfestationSet, ProductSeriesSet, SourcePackageSet)
+
+def _skip_one(context, request):
+    travstack = request.getTraversalStack()
+    if len(travstack) == 0:
+        return
+    name = travstack.pop()
+    request._traversed_names.append(name)
+    request.setTraversalStack(travstack)
+    return name
 
 def traverse_malone_application(malone_application, request, name):
     """Traverse the Malone application object."""
@@ -57,7 +66,8 @@ def traverse_potemplate(potemplate, request, name):
         return potemplate.getPOFileOrDummy(name, owner=user)
     elif request.method == 'POST':
         return potemplate.getOrCreatePOFile(name, owner=user)
-    raise AssertionError('We only know about GET, HEAD, and POST')
+    else:
+        raise AssertionError('We only know about GET, HEAD, and POST')
 
 
 def traverse_project(project, request, name):
@@ -72,8 +82,12 @@ def traverse_product(product, request, name):
     """Traverse an IProduct."""
     if name == '+series':
         return ProductSeriesSet(product=product)
-    elif name == '+milestones':
-        return ProductMilestoneSet(product=product)
+    elif name == '+milestone':
+        milestone_name = _skip_one(product, request)
+        try:
+            return product.getMilestone(milestone_name)
+        except NotFoundError:
+            return None
     elif name == '+bugs':
         travstack = request.getTraversalStack()
         if len(travstack) == 0:
@@ -88,17 +102,9 @@ def traverse_product(product, request, name):
             request.setTraversalStack(travstack)
 
             if nextstep.isdigit():
-                # This looks like a bug ID; return the task for this
-                # context.
-                bugtaskset = getUtility(IBugTaskSet)
-                bugset = getUtility(IBugSet)
+                bug = getUtility(IBugSet).get(nextstep)
+                return _get_task_for_context(bug, product)
 
-                bug = bugset.get(nextstep)
-                bugtasks = bugtaskset.search(
-                    product=product, bug=bug, user=getUtility(ILaunchBag).user)
-
-                if bugtasks.count() == 1:
-                    return bugtasks[0]
     elif name == '+calendar':
         return ICalendarOwner(product).calendar
     else:
@@ -111,6 +117,12 @@ def traverse_distribution(distribution, request, name):
     """Traverse an IDistribution."""
     if name == '+packages':
         return getUtility(IPublishedPackageSet)
+    elif name == '+milestone':
+        milestone_name = _skip_one(distribution, request)
+        try:
+            return distribution.getMilestone(milestone_name)
+        except NotFoundError:
+            return None
     elif name == '+bugs':
         # XXX, Brad Bollenbach, 2005-07-20: This
         # request.setTraversalStack stuff is nasty. I've discussed
@@ -125,21 +137,10 @@ def traverse_distribution(distribution, request, name):
             request.setTraversalStack(travstack)
 
             if nextstep.isdigit():
-                # This looks like a bug ID; return the task for this
-                # context.
-                bugtaskset = getUtility(IBugTaskSet)
-                bugset = getUtility(IBugSet)
-
-                bug = bugset.get(nextstep)
-                bugtasks = bugtaskset.search(
-                    distribution=distribution, bug=bug,
-                    user=getUtility(ILaunchBag).user)
-
-                if bugtasks.count() == 1:
-                    return bugtasks[0]
+                bug = getUtility(IBugSet).get(nextstep)
+                return _get_task_for_context(bug, distribution)
     else:
         return getUtility(ILaunchBag).distribution[name]
-
 
 def traverse_distrorelease(distrorelease, request, name):
     """Traverse an IDistroRelease."""
@@ -161,18 +162,9 @@ def traverse_distrorelease(distrorelease, request, name):
             request.setTraversalStack(travstack)
 
             if nextstep.isdigit():
-                # This looks like a bug ID; return the task for this
-                # context.
-                bugtaskset = getUtility(IBugTaskSet)
-                bugset = getUtility(IBugSet)
+                bug = getUtility(IBugSet).get(nextstep)
+                return _get_task_for_context(bug, distrorelease)
 
-                bug = bugset.get(nextstep)
-                bugtasks = bugtaskset.search(
-                    distrorelease=distrorelease, bug=bug,
-                    user=getUtility(ILaunchBag).user)
-
-                if bugtasks.count() == 1:
-                    return bugtasks[0]
     elif name == '+lang':
         travstack = request.getTraversalStack()
         if len(travstack) == 0:
@@ -197,6 +189,14 @@ def traverse_distrorelease(distrorelease, request, name):
         return distrorelease[name]
 
 
+def _get_task_for_context(bug, context):
+    user = getUtility(ILaunchBag).user
+    search_params = BugTaskSearchParams(bug=bug, user=user)
+    bugtasks = context.searchTasks(search_params)
+    assert bugtasks.count() == 1
+    return bugtasks[0]
+
+
 def traverse_person(person, request, name):
     """Traverse an IPerson."""
     if name == '+calendar':
@@ -210,8 +210,17 @@ def traverse_team(team, request, name):
         return ITeamMembershipSubset(team)
     elif name == '+calendar':
         return ICalendarOwner(team).calendar
-    elif name == '+polls':
-        return IPollSubset(team)
+    elif name == '+poll':
+        travstack = request.getTraversalStack()
+        if len(travstack) == 0:
+            # No option name given; returning None will raise a not found error
+            return None
+        # Consume the poll name from the traversal stack
+        pollname = travstack.pop()
+        poll = getUtility(IPollSet).getByTeamAndName(team, pollname)
+        request._traversed_names.append(pollname)
+        request.setTraversalStack(travstack)
+        return poll
 
     return None
 
@@ -225,7 +234,7 @@ def traverse_team(team, request, name):
 def traverse_bug(bug, request, name):
     """Traverse an IBug."""
     if name == 'attachments':
-        return BugAttachmentSet(bug=bug.id)
+        return getUtility(IBugAttachmentSet)
     elif name == 'references':
         return BugExternalRefSet(bug=bug.id)
     elif name == 'cverefs':
@@ -259,7 +268,16 @@ def traverse_bugs(bugcontainer, request, name):
 
 
 def traverse_poll(poll, request, name):
-    if name == '+options':
-        return IPollOptionSubset(poll)
+    if name == '+option':
+        travstack = request.getTraversalStack()
+        if len(travstack) == 0:
+            # No option name given; returning None will raise a not found error
+            return None
+        # Consume the option name from the traversal stack
+        optionid = travstack.pop()
+        option = getUtility(IPollOptionSet).getByPollAndId(poll, optionid)
+        request._traversed_names.append(optionid)
+        request.setTraversalStack(travstack)
+        return option
 
     return None

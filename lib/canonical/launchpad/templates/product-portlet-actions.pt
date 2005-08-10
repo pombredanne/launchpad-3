@@ -5,7 +5,13 @@
         <div class="portletContent even">
 
             <ul>
-                <li class="add">
+                <li class="info">
+                  <a href="+distributions">Show Distributions</a>
+                </li>
+                <li class="packages">
+                  <a href="+packages">Show Packages</a>
+                </li>
+                <li class="info">
                   <a href="+branches">Show Branches</a>
                 </li>
                 <li class="edit">
@@ -15,14 +21,16 @@
                     <a href="+reassign">Change Maintainer</a>
                 </li>
                 <li class="add">
-                  <a href="+addpackage">Link To Package</a>
+                  <a href="+filebug">Report a Bug</a>
                 </li>
-                <li class="add"><a href="+addseries">Add Branch</a></li>
+                <li class="add">
+                  <a href="+addseries">Add Branch</a>
+                </li>
                 <li class="edit">
                   <a href="+changetranslators">Change Translators</a>
                 </li>
                 <li class="add">
-                  <a href="+milestone">Add Milestone</a>
+                  <a href="+addmilestone">Add Milestone</a>
                 </li>
                 <li class="download">
                   <a href="+rdf">Download RDF Metadata</a>

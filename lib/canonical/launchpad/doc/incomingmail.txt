@@ -47,8 +47,8 @@ Now we send a few test mails to foo.com, bar.com, and baz.com:
     >>> from canonical.launchpad.mail import sendmail
 
     >>> msgids = {'foo.com': [], 'bar.com': [], 'baz.com': []}
-    >>> msg = read_test_message('signed_detached.txt')
     >>> for domain in ('foo.com', 'bar.com', 'foo.com', 'baz.com'):
+    ...     msg = read_test_message('signed_detached.txt')
     ...     msg.replace_header('To', '123@%s' % domain)
     ...     msgids[domain].append("<%s>" % sendmail(msg))
     ...     transaction.commit()
@@ -67,14 +67,13 @@ mail will get filed in there:
 
     >>> handleMail()
 
-    >>> LibrarianTestSetup().tearDown()
-
 Now we can see that each handler handled that mails sent to its domain:
 
     >>> foo_handler.handledMails == msgids['foo.com']
     True
     >>> bar_handler.handledMails == msgids['bar.com']
     True
+
 
 Unhandled Mail
 --------------
@@ -91,3 +90,58 @@ errors_address.
     ...             for from_addr, to_addr_list, raw_mail in stub.test_emails]
     >>> to_addrs == [config.launchpad.errors_address]
     True
+
+    >>> stub.test_emails = []
+
+Now let's send an email from Foo Bar, but signed with Sample Person's
+key:
+
+    >>> msg = read_test_message('signed_detached.txt')
+    >>> msg.replace_header('From', 'foo.bar@canonical.com')
+    >>> msgid = sendmail(msg)
+    >>> transaction.commit()
+    >>> handleMail(transaction)
+
+
+An error message was sent since the key didn't belong to Foo Bar:
+
+    >>> transaction.commit()
+    >>> from_addr, to_addr, raw_mail = stub.test_emails[-1]
+    >>> import email
+    >>> error_mail = email.message_from_string(raw_mail)
+    >>> print error_mail['Subject']
+    Unhandled Email: ...
+    >>> print error_mail.get_payload(decode=True)
+    The following email was unhandled:
+    ...
+    Invalid signature for foo.bar@canonical.com:
+        The key used to sign the email doesn't belong to the user.
+
+
+X-Original-To
+-------------
+
+If available, the X-Original-To header is used to determine to which
+address the email was sent to:
+
+    >>> from canonical.launchpad.mail import raw_sendmail
+    >>> msg = read_test_message('signed_detached.txt')
+    >>> msg.replace_header('To', '123@foo.com')
+    >>> msg['CC'] = '123@foo.com'
+    >>> msg['X-Original-To'] = '123@bar.com'
+    >>> msgid = '<%s>' % raw_sendmail (
+    ...     msg['From'], ['123@bar.com'], msg.as_string())
+    >>> transaction.commit()
+    >>> handleMail()
+    >>> msgid in bar_handler.handledMails
+    True
+
+Only the address in X-Original-To header will be used. The addresses in
+the To and CC headers will be ignored:
+
+    >>> msgid in foo_handler.handledMails
+    False
+
+
+    >>> LibrarianTestSetup().tearDown()
+

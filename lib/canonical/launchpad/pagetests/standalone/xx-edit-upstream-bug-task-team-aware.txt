@@ -19,7 +19,7 @@ Sample Person may edit the bug task:
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-            <h2>...in Mozilla Firefox...</h2>
+            <h2>...in upstream firefox...</h2>
   ...
 
 Edit the target:
@@ -148,7 +148,7 @@ Now Foo Bar may edit the bug, since he's part of the maintainer team:
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
-            <h2>...in Mozilla Firefox...</h2>
+            <h2>...in upstream firefox...</h2>
   ...
 
 

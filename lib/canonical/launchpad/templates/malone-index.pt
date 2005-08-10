@@ -16,11 +16,10 @@
 
 <div metal:fill-slot="main">
 
-    <h2 style="margin-top: 0;">Quick Links</h2>
     <ul>
         <form method="get" action="bugs" name="goto">
           <li>
-            Go to bug report #<input type="text" name="id" size="5" />
+            Jump to bug report #<input type="text" name="id" size="5" />
           </li>
         </form>
         <script>
@@ -29,29 +28,34 @@
         //-->
         </script>
         <li>
-            <a href="assigned">Assigned Bug Reports</a> - retrieve reports on
-            bugs assigned to yourself (or others)
+            <a href="assigned">Assigned Bug Reports</a> - list
+            bugs assigned to you (or others)
         </li>
     </ul>
-    <h2>Bugs on Packages</h2>
+    <h2 style="margin-top: 0.1em">Bugs in Distribution Packages</h2>
     <ul>
+        <div class="discreet">
+       A package is software specifically prepared for your
+       distribution; packages are installed using apt, rpm, emerge or
+       a similar program.  </div>
+
         <li>
-            <a href="bugs/+package">File a Bug on a Package</a> - report a bug
-            on something that you installed with apt, rpm, emerge or something
-            similar. <b>If you're not sure, start here.</b>
+            <a href="bugs/+package">File a Bug on a Package</a>        
         </li>
         <li>
             <!-- XXX kiko 2005-07-05 ubuntu is hardcoded -->
-            <a href="distros/ubuntu">View Ubuntu Bugs</a> - view bugs
-            filed in the Ubuntu distribution.
+            <a href="distros/ubuntu">View Ubuntu Bugs</a> - find and
+            view bugs filed in Ubuntu.
         </li>
         <li>
-            <a href="distros">View Bugs in other Distributions</a> -
-            view bugs filed on packages in distributions.
+            <a href="distros">View Bugs in other Distributions</a>
         </li>
     </ul>
-    <h2>Bugs on Products</h2>
+    <h2 style="margin-top: 0.1em">Bugs in Upstream Products</h2>
     <ul>
+        <div class="discreet">Software that is not a distribution
+        package is classified as an upstream product; this includes
+        Launchpad and Malone.</div>
         <form method="get" action="products">
           <li>
             <input type="hidden" name="exact_name" value="1">
@@ -60,10 +64,9 @@
         </form>
         <li>
             <a href="products">Locate Product and View Bugs</a> -
-            locate a product to view or file bugs
+            locate a product to view, search or file bugs
         </li>
     </ul>
-    
 </div>
 </body>
 </html>

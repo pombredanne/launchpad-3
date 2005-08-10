@@ -3,7 +3,7 @@
 
   <h4>
     <abbr title="Common Vulnerabilities and Exposures index">CVE</abbr>
-    references
+    References
   </h4>
 
   <div class="portletBody">
@@ -14,13 +14,13 @@
                              title ref/title"
              tal:content="ref/cveref"
              >CVE-2002-1342</a>
-             [<a tal:attributes="href string:$bug_url/cverefs/${ref/id}/+edit">Edit</a>]
+             <small>(<a tal:attributes="href string:$bug_url/cverefs/${ref/id}/+edit">edit</a>)</small>
         </li>
       </ul>
 
       <div style="text-align: right;">
         <img src="/++resource++add.gif" alt="Add CVE Ref">
-        <a tal:attributes="href string:$bug_url/cverefs/+new">Add CVE...</a>
+        <a tal:attributes="href string:$bug_url/cverefs/+new">Add</a>
       </div>
     </div>
   </div>

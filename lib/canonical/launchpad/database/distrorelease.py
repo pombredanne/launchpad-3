@@ -20,7 +20,8 @@ from canonical.lp.dbschema import (
     PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus)
 
 from canonical.launchpad.interfaces import (
-    IDistroRelease, IDistroReleaseSet, ISourcePackageName, ISourcePackageSet)
+    IDistroRelease, IDistroReleaseSet, ISourcePackageName,
+    IPublishedPackageSet)
 
 from canonical.launchpad.database.sourcepackageindistro import (
     SourcePackageInDistro)
@@ -44,6 +45,8 @@ class DistroRelease(SQLBase):
     implements(IDistroRelease)
 
     _table = 'DistroRelease'
+    _defaultOrder = ['distribution', 'version']
+
     distribution = ForeignKey(dbName='distribution',
                               foreignKey='Distribution', notNull=True)
     bugtasks = MultipleJoin('BugTask', joinColumn='distrorelease')
@@ -146,25 +149,13 @@ class DistroRelease(SQLBase):
         return "%s %s" % (
             self.distribution.name.capitalize(), self.name.capitalize())
 
-    def search(self, bug=None, searchtext=None, status=None, priority=None,
-               severity=None, milestone=None, assignee=None, owner=None,
-               orderby=None, statusexplanation=None, user=None):
+    def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
-        # As an initial refactoring, we're wrapping BugTaskSet.search.
-        # It's possible that the search code will live inside this
-        # method instead at some point.
-        #
-        # The implementor who would make such a change should be
-        # mindful of bug privacy.
-        return BugTaskSet().search(
-            distrorelease=self, bug=bug, searchtext=searchtext, status=status,
-            priority=priority, severity=severity, milestone=milestone,
-            assignee=assignee, owner=owner, orderby=orderby,
-            statusexplanation=statusexplanation, user=user)
+        search_params.setDistributionRelease(self)
+        return BugTaskSet().search(search_params)
 
     def getBugSourcePackages(self):
         """See IDistroRelease."""
-        clauseTables=["BugTask",]
         query = ("VSourcePackageInDistro.distrorelease = %i AND "
                  "VSourcePackageInDistro.distro = BugTask.distribution AND "
                  "VSourcePackageInDistro.name = BugTask.sourcepackagename AND "
@@ -173,7 +164,7 @@ class DistroRelease(SQLBase):
                     self.id, BugTaskStatus.FIXED, BugTaskStatus.REJECTED))
 
         return SourcePackageInDistro.select(
-            query, clauseTables=clauseTables, distinct=True)
+            query, clauseTables=["BugTask"], distinct=True)
 
     def getDistroReleaseLanguage(self, language):
         """See IDistroRelease."""
@@ -260,7 +251,8 @@ class DistroRelease(SQLBase):
     def publishedBinaryPackages(self, component=None):
         """See IDistroRelease."""
         # XXX sabdfl 04/07/05 this can become a utility when that works
-        pubpkgset = PublishedPackageSet()
+        # XXX kiko: this method is untested and possibly unused
+        pubpkgset = getUtility(IPublishedPackageSet)
         result = pubpkgset.query(distrorelease=self, component=component)
         return [BinaryPackage.get(p.binarypackage) for p in result]
 
@@ -289,7 +281,6 @@ class DistroReleaseSet:
     def search(self, distribution=None, isreleased=None, orderBy=None):
         """See IDistroReleaseSet."""
         where_clause = ""
-        order_by_param = None
         if distribution is not None:
             where_clause += "distribution = %s" % sqlvalues(distribution.id)
         if isreleased is not None:

@@ -11,7 +11,7 @@ from canonical.launchpad.vocabularies import IHugeVocabulary
 
 import logging
 
-from canonical.lp import _
+from canonical.launchpad import _
 
 class ISinglePopupWidget(ISimpleInputWidget):
     def formToken():
@@ -47,7 +47,6 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
 
         # Otherwise, return the invalid value the user entered
         return super(SinglePopupWidget, self)._getFormValue()
-        return rv
 
     def _getFormInput(self):
         '''See zope.app.form.browser.widget.SimpleWidget'''

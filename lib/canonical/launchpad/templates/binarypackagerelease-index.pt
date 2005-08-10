@@ -43,15 +43,13 @@
           </tr>
           <tr>
             <th>Section:</th>
-            <td
-              tal:content="context/binarypackagerelease/section/name"/>
+            <td tal:content="context/binarypackagerelease/section/name">
               bar
             </td>
           </tr>
           <tr>
             <th>Priority:</th>
-            <td
-              tal:content="context/binarypackagerelease/priority/title"/>
+            <td tal:content="context/binarypackagerelease/priority/title">
               YAGNI
             </td>
           </tr>

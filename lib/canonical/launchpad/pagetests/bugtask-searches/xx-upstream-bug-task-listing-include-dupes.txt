@@ -1,0 +1,9 @@
+Do an advanced search with dupes turned on and find the duplicate in the results.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+bugs/?field.searchtext=&advanced=%5Bu%27Advanced%27%2C+u%27%27%5D&field.status%3Alist=New&field.status%3Alist=Accepted&field.status-empty-marker=1&field.severity-empty-marker=1&field.assignee=&field.unassigned.used=&field.include_dupes.used=&field.include_dupes=on&field.statusexplanation=&field.milestone-empty-marker=1&search=Search HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...4 results...
+  ...<td>...6...</td>...

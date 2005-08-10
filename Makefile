@@ -103,8 +103,8 @@ debug:
 		    app = Application('Data.fs', 'site.zcml')()"
 
 clean:
-	find . -type f \( -name '*.o' -o -name '*.so' -o -name '*.py[co]' -o -name \
-	    '*.dll' \) -exec rm -f {} \;
+	find . -type f \( -name '*.o' -o -name '*.so' \
+	    -o -name '*.py[co]' -o -name '*.dll' \) -exec rm -f {} \;
 	rm -rf build
 
 realclean: clean
@@ -116,6 +116,13 @@ zcmldocs:
 	    ./src/zope/configuration/stxdocs.py \
 	    -f ./src/zope/app/meta.zcml -o ./doc/zcml/namespaces.zope.org
 
+potemplates: launchpad.pot
+
+# Generate launchpad.pot by extracting message ids from the source
+launchpad.pot:
+	$(PYTHON) sourcecode/zope/utilities/i18nextract.py \
+	    -d launchpad -p lib/canonical/launchpad \
+	    -o locales
 
 #
 #   Naughty, naughty!  How many Zope3 developers are going to have
@@ -132,5 +139,5 @@ tags:
 
 .PHONY: check tags TAGS zcmldocs realclean clean debug stop start run \
 		ftest_build ftest_inplace test_build test_inplace pagetests \
-		check importdcheck check_merge schema default
+		check importdcheck check_merge schema default launchpad.pot
 

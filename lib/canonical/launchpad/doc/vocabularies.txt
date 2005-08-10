@@ -188,8 +188,8 @@ o ValidPersonOrTeam - all 'valid' persons or teams. This is currently defined
     >>> [t.token for t in vocab.search('team')]
     ['name21', 'name18', 'support@ubuntu.com', 'name19', 'name20', 'testing-spanish-team']
 
-    Stuart hasn't validated his email address; he's not a valid Person.
-    >>> [t.token for t in vocab.search('bishop')]
+    Dave hasn't validated his email address; he's not a valid Person.
+    >>> [t.token for t in vocab.search('miller')]
     []
 
     'foo.bar@canonical.com' is a valid Person.

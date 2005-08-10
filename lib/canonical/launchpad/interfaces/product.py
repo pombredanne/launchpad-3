@@ -15,7 +15,7 @@ from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import IHasOwner, IBugTarget
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import name_validator
 
 _ = MessageIDFactory('launchpad')
 
@@ -49,7 +49,7 @@ class IProduct(IHasOwner, IBugTarget):
 
     name = TextLine(
         title=_('Name'),
-        constraint=valid_name,
+        constraint=name_validator,
         description=_("""The short name of this product, which must be
             unique among all the products. It should be at least one
             lowercase letters or number followed by one or more chars,
@@ -201,7 +201,12 @@ class IProduct(IHasOwner, IBugTarget):
         "used when the series doesn't supply one."))
 
     def getPackage(distrorelease):
-        """return a package in that distrorelease for this product."""
+        """Return a package in that distrorelease for this product."""
+
+    def getMilestone(name):
+        """Return a milestone with the given name for this product, or
+        raise NotFoundError.
+        """
 
     def potemplates():
         """Returns an iterator over this product's PO templates."""

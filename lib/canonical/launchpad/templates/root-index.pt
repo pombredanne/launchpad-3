@@ -1,56 +1,65 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
+      lang="en" metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
 <body>
 
   <div metal:fill-slot="main">
-    <h1>Welcome to The Launchpad!</h1>
+    <h1 i18n:translate="">Welcome to The Launchpad!</h1>
 
-    <p>The Launchpad is a collection of services for projects in the open
-    source universe. Here you can register your project, and collaborate
-    with your community on translations, bug squashing and the code you
-    write.</p>
+    <p i18n:translate="">The Launchpad is a collection of services for
+        projects in the open source universe. Here you can register your
+        project, and collaborate with your community on translations,
+        bug squashing and the code you write.</p>
 
-    <h2><a title="Rosetta" href="rosetta">Rosetta</a></h2>
+    <h2><a i18n:attributes="title" title="Rosetta" href="rosetta"
+            i18n:translate="">Rosetta</a></h2>
 
-    <p>Rosetta is a <b>web-based translation portal</b>. If your application
-    uses the open source standard <i>gettext</i> system for software
-    internationalisation, then you can easily have users contribute
-    translations for your software through Rosetta. You simply upload the
-    existing translations, point your community at Rosetta and then download
-    their translations before you make your release.
-    <a title="Rosetta" href="rosetta">Translate now!</a></p>
+    <p i18n:translate="rosetta-blurb">Rosetta is a
+        <b>web-based translation portal</b>.
+        If your application uses the open source standard <i>gettext</i>
+        system for software internationalisation, then you can easily have
+        users contribute translations for your software through Rosetta.
+        You simply upload the existing translations, point your community
+        at Rosetta and then download their translations before you make
+        your release. <a i18n:attributes="title" title="Rosetta"
+            href="rosetta" i18n:translate="">Translate now!</a></p>
 
-    <h2><a title="Malone" href="malone">Malone</a></h2>
+    <h2><a i18n:attributes="title" title="Malone" href="malone"
+            i18n:translate="">Malone</a></h2>
 
-    <p>Malone is a <b>web-based global bug tracking</b> tool. It is designed
-    to track bugs across the whole open source process: it understands that
-    the same code is re-used upstream and in different distributions, and
-    allows us to have a single bug number for any bug, and track where it
-    has been fixed and where it is still a problem.
-    <a title="Malone" href="malone">Track bugs now!</a></p>
+    <p i18n:translate="malone-blurb">Malone is a
+        <b>web-based global bug tracking</b>
+        tool. It is designed to track bugs across the whole open source
+        process: it understands that the same code is re-used upstream
+        and in different distributions, and allows us to have a single
+        bug number for any bug, and track where it has been fixed and
+        where it is still a problem. <a i18n:attributes="title" title="Malone"
+            href="malone" i18n:translate="">Track bugs now!</a></p>
 
-    <h2><a title="DOAP Registry" href="doap">DOAP Registry</a></h2>
+    <h2><a i18n:attributes="title" title="Registry" href="doap"
+            i18n:translate="">Registry</a></h2>
 
-    <p>A key part of the Launchpad is its <b>registry of open source and
-    related projects</b>. This registry, inspired by the DOAP framework,
-    allows us to keep track of all the open source software which uses the
-    Launchpad for translations, bug management and distributed code
-    management. You can register individual open source applications, or
-    whole projects, and track the relationships between them.
-    <a title="DOAP Registry" href="doap">Find or register apps
-    now!</a></p>
+    <p i18n:translate="registry-blurb">A key part of the Launchpad is its
+        <b>registry of open source and related projects</b>. This registry,
+        inspired by the DOAP framework, allows us to keep track of all the
+        open source software which uses the Launchpad for translations,
+        bug management and distributed code management. You can register
+        individual open source applications, or whole projects, and track
+        the relationships between them. <a i18n:attributes="title"
+            title="Registry" href="doap" i18n:translate="">Find or register
+            apps now!</a></p>
 
-    <h2><a title="Soyuz" href="/distros/">Soyuz - Distribution
-    Management</a></h2>
+    <h2><a i18n:attributes="title" title="Soyuz" href="/distros/"
+            i18n:translate="">Soyuz - Distribution Management</a></h2>
 
-    <p>The Launchpad also keeps track of software in the Ubuntu distribution
-    as well as other Linux distributions. Using this aspect of Launchpad,
-    which we call Soyuz, you can see which versions of a package are
-    published in the distribution at any time. <a title="Soyuz Distribution
-    Interface" href="/distros/">Explore Soyuz Now!</a></p>
+    <p i18n:translate="soyuz-blurb">The Launchpad also keeps track of
+        software in the Ubuntu distribution as well as other Linux
+        distributions. Using this aspect of Launchpad, which we call
+        Soyuz, you can see which versions of a package are published
+        in the distribution at any time. <a i18n:attributes="title"
+            title="Soyuz Distribution Interface" href="/distros/"
+            i18n:translate="">Explore Soyuz Now!</a></p>
 
   </div>
 

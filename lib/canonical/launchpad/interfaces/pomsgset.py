@@ -93,7 +93,7 @@ class IEditPOMsgSet(IPOMsgSet):
     """Interface for editing a POMsgSet."""
 
     def updateTranslationSet(person, new_translations, fuzzy, published,
-        is_editor, ignore_errors):
+        ignore_errors=False, force_edition_rights=False):
         """Update a pomsgset using the set of translations provided.
 
         person is the author of the translations.
@@ -102,18 +102,18 @@ class IEditPOMsgSet(IPOMsgSet):
         fuzzy is a flag that tells us if the translations are fuzzy or not.
         published indicates whether this update is coming from a published po
         file.
-        is_editor is a flag that indicates whether or not the person making
-        the submission has permission to edit this pofile. If not, their
-        submissions will be recorded but not activated.
         ignore_errors is a flag that controlls if the translations should be
         stored even when an error is detected.
+        force_edition_rights is a flag that 'forces' that this submition
+        is handled as coming from an editor, no matter if it's really an
+        editor or not
 
         If there is an error with the translations and ignore_errors is not
         True or it's not a fuzzy submit, raises gettextpo.error
         """
 
-    def makeSubmission(person, text, pluralform, published, is_editor,
-        validation_status):
+    def makeSubmission(person, text, pluralform, published, validation_status,
+        force_edition_rights=False):
         """Record a translation submission by the given person.
 
         If "published" then this is a submission noticed in the published po
@@ -141,11 +141,11 @@ class IEditPOMsgSet(IPOMsgSet):
         file upload, it should ONLY be set if this is genuinely the
         published po file.
 
-        The "is_editor" field indicates whether or not this person is
-        allowed to edit the active translation in Rosetta. If not, we will
-        still create a submission if needed, but we won't make it active.
-
         The "validation_status" field is a value of
         TranslationValidationStatus that indicates the status of the
         translation.
+
+        The "force_edition_rights" is a flag that 'forces' that this submition
+        is handled as coming from an editor, no matter if it's really an
+        editor or not
         """

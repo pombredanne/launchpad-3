@@ -20,7 +20,7 @@ email.
   ... Content-Type: application/x-www-form-urlencoded
   ... Referer: http://localhost:9000/malone/bugs/2
   ...
-  ... field.subject=test+comment+subject&field.content=test+comment&UPDATE_SUBMIT=Add""")
+  ... field.subject=test+comment+subject&field.content=test+comment&UPDATE_SUBMIT=Post+Comment""")
   HTTP/1.1 303 See Other
   ...
           <h1>Add a Comment</h1>

@@ -13,7 +13,8 @@ from canonical.database.sqlbase import (quote, sqlvalues,
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
-    BugTaskStatus, BugTaskSeverity, PackagePublishingStatus, PackagingType)
+    BugTaskStatus, BugTaskSeverity, PackagePublishingStatus, PackagingType,
+    PackagePublishingPocket)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (ISourcePackage,
@@ -74,13 +75,13 @@ class SourcePackage:
         # Set self.currentrelease based on current published sourcepackage
         # with this name in the distrorelease.  If none is published, leave
         # self.currentrelease as None
-        r = SourcePackageInDistro.selectOneBy(
-                sourcepackagenameID=sourcepackagename.id,
-                distroreleaseID = self.distrorelease.id)
-        if r is None:
+        package = SourcePackageInDistro.selectOneBy(
+                    sourcepackagenameID=sourcepackagename.id,
+                    distroreleaseID = self.distrorelease.id)
+        if package is None:
             self.currentrelease = None
         else:
-            self.currentrelease = SourcePackageRelease.get(r.id)
+            self.currentrelease = SourcePackageRelease.get(package.id)
 
     def _get_ubuntu(self):
         """This is a temporary measure while
@@ -111,10 +112,14 @@ class SourcePackage:
 
     @property
     def format(self):
+        if not self.currentrelease:
+            return None
         return self.currentrelease.format
 
     @property
     def changelog(self):
+        if not self.currentrelease:
+            return None
         return self.currentrelease.changelog
 
     @property
@@ -124,6 +129,8 @@ class SourcePackage:
         distrorelease. In future, we might have a separate table for the
         current working copy of the manifest for a source package.
         """
+        if not self.currentrelease:
+            return None
         return self.currentrelease.manifest
 
     @property
@@ -281,6 +288,27 @@ class SourcePackage:
         if ps is None:
             return False
         return ps.branch is not None
+
+    @property
+    def published_by_pocket(self):
+        """See ISourcePackage."""
+        result = SourcePackagePublishing.select("""
+            SourcePackagePublishing.distrorelease = %s AND
+            SourcePackagePublishing.sourcepackagerelease =
+                SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename = %s
+            """ % sqlvalues(
+                self.distrorelease.id,
+                self.sourcepackagename.id),
+            clauseTables=['SourcePackageRelease'])
+        # create the dictionary with the set of pockets as keys
+        thedict = {}
+        for pocket in PackagePublishingPocket.items:
+            thedict[pocket] = []
+        # add all the sourcepackagereleases in the right place
+        for spr in result:
+            thedict[spr.pocket].append(spr.sourcepackagerelease)
+        return thedict
 
     def setPackaging(self, productseries, user):
         target = self.direct_packaging

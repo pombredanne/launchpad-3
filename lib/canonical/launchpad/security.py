@@ -13,8 +13,8 @@ from canonical.launchpad.interfaces import (
     IMilestone, IBug, IBugTask, IUpstreamBugTask, IDistroBugTask,
     IDistroReleaseBugTask, ITranslator, IProduct, IProductSeries,
     IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
-    ILaunchpadCelebrities, IDistroRelease, IBugTracker, IPoll, IPollSubset,
-    IPollOption, IPollOptionSubset)
+    ILaunchpadCelebrities, IDistroRelease, IBugTracker, IBugAttachment,
+    IPoll, IPollSubset, IPollOption, IPollOptionSubset)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -86,13 +86,16 @@ class EditSeriesSourceByButtSource(AuthorizationBase):
         return False
 
 
-class EditMilestoneByProductMaintainer(AuthorizationBase):
+class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IMilestone
 
     def checkAuthenticated(self, user):
-        """Authorize the product maintainer."""
-        return user.inTeam(self.obj.product.owner)
+        """Authorize the product or distribution owner."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(admins):
+            return True
+        return user.inTeam(self.obj.target.owner)
 
 
 class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
@@ -310,6 +313,33 @@ class PublicToAllOrPrivateToExplicitSubscribersForBug(AuthorizationBase):
     def checkUnauthenticated(self):
         """Allow anonymous users to see non-private bugs only."""
         return not self.obj.private
+
+
+class ViewBugAttachment(PublicToAllOrPrivateToExplicitSubscribersForBug):
+    """Security adapter for viewing a bug attachment.
+
+    If the user is authorized to view the bug, he's allowed to view the
+    attachment.
+    """
+    permission = 'launchpad.View'
+    usedfor = IBugAttachment
+
+    def __init__(self, bugattachment):
+        self.obj = bugattachment.bug
+
+
+class EditBugAttachment(
+    EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
+    """Security adapter for editing a bug attachment.
+
+    If the user is authorized to view the bug, he's allowed to edit the
+    attachment.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = IBugAttachment
+
+    def __init__(self, bugattachment):
+        self.obj = bugattachment.bug
 
 
 class UseApiDoc(AuthorizationBase):

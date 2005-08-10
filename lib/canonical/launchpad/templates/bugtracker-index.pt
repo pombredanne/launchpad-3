@@ -29,23 +29,21 @@
   <tal:block condition="context/latestwatches">
   <h2>Latest Watches:</h2>
 
-  <table class="listing">
+  <table class="sortable listing" id="latestwatches">
     <thead>
       <tr>
-        <th>Malone</th>
-        <th>Bug Title or Summary</th>
+        <th>Malone bug</th>
         <th>Remote #</th>
       </tr>
     </thead>
 
     <tbody>
-      <tr tal:repeat="watch context/latestwatches"
-          tal:attributes="onclick
-              string:window.location='${watch/bug/fmt:url}'">
-        <td><a tal:content="watch/bug/id"
-               tal:attributes="href watch/bug/fmt:url"
-               >34</a></td>
-        <td tal:content="watch/bug/title">Malone Bug Title</td>
+      <tr tal:repeat="watch context/latestwatches">
+        <td>
+        <img alt="" src="/++resource++bug" />
+        <a href="#" tal:attributes="href watch/bug/fmt:url">
+        #<span tal:content="watch/bug/id">34</span>:
+        <span tal:content="watch/bug/title">Malone Bug Title</span></a></td>
         <td><a tal:content="watch/remotebug"
                tal:attributes="href watch/url">53656</a></td>
       </tr>

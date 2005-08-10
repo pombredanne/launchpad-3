@@ -61,21 +61,32 @@ class IPoll(Interface):
 
     def isOpen(when=None):
         """Return True if this Poll is still open.
-        
-        The optional <when> argument is used only by our tests, to test if the
+
+        The optional :when argument is used only by our tests, to test if the
         poll is/was/will be open at a specific date.
         """
 
+    def isClosed(when=None):
+        """Return True if this Poll is already closed.
+
+        The optional :when argument is used only by our tests, to test if the
+        poll is/was/will be closed at a specific date.
+        """
+
+    def getAllOptions(self):
+        """Return all Options of this poll."""
+
     def personVoted(person):
-        """Return True if <person> has already voted in this poll."""
+        """Return True if :person has already voted in this poll."""
 
 
 class PollStatus:
-    """A placeholder for the constants used when searching for polls."""
+    """This class stores the constants used when searching for polls."""
 
-    OPEN_POLLS = 'open'
-    CLOSED_POLLS = 'closed'
-    NOT_YET_OPENED_POLLS = 'not-yet-opened'
+    OPEN = 'open'
+    CLOSED = 'closed'
+    NOT_YET_OPENED = 'not-yet-opened'
+    ALL = frozenset([OPEN, CLOSED, NOT_YET_OPENED])
 
 
 class IPollSet(Interface):
@@ -85,29 +96,25 @@ class IPollSet(Interface):
             type, secrecy, allowspoilt):
         """Create a new Poll for the given team."""
 
-    def selectByTeam(team,
-                     status=frozenset([PollStatus.OPEN_POLLS,
-                                       PollStatus.CLOSED_POLLS,
-                                       PollStatus.NOT_YET_OPENED_POLLS]),
-                     orderBy=None, when=None):
+    def selectByTeam(team, status=PollStatus.ALL, orderBy=None, when=None):
         """Return all Polls for the given team, filtered by status.
-        
-        <status> is a frozenset() containing as many values as you want from
+
+        :status: is a sequence containing as many values as you want from
         PollStatus.
 
-        <orderBy> can be either a string with the column name you want to sort
+        :orderBy: can be either a string with the column name you want to sort
         or a list of column names as strings.
         If no orderBy is specified the results will be ordered using the
         default ordering specified in Poll._defaultOrder.
-        
-        The optional <when> argument is used only by our tests, to test if the
+
+        The optional :when argument is used only by our tests, to test if the
         poll is/was/will-be open at a specific date.
         """
 
     def getByTeamAndName(team, name, default=None):
         """Return the Poll for the given team with the given name.
 
-        Return <default> if there's no Poll with this name for that team.
+        Return :default if there's no Poll with this name for that team.
         """
 
 
@@ -129,7 +136,7 @@ class IPollSubset(Interface):
         """Return all Open Polls for this team ordered by the date they'll
         close.
 
-        The optional <when> argument is used only by our tests, to test if the
+        The optional :when argument is used only by our tests, to test if the
         poll is/was/will be open at a specific date.
         """
 
@@ -137,7 +144,7 @@ class IPollSubset(Interface):
         """Return all Not-Yet-Opened Polls for this team ordered by the date
         they'll open.
 
-        The optional <when> argument is used only by our tests, to test if the
+        The optional :when argument is used only by our tests, to test if the
         poll is/was/will be open at a specific date.
         """
 
@@ -145,14 +152,14 @@ class IPollSubset(Interface):
         """Return all Closed Polls for this team ordered by the date they
         closed.
 
-        The optional <when> argument is used only by our tests, to test if the
+        The optional :when argument is used only by our tests, to test if the
         poll is/was/will be open at a specific date.
         """
 
     def getByName(name, default=None):
         """Return the Poll of this team with the given name.
 
-        Return <default> if there's no Poll with this name.
+        Return :default if there's no Poll with this name.
         """
 
 
@@ -188,14 +195,14 @@ class IPollOptionSet(Interface):
 
     def selectByPoll(poll, only_active=False):
         """Return all PollOptions of the given poll.
-        
-        If <only_active> is True, then return only the active polls.
+
+        If :only_active is True, then return only the active polls.
         """
 
     def getByPollAndId(poll, id, default=None):
         """Return the PollOption with the given id.
 
-        Return <default> if there's no PollOption with the given id or if that
+        Return :default if there's no PollOption with the given id or if that
         PollOption is not in the given poll.
         """
 
@@ -216,7 +223,7 @@ class IPollOptionSubset(Interface):
     def get_default(id, default=None):
         """Return the PollOption of this poll with the given id.
 
-        Return <default> if there's no PollOption with this id in this poll.
+        Return :default if there's no PollOption with this id in this poll.
         """
 
     def getActive():
@@ -238,7 +245,7 @@ class IVoteCast(Interface):
 
 class IVote(Interface):
     """Here we store the vote itself, linked to a special token.
-    
+
     This token is given to the user when he votes, so he can change his vote
     later.
     """

@@ -11,10 +11,11 @@
 
 #portal-column-content {
   vertical-align: top;
-  padding: 0 1em;
+  padding: 2px 1em 1em 1em;
 }
 
 #portal-column-two {
+  padding-top: 3px;
   vertical-align: top;
   width: 16em;
 }
@@ -41,8 +42,13 @@
   background-color: #7090a0;
 }
 
+.collapsible {
+    padding: 0;
+    margin: 0;
+}
+
 .collapsed {
-  border-style: dashed none none none;
+  border: none;
   margin-bottom: 0;
 }
 
@@ -84,6 +90,10 @@ h1, h2, h3, h4, h5, h6 {
 
 h3 {
   list-style-image: url(/++resource++bullet.gif);
+}
+
+label {
+  font-weight: bold;
 }
 
 .listingBar a,
@@ -223,6 +233,10 @@ tr.highlight {
     background-color: #ffce7b;
 }
 
+tr.amount, td.amount {
+    text-align: right;
+}
+
 /* Display links as blocks, so we can make the whole row clickable */
 
 tr.rowLinkified a {
@@ -276,7 +290,13 @@ tr.rowLinkified a {
   padding: 0 0.25em;
 }
 
-/* Bug Severity markers */
+/* Bug Status, Severity, Priority markers */
+.statusNew           { color: Orange; }
+.statusAccepted      { color: Red; }
+.statusPendingUpload { color: Black; }
+.statusFixed         { color: Green; }
+.statusRejected      { color: Gray; }
+
 .severityCritical { color: Red; }
 .severityMajor    { color: #ff6600; }
 .severityNormal   { color: Green; }
@@ -284,22 +304,22 @@ tr.rowLinkified a {
 .severityWishlist { color: Blue; }
 
 .severityCriticalRow { background-color: #E1A1A1; }
-.severityMajorRow { background-color: #D9C08F; }
-.severityNormalRow { background-color: #9FD98F; }
-.severityMinorRow { background-color: #A5AFC8; }
+.severityMajorRow    { background-color: #D9C08F; }
+.severityNormalRow   { background-color: #9FD98F; }
+.severityMinorRow    { background-color: #A5AFC8; }
 .severityWishlistRow { background-color: #8FA9D9; }
 
-/* Priority markers */
 .priorityHigh    { color: Red; }
 .priorityMedium  { color: Orange; }
 .priorityLow     { color: Black; }
-.priorityWontFix { color: Gray; }
+.priorityWontfix { color: Gray; }
 
 /* Board-like comment CSS */
 
 .boardComment {
   border: 1px solid #364970;
-  margin-bottom: 1em;
+  margin-bottom: 1.5em;
+  margin-top: 1em;
   position: relative;
 }
 
@@ -314,7 +334,7 @@ tr.rowLinkified a {
   font-size: 80%;
   border: 1px solid #364970;
   border-style: none none solid none;
-  background-color: #f7f9fa;
+  background-color: #d7d9da;
   padding: 0.25em 12px;
 }
 
@@ -346,7 +366,7 @@ tr.rowLinkified a {
 }
 
 .boardCommentPortrait {
-  float: right; 
+  float: right;
   margin-bottom: 1em;
 }
 
@@ -365,6 +385,30 @@ tr.rowLinkified a {
 
 ul.add>li, li.add {
   list-style-image: url(/++resource++add.gif);
+}
+ul.alert>li, li.alert {
+  list-style-image: url(/++resource++alert_icon.gif);
+}
+ul.architecture>li, li.architecture {
+  list-style-image: url(/++resource++architecture);
+}
+ul.bug>li, li.bug {
+  list-style-image: url(/++resource++bug);
+}
+ul.bug.high>li, li.bug.high {
+  list-style-image: url(/++resource++bug-high);
+}
+ul.bug.medium>li, li.bug.medium {
+  list-style-image: url(/++resource++bug-medium);
+}
+ul.bug.low>li, li.bug.low {
+  list-style-image: url(/++resource++bug-low);
+}
+ul.bug.remote>li, li.bug.remote {
+  list-style-image: url(/++resource++bug-remote);
+}
+ul.bugs>li, li.bugs {
+  list-style-image: url(/++resource++bugs);
 }
 ul.document>li, li.document {
   list-style-image: url(/++resource++document_icon.gif);
@@ -386,6 +430,9 @@ ul.locked>li, li.locked {
 }
 ul.mail>li, li.mail {
   list-style-image: url(/++resource++mail_icon.gif);
+}
+ul.milestone>li, li.milestone {
+  list-style-image: url(/++resource++target);
 }
 ul.person>li, li.person, ul.people>li, li.people {
   list-style-image: url(/++resource++user.gif);
@@ -409,9 +456,6 @@ ul.search>li, li.search {
   list-style-image: url(/++resource++search_icon.gif);
 }
 
-ul.architecture>li, li.architecture {
-    list-style-image: url(/++resource++document_icon.gif);
-}
 
 /* Translation template stuff: */
 
@@ -636,9 +680,16 @@ abbr, address {
 	font-style: inherit;
 }
 
+kbd {
+  border: 1px solid;
+  border-color: white gray gray white;
+  color: black;
+  background-color: #ccc;
+  min-width: 1em;
+}
+
 label, .field label {
   font-family: sans-serif;
-  font-weight: normal;
   white-space: nowrap;
 }
 
@@ -667,8 +718,19 @@ thead {
 
 body {
   background-color: #fcfcfc;
+  color: black;
   padding: 0.25em 0.75em 0.5em 0.75em;
 }
+:visited {
+  background: none;
+  color: #8888bb;
+}
+:link, .hierarchy :visited, .footer :visited,
+.sidebar :visited, .portlet :visited {
+  background: none;
+	color: #000088;
+}
+
 .header, .footer {
   font-family: "Lucida Grande", "Charcoal", sans-serif;
 }
@@ -708,7 +770,7 @@ body {
   list-style: none;
   padding: 0 0.75em 0 1.25em;
 }
-.facets :link, .facets :visited {
+.facets :link, .facets :visited, .facets .disabled {
   background: none;
   color: #dee7ec;
 }
@@ -742,9 +804,6 @@ ul.app>li.current {
   border-bottom: 1px solid #fcfcfc;
 }
 
-#body {
-  padding: 0 1em;
-}
 .personal {
   clear: left;
   float: left;
@@ -811,8 +870,9 @@ ul.app>li.current {
 }
 
 h1, h2, h3, h4, h5, h6 {
+  background: none;
   clear: left;
-	color: #000066;
+	color: #708a96;
 	font-family: "Lucida Grande", sans-serif;
 	font-weight: normal;
 	margin-top: 0;
@@ -930,9 +990,9 @@ input {
 }
 /* this lines up text inputs so they don't look a mess */
 .textinput {
-  position: absolute; 
+  position: absolute;
   left: 250px;
-} 
+}
 /* radios had 1px left and right borders - don't know if intended
   but looked shit imo */
 .radios {

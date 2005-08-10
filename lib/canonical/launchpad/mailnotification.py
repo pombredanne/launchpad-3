@@ -10,14 +10,12 @@ import sets
 
 from contrib.docwrapper import DocWrapper
 
-from zope.component import getUtility
 from zope.security.proxy import isinstance as zope_isinstance
 
 import canonical.launchpad
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IBugDelta, IBugTaskSet, IUpstreamBugTask, IDistroBugTask,
-    IDistroReleaseBugTask)
+    IBugDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.components.bugtask import BugTaskDelta
@@ -95,8 +93,7 @@ def generate_bug_add_email(bug):
             % {'visibility' : visibility, 'bugurl' : canonical_url(bug)})
 
     # Add information about the affected upstreams and packages.
-    bugtasks = getUtility(IBugTaskSet).search(bug=bug, orderby="datecreated")
-    for bugtask in bugtasks:
+    for bugtask in bug.bugtasks:
         body += u"Affects: %s\n" % bugtask.contextname
         body += u"       Severity: %s\n" % bugtask.severity.title
         body += u"       Priority: %s\n" % bugtask.priority.title
@@ -202,6 +199,16 @@ def generate_bug_edit_email(bug_delta):
             body += u"    - %s [%s]\n" % (
                 old_cveref.displayname, old_cveref.title)
 
+    if bug_delta.attachment is not None:
+        body += "    - Changed attachments:\n"
+        body += "        Added: %s\n" % (
+            bug_delta.attachment['new'].title)
+        body += "           %s\n" % (
+            bug_delta.attachment['new'].libraryfile.url)
+        old_attachment = bug_delta.attachment.get('old')
+        if old_attachment:
+            body += "      Removed: %s\n" % old_attachment.title
+
     if bug_delta.bugtask_deltas is not None:
         bugtask_deltas = bug_delta.bugtask_deltas
         # Use zope_isinstance, to ensure that this Just Works with
@@ -212,8 +219,6 @@ def generate_bug_edit_email(bug_delta):
             if not body[-2:] == u"\n\n":
                 body += u"\n"
 
-            what = None
-            where = None
             if IUpstreamBugTask.providedBy(bugtask_delta.bugtask):
                 body += u"Changed in: %s (upstream)\n" % (
                     bugtask_delta.bugtask.product.displayname)
@@ -248,7 +253,7 @@ def generate_bug_edit_email(bug_delta):
             for fieldname, displayattrname in (
                 ("product", "displayname"), ("sourcepackagename", "name"),
                 ("binarypackagename", "name"), ("severity", "title"),
-                ("priority", "title")):
+                ("priority", "title"), ("bugwatch", "title")):
                 change = getattr(bugtask_delta, fieldname)
                 if change:
                     oldval_display, newval_display = _get_task_change_values(
@@ -534,13 +539,6 @@ def get_task_delta(old_task, new_task):
             changes["product"] = {}
             changes["product"]["old"] = old_task.product
             changes["product"]["new"] = new_task.product
-        # milestone is only used by upstream (and is a hack that was
-        # done for upstream in lieu of a "todo" application that
-        # handles this sort of functionality.)
-        if old_task.milestone != new_task.milestone:
-            changes["milestone"] = {}
-            changes["milestone"]["old"] = old_task.milestone
-            changes["milestone"]["new"] = new_task.milestone
     elif ((IDistroBugTask.providedBy(old_task) and
            IDistroBugTask.providedBy(new_task)) or
           (IDistroReleaseBugTask.providedBy(old_task) and
@@ -560,7 +558,8 @@ def get_task_delta(old_task, new_task):
 
     # calculate the differences in the fields that both types of tasks
     # have in common
-    for field_name in ("status", "severity", "priority", "assignee"):
+    for field_name in ("status", "severity", "priority",
+                       "assignee", "bugwatch", "milestone"):
         old_val = getattr(old_task, field_name)
         new_val = getattr(new_task, field_name)
         if old_val != new_val:
@@ -587,16 +586,6 @@ def notify_bug_added(bug, event):
     to_addrs = get_cc_list(bug)
 
     if to_addrs:
-        owner = "(no owner)"
-        spname = "(none)"
-        pname = "(none)"
-        if bug.owner:
-            owner = bug.owner.browsername
-        if bug.bugtasks[0].sourcepackagename:
-            spname = bug.bugtasks[0].sourcepackagename.name
-        if bug.bugtasks[0].product:
-            pname = bug.bugtasks[0].product.displayname
-
         subject, body = generate_bug_add_email(bug)
 
         for to_addr in to_addrs:
@@ -711,7 +700,8 @@ Infestation: %(infestation)s
             msg)
 
 
-def notify_bug_product_infestation_modified(modified_product_infestation, event):
+def notify_bug_product_infestation_modified(modified_product_infestation, 
+                                            event):
     """Notify CC'd list that this product infestation has been edited.
 
     modified_product_infestation must be an IBugProductInfestation. event must
@@ -729,6 +719,7 @@ def notify_bug_product_infestation_modified(modified_product_infestation, event)
                 ("infestationstatus", lambda v: v.title)))
 
         bug = modified_product_infestation.bug
+        productrelease = event.object_before_modification.productrelease
         send_bug_edit_notification(
             bug=bug,
             from_addr=get_bugmail_from_address(bug.id, event.user),
@@ -736,8 +727,8 @@ def notify_bug_product_infestation_modified(modified_product_infestation, event)
             subject="[Bug %d] %s" % (bug.id, bug.title),
             edit_header_line=(
                 "Edited infested product: %s" %
-                event.object_before_modification.productrelease.product.displayname + " " +
-                event.object_before_modification.productrelease.version),
+                productrelease.product.displayname + " " +
+                productrelease.version),
             changes=changes, user=event.user)
 
 
@@ -788,6 +779,7 @@ def notify_bug_package_infestation_modified(modified_package_infestation, event)
                 ("infestationstatus", lambda v: v.title)))
 
         bug = modified_package_infestation.bug
+        packagerelease = event.object_before_modification.sourcepackagerelease
         send_bug_edit_notification(
             bug=bug,
             from_addr=get_bugmail_from_address(bug.id, event.user),
@@ -795,8 +787,8 @@ def notify_bug_package_infestation_modified(modified_package_infestation, event)
             subject="[Bug %d] %s" % (bug.id, bug.title),
             edit_header_line=(
                 "Edited infested package: %s" %
-                event.object_before_modification.sourcepackagerelease.sourcepackagename.name + " " +
-                event.object_before_modification.sourcepackagerelease.version),
+                packagerelease.sourcepackagename.name + " " +
+                packagerelease.version),
             changes=changes, user=event.user)
 
 
@@ -981,6 +973,28 @@ def notify_bug_cveref_edited(edited_cveref, event):
             send_bug_edit_notification(
                 get_bugmail_from_address(new.id, event.user),
                 to_addrs, bug_delta)
+
+
+def notify_bug_attachment_added(bugattachment, event):
+    """Notify CC'd list that a new attachment has been added.
+
+    bugattachment must be an IBugAttachment. event must be an
+    ISQLObjectCreatedEvent.
+    """
+    bug = bugattachment.bug
+    notification_recipient_emails = get_cc_list(bug)
+
+    if notification_recipient_emails:
+        bug_delta = BugDelta(
+            bug=bug,
+            bugurl=canonical_url(bug),
+            user=event.user,
+            attachment={'new' : bugattachment})
+
+        send_bug_edit_notification(
+            get_bugmail_from_address(bug.id, event.user),
+            notification_recipient_emails,
+            bug_delta)
 
 
 def notify_join_request(event):

@@ -46,21 +46,19 @@ class PollSubset:
         """See IPollSubset."""
         assert self.team is not None
         return getUtility(IPollSet).selectByTeam(
-            self.team, set([PollStatus.OPEN_POLLS]),
-            orderBy='datecloses', when=when)
+            self.team, [PollStatus.OPEN], orderBy='datecloses', when=when)
 
     def getClosedPolls(self, when=None):
         """See IPollSubset."""
         assert self.team is not None
         return getUtility(IPollSet).selectByTeam(
-            self.team, set([PollStatus.CLOSED_POLLS]),
-            orderBy='datecloses', when=when)
+            self.team, [PollStatus.CLOSED], orderBy='datecloses', when=when)
 
     def getNotYetOpenedPolls(self, when=None):
         """See IPollSubset."""
         assert self.team is not None
         return getUtility(IPollSet).selectByTeam(
-            self.team, set([PollStatus.NOT_YET_OPENED_POLLS]),
+            self.team, [PollStatus.NOT_YET_OPENED],
             orderBy='dateopens', when=when)
 
 

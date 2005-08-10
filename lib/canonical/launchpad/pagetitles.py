@@ -133,7 +133,13 @@ bug_edit = BugPageTitle()
 
 bug_index = BugPageTitle()
 
-bug_references = ContextId('External References for Malone Bug #%s')
+bug_references = ContextId('External references for bug #%s')
+
+bug_secrecy = ContextId('Set secrecy for bug #%s')
+
+bug_secrecy = ContextId('Make Malone Bug #%d Public or Secret')
+
+bugattachment_add = 'Add an Attachment'
 
 bugwatch_editform = ContextTitle('Edit the Watch on %s')
 
@@ -213,6 +219,8 @@ default_addform = 'Default "Add" Page'
 default_editform = 'Default "Edit" Page'
 
 default_error = 'System Error'
+
+distribution_cvereport = ContextTitle('CVE Reports for %s')
 
 distribution_members = ContextTitle('%s distribution members')
 
@@ -363,6 +371,12 @@ malone_index = 'Malone: Collaborative Open Source Bug Management'
 
 malone_to_do = 'Malone ToDo'
 
+milestone_add = ContextDisplayName('Add Milestone for %s')
+
+milestone_bugs = ContextTitle('Bugs Targeted to %s')
+
+milestone_edit = ContextTitle('Edit %s')
+
 # messagechunk_snippet is a fragment
 
 # messages_index is a redirect
@@ -449,22 +463,15 @@ poll_edit = ContextTitle('Edit poll %s')
 
 poll_index = ContextTitle('%s')
 
+poll_newoption = ContextTitle('Create a new Option in poll %s')
+
 def poll_new(context, view):
     return 'Create a new Poll in team %s' % context.team.displayname
 
 def polloption_edit(context, view):
     return 'Edit option %s' % context.shortname
 
-def polloption_new(context, view):
-    return 'Create a new Option in poll %s' % context.poll.title
-
-def polloptions_list(context, view):
-    return 'Options in poll %s' % context.poll.title
-
-def polls_list(context, view):
-    return 'Polls in team %s' % context.team.displayname
-
-potemplage_admin = ContextTitle('%s admin in Rosetta')
+potemplate_add = 'Add a new template to Rosetta'
 
 # potemplate_chart is a fragment
 
@@ -486,9 +493,13 @@ product_add = 'Register a new Product with the Launchpad'
 
 product_bugs = ContextDisplayName('%s upstream bug reports')
 
+product_distros = ContextDisplayName('%s packages: Comparison of distributions')
+
 product_edit = ContextTitle('Edit Upstream Details: %s')
 
 product_index = ContextTitle('Product: %s')
+
+product_packages = ContextDisplayName('Packages of %s')
 
 product_translations = ContextTitle('Rosetta Translations for %s')
 
@@ -635,6 +646,10 @@ def team_members(context, view):
 def teammembership_index(context, view):
     return '%s: Member of %s' % (
         context.person.browsername, context.team.browsername)
+
+team_newpoll = ContextTitle('Create a new Poll in team %s')
+
+team_polls = ContextTitle('Polls in team %s')
 
 template_auto_add = 'Launchpad Auto-Add Form'
 

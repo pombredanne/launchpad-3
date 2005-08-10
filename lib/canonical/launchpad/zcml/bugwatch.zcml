@@ -12,6 +12,10 @@
             set_schema="canonical.launchpad.interfaces.IBugWatch" />
     </content>
 
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBugWatch"
+        name="+edit" />
+
     <browser:addform
         name="+new"
         schema="canonical.launchpad.interfaces.IBugWatch"

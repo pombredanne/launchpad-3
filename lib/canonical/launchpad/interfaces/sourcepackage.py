@@ -92,6 +92,11 @@ class ISourcePackage(Interface):
         "and sourcepackagename, it will be returned, otherwise we look "
         "for a match in parent and ubuntu distro releases.")
 
+    published_by_pocket = Attribute("The set of source package releases "
+        "currently published in this distro release, organised by "
+        "pocket. The result is a dictionary, with the pocket dbschema "
+        "as a key, and a list of source package releases as the value.")
+
     def setPackaging(productseries, owner):
         """Update the existing packaging record, or create a new packaging
         record, that links the source package to the given productseries,

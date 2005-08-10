@@ -6,14 +6,7 @@
 
       <ul>
         <li class="info">
-          <a href=".">Package Overview</a>
-        </li>
-        <li class="edit"
-            tal:condition="context/required:launchpad.Admin">
-          <a href="+potemplatenames">Edit Template Names</a>
-        </li>
-        <li class="edit">
-          <a href="+packaging">Edit Upstream Link</a>
+          <a href=".">Overview</a>
         </li>
         <li class="info">
           <a href="+hctstatus">View HCT Status</a>
@@ -22,13 +15,20 @@
           <a href="+changelog">View Changelog</a>
         </li>
         <li class="info">
+          <a href="+buildlog">View Build Log</a>
+        </li>
+        <li class="info">
           <a href="+gethelp">Get Help!</a>
         </li>
         <li class="translations">
           <a href="+translate">Help Translate</a>
         </li>
-        <li class="info">
-          <a href="+buildlog">View Build Log</a>
+        <li class="edit">
+          <a href="+packaging">Edit Upstream Link</a>
+        </li>
+        <li class="edit"
+            tal:condition="context/required:launchpad.Admin">
+          <a href="+potemplatenames">Edit Template Names</a>
         </li>
       </ul>
     </div>

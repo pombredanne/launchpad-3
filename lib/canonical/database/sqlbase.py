@@ -76,6 +76,9 @@ class SQLBase(SQLOS):
     per-thread connection stuff that SQLOS does.
     """
     _style = LaunchpadStyle()
+    # Silence warnings in linter script, which complains about all
+    # SQLBase-derived objects missing an id.
+    id = None
 
     def reset(self):
         if not self._SO_createValues:
@@ -176,7 +179,7 @@ class _ZopelessConnectionDescriptor(object):
         del self.transactions[thread.get_ident()]
 
     def __get__(self, inst, cls=None):
-        """Return the Transaction object for this thread if it exists, or None."""
+        """Return Transaction object for this thread (if it exists) or None."""
         tid = thread.get_ident()
         if self.implicitActivate and tid not in self.transactions:
             self._activate()
@@ -248,10 +251,10 @@ class ZopelessTransactionManager(object):
             if (cls._installed.connectionURI != connectionURI or
                 cls._installed.sqlClass != sqlClass or
                 cls._installed.debug != debug):
-                    raise ConflictingTransactionManagerError(
-                            "A ZopelessTransactionManager with different "
-                            "settings is already installed"
-                    )
+                raise ConflictingTransactionManagerError(
+                        "A ZopelessTransactionManager with different "
+                        "settings is already installed"
+                )
             # There's an identical ZopelessTransactionManager already installed,
             # so return that one, but also emit a warning.
             warnings.warn(alreadyInstalledMsg, stacklevel=2)

@@ -41,15 +41,50 @@ from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
     ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
     IJabberIDSet, IIrcIDSet, IArchUserIDSet, ILaunchBag, ILoginTokenSet,
-    IPasswordEncryptor, ISignedCodeOfConductSet, IObjectReassignment,
-    ITeamReassignment, IGPGKeySet, IGPGHandler, IKarmaActionSet, IKarmaSet,
-    UBUNTU_WIKI_URL, ITeamMembershipSet)
+    IPasswordEncryptor, ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler,
+    IKarmaActionSet, IKarmaSet, UBUNTU_WIKI_URL, ITeamMembershipSet,
+    IObjectReassignment, ITeamReassignment, IPollSubset, IPerson,
+    ICalendarOwner, BugTaskSearchParams)
 
 from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.event.team import JoinTeamRequestEvent
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, Link, DefaultLink)
+
+
+class PersonFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for an IPerson."""
+
+    usedfor = IPerson
+
+    def overview(self):
+        target = ''
+        text = 'Overview'
+        return DefaultLink(target, text)
+
+    def bugs(self):
+        # XXX: Soon the +assignedbugs and +reportedbugs pages of IPerson will
+        # be merged into a single +bugs page, and I'll fix the target here.
+        # -- GuilhermeSalgado, 2005-07-29
+        target = '+assignedbugs'
+        text = 'Bugs'
+        return Link(target, text)
+
+    def translations(self):
+        target = '+translations'
+        text = 'Translations'
+        return Link(target, text)
+
+    def calendar(self):
+        target = '+calendar'
+        text = 'Calendar'
+        # only link to the calendar if it has been created
+        linked = ICalendarOwner(self.context).calendar is not None
+        return Link(target, text, linked=linked)
+
 
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages
@@ -157,7 +192,19 @@ class PersonView:
         self.request = request
         self.message = None
         self.user = getUtility(ILaunchBag).user
-        self.team = self.context
+        if context.isTeam():
+            # These methods are called here because their return values are
+            # going to be used in some other places (including
+            # self.hasCurrentPolls()).
+            pollsubset = IPollSubset(self.context)
+            self.openpolls = pollsubset.getOpenPolls()
+            self.closedpolls = pollsubset.getClosedPolls()
+            self.notyetopenedpolls = pollsubset.getNotYetOpenedPolls()
+
+    def hasCurrentPolls(self):
+        """Return True if this team has any non-closed polls."""
+        assert self.context.isTeam()
+        return bool(len(self.openpolls) or len(self.notyetopenedpolls))
 
     def no_bounties(self):
         return not (self.context.ownedBounties or 
@@ -255,41 +302,37 @@ class PersonView:
         karmaset = getUtility(IKarmaSet)
         return len(karmaset.selectByPersonAndAction(self.context, action))
 
-    def setUpBugTasksToShow(self):
+    def setUpAssignedBugTasksToShow(self):
         """Setup the bugtasks we will always show."""
-        self.recentBugTasks = self.mostRecentBugTasks()
-        self.importantBugTasks = self.mostImportantBugTasks()
+        self.recentBugTasks = self.mostRecentMaintainedBugTasks()
+        self.assignedTasks = self.assignedBugTasks()
         # XXX: Because of the following 2 lines, a warning is going to be 
         # raised saying that we're getting a slice of an unordered set, and
         # this means we probably have a bug hiding somewhere, because both
         # sets are ordered here.
         self.assignedBugsToShow = bool(
-            self.recentBugTasks or self.importantBugTasks)
+            self.recentBugTasks or self.assignedTasks)
 
-    def mostRecentBugTasks(self):
-        """Return up to 10 bug tasks (ordered by date assigned) that are 
-        assigned to this person.
+    def reportedBugTasks(self):
+        """Return up to 30 bug tasks reported recently by this person."""
+        search_params = BugTaskSearchParams(owner=self.context, user=self.user,
+                                            orderby="-datecreated")
+        return getUtility(IBugTaskSet).search(search_params)[:30]
 
-        These bug tasks are either the ones reported on packages/products this
-        person is the maintainer or the ones assigned directly to him.
-        """
+    def assignedBugTasks(self):
+        """Return up to 10 bug tasks recently assigned to this person."""
+        search_params = BugTaskSearchParams(assignee=self.context,
+                                            user=self.user,
+                                            orderby="-dateassigned")
+        return getUtility(IBugTaskSet).search(search_params)[:10]
+
+    def mostRecentMaintainedBugTasks(self):
+        """Return up to 10 bug tasks (ordered by date assigned) reported on
+        any package/product maintained by this person."""
         bts = getUtility(IBugTaskSet)
         orderBy = ('-dateassigned', '-priority', '-severity')
-        results = bts.assignedBugTasks(
-                        self.context, orderBy=orderBy, user=self.user)
-        return results[:10]
-
-    def mostImportantBugTasks(self):
-        """Return up to 10 bug tasks (ordered by priority and severity) that
-        are assigned to this person.
-
-        These bug tasks are either the ones reported on packages/products this
-        person is the maintainer or the ones assigned directly to him.
-        """
-        bts = getUtility(IBugTaskSet)
-        orderBy = ('-priority', '-severity', '-dateassigned')
-        results = bts.assignedBugTasks(
-                        self.context, orderBy=orderBy, user=self.user)
+        results = bts.maintainedBugTasks(
+            self.context, orderBy=orderBy, user=self.user)
         return results[:10]
 
     def bugTasksWithSharedInterest(self):
@@ -308,7 +351,7 @@ class PersonView:
         bts = getUtility(IBugTaskSet)
         orderBy = ('-dateassigned', '-priority', '-severity')
         results = bts.bugTasksWithSharedInterest(
-                self.context, self.user, user=self.user, orderBy=orderBy)
+            self.context, self.user, user=self.user, orderBy=orderBy)
         return results[:10]
 
     def obfuscatedEmail(self):
@@ -414,7 +457,6 @@ class PersonView:
                 'the key <code>%s<code>. To confirm the key is yours, decrypt '
                 'the message and follow the link inside.'
                 % (self.context.preferredemail.email, key.displayname))
-
 
     def deactivate_gpg(self):
         keyids = self.request.form.get('DEACTIVATE_GPGKEY')

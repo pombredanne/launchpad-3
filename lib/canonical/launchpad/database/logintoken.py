@@ -77,7 +77,8 @@ class LoginToken(SQLBase):
         # encrypt message if requested
         if encrypt:
             gpghandler = getUtility(IGPGHandler)
-            message = gpghandler.encryptContent(message, key.fingerprint)
+            message = gpghandler.encryptContent(message.encode('utf-8'),
+                                                key.fingerprint)
 
         subject = "Launchpad: Validate your GPG Key"
         simple_sendmail(fromaddress, self.email, subject, message)

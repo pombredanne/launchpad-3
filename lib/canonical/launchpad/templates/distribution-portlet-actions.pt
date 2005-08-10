@@ -16,6 +16,12 @@
       <li class="edit">
         <a href="+changetranslators">Change Translators</a>
       </li>
+      <li class="edit">
+        <a href="+addmilestone">Add Milestone</a>
+      </li>
+      <li class="info">
+        <a href="+cve">View CVE Report</a>
+      </li>
       <li class="search">
         <a href="+packages">Search Packages</a>
       </li>

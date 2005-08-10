@@ -17,6 +17,7 @@ __all__ = [
     'IRequestPeopleMerge',
     'IObjectReassignment',
     'ITeamReassignment',
+    'ITeamCreation',
     ]
 
 from zope.schema import (
@@ -114,7 +115,6 @@ class IPerson(Interface):
     pendinggpgkeys = Attribute("Set of GPG fingerprints pending validation")
     inactivegpgkeys = Attribute("List of inactive GPG keys in LP Context")
     irc = Attribute("IRC")
-    reportedbugs = Attribute("All Bugs reported by this Person.")
     wiki = Attribute("Wiki")
     jabber = Attribute("Jabber")
     archuser = Attribute("Arch user")
@@ -696,4 +696,21 @@ class ITeamReassignment(Interface):
     """The schema used by the team reassignment page."""
 
     owner = Choice(title=_('Owner'), vocabulary='ValidTeamOwner', required=True)
+
+
+class ITeamCreation(ITeam):
+    """An interface to be used by the team creation form.
+
+    We need this special interface so we can allow people to specify a contact
+    email address for a team upon its creation.
+    """
+
+    contactemail = TextLine(
+        title=_("Contact Email Address"), required=False, readonly=False,
+        description=_(
+            "This is the email address we'll send all notifications to this "
+            "team. If no contact address is chosen, notifications directed to "
+            "this team will be sent to all team members. After finishing the "
+            "team creation, a new message will be sent to this address with "
+            "instructions on how to finish its registration."))
 

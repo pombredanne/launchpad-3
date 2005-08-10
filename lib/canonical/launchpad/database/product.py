@@ -26,8 +26,8 @@ from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtask import BugTaskSet
-from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner)
@@ -75,21 +75,10 @@ class Product(SQLBase):
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
 
-    def search(self, bug=None, searchtext=None, status=None, priority=None,
-               severity=None, milestone=None, assignee=None, owner=None,
-               orderby=None, statusexplanation=None, user=None):
+    def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
-        # As an initial refactoring, we're wrapping BugTaskSet.search.
-        # It's possible that the search code will live inside this
-        # method instead at some point.
-        #
-        # The implementor who would make such a change should be
-        # mindful of bug privacy.
-        return BugTaskSet().search(
-            product=self, bug=bug, searchtext=searchtext, status=status,
-            priority=priority, severity=severity, milestone=milestone,
-            assignee=assignee, owner=owner, orderby=orderby,
-            statusexplanation=statusexplanation, user=user)
+        search_params.setProduct(self)
+        return BugTaskSet().search(search_params)
 
     def getOrCreateCalendar(self):
         if not self.calendar:
@@ -131,6 +120,7 @@ class Product(SQLBase):
                 for r in ret]
 
     def getPackage(self, distrorelease):
+        """See IProduct."""
         if isinstance(distrorelease, Distribution):
             distrorelease = distrorelease.currentrelease
         for pkg in self.sourcepackages:
@@ -138,6 +128,16 @@ class Product(SQLBase):
                 return pkg
         else:
             raise NotFoundError(distrorelease)
+
+    def getMilestone(self, name):
+        """See IProduct."""
+        milestone = Milestone.selectOne("""
+            product = %s AND
+            name = %s
+            """ % sqlvalues(self.id, name))
+        if milestone is None:
+            raise NotFoundError(name)
+        return milestone
 
     @property
     def translatable_packages(self):
@@ -409,6 +409,8 @@ class ProductSet:
 
     def translatables(self, translationProject=None):
         """See IProductSet"""
+
+        # XXX kiko: translationProject is unused. Why?
 
         translatable_set = set()
         upstream = Product.select('''

@@ -26,37 +26,14 @@
            >Form Label will come from ZCML label="xxx"</h3>
 
         <div metal:fill-slot="extra_info" class="documentDescription">
-          This Bug Watch links Malone Bug #<span
-          tal:replace="context/bug/id">3452</span> to the remote bug
-          described below. Edit the details as appropriate.
+          This watch links <a tal:attributes="href
+          context/bug/fmt:url">bug #<span
+          tal:replace="context/bug/id">3452</span></a> to:
         </div>
 
-        <div class="row" metal:fill-slot="extra_top" tal:replace="nothing">
-          <div class="label">Extra top</div>
-            <div class="field"><input type="text" style="width:100%" /></div>
-            Put any additional widgets you want at the top of the form here,
-            or delete this section altogether, or just leave it and it will
-            be deleted by the tal:replace=nothing.
-          </div>
-        
-          <div class="row"
-               metal:fill-slot="extra_bottom" tal:replace="nothing">
-            <div class="label">Extra bottom</div>
-            <div class="field"><input type="text" style="width:100%" /></div>
-            Put any additional widgets you want at the bottom of the form here,
-            or delete this section altogether, or just leave it and it will
-            be deleted by the tal:replace=nothing.
-          </div>
-
-          <div class="row" metal:fill-slot="extra_buttons"
-              tal:replace="nothing">
-              Put any additional buttons you want on the form here and they
-              will be displayed at the bottom of the form. Watch the
-              tal:replace=nothing.
-          </div>
-        </div>
-    
       </div>
+    
+    </div>
 
   </body>
 </html>

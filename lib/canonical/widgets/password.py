@@ -13,7 +13,7 @@ from zope.app.form.interfaces import WidgetInputError
 from zope.app.form.browser import PasswordWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
-from canonical import _
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import IPasswordEncryptor
 
 class PasswordMismatch(ValidationError):

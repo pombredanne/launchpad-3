@@ -1,12 +1,13 @@
-<tal:releasebugs define="release_bugcounts view/release_bug_counts|nothing"
-                 condition="release_bugcounts">
+<tal:releasebugs define="release_bugcounts view/release_bug_counts">
+  <br />
   <h4>Release Bugs:</h4>
 
   <ul>
-    <li tal:repeat="release_bugcount release_bugcounts">
+    <li class="bugs" tal:repeat="release_bugcount release_bugcounts">
       <a href=""
-         tal:content="string:${release_bugcount/releasename} (${release_bugcount/bugcount})"
-         tal:attributes="href release_bugcount/url">sid (2)</a>
+         tal:content="release_bugcount/releasename"
+         tal:attributes="href release_bugcount/url">sid</a>
+      (<span tal:replace="release_bugcount/bugcount">2</span>)
     </li>
   </ul>
 </tal:releasebugs>

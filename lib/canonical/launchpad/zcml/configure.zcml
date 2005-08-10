@@ -19,6 +19,7 @@
     <include file="bugpackageinfestation.zcml" />
     <include file="bugsubscription.zcml" />
     <include file="bugtask.zcml" />
+    <include file="bugtarget.zcml" />
     <include file="bugtracker.zcml" />
     <include file="bugwatch.zcml" />
     <include file="bug.zcml" />

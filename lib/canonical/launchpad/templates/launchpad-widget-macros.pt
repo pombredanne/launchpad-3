@@ -12,7 +12,8 @@ for launchpad use -->
             <div tal:attributes="class python:error and 'portalError' or None"
                  tal:define="error widget/error">
 
-              <label tal:content="widget/label">The Label</label>
+              <label tal:attributes="for widget/name"
+                     tal:content="widget/label">The Label</label>
 
               <span tal:condition="widget/required"
                     class="fieldRequired"
