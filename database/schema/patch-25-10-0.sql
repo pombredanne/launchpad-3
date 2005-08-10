@@ -24,6 +24,13 @@ ALTER TABLE Milestone ADD CONSTRAINT milestone_name_distribution_key
 ALTER TABLE Milestone ADD CONSTRAINT valid_target CHECK (
     NOT (product IS NULL AND distribution IS NULL));
 
+-- Nuke dud milestones. Product changed after milestone assigned (?)
+UPDATE BugTask SET milestone=NULL
+    FROM Milestone
+    WHERE bugtask.milestone = milestone.id
+        AND bugtask.product <> milestone.product;
+
+
 ALTER TABLE BugTask DROP CONSTRAINT bugtask_milestone_fk;
 ALTER TABLE BugTask ADD CONSTRAINT bugtask_product_milestone_fk
     FOREIGN KEY (product, milestone)
