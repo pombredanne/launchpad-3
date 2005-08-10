@@ -5,36 +5,29 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-  <title metal:fill-slot="title">Validate email address</title>
-  <!-- Plone style sheet -->
-  <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Launchpad style sheet -->
-  <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">
 
     <div tal:condition="not: view/successfullyProcessed">
-      <h1>Validate GPG key: <span tal:replace="context/fingerprint"/> by 
+      <h1>Confirm GPG key: <span tal:replace="context/fingerprint"/> by 
          <span tal:replace="context/requester/displayname"/></h1>
 
       <div tal:condition="view/errormessage" class="portalMessage"
            tal:content="structure view/errormessage">
       </div>
 
-      <p>To validate GPG key just enter your password on the field below.</p>
+      <p>To confirm your GPG key, please enter your Launchpad password.</p>
 
       <form autocomplete="off" name="validate" action="" method="POST">
       <table>
         <tr>
-          <td>Password:</td>
+          <th>Launchpad Password:</th>
           <td><input type="password" name="password" /></td>
         </tr>
         <tr>
-          <td colspan="2" align="right">
+          <td></td>
+          <td>
             <input type="submit" name="SUBMIT_CHANGES" value="Submit" />
           </td>
         </tr>
@@ -42,14 +35,14 @@
       </form>
     </div>
 
-    <div tal:condition="view/successfullyProcessed">
-      <h1>GPG was validated successfully.</h1>
+    <tal:success condition="view/successfullyProcessed">
+      <h1>Your GPG key has been confirmed successfully.</h1>
 
       <div tal:condition="view/infomessage" class="portalMessage"
            tal:content="structure view/infomessage">
       </div>
       
-    </div>
+    </tal:success>
 
 </div>
 
