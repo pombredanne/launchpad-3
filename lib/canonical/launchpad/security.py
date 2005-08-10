@@ -11,10 +11,10 @@ from canonical.launchpad.interfaces import (
     IAuthorization, IHasOwner, IPerson, ITeam, ITeamMembershipSubset,
     ITeamMembership, IProductSeriesSource, IProductSeriesSourceAdmin,
     IMilestone, IBug, IBugTask, IUpstreamBugTask, IDistroBugTask,
-    IDistroReleaseBugTask, ITranslator, IProduct, IProductRelease,
+    IDistroReleaseBugTask, ITranslator, IProduct, IProductSeries,
     IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
-    ILaunchpadCelebrities, IDistroRelease, IBugTracker, IPoll, IPollSubset,
-    IPollOption, IPollOptionSubset)
+    ILaunchpadCelebrities, IDistroRelease, IBugTracker, IBugAttachment,
+    IPoll, IPollSubset, IPollOption, IPollOptionSubset)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -312,6 +312,33 @@ class PublicToAllOrPrivateToExplicitSubscribersForBug(AuthorizationBase):
         return not self.obj.private
 
 
+class ViewBugAttachment(PublicToAllOrPrivateToExplicitSubscribersForBug):
+    """Security adapter for viewing a bug attachment.
+
+    If the user is authorized to view the bug, he's allowed to view the
+    attachment.
+    """
+    permission = 'launchpad.View'
+    usedfor = IBugAttachment
+
+    def __init__(self, bugattachment):
+        self.obj = bugattachment.bug
+
+
+class EditBugAttachment(
+    EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
+    """Security adapter for editing a bug attachment.
+
+    If the user is authorized to view the bug, he's allowed to edit the
+    attachment.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = IBugAttachment
+
+    def __init__(self, bugattachment):
+        self.obj = bugattachment.bug
+
+
 class UseApiDoc(AuthorizationBase):
     permission = 'zope.app.apidoc.UseAPIDoc'
     usedfor = Interface
@@ -352,8 +379,8 @@ class EditPOTemplateDetails(EditByOwnersOrAdmins):
 # SuperSpecialPermissions when implemented.
 # See: https://launchpad.ubuntu.com/malone/bugs/753/
 class AddPOTemplate(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = IProductRelease
+    permission = 'launchpad.Append'
+    usedfor = IProductSeries
 
 
 class EditPOFileDetails(EditByOwnersOrAdmins):

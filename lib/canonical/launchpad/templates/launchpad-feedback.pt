@@ -1,0 +1,65 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <body>
+    <div metal:fill-slot="body">
+      <h1>Help us improve</h1>
+      <p>
+        Launchpad is a work in progress, and we welcome your feedback on how
+        to make it better. File bugs, talk to us on the IRC channel
+        #launchpad on irc.freenode.net, or send us email. If you have ideas
+        for new features, take a look at the
+        <a href="https://wiki.launchpad.canonical.com/">Launchpad Wiki</a>
+        and add a specification, then work with us on #launchpad to get it
+        implemented.
+      </p>
+      <ul>
+        <li>
+          <p>
+            The best way to report problems in Launchpad is in the Malone bug tracker. You can report bugs about:
+          </p>
+          <ul>
+            <li>
+              <a href="/products/malone/+bugs">Malone itself</a>
+            </li>
+            <li>
+              <a href="/products/rosetta/+bugs">Rosetta</a>
+            </li>
+            <li>
+              <a href="/products/foaf/+bugs">Launchpad accounts and teams</a>
+            </li>
+            <li>
+              <a href="/products/doap/+bugs">product and project registration</a>
+            </li>
+            <li>
+              <a href="/products/soyuz/+bugs">distribution and package registration</a>
+            </li>
+            <li>
+              <a href="/products/launchpad/+bugs">any other aspect of Launchpad</a>.
+            </li>
+          </ul>
+        </li>
+        <li>
+          <p>
+            If a problem in Launchpad is preventing you from reporting bugs,
+            <a href="mailto:launchpad-error-reports@lists.canonical.com">tell us the problem by e-mail</a>.
+          </p>
+        </li>
+        <li>
+          <p>
+            If you have general questions or suggestions,
+            <a href="irc://irc.freenode.net/#launchpad">join us on IRC</a> &#8212;
+            network <code>irc.freenode.net</code>,
+            channel <code>#launchpad</code>.
+          </p>
+        </li>
+      </ul>
+      <p>
+        Thanks for helping us make Launchpad a great place to develop software.
+      </p>
+    </div>
+  </body>
+</html>

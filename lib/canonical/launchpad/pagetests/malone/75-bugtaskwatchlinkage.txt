@@ -1,6 +1,8 @@
 We are going to test the ability to link a bug task with a bug watch. First,
 we render the bug page and show that we can see the bug watch:
 
+XXX: note the // between the hostname and the pagename; this is bug 1434
+
   >>> print http(r"""
   ... GET /malone/bugs/1/+index HTTP/1.1
   ... """)
@@ -9,12 +11,12 @@ we render the bug page and show that we can see the bug watch:
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-              <a href="/malone/bugs/1/watches/2/+edit">
-                  <img src="/++resource++search_icon.gif" alt="" />
-                   mozilla.org
-                  #2000
-                  <div class="portletDetails"></div>
-              </a>
+  ...<a href="http://bugzilla.mozilla.org//show_bug.cgi?id=2000">...
+  ...mozilla.org...
+  ...#2000...
+  ...</a>...
+  ...
+  ...<a href="/malone/bugs/1/watches/2">...
   ...
 
 Now let's view the task page. Because we are the maintainer for the Ubuntu

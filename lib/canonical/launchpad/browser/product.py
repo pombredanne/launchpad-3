@@ -16,7 +16,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 
 from canonical.launchpad.interfaces import (
     IPerson, IProduct, IProductSet, IBugTaskSet, IProductSeries,
-    ISourcePackage, ICountry, IBugSet, ILaunchBag)
+    ISourcePackage, ICountry, IBugSet, ICalendarOwner, ILaunchBag)
 from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -61,7 +61,20 @@ class ProductFacets(StandardLaunchpadFacets):
         summary = 'Translations of %s in Rosetta' % self.context.displayname
         return Link(target, text, summary)
 
+    def calendar(self):
+        target = '+calendar'
+        text = 'Calendar'
+        # only link to the calendar if it has been created
+        linked = ICalendarOwner(self.context).calendar is not None
+        return Link(target, text, linked=linked)
 
+
+def _sort_distros(a, b):
+    """Put Ubuntu first, otherwise in alpha order."""
+    if a['name'] == 'ubuntu':
+        return -1
+    return cmp(a['name'], b['name'])
+        
 # A View Class for Product
 class ProductView:
 
@@ -137,6 +150,42 @@ class ProductView:
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
+
+    def distro_packaging(self):
+        """This method returns a representation of the product packagings
+        for this product, in a special structure used for the
+        product-distros.pt page template.
+
+        Specifically, it is a list of "distro" objects, each of which has a
+        title, and an attribute "packagings" which is a list of the relevant
+        packagings for this distro and product.
+        """
+
+        distros = {}
+        # first get a list of all relevant packagings
+        all_packagings = []
+        for series in self.context.serieslist:
+            for packaging in series.packagings:
+                all_packagings.append(packaging)
+        # we sort it so that the packagings will always be displayed in the
+        # distrorelease version, then productseries name order
+        all_packagings.sort(key=lambda a: (a.distrorelease.version,
+            a.productseries.name, a.id))
+        for packaging in all_packagings:
+            if distros.has_key(packaging.distrorelease.distribution.name):
+                distro = distros[packaging.distrorelease.distribution.name]
+            else:
+                distro = {}
+                distro['name'] = packaging.distrorelease.distribution.name
+                distro['title'] = packaging.distrorelease.distribution.title
+                distro['packagings'] = []
+                distros[packaging.distrorelease.distribution.name] = distro
+            distro['packagings'].append(packaging)
+        # now we sort the resulting set of "distro" objects, and return that
+        result = distros.values()
+        result.sort(cmp=_sort_distros)
+        return result
+
 
     def projproducts(self):
         """Return a list of other products from the same project as this

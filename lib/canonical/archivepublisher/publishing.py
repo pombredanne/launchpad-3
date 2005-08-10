@@ -16,9 +16,10 @@ from canonical.archivepublisher.pool import AlreadyInPool
 from canonical.database.constants import nowUTC
 
 pocketsuffix = {
-    PackagePublishingPocket.PLAIN: "",
+    PackagePublishingPocket.RELEASE: "",
+    PackagePublishingPocket.SECURITY: "-security",
     PackagePublishingPocket.UPDATES: "-updates",
-    PackagePublishingPocket.SECURITY: "-security"
+    PackagePublishingPocket.PROPOSED: "-proposed"
     }
 
 class Publisher(object):

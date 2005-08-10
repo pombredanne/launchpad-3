@@ -36,7 +36,7 @@
             <br />
 
             <span tal:condition="context/architectures" tal:omit-tag>
-              <b>Architecture Releases:</b><br />
+              <b>Architectures:</b><br />
                 <ul>
                   <li tal:repeat="arch context/architectures"
                     class="architecture"

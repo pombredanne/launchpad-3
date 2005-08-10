@@ -22,9 +22,9 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp import dbschema
 from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.message import (
-    Message, MessageSet, MessageChunk)
+    Message, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
-from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.bugtask import BugTask, bugtask_sort_key
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.maintainership import Maintainership
@@ -65,8 +65,8 @@ class Bug(SQLBase):
     activity = MultipleJoin('BugActivity', joinColumn='bug', orderBy='id')
     messages = RelatedJoin('Message', joinColumn='bug',
                            otherColumn='message',
-                           intermediateTable='BugMessage')
-    bugtasks = MultipleJoin('BugTask', joinColumn='bug', orderBy='id')
+                           intermediateTable='BugMessage',
+                           orderBy='datecreated')
     productinfestations = MultipleJoin(
             'BugProductInfestation', joinColumn='bug', orderBy='id')
     packageinfestations = MultipleJoin(
@@ -78,6 +78,13 @@ class Bug(SQLBase):
     subscriptions = MultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id')
     duplicates = MultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
+    attachments = MultipleJoin('BugAttachment', joinColumn='bug', orderBy='id')
+
+    @property
+    def bugtasks(self):
+        """See IBug."""
+        result = BugTask.select("bug=%s" % sqlvalues(self.id))
+        return sorted(result, key=bugtask_sort_key)
 
     def followup_subject(self):
         return 'Re: '+ self.title
@@ -173,6 +180,7 @@ class Bug(SQLBase):
             binarypackagename=binarypackagename)
 
 
+# XXX kiko 2005-07-15 should this go to BugSet.new?
 def BugFactory(addview=None, distribution=None, sourcepackagename=None,
         binarypackagename=None, product=None, comment=None,
         description=None, msg=None, summary=None,
@@ -223,7 +231,7 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
         description=description, private=private,
         owner=owner.id, datecreated=datecreated)
 
-    BugSubscription(
+    sub = BugSubscription(
         person=owner.id, bug=bug.id, subscription=dbschema.BugSubscription.CC)
 
     # link the bug to the message
@@ -235,12 +243,12 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
 
     # create the task on a source package name if one was passed
     if distribution:
-        BugTask(
-            bug=bug,
-            distribution=distribution,
-            sourcepackagename=sourcepackagename,
-            binarypackagename=binarypackagename,
-            owner=owner)
+        task = BugTask(
+                bug=bug,
+                distribution=distribution,
+                sourcepackagename=sourcepackagename,
+                binarypackagename=binarypackagename,
+                owner=owner)
 
     return bug
 

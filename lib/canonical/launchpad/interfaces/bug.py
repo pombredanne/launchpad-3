@@ -10,6 +10,7 @@ __all__ = [
     'IBugSet',
     'IBugDelta',
     'IBugAddForm',
+    'IBugTarget'
     ]
 
 from zope.i18nmessageid import MessageIDFactory
@@ -61,8 +62,7 @@ class IBug(Interface):
     duplicateof = Int(
         title=_('Duplicate Of'), required=False, constraint=non_duplicate_bug)
     communityscore = Int(
-        title=_('Community Score'), required=True, readonly=True,
-        default=0)
+        title=_('Community Score'), required=True, readonly=True, default=0)
     communitytimestamp = Datetime(
         title=_('Community Timestamp'), required=True, readonly=True)
     hits = Int(
@@ -75,24 +75,26 @@ class IBug(Interface):
     activitytimestamp = Datetime(
         title=_('Activity Timestamp'), required=True, readonly=True)
     private = Bool(
-        title=_("Should this bug be kept confidential?"), required=False,
+        title=_("Keep bug confidential"), required=False,
         description=_(
-        "Check this box if, for example, this bug exposes a security "
-        "vulnerability. If selected, this bug will be visible only to "
-        "its subscribers."),
+        "Select this option if, for instance, this bug exposes a "
+        "security vulnerability. Before you set this, make sure you "
+        "have subscribed anyone who needs to see this bug."),
         default=False)
 
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
     messages = Attribute('SQLObject.RelatedJoin of IMessages')
-    bugtasks = Attribute('SQLObject.Multijoin of IBugTask')
+    bugtasks = Attribute('BugTasks on this bug, sorted upstream, then '
+        'ubuntu, then other distroreleases.')
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
     externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
     cverefs = Attribute('CVE references for this bug')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
-    duplicates = Attribute('MultiJoin of the bugs which are dups of this '
-        'one')
+    duplicates = Attribute(
+        'MultiJoin of the bugs which are dups of this one')
+    attachments = Attribute("List of bug attachments.")
 
     def followup_subject():
         """Return a candidate subject for a followup message."""
@@ -143,6 +145,24 @@ class IBug(Interface):
         """
 
 
+class IBugTarget(Interface):
+    """An entity on which a bug can be reported.
+
+    Examples include an IDistribution, an IDistroRelease and an
+    IProduct.
+    """
+    def searchBugs(bug=None, searchtext=None, status=None, priority=None,
+                   severity=None, milestone=None, assignee=None, owner=None,
+                   statusexplanation=None, attachmenttype=None, user=None,
+                   orderby=None, omit_dupes=False):
+        """Search the IBugTasks reported on this entity.
+
+        Return an iterable of matching results.
+
+        Note: milestone is currently ignored for all IBugTargets
+        except IProduct.
+        """
+
 
 class IBugDelta(Interface):
     """The quantitative change made to a bug that was edited."""
@@ -170,6 +190,9 @@ class IBugDelta(Interface):
     cveref = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
         "ICVERef's.")
+    attachment = Attribute(
+        "A dict with two keys, 'old' and 'new', or None. Key values are "
+        "IBugAttachment's.")
     added_bugtasks = Attribute(
         "A list or tuple of IBugTasks, one IBugTask, or None.")
     bugtask_deltas = Attribute(

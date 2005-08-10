@@ -30,7 +30,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.interfaces import (IPOFileSet, IEditPOFile,
     IRawFileData, IPOTemplateExporter, ZeroLengthPOExportError,
-    ILibraryFileAliasSet, IPOFile)
+    ILibraryFileAliasSet, IPOFile, ILaunchpadCelebrities)
 
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -144,10 +144,15 @@ class POFile(SQLBase, RosettaStats):
 
     def canEditTranslations(self, person):
         """See IEditPOFile."""
-
         # If the person is None, then they cannot edit
         if person is None:
             return False
+
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+
+        if person.inTeam(rosetta_experts):
+            # Rosetta experts can edit translations always.
+            return True
 
         # have a look at the aplicable permission policy
         tperm = self.translationpermission

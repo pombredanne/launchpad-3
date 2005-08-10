@@ -24,10 +24,11 @@ from zope.exceptions import NotFoundError
 from canonical.launchpad.interfaces import (
     IBugSet, IBugTaskSet, IBugTasksReport, IDistributionSet, IProjectSet,
     IProductSet, ISourcePackageSet, IBugTrackerSet, ILaunchBag,
-    ITeamMembershipSubset, ICalendarOwner, ILanguageSet, IPublishedPackageSet,
-    IPollSubset, IPollOptionSubset, IDistroReleaseLanguageSet)
+    ITeamMembershipSubset, ICalendarOwner, ILanguageSet, IBugAttachmentSet,
+    IPublishedPackageSet, IPollSet, IPollOptionSet,
+    IDistroReleaseLanguageSet)
 from canonical.launchpad.database import (
-    BugAttachmentSet, BugExternalRefSet, BugSubscriptionSet,
+    BugExternalRefSet, BugSubscriptionSet,
     BugWatchSet, BugTasksReport, CVERefSet, BugProductInfestationSet,
     BugPackageInfestationSet, ProductSeriesSet, ProductMilestoneSet,
     SourcePackageSet)
@@ -57,7 +58,8 @@ def traverse_potemplate(potemplate, request, name):
         return potemplate.getPOFileOrDummy(name, owner=user)
     elif request.method == 'POST':
         return potemplate.getOrCreatePOFile(name, owner=user)
-    raise AssertionError('We only know about GET, HEAD, and POST')
+    else:
+        raise AssertionError('We only know about GET, HEAD, and POST')
 
 
 def traverse_project(project, request, name):
@@ -210,8 +212,17 @@ def traverse_team(team, request, name):
         return ITeamMembershipSubset(team)
     elif name == '+calendar':
         return ICalendarOwner(team).calendar
-    elif name == '+polls':
-        return IPollSubset(team)
+    elif name == '+poll':
+        travstack = request.getTraversalStack()
+        if len(travstack) == 0:
+            # No option name given; returning None will raise a not found error
+            return None
+        # Consume the poll name from the traversal stack
+        pollname = travstack.pop()
+        poll = getUtility(IPollSet).getByTeamAndName(team, pollname)
+        request._traversed_names.append(pollname)
+        request.setTraversalStack(travstack)
+        return poll
 
     return None
 
@@ -225,7 +236,7 @@ def traverse_team(team, request, name):
 def traverse_bug(bug, request, name):
     """Traverse an IBug."""
     if name == 'attachments':
-        return BugAttachmentSet(bug=bug.id)
+        return getUtility(IBugAttachmentSet)
     elif name == 'references':
         return BugExternalRefSet(bug=bug.id)
     elif name == 'cverefs':
@@ -259,7 +270,17 @@ def traverse_bugs(bugcontainer, request, name):
 
 
 def traverse_poll(poll, request, name):
-    if name == '+options':
-        return IPollOptionSubset(poll)
+    if name == '+option':
+        travstack = request.getTraversalStack()
+        if len(travstack) == 0:
+            # No option name given; returning None will raise a not found error
+            return None
+        optionset = getUtility(IPollOptionSet)
+        # Consume the option name from the traversal stack
+        optionid = travstack.pop()
+        option = getUtility(IPollOptionSet).getByPollAndId(poll, optionid)
+        request._traversed_names.append(optionid)
+        request.setTraversalStack(travstack)
+        return option
 
     return None

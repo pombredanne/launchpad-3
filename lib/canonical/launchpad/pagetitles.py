@@ -122,7 +122,7 @@ def bug_add(context, view):
     distrorelease_context = IDistroRelease(context, None)
 
     if product_context or distro_context or distrorelease_context is not None:
-        context_title = ContextTitle('Bugs in %s: Report a Bug')
+        context_title = ContextTitle('Report a bug in %s')
         return context_title(context, view)
     else:
         return "Malone: Report a Bug"
@@ -134,6 +134,10 @@ bug_edit = BugPageTitle()
 bug_index = BugPageTitle()
 
 bug_references = ContextId('External References for Malone Bug #%s')
+
+bug_secrecy = ContextId('Make Malone Bug #%d Public or Secret')
+
+bugattachment_add = 'Add an Attachment'
 
 bugwatch_editform = ContextTitle('Edit the Watch on %s')
 
@@ -214,7 +218,11 @@ default_editform = 'Default "Edit" Page'
 
 default_error = 'System Error'
 
-distribution_members = ContextTitle('Members of the %s distribution')
+distribution_cvereport = ContextTitle('CVE Reports for %s')
+
+distribution_members = ContextTitle('%s distribution members')
+
+distribution_memberteam = ContextTitle("Change %s's distribution team")
 
 distribution_translators = 'Appoint Distribution Translation Group'
 
@@ -224,15 +232,11 @@ distro_edit = 'Create a new Distribution in Launchpad'
 
 distribution = ContextTitle('Launchpad Distribution Summary: %s')
 
-distro_members = ContextTitle('Distribution Members: %s')
-
-distro_search = 'Search Distributions'
-
 # distro_sources.pt.OBSELETE
 # <title metal:fill-slot="title"><span tal:replace="context/title" />: Source
 # Packages</title>
 
-distroarchrelease_index = ContextTitle('Overview of  %s')
+distroarchrelease_index = ContextTitle('%s overview')
 
 distroarchrelease_pkgsearch = 'Binary Package Search'
 
@@ -324,6 +328,8 @@ def launchpad_addform(context, view):
     return getattr(view, 'page_title', None)
 
 launchpad_editform = launchpad_addform
+
+launchpad_feedback = 'Help us improve Launchpad'
 
 launchpad_forbidden = 'Forbidden'
 
@@ -449,20 +455,13 @@ poll_edit = ContextTitle('Edit poll %s')
 
 poll_index = ContextTitle('%s')
 
+poll_newoption = ContextTitle('Create a new Option in poll %s')
+
 def poll_new(context, view):
     return 'Create a new Poll in team %s' % context.team.displayname
 
 def polloption_edit(context, view):
     return 'Edit option %s' % context.shortname
-
-def polloption_new(context, view):
-    return 'Create a new Option in poll %s' % context.poll.title
-
-def polloptions_list(context, view):
-    return 'Options in poll %s' % context.poll.title
-
-def polls_list(context, view):
-    return 'Polls in team %s' % context.team.displayname
 
 potemplage_admin = ContextTitle('%s admin in Rosetta')
 
@@ -486,9 +485,13 @@ product_add = 'Register a new Product with the Launchpad'
 
 product_bugs = ContextDisplayName('%s upstream bug reports')
 
+product_distros = ContextDisplayName('Distribution Packaging of %s')
+
 product_edit = ContextTitle('Edit Upstream Details: %s')
 
 product_index = ContextTitle('Product: %s')
+
+product_packages = ContextDisplayName('Packages of %s')
 
 product_translations = ContextTitle('Rosetta Translations for %s')
 
@@ -558,7 +561,7 @@ rosetta_preferences = 'Rosetta: Preferences'
 def series_edit(context, view):
     return 'Edit %s %s Details' % (context.product.displayname, context.name)
 
-series_new = ContextDisplayName('New Release Series for %s')
+series_new = ContextDisplayName('Register a new %s release series')
 
 def series_review(context, view):
     return 'Review %s %s Details' % (context.product.displayname, context.name)
@@ -635,6 +638,10 @@ def team_members(context, view):
 def teammembership_index(context, view):
     return '%s: Member of %s' % (
         context.person.browsername, context.team.browsername)
+
+team_newpoll = ContextTitle('Create a new Poll in team %s')
+
+team_polls = ContextTitle('Polls in team %s')
 
 template_auto_add = 'Launchpad Auto-Add Form'
 

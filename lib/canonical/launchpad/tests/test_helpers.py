@@ -241,6 +241,7 @@ class DummyLanguage:
     def __init__(self, code, pluralforms):
         self.code = code
         self.pluralforms = pluralforms
+        self.alt_suggestion_language = None
 
 
 class DummyLanguageSet:

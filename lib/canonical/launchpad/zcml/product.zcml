@@ -55,6 +55,14 @@
             name="+branches"
             template="../templates/product-branches.pt"
             />
+        <browser:page
+            name="+packages"
+            template="../templates/product-packages.pt"
+            />
+        <browser:page
+            name="+distributions"
+            template="../templates/product-distros.pt"
+            />
 	<!-- Products Portlets -->
         <browser:page
             name="+portlet-details"
@@ -64,6 +72,10 @@
             name="+portlet-branches"
             template="../templates/product-portlet-branches.pt"
             lp:url="/products/evolution/+portlet-branches" />
+        <browser:page
+            name="+portlet-series"
+            template="../templates/product-portlet-series.pt"
+            lp:url="/products/evolution/+portlet-series" />
         <browser:page
             name="+portlet-translations"
             template="../templates/product-portlet-translations.pt"
@@ -122,10 +134,6 @@
             name="+portlet-bugtasklist-actions"
             template="../templates/bugtasklist-portlet-actions.pt"
             lp:url="/products/$Product.name/+portlet-bugtasklist-actions" />
-        <browser:page
-            name="+portlet-bugtasklist-statsforcontext"
-            template="../templates/bug-portlet-statsforcontext.pt"
-            lp:url="/products/$Product.name/+portlet-bugtasklist-statsforcontext" />
     </browser:pages>
 
     <browser:pages
@@ -270,18 +278,6 @@
            class="zope.app.form.browser.TextAreaWidget"
            displayWidth="40"
            extra="tabindex=3" />
-    </browser:addform>
-
-    <browser:addform
-        name="+addpackage"
-        for="canonical.launchpad.interfaces.IProduct"
-        schema="canonical.launchpad.interfaces.IPackaging"
-        label="Distro Packaging Details"
-        fields="productseries sourcepackagename distrorelease packaging"
-        class="canonical.launchpad.browser.PackagingAddView"
-        permission="launchpad.Edit"
-        template="../templates/launchpad-addform.pt"
-        lp:url="/product/$Product.name/+package">
     </browser:addform>
 
     <!-- ProductSet-->

@@ -1,6 +1,6 @@
 <metal:page define-macro="buglisting">
   <tal:tag condition="view/assign_to_milestones|nothing"/>
-  <form action="." method="GET"
+  <form name="bugtask_search" action="" method="GET"
      tal:define="listing_columns view/task_columns;
                  logged_in request/lp:person;
                  task_batch_navigator view/search;
@@ -208,6 +208,12 @@
                     Severity:
                   </label>
                 </td>
+                <td tal:condition="view/attachmenttype_widget|nothing">
+                  <label tal:attributes="for view/attachmenttype_widget/name"
+                         tal:content="view/attachmenttype_widget/label">
+                    Attachment:
+                  </label>
+                </td>
                 <td tal:condition="python: view.assignee_widget or
                                            view.statusexplanation_widget">
                   <label tal:attributes="for view/assignee_widget/name"
@@ -229,15 +235,24 @@
                     tal:content="structure view/status_widget" />
                 <td tal:condition="view/severity_widget"
                     tal:content="structure view/severity_widget" />
+                <td tal:condition="view/attachmenttype_widget"
+                    tal:content="structure view/attachmenttype_widget" />
                 <td tal:condition="python: view.assignee_widget or
                                            view.statusexplanation_widget">
                   <tal:block condition="view/assignee_widget">
                     <tal:block content="structure view/assignee_widget" /><br />
                     <tal:block content="structure view/unassigned_widget" />
-                    <label
+                    <label style="font-weight: normal;"
                         tal:attributes="for view/unassigned_widget/name"
                         tal:content="structure view/unassigned_widget/label">
                       show only unassigned bugs
+                    </label>
+                    <br />
+                    <tal:block content="structure view/include_dupes_widget" />
+                    <label style="font-weight: normal;"
+                        tal:attributes="for view/include_dupes_widget/name"
+                        tal:content="structure view/include_dupes_widget/label">
+                      include duplicate bugs
                     </label>
                     <br /><br />
                   </tal:block>

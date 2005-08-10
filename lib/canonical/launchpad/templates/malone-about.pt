@@ -19,7 +19,7 @@
         track their bugs separately, but also share that bug
         information.</p>
 
-        <p>Malone allows you to file a bug on a packge in Gentoo, for
+        <p>Malone allows you to file a bug on a package in Gentoo, for
         example, and then easily tell the upstream maintainers about the
         bug. Someone else can then say "hey, this bug is fixed in Ubuntu",
         at which point upstream and Gentoo both see the fix.</p>
@@ -28,7 +28,7 @@
         and the tracking of where that bug occurs. Everybody shares the
         information about the bug - it's description, summary, links to
         relevant web content and other bug trackers. But tracking the status
-        of that bug is done separately for upstream aand for each fo the
+        of that bug is done separately for upstream and for each of the
         distributions. This means that a Malone Bug is a bit of a
         Heisenbug... the status of the bug depends on your viewpoint. If you
         are looking at the bug from within a distribution, you will see the
@@ -38,12 +38,12 @@
 
         <p>Malone also introduces a new concept in bug tracking, which is
         "infestation". Bug infestation is a way of tracking the state of a
-        bug in a specific release of the upstream code, or distro packages.
+        bug in a specific release of the upstream code, or distribution packages.
         So its possible with Malone to say "this bug exists in that version,
         but not in this version". If you can point at a specific version
         which fixes the bug, then that information will be highlighted for
         everyone. This allows a fix developed in one of the distributions to
-        propagate quickly upstream, and to the other distros.</p>
+        propagate quickly upstream, and to the other distributions.</p>
 
     <h2>Start Using Malone</h2>
 

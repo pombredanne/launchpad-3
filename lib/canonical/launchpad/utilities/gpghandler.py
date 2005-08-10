@@ -66,8 +66,14 @@ class GPGHandler:
     # XXX cprov 20050414
     # Instantiate a pyme.core.Context() per method, in that way
     # we can perform action in parallel (thread safe)
-    def verifySignature(self, content, signature=None, key=None):
+    def verifySignature(self, content, signature=None):
         """See IGPGHandler."""
+
+        if isinstance(content, unicode):
+            raise TypeError('Content cannot be Unicode.')
+
+        if isinstance(signature, unicode):
+            raise TypeError('Content cannot be Unicode.')
 
         c = pyme.core.Context()
 
@@ -82,9 +88,9 @@ class GPGHandler:
 
         if signature:
             # store detach-sig
-            sig = pyme.core.Data(signature.encode('ascii'))
+            sig = pyme.core.Data(signature)
             # store the content
-            plain = pyme.core.Data(content.encode('ascii'))
+            plain = pyme.core.Data(content)
             # process it
             try:
                 c.op_verify(sig, plain, None)
@@ -92,7 +98,7 @@ class GPGHandler:
                 return None
         else:
             # store clearsigned signature
-            sig = pyme.core.Data(content.encode('ascii'))
+            sig = pyme.core.Data(content)
             # writeable content
             plain = pyme.core.Data()
             # process it
@@ -109,16 +115,20 @@ class GPGHandler:
 
         # signature.status == 0 means "Ok"
         if signature.status != 0:
-            # return an empty signature object
-            return PymeSignature()
+            return None
 
-        key = c.get_key(signature.fpr, 0)
-        fingerprint = key.subkeys.fpr
+        # supporting subkeys by retriving the full key from the
+        # keyserver and use the master key fingerprint.
+        result, key = self.retrieveKey(signature.fpr)
+        if not result:
+            return None
+        
         plain.seek(0, 0)
         plain_data = plain.read()
 
         # return the signature container
-        return PymeSignature(fingerprint=fingerprint, plain_data=plain_data)
+        return PymeSignature(fingerprint=key.fingerprint,
+                             plain_data=plain_data)
 
 
     def importKey(self, content):
@@ -173,17 +183,20 @@ class GPGHandler:
 
     def encryptContent(self, content, fingerprint):
         """See IGPGHandler."""
+        if isinstance(content, unicode):
+            raise TypeError('Content cannot be Unicode.')
+
         # setup context
         c = pyme.core.Context()
         c.set_armor(1)
 
         # setup containers
-        plain = pyme.core.Data(content.encode('ascii'))
+        plain = pyme.core.Data(content)
         cipher = pyme.core.Data()
 
         # retrive pyme key object
         try:
-            key = c.get_key(fingerprint, 0)
+            key = c.get_key(fingerprint.encde('ascii'), 0)
         except pyme.errors.GPGMEError:
             return None
         
@@ -195,12 +208,19 @@ class GPGHandler:
 
     def decryptContent(self, content, password):
         """See IGPGHandler."""
+
+        if isinstance(password, unicode):
+            raise TypeError('Password cannot be Unicode.')
+
+        if isinstance(content, unicode):
+            raise TypeError('Content cannot be Unicode.')
+
         # setup context
         c = pyme.core.Context()
         c.set_armor(1)
 
         # setup containers
-        cipher = pyme.core.Data(content.encode('ascii'))
+        cipher = pyme.core.Data(content)
         plain = pyme.core.Data()
 
         # Do the deecryption.
@@ -234,7 +254,7 @@ class GPGHandler:
         # key ring, but it needs "specing" 
         
         # verify if key is present in the local key ring
-        key = PymeKey(fingerprint)
+        key = PymeKey(fingerprint.encode('ascii'))
         # if not try to import from key server
         if not key.fingerprint:
             result, pubkey = self._getPubKey(fingerprint)
@@ -331,7 +351,7 @@ class PymeKey:
         c = pyme.core.Context()
         # retrive additional key information
         try:
-            key = c.get_key(fingerprint.encode('ascii'), 0)
+            key = c.get_key(fingerprint, 0)
         except pyme.errors.GPGMEError:
             self.fingerprint = None
             return
@@ -341,11 +361,11 @@ class PymeKey:
         else:
             self.fingerprint = None
             return
-        
+
         self.algorithm = GPGKeyAlgorithm.items[key.subkeys.pubkey_algo].title
         self.revoked = key.subkeys.revoked
         self.keysize = key.subkeys.length
-
+        
         if fingerprint is not None and valid_keyid(key.subkeys.fpr[-8:]):
             self.keyid = key.subkeys.fpr[-8:]
         else:

@@ -23,6 +23,7 @@ from zope.app import zapi
 
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
+from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (IPOTemplateSet, IPackaging,
     ILaunchBag, ICountry)
@@ -188,7 +189,18 @@ class SourcePackageView:
             else:
                 self.status_message = 'Invalid upstream branch given.'
 
-
+    def published_by_pocket(self):
+        """This morfs the results of ISourcePackage.published_by_pocket into
+        something easier to parse from a page template. It becomes a list of
+        dictionaries, sorted in dbschema item order, each representing a
+        pocket and the packages in it."""
+        result = []
+        thedict = self.context.published_by_pocket
+        for pocket in PackagePublishingPocket.items:
+            newdict = {'pocketdetails': pocket}
+            newdict['packages'] = thedict[pocket]
+            result.append(newdict)
+        return result
 
     def binaries(self):
         """Format binary packages into binarypackagename and archtags"""

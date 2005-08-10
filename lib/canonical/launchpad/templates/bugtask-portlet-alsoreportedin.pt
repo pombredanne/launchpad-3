@@ -1,34 +1,34 @@
 <div class="portlet">
 
-    <h4>also reported in:</h4>
+    <h4>Also reported in:</h4>
 
     <div class="portletBody"
          tal:define="bug_url context/fmt:url;
                      other_occurrences view/alsoReportedIn;">
-      <tal:block condition="not:other_occurrences">
-        <i>
-          No other known occurrences.
-        </i>
-      </tal:block>
+      <div class="portletContent odd">
 
-      <table class="listing" style="width:100%"
-             tal:condition="other_occurrences">
-        <tbody>
-          <tr>
-            <th>Where</th>
-            <th>Status</th>
-          </tr>
-          <tr tal:repeat="task other_occurrences">
-            <td><a href="#"
-                   tal:attributes="href task/fmt:url"
-                   tal:content="task/contextname"
-                   style="text-decoration: underline">Upstream Firefox</a>
-            </td>
-            <td style="border: 1px solid #8cacbb; text-transform: lowercase;"
-                tal:content="task/status/title">Pending</td>
-          </tr>
-        </tbody>
-      </table>
+        <tal:block condition="not:other_occurrences">
+            <i>No other known occurrences.</i>
+        </tal:block>
+        <tal:block condition="other_occurrences">
+          This bug is also targetted for fixing in...
+        </tal:block>
 
+
+        <ul tal:condition="other_occurrences">
+          <li tal:repeat="task other_occurrences"><a href="#"
+                 tal:condition="not: task/required:launchpad.Edit"
+                 tal:attributes="href task/fmt:url"
+                 tal:content="task/contextname"
+                 style="text-decoration: underline">Firefox</a><a href="#"
+                 tal:condition="task/required:launchpad.Edit"
+                 tal:attributes="href string:${task/fmt:url}/+edit"
+                 tal:content="task/contextname"
+                 style="text-decoration: underline">Firefox</a>
+                 <br />
+                 [<span tal:replace="task/status/title">Pending</span>]
+
+          </li>
+        </ul>
     </div>
 </div>

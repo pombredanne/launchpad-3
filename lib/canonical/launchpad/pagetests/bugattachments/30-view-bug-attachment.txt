@@ -1,0 +1,12 @@
+On the bug page the attachment is shown in a portal.
+
+  >>> print http(r"""
+  ... GET /malone/bugs/1 HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+    <h4>Bug Attachments:</h4>
+  ...
+          <a href="http://.../foo.txt">Some information.</a>
+  ...

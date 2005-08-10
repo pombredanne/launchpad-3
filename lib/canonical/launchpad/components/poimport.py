@@ -91,7 +91,7 @@ def import_po(pofile_or_potemplate, file, published=True):
                 # We were not able to guess it from the .po file, so we take
                 # the importer as the last translator.
                 last_translator = pofile.rawimporter
-            is_editor = pofile.canEditTranslations(last_translator)
+            is_editor = pofile.canEditTranslations(pofile.rawimporter)
         else:
             # The import is not done
             raise OldPOImported(
@@ -205,7 +205,8 @@ def import_po(pofile_or_potemplate, file, published=True):
             try:
                 pomsgset.updateTranslationSet(last_translator,
                                               translations,
-                                              fuzzy, published)
+                                              fuzzy, published,
+                                              force_edition_rights=is_editor)
             except gettextpo.error, e:
                 # We got an error, so we submit the translation again but
                 # this time asking to store it as a translation with
@@ -213,7 +214,8 @@ def import_po(pofile_or_potemplate, file, published=True):
                 pomsgset.updateTranslationSet(last_translator,
                                               translations,
                                               fuzzy, published,
-                                              ignore_errors=True)
+                                              ignore_errors=True,
+                                              force_edition_rights=is_editor)
 
                 # Add the pomsgset to the list of pomsgsets with errors.
                 error = {

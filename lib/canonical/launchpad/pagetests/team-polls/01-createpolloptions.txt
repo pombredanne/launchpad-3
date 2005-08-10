@@ -1,7 +1,7 @@
 
 
   >>> print http(r"""
-  ... GET /people/name17/+polls/dpl-2080/+options/+new HTTP/1.1
+  ... GET /people/name17/+poll/dpl-2080/+options/+new HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 403 Forbidden
@@ -9,7 +9,7 @@
 
 
   >>> print http(r"""
-  ... GET /people/name17/+polls/dpl-2080/+options/+new HTTP/1.1
+  ... GET /people/name17/+poll/dpl-2080/+newoption HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -20,7 +20,7 @@
 
 
   >>> print http(r"""
-  ... POST /people/name17/+polls/dpl-2080/+options/+new HTTP/1.1
+  ... POST /people/name17/+poll/dpl-2080/+newoption HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------787692318512460570977813785
   ... 
@@ -40,12 +40,12 @@
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/people/name17/+polls/dpl-2080
+  Location: http://localhost:9000/people/name17/+poll/dpl-2080
   ...
 
 
   >>> print http(r"""
-  ... GET /people/name17/+polls/dpl-2080 HTTP/1.1
+  ... GET /people/name17/+poll/dpl-2080 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

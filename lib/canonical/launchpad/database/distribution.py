@@ -10,21 +10,22 @@ from sqlobject import (
     RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey,
     MultipleJoin)
 
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.lp.dbschema import (EnumCol, BugTaskStatus,
     DistributionReleaseStatus, TranslationPermission)
 from canonical.launchpad.interfaces import (IDistribution, IDistributionSet,
-    IDistroPackageFinder, ITeamMembershipSubset, ITeam)
+    IDistroPackageFinder)
 
 
 class Distribution(SQLBase):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(IDistribution)
 
-    _defaultOrder='name'
+    _defaultOrder = 'name'
 
     name = StringCol(notNull=True, alternateID=True, unique=True)
     displayname = StringCol(notNull=True)
@@ -47,6 +48,58 @@ class Distribution(SQLBase):
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
     lucilleconfig = StringCol(notNull=False, default=None)
 
+    def searchBugs(self, bug=None, searchtext=None, status=None, priority=None,
+                   severity=None, milestone=None, assignee=None, owner=None,
+                   statusexplanation=None, attachmenttype=None, user=None,
+                   orderby=None, omit_dupes=False):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        # As an initial refactoring, we're wrapping BugTaskSet.search.
+        # It's possible that the search code will live inside this
+        # method instead at some point.
+        #
+        # The implementor who would make such a change should be
+        # mindful of bug privacy.
+        return BugTaskSet().search(
+            distribution=self, bug=bug, searchtext=searchtext, status=status,
+            priority=priority, severity=severity, milestone=milestone,
+            assignee=assignee, owner=owner, attachmenttype=attachmenttype,
+            statusexplanation=statusexplanation, user=user, orderby=orderby,
+            omit_dupes=omit_dupes)
+
+    @property
+    def open_cve_bugtasks(self):
+        """See IDistribution."""
+        result = BugTask.select("""
+           CVERef.bug = Bug.id AND
+            BugTask.bug = Bug.id AND
+            BugTask.distribution=%s AND
+            BugTask.status IN (%s, %s)
+            """ % sqlvalues(
+                self.id,
+                BugTaskStatus.NEW,
+                BugTaskStatus.ACCEPTED),
+            clauseTables=['Bug', 'CVERef'],
+            orderBy=['-severity', 'datecreated'])
+        return result
+
+    @property
+    def resolved_cve_bugtasks(self):
+        """See IDistribution."""
+        result = BugTask.select("""
+            CVERef.bug = Bug.id AND
+            BugTask.bug = Bug.id AND
+            BugTask.distribution=%s AND
+            BugTask.status IN (%s, %s, %s)
+            """ % sqlvalues(
+                self.id,
+                BugTaskStatus.REJECTED,
+                BugTaskStatus.FIXED,
+                BugTaskStatus.PENDINGUPLOAD),
+            clauseTables=['Bug', 'CVERef'],
+            orderBy=['-severity', 'datecreated'])
+        return result
+
+    @property
     def currentrelease(self):
         # if we have a frozen one, return that
         for rel in self.releases:
@@ -64,7 +117,6 @@ class Distribution(SQLBase):
         if len(self.releases) > 0:
             return self.releases[0]
         return None
-    currentrelease = property(currentrelease)
 
     def __getitem__(self, name):
         for release in self.releases:
@@ -168,4 +220,5 @@ class DistroPackageFinder:
 
     def __init__(self, distribution=None, processorfamily=None):
         self.distribution = distribution
+        # XXX kiko: and what about processorfamily?
 

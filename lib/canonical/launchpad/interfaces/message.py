@@ -60,6 +60,8 @@ class IMessage(Interface):
     contents = Attribute(_('Full message contents as plain text'))
     followup_title = Attribute(_('Candidate title for a followup message.'))
     title = Attribute(_('The message title, usually just the subject.'))
+    bugattachments = Attribute("A list of BugAttachments connected to this "
+        "message.")
 
     def __iter__():
         """Iterate over all the message chunks."""
@@ -73,6 +75,9 @@ class IMessageSet(Interface):
 
         If no such messages exist, raise NotFoundError.
         """
+
+    def fromText(title, content, owner=None):
+        """Construct a Message from a text string and return it."""
 
     def fromEmail(email_message, owner=None, filealias=None,
             parsed_message=None):

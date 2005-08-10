@@ -83,10 +83,16 @@ IFacetMenu.  Another way would be to provide an adapter.
 
 == The Link class ==
 
-When you define a menu using class based on FacetMenu, you return Link objects
-from its methods.  The Link class is very simple.  You provide it with a
-target, some text and a summary, and it makes these available as attributes.
-The summary is optional, and defaults to None.
+When you define a menu using class based on FacetMenu, you return Link
+objects from its methods.  The Link class is very simple.  You provide
+it with a target, some text, a summary and the linked status, and it
+makes these available as attributes.  The summary is optional, and
+defaults to None.
+
+The `linked` argument is optional says whether the link ought to be
+available as a clickable hyperlink.  Links default to being linked.
+The `linked` attribute can be manipulated after the link has been
+constructed.
 
     >>> from canonical.launchpad.webapp import Link
     >>> link = Link('target', 'text', 'summary')
@@ -98,12 +104,18 @@ The summary is optional, and defaults to None.
     'text'
     >>> link.summary
     'summary'
+    >>> link.linked
+    True
 
     >>> no_summary_link = Link('target', 'text')
     >>> no_summary_link.summary is None
     True
 
-There are three more attributes that Link provides.  These can be both read
+    >>> disabled_link = Link('target', 'text', linked=False)
+    >>> disabled_link.linked
+    False
+
+There are two more attributes that Link provides.  These can be both read
 and set.
 
 The attribute `link.name` is the method name that returned the link.  As it
@@ -119,11 +131,6 @@ a set.  Links default to being unselected.
     >>> link.selected
     False
 
-The attribute `link.linked` says whether the link ought to be available as
-a clickable hyperlink.  Links default to being linked.
-
-    >>> link.linked
-    True
 
 The attribute `link.url` gives the canonical url to the link's target.  It
 defaults to None, and is set by the facetmenu.
@@ -390,6 +397,63 @@ is inside both, then the most inside link will be selected.
     http://localhost:8086/sesamestreet/+outside False
     http://localhost:8086/sesamestreet/+outside/whatever/inside True
     http://localhost:8086/sesamestreet/+other False
+
+
+== How are disabled links handled? ==
+
+Disabled links are not linked even if they would otherwise be:
+
+    >>> class DisabledLinkInFacets(FacetMenu):
+    ...     links = ['foo', 'bar', 'disabled']
+    ...
+    ...     def foo(self):
+    ...         target = '+foo'
+    ...         text = 'Foo'
+    ...         return Link(target, text)
+    ...
+    ...     def bar(self):
+    ...         target = '+bar'
+    ...         text = 'Bar'
+    ...         return Link(target, text)
+    ...
+    ...     def disabled(self):
+    ...         target = '+disabled'
+    ...         text = 'Disabled'
+    ...         return Link(target, text, linked=False)
+
+
+This next request is for +foo, but with a query string.  So, the first
+link is disabled because we are at that URL, the second link is
+enabled, and the third is disabled due to starting out unlinked.
+
+    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+foo')
+    >>> facets = DisabledLinkInFacets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected, link.linked
+    http://localhost:8086/sesamestreet/+foo True False
+    http://localhost:8086/sesamestreet/+bar False True
+    http://localhost:8086/sesamestreet/+disabled False False
+
+
+Usually a disabled facet will either be unavailable or require
+permissions the user does not have.  However, the disabled link stays
+unlinked if the request is pointed at it or under it.
+
+    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+disabled')
+    >>> facets = DisabledLinkInFacets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected, link.linked
+    http://localhost:8086/sesamestreet/+foo False True
+    http://localhost:8086/sesamestreet/+bar False True
+    http://localhost:8086/sesamestreet/+disabled True False
+
+    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+disabled/foo')
+    >>> facets = DisabledLinkInFacets(street, request)
+    >>> for link in facets:
+    ...     print link.url, link.selected, link.linked
+    http://localhost:8086/sesamestreet/+foo False True
+    http://localhost:8086/sesamestreet/+bar False True
+    http://localhost:8086/sesamestreet/+disabled True False
 
 
 == DefaultLink ==

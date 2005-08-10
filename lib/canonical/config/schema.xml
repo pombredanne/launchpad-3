@@ -85,13 +85,18 @@
                 should contain a pool and dists pair of trees.
             </description>
         </key>
-        <key name="pocket" datatype="string" default="plain">
+        <key name="pocket" datatype="string" default="release">
             <description>
-                The pocket where this import should go.
-                TODO: A description that makes sense to non-Gina developers.
+                The pocket where this import should go. A "pocket" is a
+                sub-archive for a distribution release. The default pocket
+                is called "release", others are "security", "updates" and
+                "proposed". There may be more. Packages can be published in
+                a specific pocket after the release is made, before that
+                they will always be published in the "release" pocket.
             </description>
             <metadefault>
-                TODO: A description about what the default of 'plain' means
+                The "release" pocket is where packages are published
+                before release.
             </metadefault>
             <example>updates</example>
         </key>
@@ -146,8 +151,10 @@
         <key name="root" datatype="string" required="yes" />
         <key name="launch" datatype="boolean" required="no" default="no" />
         <key name="spew" datatype="boolean" required="no" default="no" />
-        <key name="upstream_url" datatype="canonical.config.urlbase"
+        <key name="upstream_host" datatype="ipaddr-or-hostname"
             required="no" />
+        <key name="upstream_port" datatype="port-number" required="no"
+            default="80" />
         <key name="logfile" datatype="string" required="no" default="-" />
     </sectiontype>
 

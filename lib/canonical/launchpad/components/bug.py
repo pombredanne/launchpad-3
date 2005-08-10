@@ -15,7 +15,7 @@ class BugDelta:
     def __init__(self, bug, bugurl, user, title=None, summary=None,
                  description=None, name=None, private=None, duplicateof=None,
                  external_reference=None, bugwatch=None, cveref=None,
-                 added_bugtasks=None, bugtask_deltas=None):
+                 attachment=None, added_bugtasks=None, bugtask_deltas=None):
         self.bug = bug
         self.bugurl = bugurl
         self.user = user
@@ -28,5 +28,6 @@ class BugDelta:
         self.external_reference = external_reference
         self.bugwatch = bugwatch
         self.cveref = cveref
+        self.attachment = attachment
         self.added_bugtasks = added_bugtasks
         self.bugtask_deltas = bugtask_deltas

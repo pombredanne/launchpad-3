@@ -16,8 +16,7 @@ from canonical.config import config
 from psycopgda import adapter
 
 # Single MessageIDFactory for everyone
-_ = MessageIDFactory('launchpad')
-
+from canonical.launchpad import _
 
 # Allow override by environment variables for backwards compatibility.
 # This was needed to allow tests to propogate settings to spawned processes.

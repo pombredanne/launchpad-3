@@ -4,16 +4,15 @@
       i18n:domain="launchpad">
   <body>
   <metal:leftportlets fill-slot="portlets_one">
-    <!-- XXX, Brad Bollenbach, 2005-05-31: This might belong
-    in the search page instead.
-    <div tal:replace="structure view/bugStatsForContext" />
-    -->
-    <div tal:replace="structure context/bug/@@+portlet-people" />
-  </metal:leftportlets>
-
-  <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-status" />
+    <div tal:replace="structure context/bug/@@+portlet-details" />
+  </metal:leftportlets>
+  
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-actions" />
     <div tal:replace="structure context/@@+portlet-alsoreportedin" />
+    <div tal:condition="context/product" 
+         tal:replace="structure context/product/@@+portlet-latest-bugs" />
   </metal:rightportlets>
 
     <div metal:fill-slot="main">
@@ -24,15 +23,30 @@
            tal:attributes="href context/bug/duplicateof/fmt:url">bug
              #<span tal:replace="context/bug/duplicateof/id">42</span></a>
       </p>
+      
+      <p tal:condition="not: context/required:launchpad.Edit"
+         class="portalMessage">
+        <span tal:condition="not: request/lp:person">
+          To <a href="+edit">change this status page</a> you need to be
+          logged in, and you must 
+          <span tal:condition="context/assignee">
+          be either <a href="#"
+                       tal:attributes="href context/assignee/fmt:url" 
+                       tal:content="context/assignee/displayname">
+          Scott James Remnant The Third</a> or 
+          </span>
+          be a maintainer of <span 
+                              tal:replace="context/contextname">product</span>.
+        </span>
+        <span tal:condition="request/lp:person">
+        You cannot change this status page: you are not the assignee or
+        a maintainer of <span
+        tal:replace="context/contextname">product</span>.
+        </span>
+      </p>
 
       <div metal:define-macro="editform">
           <div metal:define-macro="formbody">
-            <!-- XXX: Brad Bollenbach, 2005-06-02: Implement this after
-                  merging initial task page changes.
-            <p class="portalMessage">
-              Updated: status, assignee, status explanation
-            </p>
-            -->
             <p class="portalMessage"
                tal:define="status view/update|nothing"
                tal:condition="status"
@@ -46,22 +60,7 @@
               i18n:name="num_errors">6</strong> input errors in the form
               below. Please correct them and resubmit the form.
             </p>
-            <p tal:condition="not: context/required:launchpad.Edit"
-               class="portalMessage">
-              You are not the assignee, or the maintainer of
-              <span tal:replace="context/contextname">product</span> so you
-              cannot edit this status page.
-            </p>
           </div>
-
-          <h2>
-            <a href="#" tal:attributes="href context/bug/fmt:url">Bug
-              #<span tal:replace="context/bug/id">132</span></a>
-            in
-            <a href="#" tal:attributes="href context/context/fmt:url">
-              <span tal:replace="context/contextname">some
-                package/product</span></a>
-          </h2>
 
           <div class="documentDescription"
              tal:condition="context/bug/summary"
@@ -69,11 +68,10 @@
              Bug summary goes here if it exists.
           </div>
 
-          <tal:description
-            content="structure context/bug/description/fmt:text-to-html"
-          >
-            $Bug.description
-          </tal:description>
+          <h2>Status of 
+            <span tal:replace="context/contextname">upstream
+            firefox</span> bug
+            #<span tal:replace="context/bug/id">3224</span></h2>
 
           <div class="field">
             <table>
@@ -96,7 +94,7 @@
                   Priority
                 </label>
               </td>
-              <td tal:condition="context/product">
+              <td tal:condition="context/milestone">
                 <label tal:attributes="for view/milestone_widget/name"
                        tal:content="view/milestone_widget/label">
                   Target
@@ -104,11 +102,30 @@
               </td>
             </tr>
             <tr>
-              <td tal:content="structure view/status_widget" />
-              <td tal:content="structure view/severity_widget" />
-              <td tal:content="structure view/priority_widget" />
-              <td tal:condition="context/product"
-                  tal:content="structure view/milestone_widget" />
+              <td>
+                <span tal:content="context/status/title"
+                      tal:attributes="class
+                      string:status${context/status/title}">
+                  New
+                </span>
+              </td>
+              <td>
+                <span tal:content="context/severity/title"
+                      tal:attributes="class
+                      string:severity${context/severity/title}">
+                  Critical
+                </span>
+              </td>
+              <td>
+                <span tal:content="context/priority/title"
+                      tal:attributes="class
+                      string:priority${context/priority/title}">
+                  Wontfix
+                </span>
+              </td>
+              <td tal:condition="context/milestone"
+                  tal:content="context/milestone/name">
+              </td>
             </tr>
             <tr tal:condition="python:context.distribution or
                                       context.distrorelease">
@@ -132,23 +149,31 @@
                 </label>
               </td>
               <td colspan="2">
-                <label tal:attributes="for view/bugwatch_widget/name"
-                       tal:content="view/bugwatch_widget/label"
-                       style="white-space: nowrap">
-                  Remote Watch
-                </label>
+                <tal:block condition="context/bugwatch">
+                  <label tal:attributes="for view/bugwatch_widget/name"
+                         tal:content="view/bugwatch_widget/label"
+                         style="white-space: nowrap">
+                    Remote Watch
+                  </label>
+                </tal:block>
               </td>
             </tr>
             <tr>
-              <td nowrap tal:content="structure view/assignee_widget"
-                  colspan="2" />
+              <td nowrap colspan="2">
+                <span tal:replace="structure view/assignee_widget">
+                  Scott James Remnant
+                </span>
+                <tal:block condition="not:context/assignee">
+                  <i>not assigned</i>
+                </tal:block>
+              </td>
               <td nowrap tal:content="structure view/bugwatch_widget"
                   colspan="2" />
             </tr>
             </table>
           </div>
 
-          <div class="field">
+          <div class="field" tal:condition="context/statusexplanation">
             <div>
               <label tal:attributes="for view/statusexplanation_widget/name"
                      tal:content="view/statusexplanation_widget/label" />
@@ -158,12 +183,14 @@
             </div>
           </div>
 
-        <p tal:condition="context/product">
-          <a href=""
-              tal:attributes="href string:/malone/products/${context/product/name}"
-              tal:content="string:More ${context/product/displayname} bugs"
-          >More Mozilla Firefox bugs</a>
-        </p>
+          <h2>Bug Description</h2>
+
+          <tal:description
+            content="structure context/bug/description/fmt:text-to-html"
+          >
+            $Bug.description
+          </tal:description>
+
       </div>
     </div>
   </body>

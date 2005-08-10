@@ -126,13 +126,13 @@ task. It concatenates the display names of the distribution,
 
     >>> bugtask = bugtaskset.get(1)
     >>> bugtask.contextname
-    u'Ubuntu'
+    u'upstream ubuntu'
 
 distro release, or product;
 
     >>> bugtask = bugtaskset.get(2)
     >>> bugtask.contextname
-    u'Mozilla Firefox'
+    u'upstream firefox'
 
 the name of the source package (if any); and the name of the binary
 package (but only if it's named differently from the source
@@ -171,7 +171,7 @@ Product alone:
 
     >>> bugtask.product = NamedThing('product')
     >>> bugtask.contextname()
-    '[product.displayname]'
+    'upstream [product.name]'
 
 Put things back the way they were.
 
@@ -275,7 +275,7 @@ It's also possible to iterate over all the bug tasks:
 
     >>> bugtasks = [bugtask for bugtasks in bugtaskset]
     >>> len(bugtasks)
-    13
+    14
 
 Bug Task Maintainers
 --------------------
@@ -564,6 +564,36 @@ And, as you would expect, we'll also be able to access it directly:
     >>> bug_firefox_no_svg_support.bug.title
     u'Firefox does not support SVG'
 
+Sorting Bug Tasks
+-----------------
+
+Bug tasks need to sort in a very particular order. We want product tasks
+first, then ubuntu tasks, then other distro-related tasks. In the
+distro-related tasks we want a distribution-task first, then
+distrorelease-tasks for that same distribution. The distrorelease tasks
+should be sorted by distrorelease version.
+
+Phew.
+
+Let's just make sure that the tasks on bug_one sort correctly.
+
+    >>> tasks = bug_one.bugtasks
+    >>> for task in tasks:
+    ...     print task.contextname
+    upstream evolution
+    upstream firefox
+    upstream foo-product
+    upstream ubuntu
+    ubuntu
+    ubuntu mozilla-firefox
+    ubuntu hoary
+    debian mozilla-firefox
+
+
+
+Handling IntegrityError
+-----------------------
+
 XXX: Brad Bollenbach, 2005-02-24: This bit testing the IntegrityError should be
 higher up in the file (under the explanation about creating tasks), but I can't
 figure out how to reset the connection properly after an IntegrityError is
@@ -581,3 +611,5 @@ constraints will be violated.
     Traceback (most recent call last):
       ...
     IntegrityError: ...
+
+

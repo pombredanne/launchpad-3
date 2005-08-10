@@ -22,10 +22,10 @@ _default_lockfile = '/var/lock/queuebuilder.lock'
 _default_logfilename = '/var/tmp/queuebuilder.log'
 
 
-def rebuildQueue(tm):
+def rebuildQueue(logger, tm):
     """Look for and initialise new build jobs."""
 
-    buildMaster = BuilddMaster(logging.getLogger('queuebuilder'), tm)
+    buildMaster = BuilddMaster(logger, tm)
 
     # Simple container
     distroreleases = set()
@@ -48,28 +48,33 @@ def rebuildQueue(tm):
     #Rescore the NEEDSBUILD properly
     buildMaster.sanitiseAndScoreCandidates()
 
-def main(tm):
-    # logging setup
-    #logging.basicConfig(filename=_default_logfilename)
-    logging.basicConfig()
-    logging.getLogger().setLevel(logging.DEBUG)
-    logging.getLogger().debug("Initialising BuildQueue Builder")
+def make_logger(loglevel=logging.WARN):
+    """Return a logger object for logging with."""
+    logger = logging.getLogger("buildd-queue-builder")
+    handler = logging.StreamHandler(strm=sys.stderr)
+    handler.setFormatter(
+        logging.Formatter(fmt='%(asctime)s %(levelname)s %(message)s'))
+    logger.addHandler(handler)
+    logger.setLevel(loglevel)
+    return logger
 
+
+if __name__ == '__main__':
+    # setup a transaction manager
+    tm = initZopeless(dbuser='fiera')
+
+    logger = make_logger(loglevel=logging.DEBUG)
     locker = LockFile(_default_lockfile)
     
     try:
         locker.acquire()
     except OSError:
-        logging.getLogger().info("Cannot Acquire Lock.")
+        logger.getLogger().info("Cannot Acquire Lock.")
         sys.exit(1)
 
     try:
-        rebuildQueue(tm)
+        rebuildQueue(logger, tm)
     finally:
         locker.release()
-
-if __name__ == '__main__':
-    # setup a transaction manager
-    tm = initZopeless(dbuser='fiera')
-    main(tm)
-
+    
+    logger.info("Buildd Queue Rebuilt.")

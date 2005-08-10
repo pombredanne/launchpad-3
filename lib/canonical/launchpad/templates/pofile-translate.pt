@@ -69,7 +69,7 @@
 
     <!-- Display settings. -->
 
-      <p tal:condition="view/is_editor"><form method="post"
+      <p><form method="post"
               style="text-align: right;"
               action="./+translate"
         >

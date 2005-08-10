@@ -17,7 +17,6 @@ import urllib
 from zope.interface import implements
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
-from zope.app.publisher.browser import BrowserView
 from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
 
@@ -99,7 +98,7 @@ class BugTasksReportView:
         html = '<select name="minseverity">\n'
         for item in dbschema.BugTaskSeverity.items:
             html = html + '<option value="' + str(item.value) + '"'
-            if item.value==self.minseverity:
+            if item.value == self.minseverity:
                 html = html + ' selected="yes"'
             html = html + '>'
             html = html + str(item.title)
@@ -112,7 +111,7 @@ class BugTasksReportView:
         html = '<select name="minpriority">\n'
         for item in dbschema.BugTaskPriority.items:
             html = html + '<option value="' + str(item.value) + '"'
-            if item.value==self.minpriority:
+            if item.value == self.minpriority:
                 html = html + ' selected="yes"'
             html = html + '>'
             html = html + str(item.title)
@@ -171,6 +170,7 @@ class BugTaskViewBase:
 
 
 class BugTaskEditView(SQLObjectEditView, BugTaskViewBase):
+    """The view class used for the task +edit page"""
 
     def changed(self):
         """Redirect the browser to the bug page when we successfully update
@@ -179,7 +179,7 @@ class BugTaskEditView(SQLObjectEditView, BugTaskViewBase):
 
 
 class BugTaskDisplayView(BugTaskViewBase):
-    """Simple view class that makes bugtask portlets accessible."""
+    """The view class used for the default task information page."""
 
 
 class BugTaskSearchListingView:
@@ -255,8 +255,23 @@ class BugTaskSearchListingView:
         search_params["statusexplanation"] = form_params.get(
                 "statusexplanation")
 
-        # make this search context-sensitive
-        tasks = self._searchBugsInContext(**search_params)
+        attachmenttype = form_params.get("attachmenttype")
+        if attachmenttype:
+            search_params["attachmenttype"] = any(*attachmenttype)
+
+        search_params["user"] = getUtility(ILaunchBag).user
+
+        # This reversal with include_dupes and omit_dupes is a bit odd;
+        # the reason to do this is that from the search UI's viewpoint,
+        # including a dupe is the special case, whereas a
+        # BugTaskSet.search() method that omitted dupes silently would
+        # be a source of surprising bugs.
+        if form_params.get("include_dupes"):
+            search_params["omit_dupes"] = False
+        else:
+            search_params["omit_dupes"] = True
+
+        tasks = self.context.searchBugs(**search_params)
 
         return BatchNavigator(
             batch=Batch(tasks, int(self.request.get('batch_start', 0))),
@@ -327,9 +342,10 @@ class BugTaskSearchListingView:
         status_new = dbschema.BugTaskStatus.NEW
         status_accepted = dbschema.BugTaskStatus.ACCEPTED
 
-        critical_tasks = self._searchBugsInContext(
+        critical_tasks = self.context.searchBugs(
             severity=dbschema.BugTaskSeverity.CRITICAL,
-            status=any(status_new, status_accepted))
+            status=any(status_new, status_accepted),
+            user=getUtility(ILaunchBag).user, omit_dupes=True)
 
         return critical_tasks.count()
 
@@ -354,9 +370,10 @@ class BugTaskSearchListingView:
         status_new = dbschema.BugTaskStatus.NEW
         status_accepted = dbschema.BugTaskStatus.ACCEPTED
 
-        tasks_assigned_to_user = self._searchBugsInContext(
+        tasks_assigned_to_user = self.context.searchBugs(
             assignee=getUtility(ILaunchBag).user,
-            status=any(status_new, status_accepted))
+            status=any(status_new, status_accepted),
+            user=getUtility(ILaunchBag).user, omit_dupes=True)
 
         return tasks_assigned_to_user.count()
 
@@ -381,8 +398,9 @@ class BugTaskSearchListingView:
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
-        untriaged_tasks = self._searchBugsInContext(
-            status=dbschema.BugTaskStatus.NEW)
+        untriaged_tasks = self.context.searchBugs(
+            status=dbschema.BugTaskStatus.NEW,
+            user=getUtility(ILaunchBag).user, omit_dupes=True)
 
         return untriaged_tasks.count()
 
@@ -404,8 +422,9 @@ class BugTaskSearchListingView:
         status_new = dbschema.BugTaskStatus.NEW
         status_accepted = dbschema.BugTaskStatus.ACCEPTED
 
-        unassigned_tasks = self._searchBugsInContext(
-            assignee=NULL, status=any(status_new, status_accepted))
+        unassigned_tasks = self.context.searchBugs(
+            assignee=NULL, status=any(status_new, status_accepted),
+            user=getUtility(ILaunchBag).user, omit_dupes=True)
 
         return unassigned_tasks.count()
 
@@ -419,7 +438,8 @@ class BugTaskSearchListingView:
             str(self.request.URL) +
             "?field.status%3Alist=New&field.status%3Alist=Accepted&" +
             "field.status-empty-marker=1&field.severity-empty-marker=1&" +
-            "field.assignee=&field.unassigned.used=&field.unassigned=on&search=Search")
+            "field.assignee=&field.unassigned.used=&field.unassigned=on&" +
+            "search=Search")
 
     @property
     def total_count(self):
@@ -428,7 +448,8 @@ class BugTaskSearchListingView:
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
-        total_bugs = self._searchBugsInContext()
+        user = getUtility(ILaunchBag).user
+        total_bugs = self.context.searchBugs(user=user, omit_dupes=True)
 
         return total_bugs.count()
 
@@ -469,14 +490,13 @@ class BugTaskSearchListingView:
 
         release_bugs = []
         for release in releases:
-            open_release_bugs = getUtility(IBugTaskSet).search(
-                distrorelease=release,
+            open_release_bugs = release.searchBugs(
                 status=any(
                     dbschema.BugTaskStatus.NEW,
                     dbschema.BugTaskStatus.ACCEPTED),
-                user=getUtility(ILaunchBag).user)
+                user=getUtility(ILaunchBag).user, omit_dupes=True)
             release_bugs.append({
-                "releasename" : release.name,
+                "releasename" : release.displayname,
                 "bugcount" : open_release_bugs.count(),
                 "url" : canonical_url(release) + '/+bugs'})
 
@@ -549,38 +569,6 @@ class BugTaskSearchListingView:
         """
         return IDistroRelease(self.context, None)
 
-    def _searchBugsInContext(self, bug=None, searchtext=None, status=None,
-                             priority=None, severity=None, milestone=None,
-                             assignee=None, owner=None, orderby=None,
-                             sourcepackagename=None, binarypackagename=None,
-                             statusexplanation=None):
-        """A proxy method to IBugTaskSet.search.
-
-        This is a helper method that automatically filters the search
-        based on the current IProduct, IDistribution, or
-        IDistroRelease context.
-        """
-        context_param = {}
-
-        upstream_context = self._upstreamContext()
-        distro_context = self._distributionContext()
-        distrorelease_context = self._distroReleaseContext()
-
-        if upstream_context:
-            context_param = {"product": upstream_context}
-        elif distro_context:
-            context_param = {"distribution": distro_context}
-        elif distrorelease_context:
-            context_param = {"distrorelease": distrorelease_context}
-
-        bugtaskset = getUtility(IBugTaskSet)
-
-        return bugtaskset.search(
-            bug=bug, searchtext=searchtext, status=status, priority=priority,
-            severity=severity, milestone=milestone, assignee=assignee,
-            owner=owner, orderby=orderby, sourcepackagename=sourcepackagename,
-            binarypackagename=binarypackagename, user=getUtility(ILaunchBag).user,
-            **context_param)
 
 class BugTaskAnorakSearchPageBegoneView:
     """This view simply kicks the user somewhere else.
@@ -595,3 +583,4 @@ class BugTaskAnorakSearchPageBegoneView:
         self.context = context
         self.request = request
         self.request.response.redirect("/malone")
+

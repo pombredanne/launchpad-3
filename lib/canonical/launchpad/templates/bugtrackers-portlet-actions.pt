@@ -1,0 +1,15 @@
+<div class="portlet">
+
+  <h4>actions:</h4>
+
+  <div class="portletBody">
+    <div class="portletContent odd">
+
+      <ul>
+        <li class="add"><a href="+newbugtracker">Add Tracker</a></li>
+      </ul>
+
+    </div>
+  </div>
+
+</div>
