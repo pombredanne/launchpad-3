@@ -28,13 +28,10 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IGPGHandler, IPymeSignature, IPymeKey)
 
-# XXX cprov 20050707
-# simply using: "import pyme" does not work correctly, we need to explicity
-# call the required child like: "from pyme import core". As the names are
-# quite unobjective, I've decided to rename them locally.
-
 # pyme
-from pyme import core as pymecore, errors as pymeerrors
+import pyme.core
+import pyme.errors
+from pyme.constants import validity
 
 
 class GPGHandler:
@@ -45,13 +42,15 @@ class GPGHandler:
     def __init__(self):
         """Initialize environment variable."""
         self.home = config.gpghandler.home
-        self._setHome()
+        self.reset_local_state()
         os.environ['GNUPGHOME'] = self.home
 
     # XXX cprov 20050516
     # Is not thread safe ... should it be ?
-    def _setHome(self):
+    def reset_local_state(self):
         """Recreate the directory and the configuration file."""
+        #FIXME RBC: this should be a zope test cleanup thing per SteveA.
+        #while still allowing __init__ to use it.
         # remove if it already exists
         if os.access(self.home, os.F_OK):
             shutil.rmtree(self.home)
@@ -70,7 +69,7 @@ class GPGHandler:
     def verifySignature(self, content, signature=None, key=None):
         """See IGPGHandler."""
 
-        c = pymecore.Context()
+        c = pyme.core.Context()
 
         # from `info gpgme` about gpgme_op_verify(SIG, SIGNED_TEXT, PLAIN):
         #
@@ -83,23 +82,23 @@ class GPGHandler:
 
         if signature:
             # store detach-sig
-            sig = pymecore.Data(signature.encode('ascii'))
+            sig = pyme.core.Data(signature.encode('ascii'))
             # store the content
-            plain = pymecore.Data(content.encode('ascii'))
+            plain = pyme.core.Data(content.encode('ascii'))
             # process it
             try:
                 c.op_verify(sig, plain, None)
-            except pymeerrors.GPGMEError:
+            except pyme.errors.GPGMEError:
                 return None
         else:
             # store clearsigned signature
-            sig = pymecore.Data(content.encode('ascii'))
+            sig = pyme.core.Data(content.encode('ascii'))
             # writeable content
-            plain = pymecore.Data()
+            plain = pyme.core.Data()
             # process it
             try:
                 c.op_verify(sig, None, plain)
-            except pymeerrors.GPGMEError:
+            except pyme.errors.GPGMEError:
                 return None
         
         result = c.op_verify_result()
@@ -113,7 +112,8 @@ class GPGHandler:
             # return an empty signature object
             return PymeSignature()
 
-        fingerprint = signature.fpr
+        key = c.get_key(signature.fpr, 0)
+        fingerprint = key.subkeys.fpr
         plain.seek(0, 0)
         plain_data = plain.read()
 
@@ -123,10 +123,10 @@ class GPGHandler:
 
     def importKey(self, content):
         """See IGPGHandler."""        
-        c = pymecore.Context()
+        c = pyme.core.Context()
         c.set_armor(1)
 
-        newkey = pymecore.Data(content)
+        newkey = pyme.core.Data(content)
         c.op_import(newkey)
         result = c.op_import_result()
 
@@ -141,6 +141,10 @@ class GPGHandler:
 
         fingerprint = result.imports.fpr
 
+        if result.imported != 1:
+            # Multiple keys supplied which one was desired is unknown
+            return None
+
         key = PymeKey(fingerprint)
 
         # pubkey not recognized
@@ -149,20 +153,38 @@ class GPGHandler:
 
         return key
 
+    def importKeyringFile(self, filepath):
+        """See IGPGHandler.importKeyringFile."""
+        context = pyme.core.Context()
+        data = pyme.core.Data()
+        data.new_from_file(filepath)
+        context.op_import(data)
+        result = context.op_import_result()
+        # if not considered -> format wasn't recognized
+        # no key was imported
+        if result.considered == 0:
+            raise ValueError('Empty or invalid keyring')
+        imported = result.imports
+        result = []
+        while imported is not None:
+            result.append(PymeKey(imported.fpr))
+            imported = imported.next
+        return result
+
     def encryptContent(self, content, fingerprint):
         """See IGPGHandler."""
         # setup context
-        c = pymecore.Context()
+        c = pyme.core.Context()
         c.set_armor(1)
 
         # setup containers
-        plain = pymecore.Data(content.encode('ascii'))
-        cipher = pymecore.Data()
+        plain = pyme.core.Data(content.encode('ascii'))
+        cipher = pyme.core.Data()
 
         # retrive pyme key object
         try:
             key = c.get_key(fingerprint, 0)
-        except pymeerrors.GPGMEError:
+        except pyme.errors.GPGMEError:
             return None
         
         # encrypt content
@@ -174,23 +196,33 @@ class GPGHandler:
     def decryptContent(self, content, password):
         """See IGPGHandler."""
         # setup context
-        c = pymecore.Context()
+        c = pyme.core.Context()
         c.set_armor(1)
 
         # setup containers
-        cipher = pymecore.Data(content.encode('ascii'))
-        plain = pymecore.Data()
+        cipher = pyme.core.Data(content.encode('ascii'))
+        plain = pyme.core.Data()
 
         # Do the deecryption.
         c.set_passphrase_cb(lambda x,y,z: password, None)
         try:
             c.op_decrypt(cipher, plain)
-        except pymeerrors.GPGMEError:
+        except pyme.errors.GPGMEError:
             return None
 
         plain.seek(0,0)
 
         return plain.read()
+
+    def local_keys(self):
+        """Get an iterator of the keys this gpg handler
+        already knows about.
+        """
+        context = pyme.core.Context()
+        for key in context.op_keylist_all():
+            # subkeys is the first in a C object based list
+            # use .next to find the next subkey
+            yield PymeKey(key.subkeys.fpr)
 
     def retrieveKey(self, fingerprint):
         """See IGPGHandler."""
@@ -296,11 +328,11 @@ class PymeKey:
 
     def _buildKey(self, fingerprint):
         # create a new particular context
-        c = pymecore.Context()
+        c = pyme.core.Context()
         # retrive additional key information
         try:
             key = c.get_key(fingerprint.encode('ascii'), 0)
-        except pymeerrors.GPGMEError:
+        except pyme.errors.GPGMEError:
             self.fingerprint = None
             return
         
@@ -326,6 +358,27 @@ class PymeKey:
             if valid_email(uid.email) and not uid.revoked:
                 self.uids.append(uid.email)
             uid = uid.next
+        
+    def _gpg_key(self, fingerprint=None):
+        """Get the underlying gpg key."""
+        if fingerprint is None:
+            fingerprint = self.fingerprint
+        context = pyme.core.Context()
+        return context.get_key(fingerprint.encode('ascii'), 0)
+
+    def get_owner_trust(self): return self._gpg_key().owner_trust
+        
+    def set_owner_trust(self, value): 
+        """Set the ownertrust on the actual gpg key"""
+        if value not in (validity.UNKNOWN, validity.UNDEFINED, validity.NEVER,
+                         validity.MARGINAL, validity.FULL, validity.ULTIMATE):
+            raise ValueError("invalid owner trust level")
+        self._gpg_key().owner_trust = value
+        
+    def del_owner_trust(self): pass
+    
+    owner_trust = property(get_owner_trust, set_owner_trust, del_owner_trust, 
+        "The keys ownertrust")
 
     @property
     def displayname(self):

@@ -33,6 +33,14 @@ class IGPGHandler(Interface):
         :returns: a PymeKey instance
         """
 
+    def importKeyringFile(filepath):
+        """Import the keyring filepath into the local key database.
+
+        :param filepath: the path to a keyring to import.
+
+        :returns: a list of the imported keys.
+        """
+
     def encryptContent(content, fingerprint):
         """Encrypt content for a given GPG key.
 
@@ -61,6 +69,13 @@ class IGPGHandler(Interface):
         is False
         """
 
+    def local_keys():
+        """Return an iterator of all keys locally known about by the handler.
+        """
+
+    def reset_local_state():
+        """Reset the local state (i.e. GPG keyrings, trust database etc."""
+        #FIXME RBC: this should be a zope test cleanup thing per SteveA.
 
 class IPymeSignature(Interface):
     """pyME signature container."""
@@ -79,3 +94,4 @@ class IPymeKey(Interface):
     keyid = Attribute("Pseudo Key ID, composed by last fingerprint 8 digits ")
     uids = Attribute("List containing only well formed and non-revoked UIDs")
     displayname = Attribute("Key displayname: <size><type>/<keyid>")
+    owner_trust = Attribute("The owner trust")
