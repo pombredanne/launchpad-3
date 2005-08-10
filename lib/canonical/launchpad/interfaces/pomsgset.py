@@ -84,7 +84,7 @@ class IPOMsgSet(Interface):
         """Return an iterator over each of the submissions out there that
         are currently published or active in any PO file for the same
         language and prime msgid.
-        
+
         So, for example, this will include submissions that are current
         upstream, or in other distributions."""
 
@@ -110,42 +110,4 @@ class IEditPOMsgSet(IPOMsgSet):
 
         If there is an error with the translations and ignore_errors is not
         True or it's not a fuzzy submit, raises gettextpo.error
-        """
-
-    def makeSubmission(person, text, pluralform, published, validation_status,
-        force_edition_rights=False):
-        """Record a translation submission by the given person.
-
-        If "published" then this is a submission noticed in the published po
-        file, otherwise it is a rosetta submission. It is assumed that any
-        new submission will become the active translation (branding?), and
-        if published is true then it will also become the published
-        submission.
-
-        This is THE KEY method in the whole of rosetta. It deals with the
-        sighting or submission of a translation for a pomsgset and plural
-        form, either online or in the published po file. It has to decide
-        exactly what to do with that submission or sighting: whether to
-        record it or ignore it, whether to make it the active or published
-        translation, etc.
-
-        It takes all the key information in the sighting/submission and
-        records that in the db. It returns either the record of the
-        submission, a POSubmission, or None if it decided to record
-        nothing at all. Note that it may return a submission that was
-        created previously, if it decides that there is not enough new
-        information in this submission to justify recording it.
-
-        The "published" field indicates whether or not this has come from
-        the published po file. It should NOT be set for an arbitrary po
-        file upload, it should ONLY be set if this is genuinely the
-        published po file.
-
-        The "validation_status" field is a value of
-        TranslationValidationStatus that indicates the status of the
-        translation.
-
-        The "force_edition_rights" is a flag that 'forces' that this submition
-        is handled as coming from an editor, no matter if it's really an
-        editor or not
         """

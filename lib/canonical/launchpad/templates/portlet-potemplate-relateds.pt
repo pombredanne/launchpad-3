@@ -21,7 +21,7 @@
     <ul>
       <li tal:repeat="pot context/relatives_by_source">
         <a href=""
-          tal:attributes="href pot/@@absolute_url"
+          tal:attributes="href pot/fmt:url"
           tal:content="pot/displayname">A POTemplate</a>
       </li>
     </ul>

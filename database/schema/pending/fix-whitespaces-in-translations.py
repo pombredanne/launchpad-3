@@ -81,8 +81,7 @@ def main():
                 break
 
             fix_submission(submission, translation)
-
-        ztm.commit()
+            ztm.commit()
 
     # Now, it's time to remove all empty translations
     empty_translation = POTranslation.byTranslation('')
