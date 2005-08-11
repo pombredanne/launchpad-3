@@ -440,7 +440,7 @@ class MergePeopleView(object):
         
         # Now we must check if the dupe account still have registered email
         # addresses. If it haven't we can actually do the merge.
-        if getUtility(IEmailAddressSet).getByPerson(self.dupe.id):
+        if getUtility(IEmailAddressSet).getByPerson(self.dupe):
             self.mergeCompleted = False
             return
 

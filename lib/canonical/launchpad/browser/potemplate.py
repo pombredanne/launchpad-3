@@ -233,7 +233,7 @@ class POTemplateAddView(AddView):
         potemplatenameid = data.get('potemplatename')
         description = data.get('description')
         iscurrent = data.get('iscurrent')
-        ownerid = data.get('owner')
+        owner = data.get('owner')
         path = data.get('path')
         filename = data.get('filename')
         content = data.get('content')
@@ -241,10 +241,6 @@ class POTemplateAddView(AddView):
         # Get the POTemplateName
         potemplatenameset = getUtility(IPOTemplateNameSet)
         potemplatename = potemplatenameset.get(potemplatenameid)
-
-        # Get the Owner
-        personset = getUtility(IPersonSet)
-        owner = personset.get(ownerid)
 
         potemplateset = getUtility(IPOTemplateSet)
         potemplatesubset = potemplateset.getSubset(

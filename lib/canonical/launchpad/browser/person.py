@@ -163,11 +163,11 @@ class FOAFSearchView:
             return None
 
         if searchfor == "all":
-            results = getUtility(IPersonSet).findByName(name)
+            results = getUtility(IPersonSet).find(name)
         elif searchfor == "peopleonly":
-            results = getUtility(IPersonSet).findPersonByName(name)
+            results = getUtility(IPersonSet).findPerson(name)
         elif searchfor == "teamsonly":
-            results = getUtility(IPersonSet).findTeamByName(name)
+            results = getUtility(IPersonSet).findTeam(name)
 
         start = int(self.request.get('batch_start', 0))
         batch = Batch(list=results, start=start, size=BATCH_SIZE)
@@ -938,7 +938,7 @@ class RequestPeopleMergeView(AddView):
             # Please, don't try to merge you into yourself.
             return
 
-        emails = getUtility(IEmailAddressSet).getByPerson(dupeaccount.id)
+        emails = getUtility(IEmailAddressSet).getByPerson(dupeaccount)
         if len(emails) > 1:
             # The dupe account have more than one email address. Must redirect
             # the user to another page to ask which of those emails (s)he
@@ -982,7 +982,7 @@ class RequestPeopleMergeMultipleEmailsView:
             dupe = self.request.get('dupe')
         self.dupe = getUtility(IPersonSet).get(int(dupe))
         emailaddrset = getUtility(IEmailAddressSet)
-        self.dupeemails = emailaddrset.getByPerson(self.dupe.id)
+        self.dupeemails = emailaddrset.getByPerson(self.dupe)
 
     def processForm(self):
         if self.request.method != "POST":
