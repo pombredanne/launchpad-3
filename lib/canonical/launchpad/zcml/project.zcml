@@ -91,7 +91,8 @@
         permission="zope.Public"
         name="+rdf"
         lp:url="/projects/$Project.name/+rdf"
-        template="../templates/project-rdf.pt" />
+        attribute="__call__"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProject"
