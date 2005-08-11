@@ -489,8 +489,8 @@ searches:
 
     >>> firefox = productset.get(4)
     >>> params = BugTaskSearchParams(status=any(STATUS_NEW, 
-    ...                                             STATUS_ACCEPTED),
-    ...                                  user=foobar)
+    ...                                         STATUS_ACCEPTED),
+    ...                              user=foobar)
     >>> firefox_bugtasks = firefox.searchTasks(params)
     >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
     [1, 4, 5, 6]
@@ -513,8 +513,8 @@ The same search as above yields only three bugs, because David
 Allouche can't see the private bug.
 
     >>> params = BugTaskSearchParams(status=any(STATUS_NEW, 
-    ...                                             STATUS_ACCEPTED),
-    ...                                  orderby="id", user=ddaa)
+    ...                                         STATUS_ACCEPTED),
+    ...                              orderby="id", user=ddaa)
     >>> bugtasks = upstream_mozilla.searchTasks(params)
     >>> print bugtasks.count()
     3
@@ -561,8 +561,8 @@ We'll find all four IBugTasks that match the search criteria, as the maintainer
 is also an explicit subscriber in this case.
 
     >>> params = BugTaskSearchParams(status=any(STATUS_NEW, 
-    ...                                             STATUS_ACCEPTED),
-    ...                                  orderby="id", user=sample_person)
+    ...                                         STATUS_ACCEPTED),
+    ...                              orderby="id", user=sample_person)
     >>> bugtasks = upstream_mozilla.searchTasks(params)
     >>> print bugtasks.count()
     4
