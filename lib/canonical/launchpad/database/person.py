@@ -829,11 +829,9 @@ class PersonSet:
 
         The old user (from_person) will be left as an atavism
 
-        XXX: Are we game to delete from_person yet?
-            -- StuartBishop 20050315
-        XXX: let's let it roll for a while and see what cruft develops. If
-             it's clean, let's start deleting
-            -- MarkShuttleworth 20050528
+        We are not yet game to delete the `from_person` entry from the
+        database yet. We will let it roll for a while and see what cruft
+        develops -- StuartBishop 20050812
         """
         # Sanity checks
         if ITeam.providedBy(from_person):
