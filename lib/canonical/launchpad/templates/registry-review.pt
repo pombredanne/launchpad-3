@@ -7,7 +7,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>DOAP Items Review</h1>
+    <h1>Registry Items Review</h1>
 
     <div class="documentDescription">
         Please review the following items.

@@ -147,7 +147,7 @@ class ProjectSet:
                      bazaar=None,
                      search_products=True,
                      show_inactive=False):
-        """Search through the DOAP database for projects that match the
+        """Search through the Registry database for projects that match the
         query terms. text is a piece of text in the title / summary /
         description fields of project (and possibly product). soyuz,
         bounties, bazaar, malone etc are hints as to whether the search

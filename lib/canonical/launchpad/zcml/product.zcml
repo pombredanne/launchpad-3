@@ -324,7 +324,7 @@
             lp:url="/products/+index" />
         <browser:page
             name="+all"
-            template="../templates/doap-listall.pt"
+            template="../templates/registry-listall.pt"
             lp:url="/products/+all" />
         <browser:page
             name="+portlet-details"
@@ -338,7 +338,7 @@
         permission="launchpad.AnyPerson">
         <browser:page
             name="+review"
-            template="../templates/doap-review.pt"
+            template="../templates/registry-review.pt"
             lp:url="/products/+review" />
     </browser:pages>
 
@@ -354,7 +354,7 @@
         class="canonical.launchpad.browser.ProductSetAddView"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="doap/products/+new">
+        lp:url="products/+new">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
         <browser:widget
            field="name"

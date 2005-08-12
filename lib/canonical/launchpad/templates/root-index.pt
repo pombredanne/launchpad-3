@@ -37,7 +37,7 @@
         where it is still a problem. <a i18n:attributes="title" title="Malone"
             href="malone" i18n:translate="">Track bugs now!</a></p>
 
-    <h2><a i18n:attributes="title" title="Registry" href="doap"
+    <h2><a i18n:attributes="title" title="Registry" href="registry"
             i18n:translate="">Registry</a></h2>
 
     <p i18n:translate="registry-blurb">A key part of the Launchpad is its
@@ -47,7 +47,7 @@
         bug management and distributed code management. You can register
         individual open source applications, or whole projects, and track
         the relationships between them. <a i18n:attributes="title"
-            title="Registry" href="doap" i18n:translate="">Find or register
+            title="Registry" href="registry" i18n:translate="">Find or register
             apps now!</a></p>
 
     <h2><a i18n:attributes="title" title="Soyuz" href="/distros/"

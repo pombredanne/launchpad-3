@@ -213,7 +213,7 @@
         lp:url="/projects/">
         <browser:page
             name="+all" 
-            template="../templates/doap-listall.pt"
+            template="../templates/registry-listall.pt"
             lp:url="/projects/+all" />
         <browser:page
             name="+index" 
@@ -227,7 +227,7 @@
         permission="launchpad.AnyPerson">
         <browser:page
             name="+review"
-            template="../templates/doap-review.pt"
+            template="../templates/registry-review.pt"
             lp:url="/projects/+review" />
         <browser:page
             name="+syncreview"

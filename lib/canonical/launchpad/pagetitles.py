@@ -271,18 +271,6 @@ distroreleaselanguage = ContextTitle('%s')
 
 distros_index = 'Overview of Distributions in Launchpad'
 
-doap_about = 'About the Launchpad Registry'
-
-doap_dashboard = 'Launchpad Project & Product Dashboard'
-
-doap_index = 'Project and Product Registration in Launchpad'
-
-doap_listall = 'Launchpad: Complete List'
-
-doap_review = 'Launchpad Content Review'
-
-doap_to_do = 'Launchpad To-Do List'
-
 errorservice_config = 'Configure Error Log'
 
 errorservice_entry = 'View Error Log Report'
@@ -555,6 +543,18 @@ def reference_index(context, view):
     return 'Web References for Malone Bug # %s' % context.bug.id
 
 # references_index is a redirect
+
+registry_about = 'About the Launchpad Registry'
+
+registry_dashboard = 'Launchpad Project & Product Dashboard'
+
+registry_index = 'Project and Product Registration in Launchpad'
+
+registry_listall = 'Launchpad: Complete List'
+
+registry_review = 'Launchpad Content Review'
+
+registry_to_do = 'Launchpad To-Do List'
 
 related_bounties = ContextDisplayName('Bounties for %s')
 
