@@ -7,9 +7,9 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Search Binary Packages in
-    <span tal:content="context/release/title"> TITLE </span>
-    </h1>
+      <h1>Search binary packages in
+        <span tal:replace="context/release/title">Foo</span>
+      </h1>
 
     <form name="search" action="" method="GET">
     Name: <input type="text" name="name" 
@@ -20,56 +20,62 @@
 
    <h4>Search Results</h4>
 
-  <tal:block tal:define="bn view/searchBinariesBatchNavigator"
-			 tal:condition="bn">
-
-  <div tal:define="batch python:list(bn.currentBatch());
-                         prev_url bn/prevBatchURL;
-                         next_url bn/nextBatchURL;">
-  <table tal:condition="batch">
-    <tr>
-      <th>Binary Packages</th>
-    </tr>
-    <tr tal:repeat="release batch">      
-      <tal:dummy tal:define="package release">
-      <td><a tal:content="string: ${package/name} : ${package/summary}"
-             tal:attributes="href package/name">PACKAGE</a>
-      </td>
-      </tal:dummy>
-    </tr>    
-    <tr>
-    <td align="center">
-    <fieldset tal:condition="python:prev_url or next_url">
-    <div>
-    	  <table>
-	  <tr>
-	  <!-- <th condition="not: prev_url"><< prev</th> -->
-          <th tal:condition="prev_url">
-	       <a tal:attributes="href prev_url"><b><< Prev</b></a>
-	  </th>
-          <th tal:repeat="page_link bn/batchPageURLs">
+      <tal:block
+        define="bn view/searchBinariesBatchNavigator"
+        condition="bn"
+      >
+        <table
+          tal:define="
+            batch bn/currentBatch;
+            prev_url bn/prevBatchURL;
+            next_url bn/nextBatchURL;
+          "
+          tal:condition="batch"
+        >
+          <thead>
+            <tr>
+              <th>Binary Package</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="package batch">
+              <td>
+                <a
+                  tal:content="string: ${package/name} : ${package/summary}"
+                  tal:attributes="href package/name"
+                >PACKAGE</a>
+              </td>
+            </tr>    
+          </tbody>
+          <tfoot>
+            <tr>
+              <td>
+                <tal:block condition="python:prev_url or next_url">
+                <span tal:condition="not: prev_url" tal:omit-tag="">
+                  &larr; Previous
+                </span>
+                <span tal:condition="prev_url" tal:omit-tag="">
+          	      <a tal:attributes="href prev_url">&larr; Previous</a>
+            	  </span>
+                <span tal:repeat="page_link bn/batchPageURLs" tal:omit-tag="">
 	     <a tal:attributes="href python:page_link.values()[0]"
                 tal:content="python:page_link.keys()[0]"></a>
-	  </th>
-          <th tal:condition="next_url" >
-	     <a tal:attributes="href next_url"><b>Next >></b></a>
-          </th>
-          <!-- <th condition="not: next_url">next >></th> -->
-          </tr>
-	  </table>
-     </div>
-     </fieldset>
-    </td>
-    </tr>
-  </table>
-  <b tal:condition="not:batch">
-    <i>No matches for your search</i>
-  </b>
-  </div>
-  </tal:block>
-
-
-
+                </span>
+                &bull;
+                <span tal:condition="next_url" tal:omit-tag="">
+            	     <a tal:attributes="href next_url">Next &rarr;</a>
+                </span>
+                <span tal:condition="not: next_url" tal:omit-tag="">
+                  Next &rarr;
+                </span>
+              </td>
+            </tr>
+          </tfoot>
+  	    </table>
+      </tal:block>
+      <p tal:condition="not:batch">
+        No matches for your search.
+      </p>
 </div>
 
 

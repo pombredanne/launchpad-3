@@ -24,13 +24,13 @@
 
     <table metal:use-macro="context/@@+bugtask-macros-tableview/batched-table" />
 
-    <div tal:condition="mass_edit_allowed">
+    <tal:edit tal:condition="mass_edit_allowed">
       <tal:milestone condition="context/context/milestones|nothing">
         <tal:block content="structure view/milestone_assignment_widget" />
         <input type="submit" name="assign_to_milestone"
                value="Assign to Milestone" />
       </tal:milestone>
-    </div>
+    </tal:edit>
 
     <tal:search-defaults condition="not:view/advanced">
         <input type="hidden" name="status" value="10" />

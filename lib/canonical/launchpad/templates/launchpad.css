@@ -456,7 +456,6 @@ ul.search>li, li.search {
   list-style-image: url(/++resource++search_icon.gif);
 }
 
-
 /* Translation template stuff: */
 
 .messageSourceString {
@@ -601,7 +600,7 @@ h1 {
   padding-right: 0;
 }
 
-/* Fix listing tables: */
+/* -- Fix listing table styles: -- */
 
 table.listing {
   border: none;
@@ -616,11 +615,10 @@ table.listing th {
   white-space: nowrap;
 }
 table.listing>tr>td, table.listing>tbody>tr>td {
-  border: dotted #8cacbb;
-  border-width: 1px 0;
-  font-size: 90%;
+  border: 1px #8cacbb;
+  border-style: dotted none;
 }
-table.listing>thead>tr>th, table.listing>thead>tr>td {
+table.listing>thead, table.listing>thead>tr>th {
   border: 1px solid #8cacbb;
 }
 table.listing>thead>tr>td {
@@ -632,7 +630,6 @@ table.listing>thead>tr>td {
 dt {
   font-weight: inherit;
 }
-
 dt dfn {
   font-style: inherit;
   font-weight: bold;
@@ -654,6 +651,7 @@ q {
 
 .formHelp, .formHelp:hover {
   color: #666666;
+  margin-bottom: 1em;
   cursor: inherit;
 }
 
@@ -871,6 +869,14 @@ ul.app>li.current {
 }
 .list {
   text-align: left;
+}
+.required:after {
+  background: url(/++resource++required.gif) center left no-repeat;
+  color: #999999;
+  content: '(Required)';
+  font-weight: normal;  
+  padding: 0 0 0 8px;
+  margin: 0 0 0 4px;
 }
 
 h1, h2, h3, h4, h5, h6 {

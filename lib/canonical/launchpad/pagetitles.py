@@ -102,7 +102,7 @@ binarypackagerelease_index = 'Binary Package Release Details'
 
 binarypackagerelease_license = 'Binary Package Licence'
 
-bounties = 'Launchpad Registered Bounties'
+bounties = 'Launchpad Bounties'
 
 bounty_subscription = 'Bounty Subscription'
 
@@ -125,7 +125,7 @@ def bug_add(context, view):
         context_title = ContextTitle('Report a bug in %s')
         return context_title(context, view)
     else:
-        return "Malone: Report a Bug"
+        return "Report a bug"
 
 bug_attachments = ContextId('Malone Bug Attachments for Bug #%s')
 
@@ -149,9 +149,9 @@ bugwatch_editform = ContextTitle('Edit the Watch on %s')
 
 def bugs_assigned(context, view):
     if view.user:
-        return 'Malone Bugs assigned to %s' % view.user.browsername
+        return 'Bugs assigned to %s' % view.user.browsername
     else:
-        return 'No user to display Malone Bugs for'
+        return 'No-one to display bugs for'
 
 bugs_createdby_index = 'Malone Bug Report by Creator'
 

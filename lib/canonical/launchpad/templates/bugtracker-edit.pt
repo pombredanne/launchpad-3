@@ -16,97 +16,74 @@
 
    <tal:dummy condition="view/edit" />
 
-    <h1>Edit: <span tal:content="context/title">$BugTracker.title</span></h1>
-
-    <div class="documentDescription">
-    Please update the bug tracking system details below.
-    </div>
-
-    <fieldset>
-
-        <legend>Bug System Details</legend>
+        <h1>
+          Edit bug tracker
+          &#8220;<span tal:replace="context/title">FooBugz</span>&#8221;
+        </h1>
 
         <form action="+edit" method="post">
 
         <div class="field">
-
-            <label>Title</label>
-
-            <span class="fieldRequired" title="Required">(Required)</span>
-
-                  <div class="formHelp">
-                    This is the full title of the bug tacker, and can
-                    contain spaces, special characters etc. This is what
-                    you would imagine seeing at the top of a page about
-                    the bug tracker.  For example, <i>The Apache
-                    Bugzilla</i>, <i>The Gnome Bug Tracker</i>, <i>The
-                    SCREEM Bug Tracker</i>.
-                  </div>
+            <label for="title">Title:</label>
+            <span tal:omit-tag class="fieldRequired" title="Required">(Required)</span>
 
                 <input type="text" name="title" size="30"
                        value="" tal:attributes="value context/title" />
         </div>
-
-        <div class="field">
-
-            <label>Summary</label>
-
                   <div class="formHelp">
-                    A single paragraph introduction or overview of this
-                    bug tracker instance. It should describe the product or
-                    products that are covered by it. For example: <i>The
-                    Gnome Bugzilla is used to track bugs in any application
-                    that is part of the Gnome release or Gnome Fifth Toe
-                    application set</i>.
+                    The full title of the tracker,
+                    as shown in bug reports.
+                    Examples:
+                    <samp>Apache Bugzilla</samp>,
+                    <samp>Plone Collector</samp>.
                   </div>
 
+        <div class="field">
+            <label for="summary">Summary:</label>
                 <textarea cols="40" rows="4" name="summary"
                           tal:content="context/summary"></textarea>
+                  <div class="formHelp">
+                    A single paragraph introduction or overview,
+                    describing the products covered by this
+                    particular bug tracker installation.
+                  </div>
         </div>
         
         <div class="field">
-
-            <label>Base URL</label>
-
-                  <div class="formHelp">
-                    The Base URL for this bug tracker. This is the "top of
-                    instance" url, from which we can calculate direct URL's
-                    to take people straight to a bug status page, for
-                    example.
-                  </div>
-
+            <label for="baseurl">URL:</label>
                 <input type="text" name="baseurl" size="30"
-                       value="http://..."
+                       value="http://"
                        tal:attributes="value context/baseurl" />
+                  <div class="formHelp">
+                    The Web address for the tracker.
+                    URLs for bug status pages <abbr><i>etc</i></abbr>
+                    are extensions of this URL.
+                  </div>
         </div>
 
         <div class="field">
-
-            <label>Contact Information</label>
-
-                  <div class="formHelp">
-                  Please give contact details for the bug tracker. The
-                  contact details help us to reach the bug tracker
-                  administrators in the event of a security breach, for
-                  example.
-                  </div>
-
+            <label>Contact Information:</label>
                 <textarea cols="40" rows="5" name="contactdetails"
                           tal:content="context/contactdetails"></textarea>
+                  <div class="formHelp">
+                  Please give contact details for the bug tracker
+                  administrators, so we can contact them in
+                  emergencies.
+                  </div>
+
         </div>
 
 
-        <div class="formControls">
+        <div class="form actions">
 
-            <input class="context" type="submit"
+            <input type="submit"
                    name="Update"
-                   value="Update Bug Tracker" />
+                   value="Save Changes" />
 
         </div>
         </form>
 
 
-    </fieldset>
 
 </div>
 

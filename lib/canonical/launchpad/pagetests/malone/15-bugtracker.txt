@@ -30,7 +30,7 @@ register a new bug tracker.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <h1>Register a New Bug Tracking System</h1>
+      <h1>Register a new bug tracker</h1>
   ...
                   <input type="text" name="name" size="15" value="" style="text-transform: lowercase" />
   ...
@@ -113,7 +113,10 @@ Modifications to the bug tracker can be made as any logged in user:
   Location: http://localhost:9000/malone/bugtrackers/testbugtrck
   <BLANKLINE>
   ...
-      <h1>Edit: <span>Test Bug Tracker</span></h1>
+  <h1>
+  Edit bug tracker
+  &#8220;Test Bug Tracker&#8221;
+  </h1>
   ...
 
 

@@ -28,8 +28,6 @@ class BountySubscriberPortletMixin:
                 if s.subscription == BountySubscription.IGNORE]
 
 
-
-
 class BountyView(BountySubscriberPortletMixin):
 
     __used_for__ = IBounty
@@ -51,8 +49,6 @@ class BountyView(BountySubscriberPortletMixin):
                 self.context.subscribe(self.user, BountySubscription.WATCH)
             elif newsub == 'email':
                 self.context.subscribe(self.user, BountySubscription.CC)
-            elif newsub == 'ignore':
-                self.context.subscribe(self.user, BountySubscription.IGNORE)
             elif newsub == 'none':
                 self.context.unsubscribe(self.user)
             self.notices.append("Your subscription to this bounty has been "
@@ -65,22 +61,12 @@ class BountyView(BountySubscriberPortletMixin):
                     self.subscription = subscription.subscription
                     break
 
-    def subselector(self):
-        html = '<select name="subscription">\n'
-        html += '<option value="watch"'
-        if self.subscription == BountySubscription.WATCH:
-            html += ' selected'
-        html += '>Watch</option>\n'
-        html += '<option value="email"'
-        if self.subscription == BountySubscription.CC:
-            html += ' selected'
-        html += '>Email</option>\n'
-        html += '<option value="none"'
-        if self.subscription is None:
-            html += ' selected'
-        html += '>None</option>\n'
-        html += '</select>\n'
-        return html
+    def subscriptionTypeIsCC(self):
+        return self.subscription == BountySubscription.CC
+
+    def subscriptionTypeIsWatch(self):
+        return self.subscription == BountySubscription.WATCH
+
 
 class BountySetAddView(AddView):
 

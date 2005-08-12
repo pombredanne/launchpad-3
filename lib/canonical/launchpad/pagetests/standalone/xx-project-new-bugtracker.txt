@@ -9,7 +9,7 @@ Test the adding of a bugtracker to a project. First, load the page:
   ...
   <BLANKLINE>
   ...
-      <h1>Register a New Bug Tracking System</h1>
+      <h1>Register a new bug tracker</h1>
   ...
 
 Now post to the page, to add the bug tracker:
@@ -27,7 +27,7 @@ Now post to the page, to add the bug tracker:
   Location: http://localhost:9000/projects/mozilla
   <BLANKLINE>
   ...
-      <h1>Register a New Bug Tracking System</h1>
+      <h1>Register a new bug tracker</h1>
   ...
 
 
