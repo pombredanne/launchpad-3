@@ -116,7 +116,8 @@
         class="canonical.launchpad.browser.ProductRdfView"
         name="+rdf"
         lp:url="/projects/$Product.name/+rdf"
-        template="../templates/product-rdf.pt" />
+        attribute="__call__"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"

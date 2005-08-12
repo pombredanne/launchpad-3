@@ -590,6 +590,10 @@ pre, textarea {
   padding-left: 30px;
 } /* need a px value because the image has a pixel size */
 
+img {
+  vertical-align: baseline;
+}
+
 /* -- Make headings lay out properly -- */
 
 h1 {

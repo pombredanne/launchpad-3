@@ -30,6 +30,7 @@ from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
 from canonical.lp.dbschema import (
@@ -162,11 +163,11 @@ class FOAFSearchView:
             return None
 
         if searchfor == "all":
-            results = getUtility(IPersonSet).findByName(name)
+            results = getUtility(IPersonSet).find(name)
         elif searchfor == "peopleonly":
-            results = getUtility(IPersonSet).findPersonByName(name)
+            results = getUtility(IPersonSet).findPerson(name)
         elif searchfor == "teamsonly":
-            results = getUtility(IPersonSet).findTeamByName(name)
+            results = getUtility(IPersonSet).findTeam(name)
 
         start = int(self.request.get('batch_start', 0))
         batch = Batch(list=results, start=start, size=BATCH_SIZE)
@@ -175,13 +176,30 @@ class FOAFSearchView:
 
 class PersonRdfView:
     """A view that sets its mime-type to application/rdf+xml"""
+
+    template = ViewPageTemplateFile(
+        '../templates/person-foaf.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        request.response.setHeader('content-type', 'application/rdf+xml')
-        request.response.setHeader('Content-Disposition',
-                                   'attachment; filename=' + 
-                                   self.context.name + '.rdf')
+
+    def __call__(self):
+        """Render RDF output, and return it as a string encoded in UTF-8.
+
+        Render the page template to produce RDF output.
+        The return value is string data encoded in UTF-8.
+
+        As a side-effect, HTTP headers are set for the mime type
+        and filename for download."""
+        self.request.response.setHeader('content-type', 
+                                        'application/rdf+xml')
+        self.request.response.setHeader('Content-Disposition',
+                                        'attachment; filename=%s.rdf' % 
+                                            self.context.name)
+        unicodedata = self.template()
+        encodeddata = unicodedata.encode('utf-8')
+        return encodeddata
 
 
 class PersonView:
@@ -920,7 +938,7 @@ class RequestPeopleMergeView(AddView):
             # Please, don't try to merge you into yourself.
             return
 
-        emails = getUtility(IEmailAddressSet).getByPerson(dupeaccount.id)
+        emails = getUtility(IEmailAddressSet).getByPerson(dupeaccount)
         if len(emails) > 1:
             # The dupe account have more than one email address. Must redirect
             # the user to another page to ask which of those emails (s)he
@@ -964,7 +982,7 @@ class RequestPeopleMergeMultipleEmailsView:
             dupe = self.request.get('dupe')
         self.dupe = getUtility(IPersonSet).get(int(dupe))
         emailaddrset = getUtility(IEmailAddressSet)
-        self.dupeemails = emailaddrset.getByPerson(self.dupe.id)
+        self.dupeemails = emailaddrset.getByPerson(self.dupe)
 
     def processForm(self):
         if self.request.method != "POST":

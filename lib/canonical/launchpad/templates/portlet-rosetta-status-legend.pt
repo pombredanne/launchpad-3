@@ -1,51 +1,34 @@
-
-  <fieldset>
-    <legend>Legend</legend>
-
-    <p>The colour coding of the translation status bar indicates the
-    extent to which the app has been translated into that language.</p>
-
-    <table class="listing">
-
-      <thead>
-        <tr>
-          <th>
-          </th>
-          <th>
-            Interpretation
-          </th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr>
-          <td>
-            <img src="/++resource++green-bar.png" height="10" width="20"
-                 style="margin-top: 2px;" alt="Translated Messages" />
-          </td>
-          <td>Unchanged in Rosetta</td>
-        </tr>
-        <tr>
-          <td>
-            <img src="/++resource++blue-bar.png" height="10" width="20"
-                 style="margin-top: 2px;" alt="Improved Message Translations" />
-          </td>
-          <td>Rosetta has a newer translation</td>
-        </tr>
-        <tr>
-          <td>
-            <img src="/++resource++purple-bar.png" height="10" width="20"
-                 style="margin-top: 2px;" alt="Newly Translated Messages" />
-          </td>
-          <td>New translation in Rosetta</td>
-        </tr>
-        <tr>
-          <td>
-            <img src="/++resource++red-bar.png" height="10" width="20"
-                 style="margin-top: 2px;" alt="Untranslated Messages" />
-          </td>
-          <td>Untranslated messages</td>
-        </tr>
-      </tbody>
-  </table>
-</fieldset>
+<div class="discreet">
+  <div>
+    <img
+      alt="Key to the above table: &#8220;published&#8221; means"
+      src="/++resource++green-bar.png"
+      style="height: 1em; width: 2em;"
+    />
+    Translation unchanged since last synchronized
+  </div>
+  <div>
+    <img
+      alt="&#8220;Changed&#8221; means"
+      src="/++resource++blue-bar.png"
+      style="height: 1em; width: 2em;"
+    />
+    Changed in Rosetta
+  </div>
+  <div>
+    <img
+      alt="&#8220;new&#8221; means"
+      src="/++resource++purple-bar.png"
+      style="height: 1em; width: 2em;"
+    />
+    Newly translated in Rosetta
+  </div>
+  <div>
+    <img
+      alt="and &#8220;untranslated&#8221; means just that,"
+      src="/++resource++red-bar.png"
+      style="height: 1em; width: 2em;"
+    />
+    Untranslated
+  </div>
+</div>

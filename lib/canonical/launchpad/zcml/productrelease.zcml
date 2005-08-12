@@ -90,7 +90,8 @@
         permission="zope.Public"
         name="+rdf"
         lp:url="/projects/$Product.name/$ProductRelease.name/+rdf"
-        template="../templates/productrelease-rdf.pt" />
+        attribute="__call__"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductRelease"
