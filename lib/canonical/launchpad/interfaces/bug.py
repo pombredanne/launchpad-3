@@ -148,6 +148,8 @@ class IBugTarget(Interface):
     def searchTasks(search_params):
         """Search the IBugTasks reported on this entity.
 
+        :search_params: a BugTaskSearchParams object
+
         Return an iterable of matching results.
 
         Note: milestone is currently ignored for all IBugTargets

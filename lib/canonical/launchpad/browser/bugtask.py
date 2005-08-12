@@ -255,7 +255,7 @@ class BugTaskSearchListingView:
             # The user is likely coming into the form by clicking
             # on a URL (vs. having submitted a GET search query),
             # so show NEW and ACCEPTED bugs by default.
-            search_params.status = any(dbschema.BugTaskStatus.NEW, 
+            search_params.status = any(dbschema.BugTaskStatus.NEW,
                                        dbschema.BugTaskStatus.ACCEPTED)
         else:
             # the user didn't select any statuses in the advanced search
@@ -570,7 +570,7 @@ class BugTargetView:
     """Used to grab bugs for a bug target; used by the latest bugs portlet"""
     def latestBugTasks(self, quantity=5):
         """Return <quantity> latest bugs reported against this target."""
-        params = BugTaskSearchParams(orderby="-datecreated", 
+        params = BugTaskSearchParams(orderby="-datecreated",
                                      user=getUtility(ILaunchBag).user)
 
         tasklist = self.context.searchTasks(params)

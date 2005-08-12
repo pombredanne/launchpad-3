@@ -12,9 +12,11 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
+from canonical.launchpad.interfaces import IBugTarget
+
 _ = MessageIDFactory('launchpad')
 
-class ISourcePackage(Interface):
+class ISourcePackage(IBugTarget):
     """A SourcePackage. See the MagicSourcePackage specification. This
     interface preserves as much as possible of the old SourcePackage
     interface from the SourcePackage table, with the new table-less
@@ -75,7 +77,7 @@ class ISourcePackage(Interface):
     releases = Attribute("The full set of source package releases that "
         "have been published in this distrorelease under this source "
         "package name. The list should be sorted by version number.")
-    
+
     releasehistory = Attribute("A list of all the source packages ever "
         "published in this Distribution (across all distroreleases) with "
         "this source package name. Note that the list spans "
@@ -119,12 +121,12 @@ class ISourcePackage(Interface):
         """Returns the SourcePackageRelease that had the name of this
         SourcePackage and the given version, and was published in this
         distribution. NB:
-        
+
           1. Currently, we have no PublishingMorgue, so this will only find
              SourcePackageReleases that are *still* published (even if they
              have been superceded, as long as they have not yet been
              deleted).
-        
+
           2. It will look across the entire distribution, not just in the
           current distrorelease. In Ubuntu and RedHat, and similar
           distributions, a sourcepackagerelease name+version is UNIQUE

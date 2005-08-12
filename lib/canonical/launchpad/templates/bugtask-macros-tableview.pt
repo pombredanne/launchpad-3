@@ -1,14 +1,14 @@
 <metal:header define-macro="batched-table">
   <tal:comment replace="nothing">
   This macro expects the following variables defined:
-      :task_batch_navigator: an IBatchNavigator 
+      :task_batch_navigator: an IBatchNavigator
       :listing_columns: a list of strings specifying columns to display
   Optional:
       :mass_edit_allowed: specifies whether a column for selection should
                          be included
   </tal:comment>
 
-  <table class="listing data" width="67%" 
+  <table class="listing data" width="67%"
          tal:define=" tasks task_batch_navigator/batch;">
     <thead>
       <tr metal:use-macro="context/@@+bugtask-macros-tableview/batching-header" />
@@ -47,7 +47,7 @@
 <metal:header define-macro="batching-header">
   <tr class="results" tal:define="task_batch task_batch_navigator/batch">
     <td
-      tal:attributes="colspan python: len(listing_columns) + 
+      tal:attributes="colspan python: len(listing_columns) +
                                       int(mass_edit_allowed|0)"
       tal:define="startno task_batch/startNumber;
                   endno task_batch/endNumber;
@@ -76,8 +76,8 @@
 
       <strong tal:content="startno">1</strong>
       &rarr;
-      <strong tal:content="endno">10</strong> 
-      of 
+      <strong tal:content="endno">10</strong>
+      of
       <tal:comment replace="nothing">
         XXX: The spacing in the following line is very tricky -- get it
         wrong and tests will fail.
@@ -171,7 +171,7 @@
                 project_name task/product/project/name|nothing;
                 package_name task/sourcepackagename/name|nothing">
   <td tal:condition="mass_edit_allowed|nothing">
-    <input type="checkbox" name="task" value="" 
+    <input type="checkbox" name="task" value=""
            tal:attributes="value task/id" />
   </td>
   <td tal:condition="python:'id' in listing_columns">

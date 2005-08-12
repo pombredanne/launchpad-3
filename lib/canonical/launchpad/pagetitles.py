@@ -588,9 +588,16 @@ signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 
+def sourcepackage_bugs(context, view):
+    return 'Bugs in %s %s' % (
+        context.distrorelease.distribution.name,
+        context.sourcepackagename)
+
 sourcepackage_buildlog = 'Source Package Build Log'
 
 sourcepackage_changelog = 'Source Package Changelog'
+
+sourcepackage_filebug = ContextTitle("Report a Bug in %s")
 
 def sourcepackage_index(context, view):
     return '%s Source Packages' % context.distrorelease.title
