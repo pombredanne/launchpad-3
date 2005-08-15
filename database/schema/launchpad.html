@@ -120,7 +120,7 @@
 <!-- Primary Index -->
 <p><br />
 <br />
-Dumped on 2005-06-23</p>
+Dumped on 2005-08-15</p>
 <h1><a name="index" id="index">Index of database -
 launchpad_dev</a></h1>
 <ul>
@@ -169,11 +169,14 @@ launchpad_dev</a></h1>
 "#public.table.bugsubscription">bugsubscription</a></li>
 <li><a href="#public.table.bugtask">bugtask</a></li>
 <li><a href="#public.table.bugtracker">bugtracker</a></li>
-<li><a href="#public.table.bugtrackertype">bugtrackertype</a></li>
 <li><a href="#public.table.bugwatch">bugwatch</a></li>
 <li><a href="#public.table.build">build</a></li>
 <li><a href="#public.table.builder">builder</a></li>
 <li><a href="#public.table.buildqueue">buildqueue</a></li>
+<li><a href="#public.table.calendar">calendar</a></li>
+<li><a href="#public.table.calendarevent">calendarevent</a></li>
+<li><a href=
+"#public.table.calendarsubscription">calendarsubscription</a></li>
 <li><a href="#public.table.changeset">changeset</a></li>
 <li><a href="#public.table.changesetfile">changesetfile</a></li>
 <li><a href=
@@ -191,6 +194,8 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.distrobounty">distrobounty</a></li>
 <li><a href="#public.table.distrorelease">distrorelease</a></li>
 <li><a href=
+"#public.table.distroreleaselanguage">distroreleaselanguage</a></li>
+<li><a href=
 "#public.table.distroreleasequeue">distroreleasequeue</a></li>
 <li><a href=
 "#public.table.distroreleasequeuebuild">distroreleasequeuebuild</a></li>
@@ -201,10 +206,14 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.ircid">ircid</a></li>
 <li><a href="#public.table.jabberid">jabberid</a></li>
 <li><a href="#public.table.karma">karma</a></li>
+<li><a href="#public.table.karmaaction">karmaaction</a></li>
+<li><a href="#public.table.karmacache">karmacache</a></li>
 <li><a href="#public.table.label">label</a></li>
 <li><a href="#public.table.language">language</a></li>
 <li><a href=
 "#public.table.launchpaddatabaserevision">launchpaddatabaserevision</a></li>
+<li><a href=
+"#public.table.launchpadstatistic">launchpadstatistic</a></li>
 <li><a href=
 "#public.table.libraryfilealias">libraryfilealias</a></li>
 <li><a href=
@@ -242,6 +251,8 @@ launchpad_dev</a></h1>
 <li><a href=
 "#public.table.poexportrequest">poexportrequest</a></li>
 <li><a href="#public.table.pofile">pofile</a></li>
+<li><a href="#public.table.poll">poll</a></li>
+<li><a href="#public.table.polloption">polloption</a></li>
 <li><a href="#public.table.pomsgid">pomsgid</a></li>
 <li><a href=
 "#public.table.pomsgidsighting">pomsgidsighting</a></li>
@@ -253,8 +264,6 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.potemplatename">potemplatename</a></li>
 <li><a href="#public.table.potmsgset">potmsgset</a></li>
 <li><a href="#public.table.potranslation">potranslation</a></li>
-<li><a href=
-"#public.table.potranslationsightingbackup">potranslationsightingbackup</a></li>
 <li><a href="#public.table.processor">processor</a></li>
 <li><a href=
 "#public.table.processorfamily">processorfamily</a></li>
@@ -305,8 +314,6 @@ launchpad_dev</a></h1>
 "#public.table.sourcepackagerelease">sourcepackagerelease</a></li>
 <li><a href=
 "#public.table.sourcepackagereleasefile">sourcepackagereleasefile</a></li>
-<li><a href=
-"#public.table.sourcesourcebackup">sourcesourcebackup</a></li>
 <li><a href="#public.table.spokenin">spokenin</a></li>
 <li><a href="#public.table.sshkey">sshkey</a></li>
 <li><a href="#public.table.teammembership">teammembership</a></li>
@@ -319,22 +326,40 @@ launchpad_dev</a></h1>
 <li><a href=
 "#public.table.translationgroup">translationgroup</a></li>
 <li><a href="#public.table.translator">translator</a></li>
+<li><a href="#public.table.vote">vote</a></li>
+<li><a href="#public.table.votecast">votecast</a></li>
 <li><a href=
 "#public.view.vsourcepackageindistro">vsourcepackageindistro</a></li>
 <li><a href=
 "#public.view.vsourcepackagereleasepublishing">vsourcepackagereleasepublishing</a></li>
 <li><a href="#public.table.wikiname">wikiname</a></li>
+<li><a href="#public.function.is-person-integer">is_person( integer
+)</a></li>
+<li><a href="#public.function.is-person-text">is_person( text
+)</a></li>
+<li><a href="#public.function.is-team-integer">is_team( integer
+)</a></li>
+<li><a href="#public.function.is-team-text">is_team( text
+)</a></li>
 <li><a href=
 "#public.function.plpython-call-handler">plpython_call_handler(
+)</a></li>
+<li><a href="#public.function.sane-version-text">sane_version( text
 )</a></li>
 <li><a href="#public.function.sha1-text">sha1( text )</a></li>
 <li><a href=
 "#public.function.valid-absolute-url-text">valid_absolute_url( text
 )</a></li>
+<li><a href=
+"#public.function.valid-branch-name-text">valid_branch_name( text
+)</a></li>
 <li><a href="#public.function.valid-bug-name-text">valid_bug_name(
 text )</a></li>
 <li><a href="#public.function.valid-cve-text">valid_cve( text
 )</a></li>
+<li><a href=
+"#public.function.valid-debian-version-text">valid_debian_version(
+text )</a></li>
 <li><a href=
 "#public.function.valid-fingerprint-text">valid_fingerprint( text
 )</a></li>
@@ -356,6 +381,7 @@ text )</a></li>
 <li><a href="#ts2.table.pg-ts-cfgmap">pg_ts_cfgmap</a></li>
 <li><a href="#ts2.table.pg-ts-dict">pg_ts_dict</a></li>
 <li><a href="#ts2.table.pg-ts-parser">pg_ts_parser</a></li>
+<li><a href="#ts2.function.-ftq-text">_ftq( text )</a></li>
 <li><a href=
 "#ts2.function.-get-parser-from-curcfg">_get_parser_from_curcfg(
 )</a></li>
@@ -369,6 +395,7 @@ internal, internal, integer )</a></li>
 <li><a href=
 "#ts2.function.exectsq-ts2.tsvector-ts2.tsquery">exectsq(
 ts2.tsvector, ts2.tsquery )</a></li>
+<li><a href="#ts2.function.ftiupdate">ftiupdate( )</a></li>
 <li><a href="#ts2.function.ftq-text">ftq( text )</a></li>
 <li><a href=
 "#ts2.function.get-covers-ts2.tsvector-ts2.tsquery">get_covers(
@@ -712,6 +739,20 @@ The archive name, usually in the format of an email address</td>
 <td>
 <center>&diams;</center>
 </td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>trebuchet</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -1521,6 +1562,20 @@ public</a></p>
 <td>
 <center>&diams;</center>
 </td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>trebuchet</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -1643,7 +1698,9 @@ public</a></p>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -1898,7 +1955,7 @@ distroarchreleases which pertain.</td>
 </tr>
 <tr class="tr0">
 <td>valid_version</td>
-<td>CHECK (valid_version("version"))</td>
+<td>CHECK (valid_debian_version("version"))</td>
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
@@ -1945,6 +2002,22 @@ distroarchreleases which pertain.</td>
 </th>
 </tr>
 <tr class="tr0">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -1968,7 +2041,7 @@ distroarchreleases which pertain.</td>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -1980,7 +2053,7 @@ distroarchreleases which pertain.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -1996,7 +2069,7 @@ distroarchreleases which pertain.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -2105,6 +2178,20 @@ public.binarypackagefile</caption>
 </th>
 </tr>
 <tr class="tr0">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -2128,7 +2215,7 @@ public.binarypackagefile</caption>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -2140,7 +2227,7 @@ public.binarypackagefile</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -2156,7 +2243,7 @@ public.binarypackagefile</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -2260,6 +2347,12 @@ SQLObject.</p>
 <td>integer</td>
 <td></td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>pocket</td>
+<td>integer</td>
+<td></td>
+</tr>
 </table>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
@@ -2279,7 +2372,8 @@ SELECT (
 , binarypackagefile.libraryfile AS libraryfilealias
 , distrorelease.name AS distroreleasename
 , distroarchrelease.architecturetag
-, packagepublishing.status AS publishingstatus 
+, packagepublishing.status AS publishingstatus
+, packagepublishing.pocket 
 FROM (
      (
            (
@@ -2531,6 +2625,20 @@ public.binarypackagename</caption>
 </th>
 </tr>
 <tr class="tr0">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -2554,7 +2662,7 @@ public.binarypackagename</caption>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -2566,7 +2674,7 @@ public.binarypackagename</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -2582,7 +2690,7 @@ public.binarypackagename</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -3418,6 +3526,20 @@ public</a></p>
 <td>
 <center>&diams;</center>
 </td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>trebuchet</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -3878,6 +4000,10 @@ to see it</td>
 </ul>
 <ul>
 <li><a href=
+"#public.table.bugattachment">public.bugattachment</a></li>
+</ul>
+<ul>
+<li><a href=
 "#public.table.bugexternalref">public.bugexternalref</a></li>
 </ul>
 <ul>
@@ -4223,7 +4349,7 @@ public</a></p>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>description</td>
+<td>title</td>
 <td>text</td>
 <td></td>
 </tr>
@@ -4235,10 +4361,16 @@ public</a></p>
 <td><i>NOT NULL</i></td>
 </tr>
 <tr class="tr1">
+<td><a href="#public.table.bug">public.bug.id</a></td>
+<td>bug</td>
+<td>integer</td>
+<td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr0">
 <td></td>
-<td>datedeactivated</td>
-<td>timestamp without time zone</td>
-<td></td>
+<td>type</td>
+<td>integer</td>
+<td><i>NOT NULL</i></td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -5579,7 +5711,7 @@ product.</p>
 </tr>
 <tr class="tr1">
 <td><a href="#public.table.bug">public.bug.id</a> <a href=
-"#public.table.bugwatch">public.bugwatch.bug#1</a></td>
+"#public.table.bugwatch">public.bugwatch.bug#3</a></td>
 <td>bug</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
@@ -5588,7 +5720,8 @@ The bug that is assigned to this (sourcepackagename, distro) or
 product.</td>
 </tr>
 <tr class="tr0">
-<td><a href="#public.table.product">public.product.id</a></td>
+<td><a href="#public.table.product">public.product.id</a> <a href=
+"#public.table.milestone">public.milestone.product#2</a></td>
 <td>product</td>
 <td>integer</td>
 <td><br />
@@ -5596,8 +5729,9 @@ product.</td>
 The product in which this bug shows up.</td>
 </tr>
 <tr class="tr1">
-<td><a href=
-"#public.table.distribution">public.distribution.id</a></td>
+<td><a href="#public.table.distribution">public.distribution.id</a>
+<a href=
+"#public.table.milestone">public.milestone.distribution#1</a></td>
 <td>distribution</td>
 <td>integer</td>
 <td><br />
@@ -5693,7 +5827,8 @@ later.</td>
 <td><i>NOT NULL</i></td>
 </tr>
 <tr class="tr0">
-<td><a href="#public.table.milestone">public.milestone.id</a></td>
+<td><a href="#public.table.milestone">public.milestone.id#1</a>
+<a href="#public.table.milestone">public.milestone.id#2</a></td>
 <td>milestone</td>
 <td>integer</td>
 <td><br />
@@ -5702,7 +5837,7 @@ A way to mark a bug for grouping purposes, e.g. to say it needs to
 be fixed by version 1.2</td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.bugwatch">public.bugwatch.id#1</a></td>
+<td><a href="#public.table.bugwatch">public.bugwatch.id#3</a></td>
 <td>bugwatch</td>
 <td>integer</td>
 <td><br />
@@ -5738,11 +5873,10 @@ A place to store bug task specific information as free text</td>
 </tr>
 <tr class="tr0">
 <td>bugtask_assignment_checks</td>
-<td>CHECK (CASE WHEN (product IS NOT NULL) THEN ((distribution IS
-NULL) AND (distrorelease IS NULL)) WHEN (distribution IS NOT NULL)
-THEN ((product IS NULL) AND (distrorelease IS NULL)) WHEN
-(distrorelease IS NOT NULL) THEN ((product IS NULL) AND
-(distribution IS NULL)) ELSE NULL::boolean END)</td>
+<td>CHECK (CASE WHEN (product IS NOT NULL) THEN (((distribution IS
+NULL) AND (distrorelease IS NULL)) AND (sourcepackagename IS NULL))
+WHEN (distribution IS NOT NULL) THEN (distrorelease IS NULL) ELSE
+NULL::boolean END)</td>
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
@@ -5880,8 +6014,7 @@ their bugzilla, Malone know that the bug is fixed upstream.</p>
 <td><i>PRIMARY KEY</i></td>
 </tr>
 <tr class="tr1">
-<td><a href=
-"#public.table.bugtrackertype">public.bugtrackertype.id</a></td>
+<td></td>
 <td>bugtrackertype</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
@@ -5980,181 +6113,6 @@ bug tracker with the responsible people on the other side.</td>
 <p> </p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>Permissions which apply to public.bugtracker</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.bugtrackertype" id=
-"public.table.bugtrackertype">bugtrackertype</a></h2>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.bugtrackertype Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>name</td>
-<td>text</td>
-<td><i>UNIQUE NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>title</td>
-<td>text</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>description</td>
-<td>text</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>homepage</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>owner</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<p> </p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.bugtrackertype Constraints</caption>
-<tr>
-<th>Name</th>
-<th>Constraint</th>
-</tr>
-<tr class="tr0">
-<td>valid_name</td>
-<td>CHECK (valid_name(name))</td>
-</tr>
-</table>
-<!-- Foreign Key Discovery -->
-<p>Tables referencing this one via Foreign Key Constraints:</p>
-<ul>
-<li><a href="#public.table.bugtracker">public.bugtracker</a></li>
-</ul>
-<!-- View Definition -->
-<!-- List off permissions -->
-<p> </p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to public.bugtrackertype</caption>
 <tr>
 <th>User</th>
 <th>
@@ -6579,6 +6537,22 @@ public</a></p>
 </th>
 </tr>
 <tr class="tr0">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -6602,7 +6576,7 @@ public</a></p>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -6614,7 +6588,7 @@ public</a></p>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -6630,7 +6604,7 @@ public</a></p>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -6803,6 +6777,22 @@ default port number for a build slave is 8221</td>
 </th>
 </tr>
 <tr class="tr0">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -6826,7 +6816,7 @@ default port number for a build slave is 8221</td>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -6838,7 +6828,7 @@ default port number for a build slave is 8221</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -6854,7 +6844,7 @@ default port number for a build slave is 8221</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -7043,6 +7033,538 @@ the UI among other places.</td>
 <td></td>
 <td></td>
 <td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>group write</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.calendar" id=
+"public.table.calendar">calendar</a></h2>
+<p>A Calendar attached to some other Launchpad object (currently
+People, Projects or Products)</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.calendar Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>title</td>
+<td>text</td>
+<td><i>NOT NULL</i><br />
+<br />
+The title of the Calendar</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>revision</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+An monotonically increasing counter indicating a particular version
+of the calendar</td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.calendarevent">public.calendarevent</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.calendarsubscription">public.calendarsubscription</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.person">public.person</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.product">public.product</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.project">public.project</a></li>
+</ul>
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.calendar</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>group write</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.calendarevent" id=
+"public.table.calendarevent">calendarevent</a></h2>
+<p>Events belonging to calendars</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.calendarevent Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>uid</td>
+<td>character varying(255)</td>
+<td><i>UNIQUE NOT NULL</i><br />
+<br />
+A globally unique identifier for the event. This identifier should
+be preserved through when importing events from a desktop calendar
+application</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.calendar">public.calendar.id</a></td>
+<td>calendar</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The calendar this event belongs to</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>dtstart</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL</i><br />
+<br />
+The start time for the event in UTC</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>duration</td>
+<td>interval</td>
+<td><i>NOT NULL</i><br />
+<br />
+The duration of the event</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>title</td>
+<td>text</td>
+<td><i>NOT NULL</i><br />
+<br />
+A one line description of the event</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>description</td>
+<td>text</td>
+<td><br />
+<br />
+A multiline description of the event</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>location</td>
+<td>text</td>
+<td><br />
+<br />
+A location associated with the event</td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.calendarevent</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>group write</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.calendarsubscription" id=
+"public.table.calendarsubscription">calendarsubscription</a></h2>
+<p>A subscription relationship between two calendars</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.calendarsubscription Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.calendar">public.calendar.id</a></td>
+<td>subject</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The subject of the subscription relationship</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.calendar">public.calendar.id</a></td>
+<td>object</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The object of the subscription relationship</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>colour</td>
+<td>text</td>
+<td><i>NOT NULL DEFAULT '#efefef'::text</i><br />
+<br />
+The colour used to display events from calendar 'object' when in
+the context of calendar 'subject'</td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.calendarsubscription</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>group write</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -7259,6 +7781,20 @@ public</a></p>
 <td>
 <center>&diams;</center>
 </td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>trebuchet</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -8260,6 +8796,15 @@ with time zone)</i></td>
 <br />
 This refers to the person who created the entry.</td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>cvestate</td>
+<td>integer</td>
+<td><i>NOT NULL DEFAULT 1</i><br />
+<br />
+This is a dbschema enum which tells us the state (CVE or CAN) of
+the CVE problem report. It is defined in dbschema.CVEState</td>
+</tr>
 </table>
 <!-- Constraint List -->
 <p> </p>
@@ -8538,6 +9083,9 @@ at all).</td>
 <ul>
 <li><a href="#public.table.message">public.message</a></li>
 </ul>
+<ul>
+<li><a href="#public.table.milestone">public.milestone</a></li>
+</ul>
 <!-- View Definition -->
 <!-- List off permissions -->
 <p> </p>
@@ -8568,6 +9116,20 @@ at all).</td>
 </th>
 </tr>
 <tr class="tr0">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -8591,7 +9153,7 @@ at all).</td>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -8603,7 +9165,7 @@ at all).</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -8619,7 +9181,7 @@ at all).</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>poexport</td>
 <td>
 <center>&diams;</center>
@@ -8631,7 +9193,7 @@ at all).</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -8655,8 +9217,32 @@ at all).</td>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>trebuchet</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -8696,7 +9282,7 @@ distroarchrelease groups that architecture-specific stuff.</p>
 "#public.table.distrorelease">public.distrorelease.id</a></td>
 <td>distrorelease</td>
 <td>integer</td>
-<td><i>NOT NULL</i><br />
+<td><i>UNIQUE#1 UNIQUE#2 NOT NULL</i><br />
 <br />
 The distribution which this distroarchrelease is part of.</td>
 </tr>
@@ -8705,7 +9291,7 @@ The distribution which this distroarchrelease is part of.</td>
 "#public.table.processorfamily">public.processorfamily.id</a></td>
 <td>processorfamily</td>
 <td>integer</td>
-<td><i>NOT NULL</i><br />
+<td><i>UNIQUE#2 NOT NULL</i><br />
 <br />
 A link to the ProcessorFamily table, giving the architecture of
 this DistroArchRelease.</td>
@@ -8714,7 +9300,7 @@ this DistroArchRelease.</td>
 <td></td>
 <td>architecturetag</td>
 <td>text</td>
-<td><i>NOT NULL</i><br />
+<td><i>UNIQUE#1 NOT NULL</i><br />
 <br />
 The name of this architecture in the context of this specific
 distro release. For example, some distributions might label amd64
@@ -8779,6 +9365,20 @@ public.distroarchrelease</caption>
 </th>
 </tr>
 <tr class="tr0">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -8802,7 +9402,7 @@ public.distroarchrelease</caption>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -8814,7 +9414,7 @@ public.distroarchrelease</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -8830,7 +9430,7 @@ public.distroarchrelease</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -9160,6 +9760,18 @@ The date we last generated a base language pack for this release.
 Language update packs for this release will only include
 translations added after that date.</td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>messagecount</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+This is a cached value and may be a few hours out of sync with
+reality. It should, however, be in sync with the values in
+DistroReleaseLanguage, and should never be updated separately. The
+total number of translation messages in this distro release, as per
+IRosettaStats.</td>
+</tr>
 </table>
 <!-- Constraint List -->
 <p> </p>
@@ -9175,7 +9787,7 @@ translations added after that date.</td>
 </tr>
 <tr class="tr1">
 <td>valid_version</td>
-<td>CHECK (valid_version("version"))</td>
+<td>CHECK (sane_version("version"))</td>
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
@@ -9194,6 +9806,10 @@ translations added after that date.</td>
 <ul>
 <li><a href=
 "#public.table.distrorelease">public.distrorelease</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.distroreleaselanguage">public.distroreleaselanguage</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -9255,6 +9871,257 @@ translations added after that date.</td>
 </th>
 </tr>
 <tr class="tr0">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr0">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>group write</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr0">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>trebuchet</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.distroreleaselanguage" id=
+"public.table.distroreleaselanguage">distroreleaselanguage</a></h2>
+<p>A cache of the current translation status of that language
+across an entire distrorelease.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.distroreleaselanguage Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.distrorelease">public.distrorelease.id</a></td>
+<td>distrorelease</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.language">public.language.id</a></td>
+<td>language</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>currentcount</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+As per IRosettaStats.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>updatescount</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+As per IRosettaStats.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>rosettacount</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+As per IRosettaStats.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>contributorcount</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The total number of contributors to the translation of this
+distrorelease into this language.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>dateupdated</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text,
+('now'::text)::timestamp(6) with time zone)</i><br />
+<br />
+The date these statistucs were last updated.</td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.distroreleaselanguage</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -9291,7 +10158,7 @@ translations added after that date.</td>
 <td></td>
 </tr>
 <tr class="tr0">
-<td>group write</td>
+<td>launchpad</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -9307,18 +10174,6 @@ translations added after that date.</td>
 <td></td>
 </tr>
 <tr class="tr1">
-<td>poexport</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -9342,13 +10197,17 @@ translations added after that date.</td>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
-<td>sourcerer</td>
+<tr class="tr0">
+<td>statistician</td>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
-<td></td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -10044,11 +10903,13 @@ The 40 character GPG fingerprint, uppercase and no whitespace</td>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>revoked</td>
+<td>active</td>
 <td>boolean</td>
 <td><i>NOT NULL</i><br />
 <br />
-True if this key has been revoked</td>
+True if this key is active for use in Launchpad context, false
+could be deactivated by user or revoked in the global key
+ring.</td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -10182,7 +11043,9 @@ with keysizes &lt; 768 bits in the future.</td>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -10328,7 +11191,9 @@ public</a></p>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -10469,7 +11334,9 @@ public</a></p>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -10523,22 +11390,14 @@ end-user support, wiki editting, etc.</p>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>karmatype</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-Type of the performed 'operation'. Possible values are in
-dbschema.KarmaType.</td>
-</tr>
-<tr class="tr0">
-<td></td>
 <td>datecreated</td>
 <td>timestamp without time zone</td>
-<td><i>NOT NULL</i><br />
+<td><i>NOT NULL DEFAULT timezone('UTC'::text,
+('now'::text)::timestamp(6) with time zone)</i><br />
 <br />
 A timestamp for the assignment of this Karma.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>person</td>
 <td>integer</td>
@@ -10546,15 +11405,14 @@ A timestamp for the assignment of this Karma.</td>
 <br />
 The Person for wich this Karma was assigned.</td>
 </tr>
-<tr class="tr0">
-<td></td>
-<td>points</td>
+<tr class="tr1">
+<td><a href=
+"#public.table.karmaaction">public.karmaaction.id</a></td>
+<td>action</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The 'weight' of this Karma. Two Karmas of the same KarmaType may
-have different Points, meaning that we may give higher weights for
-hard-to-fix bugs, for example.</td>
+A foreign key to the KarmaAction table.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -10641,6 +11499,360 @@ hard-to-fix bugs, for example.</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>karma</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.karmaaction" id=
+"public.table.karmaaction">karmaaction</a></h2>
+<p>Stores all the actions that would give karma to the user which
+performed it.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.karmaaction Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>name</td>
+<td>integer</td>
+<td><i>UNIQUE NOT NULL</i><br />
+<br />
+The unique name of this action.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>category</td>
+<td>integer</td>
+<td><br />
+<br />
+A dbschema value used to group actions together.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>points</td>
+<td>integer</td>
+<td><br />
+<br />
+The number of points this action is worth of.</td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href="#public.table.karma">public.karma</a></li>
+</ul>
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.karmaaction</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>group write</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>karma</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.karmacache" id=
+"public.table.karmacache">karmacache</a></h2>
+<p>Stores a cached value of a person's karma points, grouped by the
+action category.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.karmacache Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>person</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The person which performed the actions of this category, and thus
+got the karma.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>category</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The category of the actions.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>karmavalue</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The karma points of all actions of this category performed by this
+person.</td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.karmacache</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>group write</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>karma</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -10922,6 +12134,10 @@ NULL))))</td>
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
+<li><a href=
+"#public.table.distroreleaselanguage">public.distroreleaselanguage</a></li>
+</ul>
+<ul>
 <li><a href="#public.table.person">public.person</a></li>
 </ul>
 <ul>
@@ -11060,6 +12276,18 @@ NULL))))</td>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -11221,6 +12449,172 @@ public.launchpaddatabaserevision</caption>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.launchpadstatistic" id=
+"public.table.launchpadstatistic">launchpadstatistic</a></h2>
+<p>A store of system-wide statistics or other integer values, keyed
+by names. The names are unique and the values can be any integer.
+Each field has a place to store the timestampt when it was last
+updated, so it is possible to know how far out of date any given
+statistic is.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.launchpadstatistic Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>name</td>
+<td>text</td>
+<td><i>UNIQUE NOT NULL</i></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>value</td>
+<td>integer</td>
+<td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>dateupdated</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text,
+('now'::text)::timestamp(6) with time zone)</i></td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.launchpadstatistic</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr0">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.libraryfilealias" id=
 "public.table.libraryfilealias">libraryfilealias</a></h2>
 <p>LibraryFileAlias: A librarian file's alias. The librarian
@@ -11342,6 +12736,34 @@ public.libraryfilealias</caption>
 </th>
 </tr>
 <tr class="tr0">
+<td>dyson</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -11442,6 +12864,18 @@ public.libraryfilealias</caption>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -11540,6 +12974,34 @@ public.libraryfilecontent</caption>
 </th>
 </tr>
 <tr class="tr0">
+<td>dyson</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -11641,6 +13103,18 @@ public.libraryfilecontent</caption>
 <center>&diams;</center>
 </td>
 </tr>
+<tr class="tr0">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -11676,10 +13150,6 @@ public</a></p>
 </ul>
 <ul>
 <li><a href="#public.table.potemplate">public.potemplate</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.potranslationsightingbackup">public.potranslationsightingbackup</a></li>
 </ul>
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -12348,10 +13818,22 @@ not end up with orphaned manifests.</p>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
 <td>
 <center>&diams;</center>
 </td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>trebuchet</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -12565,10 +14047,22 @@ public</a></p>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
 <td>
 <center>&diams;</center>
 </td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>trebuchet</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -12607,9 +14101,9 @@ Launchpad.</p>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>title</td>
+<td>subject</td>
 <td>text</td>
-<td><i>NOT NULL</i><br />
+<td><br />
 <br />
 The title text of the message, or the subject if it was an
 email.</td>
@@ -12643,7 +14137,7 @@ it.</td>
 <td></td>
 <td>rfc822msgid</td>
 <td>text</td>
-<td><i>UNIQUE NOT NULL</i></td>
+<td><i>NOT NULL</i></td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -12991,13 +14485,13 @@ could use to mark a task as needing fixing in bazaar 1.2.</p>
 <td></td>
 <td>id</td>
 <td>serial</td>
-<td><i>PRIMARY KEY</i></td>
+<td><i>UNIQUE#2 PRIMARY KEY UNIQUE#1</i></td>
 </tr>
 <tr class="tr1">
 <td><a href="#public.table.product">public.product.id</a></td>
 <td>product</td>
 <td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i><br />
+<td><i>UNIQUE#3 UNIQUE#1</i><br />
 <br />
 The product for which this is a milestone.</td>
 </tr>
@@ -13005,17 +14499,40 @@ The product for which this is a milestone.</td>
 <td></td>
 <td>name</td>
 <td>text</td>
-<td><i>UNIQUE#1 NOT NULL</i><br />
+<td><i>UNIQUE#4 UNIQUE#3 NOT NULL</i><br />
 <br />
 The identifier text, e.g. "1.2."</td>
 </tr>
 <tr class="tr1">
-<td></td>
-<td>title</td>
-<td>text</td>
-<td><i>NOT NULL</i><br />
+<td><a href=
+"#public.table.distribution">public.distribution.id</a></td>
+<td>distribution</td>
+<td>integer</td>
+<td><i>UNIQUE#2 UNIQUE#4</i><br />
 <br />
-The description of, e.g. "1.2."</td>
+The distribution to which this milestone belongs, if it is a distro
+milestone.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>dateexpected</td>
+<td>timestamp without time zone</td>
+<td><br />
+<br />
+If set, the date on which we expect this milestone to be delivered.
+This alloes for some optional sorting by date.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>visible</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT true</i><br />
+<br />
+Whether or not this milestone should be displayed in general
+listings. All milestones will be visible on the "page of milestones
+for product foo", but we want to be able to screen out obviously
+old milestones over time, for the general listings and
+vocabularies.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -13029,6 +14546,11 @@ The description of, e.g. "1.2."</td>
 <tr class="tr0">
 <td>valid_name</td>
 <td>CHECK (valid_name(name))</td>
+</tr>
+<tr class="tr1">
+<td>valid_target</td>
+<td>CHECK ((NOT ((product IS NULL) AND (distribution IS
+NULL))))</td>
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
@@ -14363,7 +15885,7 @@ The date/time at which the package was actually deleted.</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The pocket into which this record is published. The PLAIN pocket
+The pocket into which this record is published. The RELEASE pocket
 (zero) provides behaviour as normal. Other pockets may append
 things to the distrorelease name such as the UPDATES pocket
 (-updates) or the SECURITY pocket (-security).</td>
@@ -15037,6 +16559,26 @@ packaged.</td>
 The upstream product series that has been packaged in this
 distrorelease sourcepackage.</td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>datecreated</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text,
+('now'::text)::timestamp(6) with time zone)</i></td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>owner</td>
+<td>integer</td>
+<td><br />
+<br />
+This is not the "owner" in the sense of giving the person any
+special privileges to edit the Packaging record, it is simply a
+record of who told us about this packaging relationship. Note that
+we do not keep a history of these, so if someone sets it correctly,
+then someone else sets it incorrectly, we lose the first
+setting.</td>
+</tr>
 </table>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
@@ -15145,6 +16687,30 @@ distrorelease sourcepackage.</td>
 <center>&diams;</center>
 </td>
 </tr>
+<tr class="tr0">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>trebuchet</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -15172,7 +16738,7 @@ set.</p>
 <td></td>
 <td>displayname</td>
 <td>text</td>
-<td><br />
+<td><i>NOT NULL</i><br />
 <br />
 Person or group's name as it should be rendered to screen</td>
 </tr>
@@ -15219,26 +16785,6 @@ remove people from the team.</td>
 <br />
 Informative description of the team. Format and restrictions are as
 yet undefined.</td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>karma</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-Numeric score attempting to indicate how useful, helpful or
-generally cool a person is. It is currently unknown if teams have
-karma.</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>karmatimestamp</td>
-<td>timestamp without time zone</td>
-<td><i>NOT NULL DEFAULT timezone('UTC'::text,
-('now'::text)::timestamp(6) with time zone)</i><br />
-<br />
-Last time this person's karma scrore was calculated and
-updated.</td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -15296,6 +16842,24 @@ displayed in this language wherever possible.</td>
 <td>timestamp without time zone</td>
 <td><i>NOT NULL DEFAULT timezone('UTC'::text,
 ('now'::text)::timestamp(6) with time zone)</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.calendar">public.calendar.id</a></td>
+<td>calendar</td>
+<td>integer</td>
+<td><i>UNIQUE</i><br />
+<br />
+The calendar associated with this person.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>timezone</td>
+<td>text</td>
+<td><i>NOT NULL DEFAULT 'UTC'::text</i><br />
+<br />
+The name of the time zone this person prefers (if unset, UTC is
+used). UI should display dates and times in this time zone wherever
+possible.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -15368,10 +16932,6 @@ NULL))))</td>
 <li><a href="#public.table.bugtracker">public.bugtracker</a></li>
 </ul>
 <ul>
-<li><a href=
-"#public.table.bugtrackertype">public.bugtrackertype</a></li>
-</ul>
-<ul>
 <li><a href="#public.table.bugwatch">public.bugwatch</a></li>
 </ul>
 <ul>
@@ -15409,6 +16969,9 @@ NULL))))</td>
 <li><a href="#public.table.karma">public.karma</a></li>
 </ul>
 <ul>
+<li><a href="#public.table.karmacache">public.karmacache</a></li>
+</ul>
+<ul>
 <li><a href="#public.table.logintoken">public.logintoken</a></li>
 </ul>
 <ul>
@@ -15420,6 +16983,9 @@ NULL))))</td>
 </ul>
 <ul>
 <li><a href="#public.table.mirror">public.mirror</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.packaging">public.packaging</a></li>
 </ul>
 <ul>
 <li><a href="#public.table.person">public.person</a></li>
@@ -15442,6 +17008,9 @@ NULL))))</td>
 <li><a href="#public.table.pofile">public.pofile</a></li>
 </ul>
 <ul>
+<li><a href="#public.table.poll">public.poll</a></li>
+</ul>
+<ul>
 <li><a href=
 "#public.table.posubmission">public.posubmission</a></li>
 </ul>
@@ -15451,17 +17020,6 @@ NULL))))</td>
 </ul>
 <ul>
 <li><a href="#public.table.potemplate">public.potemplate</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.potranslationsightingbackup">public.potranslationsightingbackup</a></li>
-</ul>
-<ul>
-<li><a href="#public.table.processor">public.processor</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.processorfamily">public.processorfamily</a></li>
 </ul>
 <ul>
 <li><a href="#public.table.product">public.product</a></li>
@@ -15509,6 +17067,12 @@ NULL))))</td>
 </ul>
 <ul>
 <li><a href="#public.table.translator">public.translator</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.vote">public.vote</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.votecast">public.votecast</a></li>
 </ul>
 <ul>
 <li><a href="#public.table.wikiname">public.wikiname</a></li>
@@ -15607,7 +17171,7 @@ NULL))))</td>
 <td></td>
 </tr>
 <tr class="tr0">
-<td>poexport</td>
+<td>karma</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -15619,6 +17183,18 @@ NULL))))</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -15641,6 +17217,18 @@ NULL))))</td>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -16079,6 +17667,18 @@ The chroot used by the pocket of the distroarchrelease.</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>group write</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -16316,7 +17916,7 @@ public</a></p>
 </tr>
 <tr class="tr0">
 <td></td>
-<td>productrelease</td>
+<td>productseries</td>
 <td>integer</td>
 <td></td>
 </tr>
@@ -16524,7 +18124,7 @@ SELECT (
 , potemplatename.name
 , potemplatename.translationdomain
 , potemplate.id AS potemplate
-, potemplate.productrelease
+, potemplate.productseries
 , potemplate.sourcepackagename
 , potemplate.distrorelease
 , potemplate.header AS potheader
@@ -16770,6 +18370,15 @@ The PO template being requested.</td>
 <td><br />
 <br />
 The PO file being requested, or NULL.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>format</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The format the user would like the export to be in. See the
+RosettaFileFormat DB schema for possible values.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -17079,6 +18688,12 @@ generated.</td>
 <td><i>NOT NULL DEFAULT timezone('UTC'::text,
 ('now'::text)::timestamp(6) with time zone)</i></td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>latestsubmission</td>
+<td>integer</td>
+<td></td>
+</tr>
 </table>
 <!-- Constraint List -->
 <p> </p>
@@ -17203,6 +18818,413 @@ generated.</td>
 <td></td>
 </tr>
 <tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.poll" id="public.table.poll">poll</a></h2>
+<p>The polls belonging to teams.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.poll Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>team</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The team this poll belongs to</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>name</td>
+<td>text</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The unique name of this poll.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>title</td>
+<td>text</td>
+<td><i>NOT NULL</i><br />
+<br />
+The title of this poll.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>dateopens</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL</i><br />
+<br />
+The date and time when this poll opens.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>datecloses</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL</i><br />
+<br />
+The date and time when this poll closes.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>proposition</td>
+<td>text</td>
+<td><i>NOT NULL</i><br />
+<br />
+The proposition that is going to be voted.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>type</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The type of this poll (Simple, Preferential, etc).</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>allowspoilt</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+If people can spoil their votes.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>secrecy</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+If people votes are SECRET (no one can see), ADMIN (team
+administrators can see) or PUBLIC (everyone can see).</td>
+</tr>
+</table>
+<!-- Constraint List -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.poll Constraints</caption>
+<tr>
+<th>Name</th>
+<th>Constraint</th>
+</tr>
+<tr class="tr0">
+<td>is_team</td>
+<td>CHECK (is_team(team))</td>
+</tr>
+<tr class="tr1">
+<td>sane_dates</td>
+<td>CHECK ((dateopens &lt; datecloses))</td>
+</tr>
+</table>
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href="#public.table.polloption">public.polloption</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.vote">public.vote</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.votecast">public.votecast</a></li>
+</ul>
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.poll</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.polloption" id=
+"public.table.polloption">polloption</a></h2>
+<p>The options belonging to polls.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.polloption Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY UNIQUE#3</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.poll">public.poll.id</a></td>
+<td>poll</td>
+<td>integer</td>
+<td><i>UNIQUE#1 UNIQUE#3 UNIQUE#2 NOT NULL</i><br />
+<br />
+The poll this options belongs to.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>name</td>
+<td>text</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The name of this option.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>shortname</td>
+<td>text</td>
+<td><i>UNIQUE#2 NOT NULL</i><br />
+<br />
+A short name for this option.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>active</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT true</i><br />
+<br />
+If TRUE, people will be able to vote on this option. Otherwise they
+don't.</td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href="#public.table.vote">public.vote</a></li>
+</ul>
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.polloption</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -17370,6 +19392,18 @@ public</a></p>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -17648,10 +19682,6 @@ Rosetta since it was imported.</td>
 <li><a href=
 "#public.table.posubmission">public.posubmission</a></li>
 </ul>
-<ul>
-<li><a href=
-"#public.table.potranslationsightingbackup">public.potranslationsightingbackup</a></li>
-</ul>
 <!-- View Definition -->
 <!-- List off permissions -->
 <p> </p>
@@ -17768,6 +19798,18 @@ Rosetta since it was imported.</td>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -18047,6 +20089,16 @@ the last-translator on the pofile that we are processing, or the
 person who uploaded that pofile to rosetta. In short, our best
 guess as to the person who is contributing that translation.</td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>validationstatus</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+Says whether or not we have validated this translation. Its value
+is specified by dbschema.TranslationValidationStatus, with 0 the
+value that says this row has not been validated yet.</td>
+</tr>
 </table>
 <!-- Constraint List -->
 <p> </p>
@@ -18182,6 +20234,18 @@ guess as to the person who is contributing that translation.</td>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -18400,7 +20464,7 @@ public</a></p>
 <td></td>
 <td>path</td>
 <td>text</td>
-<td><i>UNIQUE#3</i></td>
+<td><i>UNIQUE#2</i></td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -18451,7 +20515,7 @@ failed.</td>
 "#public.table.sourcepackagename">public.sourcepackagename.id</a></td>
 <td>sourcepackagename</td>
 <td>integer</td>
-<td><i>UNIQUE#2 UNIQUE#3</i><br />
+<td><i>UNIQUE#1 UNIQUE#2</i><br />
 <br />
 A reference to a sourcepackage name from where this POTemplate
 comes.</td>
@@ -18461,7 +20525,7 @@ comes.</td>
 "#public.table.distrorelease">public.distrorelease.id</a></td>
 <td>distrorelease</td>
 <td>integer</td>
-<td><i>UNIQUE#2 UNIQUE#3</i><br />
+<td><i>UNIQUE#1 UNIQUE#2</i><br />
 <br />
 A reference to the distribution from where this POTemplate
 comes.</td>
@@ -18489,41 +20553,31 @@ from it is POT-Creation-Date and custom headers.</td>
 "#public.table.potemplatename">public.potemplatename.id</a></td>
 <td>potemplatename</td>
 <td>integer</td>
-<td><i>UNIQUE#2 UNIQUE#1 NOT NULL</i><br />
+<td><i>UNIQUE#1 UNIQUE#3 NOT NULL</i><br />
 <br />
 A reference to a POTemplateName row that tells us the name/domain
 for this POTemplate.</td>
 </tr>
 <tr class="tr0">
 <td><a href=
-"#public.table.productrelease">public.productrelease.id</a></td>
-<td>productrelease</td>
-<td>integer</td>
-<td><i>UNIQUE#1</i><br />
-<br />
-A reference to a ProductRelease from where this POTemplate
-comes.</td>
-</tr>
-<tr class="tr1">
-<td><a href=
 "#public.table.binarypackagename">public.binarypackagename.id</a></td>
 <td>binarypackagename</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>languagepack</td>
 <td>boolean</td>
 <td><i>NOT NULL DEFAULT false</i></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>filename</td>
 <td>text</td>
-<td><i>UNIQUE#3</i></td>
+<td><i>UNIQUE#2</i></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href=
 "#public.table.libraryfilealias">public.libraryfilealias.id</a></td>
 <td>rawfile</td>
@@ -18531,6 +20585,16 @@ comes.</td>
 <td><i>NOT NULL</i><br />
 <br />
 The pot file itself encoded as a base64 string.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.productseries">public.productseries.id</a></td>
+<td>productseries</td>
+<td>integer</td>
+<td><i>UNIQUE#3</i><br />
+<br />
+A reference to a ProductSeries from where this POTemplate
+comes.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -18543,7 +20607,7 @@ The pot file itself encoded as a base64 string.</td>
 </tr>
 <tr class="tr0">
 <td>valid_link</td>
-<td>CHECK ((((productrelease IS NULL) &lt;&gt; (distrorelease IS
+<td>CHECK ((((productseries IS NULL) &lt;&gt; (distrorelease IS
 NULL)) AND ((distrorelease IS NULL) = (sourcepackagename IS
 NULL))))</td>
 </tr>
@@ -18687,6 +20751,18 @@ NULL))))</td>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -18880,6 +20956,18 @@ The translation domain name for this POTemplateName</td>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -19079,6 +21167,18 @@ The flags associated with this set (like c-format).</td>
 <center>&diams;</center>
 </td>
 </tr>
+<tr class="tr0">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -19116,10 +21216,6 @@ public</a></p>
 <ul>
 <li><a href=
 "#public.table.posubmission">public.posubmission</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.potranslationsightingbackup">public.potranslationsightingbackup</a></li>
 </ul>
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -19231,221 +21327,6 @@ public</a></p>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.potranslationsightingbackup" id=
-"public.table.potranslationsightingbackup">potranslationsightingbackup</a></h2>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.potranslationsightingbackup Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.pomsgset">public.pomsgset.id</a></td>
-<td>pomsgset</td>
-<td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td><a href=
-"#public.table.potranslation">public.potranslation.id</a></td>
-<td>potranslation</td>
-<td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.license">public.license.id</a></td>
-<td>license</td>
-<td>integer</td>
-<td><i>UNIQUE#1</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>datefirstseen</td>
-<td>timestamp without time zone</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>datelastactive</td>
-<td>timestamp without time zone</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>inlastrevision</td>
-<td>boolean</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>pluralform</td>
-<td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>active</td>
-<td>boolean</td>
-<td><i>NOT NULL DEFAULT true</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>origin</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>person</td>
-<td>integer</td>
-<td><i>UNIQUE#1</i></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<p> </p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.potranslationsightingbackup Constraints</caption>
-<tr>
-<th>Name</th>
-<th>Constraint</th>
-</tr>
-<tr class="tr0">
-<td>$1</td>
-<td>CHECK ((pluralform &gt;= 0))</td>
-</tr>
-</table>
-<!-- Foreign Key Discovery -->
-<!-- View Definition -->
-<!-- List off permissions -->
-<p> </p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to
-public.potranslationsightingbackup</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>poexport</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.processor" id=
 "public.table.processor">processor</a></h2>
 <p>A single processor for which code might be compiled. For
@@ -19498,12 +21379,6 @@ unique.</td>
 <td>text</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr1">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>owner</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
 </table>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
@@ -19544,6 +21419,18 @@ unique.</td>
 </th>
 </tr>
 <tr class="tr0">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -19567,7 +21454,7 @@ unique.</td>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -19579,7 +21466,7 @@ unique.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -19595,7 +21482,7 @@ unique.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -19673,14 +21560,6 @@ A description for this processor family. It might include any
 gotchas such as the fact that i386 does not necessarily mean that
 code would run on a 386... Ubuntu for example requires a 486.</td>
 </tr>
-<tr class="tr0">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>owner</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The person responsible for this processor family entry.</td>
-</tr>
 </table>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
@@ -19723,6 +21602,18 @@ public.processorfamily</caption>
 </th>
 </tr>
 <tr class="tr0">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -19746,7 +21637,7 @@ public.processorfamily</caption>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -19758,7 +21649,7 @@ public.processorfamily</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -19774,7 +21665,7 @@ public.processorfamily</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -20033,7 +21924,21 @@ at all).</td>
 <td></td>
 <td>releaseroot</td>
 <td>text</td>
-<td></td>
+<td><br />
+<br />
+The URL to the directory which holds upstream releases for this
+product. This allows us to monitor the upstream site and detect new
+upstream release tarballs. This URL is used when the associated
+ProductSeries does not have a URL to use. It is also used to find
+files outside of any registered series.</td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.calendar">public.calendar.id</a></td>
+<td>calendar</td>
+<td>integer</td>
+<td><i>UNIQUE</i><br />
+<br />
+The calendar associated with this product.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -20207,6 +22112,18 @@ at all).</td>
 </tr>
 <tr class="tr1">
 <td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>trebuchet</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -21072,7 +22989,7 @@ in time.</td>
 </tr>
 <tr class="tr0">
 <td>valid_version</td>
-<td>CHECK (valid_version("version"))</td>
+<td>CHECK (sane_version("version"))</td>
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
@@ -21083,9 +23000,6 @@ in time.</td>
 <ul>
 <li><a href=
 "#public.table.bugproductinfestation">public.bugproductinfestation</a></li>
-</ul>
-<ul>
-<li><a href="#public.table.potemplate">public.potemplate</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -21128,7 +23042,9 @@ in time.</td>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -21215,9 +23131,21 @@ in time.</td>
 <td>
 <center>&diams;</center>
 </td>
+<td></td>
 <td>
 <center>&diams;</center>
 </td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>trebuchet</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -21307,7 +23235,9 @@ public.productreleasefile</caption>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -21388,6 +23318,30 @@ public.productreleasefile</caption>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>trebuchet</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -21718,6 +23672,9 @@ NULL))))</td>
 <li><a href="#public.table.packaging">public.packaging</a></li>
 </ul>
 <ul>
+<li><a href="#public.table.potemplate">public.potemplate</a></li>
+</ul>
+<ul>
 <li><a href=
 "#public.table.productrelease">public.productrelease</a></li>
 </ul>
@@ -21840,6 +23797,18 @@ NULL))))</td>
 </tr>
 <tr class="tr1">
 <td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>trebuchet</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -22187,6 +24156,14 @@ enum lists different approaches to translation, from the very open
 (anybody can edit any translation in any language) to the
 completely closed (only designated translators can make any changes
 at all).</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.calendar">public.calendar.id</a></td>
+<td>calendar</td>
+<td>integer</td>
+<td><i>UNIQUE</i><br />
+<br />
+The calendar associated with this project.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -22809,113 +24786,119 @@ in the distribution, but may be more widely used.</p>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>distribution</td>
+<td>distroarchrelease</td>
 <td>integer</td>
 <td></td>
 </tr>
 <tr class="tr0">
+<td></td>
+<td>distribution</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td></td>
 <td>distrorelease</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>distroreleasename</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>processorfamily</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>processorfamilyname</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>packagepublishingstatus</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>component</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>section</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>binarypackage</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>binarypackagename</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>binarypackagesummary</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>binarypackagedescription</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>binarypackageversion</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>build</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>datebuilt</td>
 <td>timestamp without time zone</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>sourcepackagerelease</td>
 <td>integer</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>sourcepackagereleaseversion</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>sourcepackagename</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>binarypackagefti</td>
 <td>tsvector</td>
@@ -22927,6 +24910,7 @@ in the distribution, but may be more widely used.</p>
 <!-- View Definition -->
 <pre>
 SELECT packagepublishing.id
+, distroarchrelease.id AS distroarchrelease
 , distrorelease.distribution
 , distrorelease.id AS distrorelease
 , distrorelease.name AS distroreleasename
@@ -23992,6 +25976,12 @@ SQLObject.</p>
 <td>integer</td>
 <td></td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>pocket</td>
+<td>integer</td>
+<td></td>
+</tr>
 </table>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
@@ -24010,7 +26000,8 @@ SELECT (
 , sourcepackagename.name AS sourcepackagename
 , component.name AS componentname
 , distrorelease.name AS distroreleasename
-, sourcepackagepublishing.status AS publishingstatus 
+, sourcepackagepublishing.status AS publishingstatus
+, sourcepackagepublishing.pocket 
 FROM (
      (
            (
@@ -24251,6 +26242,18 @@ public.sourcepackagename</caption>
 </th>
 </tr>
 <tr class="tr0">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -24274,7 +26277,7 @@ public.sourcepackagename</caption>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -24286,7 +26289,7 @@ public.sourcepackagename</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -24302,7 +26305,7 @@ public.sourcepackagename</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -24326,8 +26329,20 @@ public.sourcepackagename</caption>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>trebuchet</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -24480,6 +26495,22 @@ public.sourcepackagepublishing</caption>
 </th>
 </tr>
 <tr class="tr0">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>gina</td>
 <td>
 <center>&diams;</center>
@@ -24491,7 +26522,7 @@ public.sourcepackagepublishing</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -24515,7 +26546,7 @@ public.sourcepackagepublishing</caption>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -24527,7 +26558,7 @@ public.sourcepackagepublishing</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -24539,7 +26570,7 @@ public.sourcepackagepublishing</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>lucille</td>
 <td>
 <center>&diams;</center>
@@ -24551,7 +26582,7 @@ public.sourcepackagepublishing</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -24574,6 +26605,30 @@ public.sourcepackagepublishing</caption>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>trebuchet</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -24883,6 +26938,30 @@ public.sourcepackagepublishinghistory</caption>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>trebuchet</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -25481,7 +27560,7 @@ claims to be in</td>
 <td><a href="#public.table.manifest">public.manifest.id</a></td>
 <td>manifest</td>
 <td>integer</td>
-<td></td>
+<td><i>UNIQUE</i></td>
 </tr>
 <tr class="tr0">
 <td><a href="#public.table.person">public.person.id</a></td>
@@ -25531,7 +27610,7 @@ dbschema.SourcePackageFormat</td>
 </tr>
 <tr class="tr0">
 <td>valid_version</td>
-<td>CHECK (valid_version("version"))</td>
+<td>CHECK (valid_debian_version("version"))</td>
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
@@ -25586,6 +27665,22 @@ public.sourcepackagerelease</caption>
 </th>
 </tr>
 <tr class="tr0">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -25609,7 +27704,7 @@ public.sourcepackagerelease</caption>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -25621,7 +27716,7 @@ public.sourcepackagerelease</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -25637,7 +27732,7 @@ public.sourcepackagerelease</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -25661,14 +27756,26 @@ public.sourcepackagerelease</caption>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>sourcerer</td>
 <td>
 <center>&diams;</center>
 </td>
+<td></td>
 <td>
 <center>&diams;</center>
 </td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>trebuchet</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -25760,6 +27867,22 @@ public.sourcepackagereleasefile</caption>
 </th>
 </tr>
 <tr class="tr0">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -25783,7 +27906,7 @@ public.sourcepackagereleasefile</caption>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -25795,7 +27918,7 @@ public.sourcepackagereleasefile</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -25811,319 +27934,6 @@ public.sourcepackagereleasefile</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.sourcesourcebackup" id=
-"public.table.sourcesourcebackup">sourcesourcebackup</a></h2>
-<p>The SourceSource table identifies upstream revision control
-systems that can be imported and re-published as bazaar (baz)
-archives. So, for example, there is an entry in this table for each
-upstream CVS or SVN branch that we want to sync-and-publish as a
-baz branch.</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.sourcesourcebackup Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>name</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>title</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>description</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>product</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>cvsroot</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>cvsmodule</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>cvstarfile</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>cvstarfileurl</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>cvsbranch</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>svnrepository</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>releaseroot</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>releaseverstyle</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>releasefileglob</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>releaseparentbranch</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>branch</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>lastsynced</td>
-<td>timestamp without time zone</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>syncinterval</td>
-<td>interval</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>rcstype</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>hosted</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>upstreamname</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>processingapproved</td>
-<td>timestamp without time zone</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>syncingapproved</td>
-<td>timestamp without time zone</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>newarchive</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>newbranchcategory</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>newbranchbranch</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>newbranchversion</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>packagedistro</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>packagefiles_collapsed</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>owner</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>currentgpgkey</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>fileidreference</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>branchpoint</td>
-<td>text</td>
-<td><br />
-<br />
-The source specification for an import job to branch from.</td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>autotested</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>datestarted</td>
-<td>timestamp without time zone</td>
-<td><br />
-<br />
-The timestamp of the last time an import or sync was started on
-this sourcesource.</td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>datefinished</td>
-<td>timestamp without time zone</td>
-<td><br />
-<br />
-The timestamp of the last time an import or sync finished on this
-sourcesource.</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>sourcepackagename</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>distrorelease</td>
-<td>integer</td>
-<td></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<!-- View Definition -->
-<!-- List off permissions -->
-<p> </p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to
-public.sourcesourcebackup</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
 <tr class="tr0">
 <td>postgres</td>
 <td>
@@ -26147,6 +27957,30 @@ public.sourcesourcebackup</caption>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>trebuchet</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -27257,6 +29091,30 @@ public.translationgroup</caption>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>poimport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -27424,6 +29282,363 @@ group.</td>
 <td>
 <center>&diams;</center>
 </td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>poimport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.vote" id="public.table.vote">vote</a></h2>
+<p>The table where we store the actual votes of people. It may or
+may not have a reference to the person who voted, depending on the
+poll's secrecy.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.vote Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>person</td>
+<td>integer</td>
+<td><br />
+<br />
+The person who voted. It's NULL for secret polls.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.poll">public.poll.id</a> <a href=
+"#public.table.polloption">public.polloption.poll#1</a></td>
+<td>poll</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The poll for which this vote applies.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>preference</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+Used to identify in what order the options were chosen by a given
+user (in case of preferential voting).</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.polloption">public.polloption.id#1</a></td>
+<td>option</td>
+<td>integer</td>
+<td><br />
+<br />
+The choosen option.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>token</td>
+<td>text</td>
+<td><i>UNIQUE NOT NULL</i><br />
+<br />
+A unique token that's give to the user so he can change his vote
+later.</td>
+</tr>
+</table>
+<!-- Constraint List -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.vote Constraints</caption>
+<tr>
+<th>Name</th>
+<th>Constraint</th>
+</tr>
+<tr class="tr0">
+<td>is_person</td>
+<td>CHECK (is_person(person))</td>
+</tr>
+</table>
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.vote</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.votecast" id=
+"public.table.votecast">votecast</a></h2>
+<p>Here we store who has already voted in a poll, to ensure they do
+not vote again, and potentially to notify people that they may
+still vote.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.votecast Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>person</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The person who voted.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.poll">public.poll.id</a></td>
+<td>poll</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The poll in which this person voted.</td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.votecast</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -27647,6 +29862,18 @@ public.vsourcepackageindistro</caption>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -28144,6 +30371,47 @@ public</a></p>
 <!-- We've gone through the table structure, now lets take a look at user functions -->
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.is-person-integer" id=
+"public.function.is-person-integer">is_person( integer )</a></h2>
+<h3>Returns: boolean</h3>
+<h3>Language: SQL</h3>
+<p>True if the given id identifies a person in the Person table</p>
+<pre>
+    SELECT count(*)&gt;0 FROM Person WHERE id=$1 AND teamowner IS NULL;
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.is-person-text" id=
+"public.function.is-person-text">is_person( text )</a></h2>
+<h3>Returns: boolean</h3>
+<h3>Language: SQL</h3>
+<p>True if the given name identifies a person in the Person
+table</p>
+<pre>
+    SELECT count(*)&gt;0 FROM Person WHERE name=$1 AND teamowner IS NULL;
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.is-team-integer" id=
+"public.function.is-team-integer">is_team( integer )</a></h2>
+<h3>Returns: boolean</h3>
+<h3>Language: SQL</h3>
+<p>True if the given id identifies a team in the Person table</p>
+<pre>
+    SELECT count(*)&gt;0 FROM Person WHERE id=$1 AND teamowner IS NOT NULL;
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.is-team-text" id=
+"public.function.is-team-text">is_team( text )</a></h2>
+<h3>Returns: boolean</h3>
+<h3>Language: SQL</h3>
+<p>True if the given name identifies a team in the Person table</p>
+<pre>
+    SELECT count(*)&gt;0 FROM Person WHERE name=$1 AND teamowner IS NOT NULL;
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
 "public.function.plpython-call-handler" id=
 "public.function.plpython-call-handler">plpython_call_handler(
 )</a></h2>
@@ -28151,6 +30419,25 @@ public</a></p>
 <h3>Language: C</h3>
 <pre>
 plpython_call_handler
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.sane-version-text" id=
+"public.function.sane-version-text">sane_version( text )</a></h2>
+<h3>Returns: boolean</h3>
+<h3>Language: PLPYTHONU</h3>
+<p>A sane version number for use by ProductRelease and
+DistroRelease. We may make it less strict if required, but it would
+be nice if we can enforce simple version strings because we use
+them in URLs</p>
+<pre>
+    import re
+    if re.search("""^(?ix)
+        [0-9a-z]
+        ( [0-9a-z] | [0-9a-z.-]*[0-9a-z] )*
+        $""", args[0]):
+        return 1
+    return 0
 </pre>
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=
@@ -28182,6 +30469,23 @@ protocol and network location</p>
 </pre>
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.valid-branch-name-text" id=
+"public.function.valid-branch-name-text">valid_branch_name( text
+)</a></h2>
+<h3>Returns: boolean</h3>
+<h3>Language: PLPYTHONU</h3>
+<p>validate a branch name. As per valid_name, except we allow
+uppercase and @</p>
+<pre>
+    import re
+    name = args[0]
+    pat = r"^(?i)[a-z0-9][a-z0-9\+\.\-\@]+$"
+    if re.match(pat, name):
+        return 1
+    return 0
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
 "public.function.valid-bug-name-text" id=
 "public.function.valid-bug-name-text">valid_bug_name( text
 )</a></h2>
@@ -28193,7 +30497,7 @@ are not allowed (including names that look like floats).</p>
     import re
     name = args[0]
     pat = r"^[a-z][a-z0-9\+\.\-]+$"
-    if name is None or re.match(pat, name):
+    if re.match(pat, name):
         return 1
     return 0
 </pre>
@@ -28204,14 +30508,42 @@ are not allowed (including names that look like floats).</p>
 <h3>Returns: boolean</h3>
 <h3>Language: PLPYTHONU</h3>
 <p>validate a common vulnerability number As defined on
-www.cve.mitre.org</p>
+www.cve.mitre.org, minus the CAN- or CVE- prefix.</p>
 <pre>
     import re
     name = args[0]
-    pat = r"^(CAN|CVE)-(19|20)\d\d-\d+$"
+    pat = r"^(19|20)\d{2}-\d{4}$"
     if re.match(pat, name):
         return 1
     return 0
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.valid-debian-version-text" id=
+"public.function.valid-debian-version-text">valid_debian_version(
+text )</a></h2>
+<h3>Returns: boolean</h3>
+<h3>Language: PLPYTHONU</h3>
+<p>validate a version number as per Debian Policy</p>
+<pre>
+    import re
+    m = re.search("""^(?ix)
+        ([0-9]+:)?
+        ([0-9][a-z0-9+:.~-]*?)
+        (-[a-z0-9+.~]+)?
+        $""", args[0])
+    if m is None:
+        return 0
+    epoch, version, revision = m.groups()
+    if not epoch:
+        # Can't contain : if no epoch
+        if ":" in version:
+            return 0
+    if not revision:
+        # Can't contain - if no revision
+        if "-" in version:
+            return 0
+    return 1
 </pre>
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=
@@ -28264,7 +30596,7 @@ traversal is possible by name as well as id.</p>
     import re
     name = args[0]
     pat = r"^[a-z0-9][a-z0-9\+\.\-]+$"
-    if name is None or re.match(pat, name):
+    if re.match(pat, name):
         return 1
     return 0
 </pre>
@@ -28274,22 +30606,8 @@ traversal is possible by name as well as id.</p>
 "public.function.valid-version-text">valid_version( text )</a></h2>
 <h3>Returns: boolean</h3>
 <h3>Language: PLPYTHONU</h3>
-<p>validate a version number Note that this is more flexible than
-the Debian naming policy, as it states 'SHOULD' rather than 'MUST',
-and we have already imported packages that don't match it. Note
-that versions may contain both uppercase and lowercase letters so
-we can't use them in URLs. Also note that both a product name and a
-version may contain hypens, so we cannot join the product name and
-the version with a hypen to form a unique string (we need to use a
-space or some other character disallowed in the product name spec
-instead</p>
 <pre>
-    import re
-    name = args[0]
-    pat = r"^[A-Za-z0-9\+:\.\-\~]+$"
-    if name is None or re.match(pat, name):
-        return 1
-    return 0
+    raise RuntimeError("Removed")
 </pre>
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=
@@ -28755,6 +31073,52 @@ ts2</a></p>
 <!-- We've gone through the table structure, now lets take a look at user functions -->
 <hr />
 <h2>Function: <a href="#ts2.schema">ts2</a>.<a name=
+"ts2.function.-ftq-text" id="ts2.function.-ftq-text">_ftq( text
+)</a></h2>
+<h3>Returns: text</h3>
+<h3>Language: PLPYTHONU</h3>
+<pre>
+        import re
+
+        # Convert to Unicode and lowercase everything
+        query = args[0].decode('utf8').lower()
+
+        # Convert &amp;, | and ! symbols to whitespace since they have
+        # special meaning to tsearch2
+        query = re.sub(r"[\&amp;\|\!]+", " ", query)
+
+        # Convert AND, OR and NOT to tsearch2 punctuation
+        query = re.sub(r"\band\b", "&amp;", query)
+        query = re.sub(r"\bor\b", "|", query)
+        query = re.sub(r"\bnot\b", "!", query)
+
+        # Insert &amp; between tokens without an existing boolean operator
+        # Whitespace not proceded by (|&amp;! not followed by &amp;|
+        query = re.sub(r"(?&lt;![\(\|\&amp;\!\s])\s+(?![\&amp;\|\s])", "&amp;", query)
+
+        # Detect and repair syntax errors - we are lenient because
+        # this input is generally from users.
+
+        # An &amp;,| or ! followed by another boolean.
+        query = re.sub(r"\s*([\&amp;\|\!])\s*[\&amp;\|]+", r"\1", query)
+
+        # An &amp; or | following a (
+        query = re.sub(r"(?&lt;=\()[\&amp;\|\s]+", "", query)
+
+        # Leading &amp; or |
+        query = re.sub(r"^[\s\&amp;\|]+", "", query)
+
+        # Trailing &amp;, | or !
+        query = re.sub(r"[\&amp;\|\!\s]+$", "", query)
+
+        # Convert back to UTF-8
+        query = query.encode('utf8')
+        
+        return query or None
+        
+</pre>
+<hr />
+<h2>Function: <a href="#ts2.schema">ts2</a>.<a name=
 "ts2.function.-get-parser-from-curcfg" id=
 "ts2.function.-get-parser-from-curcfg">_get_parser_from_curcfg(
 )</a></h2>
@@ -28805,22 +31169,82 @@ exectsq
 </pre>
 <hr />
 <h2>Function: <a href="#ts2.schema">ts2</a>.<a name=
+"ts2.function.ftiupdate" id="ts2.function.ftiupdate">ftiupdate(
+)</a></h2>
+<h3>Returns: "trigger"</h3>
+<h3>Language: PLPYTHONU</h3>
+<p>Trigger function that keeps the fti tsvector column up to
+date.</p>
+<pre>
+            new = TD["new"]
+            args = TD["args"][:]
+
+            # Generate an SQL statement that turns the requested
+            # column values into a weighted tsvector
+            sql = []
+            for i in range(0, len(args), 2):
+                sql.append(
+                        "setweight(to_tsvector('default', "
+                        "coalesce($%d, '')), $%d)" % (i+1,i+2))
+                args[i] = new[args[i]]
+
+            sql = "SELECT %s AS fti" % "||".join(sql)
+
+            # Execute and store in the fti column
+            plan = plpy.prepare(sql, ["text", "char"] * (len(args)/2))
+            new["fti"] = plpy.execute(plan, args, 1)[0]["fti"]
+
+            # Tell PostgreSQL we have modified the data
+            return "MODIFY"
+        
+</pre>
+<hr />
+<h2>Function: <a href="#ts2.schema">ts2</a>.<a name=
 "ts2.function.ftq-text" id="ts2.function.ftq-text">ftq( text
 )</a></h2>
 <h3>Returns: tsquery</h3>
 <h3>Language: PLPYTHONU</h3>
-<p>Convert a string to a tsearch2 query using the preferred
-configuration. eg. "SELECT * FROM Bug WHERE fti @@ ftq('fatal
-crash')". The query is lowercased, and multiple words searched
-using OR.</p>
+<p>Convert a string to an unparsed tsearch2 query</p>
 <pre>
-            import re
-            q = args[0].lower()
-            q = re.subn("[|&amp;]", " ", q)
-            q = "|".join(args[0].lower().split())
-            p = plpy.prepare("SELECT to_tsquery('default', $1) AS x", ["text"])
-            q = plpy.execute(p, [q], 1)[0]["x"]
-            return q or None
+        import re
+
+        # Convert to Unicode and lowercase everything
+        query = args[0].decode('utf8').lower()
+
+        # Convert &amp;, | and ! symbols to whitespace since they have
+        # special meaning to tsearch2
+        query = re.sub(r"[\&amp;\|\!]+", " ", query)
+
+        # Convert AND, OR and NOT to tsearch2 punctuation
+        query = re.sub(r"\band\b", "&amp;", query)
+        query = re.sub(r"\bor\b", "|", query)
+        query = re.sub(r"\bnot\b", "!", query)
+
+        # Insert &amp; between tokens without an existing boolean operator
+        # Whitespace not proceded by (|&amp;! not followed by &amp;|
+        query = re.sub(r"(?&lt;![\(\|\&amp;\!\s])\s+(?![\&amp;\|\s])", "&amp;", query)
+
+        # Detect and repair syntax errors - we are lenient because
+        # this input is generally from users.
+
+        # An &amp;,| or ! followed by another boolean.
+        query = re.sub(r"\s*([\&amp;\|\!])\s*[\&amp;\|]+", r"\1", query)
+
+        # An &amp; or | following a (
+        query = re.sub(r"(?&lt;=\()[\&amp;\|\s]+", "", query)
+
+        # Leading &amp; or |
+        query = re.sub(r"^[\s\&amp;\|]+", "", query)
+
+        # Trailing &amp;, | or !
+        query = re.sub(r"[\&amp;\|\!\s]+$", "", query)
+
+        # Convert back to UTF-8
+        query = query.encode('utf8')
+        
+        p = plpy.prepare("SELECT to_tsquery('default', $1) AS x", ["text"])
+        query = plpy.execute(p, [query], 1)[0]["x"]
+        return query or None
         
 </pre>
 <hr />
