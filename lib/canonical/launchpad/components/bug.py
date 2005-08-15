@@ -8,7 +8,6 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces import IBugDelta
 
-
 class BugDelta:
     """See canonical.launchpad.interfaces.IBugDelta."""
     implements(IBugDelta)

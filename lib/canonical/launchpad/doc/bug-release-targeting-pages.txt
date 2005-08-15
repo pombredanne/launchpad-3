@@ -1,0 +1,125 @@
+Views for the Bug Release Targeting Pages
+=========================================
+
+The release-targeting feature is accessed from the bug task page, on a
+page called "+target". The context of the view will be an
+IDistroBugTask or an IDistroReleaseBugTask. Let's use an
+IDistroBugTask for this example:
+
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import IBugTaskSet
+  >>> ubuntu_distro_task = getUtility(IBugTaskSet).get(17)
+
+We'll also need a "mock" request:
+
+  >>> from zope.publisher.browser import TestRequest
+  >>> request = TestRequest()
+
+Let's instantiate the view:
+
+  >>> from zope.component import queryView
+  >>> bug_targeting_view = queryView(ubuntu_distro_task, "+target", request)
+
+Accessing Release Target Data
+-----------------------------
+
+The release_target_details view attribute provides the data required
+to render a release target selection widget. It returns data for each
+relevant release, where "relevant" means a release of the distribution
+associated with the IDistroBugTask or the IDistroReleaseBugTask.
+
+  >>> release_target_details = bug_targeting_view.release_target_details
+
+release_target_details is a list of that provide
+BugDistroReleaseTargetDetails objects. All that's left is to verify
+that the data is as we expect it to be.
+
+  >>> from canonical.launchpad.interfaces import (
+  ...     IDistroReleaseSet, ISourcePackageNameSet, IPersonSet)
+  >>> from canonical.lp import dbschema
+  >>> from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
+
+  >>> distroreleaseset = getUtility(IDistroReleaseSet)
+  >>> spnameset = getUtility(ISourcePackageNameSet)
+  >>> personset = getUtility(IPersonSet)
+
+  >>> print len(release_target_details)
+  3
+
+  >>> release_target_details[0].release == distroreleaseset.get(1)
+  True
+  >>> release_target_details[0].istargeted == False
+  True
+  >>> release_target_details[0].sourcepackage.sourcepackagename == spnameset.get(1)
+  True
+  >>> release_target_details[0].assignee is None
+  True
+  >>> release_target_details[0].status is None
+  True
+
+  >>> release_target_details[1].release == distroreleaseset.get(3)
+  True
+  >>> release_target_details[1].istargeted == False
+  True
+  >>> release_target_details[1].sourcepackage.sourcepackagename == spnameset.get(1)
+  True
+  >>> release_target_details[1].assignee is None
+  True
+  >>> release_target_details[1].status is None
+  True
+
+  >>> release_target_details[2].release == distroreleaseset.get(5)
+  True
+  >>> release_target_details[2].istargeted == False
+  True
+  >>> release_target_details[2].sourcepackage.sourcepackagename == spnameset.get(1)
+  True
+  >>> release_target_details[2].assignee is None
+  True
+  >>> release_target_details[2].status is None
+  True
+
+Creating the Targeted Tasks
+---------------------------
+
+The createTargetedTasks method is used to create the appropriate
+distrorelease tasks based on request data. It checks that a field
+named "savetargets" is present in the request and that it evaluates to
+True in a boolean context.
+
+It will look for a list of values named "target". Each "target" value
+will look like $releasename.$spname. If $spname is an empty string,
+the task is created on the distrorelease and not targeted to a
+specific sourcepackagename.
+
+To see this in action, let's first confirm that there are zero
+targeted releases for the ubuntu_distro_task used in this example:
+
+  >>> distrorelease_tasks = [
+  ...     task for task in ubuntu_distro_task.bug.bugtasks
+  ...     if task.distrorelease]
+
+  >>> print len(distrorelease_tasks)
+  0
+
+Now we'll simulate a request to target the fix to warty. In doing so,
+we'll also ensure to be logged in, since this is a requirement for
+accessing the +target page:
+
+  >>> from canonical.launchpad.ftests import login
+  >>> login("test@canonical.com")
+
+  >>> request = TestRequest(
+  ...     form={'savetargets': True, 'target': 'warty.mozilla-firefox'})
+
+  >>> bug_targeting_view = queryView(ubuntu_distro_task, "+target", request)
+  >>> bug_targeting_view.createTargetedTasks()
+
+Now there should be one targeted task:
+
+  >>> distrorelease_tasks = [
+  ...     task for task in ubuntu_distro_task.bug.bugtasks
+  ...     if task.distrorelease]
+
+  >>> print len(distrorelease_tasks)
+  1

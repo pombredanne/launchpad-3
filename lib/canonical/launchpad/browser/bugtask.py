@@ -1,5 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""IBugTask-related browser views."""
+
 __metaclass__ = type
 
 __all__ = [
@@ -10,6 +12,7 @@ __all__ = [
     'BugTaskDisplayView',
     'BugTaskSearchListingView',
     'BugTargetView',
+    'BugTaskReleaseTargetingView'
     ]
 
 import urllib
@@ -21,18 +24,19 @@ from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
 
 from canonical.lp import dbschema
-
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
     IPersonSet, ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch,
     IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask, IBugTaskSet,
-    IDistroReleaseSet, BugTaskSearchParams)
+    IDistroReleaseSet, ISourcePackageNameSet, BugTaskSearchParams,
+    IDistroBugTask, IDistroReleaseBugTask)
 from canonical.launchpad.interfaces import IBugTaskSearchListingView
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
 
 class BugTasksReportView:
     """The view class for the assigned bugs report."""
@@ -142,6 +146,121 @@ class BugTasksReportView:
         return getUtility(IPersonSet).search(password=NULL)
 
 
+class BugTaskReleaseTargetingView:
+    """View class for targeting bugs to IDistroReleases."""
+    @property
+    def release_target_details(self):
+        """Return a list of BugDistroReleaseTargetDetails objects.
+
+        Releases are filtered to only include distributions relevant
+        to the context.distribution or .distrorelease (whichever is
+        not None.)
+
+        If the context does not provide IDistroBugTask or
+        IDistroReleaseBugTask, a TypeError is raised.
+        """
+        # Ensure we have what we need.
+        distribution = None
+        context = self.context
+        if IDistroBugTask.providedBy(context):
+            distribution = context.distribution
+        elif IDistroReleaseBugTask.providedBy(context):
+            distribution = context.distrorelease.distribution
+        else:
+            raise TypeError(
+                "retrieving related releases: need IDistroBugTask or "
+                "IDistribution, found %s" % type(context))
+
+        # First, let's gather the already-targeted
+        # IDistroReleaseBugTasks relevant to this context.
+        distro_release_tasks = {}
+        for bugtask in context.bug.bugtasks:
+            if not IDistroReleaseBugTask.providedBy(bugtask):
+                continue
+
+            release_targeted = bugtask.distrorelease
+            if release_targeted.distribution == distribution:
+                distro_release_tasks[release_targeted] = bugtask
+
+        release_target_details = []
+        sourcepackagename = bugtask.sourcepackagename
+        for possible_release_target in distribution.releases:
+            sourcepackage = possible_release_target.getSourcePackageByName(
+                sourcepackagename)
+            bug_distrorelease_target_details = BugDistroReleaseTargetDetails(
+                release=possible_release_target, sourcepackage=sourcepackage)
+
+            if possible_release_target in distro_release_tasks:
+                # This release is already a target for this bugfix, so
+                # let's grab some more data about this task.
+                task = distro_release_tasks[possible_release_target]
+
+                bug_distrorelease_target_details.istargeted = True
+                bug_distrorelease_target_details.assignee = task.assignee
+                bug_distrorelease_target_details.status = task.status
+
+            release_target_details.append(bug_distrorelease_target_details)
+
+        return release_target_details
+
+    def createTargetedTasks(self):
+        """Create distrorelease-targeted tasks for this bug."""
+        form = self.request.form
+
+        if not form.get("savetargets"):
+            # The form doesn't look like it was submitted; nothing to
+            # do here.
+            return
+
+        targets = form.get("target")
+        if not isinstance(targets, (list, tuple)):
+            targets = [targets]
+
+        bug = self.context.bug
+        for target in targets:
+            # A target value looks like 'warty.mozilla-firefox'. If
+            # there was no specific sourcepackage targeted, it would
+            # look like 'warty.'
+            releasename, spname = target.split(".")
+            releases = getUtility(IDistroReleaseSet).findByName(releasename)
+            spnames = getUtility(ISourcePackageNameSet).findByName(spname)
+
+            # XXX: Brad Bollenbach, 2005-08-09: Hacks to deal with
+            # a dodgy IDistroReleaseSet and ISourcePackageNameSet
+            # API. These sets need methods that are documented to
+            # return exactly one matching result, or None.
+            releasecount = releases.count()
+            if releasecount == 0:
+                raise ValueError(
+                    "Failed to locate matching IDistroRelease: %s" %
+                    releasename)
+            elif releasecount > 1:
+                raise ValueError(
+                    "Ambiguous release name '%s' returned more than one "
+                    "match" % releasename)
+            else:
+                release = releases[0]
+
+            spnamecount = spnames.count()
+            if spnamecount == 0:
+                spname = None
+            elif spnamecount > 1:
+                raise ValueError(
+                    "Ambiguous sourcepackage name '%s' returned more than "
+                    "one match" % spname)
+            else:
+                spname = spnames[0]
+
+            user = getUtility(ILaunchBag).user
+            getUtility(IBugTaskSet).createTask(
+                bug=bug, owner=user, distrorelease=release,
+                sourcepackagename=spname)
+
+        # Redirect the user back to the task edit form.
+        self.request.response.redirect(
+            canonical_url(self.context) + "/+edit")
+
+
 class ViewWithBugTaskContext:
     def __init__(self, context, request):
         self.request = request
@@ -157,6 +276,18 @@ class ViewWithBugTaskContext:
         return [
             task for task in self.context.bug.bugtasks
             if task.id is not self.context.id]
+
+    def isReleaseTargetableContext(self):
+        """Is the context something that supports release targeting?
+
+        Returns True or False.
+        """
+        bugtarget = self.context.context
+        if (IDistribution.providedBy(bugtarget) or
+            IDistroRelease.providedBy(bugtarget)):
+            return True
+        else:
+            return False
 
     def getCCs(self):
         return [

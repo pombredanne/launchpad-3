@@ -69,6 +69,7 @@ class IHugeVocabulary(IVocabulary):
         IHugeVocabulary implementation.
         """
 
+
 class SQLObjectVocabularyBase:
     """A base class for widgets that are rendered to collect values
     for attributes that are SQLObjects, e.g. ForeignKey.
@@ -135,6 +136,7 @@ class SQLObjectVocabularyBase:
 
     def getTermByToken(self, token):
         return self.getTerm(token)
+
 
 class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
     """A SQLObjectVocabulary base for database tables that have a unique
@@ -209,6 +211,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
 
         return []
 
+
 class ProjectVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
     _table = Project
@@ -240,6 +243,7 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
             return [self._toTerm(r) for r in self._table.select(sql)]
 
         return []
+
 
 # We cannot refer to a BinaryPackage unambiguously by a name, as
 # we have no assurace that a generated name using $BinaryPackageName.name
@@ -601,6 +605,7 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
             for o in objs:
                 yield self._toTerm(o)
 
+
 class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
     """Describes ProductSeries of a particular product."""
     _table = ProductSeries
@@ -640,6 +645,7 @@ class MilestoneVocabulary(NamedSQLObjectVocabulary):
             for ms in target.milestones:
                 yield SimpleTerm(ms, ms.name, ms.name)
 
+
 class BugWatchVocabulary(SQLObjectVocabularyBase):
     _table = BugWatch
 
@@ -651,6 +657,7 @@ class BugWatchVocabulary(SQLObjectVocabularyBase):
         for watch in bug.watches:
             yield self._toTerm(watch)
 
+
 class PackageReleaseVocabulary(SQLObjectVocabularyBase):
     _table = SourcePackageRelease
     _orderBy = 'id'
@@ -658,6 +665,7 @@ class PackageReleaseVocabulary(SQLObjectVocabularyBase):
     def _toTerm(self, obj):
         return SimpleTerm(
             obj, obj.id, obj.name + " " + obj.version)
+
 
 class SourcePackageNameVocabulary(NamedSQLObjectVocabulary):
     implements(IHugeVocabulary)
@@ -703,6 +711,7 @@ class DistributionVocabulary(NamedSQLObjectVocabulary):
             return [self._toTerm(obj) for obj in objs]
 
         return []
+
 
 class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
     implements(IHugeVocabulary)

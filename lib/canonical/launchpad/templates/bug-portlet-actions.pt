@@ -6,7 +6,7 @@
        tal:define="bug_url context/fmt:url">
     <ul>
       <li class="edit">
-        <a href="#" tal:attributes="href string:$bug_url/+edit">Edit 
+        <a href="#" tal:attributes="href string:$bug_url/+edit">Edit
         Description</a>
       </li>
       <li class="edit">

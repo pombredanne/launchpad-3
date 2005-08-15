@@ -1,0 +1,69 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/bug/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <tal:createtasks condition="view/createTargetedTasks" />
+
+  <h1>Target Fix to Releases</h1>
+
+  <p class="documentDescription">
+    Select the releases in which this bug must be fixed, including
+    backport fixes. If you make a mistake, you can mark the task as
+    Rejected.
+  </p>
+
+  <form action="" method="POST">
+    <tal:distrorelease
+         tal:repeat="release_target_details view/release_target_details">
+      <tal:block tal:define="releasename release_target_details/release/name;
+                             sourcepackage release_target_details/sourcepackage|nothing;
+                             spname release_target_details/sourcepackage/sourcepackagename/name|nothing">
+        <input type="checkbox"
+               name="target"
+               tal:attributes="value string:${releasename}.${spname};
+                               disabled release_target_details/istargeted;
+                               checked release_target_details/istargeted" />
+        <a tal:content="string:${releasename} ${spname}"
+           tal:attributes="href string:${sourcepackage/fmt:url}/+bugs">
+          warty mozilla-firefox
+        </a>
+
+        <tal:targeted condition="release_target_details/istargeted">
+          <tal:status content="release_target_details/status/title" />,
+          <tal:assigned condition="release_target_details/assignee">
+            Assigned to
+            <a tal:attributes="href release_target_details/assignee/fmt:url"
+               tal:content="release_target_details/assignee/displayname">
+              Foo Bar
+            </a>
+           </tal:assigned>
+           <tal:unassigned condition="not: release_target_details/assignee">
+             Unassigned
+           </tal:unassigned>
+        </tal:targeted>
+        <br />
+      </tal:block>
+    </tal:distrorelease>
+
+    <br />
+
+    <input type="submit" name="savetargets" value="Target Fix to Selected Releases" />
+
+  </form>
+
+</div>
+</body>
+</html>

@@ -50,6 +50,18 @@ class BugTaskPageTitle:
             context.bug.id, context.contextname, context.bug.title)
 
 
+class BugTaskTargetingTitle:
+    def __call__(self, context, view):
+        task_target = context.context
+        if IDistribution.providedBy(task_target):
+            distribution_title = task_target.title
+        elif IDistroRelease.providedBy(task_target):
+            distribution_title = task_target.distribution.title 
+
+        return "Bug #%d in %s - Target Fix to Releases" % (
+            context.bug.id, distribution_title)
+
+
 class SubstitutionHelper:
     def __init__(self, text):
         self.text = text
@@ -160,6 +172,8 @@ bugs_for_context = ContextTitle('Bugs in %s')
 bugs_index = 'Malone Master Bug List'
 
 bugsubscription_edit = 'Modify Your Bug Subscription'
+
+bugtask_release_targeting = BugTaskTargetingTitle()
 
 bugtask_view = BugTaskPageTitle()
 
