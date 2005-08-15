@@ -47,7 +47,7 @@ Check to see if the items label is correct when we are atEnd of the form.
   <BLANKLINE>
   <BLANKLINE>
                       Items
-                      <strong>21</strong>
+                      <strong>13</strong>
                       &rarr;
                       <strong>22</strong>
                       of

@@ -161,24 +161,6 @@ class Bug(SQLBase):
         return BugWatch(bug=self, bugtracker=bugtracker,
             remotebug=remotebug, owner=owner)
 
-    def addTask(self, owner, product=None, distribution=None,
-        distrorelease=None, sourcepackagename=None,
-        binarypackagename=None):
-        """See IBug."""
-        # look for a match among existing tasks
-        for task in self.bugtasks:
-            if (task.product == product and
-                task.distribution == distribution and
-                task.distrorelease == distrorelease and
-                task.sourcepackagename == sourcepackagename and
-                task.binarypackagename == binarypackagename):
-                return task
-        # create and return a new task
-        return BugTask(owner=owner, product=product,
-            distribution=distribution, distrorelease=distrorelease,
-            sourcepackagename=sourcepackagename,
-            binarypackagename=binarypackagename)
-
 
 # XXX kiko 2005-07-15 should this go to BugSet.new?
 def BugFactory(addview=None, distribution=None, sourcepackagename=None,

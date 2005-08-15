@@ -1,13 +1,14 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Milestone', 'MilestoneSet', 'ProductMilestoneSet',
-           'ProductMilestoneFactory']
+__all__ = ['Milestone', 'MilestoneSet'] 
 
 from zope.interface import implements
 from zope.exceptions import NotFoundError
 
-from sqlobject import ForeignKey, StringCol, AND, SQLObjectNotFound
+from sqlobject import (
+    ForeignKey, StringCol, AND, SQLObjectNotFound, BoolCol, DateCol,
+    MultipleJoin)
 
 from canonical.launchpad.interfaces.milestone import IMilestone, IMilestoneSet
 from canonical.database.sqlbase import SQLBase
@@ -17,9 +18,34 @@ class Milestone(SQLBase):
     implements(IMilestone)
 
     product = ForeignKey(dbName='product', foreignKey='Product')
+    distribution = ForeignKey(dbName='distribution',
+        foreignKey='Distribution')
     name = StringCol(notNull=True)
-    title = StringCol(notNull=True)
+    dateexpected = DateCol(notNull=False, default=None)
+    visible = BoolCol(notNull=True, default=True)
 
+    bugtasks = MultipleJoin('BugTask', joinColumn='milestone')
+
+    @property
+    def target(self):
+        """See IMilestone."""
+        if self.product:
+            return self.product
+        elif self.distribution:
+            return self.distribution
+
+    @property
+    def displayname(self):
+        """See IMilestone."""
+        return 'Milestone %s' % self.name
+
+    @property
+    def title(self):
+        """See IMilestone."""
+        title = 'Milestone %s for %s' % (self.name, self.target.displayname)
+        if self.dateexpected:
+            title += ' due ' + self.dateexpected.strftime('%Y-%m-%d')
+        return title
 
 
 class MilestoneSet:
@@ -37,38 +63,11 @@ class MilestoneSet:
             raise NotFoundError(
                 "Milestone with ID %d does not exist" % milestoneid)
 
-    def new(self, product, name, title):
-        """See canonical.launchpad.interfaces.milestone.IMilestoneSet."""
-        return Milestone(productID = product.id, name = name, title = title)
+    def new(self, name, product=None, distribution=None, dateexpected=None,
+        visible=True):
+        """See IMilestoneSet."""
+        return Milestone(name=name, product=product,
+            distribution=distribution, dateexpected=dateexpected,
+            visible=visible)
 
-
-# XXX: Brad Bollenbach, 2005-02-02: A milestone set specific to products
-# should probably go away by the time take a second pass through this
-# code whilst implementing mpt's UI foo.
-#
-# Unless you have an amazingly good reason not to, READ milestone.txt FOR
-# THE CORRECT WAY TO USE MILESTONES.
-class ProductMilestoneSet:
-    implements(IMilestoneSet)
-
-    def __init__(self, product):
-        self.product = product
-
-    def __iter__(self):
-        for milestone in self.product.milestones:
-            yield milestone
-
-    def __getitem__(self, name):
-        milestone = Milestone.selectOne(AND(
-            Milestone.q.productID == self.product.id,
-            Milestone.q.name == name))
-
-        if milestone is None:
-            raise KeyError, name
-        return milestone
-
-def ProductMilestoneFactory(*args, **kwargs):
-    return Milestone(
-        productID = kwargs['product'], name = kwargs['name'],
-        title = kwargs['title'])
 

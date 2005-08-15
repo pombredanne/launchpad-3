@@ -387,19 +387,28 @@ class CVEState(DBSchema):
     be a CAN or a CVE.
     """
 
-    CAN = Item(1, """
-        CAN
+    CANDIDATE = Item(1, """
+        Candidate
 
         The vulnerability is a candidate, it has not yet been confirmed and
-        given a CVE number.
+        given "Entry" status.
         """)
 
-    CVE = Item(2, """
-        CVE
+    ENTRY = Item(2, """
+        Entry
 
         This vulnerability or threat has been assigned a CVE number, and is
         fully documented. It has been through the full CVE verification
         process.
+        """)
+
+    DEPRECATED = Item(3, """
+        Deprecated
+
+        This entry is deprecated, and should no longer be referred to in
+        general correspondence. There is either a newer entry that better
+        defines the problem, or the original candidate was never promoted to
+        "Entry" status.
         """)
 
 class ProjectStatus(DBSchema):

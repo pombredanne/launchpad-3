@@ -2,7 +2,7 @@
   <h4>Latest Bugs in <span tal:replace="context/displayname" />:</h4>
   <div class="portletBody">
     <div class="portletContent even">
-      <ul> 
+      <ul class="bug"> 
         <li tal:repeat="bugtask view/latestBugTasks">
           <a href="#"
              style="text-decoration: underline"
@@ -12,22 +12,20 @@
              title</span>
         </li>
         <li tal:condition="not: view/latestBugTasks" class="discreet">
-          No bugs have been reported for this product.
+          No bugs have been reported for <span tal:replace="context/displayname" />.
         </li>
       </ul>
 
       <ul>
-        <li class="info"
-            tal:condition="view/latestBugTasks">
-          <a tal:attributes="href string:/malone/products/${context/name}"
-             title="See all bugs for this product">
-              Search bug reports
+        <li class="bugs" tal:condition="view/latestBugTasks">
+          <a tal:attributes="href string:${context/fmt:url}/+bugs">
+            View bug reports for <span tal:replace="context/displayname" />
           </a>
         </li>
-        <li class="add"><a tal:attributes="href string:${context/fmt:url}/+filebug"
-          title="File a bug on this product">
-          Report new bug<br />
-        </a></li>
+        <li class="add">
+          <a tal:attributes="href string:${context/fmt:url}/+filebug">
+            Report new bug
+          </a></li>
       </ul>
     </div>
   </div>

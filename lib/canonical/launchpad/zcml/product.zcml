@@ -82,16 +82,12 @@
             lp:url="/products/evolution/+portlet-translations" />
         <browser:page
             name="+portlet-milestones"
-            template="../templates/product-portlet-milestones.pt"
+            template="../templates/object-portlet-milestones.pt"
             lp:url="/products/evolution/+portlet-milestones" />
         <browser:page
             name="+portlet-actions"
             template="../templates/product-portlet-actions.pt"
             lp:url="/products/evolution/+portlet-actions" />
-        <browser:page
-            name="+portlet-latest-bugs"
-            template="../templates/product-portlet-latestbugs.pt"
-            lp:url="/products/evolution/+portlet-latest-bugs" />
         <browser:page
             name="+portlet-bounties"
             template="../templates/object-portlet-bounties.pt"
@@ -120,7 +116,8 @@
         class="canonical.launchpad.browser.ProductRdfView"
         name="+rdf"
         lp:url="/projects/$Product.name/+rdf"
-        template="../templates/product-rdf.pt" />
+        attribute="__call__"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
@@ -254,6 +251,19 @@
     </browser:addform>
 
     <browser:addform
+        name="+addmilestone"
+        for="canonical.launchpad.interfaces.IProduct"
+        schema="canonical.launchpad.interfaces.IMilestone"
+        class="canonical.launchpad.browser.milestone.MilestoneAddView"
+        label="Add a Milestone"
+        fields="name dateexpected"
+        keyword_arguments="name dateexpected"
+        permission="launchpad.Edit"
+        template="../templates/milestone-add.pt"
+        lp:url="/products/$Product.name/+addmilestone">
+    </browser:addform>
+
+    <browser:addform
         name="+addseries"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IProductSeries"
@@ -314,7 +324,7 @@
             lp:url="/products/+index" />
         <browser:page
             name="+all"
-            template="../templates/doap-listall.pt"
+            template="../templates/registry-listall.pt"
             lp:url="/products/+all" />
         <browser:page
             name="+portlet-details"
@@ -328,7 +338,7 @@
         permission="launchpad.AnyPerson">
         <browser:page
             name="+review"
-            template="../templates/doap-review.pt"
+            template="../templates/registry-review.pt"
             lp:url="/products/+review" />
     </browser:pages>
 
@@ -344,7 +354,7 @@
         class="canonical.launchpad.browser.ProductSetAddView"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="doap/products/+new">
+        lp:url="products/+new">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
         <browser:widget
            field="name"

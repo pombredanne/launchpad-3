@@ -1,11 +1,11 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
     lang="en"
     metal:use-macro="context/@@malone_template/master"
-    i18n:domain="malone">
+    i18n:domain="malone"
+>
+  <body>
 
-<body>
-
-<div metal:fill-slot="body">
+  <div metal:fill-slot="body">
 
     <form method="POST" action="." name="update-view" class="portlet">
         <b>Assigned to:</b>
@@ -33,215 +33,77 @@
     </div>
     <div tal:condition="view/user">
 
-        <h1>Bugs Assigned to <a tal:attributes="href view/user/fmt:url"><span tal:replace="view/user/browsername">
-        Person</span></a></h1>
+      <h1>Bugs Assigned to <a tal:attributes="href view/user/fmt:url"><span tal:replace="view/user/browsername">
+      Person</span></a></h1>
 
-        <div tal:condition="view/maintainedProductBugs">
+      <div tal:condition="view/maintainedProductBugs"
+           tal:define="tasks view/maintainedProductBugs;
+                       listing_columns view/productColumns">
 
-            <h2>Bugs on upstream products <span
-            tal:replace="view/user/browsername">person</span> maintains:</h2>
+        <h2>Bugs on upstream products <span
+        tal:replace="view/user/browsername">person</span> maintains:</h2>
 
-            <table class="listing rowNavigation" width="100%">
-                
-              <thead>
+        <table metal:use-macro="context/@@+bugtask-macros-tableview/table" />
+      </div>
 
-                <tr>
-                    <th>Bug</th>
-                    <th>Title</th>
-                    <th>Upstream Product</th>
-                    <th>Work Status</th>
-                    <th>Severity</th>
-                    <th>Priority</th>
-                    <th>Work Assigned To...</th>
-                </tr>
+      <div tal:condition="view/productAssigneeBugs"
+           tal:define="tasks view/productAssigneeBugs;
+                       listing_columns view/productColumns">
 
-              </thead>
-              <tbody>
+        <h2>Upstream bugs assigned directly:</h2>
 
-                <tr tal:repeat="bugtask view/maintainedProductBugs"
-                    tal:attributes="onclick
-                    string:window.location='/malone/bugs/${bugtask/bug/id}'">
-                    <td>#<span tal:replace="bugtask/bug/id">$Bug.id</span></td>
-                    <td tal:attributes="title bugtask/bug/summary">
-                        <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
-                    <td tal:content="bugtask/product/displayname|nothing">product</td>
-                    <td tal:content="bugtask/status/title">status</td>
-                    <td tal:content="bugtask/severity/title">severity</td>
-                    <td tal:content="bugtask/priority/title">priority</td>
-                    <td tal:content="bugtask/assignee/browsername|default">-</td>
-                </tr>
+        <table metal:use-macro="context/@@+bugtask-macros-tableview/table" />
+      </div>
 
-              </tbody>
+      <div tal:condition="view/maintainedPackageBugs">
+           tal:define="tasks view/maintainedPackageBugs;
+                       listing_columns view/packageColumns">
 
-            </table>
+        <h2>Bugs on distro packages <span
+        tal:replace="view/user/browsername">person</span> maintains:</h2>
 
-        </div>
+        <table metal:use-macro="context/@@+bugtask-macros-tableview/table" />
+      </div>
 
-        <div tal:condition="view/maintainedPackageBugs">
+      <div tal:condition="view/packageAssigneeBugs"
+           tal:define="tasks view/packageAssigneeBugs;
+                       listing_columns view/packageColumns">
 
-            <h2>Bugs on distro packages <span
-            tal:replace="view/user/browsername">person</span> maintains:</h2>
+        <h2>Package bugs assigned directly:</h2>
 
-            <table class="listing rowNavigation" width="100%">
+        <table metal:use-macro="context/@@+bugtask-macros-tableview/table" />
+      </div>
 
-              <thead>
+      <div tal:condition="not:view/assignedBugs" tal:omit-tag>
+      <h2>No bugs are currently assigned to <span
+      tal:replace="view/user/browsername">Person</span>.</h2>
 
-                <tr>
-                    <th>Bug</th>
-                    <th>Title</th>
-                    <th>Distribution</th>
-                    <th>Package</th>
-                    <th>Work Status</th>
-                    <th>Severity</th>
-                    <th>Priority</th>
-                    <th>Work Assigned To...</th>
-                </tr>
-              
-              </thead>
+        <hr>
+        <p> You can assign a bug by visiting its bug page, choosing a
+        specific package or product it needs to be fixed in, and then
+        assigning it to a specific person for action.</p>
+      </div>
 
-              <tbody>
+      <div tal:condition="view/assignedBugs" tal:omit-tag>
 
-                <tr tal:repeat="bugtask view/maintainedPackageBugs"
-                    tal:attributes="onclick
-                    string:window.location='/malone/bugs/${bugtask/bug/id}'">
-                    <td>#<span tal:replace="bugtask/bug/id">$Bug.id</span></td>
-                    <td tal:attributes="title bugtask/bug/summary">
-                        <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
-                    <td tal:content="bugtask/distribution/name|string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
-                        distro
-                    </td>
-                    <td tal:content="bugtask/sourcepackagename/name">
-                        package
-                    </td>
-                    <td tal:content="bugtask/status/title">status</td>
-                    <td tal:content="bugtask/severity/title">severity</td>
-                    <td tal:content="bugtask/priority/title">priority</td>
-                    <td tal:content="bugtask/assignee/browsername|default">-</td>
-                </tr>
-              
-              </tbody>
+        <p>These are the bugs that are in the work list for <span
+        tal:replace="view/user/browsername">the person</span>. These
+        bugs might occur in upstream products or distribution packages
+        which <span tal:replace="view/user/browsername">the
+        person</span> maintains, or they might have been explicitly
+        assigned. Click on the bug to see more detail.</p>
 
-            </table>
+        <p>In Malone, a single bug can appear in multiple packages, so
+        bugs can be assigned to be fixed in multiple places. The "work
+        status" shows the state of that particular assignment. So even
+        though the bug might be fixed upstream, or in another package,
+        the assignee may still have to do work to fix it.</p>
 
-        </div>
-
-        <div tal:condition="view/packageAssigneeBugs">
-
-            <h2>Package bugs assigned directly:</h2>
-
-            <table class="listing rowNavigation" width="100%">
-
-              <thead>
-
-                <tr>
-                    <th>Bug</th>
-                    <th>Title</th>
-                    <th>Distro</th>
-                    <th>Package</th>
-                    <th>Work Status</th>
-                    <th>Severity</th>
-                    <th>Priority</th>
-                </tr>
-              
-              </thead>
-
-              <tbody>
-
-                <tr tal:repeat="bugtask view/packageAssigneeBugs"
-                    tal:attributes="onclick
-                    string:window.location='/malone/bugs/${bugtask/bug/id}'">
-                    <td>#<span tal:replace="bugtask/bug/id">$Bug.id</span></td>
-                    <td tal:attributes="title bugtask/bug/summary">
-                        <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
-                    <td tal:content="bugtask/distribution/name|string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
-                        distro
-                    </td>
-                    <td tal:content="bugtask/sourcepackagename/name">
-                        package
-                    </td>
-                    <td tal:content="bugtask/status/title">status</td>
-                    <td tal:content="bugtask/severity/title">severity</td>
-                    <td tal:content="bugtask/priority/title">priority</td>
-                </tr>
-              
-              </tbody>
-
-            </table>
-
-        </div>
-
-        <div tal:condition="view/productAssigneeBugs">
-
-            <h2>Upstream bugs assigned directly:</h2>
-
-            <table class="listing rowNavigation" width="100%">
-
-              <thead>
-
-                <tr>
-                    <th>Bug</th>
-                    <th>Title</th>
-                    <th>Upstream Product</th>
-                    <th>Work Status</th>
-                    <th>Severity</th>
-                    <th>Priority</th>
-                </tr>
-
-              </thead>
-              <tbody>
-
-                <tr tal:repeat="bugtask view/productAssigneeBugs"
-                    tal:attributes="onclick
-                    string:window.location='/malone/bugs/${bugtask/bug/id}'">
-                    <td>#<span tal:replace="bugtask/bug/id">$Bug.id</span></td>
-                    <td tal:attributes="title bugtask/bug/summary">
-                        <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
-                    <td tal:content="bugtask/product/displayname|nothing">product</td>
-                    <td tal:content="bugtask/status/title">status</td>
-                    <td tal:content="bugtask/severity/title">severity</td>
-                    <td tal:content="bugtask/priority/title">priority</td>
-                </tr>
-
-              </tbody>
-
-            </table>
-
-        </div>
-
-        <div tal:condition="not:view/assignedBugs" tal:omit-tag>
-        <h2>No bugs are currently assigned to <span
-        tal:replace="view/user/browsername">Person</span>.</h2>
-        
-            <hr>
-            <p>
-            You can assign a bug by visiting its bug page, choosing a
-            specific package or product it needs to be fixed in, and
-            then assigning it to a specific person for action.
-            </p>
-
-        </div>
-
-        <div tal:condition="view/assignedBugs" tal:omit-tag>
-            <p >These are the bugs that are
-            in the work list for <span
-            tal:replace="view/user/browsername">the person</span>. These bugs
-            might occur in upstream products or distribution packages which <span
-            tal:replace="view/user/browsername">the person</span> maintains, or
-            they might have been explicitly assigned. Click on the bug to see more
-            detail.</p>
-
-            <p>In Malone, a single bug can appear in multiple
-            packages, so bugs can be assigned to be fixed in multiple
-            places. The "work status" shows the state of that particular
-            assignment. So even though the bug might be fixed upstream,
-            or in another package, the assignee may still have to do
-            work to fix it.</p>
-
-        </div>
+      </div>
 
     </div>
-    
-</div>
+
+  </div>
 
 </body>
 

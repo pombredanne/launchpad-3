@@ -1,5 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""View classes related to IDistroRelease."""
+
 __metaclass__ = type
 
 __all__ = [
@@ -16,15 +18,14 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 
 from canonical.launchpad import helpers
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp import StandardLaunchpadFacets
 
 from canonical.launchpad.interfaces import (IDistroReleaseLanguageSet,
-    IBugTaskSearchListingView, IDistroRelease, ICountry, IPerson,
+    IBugTaskSearchListingView, IDistroRelease, ICountry,
     IDistroReleaseSet, ILaunchBag)
 from canonical.launchpad.browser.potemplate import POTemplateView
-from canonical.launchpad.browser.pofile import POFileView
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
-
 
 class DistroReleaseFacets(StandardLaunchpadFacets):
     usedfor = IDistroRelease
@@ -87,8 +88,17 @@ class DistroReleaseView:
                 drl = drlangset.getDummy(self.context, lang)
                 drlangs.append(drl)
         drlangs.sort(key=lambda a: a.language.englishname)
-        
+
         return drlangs
+
+    def redirectToDistroFileBug(self):
+        """Redirect to the distribution's filebug page.
+
+        Filing a bug on a distribution release is not directly
+        permitted; we redirect to the distribution's file
+        """
+        distro_url = canonical_url(self.context.distribution)
+        return self.request.response.redirect(distro_url + "/+filebug")
 
 
 class DistroReleaseBugsView(BugTaskSearchListingView):
@@ -104,6 +114,7 @@ class DistroReleaseBugsView(BugTaskSearchListingView):
         """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
         return [
             "id", "package", "title", "status", "submittedby", "assignedto"]
+
 
 class DistroReleaseAddView(AddView):
     __used_for__ = IDistroRelease

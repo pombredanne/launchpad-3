@@ -1,0 +1,36 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@malone_template/master"
+      i18n:domain="launchpad">
+
+  <div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_addform/addform">
+
+        <h3 tal:condition="view/label"
+            tal:content="view/label"
+            metal:fill-slot="heading">Add a New bug in Malone</h3>
+
+        <div metal:fill-slot="extra_info" class="formHelp">
+            Bug reports provide valuable information to developers who maintain
+            and improve software.
+        <br />
+        <br />
+        </div>
+
+        <div class="row" metal:fill-slot="extra_top">
+            <div class="label">Distribution</div>
+            <div class="field"
+                 tal:content="context/distrorelease/distribution/displayname" />
+            <div class="label">Source Package Name</div>
+            <div class="field" tal:content="context/name" />
+        </div>
+
+        <legend metal:fill-slot="form_legend">New Bug Details</legend>
+
+  </div>
+
+  </div>
+
+</html>
+

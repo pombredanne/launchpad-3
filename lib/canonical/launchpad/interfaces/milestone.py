@@ -10,21 +10,40 @@ __all__ = [
     ]
 
 from zope.i18nmessageid import MessageIDFactory
-from zope.interface import Interface
-from zope.schema import Choice, TextLine, Int
+from zope.interface import Interface, Attribute
+from zope.schema import Choice, TextLine, Int, Date, Bool
 
 from canonical.launchpad.interfaces import IHasProduct
 
 _ = MessageIDFactory('launchpad')
 
 class IMilestone(IHasProduct):
+    """A milestone, or a targeting point for bugs and other release-related
+    items that need coordination.
+    """
     id = Int(title=_("Id"))
+    name = TextLine(title=_("Name"), required=True,
+        description=_("A short and unique name for this milestone, only "
+        "letters,numbers, and simple punctuation are allowed."))
     product = Choice(
         title=_("Product"),
         description=_("The product to which this milestone is associated"),
-        required=True, values=('foo',))
-    name = TextLine(title=_("Name"), required=True)
-    title = TextLine(title=_("Title"), required=True)
+        vocabulary="Product")
+    distribution = Choice(title=_("Distribution"),
+        description=_("The distribution to which this milestone belongs."),
+        vocabulary="Distribution")
+    dateexpected = Date(title=_("Date Targeted"), required=False,
+        description=_("The date on which we expect this milestone to be "
+            "delivered."))
+    visible = Bool(title=_("Active"), description=_("Whether or not this "
+        "milestone should be shown in web forms for bug targeting."))
+    target = Attribute("The product or distribution of this milestone.")
+    displayname = Attribute("A displayname for this milestone, constructed "
+        "from the milestone name.")
+    title = Attribute("A milestone context title for pages.")
+    bugtasks = Attribute("A list of the bug tasks targeted to this "
+        "milestone.")
+
 
 class IMilestoneSet(Interface):
     def __iter__():

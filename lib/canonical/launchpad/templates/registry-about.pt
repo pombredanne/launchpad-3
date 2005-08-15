@@ -7,7 +7,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>About DOAP</h1>
+    <h1>About the Launchpad Registry</h1>
 
     <p>Based on Edd Dumbill's DOAP framework for open source project
     descriptions, this system allows us to keep track of all the open source

@@ -138,12 +138,6 @@ class IBug(Interface):
         tracker, owned by the person given as the owner.
         """
 
-    def addTask(owner, product=None, distribution=None, distrorelease=None,
-        sourcepackagename=None, binarypackagename=None):
-        """Create a new BugTask (unless a task on this target already
-        exists, in which case we will just return that) for this bug.
-        """
-
 
 class IBugTarget(Interface):
     """An entity on which a bug can be reported.
@@ -151,11 +145,10 @@ class IBugTarget(Interface):
     Examples include an IDistribution, an IDistroRelease and an
     IProduct.
     """
-    def searchBugs(bug=None, searchtext=None, status=None, priority=None,
-                   severity=None, milestone=None, assignee=None, owner=None,
-                   statusexplanation=None, attachmenttype=None, user=None,
-                   orderby=None, omit_dupes=False):
+    def searchTasks(search_params):
         """Search the IBugTasks reported on this entity.
+
+        :search_params: a BugTaskSearchParams object
 
         Return an iterable of matching results.
 

@@ -7,4 +7,3 @@ nowUTC = SQLConstant("CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
 UTC_NOW = nowUTC # All upper because this is the constants module
 
 DEFAULT = SQLConstant("DEFAULT")
-

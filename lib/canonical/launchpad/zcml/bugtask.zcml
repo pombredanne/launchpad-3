@@ -5,6 +5,12 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+    <browser:page
+        for="*"
+        name="+bugtask-macros-tableview"
+        permission="zope.Public"
+        template="../templates/bugtask-macros-tableview.pt" />
+
     <!-- IBugTask -->
     <content class="canonical.launchpad.database.BugTask">
         <require
@@ -78,9 +84,9 @@
             template="../templates/bugtask-portlet-alsoreportedin.pt"
             lp:url="malone/tasks/+portlet-alsoreportedin" />
         <browser:page
-            name="+portlet-status"
-            template="../templates/bugtask-portlet-status.pt"
-            lp:url="malone/tasks/+portlet-status" />
+            name="+portlet-details"
+            template="../templates/bugtask-portlet-details.pt"
+            lp:url="malone/tasks/+portlet-details" />
         
     </browser:pages>
 
@@ -167,7 +173,7 @@
         for="canonical.launchpad.interfaces.IDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename
+        fields="sourcepackagename binarypackagename milestone
                 status priority severity assignee bugwatch statusexplanation"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
@@ -217,7 +223,7 @@
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename
+        fields="sourcepackagename binarypackagename milestone
                 status priority severity assignee bugwatch statusexplanation"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
@@ -275,12 +281,4 @@
               template="../templates/bugs-assigned.pt"
               lp:url="malone/assigned/" />
     </browser:pages>
-
-    <browser:page
-        for="*"
-        name="bugtask_search_listing"
-        layer="canonical.launchpad.layers.LaunchpadLayer"
-        permission="zope.Public"
-        template="../templates/bugtask-search-listing.pt"
-        />
 </configure>

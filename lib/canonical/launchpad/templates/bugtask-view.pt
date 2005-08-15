@@ -4,7 +4,7 @@
       i18n:domain="launchpad">
   <body>
   <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-status" />
+    <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/bug/@@+portlet-details" />
   </metal:leftportlets>
   
@@ -27,15 +27,15 @@
       <p tal:condition="not: context/required:launchpad.Edit"
          class="portalMessage">
         <span tal:condition="not: request/lp:person">
-          To <a href="+edit">change this status page</a> you need to be
-          logged in, and you must 
+          To <a href="+edit">change this status page</a>,
+          you must be logged in as
           <span tal:condition="context/assignee">
-          be either <a href="#"
+            <a href="#"
                        tal:attributes="href context/assignee/fmt:url" 
                        tal:content="context/assignee/displayname">
           Scott James Remnant The Third</a> or 
           </span>
-          be a maintainer of <span 
+          a maintainer of <span 
                               tal:replace="context/contextname">product</span>.
         </span>
         <span tal:condition="request/lp:person">

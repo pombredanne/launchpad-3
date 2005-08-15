@@ -10,7 +10,7 @@ from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 __all__ = ['ILaunchpadRoot', 'ILaunchpadApplication', 'IMaloneApplication',
-           'IRosettaApplication', 'IDOAPApplication', 'IBazaarApplication',
+           'IRosettaApplication', 'IRegistryApplication', 'IBazaarApplication',
            'IFOAFApplication', 'IPasswordEncryptor',
            'IReadZODBAnnotation', 'IWriteZODBAnnotation',
            'IZODBAnnotation', 'IAuthorization',
@@ -139,8 +139,8 @@ class IRosettaApplication(ILaunchpadApplication):
         """Return the number of languages in the system."""
 
 
-class IDOAPApplication(ILaunchpadApplication):
-    """DOAP application root."""
+class IRegistryApplication(ILaunchpadApplication):
+    """Registry application root."""
 
 
 class IFOAFApplication(ILaunchpadApplication):

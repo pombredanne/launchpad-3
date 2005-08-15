@@ -20,7 +20,7 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (ISourcePackage,
     ISourcePackageSet, ILaunchpadCelebrities)
 
-from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.maintainership import Maintainership
 from canonical.launchpad.database.vsourcepackagereleasepublishing import (
@@ -309,6 +309,11 @@ class SourcePackage:
         for spr in result:
             thedict[spr.pocket].append(spr.sourcepackagerelease)
         return thedict
+
+    def searchTasks(self, search_params):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        search_params.setSourcePackage(self)
+        return BugTaskSet().search(search_params)
 
     def setPackaging(self, productseries, user):
         target = self.direct_packaging

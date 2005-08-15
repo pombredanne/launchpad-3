@@ -8,31 +8,23 @@
 
    <tal:dummy condition="view/newBugTracker" />
 
-    <h1>Register a New Bug Tracking System</h1>
-
-    <div class="documentDescription">
-    Please fill in the details below to register a new Bug Tracking System
-    in the Launchpad.
-    </div>
-
-    <fieldset>
-
-        <legend>Bug System Details</legend>
+        <h1>Register a new bug tracker</h1>
 
         <form action="+newbugtracker" method="post">
         <div class="field">
 
-            <label>Name</label>
+            <label>Bug tracker ID:</label>
 
             <span class="fieldRequired" title="Required">(Required)</span>
 
                   <div class="formHelp">
-                    The "name" of the bug tracker is a short name - a unique
-                    name that identifies the bug tracker, and is used in 
-                    URLs and references to it. It should be all lowercase
-                    letters and dashes, and contain no special characters.
-                    Examples: <i>mozilla-bugs</i>, <i>gnome-main</i>,
-                    <i>nvu-bugzilla</i>.
+                    A short string used in <abbr>URL</abbr>s to
+                    identify the bug tracker.
+                    It should contain only lowercase
+                    letters and dashes, with no special characters.
+                    Examples:
+                    <samp>mozilla-bugs</samp>,
+                    <samp>gnome-main</samp>.
                   </div>
 
                 <!--XXX Mark Shuttleworth 05/10/04 for Alex Limi:
@@ -116,9 +108,6 @@
 
         </div>
         </form>
-
-
-    </fieldset>
 
 </div>
 

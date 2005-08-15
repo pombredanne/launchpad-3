@@ -1,6 +1,8 @@
+First, test that the subscriptions page works at all.
+
   >>> print http(r"""
   ... GET /bounties/testing/+subscribe HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Referer: http://localhost:9000/bounties/testing
   ... """)
   HTTP/1.1 200 Ok
@@ -11,28 +13,55 @@
       <title>Bounty Subscription</title>
   ...
 
+Setting an "email" subscription should add you to the list of
+e-mailed subscribers.
 
   >>> print http(r"""
   ... POST /bounties/testing/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 45
   ... Content-Type: application/x-www-form-urlencoded
   ... Referer: http://localhost:9000/bounties/testing/+subscribe
   ... 
-  ... subscription=watch&Subscribe=Set+Subscription""")
+  ... subscription=email&Subscribe=Set+Subscription""")
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-              <h5>watch:</h5>
+  ...Your subscription to this bounty has been updated....
+  ...
+              <h5>email:</h5>
               <ul class="people">
                   <li>
-                    <a href="/people/name16">Foo Bar</a>
+                    <a href="/people/no-priv">No Privileges Person</a>
                   </li>
               </ul>
   ...
-      <p class="portalMessage">Your subscription to this bounty has been updated.</p>
+
+And setting a "None" subscription should remove you from the list.
+
+  >>> print http(r"""
+  ... POST /bounties/testing/ HTTP/1.1
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 44
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: http://localhost:9000/bounties/testing/+subscribe
+  ... 
+  ... subscription=none&Subscribe=Set+Subscription""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
   ...
-
-
+  ...Your subscription to this bounty has been updated...
+  ...
+              </ul>
+  ...
+              <ul class="people">
+              </ul>
+  <BLANKLINE>
+  <BLANKLINE>
+              <ul class="people">
+              </ul>
+  ...

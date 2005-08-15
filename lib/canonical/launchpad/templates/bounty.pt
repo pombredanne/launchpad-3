@@ -16,19 +16,24 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
+      <p
+        tal:repeat="notice view/notices"
+        tal:content="notice"
+        class="portalMessage"
+      >Notification Message</p>
 
-    <h1>Overview</h1>
-
+      <h2>
+        Description
+        <a href="+edit"><img 
+          alt="[Edit]"
+          src="/++resource++edit.gif"
+          title="Lets you edit the description."
+        ></a>
+      </h2>
     <p class="documentDescription" tal:content="context/summary">
         $Bounty.summary goes here. This should be quite short,
         just a single paragraph of text really, giving a summary of
         this Bounty.
-    </p>
-
-    <p tal:repeat="notice view/notices"
-         class="portalMessage"
-         tal:content="notice">
-         Notification Message
     </p>
 
     <p tal:content="context/description">

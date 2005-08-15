@@ -122,7 +122,8 @@
         permission="zope.Public"
         name="+rdf"
         lp:url="/products/$Product.name/+series/$ProductSeries.name/+rdf"
-        template="../templates/productseries-rdf.pt" />
+        attribute="__call__"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"

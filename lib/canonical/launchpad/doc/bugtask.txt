@@ -224,17 +224,20 @@ Note that we haven't tested any combinations that shouldn't occur, except
 for the case when everything is None.
 
 To retrieve a set of bug tasks matching a set of search criteria, use
-BugTaskSet.search. Here's how you'd grab all the NEW and ACCEPTED tasks:
+the searchTasks method of the IBugTarget interface. Here's how you'd
+grab all the NEW and ACCEPTED tasks:
 
 For upstream:
 
     >>> from canonical.launchpad.searchbuilder import any
     >>> from canonical.lp.dbschema import BugTaskStatus
     >>> from canonical.launchpad.database import Product
+    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
     >>> upstream_mozilla = Product.get(4)
-    >>> bugtasks = bugtaskset.search(
-    ...     status=any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
-    ...     product=upstream_mozilla, orderby="id")
+    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.NEW, 
+    ...                                         BugTaskStatus.ACCEPTED),
+    ...                              orderby="id", user=None)
+    >>> bugtasks = upstream_mozilla.searchTasks(params)
     >>> print bugtasks.count()
     4
     >>> bugtask_ids = [bt.id for bt in bugtasks]
@@ -245,9 +248,11 @@ For a distribution:
 
     >>> debian = distroset.get(3)
     >>> sample_person = personset.get(12)
-    >>> bugtasks = bugtaskset.search(
-    ...     status=any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
-    ...     distribution=debian, orderby="id", assignee=sample_person)
+    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.NEW, 
+    ...                                         BugTaskStatus.ACCEPTED),
+    ...                              orderby="id", user=None,
+    ...                              assignee=sample_person)
+    >>> bugtasks = debian.searchTasks(params)
     >>> print bugtasks.count()
     1
     >>> bugtasks[0].id
@@ -256,7 +261,8 @@ For a distribution:
 To provide null-matching search criteria, use canonical.launchpad.searchbuilder.NULL:
 
     >>> from canonical.launchpad.searchbuilder import NULL
-    >>> bugtasks = bugtaskset.search(product=upstream_mozilla, assignee=NULL)
+    >>> params = BugTaskSearchParams(assignee=NULL, user=None)
+    >>> bugtasks = upstream_mozilla.searchTasks(params)
     >>> print bugtasks.count()
     2
     >>> print [bugtask.bug.id for bugtask in bugtasks]
@@ -264,8 +270,8 @@ To provide null-matching search criteria, use canonical.launchpad.searchbuilder.
 
 There's also support for searching tasks based on a string of text, e.g.:
 
-    >>> bugtasks = bugtaskset.search(
-    ...     product=upstream_mozilla, searchtext="instructions")
+    >>> params = BugTaskSearchParams(searchtext="instructions", user=None)
+    >>> bugtasks = upstream_mozilla.searchTasks(params)
     >>> print bugtasks.count()
     1
     >>> print [bugtask.bug.id for bugtask in bugtasks]
@@ -275,7 +281,7 @@ It's also possible to iterate over all the bug tasks:
 
     >>> bugtasks = [bugtask for bugtasks in bugtaskset]
     >>> len(bugtasks)
-    14
+    16
 
 Bug Task Maintainers
 --------------------
@@ -482,18 +488,20 @@ one of the maintainers on this bug report, Foo Bar will see the bug in
 searches:
 
     >>> firefox = productset.get(4)
-    >>> firefox_bugtasks = bugtaskset.search(
-    ...     product=firefox, status=any(STATUS_NEW, STATUS_ACCEPTED),
-    ...     user=foobar)
+    >>> params = BugTaskSearchParams(status=any(STATUS_NEW, 
+    ...                                         STATUS_ACCEPTED),
+    ...                              user=foobar)
+    >>> firefox_bugtasks = firefox.searchTasks(params)
     >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
     [1, 4, 5, 6]
 
-If logged in as Foo Bar we query for all bugtasks assigned to him, we'll see
-that bug 1 is there (we'll not see it if we query logged in as a user who
-can't see that bug).
+If logged in as Foo Bar we query for all bugtasks reported on all
+packages/products he maintains, we'll see that bug 1 is there (we'll 
+not see it if we query logged in as a user who can't see that bug).
 
-    >>> foobar_assigned_tasks = bugtaskset.assignedBugTasks(foobar, user=foobar)
-    >>> [bugtask.bug.id for bugtask in foobar_assigned_tasks]
+    >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
+    ...     foobar, user=foobar)
+    >>> [bugtask.bug.id for bugtask in foobar_maintained_tasks]
     [1, 2]
 
 Now, if we log in as David Allouche:
@@ -504,20 +512,23 @@ Now, if we log in as David Allouche:
 The same search as above yields only three bugs, because David
 Allouche can't see the private bug.
 
-    >>> bugtasks = bugtaskset.search(
-    ...     status=any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
-    ...     product=upstream_mozilla, orderby="id", user=ddaa)
+    >>> params = BugTaskSearchParams(status=any(STATUS_NEW, 
+    ...                                         STATUS_ACCEPTED),
+    ...                              orderby="id", user=ddaa)
+    >>> bugtasks = upstream_mozilla.searchTasks(params)
     >>> print bugtasks.count()
     3
     >>> bugtask_ids = [bt.id for bt in bugtasks]
     >>> print bugtask_ids
     [13, 14, 15]
 
-If logged in as David Allouche we query for all bugtasks assigned to Foo Bar,
-we'll not see bug 1 there because it's a private bug.
+If logged in as David Allouche we query for all bugtasks reported on
+packages/products Foo Bar is the maintainer, we'll not see bug 1 there
+because it's a private bug.
 
-    >>> foobar_assigned_tasks = bugtaskset.assignedBugTasks(foobar, user=ddaa)
-    >>> [bugtask.bug.id for bugtask in foobar_assigned_tasks]
+    >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
+    ...     foobar, user=ddaa)
+    >>> [bugtask.bug.id for bugtask in foobar_maintained_tasks]
     [2]
 
 Trying to retrieve the bug directly will work fine:
@@ -549,9 +560,10 @@ But, logged in as the Firefox maintainer:
 We'll find all four IBugTasks that match the search criteria, as the maintainer
 is also an explicit subscriber in this case.
 
-    >>> bugtasks = bugtaskset.search(
-    ...     status=any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
-    ...     product=upstream_mozilla, orderby="id", user=sample_person)
+    >>> params = BugTaskSearchParams(status=any(STATUS_NEW, 
+    ...                                         STATUS_ACCEPTED),
+    ...                              orderby="id", user=sample_person)
+    >>> bugtasks = upstream_mozilla.searchTasks(params)
     >>> print bugtasks.count()
     4
     >>> bugtask_ids = [bt.id for bt in bugtasks]

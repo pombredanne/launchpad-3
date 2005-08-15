@@ -45,6 +45,9 @@ check: build
 	env PYTHONPATH=$(PYTHONPATH) \
 	${PYTHON} -t ./test_on_merge.py
 
+lint:
+	sh ./utilities/lint.sh
+
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) ${PYTHON} test.py test_pages
 	

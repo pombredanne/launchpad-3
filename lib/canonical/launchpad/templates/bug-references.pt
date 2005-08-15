@@ -8,11 +8,14 @@
 <div metal:fill-slot="main">
   <h1>External References</h1>
   <table class="listing">
+    <thead>
     <tr>
       <th>Type</th>
       <th>Description</th>
       <th>Data</th>
     </tr>
+    </thead>
+    <tbody>
     <tr tal:repeat="ref context/references">
       <td tal:content="ref/bugreftype/lp:BugExternalReferenceType">type</td>
       <td tal:content="ref/description">description</td>
@@ -24,6 +27,7 @@
     <tr tal:condition="not:context/references">
       <td colspan="3">No references found.</td>
     </tr>
+    </tbody>
   </table>
 </div>
 

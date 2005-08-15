@@ -30,6 +30,7 @@ from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
 from canonical.lp.dbschema import (
@@ -44,7 +45,7 @@ from canonical.launchpad.interfaces import (
     IPasswordEncryptor, ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler,
     IKarmaActionSet, IKarmaSet, UBUNTU_WIKI_URL, ITeamMembershipSet,
     IObjectReassignment, ITeamReassignment, IPollSubset, IPerson,
-    ICalendarOwner)
+    ICalendarOwner, BugTaskSearchParams)
 
 from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
@@ -56,8 +57,7 @@ from canonical.launchpad.webapp import (
 
 
 class PersonFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for an IPerson.
-    """
+    """The links that will appear in the facet menu for an IPerson."""
 
     usedfor = IPerson
 
@@ -67,6 +67,9 @@ class PersonFacets(StandardLaunchpadFacets):
         return DefaultLink(target, text)
 
     def bugs(self):
+        # XXX: Soon the +assignedbugs and +reportedbugs pages of IPerson will
+        # be merged into a single +bugs page, and I'll fix the target here.
+        # -- GuilhermeSalgado, 2005-07-29
         target = '+assignedbugs'
         text = 'Bugs'
         return Link(target, text)
@@ -160,11 +163,11 @@ class FOAFSearchView:
             return None
 
         if searchfor == "all":
-            results = getUtility(IPersonSet).findByName(name)
+            results = getUtility(IPersonSet).find(name)
         elif searchfor == "peopleonly":
-            results = getUtility(IPersonSet).findPersonByName(name)
+            results = getUtility(IPersonSet).findPerson(name)
         elif searchfor == "teamsonly":
-            results = getUtility(IPersonSet).findTeamByName(name)
+            results = getUtility(IPersonSet).findTeam(name)
 
         start = int(self.request.get('batch_start', 0))
         batch = Batch(list=results, start=start, size=BATCH_SIZE)
@@ -173,13 +176,30 @@ class FOAFSearchView:
 
 class PersonRdfView:
     """A view that sets its mime-type to application/rdf+xml"""
+
+    template = ViewPageTemplateFile(
+        '../templates/person-foaf.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        request.response.setHeader('content-type', 'application/rdf+xml')
-        request.response.setHeader('Content-Disposition',
-                                   'attachment; filename=' + 
-                                   self.context.name + '.rdf')
+
+    def __call__(self):
+        """Render RDF output, and return it as a string encoded in UTF-8.
+
+        Render the page template to produce RDF output.
+        The return value is string data encoded in UTF-8.
+
+        As a side-effect, HTTP headers are set for the mime type
+        and filename for download."""
+        self.request.response.setHeader('content-type', 
+                                        'application/rdf+xml')
+        self.request.response.setHeader('Content-Disposition',
+                                        'attachment; filename=%s.rdf' % 
+                                            self.context.name)
+        unicodedata = self.template()
+        encodeddata = unicodedata.encode('utf-8')
+        return encodeddata
 
 
 class PersonView:
@@ -209,6 +229,7 @@ class PersonView:
             self.context.reviewerBounties or
             self.context.subscribedBounties or
             self.context.claimedBounties)
+
     def activeMembersCount(self):
         return len(self.context.activemembers)
 
@@ -299,41 +320,37 @@ class PersonView:
         karmaset = getUtility(IKarmaSet)
         return len(karmaset.selectByPersonAndAction(self.context, action))
 
-    def setUpBugTasksToShow(self):
+    def setUpAssignedBugTasksToShow(self):
         """Setup the bugtasks we will always show."""
-        self.recentBugTasks = self.mostRecentBugTasks()
-        self.importantBugTasks = self.mostImportantBugTasks()
+        self.recentBugTasks = self.mostRecentMaintainedBugTasks()
+        self.assignedTasks = self.assignedBugTasks()
         # XXX: Because of the following 2 lines, a warning is going to be 
         # raised saying that we're getting a slice of an unordered set, and
         # this means we probably have a bug hiding somewhere, because both
         # sets are ordered here.
         self.assignedBugsToShow = bool(
-            self.recentBugTasks or self.importantBugTasks)
+            self.recentBugTasks or self.assignedTasks)
 
-    def mostRecentBugTasks(self):
-        """Return up to 10 bug tasks (ordered by date assigned) that are 
-        assigned to this person.
+    def reportedBugTasks(self):
+        """Return up to 30 bug tasks reported recently by this person."""
+        search_params = BugTaskSearchParams(owner=self.context, user=self.user,
+                                            orderby="-datecreated")
+        return getUtility(IBugTaskSet).search(search_params)[:30]
 
-        These bug tasks are either the ones reported on packages/products this
-        person is the maintainer or the ones assigned directly to him.
-        """
+    def assignedBugTasks(self):
+        """Return up to 10 bug tasks recently assigned to this person."""
+        search_params = BugTaskSearchParams(assignee=self.context,
+                                            user=self.user,
+                                            orderby="-dateassigned")
+        return getUtility(IBugTaskSet).search(search_params)[:10]
+
+    def mostRecentMaintainedBugTasks(self):
+        """Return up to 10 bug tasks (ordered by date assigned) reported on
+        any package/product maintained by this person."""
         bts = getUtility(IBugTaskSet)
         orderBy = ('-dateassigned', '-priority', '-severity')
-        results = bts.assignedBugTasks(
-                        self.context, orderBy=orderBy, user=self.user)
-        return results[:10]
-
-    def mostImportantBugTasks(self):
-        """Return up to 10 bug tasks (ordered by priority and severity) that
-        are assigned to this person.
-
-        These bug tasks are either the ones reported on packages/products this
-        person is the maintainer or the ones assigned directly to him.
-        """
-        bts = getUtility(IBugTaskSet)
-        orderBy = ('-priority', '-severity', '-dateassigned')
-        results = bts.assignedBugTasks(
-                        self.context, orderBy=orderBy, user=self.user)
+        results = bts.maintainedBugTasks(
+            self.context, orderBy=orderBy, user=self.user)
         return results[:10]
 
     def bugTasksWithSharedInterest(self):
@@ -352,7 +369,7 @@ class PersonView:
         bts = getUtility(IBugTaskSet)
         orderBy = ('-dateassigned', '-priority', '-severity')
         results = bts.bugTasksWithSharedInterest(
-                self.context, self.user, user=self.user, orderBy=orderBy)
+            self.context, self.user, user=self.user, orderBy=orderBy)
         return results[:10]
 
     def obfuscatedEmail(self):
@@ -458,7 +475,6 @@ class PersonView:
                 'the key <code>%s<code>. To confirm the key is yours, decrypt '
                 'the message and follow the link inside.'
                 % (self.context.preferredemail.email, key.displayname))
-
 
     def deactivate_gpg(self):
         keyids = self.request.form.get('DEACTIVATE_GPGKEY')
@@ -922,7 +938,7 @@ class RequestPeopleMergeView(AddView):
             # Please, don't try to merge you into yourself.
             return
 
-        emails = getUtility(IEmailAddressSet).getByPerson(dupeaccount.id)
+        emails = getUtility(IEmailAddressSet).getByPerson(dupeaccount)
         if len(emails) > 1:
             # The dupe account have more than one email address. Must redirect
             # the user to another page to ask which of those emails (s)he
@@ -966,7 +982,7 @@ class RequestPeopleMergeMultipleEmailsView:
             dupe = self.request.get('dupe')
         self.dupe = getUtility(IPersonSet).get(int(dupe))
         emailaddrset = getUtility(IEmailAddressSet)
-        self.dupeemails = emailaddrset.getByPerson(self.dupe.id)
+        self.dupeemails = emailaddrset.getByPerson(self.dupe)
 
     def processForm(self):
         if self.request.method != "POST":

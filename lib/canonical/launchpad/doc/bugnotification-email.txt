@@ -376,12 +376,12 @@ Adding a CVE ref will generate a notification that looks as follows:
     ...         self.bug = bug
     ...         self.cveref = cveref
     ...         self.cvestate = cvestate
-    ...         self.displayname = cvestate.name + '-' + cveref
+    ...         self.displayname = 'CVE-' + cveref
     ...         self.title = title
     >>> mock_cve_ref = MockCVERef(
     ...     bug = edited_bug,
     ...     cveref = "2004-0718",
-    ...     cvestate = CVEState.CAN,
+    ...     cvestate = CVEState.CANDIDATE,
     ...     title = "a test cve ref")
 
     >>> bug_delta = BugDelta(
@@ -397,7 +397,7 @@ Adding a CVE ref will generate a notification that looks as follows:
     http://www.example.com/bugs/2
     <BLANKLINE>
     CVE references changed:
-        + CAN-2004-0718 [a test cve ref]
+        + CVE-2004-0718 [a test cve ref]
     <BLANKLINE>
 
 Editing a CVE ref generates an email that refers to the previous CVE
@@ -407,7 +407,7 @@ follows:
     >>> mock_cve_ref_edited = MockCVERef(
     ...     bug = edited_bug,
     ...     cveref = "2004-0719",
-    ...     cvestate = CVEState.CAN,
+    ...     cvestate = CVEState.CANDIDATE,
     ...     title = "a test cve ref")
 
     >>> bug_delta = BugDelta(
@@ -423,8 +423,8 @@ follows:
     http://www.example.com/bugs/2
     <BLANKLINE>
     CVE references changed:
-        + CAN-2004-0719 [a test cve ref]
-        - CAN-2004-0718 [a test cve ref]
+        + CVE-2004-0719 [a test cve ref]
+        - CVE-2004-0718 [a test cve ref]
     <BLANKLINE>
 
 Adding an infestation

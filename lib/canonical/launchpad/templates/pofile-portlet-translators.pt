@@ -28,7 +28,9 @@
       </ul>
 
       <tal:block condition="not: view/has_translators">
-        No translators currently designated for this PO file.
+        No translators currently designated for this PO file. Learn more
+        about <a href="/rosetta/groups/">translation groups</a> and
+        permissions.
       </tal:block>  
 
   </div>

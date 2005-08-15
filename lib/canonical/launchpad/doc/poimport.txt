@@ -217,6 +217,12 @@ This message set should be fuzzy, however.
     >>> messageSet.publishedfuzzy
     True
 
+And as we don't have a translation for it over the web, it should
+be the same for the active translation.
+
+    >>> messageSet.isfuzzy
+    True
+
 And this one should have the validation status with an error.
 
     >>> messageSet = pofile.messageSet(u'Foo %s')

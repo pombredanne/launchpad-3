@@ -1,0 +1,74 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<div metal:fill-slot="body"
+     tal:define="listing_columns view/listing_columns">
+
+  <h1>Bugs in
+    <span tal:replace="string:${context/distrorelease/distribution/name} ${context/sourcepackagename}">
+      Title
+    </span>
+  </h1>
+
+  <table width="100%">
+    <tr>
+      <td style="padding-right: 1em;">
+        <h2 style="margin-top: 0; padding-top: 0;"
+            tal:content="string:To be fixed in ${context/distrorelease/displayname}">
+          To be fixed in hoary
+        </h2>
+        <table class="sortable listing data" id="releasebugs">
+          <thead>
+            <tr metal:use-macro="context/@@+bugtask-macros-tableview/header" />
+          </thead>
+          <tbody>
+            <tr tal:repeat="task view/unresolved_release_bugs">
+              <metal:taskrow use-macro="context/@@+bugtask-macros-tableview/item" />
+            </tr>
+          </tbody>
+        </table>
+
+        <tal:block define="other_release_bugs view/other_releases_unresolved_bugs">
+          <tal:otherrelease repeat="release_displayname other_release_bugs">
+            <h2 tal:content="string:To be fixed in ${release_displayname}">
+              To be fixed in hoary
+            </h2>
+            <table class="sortable listing data"
+                   tal:attributes="id string:${release_displayname}bugs">
+              <thead>
+                <tr metal:use-macro="context/@@+bugtask-macros-tableview/header" />
+              </thead>
+              <tbody>
+                <tr tal:repeat="task other_release_bugs/?release_displayname">
+                  <metal:taskrow use-macro="context/@@+bugtask-macros-tableview/item" />
+                </tr>
+              </tbody>
+            </table>
+          </tal:otherrelease>
+        </tal:block>
+
+        <h2>Untargeted bugs</h2>
+        <table class="sortable listing data" id="generalbugs">
+          <thead>
+            <tr metal:use-macro="context/@@+bugtask-macros-tableview/header" />
+          </thead>
+          <tbody>
+            <tr tal:repeat="task view/general_unresolved_bugs">
+              <metal:taskrow use-macro="context/@@+bugtask-macros-tableview/item" />
+            </tr>
+          </tbody>
+        </table>
+        </td>
+        <td>
+          <div tal:replace="structure context/@@+portlet-bugtasklist-actions" />
+        </td>
+      </tr>
+    </table>
+  </div>
+
+</body>
+</html>

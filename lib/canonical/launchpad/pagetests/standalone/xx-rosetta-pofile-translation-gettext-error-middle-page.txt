@@ -19,7 +19,7 @@ messages for this POFile).
   HTTP/1.1 200 Ok
   ...
                       Items
-                      <strong>21</strong>
+                      <strong>13</strong>
                       &rarr;
                       <strong>22</strong>
                       of

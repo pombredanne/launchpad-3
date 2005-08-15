@@ -15,11 +15,10 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Application Translation Statuses</h1>
+  <h1>Programs you can translate</h1>
 
-  <p class="documentDescription">
-    Each of the application translation templates below can be translated.
-    Select a template name to begin translating immediately!
+  <p>
+    Choose a template name to begin translating.
   </p>
 
   <table class="listing sortable" width="100%" id="translationstatuses">

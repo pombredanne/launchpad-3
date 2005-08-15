@@ -19,7 +19,6 @@ __all__ = [
     'BugTrackerVocabulary',
     'LanguageVocabulary',
     'TranslationGroupVocabulary',
-    'BasePersonVocabulary',
     'PersonAccountToMergeVocabulary',
     'ValidPersonOrTeamVocabulary',
     'ValidTeamMemberVocabulary',
@@ -38,23 +37,22 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-from zope.interface import implements, Interface
+from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
-from sqlobject import AND, OR, CONTAINSSTRING, SQLObjectMoreThanOneResultError
+from sqlobject import AND, OR, CONTAINSSTRING
 
 from canonical.lp.dbschema import EmailAddressStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.database import (
-    Distribution, DistroRelease, Person, GPGKey, SourcePackage,
-    SourcePackageRelease, SourcePackageName, BinaryPackage, BugWatch,
-    BinaryPackageName, BugTracker, Language, Milestone, Product,
-    Project, ProductRelease, ProductSeries, TranslationGroup, BugTracker,
-    POTemplateName, EmailAddress, Schema)
+    Distribution, DistroRelease, Person, SourcePackageRelease,
+    SourcePackageName, BinaryPackage, BugWatch, BinaryPackageName, Language,
+    Milestone, Product, Project, ProductRelease, ProductSeries,
+    TranslationGroup, BugTracker, POTemplateName, Schema)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ITeam, ITeamMembershipSubset)
+    ILaunchBag, ITeam, ITeamMembershipSubset, IPersonSet, IEmailAddressSet)
 
 class IHugeVocabulary(IVocabulary):
     """Interface for huge vocabularies.
@@ -284,43 +282,15 @@ class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
         return SimpleTerm(obj, obj.name, obj.title)
 
 
-class BasePersonVocabulary(SQLObjectVocabularyBase):
-    """This is a base class to be used by all different Person Vocabularies.
-
-    This class is not supposed to be exported as a vocabulary. Instead, you
-    should create a new one inheriting from this and redefine its _basequery
-    and _clauseTables attributes to suit your needs.
-    """
-    implements(IHugeVocabulary)
-    _orderBy = ['familyname','givenname','displayname', 'name']
+class BasePersonVocabulary:
+    """This is a base class to be used by all different Person Vocabularies."""
     _table = Person
-    _basequery = ''
-    _clauseTables = []
-
-    def __iter__(self):
-        for obj in self._select(self._basequery):
-            yield self._toTerm(obj)
-
-    def __contains__(self, obj):
-        extraquery = 'person.id = %d' % obj.id
-        return obj in self._select(extraquery)
-
-    def _select(self, extraquery):
-        if self._basequery:
-            query = '(%s) AND (%s)' % (self._basequery, extraquery)
-        else:
-            query = extraquery
-
-        return self._table.select(query, orderBy=self._orderBy,
-                                  clauseTables=self._clauseTables,
-                                  distinct=True)
 
     def _toTerm(self, obj):
         """Return the term for this object.
 
         Preference is given to email-based terms, falling back on
-        name-based terms when no preferred email exists for the
-        IPerson.
+        name-based terms when no preferred email exists for the IPerson.
         """
         if obj.preferredemail is not None:
             return SimpleTerm(obj, obj.preferredemail.email, obj.browsername)
@@ -330,54 +300,57 @@ class BasePersonVocabulary(SQLObjectVocabularyBase):
     def getTermByToken(self, token):
         """Return the term for the given token.
 
-        If the token contains an '@', treat it like an
-        email. Otherwise, treat it like a name.
+        If the token contains an '@', treat it like an email. Otherwise,
+        treat it like a name.
         """
         if "@" in token:
             # This looks like an email token, so let's do an object
             # lookup based on that.
-            try:
-                email = EmailAddress.selectOneBy(email=token)
-            except SQLObjectMoreThanOneResultError:
+            email = getUtility(IEmailAddressSet).getByEmail(token)
+            if email is None:
                 raise LookupError(token)
-
             return self._toTerm(email.person)
         else:
             # This doesn't look like an email, so let's simply treat
             # it like a name.
-            person = Person.selectOneBy(name=token)
-            if not person:
+            person = getUtility(IPersonSet).getByName(token)
+            if person is None:
                 raise LookupError(token)
             return self._toTerm(person)
 
-    def search(self, text):
-        """Return persons where <text> is a subtring of either the name,
-        givenname, familyname or displayname.
-        """
-        if not text:
-            return []
 
-        text = text.lower()
-        like_query = "'%%' || %s || '%%'" % quote_like(text)
-        fti_query = quote(text)
-        extraquery = 'name LIKE %s OR fti @@ ftq(%s)' % (like_query, fti_query)
-
-        return [self._toTerm(obj) for obj in self._select(extraquery)]
-
-
-class PersonAccountToMergeVocabulary(BasePersonVocabulary):
+class PersonAccountToMergeVocabulary(
+        BasePersonVocabulary, SQLObjectVocabularyBase):
     """The set of all non-merged people with at least one email address.
 
     This vocabulary is a very specialized one, meant to be used only to choose
     accounts to merge. You *don't* want to use it.
     """
+    implements(IHugeVocabulary)
 
-    _basequery = ('Person.teamowner IS NULL AND Person.merged IS NULL AND '
-                  'Person.id = EmailAddress.person')
-    _clauseTables = ['EmailAddress']
+    _orderBy = ['displayname']
+
+    def __iter__(self):
+        for obj in self._select():
+            yield self._toTerm(obj)
+
+    def __contains__(self, obj):
+        return obj in self._select()
+
+    def _select(self, text=""):
+        return getUtility(IPersonSet).findPerson(text)
+
+    def search(self, text):
+        """Return people whose fti or email address match :text."""
+        if not text:
+            return []
+
+        text = text.lower()
+        return [self._toTerm(obj) for obj in self._select(text)]
 
 
-class ValidPersonOrTeamVocabulary(BasePersonVocabulary):
+class ValidPersonOrTeamVocabulary(
+        BasePersonVocabulary, SQLObjectVocabularyBase):
     """The set of valid Persons/Teams in Launchpad.
 
     A Person is considered valid if he has a preferred email address,
@@ -388,18 +361,64 @@ class ValidPersonOrTeamVocabulary(BasePersonVocabulary):
     ValidMaintainer and ValidOwner, because they have exactly the same
     requisites.
     """
+    implements(IHugeVocabulary)
 
-    _validpersons = ("""
-        Person.teamowner IS NULL AND 
-        Person.password IS NOT NULL AND 
-        Person.merged IS NULL AND
-        emailaddress.person = Person.id AND
-        emailaddress.status = %s
-        """ % sqlvalues(EmailAddressStatus.PREFERRED))
-    _validteams = ('Person.teamowner IS NOT NULL')
+    # XXX: It'll be possible to replace this raw query (and the usage of
+    # connection.queryAll()) as soon as we update our sqlobject branch to have
+    # support for JOINs (that already exists upstream). -- Guilherme Salgado,
+    # 2005-07-22
+    _joinclause = """
+        SELECT DISTINCT Person.id, Person.displayname FROM Person
+            LEFT OUTER JOIN EmailAddress ON Person.id = EmailAddress.person"""
+    _whereclause = """
+        (Person.teamowner IS NULL AND Person.password IS NOT NULL AND
+         Person.merged IS NULL AND EmailAddress.status = %s) OR
+        (Person.teamowner IS NOT NULL)""" % EmailAddressStatus.PREFERRED
+    _textsearchclause = """
+        Person.fti @@ ftq(%s) OR
+        lower(EmailAddress.email) LIKE %s"""
+    _orderBy = 'ORDER BY displayname'
 
-    _basequery = '(%s) OR (%s)' % (_validpersons, _validteams)
-    _clauseTables = ['EmailAddress']
+    def __contains__(self, obj):
+        idfilter = 'Person.id = %s' % sqlvalues(obj.id)
+        where = '(%s) AND (%s)' % (self._whereclause, idfilter)
+        query = self._buildQuery(where)
+        return len(self._table._connection.queryAll(query)) > 0
+
+    def __iter__(self):
+        for id, dummy in self._table._connection.queryAll(self._buildQuery()):
+            yield self._idToTerm(id)
+
+    def _buildQuery(self, where=None):
+        """Return a query suitable for use in connection.queryAll().
+
+        :where: The "WHERE" part of an SQL query. If it is None
+                self._whereclause is used.
+        """
+        if where is None:
+            where = self._whereclause
+        return "%s WHERE %s %s" % (self._joinclause, where, self._orderBy)
+
+    def _idToTerm(self, id):
+        """Return the term for the object with the given id."""
+        obj = self._table.get(id)
+        return BasePersonVocabulary._toTerm(self, obj)
+
+    def search(self, text):
+        """Return people/teams whose fti or email address match :text."""
+        if not text:
+            return []
+
+        text = text.lower()
+        textsearchclause = (
+            self._textsearchclause % (quote(text), quote(text + '%%')))
+        where = '(%s) AND (%s)' % (self._whereclause, textsearchclause)
+        results = self._table._connection.queryAll(self._buildQuery(where))
+        ids = ', '.join([str(id) for id, dummy in results])
+        if not ids:
+            return []
+        people = self._table.select('id in (%s)' % ids)
+        return [self._toTerm(person) for person in people]
 
 
 class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
@@ -423,10 +442,10 @@ class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
 
         ValidPersonOrTeamVocabulary.__init__(self, context)
         extraclause = """
-            Person.id not in (SELECT team from TeamParticipation WHERE
+            Person.id NOT IN (SELECT team FROM TeamParticipation WHERE
                                   person = %d) AND Person.id != %d
             """ % (self.team.id, self.team.id)
-        self._basequery = '(%s) AND (%s)' % (self._basequery, extraclause)
+        self._whereclause = '(%s) AND (%s)' % (self._whereclause, extraclause)
 
 
 class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
@@ -443,10 +462,10 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
             raise ValueError(
                     "ValidTeamOwnerVocabulary's context must be a team.")
         ValidPersonOrTeamVocabulary.__init__(self, context)
-        extraclause = ('''
+        extraclause = ("""
             (person.teamowner != %d OR person.teamowner IS NULL) AND
-            person.id != %d''' % (context.id, context.id))
-        self._basequery = '(%s) AND (%s)' % (self._basequery, extraclause)
+            person.id != %d""" % (context.id, context.id))
+        self._whereclause = '(%s) AND (%s)' % (self._whereclause, extraclause)
 
 
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
@@ -610,11 +629,15 @@ class MilestoneVocabulary(NamedSQLObjectVocabulary):
 
     def __iter__(self):
         product = getUtility(ILaunchBag).product
-        if product is None:
-            product = self.context.product
-
         if product is not None:
-            for ms in product.milestones:
+            target = product
+
+        distribution = getUtility(ILaunchBag).distribution
+        if distribution is not None:
+            target = distribution
+
+        if target is not None:
+            for ms in target.milestones:
                 yield SimpleTerm(ms, ms.name, ms.name)
 
 class BugWatchVocabulary(SQLObjectVocabularyBase):

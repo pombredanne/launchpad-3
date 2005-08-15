@@ -9,6 +9,7 @@ __all__ = [
 
 # zope3
 from zope.component import getUtility
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 # launchpad
 from canonical.launchpad.interfaces import (
@@ -82,12 +83,27 @@ class ProductReleaseView:
 
 class ProductReleaseRdfView(object):
     """A view that sets its mime-type to application/rdf+xml"""
+
+    template = ViewPageTemplateFile('../templates/productrelease-rdf.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        request.response.setHeader('Content-Type', 'application/rdf+xml')
-        request.response.setHeader('Content-Disposition',
-                                   'attachment; filename=' +
-                                   self.context.product.name + '-' +
-                                   self.context.productseries.name + '-' +
-                                   self.context.version + '.rdf')
+
+    def __call__(self):
+        """Render RDF output, and return it as a string encoded in UTF-8.
+
+        Render the page template to produce RDF output.
+        The return value is string data encoded in UTF-8.
+
+        As a side-effect, HTTP headers are set for the mime type
+        and filename for download."""
+        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
+        self.request.response.setHeader('Content-Disposition',
+                                        'attachment; filename=%s-%s-%s.rdf' % (
+                                            self.context.product.name,
+                                            self.context.productseries.name,
+                                            self.context.version))
+        unicodedata = self.template()
+        encodeddata = unicodedata.encode('utf-8')
+        return encodeddata

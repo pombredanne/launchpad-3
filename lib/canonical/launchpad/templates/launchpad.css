@@ -11,10 +11,11 @@
 
 #portal-column-content {
   vertical-align: top;
-  padding: 0 1em;
+  padding: 2px 1em 1em 1em;
 }
 
 #portal-column-two {
+  padding-top: 3px;
   vertical-align: top;
   width: 16em;
 }
@@ -385,6 +386,30 @@ tr.rowLinkified a {
 ul.add>li, li.add {
   list-style-image: url(/++resource++add.gif);
 }
+ul.alert>li, li.alert {
+  list-style-image: url(/++resource++alert_icon.gif);
+}
+ul.architecture>li, li.architecture {
+  list-style-image: url(/++resource++architecture);
+}
+ul.bug>li, li.bug {
+  list-style-image: url(/++resource++bug);
+}
+ul.bug.high>li, li.bug.high {
+  list-style-image: url(/++resource++bug-high);
+}
+ul.bug.medium>li, li.bug.medium {
+  list-style-image: url(/++resource++bug-medium);
+}
+ul.bug.low>li, li.bug.low {
+  list-style-image: url(/++resource++bug-low);
+}
+ul.bug.remote>li, li.bug.remote {
+  list-style-image: url(/++resource++bug-remote);
+}
+ul.bugs>li, li.bugs {
+  list-style-image: url(/++resource++bugs);
+}
 ul.document>li, li.document {
   list-style-image: url(/++resource++document_icon.gif);
 }
@@ -393,9 +418,6 @@ ul.download>li, li.download {
 }
 ul.edit>li, li.edit {
   list-style-image: url(/++resource++edit.gif);
-}
-ul.alert>li, li.alert {
-  list-style-image: url(/++resource++alert_icon.gif);
 }
 ul.info>li, li.info {
   list-style-image: url(/++resource++info_icon.gif);
@@ -408,6 +430,9 @@ ul.locked>li, li.locked {
 }
 ul.mail>li, li.mail {
   list-style-image: url(/++resource++mail_icon.gif);
+}
+ul.milestone>li, li.milestone {
+  list-style-image: url(/++resource++target);
 }
 ul.person>li, li.person, ul.people>li, li.people {
   list-style-image: url(/++resource++user.gif);
@@ -429,10 +454,6 @@ dl.products>dt:before {
 }
 ul.search>li, li.search {
   list-style-image: url(/++resource++search_icon.gif);
-}
-
-ul.architecture>li, li.architecture {
-    list-style-image: url(/++resource++document_icon.gif);
 }
 
 /* Translation template stuff: */
@@ -568,6 +589,10 @@ pre, textarea {
   padding-left: 30px;
 } /* need a px value because the image has a pixel size */
 
+img {
+  vertical-align: baseline;
+}
+
 /* -- Make headings lay out properly -- */
 
 h1 {
@@ -575,7 +600,7 @@ h1 {
   padding-right: 0;
 }
 
-/* Fix listing tables: */
+/* -- Fix listing table styles: -- */
 
 table.listing {
   border: none;
@@ -590,11 +615,10 @@ table.listing th {
   white-space: nowrap;
 }
 table.listing>tr>td, table.listing>tbody>tr>td {
-  border: dotted #8cacbb;
-  border-width: 1px 0;
-  font-size: 90%;
+  border: 1px #8cacbb;
+  border-style: dotted none;
 }
-table.listing>thead>tr>th, table.listing>thead>tr>td {
+table.listing>thead, table.listing>thead>tr>th {
   border: 1px solid #8cacbb;
 }
 table.listing>thead>tr>td {
@@ -606,7 +630,6 @@ table.listing>thead>tr>td {
 dt {
   font-weight: inherit;
 }
-
 dt dfn {
   font-style: inherit;
   font-weight: bold;
@@ -628,6 +651,7 @@ q {
 
 .formHelp, .formHelp:hover {
   color: #666666;
+  margin-bottom: 1em;
   cursor: inherit;
 }
 
@@ -696,8 +720,19 @@ thead {
 
 body {
   background-color: #fcfcfc;
+  color: black;
   padding: 0.25em 0.75em 0.5em 0.75em;
 }
+:visited {
+  background: none;
+  color: #8888bb;
+}
+:link, .hierarchy :visited, .footer :visited,
+.sidebar :visited, .portlet :visited {
+  background: none;
+	color: #000088;
+}
+
 .header, .footer {
   font-family: "Lucida Grande", "Charcoal", sans-serif;
 }
@@ -771,9 +806,6 @@ ul.app>li.current {
   border-bottom: 1px solid #fcfcfc;
 }
 
-#body {
-  padding: 0 1em;
-}
 .personal {
   clear: left;
   float: left;
@@ -838,10 +870,19 @@ ul.app>li.current {
 .list {
   text-align: left;
 }
+.required:after {
+  background: url(/++resource++required.gif) center left no-repeat;
+  color: #999999;
+  content: '(Required)';
+  font-weight: normal;  
+  padding: 0 0 0 8px;
+  margin: 0 0 0 4px;
+}
 
 h1, h2, h3, h4, h5, h6 {
+  background: none;
   clear: left;
-	color: #000066;
+	color: #708a96;
 	font-family: "Lucida Grande", sans-serif;
 	font-weight: normal;
 	margin-top: 0;

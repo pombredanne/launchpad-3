@@ -1,0 +1,22 @@
+<div class="portlet">
+
+  <h4><span tal:replace="context/displayname">milestone</span> details:</h4>
+
+  <div class="portletBody portletContent">
+
+    <b>Name:</b>
+    <span tal:replace="context/name">foo</span><br />
+
+    <b>Date expected:</b>
+    <span tal:condition="context/dateexpected"
+          tal:replace="context/dateexpected/fmt:date">2005-06-01</span>
+    <i tal:condition="not: context/dateexpected">None set.</i>
+    <br />
+
+    <b>For:</b>
+    <a tal:content="context/target/displayname"
+       tal:attributes="href context/target/fmt:url">Ubuntu</a><br />
+	
+  </div>
+
+</div>

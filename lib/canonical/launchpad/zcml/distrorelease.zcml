@@ -66,6 +66,12 @@
         permission="zope.Public">
 
         <browser:page
+            name="+filebug"
+            lp:url="/distros/$DistroRelease.name/+filebug"
+            attribute="redirectToDistroFileBug"
+             />
+
+        <browser:page
             name="+index"
             template="../templates/distrorelease-index.pt"
             lp:url="/distros/$Distribution.name/$Release.name/+index"

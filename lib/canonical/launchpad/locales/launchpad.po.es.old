@@ -1161,12 +1161,12 @@ msgid ""
 msgstr ""
 
 #: l/launchpad/interfaces/project.py:44
-msgid "Last-parsed DOAP fragment"
+msgid "Last-parsed RDF fragment"
 msgstr ""
 
 #: l/launchpad/interfaces/project.py:45
 msgid ""
-"The last DOAP fragment for this\n"
+"The last RDF fragment for this\n"
 "                        entity that we received and parsed, or\n"
 "                        generated."
 msgstr ""

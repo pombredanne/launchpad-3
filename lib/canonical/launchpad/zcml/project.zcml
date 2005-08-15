@@ -91,7 +91,8 @@
         permission="zope.Public"
         name="+rdf"
         lp:url="/projects/$Project.name/+rdf"
-        template="../templates/project-rdf.pt" />
+        attribute="__call__"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProject"
@@ -212,7 +213,7 @@
         lp:url="/projects/">
         <browser:page
             name="+all" 
-            template="../templates/doap-listall.pt"
+            template="../templates/registry-listall.pt"
             lp:url="/projects/+all" />
         <browser:page
             name="+index" 
@@ -226,7 +227,7 @@
         permission="launchpad.AnyPerson">
         <browser:page
             name="+review"
-            template="../templates/doap-review.pt"
+            template="../templates/registry-review.pt"
             lp:url="/projects/+review" />
         <browser:page
             name="+syncreview"

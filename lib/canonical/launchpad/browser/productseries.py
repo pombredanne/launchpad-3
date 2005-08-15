@@ -11,6 +11,7 @@ from urllib import quote as urlquote
 
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from CVS.protocol import CVSRoot
 import pybaz
@@ -414,14 +415,30 @@ class ProductSeriesView(object):
 
 class ProductSeriesRdfView(object):
     """A view that sets its mime-type to application/rdf+xml"""
+
+    template = ViewPageTemplateFile(
+        '../templates/productseries-rdf.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        request.response.setHeader('Content-Type', 'application/rdf+xml')
-        request.response.setHeader('Content-Disposition',
-                                   'attachment; filename=' +
-                                   self.context.product.name + '-' +
-                                   self.context.name + '.rdf')
+
+    def __call__(self):
+        """Render RDF output, and return it as a string encoded in UTF-8.
+
+        Render the page template to produce RDF output.
+        The return value is string data encoded in UTF-8.
+
+        As a side-effect, HTTP headers are set for the mime type
+        and filename for download."""
+        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
+        self.request.response.setHeader('Content-Disposition',
+                                        'attachment; filename=%s-%s.rdf' % (
+                                            self.context.product.name,
+                                            self.context.name))
+        unicodedata = self.template()
+        encodeddata = unicodedata.encode('utf-8')
+        return encodeddata
 
 
 class ProductSeriesSourceSetView:

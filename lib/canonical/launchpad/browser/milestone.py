@@ -4,15 +4,28 @@
 
 __metaclass__ = type
 
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces import (
+    IProduct, IDistribution, IMilestoneSet)
+from canonical.launchpad.browser.editview import SQLObjectEditView
+
 __all__ = [
-    'ProductMilestoneAddView',
+    'MilestoneAddView',
+    'MilestoneEditView',
     ]
 
-class ProductMilestoneAddView:
-    def create(self, *args, **kw):
-        """Inject the product ID into the kw args."""
-        kw['product'] = self.context.id
-        return self._factory(*args, **kw)
+class MilestoneAddView:
+    def create(self, name, dateexpected=None):
+        """Inject the relevant product or distribution into the kw args."""
+        product = None
+        distribution = None
+        if IProduct.providedBy(self.context):
+            product = self.context.id
+        elif IDistribution.providedBy(self.context):
+            distribution = self.context.id
+        return getUtility(IMilestoneSet).new(name, product=product,
+            distribution=distribution, dateexpected=dateexpected)
 
     def add(self, content):
         """Skipping 'adding' this content to a container, because
@@ -21,3 +34,10 @@ class ProductMilestoneAddView:
 
     def nextURL(self):
         return '.'
+
+
+class MilestoneEditView(SQLObjectEditView):
+
+    def changed(self):
+        self.request.response.redirect('../..')
+

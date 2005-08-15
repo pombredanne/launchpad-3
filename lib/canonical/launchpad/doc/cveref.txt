@@ -28,7 +28,7 @@ CVE references can be created with the ICVERefSet utility.
 To create a CVE reference, call ICVERefSet.createCVERef.
 
     >>> cveref = cverefset.createCVERef(
-    ...     bug = 2, cveref = "2004-0276", cvestate=CVEState.CVE,
+    ...     bug = 2, cveref = "2004-0276", cvestate=CVEState.ENTRY,
     ...     title = "a test cve ref", owner = 12)
     >>> cveref.displayname
     u'CVE-2004-0276'

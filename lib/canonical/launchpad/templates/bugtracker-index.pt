@@ -15,16 +15,43 @@
 
 <div metal:fill-slot="main">
 
-  <p class="documentDescription">
-    This page shows the details of an external bug tracker registered with
-    the Launchpad.
-  </p>
+      <h1 tal:content="context/title">$BugTracker.title</h1>
+      <table>
+        <tbody>
+          <tr>
+            <th>Home:</th>
+            <td>
+    <a tal:content="context/baseurl|default"
+       tal:attributes="href context/baseurl|nothing">(none supplied)</a>
+            </td>
+          </tr>
+          <tr>
+            <th>Owner:</th>
+            <td tal:content="context/owner/browsername">Foo</td>
+          </tr>
+        </tbody>
+      </table>
 
-  <p tal:content="context/summary">
-    $BugTracker.summary goes here. This should be quite short,
-    just a single paragraph of text really, giving the BugTracker
-    highlights.
-  </p>
+      <p tal:content="context/summary">
+        $BugTracker.summary goes here. This should be quite short,
+        just a single paragraph of text really, giving the BugTracker
+        highlights.
+      </p>
+      <h2>Contact details</h2>
+      <div tal:condition="not: context/contactdetails">
+        None provided.
+      </div>
+      <div
+        tal:condition="context/contactdetails"
+        tal:content="context/contactdetails"
+      >
+    The contact details for the admins of this bug tracker go here, so we
+    can get to them in an emergency.
+    </div>
+    
+    <div class="form actions">
+        <a href="+edit">Edit this tracker&hellip;</a>
+    </div>
 
   <tal:block condition="context/latestwatches">
   <h2>Latest Watches:</h2>
@@ -39,9 +66,11 @@
 
     <tbody>
       <tr tal:repeat="watch context/latestwatches">
-        <td><a href="#" tal:attributes="href watch/bug/fmt:url">
-        #<span tal:content="watch/bug/id">34</span>:
-        <span tal:content="watch/bug/title">Malone Bug Title</span></a></td>
+        <td>
+          <img alt="" src="/++resource++bug" />
+          <a href="#" tal:attributes="href watch/bug/fmt:url">
+            #<span tal:replace="watch/bug/id">34</span>:
+            <span tal:replace="watch/bug/title">Malone Bug Title</span></a></td>
         <td><a tal:content="watch/remotebug"
                tal:attributes="href watch/url">53656</a></td>
       </tr>

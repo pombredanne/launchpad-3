@@ -24,8 +24,7 @@ from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
-from canonical.database.sqlbase import (SQLBase, quote, cursor, sqlvalues,
-    )
+from canonical.database.sqlbase import SQLBase, quote, cursor, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
@@ -37,9 +36,8 @@ from canonical.launchpad.interfaces import (
     IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IMaintainershipSet,
     IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
     ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
-    ILoginTokenSet, IBugTaskSet)
+    ILoginTokenSet)
 
-from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
@@ -577,11 +575,6 @@ class Person(SQLBase):
         return self._getEmailsByStatus(EmailAddressStatus.NEW)
 
     @property
-    def reportedbugs(self):
-        """See IPerson."""
-        return getUtility(IBugTaskSet).search(owner=self)
-
-    @property
     def activities(self):
         """See IPerson."""
         return Karma.selectBy(personID=self.id)
@@ -760,15 +753,18 @@ class PersonSet:
         return person
 
     def peopleCount(self):
+        """See IPersonSet."""
         return self.getAllPersons().count()
 
     def getAllPersons(self, orderBy=None):
+        """See IPersonSet."""
         if orderBy is None:
             orderBy = self._defaultOrder
         query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
     def getAllValidPersons(self, orderBy=None):
+        """See IPersonSet."""
         if orderBy is None:
             orderBy = self._defaultOrder
         query = AND(Person.q.teamownerID==None,
@@ -778,30 +774,66 @@ class PersonSet:
         return Person.select(query, orderBy=orderBy)
 
     def teamsCount(self):
+        """See IPersonSet."""
         return self.getAllTeams().count()
 
     def getAllTeams(self, orderBy=None):
+        """See IPersonSet."""
         if orderBy is None:
             orderBy = self._defaultOrder
         return Person.select(Person.q.teamownerID!=None, orderBy=orderBy)
 
-    def findByName(self, name, orderBy=None):
+    def find(self, text, orderBy=None):
+        """See IPersonSet."""
         if orderBy is None:
             orderBy = self._defaultOrder
-        query = "fti @@ ftq(%s) AND merged is NULL" % quote(name)
-        return Person.select(query, orderBy=orderBy)
+        text = text.lower()
+        # Teams may not have email addresses, so we need to either use a LEFT
+        # OUTER JOIN or do a UNION between two queries.
+        # XXX: I'll be using two queries and a union() here until we have
+        # support for JOINS in our sqlobject. -- Guilherme Salgado 2005-07-18
+        email_query = """
+            EmailAddress.person = Person.id AND 
+            lower(EmailAddress.email) LIKE %s
+            """ % quote(text + '%%')
+        results = Person.select(email_query, clauseTables=['EmailAddress'])
+        name_query = "fti @@ ftq(%s) AND merged is NULL" % quote(text)
+        return results.union(Person.select(name_query), orderBy=orderBy)
 
-    def findPersonByName(self, name, orderBy=None):
+    def findPerson(self, text="", orderBy=None):
+        """See IPersonSet."""
         if orderBy is None:
             orderBy = self._defaultOrder
-        query = "fti @@ ftq(%s) AND teamowner is NULL AND merged is NULL"
-        return Person.select(query % quote(name), orderBy=orderBy)
+        text = text.lower()
+        query = ('Person.teamowner IS NULL AND Person.merged IS NULL AND '
+                 'EmailAddress.person = Person.id')
+        if text:
+            query += (' AND (lower(EmailAddress.email) LIKE %s OR '
+                      'Person.fti @@ ftq(%s))'
+                      % (quote(text + '%%'), quote(text)))
+        return Person.select(query, clauseTables=['EmailAddress'],
+                             orderBy=orderBy, distinct=True)
 
-    def findTeamByName(self, name, orderBy=None):
+    def findTeam(self, text, orderBy=None):
+        """See IPersonSet."""
         if orderBy is None:
             orderBy = self._defaultOrder
-        query = "fti @@ ftq(%s) AND teamowner is not NULL" % quote(name)
-        return Person.select(query, orderBy=orderBy)
+        text = text.lower()
+        # Teams may not have email addresses, so we need to either use a LEFT
+        # OUTER JOIN or do a UNION between two queries.
+        # XXX: I'll be using two queries and a union() here until we have
+        # support for JOINS in our sqlobject. -- Guilherme Salgado 2005-07-18
+        email_query = """
+            Person.teamowner IS NOT NULL AND 
+            EmailAddress.person = Person.id AND 
+            lower(EmailAddress.email) LIKE %s
+            """ % quote(text + '%%')
+        results = Person.select(email_query, clauseTables=['EmailAddress'])
+        name_query = """
+             Person.teamowner IS NOT NULL AND 
+             Person.fti @@ ftq(%s)
+            """ % quote(text)
+        return results.union(Person.select(name_query), orderBy=orderBy)
 
     def get(self, personid, default=None):
         """See IPersonSet."""
@@ -836,11 +868,9 @@ class PersonSet:
 
         The old user (from_person) will be left as an atavism
 
-        XXX: Are we game to delete from_person yet?
-            -- StuartBishop 20050315
-        XXX: let's let it roll for a while and see what cruft develops. If
-             it's clean, let's start deleting
-            -- MarkShuttleworth 20050528
+        We are not yet game to delete the `from_person` entry from the
+        database yet. We will let it roll for a while and see what cruft
+        develops -- StuartBishop 20050812
         """
         # Sanity checks
         if ITeam.providedBy(from_person):
@@ -852,7 +882,7 @@ class PersonSet:
         if not IPerson.providedBy(to_person):
             raise TypeError('to_person is not a person.')
 
-        if len(getUtility(IEmailAddressSet).getByPerson(from_person.id)) > 0:
+        if len(getUtility(IEmailAddressSet).getByPerson(from_person)) > 0:
             raise ValueError('from_person still has email addresses.')
 
         # Get a database cursor.
@@ -1025,8 +1055,8 @@ class EmailAddressSet:
         else:
             return email
 
-    def getByPerson(self, personid):
-        return EmailAddress.selectBy(personID=personid)
+    def getByPerson(self, person):
+        return EmailAddress.selectBy(personID=person.id)
 
     def getByEmail(self, email, default=None):
         try:

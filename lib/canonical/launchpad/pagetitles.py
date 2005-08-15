@@ -102,7 +102,7 @@ binarypackagerelease_index = 'Binary Package Release Details'
 
 binarypackagerelease_license = 'Binary Package Licence'
 
-bounties = 'Launchpad Registered Bounties'
+bounties = 'Launchpad Bounties'
 
 bounty_subscription = 'Bounty Subscription'
 
@@ -125,7 +125,7 @@ def bug_add(context, view):
         context_title = ContextTitle('Report a bug in %s')
         return context_title(context, view)
     else:
-        return "Malone: Report a Bug"
+        return "Report a bug"
 
 bug_attachments = ContextId('Malone Bug Attachments for Bug #%s')
 
@@ -133,7 +133,9 @@ bug_edit = BugPageTitle()
 
 bug_index = BugPageTitle()
 
-bug_references = ContextId('External References for Malone Bug #%s')
+bug_references = ContextId('External references for bug #%s')
+
+bug_secrecy = ContextId('Set secrecy for bug #%s')
 
 bug_secrecy = ContextId('Make Malone Bug #%d Public or Secret')
 
@@ -147,9 +149,9 @@ bugwatch_editform = ContextTitle('Edit the Watch on %s')
 
 def bugs_assigned(context, view):
     if view.user:
-        return 'Malone Bugs assigned to %s' % view.user.browsername
+        return 'Bugs assigned to %s' % view.user.browsername
     else:
-        return 'No user to display Malone Bugs for'
+        return 'No-one to display bugs for'
 
 bugs_createdby_index = 'Malone Bug Report by Creator'
 
@@ -269,18 +271,6 @@ distroreleaselanguage = ContextTitle('%s')
 
 distros_index = 'Overview of Distributions in Launchpad'
 
-doap_about = 'About the Launchpad Registry'
-
-doap_dashboard = 'Launchpad Project & Product Dashboard'
-
-doap_index = 'Project and Product Registration in Launchpad'
-
-doap_listall = 'Launchpad: Complete List'
-
-doap_review = 'Launchpad Content Review'
-
-doap_to_do = 'Launchpad To-Do List'
-
 errorservice_config = 'Configure Error Log'
 
 errorservice_entry = 'View Error Log Report'
@@ -368,6 +358,12 @@ malone_index = 'Malone: Collaborative Open Source Bug Management'
 # malone_template is a means to include the mainmaster template
 
 malone_to_do = 'Malone ToDo'
+
+milestone_add = ContextDisplayName('Add Milestone for %s')
+
+milestone_bugs = ContextTitle('Bugs Targeted to %s')
+
+milestone_edit = ContextTitle('Edit %s')
 
 # messagechunk_snippet is a fragment
 
@@ -463,7 +459,7 @@ def poll_new(context, view):
 def polloption_edit(context, view):
     return 'Edit option %s' % context.shortname
 
-potemplage_admin = ContextTitle('%s admin in Rosetta')
+potemplate_add = 'Add a new template to Rosetta'
 
 # potemplate_chart is a fragment
 
@@ -485,7 +481,7 @@ product_add = 'Register a new Product with the Launchpad'
 
 product_bugs = ContextDisplayName('%s upstream bug reports')
 
-product_distros = ContextDisplayName('Distribution Packaging of %s')
+product_distros = ContextDisplayName('%s packages: Comparison of distributions')
 
 product_edit = ContextTitle('Edit Upstream Details: %s')
 
@@ -548,6 +544,18 @@ def reference_index(context, view):
 
 # references_index is a redirect
 
+registry_about = 'About the Launchpad Registry'
+
+registry_dashboard = 'Launchpad Project & Product Dashboard'
+
+registry_index = 'Project and Product Registration in Launchpad'
+
+registry_listall = 'Launchpad: Complete List'
+
+registry_review = 'Launchpad Content Review'
+
+registry_to_do = 'Launchpad To-Do List'
+
 related_bounties = ContextDisplayName('Bounties for %s')
 
 root_index = 'The Launchpad Home Page'
@@ -580,9 +588,16 @@ signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 
+def sourcepackage_bugs(context, view):
+    return 'Bugs in %s %s' % (
+        context.distrorelease.distribution.name,
+        context.sourcepackagename)
+
 sourcepackage_buildlog = 'Source Package Build Log'
 
 sourcepackage_changelog = 'Source Package Changelog'
+
+sourcepackage_filebug = ContextTitle("Report a Bug in %s")
 
 def sourcepackage_index(context, view):
     return '%s Source Packages' % context.distrorelease.title

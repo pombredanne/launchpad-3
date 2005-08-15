@@ -159,6 +159,7 @@
         name="+index"
         for="canonical.launchpad.interfaces.IBugSet"
         class="canonical.launchpad.browser.BugSetView"
+        attribute="redirectToBug"
         permission="zope.Public" />
 
     <browser:traverse
