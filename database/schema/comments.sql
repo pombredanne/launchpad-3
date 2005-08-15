@@ -510,7 +510,6 @@ COMMENT ON TABLE ProcessorFamily IS 'An architecture, that might consist of seve
 COMMENT ON COLUMN ProcessorFamily.name IS 'The name of the architecture. This is a short unix-style name such as i386 or amd64';
 COMMENT ON COLUMN ProcessorFamily.title IS 'A title for the architecture. For example "Intel i386 Compatible".';
 COMMENT ON COLUMN ProcessorFamily.description IS 'A description for this processor family. It might include any gotchas such as the fact that i386 does not necessarily mean that code would run on a 386... Ubuntu for example requires a 486.';
-COMMENT ON COLUMN ProcessorFamily.owner IS 'The person responsible for this processor family entry.';
 
 -- Processor
 
