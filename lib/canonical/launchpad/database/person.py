@@ -56,7 +56,7 @@ class Person(SQLBase):
 
     implements(IPerson, ICalendarOwner)
 
-    _defaultOrder = 'displayname'
+    _defaultOrder = ['displayname', 'familyname', 'givenname', 'name']
 
     name = StringCol(dbName='name', alternateID=True, notNull=True)
     password = StringCol(dbName='password', default=None)
@@ -1027,6 +1027,7 @@ class EmailAddress(SQLBase):
     implements(IEmailAddress)
 
     _table = 'EmailAddress'
+    _defaultOrder = ['email']
 
     email = StringCol(dbName='email', notNull=True, alternateID=True)
     status = EnumCol(dbName='status', schema=EmailAddressStatus, notNull=True)

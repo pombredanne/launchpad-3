@@ -4,7 +4,12 @@
 
 __metaclass__ = type
 
-__all__ = ['POFileView', 'ExportCompatibilityView', 'POExportView']
+__all__ = [
+    'POFileView',
+    'BaseExportView',
+    'ExportCompatibilityView',
+    'POFileAppMenus',
+    'POExportView']
 
 import gettextpo
 import urllib

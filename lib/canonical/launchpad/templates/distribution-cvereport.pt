@@ -30,8 +30,8 @@
       <thead>
         <tr>
           <th>CVE</th>
-          <th>Details</th>
-          <th>Location</th>
+          <th>Bug Title</th>
+          <th>Source Package</th>
           <th>Status</th>
         </tr>
       </thead>
@@ -39,22 +39,28 @@
         <tr tal:repeat="bugtask context/open_cve_bugtasks">
           <td>
             <tal:block repeat="cve bugtask/bug/cverefs">
+              <img src="/++resource++link_icon.gif" />
               <a tal:content="cve/displayname"
-                 tal:attributes="href cve/fmt:url">CVE-1999-1234</a><br />
+                 tal:attributes="href cve/url">CVE-1999-1234</a><br />
             </tal:block>
           </td>
-          <td><b tal:content="bugtask/bug/title">Foo Bar does not
-          work</b></td>
+          <td>
+            <a tal:content="bugtask/bug/title"
+               tal:attributes="href bugtask/bug/fmt:url"
+               >Foo Bar does not work</a>
+          </td>
           <td tal:content="bugtask/sourcepackagename/name">apache2</td>
           <td>
-            <span tal:replace="bugtask/status/title">Accepted</span>
+            <span tal:content="bugtask/status/title"
+                  tal:attributes="class string:status${bugtask/status/title}"
+                  >Accepted</span>
           </td>
         </tr>
       </tbody>
     </table>
 
     <p tal:condition="not: context/open_cve_bugtasks">
-      There are no registered CVE issues still open on
+      There are no CVE issues still open on
       <span tal:replace="context/displayname">ubuntu</span>.
     </p>
 
@@ -64,8 +70,8 @@
       <thead>
         <tr>
           <th>CVE</th>
-          <th>Details</th>
-          <th>Location</th>
+          <th>Bug Title</th>
+          <th>Source Package</th>
           <th>Status</th>
         </tr>
       </thead>
@@ -73,15 +79,20 @@
         <tr tal:repeat="bugtask context/open_cve_bugtasks">
           <td><ul>
             <li tal:repeat="cve bugtask/bug/cverefs">
+              <img src="/++resource++link_icon.gif" />
               <a tal:content="cve/displayname"
-                 tal:attributes="href cve/fmt:url">CVE-1999-1234</a>
+                 tal:attributes="href cve/url">CVE-1999-1234</a>
             </li>
           </ul></td>
-          <td><b tal:content="bugtask/bug/title">Foo Bar does not
-          work</b></td>
+          <td><a tal:content="bugtask/bug/title"
+                 tal:attributes="href bugtask/bug/fmt:url"
+                 >Foo Bar does not work</a>
+          </td>
           <td tal:content="bugtask/sourcepackagename/name">apache2</td>
           <td>
-            <span tal:replace="bugtask/status/title">Accepted</span>
+            <span tal:content="bugtask/status/title"
+                  tal:attributes="class
+                  string:status${bugtask/status/title}">Accepted</span>
           </td>
         </tr>
       </tbody>

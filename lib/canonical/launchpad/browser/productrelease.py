@@ -4,50 +4,49 @@ __metaclass__ = type
 
 __all__ = [
     'ProductReleaseView',
+    'ProductReleaseAddView',
     'ProductReleaseRdfView',
     ]
 
 # zope3
+from zope.event import notify
+from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.component import getUtility
+from zope.app.form.browser.add import AddView
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 # launchpad
 from canonical.launchpad.interfaces import (
-    IPOTemplateSet, IProductReleaseSet, ICountry)
+    IProductRelease, IPOTemplateSet, IProductReleaseSet, ICountry,
+    ILaunchBag)
+
+from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad import helpers
+from canonical.launchpad.webapp import canonical_url
 
 
-def newProductRelease(form, product, owner, series=None):
-    """Process a form to create a new Product Release object."""
-    # Verify that the form was in fact submitted, and that it looks like
-    # the right form (by checking the contents of the submit button
-    # field, called "Update").
-    if not form.has_key('Register'): return
-    if not form['Register'] == 'Register New Release': return
-    # Extract the ProductRelease details, which are in self.form
-    version = form['version']
-    title = form['title']
-    summary = form['summary']
-    description = form['description']
-    # XXX cprov 20050509
-    # releaseurl is currently ignored because there's no place for it in the
-    # database.
-    releaseurl = form['releaseurl']
-    # series may be passed in arguments, or in the form
-    if not series:
-        if form.has_key('series'):
-            series = int(form['series'])
-    # Create the new ProductRelease
-    prset = getUtility(IProductReleaseSet)
-    productrelease = prset.new(version, series, owner,
-                               title=title,
-                               summary=summary,
-                               description=description)
-    return productrelease
+class ProductReleaseAddView(AddView):
+
+    __used_for__ = IProductRelease
+    
+    _nextURL = '.'
+
+    def nextURL(self):
+        return self._nextURL
+
+    def createAndAdd(self, data):
+        prset = getUtility(IProductReleaseSet)
+        user = getUtility(ILaunchBag).user
+        newrelease = prset.new(
+            data['version'], data['productseries'], user, 
+            title=data['title'], summary=data['summary'],
+            description=data['description'], changelog=data['changelog'])
+        self._nextURL = canonical_url(newrelease)
+        notify(ObjectCreatedEvent(newrelease))
 
 
-class ProductReleaseView:
+class ProductReleaseView(SQLObjectEditView):
     """A View class for ProductRelease objects"""
 
     def __init__(self, context, request):
@@ -73,6 +72,9 @@ class ProductReleaseView:
         self.context.changelog = self.form['changelog']
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
+
+    def changed(self):
+        self.request.response.redirect('.')
 
     def requestCountry(self):
         return ICountry(self.request, None)

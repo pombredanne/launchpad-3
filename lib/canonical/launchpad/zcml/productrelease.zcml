@@ -93,14 +93,22 @@
         attribute="__call__"
         />
 
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProductRelease"
-        class="canonical.launchpad.browser.ProductReleaseView"
-        permission="launchpad.Edit">
-        <browser:page
-            name="+edit"
-            template="../templates/productrelease-edit.pt" />
-    </browser:pages>
+    <browser:editform
+      name="+edit"
+      for="canonical.launchpad.interfaces.IProductRelease"
+      schema="canonical.launchpad.interfaces.IProductRelease"
+      class="canonical.launchpad.browser.productrelease.ProductReleaseView"
+      label="Edit Product Release Details:"
+      fields="title summary description changelog"
+      permission="launchpad.Edit"
+      template="../templates/productrelease-edit.pt"
+      lp:url="/products/$Product.name/$ProductRelease.version/+edit">
+      <browser:widget
+        field="summary"
+        class="zope.app.form.browser.TextAreaWidget"
+        width="60"
+        height="5" />
+    </browser:editform>
 
     <browser:editform
         name="+review"

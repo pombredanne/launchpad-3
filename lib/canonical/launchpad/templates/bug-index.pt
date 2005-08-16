@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@malone_template/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
 <body>

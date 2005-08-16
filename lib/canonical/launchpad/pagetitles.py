@@ -513,8 +513,7 @@ def productrelease_edit(context, view):
     return 'Edit Details for %s %s' % (
         context.product.displayname, context.version)
 
-def productrelease_new(context, view):
-    return 'Register a new release of %s' % view.product.displayname
+productrelease_add = ContextTitle('Register a new release of %s')
 
 productseries_translations = ContextTitle(
     'Rosetta Translation Templates for %s')

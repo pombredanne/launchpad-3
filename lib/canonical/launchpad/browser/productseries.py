@@ -23,7 +23,6 @@ from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 from canonical.launchpad.helpers import request_languages, browserLanguages
 from canonical.launchpad.interfaces import (IPerson, ICountry, IPOTemplateSet,
     ILaunchpadCelebrities, ILaunchBag, ISourcePackageNameSet)
-from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad.browser.potemplate import POTemplateView
 
 
@@ -291,8 +290,6 @@ class ProductSeriesView(object):
         # make sure we also update the ubuntu packaging if it has been
         # modified
         self.setCurrentUbuntuPackage()
-        # XXX: conflicted, probably removed --keybuk 24jun05
-        #self.request.response.redirect('.')
 
     def adminSource(self):
         """Make administrative changes to the source details of the
@@ -388,23 +385,6 @@ class ProductSeriesView(object):
         # ubuntu release. if none exists, one will be created
         self.context.setPackaging(self.curr_ubuntu_release, spn, self.user)
         self.setUpPackaging()
-
-
-    def newProductRelease(self):
-        """
-        Process a submission to create a new ProductRelease
-        for this series.
-        """
-        # figure out who is calling
-        owner = IPerson(self.request.principal)
-        # XXX sabdfl 09/04/05 we should not be passing the form to the
-        # content object, violating the separation between content and
-        # presentation. I think this is my old code, but it needs to be
-        # fixed nonetheless.
-        pr = newProductRelease(self.form, self.context.product, owner,
-                               series=self.context.id)
-        if pr:
-            self.request.response.redirect(pr.version)
 
     def requestCountry(self):
         return ICountry(self.request, None)
