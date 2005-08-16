@@ -1145,7 +1145,12 @@ class TeamReassignmentView(ObjectReassignmentView):
         an administrator of the team, and so we do.
         """
         team.addMember(newOwner)
-        team.setMembershipStatus(newOwner, TeamMembershipStatus.ADMIN)
         team.addMember(oldOwner)
+        # Need to flush all database updates so the setMembershipStatus method
+        # will see both old and new owners as active members of the team.
+        # Otherwise it'll complain (with an AssertionError) because only 
+        # active members can be promoted to adminsitrators.
+        flush_database_updates()
+        team.setMembershipStatus(newOwner, TeamMembershipStatus.ADMIN)
         team.setMembershipStatus(oldOwner, TeamMembershipStatus.ADMIN)
 
