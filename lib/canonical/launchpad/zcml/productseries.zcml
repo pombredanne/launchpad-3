@@ -97,23 +97,6 @@
             name="+portlet-potemplates"
             template="../templates/object-portlet-potemplates.pt"
             />
-        <browser:page
-            name="+portlet-status-legend"
-            template="../templates/portlet-rosetta-status-legend.pt"
-            />
-        <browser:page
-            name="+portlet-pref-langs"
-            template="../templates/portlet-pref-langs.pt"
-            />
-        <browser:page
-            name="+portlet-country"
-            template="../templates/portlet-country-langs.pt"
-            />
-        <browser:page
-            name="+portlet-browser-langs"
-            template="../templates/portlet-browser-langs.pt"
-            lp:url="/products/evolution/2.1.6/+portlet-browser-langs"
-            />
     </browser:pages>
 
     <browser:page

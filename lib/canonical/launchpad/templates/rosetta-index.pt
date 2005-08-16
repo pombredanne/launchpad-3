@@ -6,14 +6,12 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure view/translationGroupsPortlet" />
-    <div tal:replace="structure view/statsPortlet" />
+    <div tal:replace="structure context/@@+portlet-groups" />
+    <div tal:replace="structure context/@@+portlet-stats" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure view/prefLangPortlet" />
-    <div tal:replace="structure view/countryPortlet" />
-    <div tal:replace="structure view/browserLangPortlet" />
+    <div tal:replace="structure context/@@+portlet-preflangs" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">

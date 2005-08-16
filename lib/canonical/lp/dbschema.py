@@ -377,6 +377,13 @@ class BugTrackerType(DBSchema):
         tracker written in Python.
         """)
 
+    TRAC = Item(4, """
+        Trac
+
+        Trac is an enhanced wiki and issue tracking system for
+        software development projects.
+        """)
+
 
 class CVEState(DBSchema):
     """The Status of this item in the CVE Database

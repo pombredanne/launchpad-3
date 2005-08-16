@@ -1,91 +1,37 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
-<head>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
+<tal:tag condition="view/update"/>
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
 
 <body>
 
-<div metal:fill-slot="main">
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
 
-   <tal:dummy condition="view/edit" />
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
 
-        <h1>
-          Edit bug tracker
-          &#8220;<span tal:replace="context/title">FooBugz</span>&#8221;
-        </h1>
+  <div metal:fill-slot="main">
 
-        <form action="+edit" method="post">
+    <div metal:use-macro="context/@@launchpad_editform/editform">
 
-        <div class="field">
-            <label for="title">Title:</label>
-            <span tal:omit-tag class="fieldRequired" title="Required">(Required)</span>
+          <h1 tal:condition="view/label"
+              tal:content="view/label"
+              metal:fill-slot="heading"
+              >Form Label will come from ZCML label="xxx"</h1>
 
-                <input type="text" name="title" size="30"
-                       value="" tal:attributes="value context/title" />
-        </div>
-                  <div class="formHelp">
-                    The full title of the tracker,
-                    as shown in bug reports.
-                    Examples:
-                    <samp>Apache Bugzilla</samp>,
-                    <samp>Plone Collector</samp>.
-                  </div>
+    <div metal:fill-slot="extra_info" class="documentDescription">
+      If you need to change the type of bug tracker, then please ask for
+      admin support on #launchpad (see the bottom of the page for details).
+    </div>
 
-        <div class="field">
-            <label for="summary">Summary:</label>
-                <textarea cols="40" rows="4" name="summary"
-                          tal:content="context/summary"></textarea>
-                  <div class="formHelp">
-                    A single paragraph introduction or overview,
-                    describing the products covered by this
-                    particular bug tracker installation.
-                  </div>
-        </div>
-        
-        <div class="field">
-            <label for="baseurl">URL:</label>
-                <input type="text" name="baseurl" size="30"
-                       value="http://"
-                       tal:attributes="value context/baseurl" />
-                  <div class="formHelp">
-                    The Web address for the tracker.
-                    URLs for bug status pages <abbr><i>etc</i></abbr>
-                    are extensions of this URL.
-                  </div>
-        </div>
-
-        <div class="field">
-            <label>Contact Information:</label>
-                <textarea cols="40" rows="5" name="contactdetails"
-                          tal:content="context/contactdetails"></textarea>
-                  <div class="formHelp">
-                  Please give contact details for the bug tracker
-                  administrators, so we can contact them in
-                  emergencies.
-                  </div>
-
-        </div>
-
-
-        <div class="form actions">
-
-            <input type="submit"
-                   name="Update"
-                   value="Save Changes" />
-
-        </div>
-        </form>
-
-
-
+  </div>
+    
 </div>
-
 </body>
 </html>

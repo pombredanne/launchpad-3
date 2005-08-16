@@ -49,38 +49,9 @@ class ProductReleaseAddView(AddView):
 class ProductReleaseView(SQLObjectEditView):
     """A View class for ProductRelease objects"""
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.form = request.form
-        # List of languages the user is interested on based on their browser,
-        # IP address and launchpad preferences.
-        self.languages = helpers.request_languages(self.request)
-        self.status_message = None
-
-    def edit(self):
-        # check that we are processing the correct form, and that
-        # it has been POST'ed
-        if not self.form.get("Update", None)=="Update Release Details":
-            return
-        if not self.request.method == "POST":
-            return
-        # Extract details from the form and update the Product
-        self.context.title = self.form['title']
-        self.context.summary = self.form['summary']
-        self.context.description = self.form['description']
-        self.context.changelog = self.form['changelog']
-        # now redirect to view the product
-        self.request.response.redirect(self.request.URL[-1])
-
     def changed(self):
         self.request.response.redirect('.')
 
-    def requestCountry(self):
-        return ICountry(self.request, None)
-
-    def browserLanguages(self):
-        return helpers.browserLanguages(self.request)
 
 
 class ProductReleaseRdfView(object):

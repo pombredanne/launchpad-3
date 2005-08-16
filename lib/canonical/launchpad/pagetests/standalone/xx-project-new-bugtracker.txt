@@ -1,33 +1,61 @@
-Test the adding of a bugtracker to a project. First, load the page:
+
+We want to ensure that we can add a bugtracker directly to a project.
+
+First, can we see the form?
 
   >>> print http(r"""
   ... GET /projects/mozilla/+newbugtracker HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  ...
-  <BLANKLINE>
-  ...
-      <h1>Register a new bug tracker</h1>
-  ...
+  ...Register an External Bug Tracker...
 
-Now post to the page, to add the bug tracker:
+OK. If we POST to that form, we would expect to be redirected to view the
+new tracker.
 
   >>> print http(r"""
   ... POST /projects/mozilla/+newbugtracker HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 238
-  ... Content-Type: application/x-www-form-urlencoded
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1195
+  ... Content-Type: multipart/form-data; boundary=---------------------------158390379412363622851415090934
   ... 
-  ... name=mozilla-bugs&title=Bugzilla&summary=The+Mozilla+Bugzilla+is+used+to+track+bugs+in+all+the+mozilla+applicationzillas.&baseurl=http%3A%2F%2Fbugzilla.mozilla.org&contactdetails=admins%40bugzilla.mozilla.org&Register=Register+Bug+Tracker""")
+  ... -----------------------------158390379412363622851415090934
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... mozbugs
+  ... -----------------------------158390379412363622851415090934
+  ... Content-Disposition: form-data; name="field.bugtrackertype"
+  ... 
+  ... Bugzilla
+  ... -----------------------------158390379412363622851415090934
+  ... Content-Disposition: form-data; name="field.bugtrackertype-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------158390379412363622851415090934
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... The Mozilla Project Bug Tracker
+  ... -----------------------------158390379412363622851415090934
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... This is the bugszilla used for all mozilla projects.
+  ... -----------------------------158390379412363622851415090934
+  ... Content-Disposition: form-data; name="field.baseurl"
+  ... 
+  ... http://bugzilla.moz.org/
+  ... -----------------------------158390379412363622851415090934
+  ... Content-Disposition: form-data; name="field.contactdetails"
+  ... 
+  ... kdf jslkdjf slkdjf slkdj 
+  ... -----------------------------158390379412363622851415090934
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------158390379412363622851415090934--
+  ... """)
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  Location: http://localhost:9000/projects/mozilla
-  <BLANKLINE>
+  Location: http://localhost:9000/malone/bugtrackers/mozbugs
   ...
-      <h1>Register a new bug tracker</h1>
-  ...
-
 

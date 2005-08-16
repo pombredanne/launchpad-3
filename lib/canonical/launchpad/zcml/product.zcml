@@ -105,10 +105,6 @@
             template="../templates/object-portlet-summary.pt"
             lp:url="/products/evolution/+portlet-summary" />
         <browser:page
-            name="+portlet-pref-lang"
-            template="../templates/portlet-pref-langs.pt"
-            lp:url="/products/evolution/+portlet-pref-langs" />
-        <browser:page
             name="+portlet-translatables"
             template="../templates/product-portlet-translatables.pt"
             lp:url="/products/evolution/+portlet-translatables" />
