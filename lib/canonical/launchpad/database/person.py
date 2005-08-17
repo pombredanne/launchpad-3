@@ -685,6 +685,10 @@ class PersonSet:
         else:
             return person
 
+    def topPeople(self):
+        """See IPersonSet."""
+        return Person.select('password IS NOT NULL', orderBy='-karma')
+
     def newTeam(self, **kw):
         """See IPersonSet."""
         ownerID = kw.get('teamownerID')

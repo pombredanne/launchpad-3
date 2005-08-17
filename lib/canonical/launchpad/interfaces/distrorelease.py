@@ -136,6 +136,11 @@ class IDistroRelease(IHasOwner, IBugTarget):
         distribution and the given language.
         """
 
+    def getDistroReleaseLanguageOrDummy(language):
+        """Return the DistroReleaseLanguage for this distrorelease and the
+        given language, or a DummyDistroReleaseLanguage.
+        """
+
 
 class IDistroReleaseSet(Interface):
     """The set of distro releases."""

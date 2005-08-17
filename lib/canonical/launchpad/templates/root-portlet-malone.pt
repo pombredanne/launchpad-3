@@ -1,0 +1,16 @@
+  <div class="portlet">
+    <h4>Tracking Bugs:</h4>
+
+    <div class="portletBody portletContent" i18n:translate="malone-blurb">
+      <img src="/++resource++bug.png" />
+      <a i18n:attributes="title" title="Malone"
+         href="malone" i18n:translate="">Malone</a> is a
+      <b>web-based global bug tracking</b>
+      tool. It is designed to track bugs across the whole open source
+      process: it understands that the same code is re-used upstream
+      and in different distributions, and allows us to have a single
+      bug number for any bug, and track where it has been fixed and
+      where it is still a problem. <a i18n:attributes="title" title="Malone"
+      href="malone" i18n:translate="">Track bugs now!</a>
+  </div>
+</div>

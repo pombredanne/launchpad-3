@@ -383,6 +383,9 @@ class IPersonSet(Interface):
 
         Raise KeyError if there is no such person.
         """
+    
+    def topPeople():
+        """Return the top 5 people by Karma score in the Launchpad."""
 
     def createPersonAndEmail(email, name=None, displayname=None, givenname=None,
             familyname=None, password=None, passwordEncrypted=False):

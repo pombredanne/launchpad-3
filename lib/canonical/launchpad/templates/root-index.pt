@@ -5,51 +5,12 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div class="portlet">
-    <h4>Translating Applications:</h4>
-
-    <div class="portletBody portletContent" i18n:translate="rosetta-blurb">
-      <a i18n:attributes="title" title="Rosetta"
-         href="rosetta" i18n:translate="">Rosetta</a> is a
-      <b>web-based translation portal</b>.
-      If your application uses the open source standard <i>gettext</i>
-      system for software internationalisation, then you can easily have
-      users contribute translations for your software through Rosetta.
-      You simply upload the existing translations, point your community
-      at Rosetta and then download their translations before you make
-      your release. <a i18n:attributes="title" title="Rosetta"
-      href="rosetta" i18n:translate="">Translate now!</a>
-    </div>
-  </div>
-  
-  <div class="portlet">
-    <h4>Open Source People:</h4>
-
-    <div class="portletBody portletContent">
-      See what 
-      <a href="/people/">people and teams</a> are registered in the
-      Launchpad, which projects they are hacking or translating, and where
-      they have been active in recent days.
-    </div>
-  </div>
+  <div tal:replace="structure context/@@+portlet-rosetta" />
+  <div tal:replace="structure context/@@+portlet-foaf" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div class="portlet">
-    <h4>Tracking Bugs:</h4>
-
-    <div class="portletBody portletContent" i18n:translate="malone-blurb">
-      <a i18n:attributes="title" title="Malone"
-         href="malone" i18n:translate="">Malone</a> is a
-      <b>web-based global bug tracking</b>
-      tool. It is designed to track bugs across the whole open source
-      process: it understands that the same code is re-used upstream
-      and in different distributions, and allows us to have a single
-      bug number for any bug, and track where it has been fixed and
-      where it is still a problem. <a i18n:attributes="title" title="Malone"
-      href="malone" i18n:translate="">Track bugs now!</a>
-  </div>
-</div>
+  <div tal:replace="structure context/@@+portlet-malone" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">

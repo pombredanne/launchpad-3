@@ -11,7 +11,8 @@ from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
-    ILanguageSet, ILaunchBag, IRequestPreferredLanguages, ICountry)
+    ILanguageSet, ILaunchBag, IRequestPreferredLanguages, ICountry,
+    ILaunchpadCelebrities)
 from canonical.launchpad import helpers
 
 
@@ -21,6 +22,13 @@ class RosettaApplicationView:
         self.context = context
         self.request = request
         self.languages = helpers.request_languages(self.request)
+
+    def ubuntu_languages(self):
+        langs = []
+        release = getUtility(ILaunchpadCelebrities).ubuntu.currentrelease
+        for language in self.languages:
+            langs.append(release.getDistroReleaseLanguageOrDummy(language))
+        return langs
 
     def requestCountry(self):
         return ICountry(self.request, None)

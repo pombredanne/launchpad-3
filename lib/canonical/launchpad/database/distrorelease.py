@@ -31,7 +31,7 @@ from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.distroreleaselanguage import \
-    DistroReleaseLanguage
+    DistroReleaseLanguage, DummyDistroReleaseLanguage
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.sourcepackagename import SourcePackageNameSet
 from canonical.launchpad.database.packaging import Packaging
@@ -171,6 +171,13 @@ class DistroRelease(SQLBase):
         return DistroReleaseLanguage.selectOneBy(
             distroreleaseID=self.id,
             languageID=language.id)
+
+    def getDistroReleaseLanguageOrDummy(self, language):
+        """See IDistroRelease."""
+        drl = self.getDistroReleaseLanguage(language)
+        if drl is not None:
+            return drl
+        return DummyDistroReleaseLanguage(self, language)
 
     def updateStatistics(self):
         """See IDistroRelease."""
