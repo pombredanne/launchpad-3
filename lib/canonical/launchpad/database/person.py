@@ -939,6 +939,22 @@ class PersonSet:
                     % vars())
         skip.append(('gpgkey','owner'))
 
+        # Update WikiName. Delete the from entry for our internal wikis
+        # so it can be reused. Migrate the non-internal wikinames.
+        # Note we only allow one wikiname per person for the UBUNTU_WIKI_URL
+        # wiki.
+        quoted_internal_wikiname = quote(UBUNTU_WIKI_URL)
+        cur.execute("""
+            DELETE FROM WikiName
+            WHERE person=%(from_id)d AND wiki=%(quoted_internal_wikiname)s
+            """ % vars()
+            )
+        cur.execute("""
+            UPDATE WikiName SET person=%(to_id)d WHERE person=%(from_id)d
+            """ % vars()
+            )
+        skip.append(('wikiname', 'person'))
+
         # Update only the BountySubscriptions that will not conflict
         # XXX: Add sampledata and test to confirm this case
         # -- StuartBishop 20050331
