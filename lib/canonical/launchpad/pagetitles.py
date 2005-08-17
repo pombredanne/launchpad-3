@@ -186,7 +186,7 @@ bugtracker_edit = ContextTitle('Edit %s Details')
 
 bugtracker_index = ContextTitle('Malone Bugtracker: %s')
 
-bugtracker_new = 'Create Malone Bugtracker'
+bugtrackers_add = 'Register External Bugtracker in Malone'
 
 bugtrackers_index = 'Malone-Registered Bug Trackers'
 

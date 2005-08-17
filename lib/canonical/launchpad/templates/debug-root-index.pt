@@ -3,6 +3,7 @@
         <div metal:fill-slot="main">
             <h1>Welcome to the  Launchpad</h1>
             <ul>
+                <li><a href="real-index.html">The Official Home Page</a></li>
                 <li><a href="people">People</a></li>
                 <li><a href="products">Products</a></li>
                 <li><a href="projects">Projects</a></li>
