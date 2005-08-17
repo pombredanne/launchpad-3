@@ -8,7 +8,10 @@ Adapting a request to a country allows you to see where the request came from.
     ...     LaunchpadFunctionalTestSetup)
     >>> LaunchpadFunctionalTestSetup().setUp()
 
-Here's a dummy request.
+Here's a dummy request. Zope adds the REMOTE_ADDR CGI environment variable
+for us. Upstream proxy servers (and tinkering users!) may also add
+X-Forwarded-For: headers. The X-Forwarded-For: header takes precidence
+if it is set.
 
     >>> from zope.publisher.browser import TestRequest
     >>> request = TestRequest(environ={
