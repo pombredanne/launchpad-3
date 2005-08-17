@@ -13,6 +13,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-actions" />
+  <div tal:replace="structure context/@@+portlet-preflangs" />
 </metal:rightportlets>
 
 
@@ -35,7 +36,7 @@
       [<a href="/rosetta/prefs">Choose Preferred Languages</a>]
     </div>
 
-    <div tal:replace="structure context/@@+portlet-status-legend" />
+    <div tal:replace="structure context/@@+rosetta-status-legend" />
 
 </div>
 

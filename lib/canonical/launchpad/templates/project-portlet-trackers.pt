@@ -2,20 +2,14 @@
 
     <h4>Project Bug Trackers:</h4>
 
-    <div class="portletBody">
-        <div class="portletContent even">
+    <div class="portletBody portletContent">
 
-        <table class="rowNavigation" border="0" width="100%">
-            <tr tal:repeat="tracker context/bugtrackers"
-                tal:attributes="onclick
-                string:window.location='/malone/bugtrackers/${tracker/name}';">
-                <td><b>
-                    <span tal:replace="tracker/name">bugtracker-name</span></b>:
-                    <br />
-                    <span tal:replace="tracker/title">tracker title</span>
-                </td>
-            </tr>
-        </table>
+      <ul class="info">
+        <li tal:repeat="tracker context/bugtrackers">
+          <a tal:content="tracker/title"
+             tal:attributes="href tracker/fmt:url">tracker title</a>
+        </li>
+      </ul>
 
         <ul><li class="add">
         <a href="+newbugtracker"
@@ -24,7 +18,5 @@
         </a>
         </li></ul>
 
-        </div>
-                
     </div>
 </div>

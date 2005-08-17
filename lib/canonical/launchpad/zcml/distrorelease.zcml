@@ -113,26 +113,6 @@
             template="../templates/distrorelease-portlet-aboutlangs.pt"
             lp:url="/distros/ubuntu/hoary/+portlet-aboutlangs"
             />
-        <browser:page
-            name="+portlet-status-legend"
-            template="../templates/portlet-rosetta-status-legend.pt"
-            lp:url="/distros/ubuntu/hoary/+portlet-status-legend"
-            />
-        <browser:page
-            name="+portlet-pref-langs"
-            template="../templates/portlet-pref-langs.pt"
-            lp:url="/distros/ubuntu/hoary/+portlet-pref-langs"
-            />
-        <browser:page
-            name="+portlet-country-langs"
-            template="../templates/portlet-country-langs.pt"
-            lp:url="/distros/ubuntu/hoary/+portlet-country-langs"
-            />
-        <browser:page
-            name="+portlet-browser-langs"
-            template="../templates/portlet-browser-langs.pt"
-            lp:url="/distros/ubuntu/hoary/+portlet-browser-langs"
-            />
     </browser:pages>
 
     <browser:pages

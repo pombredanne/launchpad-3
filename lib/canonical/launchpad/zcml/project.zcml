@@ -104,15 +104,19 @@
               lp:url="/project/$project.id/+reassign" />
     </browser:pages>
 
-    <browser:pages
+    <browser:addform
+        name="+newbugtracker"
+        permission="launchpad.AnyPerson"
+        label="Register an External Bug Tracker"
+        class="canonical.launchpad.browser.BugTrackerAddView"
         for="canonical.launchpad.interfaces.IProject"
-        class="canonical.launchpad.browser.ProjectView"
-        permission="launchpad.AnyPerson" >
-        <browser:page
-            name="+newbugtracker"
-            template="../templates/bugtracker-new.pt"
-            lp:url="/projects/$Project.name/+newbugtracker" />
-    </browser:pages>
+        schema="canonical.launchpad.interfaces.IBugTracker"
+        fields="name bugtrackertype title summary baseurl contactdetails"
+        keyword_arguments="name bugtrackertype title summary baseurl
+                           contactdetails"
+        template="../templates/bugtrackers-add.pt"
+        lp:url="/projects/$Project.name/+newbugtracker"
+        />
 
     <browser:editform
         name="+edit"
@@ -213,7 +217,7 @@
         lp:url="/projects/">
         <browser:page
             name="+all" 
-            template="../templates/doap-listall.pt"
+            template="../templates/registry-listall.pt"
             lp:url="/projects/+all" />
         <browser:page
             name="+index" 
@@ -227,7 +231,7 @@
         permission="launchpad.AnyPerson">
         <browser:page
             name="+review"
-            template="../templates/doap-review.pt"
+            template="../templates/registry-review.pt"
             lp:url="/projects/+review" />
         <browser:page
             name="+syncreview"

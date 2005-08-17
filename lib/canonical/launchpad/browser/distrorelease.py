@@ -1,5 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""View classes related to IDistroRelease."""
+
 __metaclass__ = type
 
 __all__ = [
@@ -24,7 +26,6 @@ from canonical.launchpad.interfaces import (IDistroReleaseLanguageSet,
     IDistroReleaseSet, ILaunchBag)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
-
 
 class DistroReleaseFacets(StandardLaunchpadFacets):
     usedfor = IDistroRelease
@@ -87,11 +88,11 @@ class DistroReleaseView:
                 drl = drlangset.getDummy(self.context, lang)
                 drlangs.append(drl)
         drlangs.sort(key=lambda a: a.language.englishname)
-        
+
         return drlangs
 
     def redirectToDistroFileBug(self):
-        """Redirects to the distribution's filebug page
+        """Redirect to the distribution's filebug page.
 
         Filing a bug on a distribution release is not directly
         permitted; we redirect to the distribution's file
@@ -113,6 +114,7 @@ class DistroReleaseBugsView(BugTaskSearchListingView):
         """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
         return [
             "id", "package", "title", "status", "submittedby", "assignedto"]
+
 
 class DistroReleaseAddView(AddView):
     __used_for__ = IDistroRelease

@@ -2,7 +2,8 @@
     xml:lang="en"
     lang="en"
     metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad">
+    i18n:domain="launchpad"
+>
 
 <body>
 
@@ -17,10 +18,19 @@
 
 <div metal:fill-slot="main">
 
-  <div class="documentDescription">
-    Below are all of the outstanding bounties registered in the
-    Launchpad. Click on a bounty for more information.
-  </div>
+      <p class="documentDescription">
+        In Launchpad, a bounty is an offer of payment
+        for development work.
+        <tal:block condition="request/lp:person">
+          With your Launchpad account, you can register bounties
+          or sign up for bounties offered by other people.
+        </tal:block>
+        <tal:block condition="not: request/lp:person">
+          <a href="+login">Log in with a Launchpad account</a>
+          and you&#8217;ll be able to register bounties,
+          or sign up for bounties offered by other people.
+        </tal:block>
+      </p>
 
   <table class="listing" width="100%">
     <tr>
@@ -40,9 +50,9 @@
     </tr>
   </table>
 
-  <p><sup>*</sup> A bounty may include contributions in several currencies.
-  This is an estimate of the bounty value in US Dollars based on recent
-  exchange rates.</p>
+    <p><sup>*</sup> A bounty may include contributions in several currencies.
+    This is an estimate of the bounty value in US dollars, based on recent
+    exchange rates.</p>
 
 </div>
 </body>

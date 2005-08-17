@@ -7,7 +7,7 @@ import urllib
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol, MultipleJoin
+from sqlobject import ForeignKey, StringCol, MultipleJoin, RelatedJoin
 
 from canonical.lp.dbschema import EnumCol, BugTrackerType
 from canonical.database.sqlbase import (SQLBase, flush_database_updates,
@@ -35,6 +35,9 @@ class BugTracker(SQLBase):
     contactdetails = StringCol(notNull=False)
     watches = MultipleJoin('BugWatch', joinColumn='bugtracker',
         orderBy='remotebug')
+    projects = RelatedJoin('Project', intermediateTable='ProjectBugTracker',
+        joinColumn='bugtracker', otherColumn='project',
+        orderBy='name')
 
     @property
     def watchcount(self):
@@ -113,4 +116,7 @@ class BugTrackerSet:
         flush_database_updates()
         return bugtracker
 
+    @property
+    def bugtracker_count(self):
+        return BugTracker.select().count()
 

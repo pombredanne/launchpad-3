@@ -1,10 +1,10 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
     lang="en"
     metal:use-macro="context/@@launchpad_template/master"
-    i18n:domain="doap">
+    i18n:domain="launchpad">
 <body>
   <metal:block fill-slot="titleheader">
-  The DOAP System in Launchpad
+  The Launchpad Registry
   </metal:block>
   <div metal:fill-slot="main">
 

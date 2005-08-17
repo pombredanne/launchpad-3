@@ -17,21 +17,6 @@ from canonical.launchpad import helpers
 
 class RosettaApplicationView:
 
-    translationGroupsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-groups.pt')
-
-    prefLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-pref-langs.pt')
-
-    countryPortlet = ViewPageTemplateFile(
-        '../templates/portlet-country-langs.pt')
-
-    browserLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-browser-langs.pt')
-
-    statsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-stats.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -51,6 +36,12 @@ class RosettaPreferencesView:
 
         self.error_msg = None
         self.person = getUtility(ILaunchBag).user
+
+    def requestCountry(self):
+        return ICountry(self.request, None)
+
+    def browserLanguages(self):
+        return IRequestPreferredLanguages(self.request).getPreferredLanguages()
 
     def visible_languages(self):
         class BrowserLanguage:

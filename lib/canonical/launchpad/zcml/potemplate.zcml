@@ -63,11 +63,6 @@
             name="+portlet-for"
             template="../templates/potemplate-portlet-for.pt"
         />
-        <browser:page
-            name="+portlet-status-legend"
-            template="../templates/portlet-rosetta-status-legend.pt"
-        />
-
     </browser:pages>
 
     <browser:page

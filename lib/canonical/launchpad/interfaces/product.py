@@ -279,7 +279,7 @@ class IProductSet(Interface):
     def search(text=None, soyuz=None,
                rosetta=None, malone=None,
                bazaar=None):
-        """Search through the DOAP database for products that match the
+        """Search through the Registry database for products that match the
         query terms. text is a piece of text in the title / summary /
         description fields of product. soyuz, bazaar, malone etc are
         hints as to whether the search should be limited to products

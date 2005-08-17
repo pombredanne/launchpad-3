@@ -97,13 +97,13 @@
             template="../templates/product-portlet-packages.pt"
             lp:url="/products/evolution/+portlet-packages" />
         <browser:page
+            name="+portlet-releases"
+            template="../templates/product-portlet-releases.pt"
+            lp:url="/products/evolution/+portlet-releases" />
+        <browser:page
             name="+portlet-summary"
             template="../templates/object-portlet-summary.pt"
             lp:url="/products/evolution/+portlet-summary" />
-        <browser:page
-            name="+portlet-pref-lang"
-            template="../templates/portlet-pref-langs.pt"
-            lp:url="/products/evolution/+portlet-pref-langs" />
         <browser:page
             name="+portlet-translatables"
             template="../templates/product-portlet-translatables.pt"
@@ -160,16 +160,6 @@
             name="+bounties"
             template="../templates/related-bounties.pt"
             lp:url="/products/$Product.name/+bounties/" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.ProductView"
-        permission="launchpad.AnyPerson">
-        <browser:page
-            name="+addrelease"
-            template="../templates/productrelease-new.pt"
-            lp:url="/products/$Product.name/+addrelease" />
     </browser:pages>
 
     <browser:editform
@@ -324,7 +314,7 @@
             lp:url="/products/+index" />
         <browser:page
             name="+all"
-            template="../templates/doap-listall.pt"
+            template="../templates/registry-listall.pt"
             lp:url="/products/+all" />
         <browser:page
             name="+portlet-details"
@@ -338,7 +328,7 @@
         permission="launchpad.AnyPerson">
         <browser:page
             name="+review"
-            template="../templates/doap-review.pt"
+            template="../templates/registry-review.pt"
             lp:url="/products/+review" />
     </browser:pages>
 
@@ -354,7 +344,7 @@
         class="canonical.launchpad.browser.ProductSetAddView"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="doap/products/+new">
+        lp:url="products/+new">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
         <browser:widget
            field="name"

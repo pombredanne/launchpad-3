@@ -82,6 +82,8 @@ __all__ = (
 'RosettaFileFormat',
 )
 
+from canonical.database.constants import DEFAULT
+
 from zope.interface.advice import addClassAdvisor
 import sys
 import warnings
@@ -139,6 +141,8 @@ class DBSchemaValidator(validators.Validator):
                 ' not an int')
         # Allow this to work in the presence of security proxies.
         ##if not isinstance(value, Item):
+        if value is DEFAULT:
+            return value
         if value.__class__ != Item:
             raise TypeError('Not a DBSchema Item: %r' % value)
         if value.schema is not self.schema:
@@ -155,6 +159,8 @@ class DBSchemaValidator(validators.Validator):
         """
         if value is None:
             return None
+        if value is DEFAULT:
+            return value
         return self.schema.items[value]
 
 EnumCol = DBSchemaEnumCol
@@ -375,6 +381,13 @@ class BugTrackerType(DBSchema):
 
         Roundup is a lightweight, customisable and fast web/email based bug
         tracker written in Python.
+        """)
+
+    TRAC = Item(4, """
+        Trac
+
+        Trac is an enhanced wiki and issue tracking system for
+        software development projects.
         """)
 
 

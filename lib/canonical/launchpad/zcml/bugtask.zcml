@@ -87,7 +87,6 @@
             name="+portlet-details"
             template="../templates/bugtask-portlet-details.pt"
             lp:url="malone/tasks/+portlet-details" />
-        
     </browser:pages>
 
     <!-- XXX: Brad Bollenbach, 2005-01-18: We need to sort out the +upstreamtask
@@ -198,6 +197,14 @@
         lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:schemadisplay>
 
+    <browser:page
+        name="+target"
+        for="canonical.launchpad.interfaces.IDistroBugTask"
+        class="canonical.launchpad.browser.BugTaskReleaseTargetingView"
+        permission="launchpad.AnyPerson"
+        template="../templates/bugtask-release-targeting.pt"
+        />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         name="+index" />
@@ -247,6 +254,14 @@
         template="../templates/bugtask-view.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:schemadisplay>
+
+    <browser:page
+        name="+target"
+        for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
+        class="canonical.launchpad.browser.BugTaskReleaseTargetingView"
+        permission="launchpad.AnyPerson"
+        template="../templates/bugtask-release-targeting.pt"
+        />
 
     <!-- BugTaskDelta -->
     <content class="canonical.launchpad.components.bugtask.BugTaskDelta">

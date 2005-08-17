@@ -31,7 +31,7 @@ from canonical.launchpad.interfaces import (
     IGPGKeySet, IGPGHandler, ILaunchBag)
 
 
-class LoginTokenView(object):
+class LoginTokenView:
     """The default view for LoginToken.
 
     This view will check the token type and then redirect to the specific view
@@ -54,33 +54,65 @@ class LoginTokenView(object):
         request.response.redirect(url)
 
 
-class ResetPasswordView(object):
+class BaseLoginTokenView:
+    """A base view class to be used by other LoginToken views."""
 
     def __init__(self, context, request):
-        self.context = context
         self.request = request
-        self.errormessage = None
+        self.context = context
+        self.errormessage = ""
         self.formProcessed = False
+
+    def successfullyProcessed(self):
+        """Return True if the form was processed without any errors."""
+        return self.formProcessed and not self.errormessage
+
+    def validateRequesterPassword(self, password):
+        """Return True if <password> is the same as the requester's password.
+        
+        In case of failure, an error message is assigned to self.errormessage.
+        """
+        assert self.context.requester is not None
+        encryptor = getUtility(IPasswordEncryptor)
+        if encryptor.validate(password, self.context.requester.password):
+            return True
+        else:
+            self.errormessage = "Wrong password. Please check and try again."
+            return False
+
+    def logInPersonByEmail(self, email):
+        """Login the person with the given email address."""
+        loginsource = getUtility(IPlacelessLoginSource)
+        principal = loginsource.getPrincipalByLogin(email)
+        logInPerson(self.request, principal, email)
+
+
+class ResetPasswordView(BaseLoginTokenView):
+
+    def __init__(self, context, request):
+        BaseLoginTokenView.__init__(self, context, request)
         self.email = None
 
     def processForm(self):
         """Check the email address, check if both passwords match and then
         reset the user's password. When password is successfully changed, the
         LoginToken (self.context) used is removed, so nobody can use it again.
-
         """
         if self.request.method != "POST":
             return
 
-        self.email = self.request.form.get("email").strip()
+        form = self.request.form
+        self.email = form.get("email").strip()
+        # XXX: Should not do case-sensitive comparison with the part after the
+        # @ of the email address. -- GuilhermeSalgado, 2005-08-15
         if self.email != self.context.email:
             self.errormessage = (
                 "The email address you provided didn't match the address "
                 "you provided when requesting the password reset.")
             return
 
-        password = self.request.form.get("password")
-        password2 = self.request.form.get("password2")
+        password = form.get("password")
+        password2 = form.get("password2")
         if not password and not password2:
             self.errormessage = "Your password cannot be empty."
             return
@@ -89,18 +121,13 @@ class ResetPasswordView(object):
             self.errormessage = "Password didn't match."
             return
 
-        # Make sure this person has a preferred email address.
         emailset = getUtility(IEmailAddressSet)
         emailaddress = emailset.getByEmail(self.context.email)
         person = emailaddress.person
-        if person.preferredemail != emailaddress:
-            person.validateAndEnsurePreferredEmail(emailaddress)
 
-        # Need to flush all changes we made, so subsequent queries we make
-        # with this transaction will see this changes and thus they'll be
-        # displayed on the page that calls this method.
-        flush_database_updates()
-
+        # XXX: It should be possible to do the login before this and avoid
+        # this hack. In case the user doesn't want to be logged in
+        # automatically we can log him out after doing what we want.
         # XXX: Steve Alexander, 2005-03-18
         #      Local import, because I don't want this import copied elsewhere!
         #      This code is to be removed when the UpgradeToBusinessClass
@@ -109,44 +136,62 @@ class ResetPasswordView(object):
         naked_person = removeSecurityProxy(person)
         #      end of evil code.
 
+        # Make sure this person has a preferred email address.
+        if naked_person.preferredemail != emailaddress:
+            naked_person.validateAndEnsurePreferredEmail(emailaddress)
+
         encryptor = getUtility(IPasswordEncryptor)
         password = encryptor.encrypt(password)
         naked_person.password = password
         self.formProcessed = True
         self.context.destroySelf()
 
-    def successfullyProcessed(self):
-        return self.formProcessed and not self.errormessage
+        # Need to flush all changes we made, so subsequent queries we make
+        # with this transaction will see this changes and thus they'll be
+        # displayed on the page that calls this method.
+        flush_database_updates()
+
+        if form.get('logmein'):
+            self.logInPersonByEmail(self.context.email)
 
 
-class ValidateEmailView(object):
+class ValidateEmailView(BaseLoginTokenView):
 
     def __init__(self, context, request):
-        self.request = request
-        self.context = context
-        self.errormessage = ""
+        BaseLoginTokenView.__init__(self, context, request)
         self.infomessage = ""
-        self.formProcessed = False
-
-    def successfullyProcessed(self):
-        return self.formProcessed and not self.errormessage
 
     def processForm(self):
+        """Process the action specified by the LoginToken.
+
+        If necessary, verify the requester's password before actually
+        processing anything.
+        """
         if self.request.method != "POST":
             return
 
-        # Email validation requests must have a registered requester.
-        assert self.context.requester is not None
         self.formProcessed = True
-        if self.context.tokentype == LoginTokenType.VALIDATEEMAIL:
-            self.validatePersonEmail()
-        elif self.context.tokentype == LoginTokenType.VALIDATETEAMEMAIL:
-            self.validateTeamEmail()
-        elif self.context.tokentype == LoginTokenType.VALIDATEGPG:
-            self.validateGpg()
+        if (self.context.tokentype == LoginTokenType.VALIDATEEMAIL or
+            self.context.tokentype == LoginTokenType.VALIDATEGPG):
+            password = self.request.form.get("password")
+            if not self.validateRequesterPassword(password):
+                return
 
-    def validateTeamEmail(self):
-        """Set the new email address as the team's contact email address."""
+            if self.context.tokentype == LoginTokenType.VALIDATEEMAIL:
+                self.markEmailAddressAsValidated()
+            else:
+                self.validateGpg()
+        elif self.context.tokentype == LoginTokenType.VALIDATETEAMEMAIL:
+            self.setTeamContactAddress()
+
+    def setTeamContactAddress(self):
+        """Set the new email address as the team's contact email address.
+        
+        Make sure that the new email address is owned by the team, if it
+        already exists, set it as the team's contact address (removing any
+        previous contact address) and remove the logintoken used to validate
+        this email address.
+        """
         requester = self.context.requester
         email = self._ensureEmail(self.context.email)
         if email is not None:
@@ -161,18 +206,18 @@ class ValidateEmailView(object):
         logintokenset = getUtility(ILoginTokenSet)
         logintokenset.deleteByEmailAndRequester(self.context.email, requester)
 
-    def validatePersonEmail(self):
-        """Check the password and validate a person's email address."""
-        requester = self.context.requester
-        password = self.request.form.get("password")
-        encryptor = getUtility(IPasswordEncryptor)
-        if not encryptor.validate(password, requester.password):
-            self.errormessage = "Wrong password. Please check and try again."
-            return 
+    def markEmailAddressAsValidated(self):
+        """Mark the new email address as VALIDATED in the database.
 
+        If this is the first validated email of this person, it'll be marked
+        as the preferred one.
+        """
         email = self._ensureEmail(self.context.email)
+        requester = self.context.requester
         if email is not None:
             requester.validateAndEnsurePreferredEmail(email)
+            if self.request.form.get('logmein'):
+                self.logInPersonByEmail(email.email)
 
         # At this point, either this email address is validated or it can't be
         # validated for this user because it's owned by someone else in
@@ -182,39 +227,31 @@ class ValidateEmailView(object):
         logintokenset.deleteByEmailAndRequester(self.context.email, requester)
 
     def validateGpg(self):
-        """Check the password and validate a gpg key."""
-        requester = self.context.requester
-        password = self.request.form.get("password")
-        encryptor = getUtility(IPasswordEncryptor)
-        if not encryptor.validate(password, requester.password):
-            self.errormessage = "Wrong password. Please check and try again."
-            return
+        """Validate a gpg key."""
+        if self.request.form.get('logmein'):
+            self.logInPersonByEmail(self.context.requesteremail)
 
+        requester = self.context.requester
         fingerprint = self.context.fingerprint
+        assert fingerprint is not None
 
         gpgkeyset = getUtility(IGPGKeySet)
         logintokenset = getUtility(ILoginTokenSet)
-        # No fingerprint, is it plausible ??
-        if fingerprint == None:
-            self.errormessage = (
-                "Launchpad could not register this token because it has no "
-                "fingerprint information. Check you entered it correctly, "
-                "and try again.")
-            return
 
         # retrieve respective key info
         gpghandler = getUtility(IGPGHandler)
         result, key = gpghandler.retrieveKey(fingerprint)
 
+        person_url = canonical_url(requester)
         if not result:
             self.errormessage = (
-                "Launchpad could not import GPG key, the reason was: %s ."
-                "Check if you published it correctly in the global key ring "
-                "(using <kbd>gpg --send-keys KEY</kbd>) and that you add "
-                "entered the fingerprint correctly (as produced by <kbd>"
-                "gpg --fingerprint YOU</kdb>). Try later or <a href=\"/people"
-                "/%s/+editgpgkey\">cancel your request</a>."
-                % (key, requester.name))
+                'Launchpad could not import GPG key, the reason was: %s .'
+                'Check if you published it correctly in the global key ring '
+                '(using <kbd>gpg --send-keys KEY</kbd>) and that you add '
+                'entered the fingerprint correctly (as produced by <kbd>'
+                'gpg --fingerprint YOU</kdb>). Try later or '
+                '<a href="%s/+editgpgkey">cancel your request</a>.'
+                % (key, person_url))
             return        
 
         # Is it a revalidation ?
@@ -224,18 +261,17 @@ class ValidateEmailView(object):
             # if key is globally revoked skip import and remove token
             if key.revoked:
                 self.errormessage = (
-                    "The key %s cannot be revalidated, because it has been"
-                    "publicly revoked. You will need to generate a new key"
-                    "(using <kbd>gpg --genkey</kbd>) and repeat the previous "
-                    "process to <a href=\"/people/%s/+editgpgkey\">find and "
-                    "import</a> the new key."% (lpkey.displayname,
-                                                requester.name))
+                    'The key %s cannot be revalidated because it has been '
+                    'publicly revoked. You will need to generate a new key '
+                    '(using <kbd>gpg --genkey</kbd>) and repeat the previous '
+                    'process to <a href="%s/+editgpgkey">find and import</a> '
+                    'the new key.' % (lpkey.displayname, person_url))
             else:
                 gpgkeyset.activateGpgKey(lpkey.id)
                 self.infomessage = (
-                    "The key %s was successfully revalidated. <a href=\"/"
-                    "people/%s/+editgpgkey\">See more Information</a>"
-                    % (lpkey.displayname, requester.name))
+                    'The key %s was successfully revalidated. '
+                    '<a href="%s/+editgpgkey">See more Information</a>'
+                    % (lpkey.displayname, person_url))
                 self.formProcessed = True
 
             logintokenset.deleteByFingerprintAndRequester(fingerprint,
@@ -267,11 +303,11 @@ class ValidateEmailView(object):
             emails = ' '.join([email.email for email in guessed]) 
 
             self.infomessage += (
-                "<p>Some e-mail addresses were found in your key but are "
-                "not registered with Launchpad:<code>%s</code>. If you "
-                "want to use these addressess with Launchpad, you need to "
-                "<a href=\"/people/%s/+emails\">confirm them</a>.</p>"
-                % (emails, requester.name))
+                '<p>Some e-mail addresses were found in your key but are '
+                'not registered with Launchpad:<code>%s</code>. If you '
+                'want to use these addressess with Launchpad, you need to '
+                '<a href="%s/+emails\">confirm them</a>.</p>'
+                % (emails, person_url))
 
         if len(hijacked):
             # build email list
@@ -325,13 +361,17 @@ class ValidateEmailView(object):
         email = emailset.getByEmail(emailaddress)
         if email is not None:
             if email.person.id != requester.id:
+                dupe = email.person
+                # Yes, hardcoding an autogenerated field name is an evil 
+                # hack, but if it fails nothing will happen.
+                # -- Guilherme Salgado 2005-07-09
+                url = '/people/+requestmerge?field.dupeaccount=%s' % dupe.name
                 self.errormessage = (
                         'This email is already registered for another '
                         'Launchpad user account. This account can be a '
                         'duplicate of yours, created automatically, and '
                         'in this case you should be able to '
-                        '<a href="/people/+requestmerge">merge them</a> '
-                        'into a single one.')
+                        '<a href="%s">merge them</a> into a single one.' % url)
                 return None
 
             elif email.status in validated:
@@ -350,7 +390,7 @@ class ValidateEmailView(object):
         return email
         
 
-class NewAccountView(AddView):
+class NewAccountView(AddView, BaseLoginTokenView):
 
     def __init__(self, context, request):
         self.context = context
@@ -381,51 +421,31 @@ class NewAccountView(AddView):
         person.validateAndEnsurePreferredEmail(email)
         self._nextURL = canonical_url(person)
         self.context.destroySelf()
-
-        loginsource = getUtility(IPlacelessLoginSource)
-        principal = loginsource.getPrincipalByLogin(email.email)
-        if principal is not None and principal.validate(kw['password']):
-            logInPerson(self.request, principal, email.email)
+        self.logInPersonByEmail(email.email)
         return True
 
 
-class MergePeopleView(object):
+class MergePeopleView(BaseLoginTokenView):
 
     def __init__(self, context, request):
-        self.request = request
-        self.context = context
-        self.errormessage = ""
-        self.formProcessed = False
+        BaseLoginTokenView.__init__(self, context, request)
         self.mergeCompleted = False
         self.dupe = getUtility(IPersonSet).getByEmail(context.email)
 
     def processForm(self):
+        """Check if the password is correct and perform the merge."""
         if self.request.method != "POST":
             return
 
+        # Merge requests must have a valid user account (one with a preferred
+        # email) as requester.
+        assert self.context.requester.preferredemail is not None
         self.formProcessed = True
-        if self.validate():
-            self.doMerge()
+        if self.validateRequesterPassword(self.request.form.get("password")):
+            self._doMerge()
             self.context.destroySelf()
 
-    def successfullyProcessed(self):
-        return self.formProcessed and not self.errormessage
-
-    def validate(self):
-        """Verify if the user provided the correct password."""
-        # Merge requests must have a registered requester.
-        assert self.context.requester is not None
-        assert self.context.requesteremail is not None
-        requester = self.context.requester
-        password = self.request.form.get("password")
-        encryptor = getUtility(IPasswordEncryptor)
-        if not encryptor.validate(password, requester.password):
-            self.errormessage = "Wrong password. Please try again."
-            return False
-
-        return True
-
-    def doMerge(self):
+    def _doMerge(self):
         # The user proved that he has access to this email address of the
         # dupe account, so we can assign it to him.
         requester = self.context.requester
@@ -437,15 +457,18 @@ class MergePeopleView(object):
         # with this transaction will see this changes and thus they'll be
         # displayed on the page that calls this method.
         flush_database_updates()
-        
+         
+        if self.request.form.get('logmein'):
+            self.logInPersonByEmail(email.email)
+
         # Now we must check if the dupe account still have registered email
-        # addresses. If it haven't we can actually do the merge.
+        # addresses. If it hasn't we can actually do the merge.
         if getUtility(IEmailAddressSet).getByPerson(self.dupe):
             self.mergeCompleted = False
             return
 
         # Call Stuart's magic function which will reassign all of the dupe
         # account's stuff to the user account.
-        pset = getUtility(IPersonSet).merge(self.dupe, requester)
+        getUtility(IPersonSet).merge(self.dupe, requester)
         self.mergeCompleted = True
 

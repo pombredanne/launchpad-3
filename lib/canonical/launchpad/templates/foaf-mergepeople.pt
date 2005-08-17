@@ -23,17 +23,24 @@
       form bellow and click on <em>Submit</em>.</p>
 
       <form autocomplete="off" name="merge" method="POST">
-      <table>
-        <tr>
-          <td>Password:</td>
-          <td><input type="password" name="password" /></td>
-        </tr>
-        <tr>
-          <td colspan="2" align="right">
-            <input type="submit" value="Submit" />
-          </td>
-        </tr>
-      </table>
+        <div class="field">
+
+          <label>Password</label>
+          <br>
+          <div class="formHelp"> Type your Launchpad password </div>
+          <input type="password" size="30" name="password" />
+          <br>
+
+          <label>
+            <input type="checkbox" checked="checked" name="logmein" />
+            Log me in after resetting my password
+          </label><br />
+
+          <div class="formControls">
+            <input type="submit" name="SUBMIT_CHANGES" value="Submit" />
+          </div>
+
+        </div>
       </form>
     </div>
 

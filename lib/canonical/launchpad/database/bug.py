@@ -2,7 +2,10 @@
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
-__all__ = ['Bug', 'BugFactory', 'BugSet']
+__all__ = [
+    'Bug',
+    'BugFactory',
+    'BugSet']
 
 from sets import Set
 from email.Utils import make_msgid

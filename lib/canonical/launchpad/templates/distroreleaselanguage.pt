@@ -64,7 +64,7 @@
     </tbody>
   </table>
 
-  <div tal:replace="structure context/@@+portlet-status-legend" />
+  <div tal:replace="structure context/@@+rosetta-status-legend" />
 
 </div>
 

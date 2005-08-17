@@ -18,7 +18,7 @@ __all__ = [
     'IBugTaskSet',
     'IBugTasksReport',
     'BugTaskSearchParams',
-    ]
+    'UNRESOLVED_BUGTASK_STATUSES']
 
 from zope.component.interfaces import IView
 from zope.i18nmessageid import MessageIDFactory
@@ -33,6 +33,9 @@ from canonical.launchpad.interfaces.launchpad import IHasDateCreated
 from canonical.launchpad.interfaces.bugattachment import IBugAttachment
 
 _ = MessageIDFactory('launchpad')
+
+UNRESOLVED_BUGTASK_STATUSES = (
+    dbschema.BugTaskStatus.NEW, dbschema.BugTaskStatus.ACCEPTED)
 
 class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product
@@ -302,8 +305,9 @@ class BugTaskSearchParams:
     Details:
 
       user is an object that provides IPerson, and represents the
-      person performing the query (which is important to know for,
-      for example, privacy-aware results.)
+      person performing the query (which is important to know for, for
+      example, privacy-aware results.) If user is None, the search
+      will be filtered to only consider public bugs.
 
       product, distribution and distrorelease (IBugTargets) should /not/
       be supplied to BugTaskSearchParams; instead, IBugTarget's
@@ -361,30 +365,28 @@ class BugTaskSearchParams:
         self._has_context = False
 
     def setProduct(self, product):
-        """Sets the product to search on.
-
-        This should only be called by Product
-        """
+        """Set the upstream context on which to filter the search."""
         assert not self._has_context
         self.product = product
         self._has_context = True
 
     def setDistribution(self, distribution):
-        """Sets the distribution to search on
-
-        This should only be called by Distribution
-        """
+        """Set the distribution context on which to filter the search."""
         assert not self._has_context
         self.distribution = distribution
         self._has_context = True
 
     def setDistributionRelease(self, distrorelease):
-        """Sets the distribution release to search on
-
-        This should only be called by DistroRelease
-        """
+        """Set the distrorelease context on which to filter the search."""
         assert not self._has_context
         self.distrorelease = distrorelease
+        self._has_context = True
+
+    def setSourcePackage(self, sourcepackage):
+        """Set the sourcepackage context on which to filter the search."""
+        assert not self._has_context
+        self.distrorelease = sourcepackage.distrorelease
+        self.sourcepackagename = sourcepackage.sourcepackagename
         self._has_context = True
 
 

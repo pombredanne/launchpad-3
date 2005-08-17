@@ -63,8 +63,11 @@ def librarianTearDown(test):
 # Files that have special needs can construct their own suite
 special = {
 
-    # No setup or teardown at all, since it is demonstrating these features
+    # No setup or teardown at all, since it is demonstrating these features.
     'testing.txt': DocFileSuite('../doc/testing.txt'),
+
+    # And these tests want minimal environments too.
+    'enumcol.txt': DocFileSuite('../doc/enumcol.txt'),
     'poparser.txt': DocFileSuite('../doc/poparser.txt'),
 
     # POExport stuff is Zopeless and connects as a different database user.

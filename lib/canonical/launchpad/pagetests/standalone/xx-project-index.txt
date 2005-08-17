@@ -1,7 +1,7 @@
 Test that a product page for the firefox product in the mozilla project loads.
 
   >>> print http(r"""
-  ... GET /doap/projects/mozilla/firefox HTTP/1.1
+  ... GET /projects/mozilla/firefox HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

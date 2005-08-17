@@ -10,8 +10,8 @@ __all__ = [
     'IBugSet',
     'IBugDelta',
     'IBugAddForm',
-    'IBugTarget'
-    ]
+    'IBugTarget',
+    'BugDistroReleaseTargetDetails']
 
 from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
@@ -148,11 +148,33 @@ class IBugTarget(Interface):
     def searchTasks(search_params):
         """Search the IBugTasks reported on this entity.
 
+        :search_params: a BugTaskSearchParams object
+
         Return an iterable of matching results.
 
         Note: milestone is currently ignored for all IBugTargets
         except IProduct.
         """
+
+
+class BugDistroReleaseTargetDetails:
+    """The details of a bug targeted to a specific IDistroRelease.
+
+    The following attributes are provided:
+
+    :release: The IDistroRelease.
+    :istargeted: Is there a fix targeted to this release?
+    :sourcepackage: The sourcepackage to which the fix would be targeted.
+    :assignee: An IPerson, or None if no assignee.
+    :status: A BugTaskStatus dbschema item, or None, if release is not targeted.
+    """
+    def __init__(self, release, istargeted=False, sourcepackage=None,
+                 assignee=None, status=None):
+        self.release = release
+        self.istargeted = istargeted
+        self.sourcepackage = sourcepackage
+        self.assignee = assignee
+        self.status = status
 
 
 class IBugDelta(Interface):
