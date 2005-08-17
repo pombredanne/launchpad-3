@@ -3,6 +3,10 @@
   <h4>related projects:</h4>
 
   <div class="portletBody portletContent">
+
+    You can link a registered bug tracker with a 
+    <a href="/projects/">registered project</a> in
+    Launchpad:
 	
     <ul>
       <li tal:repeat="project context/projects"
