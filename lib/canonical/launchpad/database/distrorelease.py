@@ -150,12 +150,13 @@ class DistroRelease(SQLBase):
     def potemplates(self):
         result = POTemplate.selectBy(distroreleaseID=self.id)
         result = list(result)
-        result.sort(key=lambda x: x.potemplatename.name)
-        return result
+        return sorted(result, key=lambda x: x.potemplatename.name)
 
     @property
-    def potemplatecount(self):
-        return len(self.potemplates)
+    def currentpotemplates(self):
+        result = POTemplate.selectBy(distroreleaseID=self.id, iscurrent=True)
+        result = list(result)
+        return sorted(result, key=lambda x: x.potemplatename.name)
 
     @property
     def fullreleasename(self):

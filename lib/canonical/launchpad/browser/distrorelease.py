@@ -64,7 +64,7 @@ class DistroReleaseView:
 
     def templateviews(self):
         return [POTemplateView(template, self.request)
-                for template in self.context.potemplates]
+                for template in self.context.currentpotemplates]
 
     def distroreleaselanguages(self):
         """Yields a DistroReleaseLanguage object for each language this

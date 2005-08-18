@@ -29,10 +29,6 @@ def fix_submission(submission, translation):
             postfix = msgid.msgid[-length_postfix:]
         newvalue = '%s%s%s' % (
                 prefix, striped_translation, postfix)
-        try:
-            newtranslation = POTranslation.byTranslation(newvalue)
-        except SQLObjectNotFound:
-            newtranslation = None
     elif len(striped_translation) != len(translation.translation):
         # The msgid does not have any whitespace, we need to remove
         # the extra ones added to this translation.
@@ -40,6 +36,13 @@ def fix_submission(submission, translation):
 
     if newvalue == translation.translation:
         return
+
+    # If we already have the fixed value in our database, we use it instead of
+    # change the old one.
+    try:
+        newtranslation = POTranslation.byTranslation(newvalue)
+    except SQLObjectNotFound:
+        newtranslation = None
 
     if newtranslation is not None:
         submission.potranslation = newtranslation

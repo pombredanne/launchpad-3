@@ -145,7 +145,7 @@ class ProductSeriesView(object):
         # IP address and launchpad preferences.
         self.languages = request_languages(self.request)
         # Whether there is more than one PO template.
-        self.has_multiple_templates = len(self.context.potemplates) > 1
+        self.has_multiple_templates = len(self.context.currentpotemplates) > 1
 
         # let's find out what source package is associated with this
         # productseries in the current release of ubuntu
@@ -155,7 +155,7 @@ class ProductSeriesView(object):
 
     def templateviews(self):
         return [POTemplateView(template, self.request)
-                for template in self.context.potemplates]
+                for template in self.context.currentpotemplates]
 
     def setUpPackaging(self):
         """Ensure that the View class correctly reflects the packaging of
