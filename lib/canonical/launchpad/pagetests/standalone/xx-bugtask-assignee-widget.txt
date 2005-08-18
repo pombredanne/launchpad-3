@@ -1,0 +1,281 @@
+The bug task edit page now features a new and improved assignee
+widget, which makes it easier to "take" a task.
+
+  >>> print http(r"""
+  ... GET /distros/debian/+bugs/1/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Cookie: launchpad=cB8B19HiXp7whphyHXL-4zHCb5QJy.chSata4WiN2w3eRyOpyVk63w
+  ... Referer: http://localhost:9000/malone/bugs/1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...Assigned to:...
+  ...nobody...
+  ...me...
+
+So, taking the task is now as simple as selecting the "me" radio
+button:
+
+  >>> print http(r"""
+  ... POST /distros/debian/+bugs/1/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1999
+  ... Content-Type: multipart/form-data; boundary=---------------------------19759086281403130373932339922
+  ... Cookie: launchpad=cB8B19HiXp7whphyHXL-4zHCb5QJy.chSata4WiN2w3eRyOpyVk63w
+  ... Referer: http://localhost:9000/distros/debian/+bugs/1/+edit
+  ... 
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.status"
+  ... 
+  ... Accepted
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.status-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.severity"
+  ... 
+  ... Minor
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.severity-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.priority"
+  ... 
+  ... High
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.milestone"
+  ... 
+  ... 
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.milestone-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... 
+  ... mozilla-firefox
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.assignee.option"
+  ... 
+  ... assign_to_me
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.assignee"
+  ... 
+  ... 
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.bugwatch"
+  ... 
+  ... 
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.bugwatch-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.statusexplanation"
+  ... 
+  ... 
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Save Changes
+  ... -----------------------------19759086281403130373932339922--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+
+In this example, we were logged in as Foo Bar, so the task is now
+automagically assigned to Foo Bar.
+
+  >>> print http(r"""
+  ... GET /malone/bugs/1 HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Cookie: launchpad=cB8B19HiXp7whphyHXL-4zHCb5QJy.chSata4WiN2w3eRyOpyVk63w
+  ... Referer: http://localhost:9000/distros/debian/+bugs/1/+edit
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...debian mozilla-firefox...Foo Bar...
+  ...
+
+But, you can also assign the task to another person, of course:
+
+  >>> print http(r"""
+  ... POST /distros/debian/+bugs/1/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1999
+  ... Content-Type: multipart/form-data; boundary=---------------------------19759086281403130373932339922
+  ... Cookie: launchpad=cB8B19HiXp7whphyHXL-4zHCb5QJy.chSata4WiN2w3eRyOpyVk63w
+  ... Referer: http://localhost:9000/distros/debian/+bugs/1/+edit
+  ... 
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.status"
+  ... 
+  ... Accepted
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.status-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.severity"
+  ... 
+  ... Minor
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.severity-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.priority"
+  ... 
+  ... High
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.milestone"
+  ... 
+  ... 
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.milestone-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... 
+  ... mozilla-firefox
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.assignee.option"
+  ... 
+  ... assign_to
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.assignee"
+  ... 
+  ... name12
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.bugwatch"
+  ... 
+  ... 
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.bugwatch-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.statusexplanation"
+  ... 
+  ... 
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Save Changes
+  ... -----------------------------19759086281403130373932339922--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+
+In this case, we assigned the task to Sample Person:
+
+  >>> print http(r"""
+  ... GET /malone/bugs/1 HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Cookie: launchpad=cB8B19HiXp7whphyHXL-4zHCb5QJy.chSata4WiN2w3eRyOpyVk63w
+  ... Referer: http://localhost:9000/distros/debian/+bugs/1/+edit
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...debian mozilla-firefox...Sample Person...
+  ...
+
+Lastly, the widget also allows you to simply assign the task to nobody
+(to, "give up" the task, you might say)
+
+  >>> print http(r"""
+  ... POST /distros/debian/+bugs/1/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1999
+  ... Content-Type: multipart/form-data; boundary=---------------------------19759086281403130373932339922
+  ... Cookie: launchpad=cB8B19HiXp7whphyHXL-4zHCb5QJy.chSata4WiN2w3eRyOpyVk63w
+  ... Referer: http://localhost:9000/distros/debian/+bugs/1/+edit
+  ... 
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.status"
+  ... 
+  ... Accepted
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.status-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.severity"
+  ... 
+  ... Minor
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.severity-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.priority"
+  ... 
+  ... High
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.milestone"
+  ... 
+  ... 
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.milestone-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... 
+  ... mozilla-firefox
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.assignee.option"
+  ... 
+  ... assign_to_nobody
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.assignee"
+  ... 
+  ... 
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.bugwatch"
+  ... 
+  ... 
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.bugwatch-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="field.statusexplanation"
+  ... 
+  ... 
+  ... -----------------------------19759086281403130373932339922
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Save Changes
+  ... -----------------------------19759086281403130373932339922--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+
+And now the bug task is unassigned:
+
+  >>> print http(r"""
+  ... GET /malone/bugs/1 HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Cookie: launchpad=cB8B19HiXp7whphyHXL-4zHCb5QJy.chSata4WiN2w3eRyOpyVk63w
+  ... Referer: http://localhost:9000/distros/debian/+bugs/1/+edit
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...debian mozilla-firefox...
+  ...
