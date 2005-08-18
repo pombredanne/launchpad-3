@@ -11,16 +11,19 @@ import tarfile
 import tempfile
 import time
 from StringIO import StringIO
+from shutil import copyfileobj
 
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import flush_database_updates
+from canonical.database.sqlbase import (flush_database_updates, sqlvalues,
+    cursor)
 from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
-from canonical.launchpad.components.poexport import DistroReleasePOExporter, \
-    DistroRelaseTarballPOFileOutput
+from canonical.launchpad.components.poexport import (DistroReleasePOExporter,
+    DistroReleaseTarballPOFileOutput)
 from canonical.launchpad.interfaces import IDistributionSet, IVPOExportSet
 from canonical.launchpad.mail import simple_sendmail
+from canonical.launchpad import helpers
 
 def get_distribution(name):
     """Return the distribution with the given name."""
@@ -32,7 +35,30 @@ def get_release(distribution_name, release_name):
     """
     return get_distribution(distribution_name).getRelease(release_name)
 
-def export(distribution_name, release_name, update, logger):
+def iter_sourcepackage_translationdomain_mapping(release):
+    """Return an iterator of tuples with sourcepackagename - translationdomain
+    mapping.
+
+    With the output of this method we can know the translationdomains that
+    a sourcepackage has.
+    """
+    cur = cursor()
+    cur.execute("""
+        SELECT DISTINCT SourcePackageName.name, POExport.translationdomain
+        FROM POExport, SourcePackageName
+        WHERE
+            SourcePackageName.id = POExport.sourcepackagename AND
+            POExport.languagepack = TRUE AND
+            POExport.distrorelease = %s
+        ORDER BY SourcePackageName.name, POExport.translationdomain
+        """ % sqlvalues(release.id))
+
+    for (sourcepackagename, translationdomain,) in cur.fetchall():
+        yield (sourcepackagename, translationdomain)
+
+
+
+def export(distribution_name, release_name, component, update, logger):
     """Export a distribution's translations into a tarball.
 
     Returns a pair containing a filehandle from which the exported tarball can
@@ -54,13 +80,16 @@ def export(distribution_name, release_name, update, logger):
     else:
         date = release.datereleased
 
-    pofiles = export_set.get_distrorelease_pofiles(release, date)
-    pofile_count = len(pofiles)
+    pofiles = export_set.get_distrorelease_pofiles(release, date, component,
+        languagepack=True)
+    # pofile_count = len(pofiles)
+    pofile_count = export_set.get_distrorelease_pofiles_count(
+        release, date, component, languagepack=True)
     logger.info("Number of PO files to export: %d" % pofile_count)
 
     filehandle = tempfile.TemporaryFile()
-    archive = tarfile.open('', 'w:gz', filehandle)
-    pofile_output = DistroRelaseTarballPOFileOutput(release, archive)
+    archive = helpers.RosettaWriteTarFile(filehandle)
+    pofile_output = DistroReleaseTarballPOFileOutput(release, archive)
 
     for index, pofile in enumerate(pofiles):
         logger.debug("Exporting PO file %d (%d/%d)" %
@@ -82,10 +111,14 @@ def export(distribution_name, release_name, update, logger):
 
     logger.debug("Adding timestamp file")
     contents = datetime.datetime.utcnow().strftime('%Y%m%d\n')
-    fileinfo = tarfile.TarInfo('rosetta-%s/timestamp.txt' % release.name)
-    fileinfo.size = len(contents)
-    fileinfo.mtime = int(time.time())
-    archive.addfile(fileinfo, StringIO(contents))
+    archive.add_file('rosetta-%s/timestamp.txt' % release.name, contents)
+
+    logger.debug("Adding mapping file")
+    mapping_text = ''
+    mapping = iter_sourcepackage_translationdomain_mapping(release)
+    for sourcepackagename, translationdomain in mapping:
+        mapping_text += "%s %s\n" % (sourcepackagename, translationdomain)
+    archive.add_file('rosetta-%s/mapping.txt' % release.name, mapping_text)
 
     logger.info("Done.")
 
@@ -95,18 +128,6 @@ def export(distribution_name, release_name, update, logger):
     archive.close()
     size = filehandle.tell()
     filehandle.seek(0)
-
-    return filehandle, size
-
-def safe_export(distribution_name, release_name, update, logger):
-    """As export(), except that errors are logged."""
-
-    try:
-        filehandle, size = export(
-            distribution_name, release_name, update, logger)
-    except:
-        logger.exception('Uncaught exception while exporting')
-        raise
 
     return filehandle, size
 
@@ -122,20 +143,6 @@ def upload(filename, filehandle, size):
         size=size,
         file=filehandle,
         contentType='application/octet-stream')
-
-    return file_alias
-
-def safe_upload(filename, filehandle, size, logger):
-    """As upload(), except that errors are logged."""
-
-    try:
-        file_alias = upload(filename, filehandle, size)
-    except UploadFailed, e:
-        logger.error('Uploading to the Librarian failed: %s', e)
-        raise
-    except:
-        logger.exception('Uncaught exception while uploading to the Librarian')
-        raise
 
     return file_alias
 
@@ -156,8 +163,13 @@ def compose_mail(sender, recipients, headers, body):
     return header + '\n\n' + body
 
 def send_upload_notification(recipients, distribution_name, release_name,
-        file_alias):
+        component, file_alias):
     """Send a notification of an upload to the Librarian."""
+
+    if component is None:
+        components = 'All available'
+    else:
+        components = component
 
     simple_sendmail(
         from_addr='rosetta@canonical.com',
@@ -166,35 +178,22 @@ def send_upload_notification(recipients, distribution_name, release_name,
         body=
             'Distribution: %s\n'
             'Release: %s\n'
+            'Component: %s\n'
             'Librarian file alias: %s\n'
-            % (distribution_name, release_name, file_alias))
+            % (distribution_name, release_name, components, file_alias))
 
-def copy(input, output):
-    """Copy data from one filehandle to another until end of file is
-    encountered.
-    """
-
-    while True:
-        data = input.read(16384)
-
-        if data:
-            output.write(data)
-        else:
-            output.close()
-            break
-
-def export_language_pack(distribution_name, release_name, update, output_file,
-        email_addresses, logger):
-    # Bare except statements are used in order to prevent premature
-    # termination of the script.
+def export_language_pack(distribution_name, release_name, component, update,
+        output_file, email_addresses, logger):
 
     # Export the translations to a tarball.
 
     try:
-        filehandle, size = safe_export(
-            distribution_name, release_name, update, logger)
+        filehandle, size = export(
+            distribution_name, release_name, component, update, logger)
     except:
-        logger.error("Export failed.")
+        # Bare except statements are used in order to prevent premature
+        # termination of the script.
+        logger.exception('Uncaught exception while exporting')
         return False
 
     if output_file is not None:
@@ -205,17 +204,26 @@ def export_language_pack(distribution_name, release_name, update, output_file,
         else:
             output_filehandle = file(output_file, 'wb')
 
-        copy(filehandle, output_filehandle)
+        copyfileobj(filehandle, output_filehandle)
     else:
         # Upload the tarball to the librarian.
 
-        filename = ('%s-%s-translations.tar.gz' %
-            (distribution_name, release_name))
+        if component is None:
+            filename = '%s-%s-translations.tar.gz' % (
+                distribution_name, release_name)
+        else:
+            filename = '%s-%s-%s-translations.tar.gz' % (
+                distribution_name, release_name, component)
 
         try:
-            file_alias = safe_upload(filename, filehandle, size, logger)
+            file_alias = upload(filename, filehandle, size)
+        except UploadFailed, e:
+            logger.error('Uploading to the Librarian failed: %s', e)
+            return False
         except:
-            logger.error("Librarian upload failed.")
+            # Bare except statements are used in order to prevent premature
+            # termination of the script.
+            logger.exception('Uncaught exception while uploading to the Librarian')
             return False
 
         logger.info('Upload complete, file alias: %d' % file_alias)
@@ -225,9 +233,11 @@ def export_language_pack(distribution_name, release_name, update, output_file,
 
             try:
                 send_upload_notification(email_addresses,
-                    distribution_name, release_name, file_alias)
+                    distribution_name, release_name, component, file_alias)
             except:
-                logger.error("Sending notifications failed.")
+                # Bare except statements are used in order to prevent
+                # premature termination of the script.
+                logger.exception("Sending notifications failed.")
                 return False
 
     # Return a success code.

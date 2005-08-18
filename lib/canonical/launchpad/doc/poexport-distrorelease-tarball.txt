@@ -32,6 +32,11 @@ Check the tarball has the right members.
   ...
   rosetta-hoary/timestamp.txt
 
+Check the directory permissions (493 == 0775)
+
+  >>> directory = tarfile.getmember('rosetta-hoary/')
+  >>> directory.mode == 0755
+  True
 
 Check the PO file looks like what we expected.
 
