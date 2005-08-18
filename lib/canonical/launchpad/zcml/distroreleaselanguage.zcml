@@ -30,9 +30,6 @@
       lp:url="/distros/ubuntu/hoary/+lang/$DistroReleaseLanguage.language/"
       />
     <browser:page
-      name="+barchart"
-      template="../templates/pofile-barchart.pt" />
-    <browser:page
       name="+portlet-about"
       template="../templates/distroreleaselanguage-portlet-about.pt" />
     <browser:page

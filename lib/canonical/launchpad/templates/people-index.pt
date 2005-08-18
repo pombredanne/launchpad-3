@@ -108,7 +108,7 @@
             <table class="data">
               <thead class="results">
                 <tr>
-                  <td>
+                  <td colspan="3">
                     <div style="width: 50%; float: left;">
                       Search results
                     </div>
@@ -138,6 +138,8 @@
                   <td><a tal:content="person/browsername"
             	    tal:attributes="href person/name"/>
                   </td>
+                  <td tal:content="person/name">foobar</td>
+                  <td tal:content="person/karma">34</td>
                 </tr>    
               </tbody>
             </table>
