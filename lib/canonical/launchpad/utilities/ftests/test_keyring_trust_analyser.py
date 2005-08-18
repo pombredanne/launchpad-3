@@ -36,11 +36,12 @@ class TestImportKeyRing(FunctionalTestCase):
             pubkey = keys_for_tests.test_pubkey_from_email(email)
             self.gpg_handler.importKey(pubkey)
         self.assertNotEqual([], list(self.gpg_handler.local_keys()))
-        iterator = self.gpg_handler.local_keys()
-        self.assertEqual(iterator.next().fingerprint,
-                         "A419AE861E88BC9E04B9C26FBA2B9389DFD20543")
-        self.assertEqual(iterator.next().fingerprint, 
-                         "340CA3BB270E2716C9EE0B768E7EB7086C64A8C5")
+        fingerprints = set(key.fingerprint
+                           for key in self.gpg_handler.local_keys())
+        self.assertTrue("340CA3BB270E2716C9EE0B768E7EB7086C64A8C5"
+                        in fingerprints)
+        self.assertTrue("A419AE861E88BC9E04B9C26FBA2B9389DFD20543"
+                        in fingerprints)
 
     def testTestkeyrings(self):
         """Do we have the expected test keyring files"""
@@ -53,11 +54,12 @@ class TestImportKeyRing(FunctionalTestCase):
             keys = self.gpg_handler.importKeyringFile(ring)
             
         self.assertNotEqual([], list(self.gpg_handler.local_keys()))
-        iterator = iter(keys)
-        self.assertEqual (iterator.next().fingerprint, 
-                          "340CA3BB270E2716C9EE0B768E7EB7086C64A8C5")
-        self.assertEqual (iterator.next().fingerprint,
-                          "A419AE861E88BC9E04B9C26FBA2B9389DFD20543")
+        fingerprints = set(key.fingerprint
+                           for key in self.gpg_handler.local_keys())
+        self.assertTrue("340CA3BB270E2716C9EE0B768E7EB7086C64A8C5"
+                        in fingerprints)
+        self.assertTrue("A419AE861E88BC9E04B9C26FBA2B9389DFD20543"
+                        in fingerprints)
 
     def testSetOwnertrust(self):
         """Import a key and set the ownertrust."""

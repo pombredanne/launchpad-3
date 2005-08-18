@@ -353,23 +353,19 @@ class PymeKey:
         try:
             key = c.get_key(fingerprint, 0)
         except pyme.errors.GPGMEError:
-            self.fingerprint = None
-            return
-        
-        if valid_fingerprint(key.subkeys.fpr):
-            self.fingerprint = key.subkeys.fpr
-        else:
+            key = None
+
+        if not (key and valid_fingerprint(key.subkeys.fpr)):
             self.fingerprint = None
             return
 
+        self.fingerprint = key.subkeys.fpr
+        self.keyid = key.subkeys.fpr[-8:]
         self.algorithm = GPGKeyAlgorithm.items[key.subkeys.pubkey_algo].title
         self.revoked = key.subkeys.revoked
         self.keysize = key.subkeys.length
-        
-        if fingerprint is not None and valid_keyid(key.subkeys.fpr[-8:]):
-            self.keyid = key.subkeys.fpr[-8:]
-        else:
-            self.keyid = None
+        self._owner_trust = key.owner_trust
+
         # copy the UIDs 
         self.uids = []
         uid = key.uids
@@ -386,21 +382,27 @@ class PymeKey:
         context = pyme.core.Context()
         return context.get_key(fingerprint.encode('ascii'), 0)
 
-    def get_owner_trust(self): return self._gpg_key().owner_trust
+    def owner_trust(self):
+        """The owner trust value for the key"""
+        return self._owner_trust
         
     def set_owner_trust(self, value): 
         """Set the ownertrust on the actual gpg key"""
-        if value not in (validity.UNKNOWN, validity.UNDEFINED, validity.NEVER,
-                         validity.MARGINAL, validity.FULL, validity.ULTIMATE):
+        if value not in (validity.UNDEFINED, validity.NEVER,
+                         validity.MARGINAL, validity.FULL,
+                         validity.ULTIMATE):
             raise ValueError("invalid owner trust level")
-        self._gpg_key().owner_trust = value
-        
-    def del_owner_trust(self): pass
+        # edit the owner trust value on the key
+        context = pyme.core.Context()
+        key = context.get_key(self.fingerprint.encode('ascii'), False)
+        context.op_edit_trust(key, value)
+        # set the cached copy of owner_trust
+        self._owner_trust = value
     
-    owner_trust = property(get_owner_trust, set_owner_trust, del_owner_trust, 
-        "The keys ownertrust")
+    owner_trust = property(owner_trust, set_owner_trust)
+    del set_owner_trust
 
     @property
     def displayname(self):
         return '%s%s/%s' % (self.keysize, self.algorithm, self.keyid)
-    
+
