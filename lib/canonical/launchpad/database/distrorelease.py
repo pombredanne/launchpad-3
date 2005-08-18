@@ -33,7 +33,8 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.distroreleaselanguage import \
     DistroReleaseLanguage, DummyDistroReleaseLanguage
 from canonical.launchpad.database.sourcepackage import SourcePackage
-from canonical.launchpad.database.sourcepackagename import SourcePackageNameSet
+from canonical.launchpad.database.sourcepackagename import (
+    SourcePackageName, SourcePackageNameSet)
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.binarypackage import BinaryPackage
 from canonical.launchpad.database.bugtask import BugTaskSet
@@ -84,6 +85,18 @@ class DistroRelease(SQLBase):
     def distroreleaselanguages(self):
         result = DistroReleaseLanguage.selectBy(distroreleaseID=self.id)
         return sorted(result, key=lambda a: a.language.englishname)
+
+    @property
+    def translatable_sourcepackages(self):
+        """See IDistroRelease."""
+        result = SourcePackageName.select("""
+            POTemplate.sourcepackagename = SourcePackageName.id AND
+            POTemplate.distrorelease = %s
+            """ % sqlvalues(self.id),
+            clauseTables=['POTemplate'],
+            orderBy=['name'])
+        return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
+            spn in result]
 
     @property
     def previous_releases(self):

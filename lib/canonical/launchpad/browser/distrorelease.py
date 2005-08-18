@@ -91,6 +91,15 @@ class DistroReleaseView:
 
         return drlangs
 
+    def unlinked_translatables(self):
+        """Return a list of sourcepackage that don't have a link to a product.
+        """
+        result = []
+        for sp in self.context.translatable_sourcepackages:
+            if sp.productseries is None:
+                result.append(sp)
+        return result
+
     def redirectToDistroFileBug(self):
         """Redirect to the distribution's filebug page.
 
