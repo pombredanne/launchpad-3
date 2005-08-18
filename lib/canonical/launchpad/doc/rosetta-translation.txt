@@ -186,9 +186,10 @@ to see a non-editor published submission.
     ...
     AssertionError: published translations are ALWAYS from an editor
 
-Now let's try again, this time through the web:
+Now let's try again, this time we are not using a public API, but we need it
+to test the code more easily:
 
-    >>> noneditor_submission = pomsgset.makeSubmission(
+    >>> noneditor_submission = pomsgset._makeSubmission(
     ...    Pn, u'bong', 0, published=False)
 
 This submission should come from the new non-editor person:

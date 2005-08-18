@@ -20,10 +20,7 @@ from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 class BugView:
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
+    """The view for the main bug page"""
     def getCCs(self):
         return [s for s in self.context.subscriptions
                 if s.subscription==dbschema.BugSubscription.CC]
@@ -43,11 +40,7 @@ class BugSetView:
     Essentially, this exists only to allow forms to post IDs here and be
     redirected to the right place.
     """
-    def __init__(self, context, request):
-        self.request = request
-        self.context = context
-
-    def __call__(self, *args, **kwargs):
+    def redirectToBug(self):
         bug_id = self.request.form.get("id")
         if bug_id:
             return self.request.response.redirect(bug_id)

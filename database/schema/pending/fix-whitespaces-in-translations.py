@@ -4,7 +4,7 @@ from psycopg import ProgrammingError
 from sqlobject import SQLObjectNotFound
 
 from canonical.lp import initZopeless
-from canonical.database.sqlbase import flush_database_updates
+from canonical.database.sqlbase import cursor
 from canonical.launchpad.database import (POTranslation, POSubmission,
     POSelection)
 
@@ -49,8 +49,14 @@ def fix_submission(submission, translation):
 
 def main():
     ztm = initZopeless()
-    translations = POTranslation.select()
-    for translation in translations:
+    # We need to use raw queries so every commit will flush the changes done
+    # to POTranslation and don't get problems related with excess memory
+    # usage.
+    c = cursor()
+    c.execute("SELECT POTranslation.id FROM POTranslation")
+    ids = [id for (id,) in c.fetchall()]
+    for id in ids:
+        translation = POTranslation.get(id)
         submissions = POSubmission.selectBy(potranslationID=translation.id)
         previous_msgid = None
         for submission in submissions:
@@ -75,10 +81,7 @@ def main():
                 break
 
             fix_submission(submission, translation)
-
-        # Flush database updates so that we save a bit of memory
-        flush_database_updates()
-        ztm.commit()
+            ztm.commit()
 
     # Now, it's time to remove all empty translations
     empty_translation = POTranslation.byTranslation('')

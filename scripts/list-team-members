@@ -1,0 +1,43 @@
+#!/usr/bin/env python
+
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""list all team members: name, preferred email address. Usage:
+
+  ./list-team-members <teamname>
+"""
+
+__metaclass__ = type
+
+import sys
+
+# zope bits
+from zope.component import getUtility
+
+# canonical launchpad modules
+from canonical.lp import initZopeless
+from canonical.launchpad.scripts import execute_zcml_for_scripts
+    
+from canonical.launchpad.interfaces import IPersonSet
+
+def main(args):
+    execute_zcml_for_scripts()
+    ztm = initZopeless()
+    people = getUtility(IPersonSet)
+    teamname = sys.argv[1]
+    memberset = people.getByName(teamname)
+    if memberset == None:
+        print 'No such team:', teamname
+        return 1
+    for member in memberset.allmembers:
+        prefmail = member.preferredemail
+        if prefmail is not None:
+            email = prefmail.email
+        else:
+            email = '--none--'
+        print '%s, %s' % (member.name, email)
+    return 0
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
+

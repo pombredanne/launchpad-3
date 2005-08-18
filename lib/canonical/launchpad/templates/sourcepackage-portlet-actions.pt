@@ -9,6 +9,9 @@
           <a href=".">Overview</a>
         </li>
         <li class="info">
+          <a href="+bugs">View Package Bugs</a>
+        </li>
+        <li class="info">
           <a href="+hctstatus">View HCT Status</a>
         </li>
         <li class="info">

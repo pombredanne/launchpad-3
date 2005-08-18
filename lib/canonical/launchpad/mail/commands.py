@@ -11,8 +11,9 @@ from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.pathlookup import get_object
 from canonical.launchpad.pathlookup.exceptions import PathStepNotFoundError
 from canonical.launchpad.interfaces import (
-        IProduct, IDistribution, IPersonSet, ISourcePackage, IBugEmailCommand,
-        IBugEditEmailCommand, IBugSet, ILaunchBag, IBugTaskSet)
+        IProduct, IDistribution, IDistroRelease, IPersonSet,
+        ISourcePackage, IBugEmailCommand, IBugEditEmailCommand, IBugSet,
+        ILaunchBag, IBugTaskSet, BugTaskSearchParams, IBugTarget)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
@@ -214,35 +215,45 @@ class AffectsEmailCommand(EditEmailCommand):
                 "'%s' couldn't be found in command 'affects %s'" % (
                     error.step, path))
 
-        bugtask_params = {}
-        if IProduct.providedBy(obj):
-            bugtask_params['product'] = obj
-        elif IDistribution.providedBy(obj):
-            bugtask_params['distribution'] = obj
-        elif ISourcePackage.providedBy(obj):
-            bugtask_params['sourcepackagename'] = obj.sourcepackagename
-            bugtask_params['distribution'] = obj.distribution
+        user = getUtility(ILaunchBag).user
 
-        bugtaskset = getUtility(IBugTaskSet)
-        bug_tasks = bugtaskset.search(
-                bug=bug,
-                distribution=bugtask_params.get('distribution'),
-                distrorelease=bugtask_params.get('distrorelease'),
-                product=bugtask_params.get('product'))
-        bug_tasks = list(bug_tasks)
+        if ISourcePackage.providedBy(obj):
+            search_params = BugTaskSearchParams(bug=bug, user=user,
+                                sourcepackagename=obj.sourcepackagename)
+            context = obj.distribution
+        else:
+            search_params = BugTaskSearchParams(bug=bug, user=user)
+            context = obj
+
+        assert IBugTarget.providedBy(context), context
+        # XXX do we really need the list()?
+        bug_tasks = list(context.searchTasks(search_params))
+
         if len(bug_tasks) > 1:
             # XXX: This shouldn't happen
             raise ValueError('Found more than one bug task.')
         if len(bug_tasks) == 0:
-            bugtask = bugtaskset.createTask(
-                bug, getUtility(ILaunchBag).user, **bugtask_params)
+            # XXX kiko: we could fix this by making createTask be a method on
+            # IBugTarget, but I'm not going to do this now. Bug 1690
+            if IProduct.providedBy(obj):
+                args = {'product': obj}
+            elif IDistribution.providedBy(obj):
+                args = {'distribution': obj}
+            elif IDistroRelease.providedBy(obj):
+                args = {'distrorelease': obj}
+            elif ISourcePackage.providedBy(obj):
+                args = {'distribution': obj.distribution,
+                        'sourcepackagename': obj.sourcepackagename}
+            else:
+                raise AssertionError
+            bugtaskset = getUtility(IBugTaskSet)
+            bugtask = bugtaskset.createTask(bug, user, **args)
             event = SQLObjectCreatedEvent(bugtask)
         else:
             bugtask = bug_tasks[0]
             event = None
 
         return bugtask, event
-
 
 
 class AssigneeEmailCommand(EmailCommand):

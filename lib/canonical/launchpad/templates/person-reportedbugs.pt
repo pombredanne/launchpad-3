@@ -15,42 +15,51 @@
 </metal:rightportlets>
 
 
-  <div metal:fill-slot="main">
+  <div metal:fill-slot="main" 
+       tal:define="reportedTasks view/reportedBugTasks;
+                   reportedTasksCount reportedTasks/count">
 
-   <h1>Bugs Reported</h1>
+    <h1>Reported Bugs</h1>
 
-    <p tal:condition="not: context/reportedbugs">No bugs have been reported by <span
-    tal:replace="context/browsername" />. You can use the Launchpad to
-    report a bug on any product or distribution package.</p>
+    <p tal:condition="not: reportedTasksCount">No bugs have been 
+      reported by <span tal:replace="context/browsername" />.
+    </p>
 
-    <table tal:condition="context/reportedbugs"
-           class="listing lpListing rowNavigation" width="90%">
-      <tr>
-        <th>#</th>
-        <th>title</th>
-        <th>upstream / package</th>
-        <th>status</th>
-        <th>priority</th>
-        <th>severity</th>
-      </tr>
+    <div tal:condition="reportedTasksCount">
+      <p>These are the most recent bugs reported by 
+        <span tal:replace="context/browsername" />.
+      </p>
 
-      <tr tal:repeat="bugtask context/reportedbugs" class="rowLinkified">
-        <tal:block tal:define="url string:/malone/bugs/${bugtask/bug/id}">
-        <td><a tal:attributes="href url"><span tal:replace="bugtask/bug/id" /></a></td>
-        <td tal:attributes="title bugtask/bug/summary">
-          <a tal:attributes="href url"><span tal:replace="bugtask/bug/title" /></a></td>
-        <td><a tal:attributes="href url" 
-               tal:content="bugtask/product/displayname|default">-</a></td>
-        <td><a tal:attributes="href url" 
-               tal:content="bugtask/status/title">status</a></td>
-        <td><a tal:attributes="href url"
-               tal:content="bugtask/priority/title|default">-</a></td>
-        <td><a tal:attributes="href url"
-               tal:content="bugtask/severity/title|default">-</a></td>
-        </tal:block>
-      </tr>
-    </table>
+      <table class="listing lpListing rowNavigation" width="90%">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>title</th>
+            <th>upstream / package</th>
+            <th>status</th>
+            <th>priority</th>
+            <th>severity</th>
+          </tr>
+        </thead>
 
+        <tr tal:repeat="bugtask reportedTasks" class="rowLinkified">
+          <tal:block tal:define="url string:/malone/bugs/${bugtask/bug/id}">
+          <td><a tal:attributes="href url"><span tal:replace="bugtask/bug/id" /></a></td>
+          <td tal:attributes="title bugtask/bug/summary">
+            <a tal:attributes="href url"><span tal:replace="bugtask/bug/title" /></a></td>
+          <td><a tal:attributes="href url" 
+                 tal:content="bugtask/product/displayname|default">-</a></td>
+          <td><a tal:attributes="href url" 
+                 tal:content="bugtask/status/title">status</a></td>
+          <td><a tal:attributes="href url"
+                 tal:content="bugtask/priority/title|default">-</a></td>
+          <td><a tal:attributes="href url"
+                 tal:content="bugtask/severity/title|default">-</a></td>
+          </tal:block>
+        </tr>
+      </table>
+
+    </div>
   </div>
 
 </body>

@@ -1,9 +1,8 @@
 Test that the page to add a product release loads.
 
   >>> print http(r"""
-  ... GET /doap/projects/mozilla/firefox/+addrelease HTTP/1.1
+  ... GET /products/firefox/+series/milestones/+addrelease HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Referer: http://localhost:9000/doap/projects/mozilla/firefox
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -15,11 +14,10 @@ Test that the page to add a product release loads.
 Test that the page to add a product release works.
 
   >>> print http(r"""
-  ... POST /doap/projects/mozilla/firefox/+addrelease HTTP/1.1
+  ... POST /products/firefox/+series/milestones/+addrelease HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 285
   ... Content-Type: application/x-www-form-urlencoded
-  ... Referer: http://localhost:9000/doap/projects/mozilla/firefox/+addrelease
   ... 
   ... series=1&version=0.9.3&title=One+Tree+Hill+the+3rd&summary=Yes+another+security+fix+for+this+version+of+Firefox.+Sigh.&description=A+long+description.+Not+really%2C+but+you+get+the+picture.&releaseurl=http%3A%2F%2Fwww.mozilla.org%2Fproducts%2Ffirefox%2F&Register=Register+New+Release""")
   HTTP/1.1 200 Ok
@@ -28,3 +26,4 @@ Test that the page to add a product release works.
   ...
       <h1>Register a New Release</h1>
   ...
+

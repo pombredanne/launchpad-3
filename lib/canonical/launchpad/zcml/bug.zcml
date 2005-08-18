@@ -159,6 +159,7 @@
         name="+index"
         for="canonical.launchpad.interfaces.IBugSet"
         class="canonical.launchpad.browser.BugSetView"
+        attribute="redirectToBug"
         permission="zope.Public" />
 
     <browser:traverse
@@ -228,4 +229,5 @@
     <content class="canonical.launchpad.components.bug.BugDelta">
         <allow interface="canonical.launchpad.interfaces.IBugDelta" />
     </content>
+
 </configure>

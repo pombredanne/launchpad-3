@@ -13,11 +13,11 @@ from zope.event import notify
 from zope.exceptions import NotFoundError
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
-    IPerson, IProduct, IProductSet, IBugTaskSet, IProductSeries,
-    ISourcePackage, ICountry, IBugSet, ICalendarOwner, ILaunchBag)
-from canonical.launchpad.browser.productrelease import newProductRelease
+    IPerson, IProduct, IProductSet, IProductSeries, ISourcePackage,
+    ICountry, IBugSet, ICalendarOwner)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -220,23 +220,6 @@ class ProductView:
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
 
-    def newProductRelease(self):
-        # default owner is the logged in user
-        owner = IPerson(self.request.principal)
-        #XXX: cprov 20050112
-        # Avoid passing obscure arguments such as self.form
-        newProductRelease(self.form, self.context, owner)
-
-    def latestBugTasks(self, quantity=5):
-        """Return <quantity> latest bugs reported against this product."""
-        bugtaskset = getUtility(IBugTaskSet)
-
-        tasklist = bugtaskset.search(
-            product=self.context, orderby="-datecreated",
-            user=getUtility(ILaunchBag).user)
-
-        return tasklist[:quantity]
-
     def potemplatenames(self):
         potemplatenames = set([])
 
@@ -314,13 +297,29 @@ class ProductFileBugView(SQLObjectAddView):
 
 class ProductRdfView(object):
     """A view that sets its mime-type to application/rdf+xml"""
+
+    template = ViewPageTemplateFile(
+        '../templates/product-rdf.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        request.response.setHeader('Content-Type', 'application/rdf+xml')
-        request.response.setHeader('Content-Disposition',
-                                   'attachment; filename=' +
-                                   self.context.name + '.rdf')
+
+    def __call__(self):
+        """Render RDF output, and return it as a string encoded in UTF-8.
+
+        Render the page template to produce RDF output.
+        The return value is string data encoded in UTF-8.
+
+        As a side-effect, HTTP headers are set for the mime type
+        and filename for download."""
+        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
+        self.request.response.setHeader('Content-Disposition',
+                                        'attachment; filename=%s.rdf' %
+                                        self.context.name)
+        unicodedata = self.template()
+        encodeddata = unicodedata.encode('utf-8')
+        return encodeddata
 
 
 class ProductSetView:

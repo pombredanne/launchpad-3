@@ -7,14 +7,40 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+  <div class="portlet">
+    <h4>About Soyuz:</h4>
+
+    <div class="portletBody portletContent">
+      <img src="/++resource++info_icon.gif" />
+      "Soyuz" is the part of Launchpad that keeps track of the applications
+      published in different distributions. It allows you to track, for
+      example, the bugs in a distribution.
+    </div>
+  </div>
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div class="portlet">
+    <h4>About Read-Only Distributions:</h4>
+
+    <div class="portletBody portletContent">
+      <img src="/++resource++info_icon.gif" />
+      Note that some of these distributions are "read-only", we monitor
+      those distributions and present package information for them in
+      Launchpad, but they cannot be altered or managed through the
+      Launchpad. The Launchpad representations of those distributions might
+      be out of date.
+    </div>
+  </div>
+</metal:rightportlets>
+
 <div metal:fill-slot="main">
 
-    <p>This page shows all distributions that are registered in the
-    Launchpad. Note that some of these distributions are "read-only", we
-    monitor those distributions and present package information for them
-    in Launchpad, but they cannot be altered or managed through the
-    Launchpad. The Launchpad representations of those distributions
-    might be out of date.</p>
+    <p class="documentDescription">
+      This page shows all distributions that are registered in the
+      Launchpad.
+    </p>
 
     <table width="100%" class="listing">
         <tr>
@@ -54,7 +80,8 @@
       </div>
     </div>
 
-</div>
+
+  </div>
 
 </body>
 </html>

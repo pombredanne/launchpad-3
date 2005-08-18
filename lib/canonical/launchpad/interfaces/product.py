@@ -201,7 +201,12 @@ class IProduct(IHasOwner, IBugTarget):
         "used when the series doesn't supply one."))
 
     def getPackage(distrorelease):
-        """return a package in that distrorelease for this product."""
+        """Return a package in that distrorelease for this product."""
+
+    def getMilestone(name):
+        """Return a milestone with the given name for this product, or
+        raise NotFoundError.
+        """
 
     def potemplates():
         """Returns an iterator over this product's PO templates."""
@@ -274,7 +279,7 @@ class IProductSet(Interface):
     def search(text=None, soyuz=None,
                rosetta=None, malone=None,
                bazaar=None):
-        """Search through the DOAP database for products that match the
+        """Search through the Registry database for products that match the
         query terms. text is a piece of text in the title / summary /
         description fields of product. soyuz, bazaar, malone etc are
         hints as to whether the search should be limited to products

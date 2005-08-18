@@ -83,6 +83,9 @@ class IDistroRelease(IHasOwner, IBugTarget):
     datelastlangpack = Attribute(
         "The date of the last base language pack export for this release.")
 
+    translatable_sourcepackages = Attribute("Source packages in this "
+        "distrorelease that can be translated.")
+
     # related joins
     packagings = Attribute("All of the Packaging entries for this "
         "distrorelease.")
@@ -134,6 +137,11 @@ class IDistroRelease(IHasOwner, IBugTarget):
         """Return the DistroReleaseLanguage for this distrorelease and the
         given language, or None if there's no DistroReleaseLanguage for this
         distribution and the given language.
+        """
+
+    def getDistroReleaseLanguageOrDummy(language):
+        """Return the DistroReleaseLanguage for this distrorelease and the
+        given language, or a DummyDistroReleaseLanguage.
         """
 
 

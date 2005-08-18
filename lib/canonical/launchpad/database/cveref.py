@@ -40,12 +40,12 @@ class CVERef(SQLBase):
     @property
     def url(self):
         """See ICVERef."""
-        return ('http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=%s-%s'
-                % (self.cvestate.name, self.cveref))
+        return ('http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-%s'
+                % self.cveref)
 
     @property
     def displayname(self):
-        return '%s-%s' % (self.cvestate.name, self.cveref)
+        return 'CVE-%s' % self.cveref
 
 
 class CVERefSet(BugSetBase):
@@ -55,13 +55,18 @@ class CVERefSet(BugSetBase):
     table = CVERef
 
     def __init__(self, bug=None):
+        """See ICVERefSet."""
         BugSetBase.__init__(self, bug)
         self.title = 'CVE References'
         if bug:
             self.title += ' for Malone Bug #' + str(bug)
 
+    def __iter__(self):
+        """See ICVERefSet."""
+        return iter(CVERef.select())
+
     def createCVERef(self, bug, cveref, cvestate, title, owner):
-        """See canonical.launchpad.interfaces.ICVERefSet."""
+        """See ICVERefSet."""
         return CVERef(bug=bug, cveref=cveref, cvestate=cvestate,
             title=title, owner=owner)
 
@@ -84,7 +89,7 @@ class CVERefSet(BugSetBase):
                     break
             if cveref is None:
                 cveref = CVERef(bug=bug, cveref=cvenum,
-                    cvestate=CVEState.items[cvestate], owner=owner,
+                    cvestate=CVEState.CANDIDATE, owner=owner,
                     title=title)
                 newcverefs.append(cveref)
                 flush_database_updates()

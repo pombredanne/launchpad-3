@@ -85,8 +85,8 @@ class IProject(IHasOwner):
             Please include the http://"""))
 
     lastdoap = TextLine(
-        title=_('Last-parsed DOAP fragment'),
-        description=_("""The last DOAP fragment for this
+        title=_('Last-parsed RDF fragment'),
+        description=_("""The last RDF fragment for this
            entity that we received and parsed, or
            generated."""),
         required=False)
@@ -176,7 +176,7 @@ class IProjectSet(Interface):
                      rosetta=None, malone=None,
                      bazaar=None,
                      search_products=True):
-        """Search through the DOAP database for projects that match the
+        """Search through the Registry database for projects that match the
         query terms. text is a piece of text in the title / summary /
         description fields of project (and possibly product). soyuz,
         bazaar, malone etc are hints as to whether the search should

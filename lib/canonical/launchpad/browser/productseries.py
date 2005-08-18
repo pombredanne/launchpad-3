@@ -11,6 +11,7 @@ from urllib import quote as urlquote
 
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from CVS.protocol import CVSRoot
 import pybaz
@@ -22,7 +23,6 @@ from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 from canonical.launchpad.helpers import request_languages, browserLanguages
 from canonical.launchpad.interfaces import (IPerson, ICountry, IPOTemplateSet,
     ILaunchpadCelebrities, ILaunchBag, ISourcePackageNameSet)
-from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad.browser.potemplate import POTemplateView
 
 
@@ -290,8 +290,6 @@ class ProductSeriesView(object):
         # make sure we also update the ubuntu packaging if it has been
         # modified
         self.setCurrentUbuntuPackage()
-        # XXX: conflicted, probably removed --keybuk 24jun05
-        #self.request.response.redirect('.')
 
     def adminSource(self):
         """Make administrative changes to the source details of the
@@ -388,23 +386,6 @@ class ProductSeriesView(object):
         self.context.setPackaging(self.curr_ubuntu_release, spn, self.user)
         self.setUpPackaging()
 
-
-    def newProductRelease(self):
-        """
-        Process a submission to create a new ProductRelease
-        for this series.
-        """
-        # figure out who is calling
-        owner = IPerson(self.request.principal)
-        # XXX sabdfl 09/04/05 we should not be passing the form to the
-        # content object, violating the separation between content and
-        # presentation. I think this is my old code, but it needs to be
-        # fixed nonetheless.
-        pr = newProductRelease(self.form, self.context.product, owner,
-                               series=self.context.id)
-        if pr:
-            self.request.response.redirect(pr.version)
-
     def requestCountry(self):
         return ICountry(self.request, None)
 
@@ -414,14 +395,30 @@ class ProductSeriesView(object):
 
 class ProductSeriesRdfView(object):
     """A view that sets its mime-type to application/rdf+xml"""
+
+    template = ViewPageTemplateFile(
+        '../templates/productseries-rdf.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        request.response.setHeader('Content-Type', 'application/rdf+xml')
-        request.response.setHeader('Content-Disposition',
-                                   'attachment; filename=' +
-                                   self.context.product.name + '-' +
-                                   self.context.name + '.rdf')
+
+    def __call__(self):
+        """Render RDF output, and return it as a string encoded in UTF-8.
+
+        Render the page template to produce RDF output.
+        The return value is string data encoded in UTF-8.
+
+        As a side-effect, HTTP headers are set for the mime type
+        and filename for download."""
+        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
+        self.request.response.setHeader('Content-Disposition',
+                                        'attachment; filename=%s-%s.rdf' % (
+                                            self.context.product.name,
+                                            self.context.name))
+        unicodedata = self.template()
+        encodeddata = unicodedata.encode('utf-8')
+        return encodeddata
 
 
 class ProductSeriesSourceSetView:

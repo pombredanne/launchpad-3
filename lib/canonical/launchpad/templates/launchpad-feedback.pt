@@ -9,17 +9,14 @@
       <h1>Help us improve</h1>
       <p>
         Launchpad is a work in progress, and we welcome your feedback on how
-        to make it better. File bugs, talk to us on the IRC channel
-        #launchpad on irc.freenode.net, or send us email. If you have ideas
-        for new features, take a look at the
-        <a href="https://wiki.launchpad.canonical.com/">Launchpad Wiki</a>
-        and add a specification, then work with us on #launchpad to get it
-        implemented.
+        to make it better.
       </p>
       <ul>
         <li>
           <p>
-            The best way to report problems in Launchpad is in the Malone bug tracker. You can report bugs about:
+            Found a bug in Launchpad?
+            Check that it&#8217;s reported in the Malone bug tracker.
+            Report bugs about:
           </p>
           <ul>
             <li>
@@ -29,23 +26,24 @@
               <a href="/products/rosetta/+bugs">Rosetta</a>
             </li>
             <li>
-              <a href="/products/foaf/+bugs">Launchpad accounts and teams</a>
-            </li>
-            <li>
-              <a href="/products/doap/+bugs">product and project registration</a>
-            </li>
-            <li>
-              <a href="/products/soyuz/+bugs">distribution and package registration</a>
-            </li>
-            <li>
               <a href="/products/launchpad/+bugs">any other aspect of Launchpad</a>.
             </li>
           </ul>
         </li>
         <li>
           <p>
-            If a problem in Launchpad is preventing you from reporting bugs,
+            If a problem in Launchpad prevents you from reporting bugs,
             <a href="mailto:launchpad-error-reports@lists.canonical.com">tell us the problem by e-mail</a>.
+          </p>
+        </li>
+        <li>
+          <p>
+            Got an idea for a new feature? Search
+            <a href="http://wiki.launchpad.canonical.com/">the Launchpad wiki</a>
+            to see if it&#8217;s planned.
+            If not,
+            write a specification on the wiki,
+            and discuss it with us on IRC.
           </p>
         </li>
         <li>

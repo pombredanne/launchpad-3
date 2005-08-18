@@ -6,6 +6,11 @@
         />
 
     <vocabulary
+        name="BugTrackerType"
+        factory="canonical.launchpad.vocabularies.BugTrackerTypeVocabulary"
+        />
+
+    <vocabulary
         name="CVEState"
         factory="canonical.launchpad.vocabularies.CVEStateVocabulary"
         />

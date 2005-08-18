@@ -82,6 +82,8 @@ __all__ = (
 'RosettaFileFormat',
 )
 
+from canonical.database.constants import DEFAULT
+
 from zope.interface.advice import addClassAdvisor
 import sys
 import warnings
@@ -139,6 +141,8 @@ class DBSchemaValidator(validators.Validator):
                 ' not an int')
         # Allow this to work in the presence of security proxies.
         ##if not isinstance(value, Item):
+        if value is DEFAULT:
+            return value
         if value.__class__ != Item:
             raise TypeError('Not a DBSchema Item: %r' % value)
         if value.schema is not self.schema:
@@ -155,6 +159,8 @@ class DBSchemaValidator(validators.Validator):
         """
         if value is None:
             return None
+        if value is DEFAULT:
+            return value
         return self.schema.items[value]
 
 EnumCol = DBSchemaEnumCol
@@ -377,6 +383,13 @@ class BugTrackerType(DBSchema):
         tracker written in Python.
         """)
 
+    TRAC = Item(4, """
+        Trac
+
+        Trac is an enhanced wiki and issue tracking system for
+        software development projects.
+        """)
+
 
 class CVEState(DBSchema):
     """The Status of this item in the CVE Database
@@ -387,19 +400,28 @@ class CVEState(DBSchema):
     be a CAN or a CVE.
     """
 
-    CAN = Item(1, """
-        CAN
+    CANDIDATE = Item(1, """
+        Candidate
 
         The vulnerability is a candidate, it has not yet been confirmed and
-        given a CVE number.
+        given "Entry" status.
         """)
 
-    CVE = Item(2, """
-        CVE
+    ENTRY = Item(2, """
+        Entry
 
         This vulnerability or threat has been assigned a CVE number, and is
         fully documented. It has been through the full CVE verification
         process.
+        """)
+
+    DEPRECATED = Item(3, """
+        Deprecated
+
+        This entry is deprecated, and should no longer be referred to in
+        general correspondence. There is either a newer entry that better
+        defines the problem, or the original candidate was never promoted to
+        "Entry" status.
         """)
 
 class ProjectStatus(DBSchema):

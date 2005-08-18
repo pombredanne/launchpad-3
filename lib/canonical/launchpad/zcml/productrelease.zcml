@@ -62,26 +62,6 @@
             name="+portlet-summary"
             template="../templates/object-portlet-summary.pt"
             />
-        <browser:page
-            name="+portlet-pref-langs"
-            template="../templates/portlet-pref-langs.pt"
-            lp:url="/products/evolution/+main/+portlet-pref-langs"
-            />
-        <browser:page
-            name="+portlet-country"
-            template="../templates/portlet-country-langs.pt"
-            lp:url="/products/evolution/2.1.6/+portlet-country"
-            />
-        <browser:page
-            name="+portlet-browser-langs"
-            template="../templates/portlet-browser-langs.pt"
-            lp:url="/products/evolution/2.1.6/+portlet-browser-langs"
-            />
-        <browser:page
-            name="+portlet-status-legend"
-            template="../templates/portlet-rosetta-status-legend.pt"
-            />
-
     </browser:pages>
 
     <browser:page
@@ -90,16 +70,25 @@
         permission="zope.Public"
         name="+rdf"
         lp:url="/projects/$Product.name/$ProductRelease.name/+rdf"
-        template="../templates/productrelease-rdf.pt" />
+        attribute="__call__"
+        />
 
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProductRelease"
-        class="canonical.launchpad.browser.ProductReleaseView"
-        permission="launchpad.Edit">
-        <browser:page
-            name="+edit"
-            template="../templates/productrelease-edit.pt" />
-    </browser:pages>
+    <browser:editform
+      name="+edit"
+      for="canonical.launchpad.interfaces.IProductRelease"
+      schema="canonical.launchpad.interfaces.IProductRelease"
+      class="canonical.launchpad.browser.productrelease.ProductReleaseView"
+      label="Edit Product Release Details:"
+      fields="title summary description changelog"
+      permission="launchpad.Edit"
+      template="../templates/productrelease-edit.pt"
+      lp:url="/products/$Product.name/$ProductRelease.version/+edit">
+      <browser:widget
+        field="summary"
+        class="zope.app.form.browser.TextAreaWidget"
+        width="60"
+        height="5" />
+    </browser:editform>
 
     <browser:editform
         name="+review"

@@ -121,11 +121,13 @@ Search for attachments
 
 We can search for attachment of a specific types:
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> from canonical.launchpad.interfaces import (IBugTaskSet,
+    ...                                             BugTaskSearchParams)
     >>> from canonical.lp.dbschema import BugAttachmentType
     >>> bugtaskset = getUtility(IBugTaskSet)
-    >>> bugtasks = bugtaskset.search(
-    ...     attachmenttype=BugAttachmentType.UNSPECIFIED)
+    >>> attachmenttype = BugAttachmentType.UNSPECIFIED
+    >>> params = BugTaskSearchParams(attachmenttype=attachmenttype, user=None)
+    >>> bugtasks = bugtaskset.search(params)
     >>> bugs = set([bugtask.bug for bugtask in bugtasks])
     >>> bugs = list(bugs)
     >>> len(bugs)
@@ -134,8 +136,9 @@ We can search for attachment of a specific types:
     1
 
     >>> from canonical.launchpad.searchbuilder import any
-    >>> bugtasks = bugtaskset.search(
-    ...     attachmenttype=any(*BugAttachmentType.items))
+    >>> attachmenttype = any(*BugAttachmentType.items)
+    >>> params = BugTaskSearchParams(attachmenttype=attachmenttype, user=None)
+    >>> bugtasks = bugtaskset.search(params)
     >>> bugs = set([bugtask.bug for bugtask in bugtasks])
     >>> bugs = list(bugs)
     >>> len(bugs)
@@ -145,8 +148,9 @@ We can search for attachment of a specific types:
 
 There are no patches attached to any bugs:
 
-    >>> bugtasks = bugtaskset.search(
-    ...     attachmenttype=BugAttachmentType.PATCH)
+    >>> attachmenttype = BugAttachmentType.PATCH
+    >>> params = BugTaskSearchParams(attachmenttype=attachmenttype, user=None)
+    >>> bugtasks = bugtaskset.search(params)
     >>> bugs = set([bugtask.bug for bugtask in bugtasks])
     >>> bugs = list(bugs)
     >>> len(bugs)
@@ -158,8 +162,9 @@ Let's make our attachment a patch and search again:
     >>> login('test@canonical.com')
     >>> attachment.type = BugAttachmentType.PATCH
     >>> flush_database_updates()
-    >>> bugtasks = bugtaskset.search(
-    ...     attachmenttype=BugAttachmentType.PATCH)
+    >>> attachmenttype = BugAttachmentType.PATCH
+    >>> params = BugTaskSearchParams(attachmenttype=attachmenttype, user=None)
+    >>> bugtasks = bugtaskset.search(params)
     >>> bugs = set([bugtask.bug for bugtask in bugtasks])
     >>> bugs = list(bugs)
     >>> len(bugs)

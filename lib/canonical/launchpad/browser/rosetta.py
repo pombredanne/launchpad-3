@@ -11,31 +11,24 @@ from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
-    ILanguageSet, ILaunchBag, IRequestPreferredLanguages, ICountry)
+    ILanguageSet, ILaunchBag, IRequestPreferredLanguages, ICountry,
+    ILaunchpadCelebrities)
 from canonical.launchpad import helpers
 
 
 class RosettaApplicationView:
 
-    translationGroupsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-groups.pt')
-
-    prefLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-pref-langs.pt')
-
-    countryPortlet = ViewPageTemplateFile(
-        '../templates/portlet-country-langs.pt')
-
-    browserLangPortlet = ViewPageTemplateFile(
-        '../templates/portlet-browser-langs.pt')
-
-    statsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-rosetta-stats.pt')
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.languages = helpers.request_languages(self.request)
+
+    def ubuntu_languages(self):
+        langs = []
+        release = getUtility(ILaunchpadCelebrities).ubuntu.currentrelease
+        for language in self.languages:
+            langs.append(release.getDistroReleaseLanguageOrDummy(language))
+        return langs
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -51,6 +44,12 @@ class RosettaPreferencesView:
 
         self.error_msg = None
         self.person = getUtility(ILaunchBag).user
+
+    def requestCountry(self):
+        return ICountry(self.request, None)
+
+    def browserLanguages(self):
+        return IRequestPreferredLanguages(self.request).getPreferredLanguages()
 
     def visible_languages(self):
         class BrowserLanguage:

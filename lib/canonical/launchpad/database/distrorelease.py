@@ -31,9 +31,10 @@ from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.distroreleaselanguage import \
-    DistroReleaseLanguage
+    DistroReleaseLanguage, DummyDistroReleaseLanguage
 from canonical.launchpad.database.sourcepackage import SourcePackage
-from canonical.launchpad.database.sourcepackagename import SourcePackageNameSet
+from canonical.launchpad.database.sourcepackagename import (
+    SourcePackageName, SourcePackageNameSet)
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.binarypackage import BinaryPackage
 from canonical.launchpad.database.bugtask import BugTaskSet
@@ -84,6 +85,18 @@ class DistroRelease(SQLBase):
     def distroreleaselanguages(self):
         result = DistroReleaseLanguage.selectBy(distroreleaseID=self.id)
         return sorted(result, key=lambda a: a.language.englishname)
+
+    @property
+    def translatable_sourcepackages(self):
+        """See IDistroRelease."""
+        result = SourcePackageName.select("""
+            POTemplate.sourcepackagename = SourcePackageName.id AND
+            POTemplate.distrorelease = %s
+            """ % sqlvalues(self.id),
+            clauseTables=['POTemplate'],
+            orderBy=['name'])
+        return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
+            spn in result]
 
     @property
     def previous_releases(self):
@@ -149,23 +162,10 @@ class DistroRelease(SQLBase):
         return "%s %s" % (
             self.distribution.name.capitalize(), self.name.capitalize())
 
-    def searchBugs(self, bug=None, searchtext=None, status=None, priority=None,
-                   severity=None, milestone=None, assignee=None, owner=None,
-                   statusexplanation=None, attachmenttype=None, user=None,
-                   orderby=None, omit_dupes=False):
+    def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
-        # As an initial refactoring, we're wrapping BugTaskSet.search.
-        # It's possible that the search code will live inside this
-        # method instead at some point.
-        #
-        # The implementor who would make such a change should be
-        # mindful of bug privacy.
-        return BugTaskSet().search(
-            distrorelease=self, bug=bug, searchtext=searchtext, status=status,
-            priority=priority, severity=severity, milestone=milestone,
-            assignee=assignee, owner=owner, attachmenttype=attachmenttype,
-            statusexplanation=statusexplanation, user=user, orderby=orderby,
-            omit_dupes=omit_dupes)
+        search_params.setDistributionRelease(self)
+        return BugTaskSet().search(search_params)
 
     def getBugSourcePackages(self):
         """See IDistroRelease."""
@@ -184,6 +184,13 @@ class DistroRelease(SQLBase):
         return DistroReleaseLanguage.selectOneBy(
             distroreleaseID=self.id,
             languageID=language.id)
+
+    def getDistroReleaseLanguageOrDummy(self, language):
+        """See IDistroRelease."""
+        drl = self.getDistroReleaseLanguage(language)
+        if drl is not None:
+            return drl
+        return DummyDistroReleaseLanguage(self, language)
 
     def updateStatistics(self):
         """See IDistroRelease."""
