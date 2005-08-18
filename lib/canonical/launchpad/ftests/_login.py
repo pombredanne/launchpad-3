@@ -22,8 +22,6 @@ def login(email, participation=None):
 
     The participation passed in must allow setting of its principal.
     """
-    logout() # Nuke any existing interaction
-
     authutil = getUtility(IPlacelessAuthUtility)
 
     if email == ANONYMOUS:

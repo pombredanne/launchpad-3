@@ -4,7 +4,7 @@ __metaclass__ = type
 
 import unittest
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
-from canonical.launchpad.ftests import login, ANONYMOUS
+from canonical.launchpad.ftests import login, ANONYMOUS, logout
 
 from canonical.launchpad.components.request_country import request_country
 
@@ -20,6 +20,7 @@ class RequestCountryTestCase(unittest.TestCase):
 
     def tearDown(self):
         LaunchpadFunctionalTestSetup().tearDown()
+        logout()
 
     def testRemoteAddr(self):
         country = request_country({'REMOTE_ADDR': self.lp})

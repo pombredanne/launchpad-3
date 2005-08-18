@@ -14,5 +14,5 @@ periodically. This cache is stored in the KarmaCache table and is updated by
 the foaf-update-karma-cache.py cronscript.
 
 >>> import subprocess
->>> subprocess.call('cronscripts/foaf-update-karma-cache.py', shell=True)
+>>> subprocess.call('cronscripts/foaf-update-karma-cache.py -q', shell=True)
 0

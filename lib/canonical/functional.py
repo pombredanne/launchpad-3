@@ -145,9 +145,6 @@ class FunctionalTestSetup(object):
         abort()
         self.db.removeVersionPool('')
         self.db.close()
-        if zope.security.management.queryInteraction():
-            # clean up the leftover interaction
-            zope.security.management.endInteraction()
 
     def getRootFolder(self):
         """Returns the Zope root folder."""
