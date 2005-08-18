@@ -60,10 +60,8 @@ import the keys first. We also need to start the Librarian, since every
 mail will get filed in there:
 
     >>> from canonical.launchpad.ftests import import_public_test_keys
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
     >>> import_public_test_keys()
     >>> transaction.commit()
-    >>> LibrarianTestSetup().setUp()
 
     >>> handleMail()
 
@@ -141,7 +139,4 @@ the To and CC headers will be ignored:
 
     >>> msgid in foo_handler.handledMails
     False
-
-
-    >>> LibrarianTestSetup().tearDown()
 

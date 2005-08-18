@@ -89,6 +89,10 @@ special = {
             '../doc/message.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
             ),
+    'incomingmail.txt': FunctionalDocFileSuite(
+            '../doc/incomingmail.txt',
+            setUp=librarianSetUp, tearDown=librarianTearDown
+            ),
     }
 
 def test_suite():
