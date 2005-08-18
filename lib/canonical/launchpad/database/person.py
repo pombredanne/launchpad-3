@@ -59,6 +59,7 @@ class Person(SQLBase):
     _defaultOrder = ['displayname', 'familyname', 'givenname', 'name']
 
     name = StringCol(dbName='name', alternateID=True, notNull=True)
+    karma = IntCol(dbName='karma', notNull=True, default=0)
     password = StringCol(dbName='password', default=None)
     givenname = StringCol(dbName='givenname', default=None)
     familyname = StringCol(dbName='familyname', default=None)
@@ -396,14 +397,6 @@ class Person(SQLBase):
     def title(self):
         """See IPerson."""
         return self.browsername
-
-    @property
-    def karma(self):
-        """See IPerson."""
-        total = 0
-        for karma in KarmaCache.selectBy(personID=self.id):
-            total += karma.karmavalue
-        return total
 
     @property 
     def allmembers(self):
