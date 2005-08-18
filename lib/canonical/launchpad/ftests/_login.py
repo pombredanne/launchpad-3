@@ -3,8 +3,11 @@
 __metaclass__ = type
 
 from zope.component import getUtility
+from zope.security.management import endInteraction
 from canonical.launchpad.helpers import setupInteraction
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+
+__all__ = ['login', 'logout', 'ANONYMOUS']
 
 ANONYMOUS = 'launchpad.anonymous'
 
@@ -19,6 +22,8 @@ def login(email, participation=None):
 
     The participation passed in must allow setting of its principal.
     """
+    logout() # Nuke any existing interaction
+
     authutil = getUtility(IPlacelessAuthUtility)
 
     if email == ANONYMOUS:
@@ -27,3 +32,12 @@ def login(email, participation=None):
         principal = authutil.getPrincipalByLogin(email)
 
     setupInteraction(principal, login=email, participation=participation)
+
+def logout():
+    """Tear down after login(...), ending the current interaction.
+   
+    Note that this is done automatically in
+    canonical.functional.FunctionalTestSetup's tearDown method so you
+    generally won't need to call this.
+    """
+    endInteraction()
