@@ -219,6 +219,10 @@ class IProduct(IHasOwner, IBugTarget):
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
 
+    def ensureRelatedBounty(bounty):
+        """Ensure that the bounty is linked to this product. Return None.
+        """
+
 
 class IProductSet(Interface):
     """The collection of products."""

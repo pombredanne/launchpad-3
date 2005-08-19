@@ -1,0 +1,62 @@
+
+One of the sampledata bounties is called mozilla-svg. Let's take a look at
+it now.
+
+  >>> print http(r"""
+  ... GET /bounties/mozilla-svg HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Support SVG in Mozilla...
+
+
+Next, let's POST the +edit form, with some updated values. Specifically, we'll
+change the difficulty to basic.
+
+  >>> print http(r"""
+  ... POST /bounties/mozilla-svg/+edit HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 2175
+  ... Content-Type: multipart/form-data; boundary=---------------------------355648249875698224683328425
+  ... 
+  ... -----------------------------355648249875698224683328425
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Support SVG in Mozilla
+  ... -----------------------------355648249875698224683328425
+  ... Content-Disposition: form-data; name="field.bountystatus"
+  ... 
+  ... Open
+  ... -----------------------------355648249875698224683328425
+  ... Content-Disposition: form-data; name="field.bountystatus-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------355648249875698224683328425
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... SVG is emerging as a well-supported and well-defined standard for classy vector images. Mozilla should support SVG images natively, without plugins as currently required. In addition, it would be great to be able to address SVG images using the DOM, since they are made up of XML just like XHTML.
+  ... -----------------------------355648249875698224683328425
+  ... Content-Disposition: form-data; name="field.difficulty"
+  ... 
+  ... Basic
+  ... -----------------------------355648249875698224683328425
+  ... Content-Disposition: form-data; name="field.difficulty-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------355648249875698224683328425
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ...  Since you have come this far, you probably already know that SVG stands for Scalable Vector Graphics, and that it is an XML language for sophisticated 2-dimensional graphics. SVG is to graphics what XHTML is to text, MathML is to mathematical equations and CML is to the description of chemical molecules.
+  ... 
+  ... SVG is similar in scope to Macromedia's proprietary Flash technology: among other things it offers anti-aliased rendering, pattern and gradient fills, sophisticated filter-effects, clipping to arbitrary paths, text and animations. What distinguishes SVG from Flash, is that it is a W3 recommendation (i.e. a standard for all intents and purposes) and that it is XML-based as opposed to a closed binary format. It is explicitly designed to work with other W3C standards such as CSS, DOM and SMIL. 
+  ... 
+  ... -----------------------------355648249875698224683328425
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------355648249875698224683328425--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../bounties/mozilla-svg
+  ...
+

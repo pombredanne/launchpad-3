@@ -23,6 +23,7 @@ from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, BugTaskSeverity, BugTaskStatus,
     RosettaImportStatus)
 from canonical.launchpad.database.productseries import ProductSeries
+from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtask import BugTaskSet
@@ -276,6 +277,14 @@ class Product(SQLBase):
                 statusline.append(bugmatrix[severity][status])
             resultset.append(statusline)
         return resultset
+
+    def ensureRelatedBounty(self, bounty):
+        """See IProduct."""
+        for curr_bounty in self.bounties:
+            if bounty.id == curr_bounty.id:
+                return None
+        linker = ProductBounty(product=self, bounty=bounty)
+        return None
 
 
 class ProductSet:

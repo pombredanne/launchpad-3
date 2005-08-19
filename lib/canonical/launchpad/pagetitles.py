@@ -116,9 +116,11 @@ binarypackagerelease_license = 'Binary Package Licence'
 
 bounties = 'Launchpad Bounties'
 
-bounty_subscription = 'Bounty Subscription'
+bounties_new = 'Register a New Bounty in Launchpad'
 
-bounty = ContextTitle('Launchpad Bounty: %s')
+bounty_index = ContextTitle('Launchpad Bounty: %s')
+
+bounty_subscription = 'Bounty Subscription'
 
 branch_index = ContextTitle('Bazaar Branch: %s')
 
@@ -269,6 +271,9 @@ def distrorelease_index(context, view):
 
 def distrorelease_new(context, view):
     return 'Create New Release of %s' % context.distribution.title
+
+distrorelease_packaging = ContextDisplayName('Mapping packages to upstream '
+    'for %s')
 
 distrorelease_search = ContextDisplayName('%s Packages')
 

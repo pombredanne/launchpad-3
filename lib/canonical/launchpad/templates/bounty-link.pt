@@ -1,0 +1,43 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-bounties" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_addform/addform">
+
+        <h1 tal:condition="view/label"
+            tal:content="view/label"
+            metal:fill-slot="heading">Heading from ZCML label="xxx"</h1>
+
+    <div metal:fill-slot="extra_info" class="documentDescription">
+      Use this page to register that an existing Launchpad bounty is
+      related to
+      <span tal:replace="context/displayname">Ubuntu</span>.
+    </div>
+
+  </div>
+
+  <div>
+    Thanks for linking to this bounty!
+  </div>
+
+</div>
+    
+</body>
+</html>
+

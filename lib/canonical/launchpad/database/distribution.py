@@ -12,6 +12,8 @@ from sqlobject import (
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.distributionbounty import \
+    DistributionBounty
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.bugtask import BugTaskSet
@@ -166,6 +168,14 @@ class Distribution(SQLBase):
         if milestone is None:
             raise NotFoundError(name)
         return milestone
+
+    def ensureRelatedBounty(self, bounty):
+        """See IDistribution."""
+        for curr_bounty in self.bounties:
+            if bounty.id == curr_bounty.id:
+                return None
+        linker = DistributionBounty(distribution=self, bounty=bounty)
+        return None
 
 
 class DistributionSet:
