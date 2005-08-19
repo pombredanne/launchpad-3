@@ -129,6 +129,11 @@ class IDistribution(IHasOwner, IBugTarget):
         raise NotFoundError.
         """
 
+    def ensureRelatedBounty(bounty):
+        """Ensure that the bounty is linked to this distribution. Return
+        None.
+        """
+
 
 class IDistributionSet(Interface):
     """Interface for DistrosSet"""

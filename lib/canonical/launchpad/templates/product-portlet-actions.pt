@@ -30,6 +30,12 @@
                   <a href="+changetranslators">Change Translators</a>
                 </li>
                 <li class="add">
+                  <a href="+linkbounty">Link Existing Bounty</a>
+                </li>
+                <li class="add">
+                  <a href="+addbounty">Register New Bounty</a>
+                </li>
+                <li class="add">
                   <a href="+addmilestone">Add Milestone</a>
                 </li>
                 <li class="download">

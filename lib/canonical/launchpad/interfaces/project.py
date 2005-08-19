@@ -149,6 +149,10 @@ class IProject(IHasOwner):
         """Return the product belonging to this project with the given
         name."""
 
+    def ensureRelatedBounty(bounty):
+        """Ensure that the bounty is linked to this project. Return None.
+        """
+
 
 # Interfaces for set
 
