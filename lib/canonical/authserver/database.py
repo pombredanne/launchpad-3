@@ -388,6 +388,22 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         """
         self.connectionPool = connectionPool
         self.encryptor = SSHADigestEncryptor()
+
+    def _getTeams(self, transaction, personID):
+        """Get list of teams a person is in.
+
+        Returns a list of team dicts (see IUserDetailsStorageV2).
+        """
+        transaction.execute('''
+            SELECT TeamParticipation.team, Person.name, Person.displayname
+            FROM TeamParticipation 
+            INNER JOIN Person ON TeamParticipation.team = Person.id 
+            WHERE TeamParticipation.person = %d
+            '''
+            % (personID,)
+        )
+        return [{'id': row[0], 'name': row[1], 'displayname': row[2]}
+                for row in transaction.fetchall()]
     
     def getUser(self, loginID):
         ri = self.connectionPool.runInteraction
@@ -412,6 +428,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             'displayname': displayname,
             'emailaddresses': emailaddresses,
             'wikiname': wikiname,
+            'teams': self._getTeams(transaction, personID),
         }
 
     def _getPerson(self, transaction, loginID):
@@ -457,6 +474,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             'displayname': displayname,
             'emailaddresses': emailaddresses,
             'wikiname': wikiname,
+            'teams': self._getTeams(transaction, personID),
         }
 
     def createUser(self, preferredEmail, password, displayname, emailAddresses):
@@ -522,6 +540,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             'displayname': displayname,
             'emailaddresses': list(emailAddresses),
             'wikiname': wikiname,
+            'teams': self._getTeams(transaction, personID),
         }
                 
     def changePassword(self, loginID, oldPassword, newPassword):
