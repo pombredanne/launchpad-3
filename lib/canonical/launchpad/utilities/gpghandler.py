@@ -10,6 +10,7 @@ import shutil
 import urllib
 import urllib2
 import re
+import subprocess
 
 # launchpad
 from canonical.config import config
@@ -324,6 +325,16 @@ class GPGHandler:
         f.close()
 
         return True, page
+
+    def checkTrustDb(self):
+        """See IGPGHandler"""
+        p = subprocess.Popen(['gpg', '--check-trustdb', '--batch', '--yes'],
+                             close_fds=True,
+                             stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.STDOUT)
+        p.communicate()
+        return p.returncode
 
 
 class PymeSignature(object):

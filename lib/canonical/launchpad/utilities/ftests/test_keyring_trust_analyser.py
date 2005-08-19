@@ -50,16 +50,22 @@ class TestImportKeyRing(FunctionalTestCase):
     def testImportKeyRing(self):
         """Import a sample keyring and check its contents are available."""
         self.testEmptyGetKeys()
+        importedkeys = set()
         for ring in keys_for_tests.test_keyrings():
             keys = self.gpg_handler.importKeyringFile(ring)
-            
-        self.assertNotEqual([], list(self.gpg_handler.local_keys()))
-        fingerprints = set(key.fingerprint
-                           for key in self.gpg_handler.local_keys())
+            importedkeys.update(key.fingerprint for key in keys)
+
+        # check that expected keys are in importedkeys set
         self.assertTrue("340CA3BB270E2716C9EE0B768E7EB7086C64A8C5"
-                        in fingerprints)
+                        in importedkeys)
         self.assertTrue("A419AE861E88BC9E04B9C26FBA2B9389DFD20543"
-                        in fingerprints)
+                        in importedkeys)
+
+        # check that importedkeys are in key ring
+        keyring = set(key.fingerprint
+                      for key in self.gpg_handler.local_keys())
+        self.assertNotEqual(len(keyring), 0)
+        self.assertTrue(importedkeys.issubset(keyring))
 
     def testSetOwnertrust(self):
         """Import a key and set the ownertrust."""
@@ -76,6 +82,18 @@ class TestImportKeyRing(FunctionalTestCase):
         other_iterator = self.gpg_handler.local_keys()
         other_key_instance = other_iterator.next()
         self.assertEqual(key.owner_trust, other_key_instance.owner_trust)
+
+    def testCheckTrustDb(self):
+        """Test IGPGHandler.checkTrustDb()"""
+        self.testEmptyGetKeys()
+
+        # check trust DB with no keys succeeds
+        self.assertEqual(self.gpg_handler.checkTrustDb(), 0)
+
+        # add some keys and check trust DB again
+        for ring in keys_for_tests.test_keyrings():
+            self.gpg_handler.importKeyringFile(ring)
+        self.assertEqual(self.gpg_handler.checkTrustDb(), 0)
 
 # this is what we want to end up with.
 # result = []
