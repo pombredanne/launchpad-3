@@ -15,7 +15,7 @@ from zope.testing.doctest import DocFileSuite
 from zope.component import getUtility
 from canonical.launchpad.interfaces import ILaunchBag, IOpenLaunchBag
 from canonical.launchpad.mail import stub
-from canonical.launchpad.ftests import login, ANONYMOUS
+from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 
 here = os.path.dirname(os.path.realpath(__file__))
@@ -23,6 +23,7 @@ here = os.path.dirname(os.path.realpath(__file__))
 def setGlobs(test):
     test.globs['ANONYMOUS'] = ANONYMOUS
     test.globs['login'] = login
+    test.globs['logout'] = logout
     test.globs['ILaunchBag'] = ILaunchBag
     test.globs['getUtility'] = getUtility
 
@@ -53,7 +54,6 @@ def poExportTearDown(test):
 
 def librarianSetUp(test):
     setUp(test)
-    login(ANONYMOUS)
     LibrarianTestSetup().setUp()
 
 def librarianTearDown(test):

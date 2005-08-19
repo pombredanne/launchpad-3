@@ -1,12 +1,19 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
+import _pythonpath
+
+import time, sys
 from psycopg import ProgrammingError
 from sqlobject import SQLObjectNotFound
+from datetime import datetime, timedelta
+from optparse import OptionParser
 
 from canonical.lp import initZopeless
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.database import (POTranslation, POSubmission,
     POSelection)
+from canonical.launchpad.scripts import db_options
+from canonical.database.sqlbase import flush_database_updates
 
 def fix_submission(submission, translation):
     msgid = submission.pomsgset.potmsgset.primemsgid_
@@ -55,10 +62,23 @@ def main():
     # We need to use raw queries so every commit will flush the changes done
     # to POTranslation and don't get problems related with excess memory
     # usage.
+    total_potranslations = 0
     c = cursor()
     c.execute("SELECT POTranslation.id FROM POTranslation")
-    ids = [id for (id,) in c.fetchall()]
+    outf = open('/tmp/rosids.out','w')
+    while True:
+        row = c.fetchone()
+        if row is None:
+            break
+        print >> outf, row[0]
+        total_potranslations += 1
+    outf.close()
+    ids = open('/tmp/rosids.out')
+    count = 0
+    started = time.time()
     for id in ids:
+	id = int(id)
+        count += 1
         translation = POTranslation.get(id)
         submissions = POSubmission.selectBy(potranslationID=translation.id)
         previous_msgid = None
@@ -80,11 +100,23 @@ def main():
                        'msgid2: \'%r\'\n'
                        'translation: \'%r\'\n' % (previous_msgid,
                             current_msgid, translation.translation))
-                ztm.abort()
+                #ztm.abort()
                 break
 
             fix_submission(submission, translation)
+        if count % 5000 == 0 or count == total_potranslations:
+            done = float(count) / total_potranslations
+            todo = total_potranslations - count
+            now = time.time()
+            elapsed = now - started
+            eta = timedelta(seconds=(elapsed / done) - elapsed)
+            print >> sys.stderr, '%0.4f done (%d of %d). eta %s' % (
+                    done*100, count, total_potranslations, eta
+                    )
             ztm.commit()
+        else:
+            flush_database_updates()
+    ztm.commit()
 
     # Now, it's time to remove all empty translations
     empty_translation = POTranslation.byTranslation('')
@@ -106,6 +138,9 @@ def main():
     ztm.commit()
 
 if __name__ == '__main__':
+    parser = OptionParser()
+    db_options(parser)
+    (opts, args) = parser.parse_args()
     main()
 
 

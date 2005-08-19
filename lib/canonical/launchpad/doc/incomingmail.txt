@@ -93,6 +93,8 @@ wasn't a handler registered for that domain, an error message was sent
 to the errors email address, which is specified in launchpad.conf as
 errors_address.
 
+    >>> len(error_handler.handledMails)
+    0
     >>> handleMail()
     >>> len(error_handler.handledMails)
     1
@@ -148,7 +150,6 @@ the To and CC headers will be ignored:
 
     >>> msgid in foo_handler.handledMails
     False
-
 
     >>> LibrarianTestSetup().tearDown()
     >>> config.malone.bugmail_error_from_address = old_error_from_address
