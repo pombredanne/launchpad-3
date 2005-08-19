@@ -1,7 +1,7 @@
 <!-- The PO file stats bar -->
 <!-- Show an mdash if there is no graph -->
 <span tal:condition="not: context/messageCount">&mdash;</span>
-<span style="display: none" tal:content="string:${context/translatedPercentage} %" />
+<span style="display: none" tal:content="string:${context/untranslatedCount}" />
 <img
   tal:condition="context/nonUpdatesCount"
   tal:attributes="
