@@ -18,14 +18,7 @@ the foaf-update-karma-cache.py cronscript.
 ...     'cronscripts/foaf-update-karma-cache.py -q', shell=True,
 ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 >>> (out, err) = process.communicate()
->>> out
-''
-
-XXX: Unfortunately, stderr is full of sqlobject destructor errors :-(
--- StuartBishop 20050819
-
->>> err != ''
-True
-
+>>> out, err
+('', '')
 >>> process.returncode
 0
