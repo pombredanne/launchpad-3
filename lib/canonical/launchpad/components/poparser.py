@@ -699,7 +699,8 @@ class POParser(object):
         if not self.header:
             # XXX kiko: it may be that we need to run a _make_header() here
             # to ensure we have one, but I'm not guessing.
-            raise POSyntaxError(msg="All pofiles should have a header")
+            logging.warning(POSyntaxWarning(self._lineno,
+                                            'No header found in this pofile'))
 
 
 # convenience function to parse "assignment" expressions like
