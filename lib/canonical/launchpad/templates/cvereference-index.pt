@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@malone_template/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="malone">
 <body>
 
@@ -12,17 +12,17 @@
   <table class="listing">
         <thead>
     <tr>
-      <th>Title</th>
-      <th>Data</th>
+      <th>CVE</th>
+      <th>Description</th>
     </tr>
         </thead>
         <tbody>
     <tr>
-      <td tal:content="context/title">CVE Title</td>
       <td>
         <a tal:attributes="href context/url"
-           tal:content="context/data">999</a>
+           tal:content="context/cveref">1990-2343</a>
       </td>
+      <td tal:content="context/title">CVE Title</td>
     </tr>
         </tbody>
   </table>

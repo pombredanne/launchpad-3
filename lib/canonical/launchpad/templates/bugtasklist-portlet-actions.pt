@@ -17,9 +17,9 @@
     (<span tal:replace="view/total_count">115</span>)
   </li>
   <li class="info" tal:condition="not: request/lp:person">
-    Assigned to me (requires 
+    Show Bugs Assigned to Me <br />(requires
     <a href="#"
-       style="text-decoration: underline" 
+       style="text-decoration: underline"
        tal:attributes="href string:${request/URL}/+login">login</a>)
   </li>
   <li class="info" tal:condition="request/lp:person">

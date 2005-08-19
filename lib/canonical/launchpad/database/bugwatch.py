@@ -24,6 +24,7 @@ from canonical.launchpad.database.bugset import BugSetBase
 
 bugzillaref = re.compile(r'(https?://.+/)show_bug.cgi.+id=(\d+).*')
 roundupref = re.compile(r'(https?://.+/)issue(\d+).*')
+tracref = re.compile(r'(https?://.+/)tickets/(\d+)')
 
 class BugWatch(SQLBase):
     """See canonical.launchpad.interfaces.IBugWatch."""
@@ -57,6 +58,7 @@ class BugWatch(SQLBase):
             # slashes -- should we instead ensure when it is entered?
             # Filed bug 1434.
             BugTrackerType.BUGZILLA: '%s/show_bug.cgi?id=%s',
+            BugTrackerType.TRAC:     '%s/tickets/%s',
             BugTrackerType.DEBBUGS:  '%s/cgi-bin/bugreport.cgi?bug=%s',
             BugTrackerType.ROUNDUP:  '%s/issue%s'
         }
@@ -120,12 +122,13 @@ class BugWatchSet(BugSetBase):
 
     def fromText(self, text, bug, owner):
         """See IBugTrackerSet.fromText."""
-        # XXX sabdfl this should also look for sourceforge
         watches = set([])
         for pattern, trackertype in [
             (bugzillaref, BugTrackerType.BUGZILLA),
-            (roundupref, BugTrackerType.ROUNDUP),]:
-            watches = watches.union(self._find_watches(pattern,
+            (roundupref, BugTrackerType.ROUNDUP),
+            (tracref, BugTrackerType.TRAC),
+            ]:
+            watches = watches.union(self._find_watches(pattern, 
                 trackertype, text, bug, owner))
         return sorted(watches, key=lambda a: (a.bugtracker.name,
             a.remotebug))

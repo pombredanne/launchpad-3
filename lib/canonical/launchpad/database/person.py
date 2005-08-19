@@ -56,9 +56,10 @@ class Person(SQLBase):
 
     implements(IPerson, ICalendarOwner)
 
-    _defaultOrder = 'displayname'
+    _defaultOrder = ['displayname', 'familyname', 'givenname', 'name']
 
     name = StringCol(dbName='name', alternateID=True, notNull=True)
+    karma = IntCol(dbName='karma', notNull=True, default=0)
     password = StringCol(dbName='password', default=None)
     givenname = StringCol(dbName='givenname', default=None)
     familyname = StringCol(dbName='familyname', default=None)
@@ -397,14 +398,6 @@ class Person(SQLBase):
         """See IPerson."""
         return self.browsername
 
-    @property
-    def karma(self):
-        """See IPerson."""
-        total = 0
-        for karma in KarmaCache.selectBy(personID=self.id):
-            total += karma.karmavalue
-        return total
-
     @property 
     def allmembers(self):
         """See IPerson."""
@@ -685,6 +678,10 @@ class PersonSet:
         else:
             return person
 
+    def topPeople(self):
+        """See IPersonSet."""
+        return Person.select('password IS NOT NULL', orderBy='-karma')[:5]
+
     def newTeam(self, **kw):
         """See IPersonSet."""
         ownerID = kw.get('teamownerID')
@@ -939,6 +936,22 @@ class PersonSet:
                     % vars())
         skip.append(('gpgkey','owner'))
 
+        # Update WikiName. Delete the from entry for our internal wikis
+        # so it can be reused. Migrate the non-internal wikinames.
+        # Note we only allow one wikiname per person for the UBUNTU_WIKI_URL
+        # wiki.
+        quoted_internal_wikiname = quote(UBUNTU_WIKI_URL)
+        cur.execute("""
+            DELETE FROM WikiName
+            WHERE person=%(from_id)d AND wiki=%(quoted_internal_wikiname)s
+            """ % vars()
+            )
+        cur.execute("""
+            UPDATE WikiName SET person=%(to_id)d WHERE person=%(from_id)d
+            """ % vars()
+            )
+        skip.append(('wikiname', 'person'))
+
         # Update only the BountySubscriptions that will not conflict
         # XXX: Add sampledata and test to confirm this case
         # -- StuartBishop 20050331
@@ -1027,6 +1040,7 @@ class EmailAddress(SQLBase):
     implements(IEmailAddress)
 
     _table = 'EmailAddress'
+    _defaultOrder = ['email']
 
     email = StringCol(dbName='email', notNull=True, alternateID=True)
     status = EnumCol(dbName='status', schema=EmailAddressStatus, notNull=True)

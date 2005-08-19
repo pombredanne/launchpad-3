@@ -9,12 +9,13 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IAuthorization, IHasOwner, IPerson, ITeam, ITeamMembershipSubset,
+    IDistribution,
     ITeamMembership, IProductSeriesSource, IProductSeriesSourceAdmin,
     IMilestone, IBug, IBugTask, IUpstreamBugTask, IDistroBugTask,
     IDistroReleaseBugTask, ITranslator, IProduct, IProductSeries,
     IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
     ILaunchpadCelebrities, IDistroRelease, IBugTracker, IBugAttachment,
-    IPoll, IPollSubset, IPollOption, IPollOptionSubset)
+    IPoll, IPollSubset, IPollOption, IPollOptionSubset, IProductRelease)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -51,18 +52,6 @@ class EditByOwnersOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
-
-
-class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IDistroRelease
-
-    def checkAuthenticated(self, user):
-        admins = getUtility(ILaunchpadCelebrities).admin
-        return (user.inTeam(self.obj.owner) or
-                user.inTeam(self.obj.distribution.owner) or
-                user.inTeam(admins))
-
 
 class AdminSeriesSourceByButtSource(AuthorizationBase):
     permission = 'launchpad.Admin'
@@ -186,6 +175,53 @@ class EditPollOptionSubsetByTeamOwnerOrTeamAdminsOrAdmins(
     permission = 'launchpad.Edit'
     usedfor = IPollOptionSubset
 
+
+class AdminDistribution(AdminByAdminsTeam):
+    """Soyuz involves huge chunks of data in the archive and librarian,
+    so for the moment we are locking down admin and edit on distributions
+    and distroreleases to the Launchpad admin team."""
+    permission = 'launchpad.Admin'
+    usedfor = IDistribution
+
+
+class EditDistribution(AdminByAdminsTeam):
+    """Soyuz involves huge chunks of data in the archive and librarian,
+    so for the moment we are locking down admin and edit on distributions
+    and distroreleases to the Launchpad admin team."""
+    permission = 'launchpad.Edit'
+    usedfor = IDistribution
+
+
+class AdminDistroRelease(AdminByAdminsTeam):
+    """Soyuz involves huge chunks of data in the archive and librarian,
+    so for the moment we are locking down admin and edit on distributions
+    and distroreleases to the Launchpad admin team."""
+    permission = 'launchpad.Admin'
+    usedfor = IDistroRelease
+
+
+class EditDistroRelease(AdminByAdminsTeam):
+    """Soyuz involves huge chunks of data in the archive and librarian,
+    so for the moment we are locking down admin and edit on distributions
+    and distroreleases to the Launchpad admin team."""
+    permission = 'launchpad.Edit'
+    usedfor = IDistroRelease
+
+
+# Mark Shuttleworth - I've commented out the below configuration, because
+# of the risk of a distrorelease edit causing huge movements of files in the
+# archive and publisher and librarian. Please discuss with me before
+# changing it.
+#
+#class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
+#    permission = 'launchpad.Edit'
+#    usedfor = IDistroRelease
+#
+#    def checkAuthenticated(self, user):
+#        admins = getUtility(ILaunchpadCelebrities).admin
+#        return (user.inTeam(self.obj.owner) or
+#                user.inTeam(self.obj.distribution.owner) or
+#                user.inTeam(admins))
 
 
 class EditUpstreamBugTask(AuthorizationBase):
@@ -437,4 +473,8 @@ class EditPOTemplateNameSet(OnlyRosettaExpertsAndAdmins):
 class EditBugTracker(EditByOwnersOrAdmins):
     permission = 'launchpad.Edit'
     usedfor = IBugTracker
+
+class EditProductRelease(EditByOwnersOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IProductRelease
 

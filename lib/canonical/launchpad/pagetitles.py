@@ -50,6 +50,18 @@ class BugTaskPageTitle:
             context.bug.id, context.contextname, context.bug.title)
 
 
+class BugTaskTargetingTitle:
+    def __call__(self, context, view):
+        task_target = context.context
+        if IDistribution.providedBy(task_target):
+            distribution_title = task_target.title
+        elif IDistroRelease.providedBy(task_target):
+            distribution_title = task_target.distribution.title 
+
+        return "Bug #%d in %s - Target Fix to Releases" % (
+            context.bug.id, distribution_title)
+
+
 class SubstitutionHelper:
     def __init__(self, text):
         self.text = text
@@ -161,6 +173,8 @@ bugs_index = 'Malone Master Bug List'
 
 bugsubscription_edit = 'Modify Your Bug Subscription'
 
+bugtask_release_targeting = BugTaskTargetingTitle()
+
 bugtask_view = BugTaskPageTitle()
 
 bugtask_edit = BugTaskPageTitle()
@@ -172,7 +186,7 @@ bugtracker_edit = ContextTitle('Edit %s Details')
 
 bugtracker_index = ContextTitle('Malone Bugtracker: %s')
 
-bugtracker_new = 'Create Malone Bugtracker'
+bugtrackers_add = 'Register External Bugtracker in Malone'
 
 bugtrackers_index = 'Malone-Registered Bug Trackers'
 
@@ -499,8 +513,7 @@ def productrelease_edit(context, view):
     return 'Edit Details for %s %s' % (
         context.product.displayname, context.version)
 
-def productrelease_new(context, view):
-    return 'Register a new release of %s' % view.product.displayname
+productrelease_add = ContextTitle('Register a new release of %s')
 
 productseries_translations = ContextTitle(
     'Rosetta Translation Templates for %s')

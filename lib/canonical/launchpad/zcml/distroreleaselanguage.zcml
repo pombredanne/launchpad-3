@@ -30,14 +30,11 @@
       lp:url="/distros/ubuntu/hoary/+lang/$DistroReleaseLanguage.language/"
       />
     <browser:page
-      name="+barchart"
-      template="../templates/pofile-barchart.pt" />
-    <browser:page
       name="+portlet-about"
       template="../templates/distroreleaselanguage-portlet-about.pt" />
     <browser:page
-      name="+portlet-status-legend"
-      template="../templates/portlet-rosetta-status-legend.pt" />
+      name="+rosetta-status-legend"
+      template="../templates/rosetta-status-legend.pt" />
     <browser:page
       name="+portlet-stats"
       template="../templates/distroreleaselanguage-portlet-stats.pt" />

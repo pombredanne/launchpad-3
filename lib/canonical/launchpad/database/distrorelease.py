@@ -31,9 +31,10 @@ from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.distroreleaselanguage import \
-    DistroReleaseLanguage
+    DistroReleaseLanguage, DummyDistroReleaseLanguage
 from canonical.launchpad.database.sourcepackage import SourcePackage
-from canonical.launchpad.database.sourcepackagename import SourcePackageNameSet
+from canonical.launchpad.database.sourcepackagename import (
+    SourcePackageName, SourcePackageNameSet)
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.binarypackage import BinaryPackage
 from canonical.launchpad.database.bugtask import BugTaskSet
@@ -84,6 +85,18 @@ class DistroRelease(SQLBase):
     def distroreleaselanguages(self):
         result = DistroReleaseLanguage.selectBy(distroreleaseID=self.id)
         return sorted(result, key=lambda a: a.language.englishname)
+
+    @property
+    def translatable_sourcepackages(self):
+        """See IDistroRelease."""
+        result = SourcePackageName.select("""
+            POTemplate.sourcepackagename = SourcePackageName.id AND
+            POTemplate.distrorelease = %s
+            """ % sqlvalues(self.id),
+            clauseTables=['POTemplate'],
+            orderBy=['name'])
+        return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
+            spn in result]
 
     @property
     def previous_releases(self):
@@ -137,12 +150,13 @@ class DistroRelease(SQLBase):
     def potemplates(self):
         result = POTemplate.selectBy(distroreleaseID=self.id)
         result = list(result)
-        result.sort(key=lambda x: x.potemplatename.name)
-        return result
+        return sorted(result, key=lambda x: x.potemplatename.name)
 
     @property
-    def potemplatecount(self):
-        return len(self.potemplates)
+    def currentpotemplates(self):
+        result = POTemplate.selectBy(distroreleaseID=self.id, iscurrent=True)
+        result = list(result)
+        return sorted(result, key=lambda x: x.potemplatename.name)
 
     @property
     def fullreleasename(self):
@@ -171,6 +185,13 @@ class DistroRelease(SQLBase):
         return DistroReleaseLanguage.selectOneBy(
             distroreleaseID=self.id,
             languageID=language.id)
+
+    def getDistroReleaseLanguageOrDummy(self, language):
+        """See IDistroRelease."""
+        drl = self.getDistroReleaseLanguage(language)
+        if drl is not None:
+            return drl
+        return DummyDistroReleaseLanguage(self, language)
 
     def updateStatistics(self):
         """See IDistroRelease."""

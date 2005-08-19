@@ -82,10 +82,18 @@ class IUserDetailsStorageV2(Interface):
         :emailaddresses: list of email addresses
         :wikiname:       the wikiname of this user on
                          http://www.ubuntulinux.com/wiki/
+        :teams:          a list of team dicts for each team the user is a member
+                         of (including the user themself).
+
+    A *team dict* contains:
+        :id:            team id (integer, doesn't change ever)
+        :name:          nickname for the team
+        :displayname:   full name of the team, for display
 
     Differences from version 1 (IUserDetailsStorage):
         - no salts in user dicts
         - no SSHA digests, just cleartext passwords
+        - teams in user dicts.
     """
 
     def getUser(loginID):
@@ -122,8 +130,8 @@ class IUserDetailsStorageV2(Interface):
         """Change a password
 
         :param loginID: A login ID, same as for getUser.
-        :param sshaDigestedPassword: The current password.
-        :param newSshaDigestedPassword: The password to change to.
+        :param oldPassword: The current password.
+        :param newPassword: The password to change to.
         """
 
     def getSSHKeys(archiveName):

@@ -189,12 +189,16 @@ class SourcePackage:
             distroreleaseID=self.distrorelease.id,
             sourcepackagenameID=self.sourcepackagename.id)
         result = list(result)
-        result.sort(key=lambda x: x.potemplatename.name)
-        return result
+        return sorted(result, key=lambda x: x.potemplatename.name)
 
     @property
-    def potemplatecount(self):
-        return len(self.potemplates)
+    def currentpotemplates(self):
+        result = POTemplate.selectBy(
+            distroreleaseID=self.distrorelease.id,
+            sourcepackagenameID=self.sourcepackagename.id,
+            iscurrent=True)
+        result = list(result)
+        return sorted(result, key=lambda x: x.potemplatename.name)
 
     @property
     def product(self):

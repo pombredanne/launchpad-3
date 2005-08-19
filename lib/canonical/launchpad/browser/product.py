@@ -18,7 +18,6 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.launchpad.interfaces import (
     IPerson, IProduct, IProductSet, IProductSeries, ISourcePackage,
     ICountry, IBugSet, ICalendarOwner)
-from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -109,7 +108,7 @@ class ProductView:
 
                 object_translatable = {
                     'title': sourcepackage.title,
-                    'potemplates': sourcepackage.potemplates,
+                    'potemplates': sourcepackage.currentpotemplates,
                     'base_url': '/distros/%s/%s/+sources/%s' % (
                         sourcepackage.distribution.name,
                         sourcepackage.distrorelease.name,
@@ -121,7 +120,7 @@ class ProductView:
 
                 object_translatable = {
                     'title': productseries.title,
-                    'potemplates': productseries.potemplates,
+                    'potemplates': productseries.currentpotemplates,
                     'base_url': '/products/%s/+series/%s' %(
                         self.context.name,
                         productseries.name)
@@ -144,7 +143,7 @@ class ProductView:
         if target is None:
             return []
         return [POTemplateView(template, self.request)
-                for template in target.potemplates]
+                for template in target.currentpotemplates]
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -220,13 +219,6 @@ class ProductView:
         notify(ObjectModifiedEvent(self.context))
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
-
-    def newProductRelease(self):
-        # default owner is the logged in user
-        owner = IPerson(self.request.principal)
-        #XXX: cprov 20050112
-        # Avoid passing obscure arguments such as self.form
-        newProductRelease(self.form, self.context, owner)
 
     def potemplatenames(self):
         potemplatenames = set([])

@@ -69,10 +69,6 @@
             template="../templates/product-portlet-details.pt"
             lp:url="/products/evolution/+portlet-details" />
         <browser:page
-            name="+portlet-branches"
-            template="../templates/product-portlet-branches.pt"
-            lp:url="/products/evolution/+portlet-branches" />
-        <browser:page
             name="+portlet-series"
             template="../templates/product-portlet-series.pt"
             lp:url="/products/evolution/+portlet-series" />
@@ -97,13 +93,13 @@
             template="../templates/product-portlet-packages.pt"
             lp:url="/products/evolution/+portlet-packages" />
         <browser:page
+            name="+portlet-releases"
+            template="../templates/product-portlet-releases.pt"
+            lp:url="/products/evolution/+portlet-releases" />
+        <browser:page
             name="+portlet-summary"
             template="../templates/object-portlet-summary.pt"
             lp:url="/products/evolution/+portlet-summary" />
-        <browser:page
-            name="+portlet-pref-lang"
-            template="../templates/portlet-pref-langs.pt"
-            lp:url="/products/evolution/+portlet-pref-langs" />
         <browser:page
             name="+portlet-translatables"
             template="../templates/product-portlet-translatables.pt"
@@ -160,16 +156,6 @@
             name="+bounties"
             template="../templates/related-bounties.pt"
             lp:url="/products/$Product.name/+bounties/" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.ProductView"
-        permission="launchpad.AnyPerson">
-        <browser:page
-            name="+addrelease"
-            template="../templates/productrelease-new.pt"
-            lp:url="/products/$Product.name/+addrelease" />
     </browser:pages>
 
     <browser:editform

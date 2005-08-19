@@ -64,7 +64,7 @@ class DistroReleaseView:
 
     def templateviews(self):
         return [POTemplateView(template, self.request)
-                for template in self.context.potemplates]
+                for template in self.context.currentpotemplates]
 
     def distroreleaselanguages(self):
         """Yields a DistroReleaseLanguage object for each language this
@@ -90,6 +90,15 @@ class DistroReleaseView:
         drlangs.sort(key=lambda a: a.language.englishname)
 
         return drlangs
+
+    def unlinked_translatables(self):
+        """Return a list of sourcepackage that don't have a link to a product.
+        """
+        result = []
+        for sp in self.context.translatable_sourcepackages:
+            if sp.productseries is None:
+                result.append(sp)
+        return result
 
     def redirectToDistroFileBug(self):
         """Redirect to the distribution's filebug page.

@@ -15,6 +15,7 @@ __all__ = [
     'BugTaskPriorityVocabulary',
     'BugTaskSeverityVocabulary',
     'BugRefVocabulary',
+    'BugTrackerTypeVocabulary',
     'InfestationStatusVocabulary',
     'PackagingTypeVocabulary',
     'TranslationPermissionVocabulary',
@@ -31,7 +32,7 @@ from zope.schema.vocabulary import SimpleVocabulary
 
 # TODO: Make DBSchema classes provide an interface, so we can adapt IDBSchema
 # to IVocabulary
-def vocab_factory(schema):
+def vocab_factory(schema, noshow=[]):
     """Factory for IDBSchema -> IVocabulary adapters.
 
     This function returns a callable object that creates vocabularies
@@ -39,10 +40,12 @@ def vocab_factory(schema):
 
     The items appear in value order, lowest first.
     """
-    def factory(context, schema=schema):
+    def factory(context, schema=schema, noshow=noshow):
         """Adapt IDBSchema to IVocabulary."""
         # XXX kiko: we should use sort's built-in DSU here.
-        items = [(item.value, item.title, item) for item in schema.items]
+        items = [(item.value, item.title, item)
+            for item in schema.items
+            if item not in noshow]
         items.sort()
         items = [(title, value) for sortkey, title, value in items]
         return SimpleVocabulary.fromItems(items)
@@ -56,6 +59,8 @@ BugTaskStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
 BugTaskPriorityVocabulary = vocab_factory(dbschema.BugTaskPriority)
 BugTaskSeverityVocabulary = vocab_factory(dbschema.BugTaskSeverity)
 BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
+BugTrackerTypeVocabulary = vocab_factory(dbschema.BugTrackerType,
+    noshow=[dbschema.BugTrackerType.DEBBUGS])
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
 PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
 TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
@@ -66,4 +71,3 @@ GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
 PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
 PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
 CVEStateVocabulary = vocab_factory(dbschema.CVEState)
-

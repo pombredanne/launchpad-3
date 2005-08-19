@@ -1,6 +1,6 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
-""" karma.py -- handles all karma assignments done in the launchpad 
+""" karma.py -- handles all karma assignments done in the launchpad
 application."""
 
 from zope.component import getUtility

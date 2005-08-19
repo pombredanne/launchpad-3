@@ -21,7 +21,6 @@ from canonical.launchpad.interfaces import (
     IPerson, IProject, IProjectSet, IProductSet, IProjectBugTrackerSet,
     ICalendarOwner)
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.bugtracker import newBugTracker
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, DefaultLink)
@@ -91,26 +90,6 @@ class ProjectView(object):
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
         
-    def newBugTracker(self):
-        """This method is triggered by a tal:dummy element in the page
-        template, so it is run even when the page is first displayed. It
-        calls newBugTracker which will check if a form has been submitted,
-        and if so it creates one accordingly and redirects back to its
-        display page."""
-        # The person who is logged in needs to end up owning this bug
-        # tracking instance.
-        owner = IPerson(self.request.principal).id
-        # Now try to process the form
-        bugtracker = newBugTracker(self.form, owner)
-        if not bugtracker: return
-        # Now we need to create the link between that bug tracker and the
-        # project itself, using the ProjectBugTracker table
-        projectbugtracker = getUtility(IProjectBugTrackerSet).new(
-            project=self.context,
-            bugtracker=bugtracker)
-        # Now redirect to view it again
-        self.request.response.redirect(self.request.URL[-1])
-
     def hasProducts(self):
         return len(list(self.context.products())) > 0
 

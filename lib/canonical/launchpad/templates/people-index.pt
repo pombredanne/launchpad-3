@@ -20,9 +20,8 @@
         <form name="search" action="." method="GET">
           <table style="margin-bottom: 1em;">
             <tr>
-              <th><label>Search:</label></th>
               <td>
-                <input type="text" name="name" size="25" tabindex="1"
+                <input type="text" name="name" size="35" tabindex="1"
                      tal:attributes="value request/name|nothing"
                 />
                 <input
@@ -38,7 +37,6 @@
               </td>
             </tr>
             <tr>
-              <th></th>
               <td tal:define="searchfor request/searchfor|nothing">
                 <label>
                   <input
@@ -110,7 +108,7 @@
             <table class="data">
               <thead class="results">
                 <tr>
-                  <td>
+                  <td colspan="3">
                     <div style="width: 50%; float: left;">
                       Search results
                     </div>
@@ -140,6 +138,8 @@
                   <td><a tal:content="person/browsername"
             	    tal:attributes="href person/name"/>
                   </td>
+                  <td tal:content="person/name">foobar</td>
+                  <td tal:content="person/karma">34</td>
                 </tr>    
               </tbody>
             </table>

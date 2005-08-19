@@ -6,7 +6,7 @@
   tal:condition="context/nonUpdatesCount"
   tal:attributes="
     alt string: ${context/nonUpdatesPercentage} percent published, ;
-    title string:Published: ${context/nonUpdatesPercentage} %
+    title string:Published: ${context/nonUpdatesPercentage} %;
     width context/nonUpdatesPercentage;
   "
   src="/++resource++green-bar.png"
