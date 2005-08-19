@@ -680,7 +680,7 @@ class PersonSet:
 
     def topPeople(self):
         """See IPersonSet."""
-        return Person.select('password IS NOT NULL', orderBy='-karma')
+        return Person.select('password IS NOT NULL', orderBy='-karma')[:5]
 
     def newTeam(self, **kw):
         """See IPersonSet."""

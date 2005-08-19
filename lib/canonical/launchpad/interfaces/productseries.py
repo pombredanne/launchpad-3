@@ -59,8 +59,9 @@ class IProductSeries(Interface):
         "Series, sorted with latest release first.")
     potemplates = Attribute(
         _("Return an iterator over this productrelease's PO templates."))
-    potemplatecount = Attribute(_("The number of POTemplates for this "
-        "Product Series."))
+    currentpotemplates = Attribute(
+        _("Return an iterator over this productrelease's PO templates that"
+          " have the 'iscurrent' flag set'."))
     packagings = Attribute("An iterator over the Packaging entries "
         "for this product series.")
 

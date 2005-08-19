@@ -17,15 +17,29 @@ class IVPOExportSet(Interface):
     def get_potemplate_rows(potemplate):
         """Return all rows which belong to a particular PO template."""
 
-    def get_distrorelease_pofiles(release, date=None):
+    def get_distrorelease_pofiles(release, date=None, component=None,
+        languagepack=None):
         """Get a list of PO files which would be contained in an export of a
         distribtuion release.
+
+        The filtering is done based on the 'release', last modified 'date',
+        archive 'component' and if it belongs to a 'languagepack'
+        """
+
+    def get_distrorelease_pofiles_count(release, date=None, component=None,
+        languagepack=None):
+        """Return the number of PO files which would be contained in an export of a
+        distribtuion release.
+
+        The filtering is done based on the 'release', last modified 'date',
+        archive 'component' and if it belongs to a 'languagepack'
         """
 
     def get_distrorelease_rows(release, date=None):
         """Return all rows which belong to a particular distribution
         release.
         """
+
 
 class IVPOExport(Interface):
     """Database view for efficient PO exports."""

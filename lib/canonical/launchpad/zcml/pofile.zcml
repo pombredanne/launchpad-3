@@ -43,9 +43,6 @@
             name="+index"
             template="../templates/pofile-index.pt"
             lp:url="/products/$Product.name/$POTemplate.name/$POFile.language"/>
-        <browser:page
-            name="+barchart"
-            template="../templates/pofile-barchart.pt" />
 
         <!-- POFile Portlets -->
         <browser:page

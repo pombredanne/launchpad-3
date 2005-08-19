@@ -1,0 +1,96 @@
+Check to be sure that an admin can reach the POTemplate admin page.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+admin HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...Template "evolution-2.2" in ubuntu hoary package "evolution" edit in Rosetta...
+
+And that we are able to POST it.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+admin HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 2420
+  ... Content-Type: multipart/form-data; boundary=---------------------------80986468519315900241075667433
+  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+admin
+  ... 
+  ... -----------------------------80986468519315900241075667433
+  ... Content-Disposition: form-data; name="field.potemplatename"
+  ... 
+  ... evolution-2.2
+  ... -----------------------------80986468519315900241075667433
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... 
+  ... -----------------------------80986468519315900241075667433
+  ... Content-Disposition: form-data; name="field.header"
+  ... 
+  ... Project-Id-Version: PACKAGE VERSION
+  ... Report-Msgid-Bugs-To: 
+  ... POT-Creation-Date: 2005-04-07 14:10+0200
+  ... PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+  ... Last-Translator: FULL NAME <EMAIL@ADDRESS>
+  ... Language-Team: LANGUAGE <LL@li.org>
+  ... MIME-Version: 1.0
+  ... Content-Type: text/plain; charset=ASCII
+  ... Content-Transfer-Encoding: 8bit
+  ... 
+  ... -----------------------------80986468519315900241075667433
+  ... Content-Disposition: form-data; name="field.iscurrent.used"
+  ... 
+  ... 
+  ... -----------------------------80986468519315900241075667433
+  ... Content-Disposition: form-data; name="field.iscurrent"
+  ... 
+  ... on
+  ... -----------------------------80986468519315900241075667433
+  ... Content-Disposition: form-data; name="field.owner"
+  ... 
+  ... rosetta-admins
+  ... -----------------------------80986468519315900241075667433
+  ... Content-Disposition: form-data; name="field.productseries"
+  ... 
+  ... 
+  ... -----------------------------80986468519315900241075667433
+  ... Content-Disposition: form-data; name="field.distrorelease"
+  ... 
+  ... ubuntu/hoary
+  ... -----------------------------80986468519315900241075667433
+  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... 
+  ... evolution
+  ... -----------------------------80986468519315900241075667433
+  ... Content-Disposition: form-data; name="field.sourcepackageversion"
+  ... 
+  ... 
+  ... -----------------------------80986468519315900241075667433
+  ... Content-Disposition: form-data; name="field.binarypackagename"
+  ... 
+  ... 
+  ... -----------------------------80986468519315900241075667433
+  ... Content-Disposition: form-data; name="field.languagepack.used"
+  ... 
+  ... 
+  ... -----------------------------80986468519315900241075667433
+  ... Content-Disposition: form-data; name="field.languagepack"
+  ... 
+  ... on
+  ... -----------------------------80986468519315900241075667433
+  ... Content-Disposition: form-data; name="field.path"
+  ... 
+  ... po
+  ... -----------------------------80986468519315900241075667433
+  ... Content-Disposition: form-data; name="field.filename"
+  ... 
+  ... evolution-2.2.pot
+  ... -----------------------------80986468519315900241075667433
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------80986468519315900241075667433--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...

@@ -144,7 +144,7 @@ class Product(SQLBase):
         """See IProduct."""
         packages = sets.Set([package
                             for package in self.sourcepackages
-                            if package.potemplatecount > 0])
+                            if len(package.currentpotemplates) > 0])
         # Sort the list of packages by distrorelease.name and package.name
         L = [(item.distrorelease.name + item.name, item)
              for item in packages]
@@ -210,58 +210,6 @@ class Product(SQLBase):
         # ensure a consistent sort order in future, but there should be
         # a better way.
         return max(perms)
-
-    def potemplates(self):
-        """See IProduct."""
-        # XXX sabdfl 30/03/05 this method is really obsolete, because what
-        # we really care about now is ProductSeries.potemplates
-        warn("Product.potemplates is obsolete, should be on ProductRelease",
-             DeprecationWarning, stacklevel=2)
-        templates = []
-        for series in self.serieslist:
-            for potemplate in series.potemplates:
-                templates.append(potemplate)
-
-        return templates
-
-    @property
-    def potemplatecount(self):
-        """See IProduct."""
-        target = self.primary_translatable
-        if target is None:
-            return 0
-        return len(target.potemplates)
-
-    def poTemplatesToImport(self):
-        # XXX sabdfl 30/03/05 again, i think we want to be using
-        # ProductRelease.poTemplatesToImport
-        for template in iter(self.potemplates):
-            if template.rawimportstatus == RosettaImportStatus.PENDING:
-                yield template
-
-    def messageCount(self):
-        count = 0
-        for t in self.potemplates:
-            count += len(t)
-        return count
-
-    def currentCount(self, language):
-        count = 0
-        for t in self.potemplates:
-            count += t.currentCount(language)
-        return count
-
-    def updatesCount(self, language):
-        count = 0
-        for t in self.potemplates:
-            count += t.updatesCount(language)
-        return count
-
-    def rosettaCount(self, language):
-        count = 0
-        for t in self.potemplates:
-            count += t.rosettaCount(language)
-        return count
 
     def getSeries(self, name):
         """See IProduct."""
@@ -407,11 +355,8 @@ class ProductSet:
             query += ' AND Product.active IS TRUE \n'
         return Product.select(query, distinct=True, clauseTables=clauseTables)
 
-    def translatables(self, translationProject=None):
+    def translatables(self):
         """See IProductSet"""
-
-        # XXX kiko: translationProject is unused. Why?
-
         translatable_set = set()
         upstream = Product.select('''
             Product.id = ProductSeries.product AND

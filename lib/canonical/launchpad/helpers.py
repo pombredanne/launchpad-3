@@ -415,12 +415,18 @@ class RosettaWriteTarFile:
                 tarinfo = tarfile.TarInfo(joined_path)
                 tarinfo.type = tarfile.DIRTYPE
                 tarinfo.mtime = now
+                tarinfo.mode = 0755
+                tarinfo.uname = 'rosetta'
+                tarinfo.gname = 'rosetta'
                 self.tarfile.addfile(tarinfo)
 
         tarinfo = tarfile.TarInfo(path)
         tarinfo.time = now
         tarinfo.mtime = now
+        tarinfo.mode = 0644
         tarinfo.size = len(contents)
+        tarinfo.uname = 'rosetta'
+        tarinfo.gname = 'rosetta'
         self.tarfile.addfile(tarinfo, StringIO(contents))
 
     def add_files(self, files):

@@ -41,30 +41,37 @@
 
   <h2>Most Active Projects</h2>
 
-  <p>The following projects are making the most active use of Launchpad
-  services (translation and bug tracking):</p>
+  <div style="font-size: 80%;">
+    <img src="/++resource++product_icon.gif" />
+    <b>The Ubuntu Distribution</b>
+    [<a href="/distros/ubuntu">View</a>]<br />
+    <div style="margin-left: 30px;">
+      Ubuntu is a Linux distribution that emphasises ease of use and free
+      global distribution.
+      The project uses the Launchpad for all translation and bug tracking.
+    </div>
 
-  <img src="/++resource++product_icon.gif" />
-  <b>The Ubuntu Distribution</b>
-  [<a href="/distros/ubuntu">View</a>]<br />
-  Ubuntu uses the Launchpad for all translation and bug tracking.
+    <hr />
 
-  <hr />
+    <img src="/++resource++product_icon.gif" />
+    <b>GnomeBaker - CD Burning Application</b>
+    [<a href="/products/gnomebaker">View</a>]<br />
+    <div style="margin-left: 30px;">
+      GnomeBaker is a popular CD burning GUI application for the Gnome desktop
+      environment. It uses the Launchpad primarily for translation services
+      through Rosetta.
+    </div>
 
-  <img src="/++resource++product_icon.gif" />
-  <b>GnomeBaker - CD Burning Application</b>
-  [<a href="/products/gnomebaker">View</a>]<br />
-  GnomeBaker is a popular CD burning GUI application for the Gnome desktop
-  environment. It uses the Launchpad primarily for translation services
-  through Rosetta.
+    <hr />
 
-  <hr />
-
-  <img src="/++resource++product_icon.gif" />
-  <b>Bazaar - Distributed Revision Control</b>
-  [<a href="/products/bazaar">View</a>]<br />
-  Bazaar is a distributed revision control system that is based on Arch. It
-  uses the Launchpad for bug tracking.
+    <img src="/++resource++product_icon.gif" />
+    <b>Bazaar - Distributed Revision Control</b>
+    [<a href="/products/bazaar">View</a>]<br />
+    <div style="margin-left: 30px;">
+      Bazaar is a distributed revision control system that is based on Arch. It
+      uses the Launchpad for bug tracking.
+    </div>
+  </div>
 
   <hr />
 
