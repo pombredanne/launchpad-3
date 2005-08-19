@@ -26,7 +26,7 @@ from zope.component import getUtility
 
 # interface
 from canonical.launchpad.interfaces import (
-    IGPGHandler, IPymeSignature, IPymeKey)
+    IGPGHandler, IPymeSignature, IPymeKey, IPymeUserId)
 
 # pyme
 import pyme.core
@@ -369,12 +369,14 @@ class PymeKey:
         # copy the UIDs 
         self.uids = []
         uid = key.uids
-        while uid:
-            # we expect only one emailaddress by UID
-            if valid_email(uid.email) and not uid.revoked:
-                self.uids.append(uid.email)
+        while uid is not None:
+            self.uids.append(PymeUserId(uid))
             uid = uid.next
-        
+
+        # the non-revoked valid email addresses associated with this key
+        self.emails = [uid.email for uid in self.uids
+                       if valid_email(uid.email) and not uid.revoked]
+
     def _gpg_key(self, fingerprint=None):
         """Get the underlying gpg key."""
         if fingerprint is None:
@@ -406,3 +408,16 @@ class PymeKey:
     def displayname(self):
         return '%s%s/%s' % (self.keysize, self.algorithm, self.keyid)
 
+
+class PymeUserId:
+    """See IPymeUserId"""
+    implements(IPymeUserId)
+
+    def __init__(self, uid):
+        self.revoked = uid.revoked
+        self.invalid = uid.invalid
+        self.validity = uid.validity
+        self.uid = uid.uid
+        self.name = uid.name
+        self.email = uid.email
+        self.comment = uid.comment

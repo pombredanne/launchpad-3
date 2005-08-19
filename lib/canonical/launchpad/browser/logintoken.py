@@ -296,7 +296,7 @@ class ValidateEmailView(BaseLoginTokenView):
 
         self.formProcessed = True
 
-        guessed, hijacked = self._guessGpgEmails(key.uids)
+        guessed, hijacked = self._guessGpgEmails(key.emails)
 
         if len(guessed):
             # build email list
