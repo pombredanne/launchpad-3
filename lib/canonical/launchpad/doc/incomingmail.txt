@@ -70,8 +70,10 @@ import the keys first. We also need to start the Librarian, since every
 mail will get filed in there:
 
     >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
     >>> import_public_test_keys()
     >>> transaction.commit()
+    >>> LibrarianTestSetup().setUp()
 
     >>> handleMail()
 
@@ -91,6 +93,8 @@ wasn't a handler registered for that domain, an error message was sent
 to the errors email address, which is specified in launchpad.conf as
 errors_address.
 
+    >>> len(error_handler.handledMails)
+    0
     >>> handleMail()
     >>> len(error_handler.handledMails)
     1
@@ -147,5 +151,6 @@ the To and CC headers will be ignored:
     >>> msgid in foo_handler.handledMails
     False
 
+    >>> LibrarianTestSetup().tearDown()
     >>> config.malone.bugmail_error_from_address = old_error_from_address
 
