@@ -11,7 +11,6 @@
     <div tal:replace="structure context/@@+portlet-milestones" />
     <div tal:condition="context/project"
          tal:replace="structure context/project/@@+portlet-details" />
-    <div tal:replace="structure context/@@+portlet-branches" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
@@ -91,11 +90,10 @@
 
       <ul>
         <li tal:repeat="branch context/branches">
-          <a tal:attributes="href
-            string:http://bazaar.ubuntu.com/${branch/getPackageName}">
-            http://bazaar.ubuntu.com/&#8203;<span tal:content="branch/getPackageName">
-            url</span>
-          </a>
+          <a
+            tal:attributes="href string:http://bazaar.ubuntu.com/${branch/getPackageName}"
+            tal:content="branch/title"
+          >branch title</a>
         </li>
       </ul>
 

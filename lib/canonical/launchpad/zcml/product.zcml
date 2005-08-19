@@ -69,10 +69,6 @@
             template="../templates/product-portlet-details.pt"
             lp:url="/products/evolution/+portlet-details" />
         <browser:page
-            name="+portlet-branches"
-            template="../templates/product-portlet-branches.pt"
-            lp:url="/products/evolution/+portlet-branches" />
-        <browser:page
             name="+portlet-series"
             template="../templates/product-portlet-series.pt"
             lp:url="/products/evolution/+portlet-series" />
