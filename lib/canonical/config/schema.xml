@@ -226,13 +226,6 @@
         the runtime build configuration file and keyring and an
         addresss, "host:port",  pointing a reliable keyserver.
         </description>
-        <key name="home" datatype="existing-dirpath" required="yes">
-            <description>
-                Current GNUPGHOME directory,  a configuration file will be
-                allocated there according our aims and the current keyring
-                will be stored there.
-            </description>
-        </key>
         <key name="host" datatype="ipaddr-or-hostname" required="yes">
             <description>
                 Host running PKS-like (SKS) keyserver Application.
