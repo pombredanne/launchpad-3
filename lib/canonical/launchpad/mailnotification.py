@@ -94,7 +94,7 @@ def generate_bug_add_email(bug):
 
     # Add information about the affected upstreams and packages.
     for bugtask in bug.bugtasks:
-        body += u"Affects: %s\n" % bugtask.contextname
+        body += u"Affects: %s\n" % bugtask.targetname
         body += u"       Severity: %s\n" % bugtask.severity.title
         body += u"       Priority: %s\n" % bugtask.priority.title
         if bugtask.assignee:

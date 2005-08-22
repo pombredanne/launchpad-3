@@ -282,7 +282,7 @@ class ViewWithBugTaskContext:
 
         Returns True or False.
         """
-        bugtarget = self.context.context
+        bugtarget = self.context.target
         if (IDistribution.providedBy(bugtarget) or
             IDistroRelease.providedBy(bugtarget)):
             return True

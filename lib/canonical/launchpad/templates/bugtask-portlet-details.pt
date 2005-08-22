@@ -13,8 +13,8 @@
         style="text-decoration: underline"></a><br />
 
       <b>On:</b>
-      <a tal:content="context/contextname"
-         tal:attributes="href context/context/fmt:url">ubuntu</a><br />
+      <a tal:content="context/targetname"
+         tal:attributes="href context/target/fmt:url">ubuntu</a><br />
 
       <b>Date:</b>
       <tal:block content="context/datecreated/fmt:date" />

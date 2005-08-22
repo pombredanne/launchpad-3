@@ -47,12 +47,12 @@ class BugPageTitle:
 class BugTaskPageTitle:
     def __call__(self, context, view):
         return "Bug #%d in %s - %s" % (
-            context.bug.id, context.contextname, context.bug.title)
+            context.bug.id, context.targetname, context.bug.title)
 
 
 class BugTaskTargetingTitle:
     def __call__(self, context, view):
-        task_target = context.context
+        task_target = context.target
         if IDistribution.providedBy(task_target):
             distribution_title = task_target.title
         elif IDistroRelease.providedBy(task_target):
