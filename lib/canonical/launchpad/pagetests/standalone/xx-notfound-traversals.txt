@@ -1,10 +1,12 @@
-= Traversal methods =
 
 A common error of traversal methods is that they raise a KeyError,
 IndexError, LookupError NotFoundError etc. instead of
 zope.interfaces.NotFound. This means they generate a System Error page
 instead of a correct 404 page. So we test them to ensure the correct HTTP
 status is returned.
+
+XXX: This test may be better done using a tweaked LinkChecker or other
+spider -- StuartBishop 20050822
 
 
 >>> def check(valid_url):
@@ -20,6 +22,9 @@ status is returned.
 
 
 >>> check("/")
+>>> check("/legal")
+>>> check("/feedback")
+
 >>> check("/bounties")
 >>> check("/bounties/foomatic-widgets")
 
@@ -42,4 +47,7 @@ status is returned.
 >>> check("/people")
 >>> check("/people/name12")
 >>> check("/people/name12/+calendar")
+>>> check("/people/+peoplelist")
+>>> check("/people/+teamlist")
+>>> check("/people/+ubuntitelist")
 
