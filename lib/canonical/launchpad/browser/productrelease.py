@@ -3,7 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'ProductReleaseView',
+    'ProductReleaseEditView',
     'ProductReleaseAddView',
     'ProductReleaseRdfView',
     ]
@@ -46,7 +46,7 @@ class ProductReleaseAddView(AddView):
         notify(ObjectCreatedEvent(newrelease))
 
 
-class ProductReleaseView(SQLObjectEditView):
+class ProductReleaseEditView(SQLObjectEditView):
     """A View class for ProductRelease objects"""
 
     def changed(self):
