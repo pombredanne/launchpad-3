@@ -91,7 +91,7 @@ class ProductSeries(SQLBase):
             "POTemplateName.name = %s" % sqlvalues(self.id, name),
             clauseTables=['ProductRelease', 'POTemplateName'])
 
-        if template is None: 
+        if template is None:
             raise NotFoundError(name)
         return template
 
