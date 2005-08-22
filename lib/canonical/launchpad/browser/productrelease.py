@@ -29,7 +29,7 @@ from canonical.launchpad.webapp import canonical_url
 class ProductReleaseAddView(AddView):
 
     __used_for__ = IProductRelease
-    
+
     _nextURL = '.'
 
     def nextURL(self):
@@ -47,11 +47,10 @@ class ProductReleaseAddView(AddView):
 
 
 class ProductReleaseEditView(SQLObjectEditView):
-    """A View class for ProductRelease objects"""
+    """Edit view for ProductRelease objects"""
 
     def changed(self):
         self.request.response.redirect('.')
-
 
 
 class ProductReleaseRdfView(object):
