@@ -12,6 +12,7 @@ from urllib import quote as urlquote
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.publisher.interfaces import NotFound
 
 from CVS.protocol import CVSRoot
 import pybaz
@@ -30,7 +31,10 @@ def traverseProductSeries(series, request, name):
     if name == '+pots':
         potemplateset = getUtility(IPOTemplateSet)
         return potemplateset.getSubset(productseries=series)
-    return series.getRelease(name)
+    try:
+        return series.getRelease(name)
+    except NotFoundError:
+        raise NotFound(series, name, request)
 
 def validate_cvs_root(cvsroot, cvsmodule):
     try:
