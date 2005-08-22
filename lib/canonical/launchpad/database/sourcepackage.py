@@ -8,6 +8,8 @@ import sets
 from zope.interface import implements
 from zope.component import getUtility
 
+from sqlobject import SQLObjectNotFound
+
 from canonical.database.sqlbase import (quote, sqlvalues,
     flush_database_updates)
 from canonical.database.constants import UTC_NOW
@@ -421,7 +423,7 @@ class SourcePackageSet(object):
     def __getitem__(self, name):
         try:
             spname = SourcePackageName.byName(name)
-        except IndexError:
+        except SQLObjectNotFound:
             raise KeyError, 'No source package name %s' % name
         return SourcePackage(sourcepackagename=spname,
                              distrorelease=self.distrorelease)

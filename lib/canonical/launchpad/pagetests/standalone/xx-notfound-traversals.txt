@@ -9,6 +9,7 @@ status is returned.
 
 >>> http(r"GET /wobbly HTTP/1.0").getStatus()
 404
+
 >>> http(r"GET /products/wobbly HTTP/1.0").getStatus()
 404
 >>> http(r"GET /products/firefox/wobbly HTTP/1.0").getStatus()
@@ -16,5 +17,17 @@ status is returned.
 >>> http(r"GET /products/firefox/+series/wobbly HTTP/1.0").getStatus()
 404
 >>> http(r"GET /products/firefox/+series/1.0/wobbly HTTP/1.0").getStatus()
+404
+
+>>> http(r"GET /distros/wobbly HTTP/1.0").getStatus()
+404
+>>> http(r"GET /distros/ubuntu/wobbly HTTP/1.0").getStatus()
+404
+>>> http(r"GET /distros/ubuntu/hoary/wobbly HTTP/1.0").getStatus()
+404
+>>> http(r"GET /distros/ubuntu/hoary/+sources/wobbly HTTP/1.0").getStatus()
+404
+>>> http(r"GET /distros/ubuntu/hoary/+sources/mozilla-firefox/wobbly"
+...      r" HTTP/1.0").getStatus()
 404
 

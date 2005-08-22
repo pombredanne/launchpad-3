@@ -146,7 +146,11 @@ def traverse_distribution(distribution, request, name):
                 bug = getUtility(IBugSet).get(nextstep)
                 return _get_task_for_context(bug, distribution)
     else:
-        return getUtility(ILaunchBag).distribution[name]
+        bag = getUtility(ILaunchBag)
+        try:
+            return bag.distribution[name]
+        except KeyError:
+            return None
 
 def traverse_distrorelease(distrorelease, request, name):
     """Traverse an IDistroRelease."""
@@ -192,7 +196,10 @@ def traverse_distrorelease(distrorelease, request, name):
             drlangset = getUtility(IDistroReleaseLanguageSet)
             return drlangset.getDummy(distrorelease, lang)
     else:
-        return distrorelease[name]
+        try:
+            return distrorelease[name]
+        except KeyError:
+            return None
 
 
 def _get_task_for_context(bug, context):
