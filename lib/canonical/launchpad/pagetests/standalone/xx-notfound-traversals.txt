@@ -6,8 +6,15 @@ zope.interfaces.NotFound. This means they generate a System Error page
 instead of a correct 404 page. So we test them to ensure the correct HTTP
 status is returned.
 
-== ProductSeries ==
 
+>>> http(r"GET /wobbly HTTP/1.0").getStatus()
+404
+>>> http(r"GET /products/wobbly HTTP/1.0").getStatus()
+404
+>>> http(r"GET /products/firefox/wobbly HTTP/1.0").getStatus()
+404
+>>> http(r"GET /products/firefox/+series/wobbly HTTP/1.0").getStatus()
+404
 >>> http(r"GET /products/firefox/+series/1.0/wobbly HTTP/1.0").getStatus()
 404
 

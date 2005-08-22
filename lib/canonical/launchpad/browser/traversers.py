@@ -75,7 +75,10 @@ def traverse_project(project, request, name):
     if name == '+calendar':
         return ICalendarOwner(project).calendar
     else:
-        return project.getProduct(name)
+        try:
+            return project.getProduct(name)
+        except NotFoundError:
+            return None
 
 
 def traverse_product(product, request, name):
@@ -108,7 +111,10 @@ def traverse_product(product, request, name):
     elif name == '+calendar':
         return ICalendarOwner(product).calendar
     else:
-        return product.getRelease(name)
+        try:
+            return product.getRelease(name)
+        except NotFoundError:
+            return None
 
     return None
 
