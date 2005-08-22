@@ -24,15 +24,6 @@ class IBountySubscription(Interface):
             readonly=True,
             )
     bounty = Int(title=_('Bounty ID'), required=True, readonly=True)
-    subscription = Choice(
-            title=_('Subscription'), required=True, readonly=False,
-            description=_("""Your subscription to a bounty can be one of
-            "watch", "cc" or "none". If you "watch" a bounty then it will
-            show up on your reports, but you won't normally receive bounty
-            mail. If you "cc" yourself on a bounty you will receive a copy of
-            all bounty update notifications by email.
-            """),
-            vocabulary='Subscription')
 
 
 class IBountySubscriptionSet(Interface):

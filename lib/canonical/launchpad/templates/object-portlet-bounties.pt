@@ -4,13 +4,13 @@
 
   <div class="portletBody portletContent">
 
-    <ol>
-      <li tal:repeat="bounty context/bounties">
+    <ul>
+      <li class="bounty" tal:repeat="bounty context/bounties">
         <a tal:content="bounty/title"
            tal:attributes="hover bounty/summary;
                            href bounty/fmt:url">bounty title</a>
       </li>
-    </ol>
+    </ul>
 
     <ul><li class="info">
     <a href="+bounties"

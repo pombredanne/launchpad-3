@@ -10,6 +10,8 @@ __metaclass__ = type
 __all__ = [
     'vocab_factory',
     'SubscriptionVocabulary',
+    'BountyDifficultyVocabulary',
+    'BountyStatusVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugTaskStatusVocabulary',
     'BugTaskPriorityVocabulary',
@@ -54,6 +56,8 @@ def vocab_factory(schema, noshow=[]):
 # DB Schema Vocabularies
 
 SubscriptionVocabulary = vocab_factory(dbschema.BugSubscription)
+BountyDifficultyVocabulary = vocab_factory(dbschema.BountyDifficulty)
+BountyStatusVocabulary = vocab_factory(dbschema.BountyStatus)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugTaskStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
 BugTaskPriorityVocabulary = vocab_factory(dbschema.BugTaskPriority)
@@ -71,3 +75,5 @@ GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
 PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
 PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
 CVEStateVocabulary = vocab_factory(dbschema.CVEState)
+
+

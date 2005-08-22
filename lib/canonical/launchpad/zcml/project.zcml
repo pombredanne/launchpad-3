@@ -185,6 +185,32 @@
            displayWidth="60" />
     </browser:addform>
 
+    <browser:addform
+      name="+linkbounty"
+      for="canonical.launchpad.interfaces.IProject"
+      schema="canonical.launchpad.interfaces.IProjectBounty"
+      class="canonical.launchpad.browser.bounty.BountyLinkView"
+      label="Link Existing Bounty"
+      fields="project bounty"
+      keyword_arguments="project bounty"
+      permission="launchpad.AnyPerson"
+      template="../templates/bounty-link.pt"
+      lp:url="/projects/$Project.name/+linkbounty">
+      <browser:widget
+        field="project"
+        class="canonical.widgets.ContextWidget" />
+    </browser:addform>
+
+    <browser:addform
+      name="+addbounty"
+      for="canonical.launchpad.interfaces.IProject"
+      schema="canonical.launchpad.interfaces.IBounty"
+      label="Register A New Bounty"
+      fields="name title summary usdvalue difficulty description"
+      class="canonical.launchpad.browser.BountyAddView"
+      permission="launchpad.AnyPerson"
+      template="../templates/bounty-add.pt"
+      />
 
     <!-- ProjectSet-->
     <content class="canonical.launchpad.database.ProjectSet">

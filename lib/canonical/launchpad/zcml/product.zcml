@@ -250,6 +250,33 @@
     </browser:addform>
 
     <browser:addform
+      name="+linkbounty"
+      for="canonical.launchpad.interfaces.IProduct"
+      schema="canonical.launchpad.interfaces.IProductBounty"
+      class="canonical.launchpad.browser.bounty.BountyLinkView"
+      label="Link Existing Bounty"
+      fields="product bounty"
+      keyword_arguments="product bounty"
+      permission="launchpad.AnyPerson"
+      template="../templates/bounty-link.pt"
+      lp:url="/products/$Product.name/+linkbounty">
+      <browser:widget
+        field="product"
+        class="canonical.widgets.ContextWidget" />
+    </browser:addform>
+
+    <browser:addform
+      name="+addbounty"
+      for="canonical.launchpad.interfaces.IProduct"
+      schema="canonical.launchpad.interfaces.IBounty"
+      label="Register A New Bounty"
+      fields="name title summary usdvalue difficulty description"
+      class="canonical.launchpad.browser.BountyAddView"
+      permission="launchpad.AnyPerson"
+      template="../templates/bounty-add.pt"
+      />
+
+    <browser:addform
         name="+addseries"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IProductSeries"

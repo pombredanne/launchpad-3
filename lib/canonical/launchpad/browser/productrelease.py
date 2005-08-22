@@ -3,7 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'ProductReleaseView',
+    'ProductReleaseEditView',
     'ProductReleaseAddView',
     'ProductReleaseRdfView',
     ]
@@ -29,7 +29,7 @@ from canonical.launchpad.webapp import canonical_url
 class ProductReleaseAddView(AddView):
 
     __used_for__ = IProductRelease
-    
+
     _nextURL = '.'
 
     def nextURL(self):
@@ -46,12 +46,11 @@ class ProductReleaseAddView(AddView):
         notify(ObjectCreatedEvent(newrelease))
 
 
-class ProductReleaseView(SQLObjectEditView):
-    """A View class for ProductRelease objects"""
+class ProductReleaseEditView(SQLObjectEditView):
+    """Edit view for ProductRelease objects"""
 
     def changed(self):
         self.request.response.redirect('.')
-
 
 
 class ProductReleaseRdfView(object):

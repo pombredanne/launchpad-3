@@ -13,12 +13,13 @@ from zope.i18nmessageid import MessageIDFactory
 
 from zope.interface import Attribute
 
-from zope.schema import Datetime, Int, Text, TextLine, Float
+from zope.schema import Datetime, Int, Choice, Text, TextLine, Float
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad.fields import Summary, Title, TimeInterval
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.lp.dbschema import BountyDifficulty, BountyStatus
 
 _ = MessageIDFactory('launchpad')
 
@@ -60,21 +61,19 @@ class IBounty(IHasOwner):
             currencies, so this USD value is an estimate based
             on recent currency rates.""")
             )
-    difficulty = Int(
-            title=_('Difficulty'),
-            required=True, description=_("""From 1 (easiest) to 100
-            (most difficult). An example of
-            an extremely difficult bounty would be something that requires
-            extensive and rare knowledge, such as a kernel memory management
-            subsystem.""")
-            )
-    duration = TimeInterval(
-            title=_('Duration'),
-            required=True, description=_("""The expected time required to
-            complete this bounty work, given the necessary skills.""")
-            )
-    reviewer = Attribute('The reviewer.')
-    reviewerID = Int(title=_('Reviewer'), required=True)
+    bountystatus = Choice(
+        title=_('Status'), vocabulary='BountyStatus',
+        default=BountyStatus.OPEN, description=_("The current "
+        "status of this bounty."))
+    difficulty = Choice(
+        title=_('Difficulty'), vocabulary='BountyDifficulty',
+        default=BountyDifficulty.NORMAL, description=_("The difficulty "
+        "of this bounty. Try to find the option that best matches the "
+        "work to be done."))
+    reviewer = Choice(title=_('The bounty reviewer.'), required=False,
+        description=_("The person who is responsible for deciding whether "
+        "the bounty is awarded, and to whom if there are multiple "
+        "claimants."), vocabulary='ValidPersonOrTeamVocabulary')
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True,
             )

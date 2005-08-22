@@ -12,6 +12,7 @@ __all__ = [
     'IHugeVocabulary',
     'SQLObjectVocabularyBase',
     'NamedSQLObjectVocabulary',
+    'BountyVocabulary',
     'BinaryPackageNameVocabulary',
     'ProductVocabulary',
     'ProjectVocabulary',
@@ -50,7 +51,7 @@ from canonical.launchpad.database import (
     Distribution, DistroRelease, Person, SourcePackageRelease,
     SourcePackageName, BinaryPackage, BugWatch, BinaryPackageName, Language,
     Milestone, Product, Project, ProductRelease, ProductSeries,
-    TranslationGroup, BugTracker, POTemplateName, Schema)
+    TranslationGroup, BugTracker, POTemplateName, Schema, Bounty)
 from canonical.launchpad.interfaces import (
     ILaunchBag, ITeam, ITeamMembershipSubset, IPersonSet, IEmailAddressSet)
 
@@ -262,6 +263,10 @@ class BinaryPackageVocabulary(SQLObjectVocabularyBase):
 
     def getTermByToken(self, token):
         return self.getTerm(token)
+
+
+class BountyVocabulary(SQLObjectVocabularyBase):
+    _table = Bounty
 
 
 class BugTrackerVocabulary(SQLObjectVocabularyBase):
