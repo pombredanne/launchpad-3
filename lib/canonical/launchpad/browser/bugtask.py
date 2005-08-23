@@ -38,6 +38,12 @@ from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
 
+# This shortcut constant indicates what we consider "open"
+# (non-terminal) states. XXX: should this be centralized elsewhere?
+#       -- kiko, 2005-08-23
+STATUS_OPEN = any(dbschema.BugTaskStatus.NEW,
+                  dbschema.BugTaskStatus.ACCEPTED)
+
 class BugTasksReportView:
     """The view class for the assigned bugs report."""
 
@@ -252,9 +258,10 @@ class BugTaskReleaseTargetingView:
                 spname = spnames[0]
 
             user = getUtility(ILaunchBag).user
-            getUtility(IBugTaskSet).createTask(
-                bug=bug, owner=user, distrorelease=release,
-                sourcepackagename=spname)
+            task = getUtility(IBugTaskSet).createTask(
+                    bug=bug, owner=user, distrorelease=release,
+                    sourcepackagename=spname)
+            assert task
 
         # Redirect the user back to the task edit form.
         self.request.response.redirect(
@@ -379,19 +386,22 @@ class BugTaskSearchListingView:
                 # The user wants to filter on certain text.
                 search_params.searchtext = searchtext
 
-        statuses = form_params.get("status")
-        if statuses:
+        statuses = form_params.get("status", None)
+        if statuses is not None:
             search_params.status = any(*statuses)
-        elif not self.request.form.get("search"):
-            # The user is likely coming into the form by clicking
-            # on a URL (vs. having submitted a GET search query),
-            # so show NEW and ACCEPTED bugs by default.
-            search_params.status = any(dbschema.BugTaskStatus.NEW,
-                                       dbschema.BugTaskStatus.ACCEPTED)
-        else:
-            # the user didn't select any statuses in the advanced search
-            # form, which is okay
+        elif (self.request.form.get('advanced') or
+              self.request.form.get('any-status')):
+            # The advanced search form always provides explicit
+            # statuses; the any-status bit is a hack to allow us to
+            # generate URLs to the basic search that display bugs in any
+            # status. XXX: should this be cleaned up to make the status
+            # /always/ explicit?
+            #   -- kiko, 2005-08-23
             pass
+        else:
+            # The basic search form always uses the open statuses by
+            # default
+            search_params.status = STATUS_OPEN
 
         unassigned = form_params.get("unassigned")
         if unassigned:
@@ -478,11 +488,8 @@ class BugTaskSearchListingView:
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
-        status_new = dbschema.BugTaskStatus.NEW
-        status_accepted = dbschema.BugTaskStatus.ACCEPTED
         critical = dbschema.BugTaskSeverity.CRITICAL
-
-        return self._countTasks(status=any(status_new, status_accepted),
+        return self._countTasks(status=STATUS_OPEN,
                                 severity=critical, user=self.user,
                                 omit_dupes=True)
 
@@ -504,12 +511,8 @@ class BugTaskSearchListingView:
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
-        status_new = dbschema.BugTaskStatus.NEW
-        status_accepted = dbschema.BugTaskStatus.ACCEPTED
-
         return self._countTasks(assignee=self.user, user=self.user,
-                                status=any(status_new, status_accepted),
-                                omit_dupes=True)
+                                status=STATUS_OPEN, omit_dupes=True)
 
     @property
     def assigned_to_me_count_filter_url(self):
@@ -549,11 +552,8 @@ class BugTaskSearchListingView:
         The count only considers bugs that the user would actually be
         able to see in a listing.
         """
-        status_new = dbschema.BugTaskStatus.NEW
-        status_accepted = dbschema.BugTaskStatus.ACCEPTED
-
         return self._countTasks(assignee=NULL, user=self.user, omit_dupes=True,
-                                status=any(status_new, status_accepted))
+                                status=STATUS_OPEN)
 
     @property
     def unassigned_count_filter_url(self):
@@ -569,6 +569,26 @@ class BugTaskSearchListingView:
             "search=Search")
 
     @property
+    def total_open_count(self):
+        """Return the total number of bugs filed in this context.
+
+        The count only considers bugs that the user would actually be
+        able to see in a listing.
+        """
+        return self._countTasks(user=self.user, status=STATUS_OPEN,
+                                omit_dupes=True)
+
+    @property
+    def total_open_count_filter_url(self):
+        """Construct and return the URL that shows all open bugs.
+
+        The URL is context-aware. Note that the basic bug search listing
+        only displays open bugs, which is why we don't need to specify
+        any status here.
+        """
+        return str(self.request.URL) + "?search=Search"
+    
+    @property
     def total_count(self):
         """Return the total number of bugs filed in this context.
 
@@ -583,7 +603,8 @@ class BugTaskSearchListingView:
 
         The URL is context-aware.
         """
-        return str(self.request.URL) + "?search=Search"
+        # See search() for details on the any-status hack
+        return str(self.request.URL) + "?any-status=1&search=Search"
 
     @property
     def release_bug_counts(self):
@@ -614,9 +635,8 @@ class BugTaskSearchListingView:
 
         release_bugs = []
         for release in releases:
-            bugcount = self._countTasks(user=self.user,
-                            status=any(dbschema.BugTaskStatus.NEW,
-                            dbschema.BugTaskStatus.ACCEPTED), omit_dupes=True)
+            bugcount = self._countTasks(user=self.user, status=STATUS_OPEN, 
+                                        omit_dupes=True)
             release_bugs.append({
                 "releasename" : release.displayname,
                 "bugcount" : bugcount,
