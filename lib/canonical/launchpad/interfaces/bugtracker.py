@@ -11,7 +11,9 @@ __all__ = [
 
 from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
-from zope.schema import Int, Text, TextLine
+from zope.schema import Int, Text, TextLine, Choice
+
+from canonical.lp import dbschema
 
 _ = MessageIDFactory('launchpad')
 
@@ -19,14 +21,31 @@ class IBugTracker(Interface):
     """A remote a bug system."""
 
     id = Int(title=_('ID'))
-    bugtrackertype = Int(title=_('Bug Tracker Type'))
-    name = TextLine(title=_('Name'))
-    title = TextLine(title=_('Title'))
-    summary = Text(title=_('Summary'))
-    baseurl = TextLine(title=_('Base URL'))
+    bugtrackertype = Choice(
+        title=_('Bug Tracker Type'),
+        description=_('The bug tracking software used by this external bug tracker.'),
+        vocabulary="BugTrackerType",
+        default=dbschema.BugTrackerType.BUGZILLA)
+    name = TextLine(
+        title=_('Name'),
+        description=_('A URL-friendly name for this bug tracker, e.g. "mozilla-bugs".'))
+    title = TextLine(
+        title=_('Title'),
+        description=_('A descriptive label for this tracker to show in listings.'))
+    summary = Text(
+        title=_('Summary'),
+        description=_('A brief introduction or overview of this bug tracker instance.'))
+    baseurl = TextLine(
+        title=_('Base URL'),
+        description=_('The top-level URL for this bug tracker instance.'))
     owner = Int(title=_('Owner'))
-    contactdetails = Text(title=_('Contact details'))
-    watches = Attribute(_('The remote watches on this bug tracker.'))
+    contactdetails = Text(
+        title=_('Contact details'),
+        description=_(
+            'The contact details for the external bug tracker (to, for '
+            'example, reach administrators in the event of a security breach.)'))
+    watches = Attribute('The remote watches on this bug tracker.')
+    projects = Attribute("The projects which use this bug tracker.")
 
     # properties
     watchcount = Attribute("Return the number of watches on this "
@@ -42,6 +61,8 @@ class IBugTrackerSet(Interface):
     """
 
     title = Attribute('Title')
+
+    bugtracker_count = Attribute("The number of registered bug trackers.")
 
     def __getitem__(name):
         """Get a BugTracker by its name in the database.
@@ -65,4 +86,5 @@ class IBugTrackerSet(Interface):
     def normalise_baseurl(baseurl):
         """Turn https into http, so that we do not create multiple
         bugtrackers unnecessarily."""
+
 

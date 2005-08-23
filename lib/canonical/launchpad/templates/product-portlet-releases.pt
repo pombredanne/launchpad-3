@@ -1,0 +1,20 @@
+<div class="portlet">
+
+  <h4>Releases of <span tal:replace="context/displayname">
+                        evolution</span>:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li class="products" tal:repeat="release context/releases">
+        <a tal:content="release/version"
+           tal:attributes="href release/fmt:url">2.1.6</a>
+      </li>
+      <li class="info" tal:condition="not: context/releases">
+        <i>No releases registered yet.</i>
+      </li>
+    </ul>
+	
+  </div>
+
+</div>

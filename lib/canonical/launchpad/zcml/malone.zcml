@@ -23,13 +23,6 @@
         <allow interface="canonical.launchpad.interfaces.IMaloneApplication" />
     </securedutility>
 
-    <!-- general template for everything in malone -->
-    <browser:pages for="*" permission="zope.Public">
-        <browser:page
-            name="malone_template"
-            template="../templates/main-template.pt" />
-    </browser:pages>
-
     <browser:menu
         id="malone_actions"
         title="Menu for Malone-related actions." />
@@ -51,8 +44,7 @@
     <!-- pages for the malone application -->
     <browser:pages
         for="canonical.launchpad.interfaces.IMaloneApplication"
-        permission="zope.Public"
-        class="canonical.malone.browser.MaloneApplicationView" >
+        permission="zope.Public">
         <browser:page
             name="+index"
             template="../templates/malone-index.pt"

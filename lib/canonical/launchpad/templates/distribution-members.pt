@@ -7,7 +7,6 @@
 
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/@@+portlet-bounties" />
 </metal:leftportlets>
 
 
@@ -26,9 +25,14 @@
     tal:replace="context/displayname">Ubuntu</span>.
   </p>
 
-  <h2 tal:content="context/members/browsername">Members Team</h2>
-
   <div tal:replace="structure context/members/@@+teamlist" />
+
+  <p tal:condition="context/members/isTeam">
+    These members are all part of the team called
+    "<span tal:content="context/members/browsername">Members
+    Team</span>". You can find out more information about the team
+    <a tal:attributes="href context/members/fmt:url">here</a>.
+  </p>
 
 </div>
 

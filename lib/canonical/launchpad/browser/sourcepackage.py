@@ -9,13 +9,12 @@ __all__ = [
     'SourcePackageView',
     'SourcePackageBugsView',
     'SourcePackageSetView',
-    ]
+    'SourcePackageFilebugView']
 
 # Python standard library imports
 import cgi
 import re
 import sets
-from apt_pkg import ParseSrcDepends
 
 from zope.component import getUtility
 from zope.app.form.interfaces import IInputWidget
@@ -23,12 +22,16 @@ from zope.app import zapi
 
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
+from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import (IPOTemplateSet, IPackaging,
-    ILaunchBag, ICountry)
+from canonical.launchpad.interfaces import (
+    IPOTemplateSet, IPackaging, ILaunchBag, ICountry, IBugTaskSet)
 from canonical.launchpad.browser.potemplate import POTemplateView
-
 from canonical.soyuz.generalapp import builddepsSet
+from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.webapp import canonical_url
+
+from apt_pkg import ParseSrcDepends
 
 BATCH_SIZE = 40
 
@@ -42,13 +45,14 @@ def linkify_changelog(changelog, sourcepkgnametxt):
     changelog = re.sub(r'%s \(([^)]+)\)' % sourcepkgnametxt,
                        r'%s (<a href="../\1">\1</a>)' % sourcepkgnametxt,
                        changelog)
-    changelog = re.sub(r'(([Ww]arty|[Uu]buntu) *#)([0-9]+)', 
+    changelog = re.sub(r'(([Ww]arty|[Uu]buntu) *#)([0-9]+)',
                        r'<a href="%s\3">\1\3</a>' % warty_bugs,
                        changelog)
-    changelog = re.sub(r'[^(W|w)arty]#([0-9]+)', 
+    changelog = re.sub(r'[^(W|w)arty]#([0-9]+)',
                        r'<a href="%s\1">#\1</a>' % deb_bugs,
                        changelog)
     return changelog
+
 
 def traverseSourcePackage(sourcepackage, request, name):
     if name == '+pots':
@@ -59,7 +63,33 @@ def traverseSourcePackage(sourcepackage, request, name):
     else:
         raise KeyError, 'No such suburl for Source Package: %s' % name
 
-class SourcePackageReleasePublishingView(object):
+
+class SourcePackageFilebugView(SQLObjectAddView):
+    """View for filing a bug on a source package."""
+    def create(self, *args, **kw):
+        """Create an IDistroBugTask."""
+        # Because distribution and sourcepackagename are things
+        # inferred from the context rather than data entered on the
+        # filebug form, we have to manually add these values to the
+        # keyword arguments.
+        assert 'distribution' not in kw
+        assert 'sourcepackagename' not in kw
+
+        kw['distribution'] = self.context.distrorelease.distribution
+        kw['sourcepackagename'] = self.context.sourcepackagename
+
+        # Store the added bug so that it can be accessed easily in any
+        # other method on this class (e.g. nextURL)
+        self.addedBug = SQLObjectAddView.create(self, *args, **kw)
+
+        return self.addedBug
+
+    def nextURL(self):
+        """Return the bug page URL of the bug that was just filed."""
+        return canonical_url(self.addedBug)
+
+
+class SourcePackageReleasePublishingView:
 
     def __init__(self, context, request):
         self.context = context
@@ -128,7 +158,7 @@ class SourcePackageReleasePublishingView(object):
         return results
 
 
-class SourcePackageInDistroSetView(object):
+class SourcePackageInDistroSetView:
 
     def __init__(self, context, request):
         self.context = context
@@ -188,7 +218,18 @@ class SourcePackageView:
             else:
                 self.status_message = 'Invalid upstream branch given.'
 
-
+    def published_by_pocket(self):
+        """This morfs the results of ISourcePackage.published_by_pocket into
+        something easier to parse from a page template. It becomes a list of
+        dictionaries, sorted in dbschema item order, each representing a
+        pocket and the packages in it."""
+        result = []
+        thedict = self.context.published_by_pocket
+        for pocket in PackagePublishingPocket.items:
+            newdict = {'pocketdetails': pocket}
+            newdict['packages'] = thedict[pocket]
+            result.append(newdict)
+        return result
 
     def binaries(self):
         """Format binary packages into binarypackagename and archtags"""
@@ -251,7 +292,7 @@ class SourcePackageView:
 
     def templateviews(self):
         return [POTemplateView(template, self.request)
-                for template in self.context.potemplates]
+                for template in self.context.currentpotemplates]
 
     def potemplatenames(self):
         potemplatenames = []

@@ -1,0 +1,34 @@
+<div class="discreet">
+  <div>
+    <img
+      alt="Key to the above table: &#8220;published&#8221; means"
+      src="/++resource++green-bar.png"
+      style="height: 1em; width: 2em;"
+    />
+    Translation unchanged since last synchronized
+  </div>
+  <div>
+    <img
+      alt="&#8220;Changed&#8221; means"
+      src="/++resource++blue-bar.png"
+      style="height: 1em; width: 2em;"
+    />
+    Changed in Rosetta
+  </div>
+  <div>
+    <img
+      alt="&#8220;new&#8221; means"
+      src="/++resource++purple-bar.png"
+      style="height: 1em; width: 2em;"
+    />
+    Newly translated in Rosetta
+  </div>
+  <div>
+    <img
+      alt="and &#8220;untranslated&#8221; means just that,"
+      src="/++resource++red-bar.png"
+      style="height: 1em; width: 2em;"
+    />
+    Untranslated
+  </div>
+</div>

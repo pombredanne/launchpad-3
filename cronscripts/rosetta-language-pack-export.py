@@ -49,6 +49,13 @@ def parse_options(args):
     # Add the verbose/quiet options.
     logger_options(parser)
 
+    parser.add_option(
+        '--component',
+        dest='component',
+        default=None,
+        action='store'
+        )
+
     options, args = parser.parse_args(args)
 
     if len(args) != 2:
@@ -71,6 +78,7 @@ def main(argv):
     success = export_language_pack(
         distribution_name=distribution_name,
         release_name=release_name,
+        component=options.component,
         update=options.update,
         output_file=options.output,
         email_addresses=options.email_addresses,

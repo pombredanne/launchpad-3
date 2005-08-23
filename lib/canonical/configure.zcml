@@ -2,7 +2,7 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
-    i18n_domain="launchpad">
+    i18n_domain="canonical">
 
     <!-- Hack to allow 'count' method of sqlobject's SelectResults -->
     <class class="sqlobject.main.SelectResults">
@@ -77,6 +77,35 @@
         template="launchpad/templates/root-index.pt"
         permission="zope.Public"
         />
+
+    <browser:pages
+        for="canonical.publication.RootObject"
+        permission="zope.Public"
+        >
+        <browser:page
+          name="+portlet-malone"
+          template="launchpad/templates/root-portlet-malone.pt" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.publication.RootObject"
+        class="canonical.launchpad.browser.RosettaApplicationView"
+        permission="zope.Public"
+        >
+        <browser:page
+          name="+portlet-rosetta"
+          template="launchpad/templates/root-portlet-rosetta.pt" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.publication.RootObject"
+        class="canonical.launchpad.browser.FOAFSearchView"
+        permission="zope.Public"
+        >
+        <browser:page
+          name="+portlet-foaf"
+          template="launchpad/templates/root-portlet-foaf.pt" />
+    </browser:pages>
 
     <!-- The root index for the debug view. This is a bit of a bodge, but it
         lets us have a different page on the production server from the one on
@@ -170,7 +199,5 @@
     </browser:pages>
 
     <include package="canonical.lp" />
-
-    <i18n:registerTranslations directory="launchpad/locale" />
 
 </configure>

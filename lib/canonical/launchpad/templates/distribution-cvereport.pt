@@ -1,0 +1,108 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-aboutcve" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>CVE Report</h1>
+
+  <p class="documentDescription">This page shows the known CVE issues in
+    <span tal:replace="context/displayname">Ubuntu</span>. See also the
+    CVE reports for each specific release of the distribution for a complete
+    picture.
+  </p>
+
+  <h2>Open Issues</h2>
+
+    <table class="listing" tal:condition="context/open_cve_bugtasks">
+      <thead>
+        <tr>
+          <th>CVE</th>
+          <th>Bug Title</th>
+          <th>Source Package</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="bugtask context/open_cve_bugtasks">
+          <td>
+            <tal:block repeat="cve bugtask/bug/cverefs">
+              <img src="/++resource++link_icon.gif" />
+              <a tal:content="cve/displayname"
+                 tal:attributes="href cve/url">CVE-1999-1234</a><br />
+            </tal:block>
+          </td>
+          <td>
+            <a tal:content="bugtask/bug/title"
+               tal:attributes="href bugtask/bug/fmt:url"
+               >Foo Bar does not work</a>
+          </td>
+          <td tal:content="bugtask/sourcepackagename/name">apache2</td>
+          <td>
+            <span tal:content="bugtask/status/title"
+                  tal:attributes="class string:status${bugtask/status/title}"
+                  >Accepted</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p tal:condition="not: context/open_cve_bugtasks">
+      There are no CVE issues still open on
+      <span tal:replace="context/displayname">ubuntu</span>.
+    </p>
+
+  <h2>Resolved Issues</h2>
+
+    <table class="listing" tal:condition="context/resolved_cve_bugtasks">
+      <thead>
+        <tr>
+          <th>CVE</th>
+          <th>Bug Title</th>
+          <th>Source Package</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="bugtask context/open_cve_bugtasks">
+          <td><ul>
+            <li tal:repeat="cve bugtask/bug/cverefs">
+              <img src="/++resource++link_icon.gif" />
+              <a tal:content="cve/displayname"
+                 tal:attributes="href cve/url">CVE-1999-1234</a>
+            </li>
+          </ul></td>
+          <td><a tal:content="bugtask/bug/title"
+                 tal:attributes="href bugtask/bug/fmt:url"
+                 >Foo Bar does not work</a>
+          </td>
+          <td tal:content="bugtask/sourcepackagename/name">apache2</td>
+          <td>
+            <span tal:content="bugtask/status/title"
+                  tal:attributes="class
+                  string:status${bugtask/status/title}">Accepted</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p tal:condition="not: context/resolved_cve_bugtasks">
+      There are no registered CVE issues resolved on
+      <span tal:replace="context/displayname">ubuntu</span>.
+    </p>
+
+</div> 
+</body>
+</html>

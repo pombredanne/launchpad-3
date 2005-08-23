@@ -7,9 +7,7 @@
 <body>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-pref-langs" />
-    <div tal:replace="structure context/@@+portlet-country-langs" />
-    <div tal:replace="structure context/@@+portlet-browser-langs" />
+    <div tal:replace="structure context/@@+portlet-preflangs" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">

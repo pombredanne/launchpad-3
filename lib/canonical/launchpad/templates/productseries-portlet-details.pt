@@ -3,7 +3,8 @@
 
   <div class="portletBody portletContent">
     <b>Product:</b>
-    <span tal:replace="context/product/name">product</span><br />
+    <a tal:attributes="href context/product/fmt:url"
+       tal:content="context/product/displayname">product</a><br />
 
     <b>Branch name:</b>
     <span tal:replace="context/name">name</span><br />

@@ -13,9 +13,9 @@ from zope.schema import Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
+from canonical.launchpad import _
 from canonical.lp.dbschema import UpstreamFileType
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad.validators.version import sane_version
 
 
 class IProductRelease(Interface):
@@ -23,14 +23,28 @@ class IProductRelease(Interface):
     Mozilla 1.7.2 or Apache 2.0.48."""
     id = Int(title=_('ID'), required=True, readonly=True)
     datereleased = Datetime(title=_('Date Released'), required=True,
-                            readonly=False)
-    version = TextLine(title=_('Version'), required=True, readonly=True)
+        readonly=False, description=_('The date this release was '
+        'published. Before release, this should have an estimated '
+        'release date.'))
+    version = TextLine(title=_('Version'), required=True, readonly=True,
+        constraint=sane_version, description=_('The specific version '
+        'number assigned to this release. Letters and numbers are '
+        'acceptable, for releases like "1.2rc3".'))
     owner = Int(title=_('Owner'), required=True, readonly=True)
     productseries = Choice(title=_('ProductSeries'), required=True,
-                           vocabulary='FilteredProductSeries')
-    title = TextLine(title=_('Title'), required=False)
-    summary = Text(title=_("Summary"), required=False)
-    description = Text(title=_("Description"), required=False)
+        vocabulary='FilteredProductSeries')
+    title = TextLine(title=_('Title'), required=False,
+        description=_('The release code-name. Famously, one Gnome release '
+        'was code-named "that, and a pair of testicles", but you don\'t '
+        'have to be as brave with your own release codenames.'))
+    summary = Text(title=_("Summary"), required=False,
+        description=_('A brief summary of the release highlights, to '
+        'be shown at the top of the release page, and in listings.'))
+    description = Text(title=_("Description"), required=False,
+        description=_('A detailed description of the new features '
+        '(though the changelog below might repeat some of this '
+        'information). The description here will be shown on the product '
+        'release home page.'))
     changelog = Text(title=_('Changelog'), required=False)
     datecreated = Datetime(title=_('Date Created'),
         description=_("The date this productrelease was created in "

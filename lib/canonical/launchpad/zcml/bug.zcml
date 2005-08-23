@@ -34,47 +34,59 @@
         <browser:page
             name="+index"
             template="../templates/bug-index.pt"
-            lp:url="malone/bugs/$Bugs.id/index" />
+            lp:url="malone/bugs/$Bug.id/index" />
         <browser:page
             name="activity"
             template="../templates/bug-activity.pt"
-            lp:url="malone/bugs/$Bugs.id/activity" />
+            lp:url="malone/bugs/$Bug.id/activity" />
         <browser:page
             name="+portlet-watch"
             template="../templates/bug-portlet-watch.pt"
-            lp:url="malone/bugs/$Bugs.id/+portlet-watch" />
+            lp:url="malone/bugs/$Bug.id/+portlet-watch" />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/bug-portlet-details.pt"
+            lp:url="malone/bugs/$Bug.id/+portlet-details" />
+        <browser:page
+            name="+portlet-subscribers"
+            template="../templates/bug-portlet-subscribers.pt"
+            lp:url="malone/bugs/$Bug.id/+portlet-subscribers" />
         <browser:page
             name="+portlet-productinfestation"
             template="../templates/bug-portlet-productinfestation.pt"
-            lp:url="malone/bugs/$Bugs.id/+portlet-productinfestation" />
+            lp:url="malone/bugs/$Bug.id/+portlet-productinfestation" />
         <browser:page
             name="+portlet-packageinfestation"
             template="../templates/bug-portlet-packageinfestation.pt"
-            lp:url="malone/bugs/$Bugs.id/+portlet-packageinfestation" />
+            lp:url="malone/bugs/$Bug.id/+portlet-packageinfestation" />
         <browser:page
             name="+portlet-reference"
             template="../templates/bug-portlet-reference.pt"
-            lp:url="malone/bugs/$Bugs.id/+portlet-reference" />
+            lp:url="malone/bugs/$Bug.id/+portlet-reference" />
         <browser:page
             name="+portlet-duplicates"
             template="../templates/bug-portlet-duplicates.pt"
-            lp:url="malone/bugs/$Bugs.id/+portlet-duplicates" />
+            lp:url="malone/bugs/$Bug.id/+portlet-duplicates" />
         <browser:page
             name="+portlet-cve"
             template="../templates/bug-portlet-cve.pt"
-            lp:url="malone/bugs/$Bugs.id/+portlet-cve" />
+            lp:url="malone/bugs/$Bug.id/+portlet-cve" />
         <browser:page
-            name="+portlet-people"
-            template="../templates/bug-portlet-people.pt"
-            lp:url="malone/bugs/$Bugs.id/+portlet-people" />
+            name="+portlet-maintainers"
+            template="../templates/bug-portlet-maintainers.pt"
+            lp:url="malone/bugs/$Bug.id/+portlet-maintainers" />
         <browser:page
             name="+headline-tasks"
             template="../templates/bug-headline-tasks.pt"
-            lp:url="malone/bugs/$Bugs.id/+headline-tasks" />
+            lp:url="malone/bugs/$Bug.id/+headline-tasks" />
         <browser:page
             name="+portlet-actions"
             template="../templates/bug-portlet-actions.pt"
-            lp:url="malone/bugs/$Bugs.id/+portlet-actions" />
+            lp:url="malone/bugs/$Bug.id/+portlet-actions" />
+        <browser:page
+            name="+portlet-attachments"
+            template="../templates/bug-portlet-attachments.pt"
+            lp:url="malone/bugs/$Bug.id/+portlet-attachments" />
     </browser:pages>
 
     <!-- Bug -->
@@ -82,15 +94,26 @@
         name="+edit"
         schema="canonical.launchpad.interfaces.IBug"
         class="canonical.launchpad.browser.bug.BugEditView"
-        label="Change Bug Information"
+        label="Edit Bug Description"
         permission="launchpad.Edit"
         template="../templates/bug-edit.pt"
-        fields="title summary description private name"
+        fields="title description summary name"
         lp:url="malone/bugs/$Bug.id/+edit">
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
            displayWidth="55" />
+    </browser:editform>
+
+    <browser:editform
+        name="+secrecy"
+        schema="canonical.launchpad.interfaces.IBug"
+        class="canonical.launchpad.browser.bug.BugEditView"
+        label="Set Bug Secrecy"
+        permission="launchpad.Edit"
+        template="../templates/bug-secrecy.pt"
+        fields="private"
+        lp:url="malone/bugs/$Bug.id/+secrecy">
     </browser:editform>
 
     <browser:editform
@@ -136,6 +159,7 @@
         name="+index"
         for="canonical.launchpad.interfaces.IBugSet"
         class="canonical.launchpad.browser.BugSetView"
+        attribute="redirectToBug"
         permission="zope.Public" />
 
     <browser:traverse
@@ -205,4 +229,5 @@
     <content class="canonical.launchpad.components.bug.BugDelta">
         <allow interface="canonical.launchpad.interfaces.IBugDelta" />
     </content>
+
 </configure>

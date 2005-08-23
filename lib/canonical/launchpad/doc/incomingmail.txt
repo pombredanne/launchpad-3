@@ -26,6 +26,7 @@ handle, and register them for some domains:
 
     >>> from canonical.launchpad.interfaces import IMailHandler
     >>> from zope.interface import implements
+    >>> from canonical.config import config
     >>> class MockHandler:
     ...     implements(IMailHandler)
     ...     def __init__(self):
@@ -37,8 +38,17 @@ handle, and register them for some domains:
     >>> from zope.app.tests import ztapi
     >>> foo_handler = MockHandler()
     >>> bar_handler = MockHandler()
+    >>> error_handler = MockHandler()
     >>> ztapi.provideUtility(IMailHandler, foo_handler, 'foo.com')
     >>> ztapi.provideUtility(IMailHandler, bar_handler, 'bar.com')
+    >>> dummy, errors_domain = config.launchpad.errors_address.split('@')
+    >>> ztapi.provideUtility(IMailHandler, error_handler, errors_domain)
+
+We temporarily override the error mails' From address, so that they will
+pass through the authentication stage:
+
+    >>> old_error_from_address = config.malone.bugmail_error_from_address
+    >>> config.malone.bugmail_error_from_address = 'foo.bar@canonical.com'
 
 Now we send a few test mails to foo.com, bar.com, and baz.com:
 
@@ -47,8 +57,8 @@ Now we send a few test mails to foo.com, bar.com, and baz.com:
     >>> from canonical.launchpad.mail import sendmail
 
     >>> msgids = {'foo.com': [], 'bar.com': [], 'baz.com': []}
-    >>> msg = read_test_message('signed_detached.txt')
     >>> for domain in ('foo.com', 'bar.com', 'foo.com', 'baz.com'):
+    ...     msg = read_test_message('signed_detached.txt')
     ...     msg.replace_header('To', '123@%s' % domain)
     ...     msgids[domain].append("<%s>" % sendmail(msg))
     ...     transaction.commit()
@@ -67,8 +77,6 @@ mail will get filed in there:
 
     >>> handleMail()
 
-    >>> LibrarianTestSetup().tearDown()
-
 Now we can see that each handler handled that mails sent to its domain:
 
     >>> foo_handler.handledMails == msgids['foo.com']
@@ -76,18 +84,73 @@ Now we can see that each handler handled that mails sent to its domain:
     >>> bar_handler.handledMails == msgids['bar.com']
     True
 
+
 Unhandled Mail
 --------------
 
 So, what happened to the message that got sent to baz.com? Since there
 wasn't a handler registered for that domain, an error message was sent
-to the errors email address, which specified in launchpad.conf as
+to the errors email address, which is specified in launchpad.conf as
 errors_address.
 
+    >>> len(error_handler.handledMails)
+    0
+    >>> handleMail()
+    >>> len(error_handler.handledMails)
+    1
+
     >>> from canonical.launchpad.mail import stub
-    >>> from canonical.config import config
+    >>> stub.test_emails = []
+
+Now let's send an email from Foo Bar, but signed with Sample Person's
+key:
+
+    >>> msg = read_test_message('signed_detached.txt')
+    >>> msg.replace_header('From', 'foo.bar@canonical.com')
+    >>> msgid = sendmail(msg)
     >>> transaction.commit()
-    >>> to_addrs = [to_addr_list[0]
-    ...             for from_addr, to_addr_list, raw_mail in stub.test_emails]
-    >>> to_addrs == [config.launchpad.errors_address]
+    >>> handleMail(transaction)
+
+
+An error message was sent since the key didn't belong to Foo Bar:
+
+    >>> transaction.commit()
+    >>> from_addr, to_addr, raw_mail = stub.test_emails[-1]
+    >>> import email
+    >>> error_mail = email.message_from_string(raw_mail)
+    >>> print error_mail['Subject']
+    Unhandled Email: ...
+    >>> print error_mail.get_payload(decode=True)
+    The following email was unhandled:
+    ...
+    Invalid signature for foo.bar@canonical.com:
+        The key used to sign the email doesn't belong to the user.
+
+
+X-Original-To
+-------------
+
+If available, the X-Original-To header is used to determine to which
+address the email was sent to:
+
+    >>> from canonical.launchpad.mail import raw_sendmail
+    >>> msg = read_test_message('signed_detached.txt')
+    >>> msg.replace_header('To', '123@foo.com')
+    >>> msg['CC'] = '123@foo.com'
+    >>> msg['X-Original-To'] = '123@bar.com'
+    >>> msgid = '<%s>' % raw_sendmail (
+    ...     msg['From'], ['123@bar.com'], msg.as_string())
+    >>> transaction.commit()
+    >>> handleMail()
+    >>> msgid in bar_handler.handledMails
     True
+
+Only the address in X-Original-To header will be used. The addresses in
+the To and CC headers will be ignored:
+
+    >>> msgid in foo_handler.handledMails
+    False
+
+    >>> LibrarianTestSetup().tearDown()
+    >>> config.malone.bugmail_error_from_address = old_error_from_address
+

@@ -20,7 +20,8 @@ from canonical.lp.dbschema import (
     PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus)
 
 from canonical.launchpad.interfaces import (
-    IDistroRelease, IDistroReleaseSet, ISourcePackageName, ISourcePackageSet)
+    IDistroRelease, IDistroReleaseSet, ISourcePackageName,
+    IPublishedPackageSet)
 
 from canonical.launchpad.database.sourcepackageindistro import (
     SourcePackageInDistro)
@@ -30,12 +31,13 @@ from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.distroreleaselanguage import \
-    DistroReleaseLanguage
+    DistroReleaseLanguage, DummyDistroReleaseLanguage
 from canonical.launchpad.database.sourcepackage import SourcePackage
-from canonical.launchpad.database.sourcepackagename import SourcePackageNameSet
+from canonical.launchpad.database.sourcepackagename import (
+    SourcePackageName, SourcePackageNameSet)
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.binarypackage import BinaryPackage
-
+from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.helpers import shortlist
 
 
@@ -44,6 +46,8 @@ class DistroRelease(SQLBase):
     implements(IDistroRelease)
 
     _table = 'DistroRelease'
+    _defaultOrder = ['distribution', 'version']
+
     distribution = ForeignKey(dbName='distribution',
                               foreignKey='Distribution', notNull=True)
     bugtasks = MultipleJoin('BugTask', joinColumn='distrorelease')
@@ -81,6 +85,18 @@ class DistroRelease(SQLBase):
     def distroreleaselanguages(self):
         result = DistroReleaseLanguage.selectBy(distroreleaseID=self.id)
         return sorted(result, key=lambda a: a.language.englishname)
+
+    @property
+    def translatable_sourcepackages(self):
+        """See IDistroRelease."""
+        result = SourcePackageName.select("""
+            POTemplate.sourcepackagename = SourcePackageName.id AND
+            POTemplate.distrorelease = %s
+            """ % sqlvalues(self.id),
+            clauseTables=['POTemplate'],
+            orderBy=['name'])
+        return [SourcePackage(sourcepackagename=spn, distrorelease=self) for
+            spn in result]
 
     @property
     def previous_releases(self):
@@ -134,21 +150,26 @@ class DistroRelease(SQLBase):
     def potemplates(self):
         result = POTemplate.selectBy(distroreleaseID=self.id)
         result = list(result)
-        result.sort(key=lambda x: x.potemplatename.name)
-        return result
+        return sorted(result, key=lambda x: x.potemplatename.name)
 
     @property
-    def potemplatecount(self):
-        return len(self.potemplates)
+    def currentpotemplates(self):
+        result = POTemplate.selectBy(distroreleaseID=self.id, iscurrent=True)
+        result = list(result)
+        return sorted(result, key=lambda x: x.potemplatename.name)
 
     @property
     def fullreleasename(self):
         return "%s %s" % (
             self.distribution.name.capitalize(), self.name.capitalize())
 
+    def searchTasks(self, search_params):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        search_params.setDistributionRelease(self)
+        return BugTaskSet().search(search_params)
+
     def getBugSourcePackages(self):
         """See IDistroRelease."""
-        clauseTables=["BugTask",]
         query = ("VSourcePackageInDistro.distrorelease = %i AND "
                  "VSourcePackageInDistro.distro = BugTask.distribution AND "
                  "VSourcePackageInDistro.name = BugTask.sourcepackagename AND "
@@ -157,13 +178,20 @@ class DistroRelease(SQLBase):
                     self.id, BugTaskStatus.FIXED, BugTaskStatus.REJECTED))
 
         return SourcePackageInDistro.select(
-            query, clauseTables=clauseTables, distinct=True)
+            query, clauseTables=["BugTask"], distinct=True)
 
     def getDistroReleaseLanguage(self, language):
         """See IDistroRelease."""
         return DistroReleaseLanguage.selectOneBy(
             distroreleaseID=self.id,
             languageID=language.id)
+
+    def getDistroReleaseLanguageOrDummy(self, language):
+        """See IDistroRelease."""
+        drl = self.getDistroReleaseLanguage(language)
+        if drl is not None:
+            return drl
+        return DummyDistroReleaseLanguage(self, language)
 
     def updateStatistics(self):
         """See IDistroRelease."""
@@ -244,7 +272,8 @@ class DistroRelease(SQLBase):
     def publishedBinaryPackages(self, component=None):
         """See IDistroRelease."""
         # XXX sabdfl 04/07/05 this can become a utility when that works
-        pubpkgset = PublishedPackageSet()
+        # XXX kiko: this method is untested and possibly unused
+        pubpkgset = getUtility(IPublishedPackageSet)
         result = pubpkgset.query(distrorelease=self, component=component)
         return [BinaryPackage.get(p.binarypackage) for p in result]
 
@@ -273,7 +302,6 @@ class DistroReleaseSet:
     def search(self, distribution=None, isreleased=None, orderBy=None):
         """See IDistroReleaseSet."""
         where_clause = ""
-        order_by_param = None
         if distribution is not None:
             where_clause += "distribution = %s" % sqlvalues(distribution.id)
         if isreleased is not None:

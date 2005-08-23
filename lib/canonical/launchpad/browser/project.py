@@ -14,22 +14,46 @@ from zope.i18nmessageid import MessageIDFactory
 from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
-    IPerson, IProject, IProjectSet, IProductSet, IProjectBugTrackerSet)
+    IPerson, IProject, IProjectSet, IProductSet, IProjectBugTrackerSet,
+    ICalendarOwner)
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.bugtracker import newBugTracker
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, Link, DefaultLink)
 
 _ = MessageIDFactory('launchpad')
 
-#
-# Traversal functions that help us look up something
-# about a project or product
-#
-def traverseProject(project, request, name):
-    return project.getProduct(name)
+
+class ProjectFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for an IProject."""
+
+    usedfor = IProject
+
+    def overview(self):
+        target = ''
+        text = 'Overview'
+        return DefaultLink(target, text)
+
+    def bugs(self):
+        target = '+bugs'
+        text = 'Bugs'
+        return Link(target, text, linked=False)
+
+    def translations(self):
+        target = '+translations'
+        text = 'Translations'
+        return Link(target, text, linked=False)
+
+    def calendar(self):
+        target = '+calendar'
+        text = 'Calendar'
+        # only link to the calendar if it has been created
+        linked = ICalendarOwner(self.context).calendar is not None
+        return Link(target, text, linked=linked)
 
 
 #
@@ -66,26 +90,6 @@ class ProjectView(object):
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
         
-    def newBugTracker(self):
-        """This method is triggered by a tal:dummy element in the page
-        template, so it is run even when the page is first displayed. It
-        calls newBugTracker which will check if a form has been submitted,
-        and if so it creates one accordingly and redirects back to its
-        display page."""
-        # The person who is logged in needs to end up owning this bug
-        # tracking instance.
-        owner = IPerson(self.request.principal).id
-        # Now try to process the form
-        bugtracker = newBugTracker(self.form, owner)
-        if not bugtracker: return
-        # Now we need to create the link between that bug tracker and the
-        # project itself, using the ProjectBugTracker table
-        projectbugtracker = getUtility(IProjectBugTrackerSet).new(
-            project=self.context,
-            bugtracker=bugtracker)
-        # Now redirect to view it again
-        self.request.response.redirect(self.request.URL[-1])
-
     def hasProducts(self):
         return len(list(self.context.products())) > 0
 
@@ -278,11 +282,27 @@ class ProjectSetView(object):
 
 class ProjectRdfView(object):
     """A view that sets its mime-type to application/rdf+xml"""
+
+    template = ViewPageTemplateFile(
+        '../templates/project-rdf.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        request.response.setHeader('Content-Type', 'application/rdf+xml')
-        request.response.setHeader('Content-Disposition',
-                                   'attachment; filename=' +
-                                   self.context.name + '-project.rdf')
+
+    def __call__(self):
+        """Render RDF output, and return it as a string encoded in UTF-8.
+
+        Render the page template to produce RDF output.
+        The return value is string data encoded in UTF-8.
+
+        As a side-effect, HTTP headers are set for the mime type
+        and filename for download."""
+        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
+        self.request.response.setHeader('Content-Disposition',
+                                        'attachment; filename=%s-project.rdf' %
+                                            self.context.name)
+        unicodedata = self.template()
+        encodeddata = unicodedata.encode('utf-8')
+        return encodeddata
 

@@ -2,8 +2,9 @@
 
 __metaclass__ = type
 
-import sys, os, os.path, shutil, time
-from signal import SIGTERM
+import os
+import shutil
+
 import canonical
 
 from canonical.launchpad.daemons.tachandler import TacTestSetup
@@ -44,10 +45,6 @@ class BuilddSlaveTestSetup(TacTestSetup):
         # * install sbuild package
         # * to copy the scripts for sbuild
 
-    def tearDownRoot(self):
-        """Remove the Root directory if necessary"""
-        shutil.rmtree(self.root)
-    
     @property
     def root(self):
         return '/var/tmp/buildd'
@@ -67,11 +64,3 @@ class BuilddSlaveTestSetup(TacTestSetup):
     def logfile(self):
         return os.path.join(self.root, 'build-slave.log')
 
-    @property
-    def spewbucket(self):
-        return os.path.join(self.root, 'build-slave.log')
-
-
-
-
-    

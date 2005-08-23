@@ -1,0 +1,26 @@
+
+We would like to test various features of the home page. This will prevent
+accidental regressions in the layout of the home page.
+
+First, we should be seeing a translation box for Ubuntu Hoary into
+Afrikaans:
+
+  >>> print http(r"""
+  ... GET / HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.7,af;q=0.3
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Afrikaans:...
+  .../distros/ubuntu/hoary/+lang/af...
+
+
+Next, we also expect to see the top contributors (by Karma) listed on the
+home page.
+
+  >>> print http(r"""
+  ... GET / HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Daniel Aguayo...
+
+

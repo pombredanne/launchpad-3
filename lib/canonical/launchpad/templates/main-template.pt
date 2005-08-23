@@ -59,9 +59,15 @@
             </li>
             <li tal:condition="not: link/selected">
               <a
+                tal:condition="link/linked"
                 tal:attributes="href link/url"
                 tal:content="link/text"
               >ghi</a>
+              <span
+                class="disabled"
+                tal:condition="not: link/linked"
+                tal:content="link/text"
+              >jkl</span>
             </li>
           </tal:block>
         </tal:block>
@@ -111,43 +117,55 @@
     </div>
 
     <table id="portal-columns">
-        <tbody>
-            <tr>
-
-                <!-- start of the left (by default at least) column -->
-                <td id="portal-column-one"
-                    metal:define-slot="column_one">
-                    <metal:portlets define-slot="portlets_one">
-
-                    </metal:portlets>
-                </td>
-                <!-- end of the left (by default at least) column -->
-
-                <td id="portal-column-content">
+      <tbody>
+        <tr>
+          <td style="height: 1px;"></td>
+          <td
+            id="portal-column-content"
+            rowspan="2"
+          >
                 <div id="region-content">
                     <metal:main define-slot="main" tal:condition="nothing">
                         <p>Main content area.</p>
                     </metal:main>
                 </div>
-                </td>
+          </td>
 
                 <!-- start of right (by default at least) column -->
-                <td id="portal-column-two" metal:define-slot="column_two">
+          <td
+            id="portal-column-two"
+            metal:define-slot="column_two"
+            rowspan="2"
+          >
                         <metal:portlets define-slot="portlets_two">
 
                         </metal:portlets>
-                </td>
+          </td>
                 <!-- end of the right (by default at least) column -->
+        </tr>
+        <tr>
+                <!-- start of the left (by default at least) column -->
+          <td
+            id="portal-column-one"
+            metal:define-slot="column_one"
+          >
+                    <metal:portlets define-slot="portlets_one">
 
-            </tr>
-        </tbody>
+                    </metal:portlets>
+          </td>
+                <!-- end of the left (by default at least) column -->
+
+          </tr>
+      </tbody>
     </table>
     <!-- end column wrapper -->
 
     <div class="visualClear">&nbsp;</div>
 
     <div class="footer">
-        Copyright 2004-2005 Canonical Ltd. &ndash;  <a href="/legal">Legalese</a>
+        Copyright 2004-2005 Canonical Ltd. &ndash;  <a
+        href="/legal">Copyright&nbsp;terms</a> &ndash;
+        <a href="/feedback">Help&nbsp;us&nbsp;improve</a>
     </div>
 </body>
 </html>

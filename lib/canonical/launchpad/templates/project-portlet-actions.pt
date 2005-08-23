@@ -5,14 +5,20 @@
       <div class="portletContent">
 
         <ul>
-          <li class="edit" tal:condition="context/required:launchpad.Edit">
-            <a href="+edit">Edit Project</a>
+          <li class="edit">
+            <a href="+edit">Edit Project Details</a>
           </li>
-          <li class="edit" tal:condition="context/required:launchpad.Edit">
+          <li class="edit">
             <a href="+reassign">Change Maintainer</a>
           </li>
-          <li class="edit" tal:condition="context/required:launchpad.Edit">
+          <li class="edit">
             <a href="+changetranslators">Change Translators</a>
+          </li>
+          <li class="add">
+            <a href="+linkbounty">Link Existing Bounty</a>
+          </li>
+          <li class="add">
+            <a href="+addbounty">Register New Bounty</a>
           </li>
           <li class="download">
             <a href="+rdf">Download RDF Metadata</a>

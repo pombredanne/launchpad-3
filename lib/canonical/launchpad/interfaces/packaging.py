@@ -43,8 +43,10 @@ class IPackaging(Interface):
                        vocabulary='PackagingType')
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
-    ownerID = Int(title=_('Creator'), required=True, readonly=True)
-    owner = Attribute("The IPerson who created this entry.")
+    owner = Int()
+    # XXX sabdfl can we get away with this? or do we need ownerID?
+    #ownerID = Int(title=_('Creator'), required=True, readonly=True)
+    #owner = Attribute("The IPerson who created this entry.")
 
     sourcepackage = Attribute("A source package that is constructed from "
         "the distrorelease and sourcepackagename of this packaging record.")

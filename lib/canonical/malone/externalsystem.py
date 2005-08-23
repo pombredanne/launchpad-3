@@ -3,7 +3,8 @@
 import urllib
 import urllib2
 from xml.dom import minidom
-from canonical.launchpad.database.bugtracker import BugTracker, BugTrackerType
+
+from canonical.lp.dbschema import BugTrackerType
 
 class UnknownBugTrackerTypeError(Exception):
     """
@@ -40,7 +41,7 @@ class ExternalSystem(object):
         self.bugtracker = bugtracker
         self.bugtrackertype = bugtracker.bugtrackertype
         self.remotesystem = None
-        if self.bugtrackertype.name == 'bugzilla':
+        if self.bugtrackertype == BugTrackerType.BUGZILLA:
             self.remotesystem = Bugzilla(self.bugtracker.baseurl,version)
         if not self.remotesystem:
             raise UnknownBugTrackerTypeError(self.bugtrackertype.name,

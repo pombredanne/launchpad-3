@@ -143,15 +143,25 @@ o PersonAccountToMergeVocabulary - all non-merged people. This vocabulary
     >>> vocab.search('team')
     []
 
+    A search using part of the email address of a team will also return an 
+    empty list.
+    >>> [t.token for t in vocab.search('support')]
+    []
+
     Searching for a person without a preferred email will return that person's
     name.
     >>> [t.token for t in vocab.search('salgado')]
     ['salgado']
 
-    Searching for a person with a preferred email will return that person's
-    preferred email.
-    >>> [t.token for t in vocab.search('foo')]
+    A search using the beginning of a person's preferred email will return 
+    that person's preferred email.
+    >>> [t.token for t in vocab.search('foo.bar')]
     ['foo.bar@canonical.com']
+
+    A search using part of the host of an email address will not return
+    anything, as we only match against the beginning of an email address.
+    >>> [t.token for t in vocab.search('canonical')]
+    []
 
     Any person without a single email address is not part of the vocabulary.
     >>> fooperson, email = getUtility(IPersonSet).createPersonAndEmail(
@@ -159,6 +169,8 @@ o PersonAccountToMergeVocabulary - all non-merged people. This vocabulary
     >>> email.destroySelf()
     >>> fooperson in vocab
     False
+    >>> [t.token for t in vocab.search('foobaz')]
+    []
 
     Adding an email address to this person will make him part of the
     vocabulary.
@@ -166,6 +178,8 @@ o PersonAccountToMergeVocabulary - all non-merged people. This vocabulary
     >>> flush_database_updates()
     >>> fooperson in vocab
     True
+    >>> [t.token for t in vocab.search('foobaz')]
+    ['foobaz']
 
     Any person that's already merged is not part of this vocabulary:
     # XXX: Here we cheat because IPerson.merged is a readonly attribute.
@@ -188,12 +202,18 @@ o ValidPersonOrTeam - all 'valid' persons or teams. This is currently defined
     >>> [t.token for t in vocab.search('team')]
     ['name21', 'name18', 'support@ubuntu.com', 'name19', 'name20', 'testing-spanish-team']
 
-    Stuart hasn't validated his email address; he's not a valid Person.
-    >>> [t.token for t in vocab.search('bishop')]
+    A search for 'support' will give us only the persons which have support
+    as part of their name/displayname/givenname/familyname or the beginning of
+    one of its email addresses.
+    >>> [t.token for t in vocab.search('support')]
+    ['support@ubuntu.com']
+
+    Dave hasn't validated his email address; he's not a valid Person.
+    >>> [t.token for t in vocab.search('dave.miller')]
     []
 
     'foo.bar@canonical.com' is a valid Person.
-    >>> [t.token for t in vocab.search('foo')]
+    >>> [t.token for t in vocab.search('foo.bar')]
     ['foo.bar@canonical.com']
 
 o ValidOwner - all valid persons and teams are also valid owners.
@@ -233,15 +253,21 @@ o ValidTeamMember - With the exception of all teams that have this team as a
     >>> vocab = vocabulary_registry.get(tms, "ValidTeamMember")
     >>> person in vocab
     True
+    >>> [t.token for t in vocab.search('foo.bar')]
+    ['foo.bar@canonical.com']
 
     'name17' is not a valid member for itself
     >>> team in vocab
     False
+    >>> [t.token for t in vocab.search('name17')]
+    []
 
     'name17' is a member of 'guadamen', so 'guadamen' can't be a member of
     'name17'.
     >>> team2 in vocab
     False
+    >>> [t.token for t in vocab.search('guadamen')]
+    []
 
 o ValidTeamOwner - With the exception of the team itself and all teams owned
   by that team, all valid persons and teams are valid owners for the team 
@@ -252,22 +278,25 @@ o ValidTeamOwner - With the exception of the team itself and all teams owned
     Traceback (most recent call last):
     ...
     ValueError: ...
- 
+
     ValidTeamOwner's context must be a team.
     >>> vocab = vocabulary_registry.get(person, "ValidTeamOwner")
     Traceback (most recent call last):
     ...
     ValueError: ...
- 
+
     'name17' is not a valid owner for itself.
     >>> vocab = vocabulary_registry.get(team, "ValidTeamOwner")
     >>> team in vocab
     False
- 
+    >>> [t.token for t in vocab.search('name17')]
+    []
+
     'name16' is a valid owner for 'name17'.
-    >>> vocab = vocabulary_registry.get(team, "ValidTeamOwner")
     >>> person in vocab
     True
+    >>> [t.token for t in vocab.search('foo.bar')]
+    ['foo.bar@canonical.com']
 
 o SchemaVocabulary - launchpad Schema Vocabulary..
 

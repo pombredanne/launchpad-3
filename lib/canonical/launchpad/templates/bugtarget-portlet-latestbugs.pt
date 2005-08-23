@@ -1,0 +1,32 @@
+<div class="portlet">
+  <h4>Latest Bugs in <span tal:replace="context/displayname" />:</h4>
+  <div class="portletBody">
+    <div class="portletContent even">
+      <ul class="bug"> 
+        <li tal:repeat="bugtask view/latestBugTasks">
+          <a href="#"
+             style="text-decoration: underline"
+             tal:attributes="href bugtask/bug/fmt:url" 
+             tal:content="string: Bug #${bugtask/bug/id}" />: 
+             <span tal:replace="bugtask/bug/title">bug
+             title</span>
+        </li>
+        <li tal:condition="not: view/latestBugTasks" class="discreet">
+          No bugs have been reported for <span tal:replace="context/displayname" />.
+        </li>
+      </ul>
+
+      <ul>
+        <li class="bugs" tal:condition="view/latestBugTasks">
+          <a tal:attributes="href string:${context/fmt:url}/+bugs">
+            View bug reports for <span tal:replace="context/displayname" />
+          </a>
+        </li>
+        <li class="add">
+          <a tal:attributes="href string:${context/fmt:url}/+filebug">
+            Report new bug
+          </a></li>
+      </ul>
+    </div>
+  </div>
+</div>

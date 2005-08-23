@@ -1,6 +1,6 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-"""Distribution release interfaces."""
+"""Interfaces including and related to IDistroRelease."""
 
 __metaclass__ = type
 
@@ -14,13 +14,13 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces import IHasOwner, IBugTarget
+from canonical.launchpad.validators.version import sane_version
 
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
-
-class IDistroRelease(IHasOwner):
-    """A Release Object"""
+class IDistroRelease(IHasOwner, IBugTarget):
+    """A specific release of an operating system distribution."""
     id = Attribute("The distrorelease's unique number.")
     name = TextLine(
         title=_("Name"), required=True,
@@ -72,7 +72,8 @@ class IDistroRelease(IHasOwner):
     sourcecount = Attribute("Source Packages Counter")
     binarycount = Attribute("Binary Packages Counter")
     potemplates = Attribute("The set of potemplates in the release")
-    potemplatecount = Attribute("The number of potemplates for this release")
+    currentpotemplates = Attribute("The set of potemplates in the release"
+        " with the iscurrent flag set")
     architecturecount = Attribute("The number of architectures in this "
         "release.")
     architectures = Attribute("The Architecture-specific Releases")
@@ -82,6 +83,9 @@ class IDistroRelease(IHasOwner):
         "release.")
     datelastlangpack = Attribute(
         "The date of the last base language pack export for this release.")
+
+    translatable_sourcepackages = Attribute("Source packages in this "
+        "distrorelease that can be translated.")
 
     # related joins
     packagings = Attribute("All of the Packaging entries for this "
@@ -134,6 +138,11 @@ class IDistroRelease(IHasOwner):
         """Return the DistroReleaseLanguage for this distrorelease and the
         given language, or None if there's no DistroReleaseLanguage for this
         distribution and the given language.
+        """
+
+    def getDistroReleaseLanguageOrDummy(language):
+        """Return the DistroReleaseLanguage for this distrorelease and the
+        given language, or a DummyDistroReleaseLanguage.
         """
 
 

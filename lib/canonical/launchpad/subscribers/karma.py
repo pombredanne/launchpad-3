@@ -1,6 +1,6 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
-""" karma.py -- handles all karma assignments done in the launchpad 
+""" karma.py -- handles all karma assignments done in the launchpad
 application."""
 
 from zope.component import getUtility
@@ -48,8 +48,9 @@ def bugtask_modified(bugtask, event):
     user = event.user
     task_delta = get_task_delta(event.object_before_modification, event.object)
 
-    if (task_delta.status is not None and 
-        task_delta.status['new'] == BugTaskStatus.FIXED):
+    assert task_delta is not None
+
+    if task_delta.status and task_delta.status['new'] == BugTaskStatus.FIXED:
         user.assignKarma(KarmaActionName.BUGFIXED)
 
 def potemplate_modified(template, event):

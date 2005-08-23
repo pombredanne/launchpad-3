@@ -484,7 +484,7 @@ COMMENT ON COLUMN PackagePublishingHistory.supersededby IS 'The build which supe
 COMMENT ON COLUMN PackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
 COMMENT ON COLUMN PackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the package is/was scheduled to be deleted.';
 COMMENT ON COLUMN PackagePublishingHistory.dateremoved IS 'The date/time at which the package was actually deleted.';
-COMMENT ON COLUMN PackagePublishingHistory.pocket IS 'The pocket into which this record is published. The PLAIN pocket (zero) provides behaviour as normal. Other pockets may append things to the distrorelease name such as the UPDATES pocket (-updates) or the SECURITY pocket (-security).';
+COMMENT ON COLUMN PackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distrorelease name such as the UPDATES pocket (-updates) or the SECURITY pocket (-security).';
 COMMENT ON COLUMN PackagePublishingHistory.embargo IS 'The publishing record is embargoed from publication if this is set to TRUE. When TRUE, this column prevents the publication record from even showing up in the publishing tables.';
 COMMENT ON COLUMN PackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
 COMMENT ON VIEW PackagePublishingPublicHistory IS 'View on PackagePublishingHistory that restricts access to embargoed entries';
@@ -510,7 +510,6 @@ COMMENT ON TABLE ProcessorFamily IS 'An architecture, that might consist of seve
 COMMENT ON COLUMN ProcessorFamily.name IS 'The name of the architecture. This is a short unix-style name such as i386 or amd64';
 COMMENT ON COLUMN ProcessorFamily.title IS 'A title for the architecture. For example "Intel i386 Compatible".';
 COMMENT ON COLUMN ProcessorFamily.description IS 'A description for this processor family. It might include any gotchas such as the fact that i386 does not necessarily mean that code would run on a 386... Ubuntu for example requires a 486.';
-COMMENT ON COLUMN ProcessorFamily.owner IS 'The person responsible for this processor family entry.';
 
 -- Processor
 
@@ -563,15 +562,15 @@ COMMENT ON COLUMN KarmaCache.KarmaValue IS 'The karma points of all actions of t
 -- Bounty
 COMMENT ON TABLE Bounty IS 'A set of bounties for work to be done by the open source community. These bounties will initially be offered only by Canonical, but later we will create the ability for people to offer the bounties themselves, using us as a clearing house.';
 COMMENT ON COLUMN Bounty.usdvalue IS 'This is the ESTIMATED value in US Dollars of the bounty. We say "estimated" because the bounty might one day be offered in one of several currencies, or people might contribute different amounts in different currencies to each bounty. This field will reflect an estimate based on recent currency exchange rates of the value of this bounty in USD.';
-COMMENT ON COLUMN Bounty.difficulty IS 'An estimate of the difficulty of the bounty, from 1 to 100, where 100 is extremely difficult and 1 is extremely easy.';
-COMMENT ON COLUMN Bounty.duration IS 'An estimate of the length of time it should take to complete this bounty, given the skills required.';
+COMMENT ON COLUMN Bounty.difficulty IS 'An estimate of the difficulty of the bounty, as a dbschema.BountyDifficulty.';
+COMMENT ON COLUMN Bounty.bountystatus IS 'The current status of this bounty
+- an indicator of whether or not it is open, closed, or withdrawn.';
 COMMENT ON COLUMN Bounty.reviewer IS 'The person who will review this bounty regularly for progress. The reviewer is the person who is responsible for establishing when the bounty is complete.';
 COMMENT ON COLUMN Bounty.owner IS 'The person who created the bounty. The owner can update the specification of the bounty, and appoints the reviewer.';
 
 COMMENT ON TABLE BountySubscription IS 'This table records whether or not someone it interested in a bounty. Subscribers will show up on the page with the bounty details.';
 COMMENT ON COLUMN BountySubscription.bounty IS 'The bounty to which the person is subscribed.';
 COMMENT ON COLUMN BountySubscription.person IS 'The person being subscribed to this bounty.';
-COMMENT ON COLUMN BountySubscription.subscription IS 'The nature of the subscription. A NULL value indicates that this subscription has been nullified, and is as if there was no subscription record at all.';
 
 COMMENT ON TABLE ProductBounty IS 'This table records a simple link between a bounty and a product. This bounty will be listed on the product web page, and the product will be mentioned on the bounty web page.';
 
@@ -823,11 +822,12 @@ COMMENT ON COLUMN LoginToken.token IS 'The token (not the URL) emailed used to u
 COMMENT ON COLUMN LoginToken.fingerprint IS 'The GPG key fingerprint to be validated on this transaction, it means that a new register will be created relating this given key with the requester in question. The requesteremail still passing for the same usual checks.';
 
 COMMENT ON TABLE Milestone IS 'An identifier that helps a maintainer group together things in some way, e.g. "1.2" could be a Milestone that bazaar developers could use to mark a task as needing fixing in bazaar 1.2.';
-COMMENT ON COLUMN Milestone.product IS 'The product for which this is a milestone.';
 COMMENT ON COLUMN Milestone.name IS 'The identifier text, e.g. "1.2."';
-COMMENT ON COLUMN Milestone.title IS 'The description of, e.g. "1.2."';
+COMMENT ON COLUMN Milestone.product IS 'The product for which this is a milestone.';
+COMMENT ON COLUMN Milestone.distribution IS 'The distribution to which this milestone belongs, if it is a distro milestone.';
+COMMENT ON COLUMN Milestone.dateexpected IS 'If set, the date on which we expect this milestone to be delivered. This alloes for some optional sorting by date.';
+COMMENT ON COLUMN Milestone.visible IS 'Whether or not this milestone should be displayed in general listings. All milestones will be visible on the "page of milestones for product foo", but we want to be able to screen out obviously old milestones over time, for the general listings and vocabularies.';
 
-    
 COMMENT ON TABLE PushMirrorAccess IS 'Records which users can update which push mirrors';
 COMMENT ON COLUMN PushMirrorAccess.name IS 'Name of an arch archive on the push mirror, e.g. lord@emf.net--2003-example';
 COMMENT ON COLUMN PushMirrorAccess.person IS 'A person that has access to update the named archive';

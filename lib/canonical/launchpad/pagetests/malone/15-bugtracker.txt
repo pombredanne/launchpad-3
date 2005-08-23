@@ -1,131 +1,129 @@
-Malone supports monitoring the status of a bug in an external bug
-tracker. To monitor the status of a bug in an external bug tracker,
-that bug tracker must be registered.
 
-You can find out which bug trackers are currently registered by
-visited the Known Bug Tracking Systems page.
+First, let's make sure we can see the page listing all registered remote bug
+trackers.
 
   >>> print http(r"""
-  ... GET /malone/bugtrackers HTTP/1.1
-  ... Referer: http://localhost:9000/malone/bugtrackers/newbugtracker
+  ... GET /malone/bugtrackers/ HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-  ...<h2>Launchpad-registered Bug Trackers</h2>...
-  ...
+  ...Launchpad-registered Bug Trackers...
 
-As user Foo Bar, let's click on the Register Your Bug Tracker link to
-register a new bug tracker.
+Now we are going to add a bug tracker. First, can we see the form?
 
   >>> print http(r"""
   ... GET /malone/bugtrackers/+newbugtracker HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Referer: http://localhost:9000/malone/bugtrackers
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-      <h1>Register a New Bug Tracking System</h1>
-  ...
-                  <input type="text" name="name" size="15" value="" style="text-transform: lowercase" />
-  ...
+  ...Register an External Bug Tracker...
 
-Fill in all the necessary info about this bug tracker...
+Now, let's POST to the form. We expect to be redirected to the page for the
+new tracker.
 
   >>> print http(r"""
   ... POST /malone/bugtrackers/+newbugtracker HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 152
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Referer: http://localhost:9000/malone/bugtrackers/+newbugtracker
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1137
+  ... Content-Type: multipart/form-data; boundary=---------------------------79153896411275119801134753838
   ... 
-  ... name=testbugtrck&title=Test+bug+Tracker&summary=Test+test&baseurl=http%3A%2F%2Ftest.bugs.com%2F&contactdetails=sdfdsfsdfdf&Register=Register+Bug+Tracker""")
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... testtrac
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.bugtrackertype"
+  ... 
+  ... Trac
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.bugtrackertype-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Test Trac Tracker
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... This is a test TRAC tracker.
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.baseurl"
+  ... 
+  ... http://trac.testing.org/tickets/
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="field.contactdetails"
+  ... 
+  ... blah blah
+  ... -----------------------------79153896411275119801134753838
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------79153896411275119801134753838--
+  ... """)
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  Location: http://localhost:9000/malone/bugtrackers
-  <BLANKLINE>
+  Location: http://localhost:9000/malone/bugtrackers/testtrac
   ...
 
-And now, we can see that the new bug tracker is registered.
+So let's view this new bug tracker.
 
   >>> print http(r"""
-  ... GET /malone/bugtrackers HTTP/1.1
-  ... Referer: http://localhost:9000/malone/bugtrackers/+newbugtracker
+  ... GET /malone/bugtrackers/testtrac HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-  ...Test bug Tracker...
-  ...
+  ...Malone Bugtracker: Test Trac Tracker...
 
-Click on the bug tracker's row in the table listing to view the info
-page for that bug tracker.
+And lets see if we can edit it.
 
   >>> print http(r"""
-  ... GET /malone/bugtrackers/testbugtrck HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... GET /malone/bugtrackers/testtrac/+edit HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-  ...Test test...
-  ...
+  ...Edit Bug Tracker Details...
 
-Any logged-in user can view the edit page of the bug tracker.
+Alright, let's POST the edit.
 
   >>> print http(r"""
-  ... GET /malone/bugtrackers/testbugtrck/+edit HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Referer: http://localhost:9000/malone/bugtrackers/testbugtrck
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-                  <input type="text" name="title" size="30"
-                         value="Test bug Tracker" />
-  ...
-
-Modifications to the bug tracker can be made as any logged in user:
-
-  >>> print http(r"""
-  ... POST /malone/bugtrackers/testbugtrck/+edit HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 131
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Referer: http://localhost:9000/malone/bugtrackers/testbugtrck/+edit
+  ... POST /malone/bugtrackers/testtrac/+edit HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 753
+  ... Content-Type: multipart/form-data; boundary=---------------------------29735158715398128091941075875
+  ... Cookie: launchpad=43TTUccjt3BFxf8gIFhykGIkKjkXI5OJBjpWn2XugSLcXrnAq8xug8
+  ... Referer: http://localhost:9000/malone/bugtrackers/testtrac/+edit
   ... 
-  ... title=Test+Bug+Tracker&summary=Test+test&baseurl=http%3A%2F%2Ftest.bugs.com%2F&contactdetails=sdfdsfsdfdf&Update=Update+Bug+Tracker""")
+  ... -----------------------------29735158715398128091941075875
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Test Trac Tracker
+  ... -----------------------------29735158715398128091941075875
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... This is a test TRAC bug tracker.
+  ... -----------------------------29735158715398128091941075875
+  ... Content-Disposition: form-data; name="field.baseurl"
+  ... 
+  ... http://trac.testing.org/tickets/
+  ... -----------------------------29735158715398128091941075875
+  ... Content-Disposition: form-data; name="field.contactdetails"
+  ... 
+  ... blah blah
+  ... -----------------------------29735158715398128091941075875
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------29735158715398128091941075875--
+  ... """)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: http://localhost:9000/malone/bugtrackers/testbugtrck
-  <BLANKLINE>
-  ...
-      <h1>Edit: <span>Test Bug Tracker</span></h1>
   ...
 
+And now the test tracker should have been updated:
 
   >>> print http(r"""
-  ... GET /malone/bugtrackers/testbugtrck HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Referer: http://localhost:9000/malone/bugtrackers/testbugtrck/+edit
+  ... GET /malone/bugtrackers/testtrac HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-  ...Test Bug Tracker...
-  ...
+  ...This is a test TRAC bug tracker...
+

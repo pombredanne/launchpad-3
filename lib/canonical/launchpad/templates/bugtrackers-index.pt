@@ -1,12 +1,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@malone_template/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-info" />
 </metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
 
 <div metal:fill-slot="main">
 
@@ -21,34 +25,27 @@
     upstream bug changes state.
   </p>
 
-  <table class="listing">
+  <table class="sortable listing" id="trackers">
     <thead>
       <tr>
         <th>Title</th>
         <th>Home Page</th>
-        <th>Watches</th>
+        <th class="amount">Watches</th>
       </tr>
     </thead>
 
     <tbody>
-      <tr tal:repeat="bugtracker context"
-          tal:attributes="onclick string:window.location='${bugtracker/name}';
-                          title bugtracker/summary">
+      <tr tal:repeat="bugtracker context">
           <td><a tal:attributes="href bugtracker/name"
                  tal:content="bugtracker/title">$Bugtracker.title
               </a></td>
           <td><a class="link-external"
                  tal:attributes="href bugtracker/baseurl"
                  tal:content="bugtracker/baseurl">$Bugtracker.baseurl</a></td>
-          <td tal:content="bugtracker/watchcount">bugcount</td>
+          <td class="amount" tal:content="bugtracker/watchcount">bugcount</td>
       </tr>
     </tbody>
   </table>
-
-  <div style="text-align: right;">
-    <img src="/++resource++add.gif" alt="Add" />
-    <a href="+newbugtracker">Register Your Bug Tracker</a>
-  </div>
 
 </div>
 

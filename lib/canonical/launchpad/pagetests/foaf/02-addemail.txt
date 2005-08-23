@@ -1,5 +1,7 @@
-  'foo' adds a new email in launchpad and validates it.
+  'foo' adds two new email addresses in launchpad and validates them.
 
+The First One
+=============
 
   Type the new email address and submit the form.
 
@@ -85,8 +87,6 @@
 
   >>> print http(r"""
   ... POST %s HTTP/1.1
-  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
-  ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
   ... 
   ... password=f&SUBMIT_CHANGES=Submit""" % path)
@@ -94,6 +94,7 @@
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
+  ...Not logged in...
   ...Email validated successfully...
   ...
 
@@ -127,5 +128,84 @@
   Content-Type: text/html;charset=utf-8
   ...
   ...The email address...is already registered...
+  ...
+
+
+
+The Second One
+==============
+
+  This is just to show that if the user wants, he can be automatically logged
+  in after validating an email address.
+
+  >>> print http(r"""
+  ... POST /people/foo/+emails HTTP/1.1
+  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... newemail=baz.foo%40canonical.com&ADD_EMAIL=Add""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...An e-mail message was sent to...
+  ...
+
+
+  Get the token we'll have to use to finish the registration process.
+
+  >>> import email, re
+  >>> from canonical.launchpad.mail import stub
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> msg = email.message_from_string(raw_msg)
+  >>> body = msg.get_payload()
+  >>> link = re.findall(r'http.*/token/.*', body)[0]
+  >>> token = re.sub(r'.*token/', '', link)
+  >>> base_path = '/token/%s' % token
+
+  Check if the email was sent to the right address.
+
+  >>> to_addrs
+  ['baz.foo@canonical.com']
+
+
+  Go to the link sent by email, to validate the email address.
+
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... """ % base_path)
+  HTTP/1.1 303 See Other
+  ...
+  Location: .../+validateemail
+  ...
+
+
+  >>> path = '%s/+validateemail' % base_path
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... """ % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...Validate email address...
+  ...
+
+
+  Here the user wants to be logged in after validating his email address (see
+  that "logmein=on" in the http request.
+
+  >>> print http(r"""
+  ... POST %s HTTP/1.1
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Cookie: launchpad=8phgCR2ckQ2r6D3uhJhVdNOlPWgpNSQkD-p00VbpbzGV5kBF8vofQM
+  ... 
+  ... password=f&logmein=onSUBMIT_CHANGES=Submit""" % path)
+  HTTP/1.1 200 Ok
+  ...
+  ...Logged in as...
+  ...<a href="/people/foo">...
+  ...Email validated successfully...
   ...
 

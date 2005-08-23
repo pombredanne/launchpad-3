@@ -3,6 +3,7 @@
         <div metal:fill-slot="main">
             <h1>Welcome to the  Launchpad</h1>
             <ul>
+                <li><a href="real-index.html">The Official Home Page</a></li>
                 <li><a href="people">People</a></li>
                 <li><a href="products">Products</a></li>
                 <li><a href="projects">Projects</a></li>
@@ -16,7 +17,7 @@
                 <li><a href="rosetta">Rosetta</a></li>
                 <li><a href="soyuz">Soyuz</a></li>
                 <li><a href="malone">Malone</a></li>
-                <li><a href="doap">DOAP Registry</a></li>
+                <li><a href="registry">Registry</a></li>
                 <li><a href="foaf">People</a></li>
                 <li><a href="bounties">Bounties</a></li>
                 <li><a href="codeofconduct">Code Of Conduct</a></li>

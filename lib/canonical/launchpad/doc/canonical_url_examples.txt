@@ -22,7 +22,7 @@ so on.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IMaloneApplication, IFOAFApplication, IBazaarApplication,
-    ...     IRosettaApplication, ILaunchpadRoot, IDOAPApplication,
+    ...     IRosettaApplication, ILaunchpadRoot, IRegistryApplication,
     ...     )
 
 The Launchpad homepage.
@@ -40,10 +40,10 @@ The Rosetta homepage.
     >>> canonical_url(getUtility(IRosettaApplication))
     u'http://localhost:8086/rosetta'
 
-The DOAP homepage.
+The Registry homepage.
 
-    >>> canonical_url(getUtility(IDOAPApplication))
-    u'http://localhost:8086/doap'
+    >>> canonical_url(getUtility(IRegistryApplication))
+    u'http://localhost:8086/registry'
 
 The FOAF homepage.
 
@@ -182,7 +182,7 @@ An IDistroBugTask.
 An IDistroReleaseBugTask.
 
     >>> canonical_url(getUtility(IBugTaskSet).get(16))
-    u'http://localhost:8086/distros/ubuntu/warty/+bugs/6'
+    u'http://localhost:8086/distros/ubuntu/warty/+bugs/5'
 
 An IBugSubset.
 

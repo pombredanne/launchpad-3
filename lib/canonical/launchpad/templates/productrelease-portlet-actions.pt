@@ -9,7 +9,7 @@
       </li>
       <li class="edit"
           tal:condition="context/required:launchpad.Admin">
-          <a href="+review">Admin Product Release</a>
+          <a href="+review">Administer</a>
       </li>
       <li class="download">
           <a href="+rdf">Download RDF Metadata</a>

@@ -13,11 +13,11 @@ from zope.event import notify
 from zope.exceptions import NotFoundError
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
-    IPerson, IProduct, IProductSet, IBugTaskSet, IProductSeries,
-    ISourcePackage, ICountry, IBugSet, ILaunchBag)
-from canonical.launchpad.browser.productrelease import newProductRelease
+    IPerson, IProduct, IProductSet, IProductSeries, ISourcePackage,
+    ICountry, IBugSet, ICalendarOwner)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -61,7 +61,20 @@ class ProductFacets(StandardLaunchpadFacets):
         summary = 'Translations of %s in Rosetta' % self.context.displayname
         return Link(target, text, summary)
 
+    def calendar(self):
+        target = '+calendar'
+        text = 'Calendar'
+        # only link to the calendar if it has been created
+        linked = ICalendarOwner(self.context).calendar is not None
+        return Link(target, text, linked=linked)
 
+
+def _sort_distros(a, b):
+    """Put Ubuntu first, otherwise in alpha order."""
+    if a['name'] == 'ubuntu':
+        return -1
+    return cmp(a['name'], b['name'])
+        
 # A View Class for Product
 class ProductView:
 
@@ -95,7 +108,7 @@ class ProductView:
 
                 object_translatable = {
                     'title': sourcepackage.title,
-                    'potemplates': sourcepackage.potemplates,
+                    'potemplates': sourcepackage.currentpotemplates,
                     'base_url': '/distros/%s/%s/+sources/%s' % (
                         sourcepackage.distribution.name,
                         sourcepackage.distrorelease.name,
@@ -107,7 +120,7 @@ class ProductView:
 
                 object_translatable = {
                     'title': productseries.title,
-                    'potemplates': productseries.potemplates,
+                    'potemplates': productseries.currentpotemplates,
                     'base_url': '/products/%s/+series/%s' %(
                         self.context.name,
                         productseries.name)
@@ -130,13 +143,49 @@ class ProductView:
         if target is None:
             return []
         return [POTemplateView(template, self.request)
-                for template in target.potemplates]
+                for template in target.currentpotemplates]
 
     def requestCountry(self):
         return ICountry(self.request, None)
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
+
+    def distro_packaging(self):
+        """This method returns a representation of the product packagings
+        for this product, in a special structure used for the
+        product-distros.pt page template.
+
+        Specifically, it is a list of "distro" objects, each of which has a
+        title, and an attribute "packagings" which is a list of the relevant
+        packagings for this distro and product.
+        """
+
+        distros = {}
+        # first get a list of all relevant packagings
+        all_packagings = []
+        for series in self.context.serieslist:
+            for packaging in series.packagings:
+                all_packagings.append(packaging)
+        # we sort it so that the packagings will always be displayed in the
+        # distrorelease version, then productseries name order
+        all_packagings.sort(key=lambda a: (a.distrorelease.version,
+            a.productseries.name, a.id))
+        for packaging in all_packagings:
+            if distros.has_key(packaging.distrorelease.distribution.name):
+                distro = distros[packaging.distrorelease.distribution.name]
+            else:
+                distro = {}
+                distro['name'] = packaging.distrorelease.distribution.name
+                distro['title'] = packaging.distrorelease.distribution.title
+                distro['packagings'] = []
+                distros[packaging.distrorelease.distribution.name] = distro
+            distro['packagings'].append(packaging)
+        # now we sort the resulting set of "distro" objects, and return that
+        result = distros.values()
+        result.sort(cmp=_sort_distros)
+        return result
+
 
     def projproducts(self):
         """Return a list of other products from the same project as this
@@ -170,23 +219,6 @@ class ProductView:
         notify(ObjectModifiedEvent(self.context))
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
-
-    def newProductRelease(self):
-        # default owner is the logged in user
-        owner = IPerson(self.request.principal)
-        #XXX: cprov 20050112
-        # Avoid passing obscure arguments such as self.form
-        newProductRelease(self.form, self.context, owner)
-
-    def latestBugTasks(self, quantity=5):
-        """Return <quantity> latest bugs reported against this product."""
-        bugtaskset = getUtility(IBugTaskSet)
-
-        tasklist = bugtaskset.search(
-            product=self.context, orderby="-datecreated",
-            user=getUtility(ILaunchBag).user)
-
-        return tasklist[:quantity]
 
     def potemplatenames(self):
         potemplatenames = set([])
@@ -265,13 +297,29 @@ class ProductFileBugView(SQLObjectAddView):
 
 class ProductRdfView(object):
     """A view that sets its mime-type to application/rdf+xml"""
+
+    template = ViewPageTemplateFile(
+        '../templates/product-rdf.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        request.response.setHeader('Content-Type', 'application/rdf+xml')
-        request.response.setHeader('Content-Disposition',
-                                   'attachment; filename=' +
-                                   self.context.name + '.rdf')
+
+    def __call__(self):
+        """Render RDF output, and return it as a string encoded in UTF-8.
+
+        Render the page template to produce RDF output.
+        The return value is string data encoded in UTF-8.
+
+        As a side-effect, HTTP headers are set for the mime type
+        and filename for download."""
+        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
+        self.request.response.setHeader('Content-Disposition',
+                                        'attachment; filename=%s.rdf' %
+                                        self.context.name)
+        unicodedata = self.template()
+        encodeddata = unicodedata.encode('utf-8')
+        return encodeddata
 
 
 class ProductSetView:

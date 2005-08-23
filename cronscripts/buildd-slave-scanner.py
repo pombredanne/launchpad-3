@@ -22,10 +22,11 @@ _default_lockfile = '/var/lock/buildd-slave-scanner.lock'
 _default_logfilename = '/var/tmp/buildd-slave-scanner.log'
 
 
-def doSlaveScan(tm):
+def doSlaveScan(logger, tm):
     """Proceed the Slave Scanning Process."""    
-    buildMaster = BuilddMaster(logging.getLogger(), tm)
+    buildMaster = BuilddMaster(logger, tm)
 
+    logger.info("Setting Builders.")
     # For every distroarchrelease we can find;
     # put it into the build master
     for archrelease in DistroArchRelease.select():
@@ -38,49 +39,52 @@ def doSlaveScan(tm):
                        archrelease.distrorelease.name,
                        archrelease.architecturetag))
             # less is more, noisely verbose
-            #logging.getLogger().warn(info, exc_info=1)
-            logging.getLogger().warn(info)
-                
+            #logger.warn(info, exc_info=1)
+            logger.warn(info)
+
+    logger.info("Scanning Builders.")
     # Scan all the pending builds; update logtails; retrieve
     # builds where they are compled
     buildMaster.scanActiveBuilders()
-        
+
     # Now that the slaves are free, ask the buildmaster to calculate
     # the set of build candiates
     buildCandidatesSortedByProcessor = buildMaster.sortAndSplitByProcessor()
     
+    logger.info("Dispatching Jobs.")
     # Now that we've gathered in all the builds;
     # dispatch the pending ones
     for processor, buildCandidates in \
             buildCandidatesSortedByProcessor.iteritems():
         buildMaster.dispatchByProcessor(processor, buildCandidates)
 
-        
-def main(tm):
-    """Simple wrap SlaveScan."""
-    # Build master logging set
-    #logging.basicConfig(filename=_default_logfilename)
-    logging.basicConfig()
-    logging.getLogger().setLevel(logging.DEBUG)
-    logging.getLogger().debug("Initialising Slave Scan Process")
+def make_logger(loglevel=logging.WARN):
+    """Return a logger object for logging with."""
+    logger = logging.getLogger("buildd-slave-scanner")
+    handler = logging.StreamHandler(strm=sys.stderr)
+    handler.setFormatter(
+        logging.Formatter(fmt='%(asctime)s %(levelname)s %(message)s'))
+    logger.addHandler(handler)
+    logger.setLevel(loglevel)
+    return logger
 
+
+if __name__ == '__main__':
+    # setup a transaction manager
+    tm = initZopeless(dbuser='fiera')
+    logger = make_logger(loglevel=logging.DEBUG)
     locker = LockFile(_default_lockfile)
 
     try:
         locker.acquire()
     except OSError:
-        logging.getLogger().info("Cannot acquire lock.")
+        logger.info("Cannot acquire lock.")
         sys.exit(1)
 
     try:
-        doSlaveScan(tm)
+        doSlaveScan(logger, tm)
     finally:
         # release process lock file if the procedure finished properly
         locker.release()
 
-if __name__ == '__main__':
-    # setup a transaction manager
-    tm = initZopeless(dbuser='fiera')
-    # wooo, we have a main :)
-    main(tm)
-    
+    logger.info("Slave Scan Process Finished.")

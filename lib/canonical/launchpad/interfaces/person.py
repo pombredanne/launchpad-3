@@ -17,6 +17,7 @@ __all__ = [
     'IRequestPeopleMerge',
     'IObjectReassignment',
     'ITeamReassignment',
+    'ITeamCreation',
     ]
 
 from zope.schema import (
@@ -86,6 +87,10 @@ class IPerson(Interface):
             description=_("The password you will use to access "
                 "Launchpad services. ")
             )
+    karma = Int(
+            title=_('Karma'), readonly=False,
+            description=_('The cached karma for this person.')
+            )
     languages = Attribute(_('List of languages known by this person'))
 
     # this is not a date of birth, it is the date the person record was
@@ -105,7 +110,6 @@ class IPerson(Interface):
                       vocabulary='TimezoneName')
 
     # Properties of the Person object.
-    karma = Attribute("The cached karma for this person.")
     ubuntite = Attribute("Ubuntite Flag")
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
@@ -114,7 +118,6 @@ class IPerson(Interface):
     pendinggpgkeys = Attribute("Set of GPG fingerprints pending validation")
     inactivegpgkeys = Attribute("List of inactive GPG keys in LP Context")
     irc = Attribute("IRC")
-    reportedbugs = Attribute("All Bugs reported by this Person.")
     wiki = Attribute("Wiki")
     jabber = Attribute("Jabber")
     archuser = Attribute("Arch user")
@@ -383,6 +386,9 @@ class IPersonSet(Interface):
 
         Raise KeyError if there is no such person.
         """
+    
+    def topPeople():
+        """Return the top 5 people by Karma score in the Launchpad."""
 
     def createPersonAndEmail(email, name=None, displayname=None, givenname=None,
             familyname=None, password=None, passwordEncrypted=False):
@@ -471,31 +477,49 @@ class IPersonSet(Interface):
     def teamsCount():
         """Return the number of teams in the database."""
 
-    def findByName(name, orderBy=None):
-        """Return all non-merged Persons and Teams with name matching.
+    def find(text, orderBy=None):
+        """Return all non-merged Persons and Teams whose name, displayname,
+        givenname, familyname or email address match <text>.
 
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
         If no orderBy is specified the results will be ordered using the
         default ordering specified in Person._defaultOrder.
+
+        While we don't have Full Text Indexes in the emailaddress table, we'll
+        be trying to match the text only against the beginning of an email
+        address.
         """
 
-    def findPersonByName(name, orderBy=None):
-        """Return all not-merged Persons with name matching.
+    def findPerson(text="", orderBy=None):
+        """Return all non-merged Persons with at least one email address whose
+        name, displayname, givenname, familyname or email address match <text>.
+
+        If text is an empty string, all persons with at least one email
+        address will be returned.
 
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
         If no orderBy is specified the results will be ordered using the
         default ordering specified in Person._defaultOrder.
+
+        While we don't have Full Text Indexes in the emailaddress table, we'll
+        be trying to match the text only against the beginning of an email
+        address.
         """
 
-    def findTeamByName(name, orderBy=None):
-        """Return all Teams with name matching.
+    def findTeam(text, orderBy=None):
+        """Return all Teams whose name, displayname, givenname, familyname or
+        email address match <text>.
 
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
         If no orderBy is specified the results will be ordered using the
         default ordering specified in Person._defaultOrder.
+
+        While we don't have Full Text Indexes in the emailaddress table, we'll
+        be trying to match the text only against the beginning of an email
+        address.
         """
 
     def getUbuntites(orderBy=None):
@@ -546,7 +570,7 @@ class IEmailAddressSet(Interface):
         Return the default value if there is no such email address.
         """
 
-    def getByPerson(personid):
+    def getByPerson(person):
         """Return all email addresses for the given person."""
 
     def getByEmail(email, default=None):
@@ -696,4 +720,21 @@ class ITeamReassignment(Interface):
     """The schema used by the team reassignment page."""
 
     owner = Choice(title=_('Owner'), vocabulary='ValidTeamOwner', required=True)
+
+
+class ITeamCreation(ITeam):
+    """An interface to be used by the team creation form.
+
+    We need this special interface so we can allow people to specify a contact
+    email address for a team upon its creation.
+    """
+
+    contactemail = TextLine(
+        title=_("Contact Email Address"), required=False, readonly=False,
+        description=_(
+            "This is the email address we'll send all notifications to this "
+            "team. If no contact address is chosen, notifications directed to "
+            "this team will be sent to all team members. After finishing the "
+            "team creation, a new message will be sent to this address with "
+            "instructions on how to finish its registration."))
 

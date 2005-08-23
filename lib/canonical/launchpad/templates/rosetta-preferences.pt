@@ -5,6 +5,15 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-countrylangs" />
+    <div tal:replace="structure context/@@+portlet-browserlangs" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-preflangs" />
+</metal:rightportlets>
+
 <div metal:fill-slot="main" >
 
     <h1>Your language preferences</h1>
@@ -31,7 +40,7 @@
             </div>
         </div>
 
-        <div class="actions">
+        <div class="actions" style="text-align: right;">
             <input type="submit" name="SAVE-LANGS" value="Save" />
         </div>
     </form>

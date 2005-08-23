@@ -69,7 +69,7 @@
 
     <!-- Display settings. -->
 
-      <p tal:condition="view/is_editor"><form method="post"
+      <p><form method="post"
               style="text-align: right;"
               action="./+translate"
         >
@@ -99,7 +99,7 @@
             else:
                 return None
 
-            Where 'literalvalue' is 'all', 'untranslated' 'need-review' or
+            Where 'literalvalue' is 'all', 'untranslated' 'fuzzy' or
             'translated'.
           </tal:comment>
 
@@ -116,9 +116,9 @@
               >
               untranslated
             </option>
-            <option value="need-review"
+            <option value="fuzzy"
               tal:attributes="selected
-              request/htmlform:show/selected/need-review"
+              request/htmlform:show/selected/fuzzy"
               >
               need review
             </option>
@@ -161,7 +161,7 @@
                   <div style="width: 50%; float: left;">
                     <tal:block tal:condition="view/onlyOneForm">
                       All
-                      <strong tal:content="context/potemplate/count:len">23</strong>
+                      <strong tal:content="view/shown_count">23</strong>
                       items
                     </tal:block>
                     <tal:block tal:condition="not:view/onlyOneForm">
@@ -170,7 +170,7 @@
                     &rarr;
                     <strong tal:content="view/getLastMessageShown">10</strong>
                     of
-                    <strong tal:content="context/potemplate/count:len">23</strong>
+                    <strong tal:content="view/shown_count">23</strong>
                     </tal:block>
                   </div>
 

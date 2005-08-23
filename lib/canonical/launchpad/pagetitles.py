@@ -47,7 +47,19 @@ class BugPageTitle:
 class BugTaskPageTitle:
     def __call__(self, context, view):
         return "Bug #%d in %s - %s" % (
-            context.bug.id, context.contextname, context.bug.title)
+            context.bug.id, context.targetname, context.bug.title)
+
+
+class BugTaskTargetingTitle:
+    def __call__(self, context, view):
+        task_target = context.target
+        if IDistribution.providedBy(task_target):
+            distribution_title = task_target.title
+        elif IDistroRelease.providedBy(task_target):
+            distribution_title = task_target.distribution.title 
+
+        return "Bug #%d in %s - Target Fix to Releases" % (
+            context.bug.id, distribution_title)
 
 
 class SubstitutionHelper:
@@ -102,11 +114,13 @@ binarypackagerelease_index = 'Binary Package Release Details'
 
 binarypackagerelease_license = 'Binary Package Licence'
 
-bounties = 'Launchpad Registered Bounties'
+bounties = 'Launchpad Bounties'
+
+bounties_new = 'Register a New Bounty in Launchpad'
+
+bounty_index = ContextTitle('Launchpad Bounty: %s')
 
 bounty_subscription = 'Bounty Subscription'
-
-bounty = ContextTitle('Launchpad Bounty: %s')
 
 branch_index = ContextTitle('Bazaar Branch: %s')
 
@@ -122,10 +136,10 @@ def bug_add(context, view):
     distrorelease_context = IDistroRelease(context, None)
 
     if product_context or distro_context or distrorelease_context is not None:
-        context_title = ContextTitle('Bugs in %s: Report a Bug')
+        context_title = ContextTitle('Report a bug in %s')
         return context_title(context, view)
     else:
-        return "Malone: Report a Bug"
+        return "Report a bug"
 
 bug_attachments = ContextId('Malone Bug Attachments for Bug #%s')
 
@@ -133,7 +147,13 @@ bug_edit = BugPageTitle()
 
 bug_index = BugPageTitle()
 
-bug_references = ContextId('External References for Malone Bug #%s')
+bug_references = ContextId('External references for bug #%s')
+
+bug_secrecy = ContextId('Set secrecy for bug #%s')
+
+bug_secrecy = ContextId('Make Malone Bug #%d Public or Secret')
+
+bugattachment_add = 'Add an Attachment'
 
 bugwatch_editform = ContextTitle('Edit the Watch on %s')
 
@@ -143,9 +163,9 @@ bugwatch_editform = ContextTitle('Edit the Watch on %s')
 
 def bugs_assigned(context, view):
     if view.user:
-        return 'Malone Bugs assigned to %s' % view.user.browsername
+        return 'Bugs assigned to %s' % view.user.browsername
     else:
-        return 'No user to display Malone Bugs for'
+        return 'No-one to display bugs for'
 
 bugs_createdby_index = 'Malone Bug Report by Creator'
 
@@ -154,6 +174,8 @@ bugs_for_context = ContextTitle('Bugs in %s')
 bugs_index = 'Malone Master Bug List'
 
 bugsubscription_edit = 'Modify Your Bug Subscription'
+
+bugtask_release_targeting = BugTaskTargetingTitle()
 
 bugtask_view = BugTaskPageTitle()
 
@@ -166,7 +188,7 @@ bugtracker_edit = ContextTitle('Edit %s Details')
 
 bugtracker_index = ContextTitle('Malone Bugtracker: %s')
 
-bugtracker_new = 'Create Malone Bugtracker'
+bugtrackers_add = 'Register External Bugtracker in Malone'
 
 bugtrackers_index = 'Malone-Registered Bug Trackers'
 
@@ -214,7 +236,11 @@ default_editform = 'Default "Edit" Page'
 
 default_error = 'System Error'
 
-distribution_members = ContextTitle('Members of the %s distribution')
+distribution_cvereport = ContextTitle('CVE Reports for %s')
+
+distribution_members = ContextTitle('%s distribution members')
+
+distribution_memberteam = ContextTitle("Change %s's distribution team")
 
 distribution_translators = 'Appoint Distribution Translation Group'
 
@@ -224,15 +250,11 @@ distro_edit = 'Create a new Distribution in Launchpad'
 
 distribution = ContextTitle('Launchpad Distribution Summary: %s')
 
-distro_members = ContextTitle('Distribution Members: %s')
-
-distro_search = 'Search Distributions'
-
 # distro_sources.pt.OBSELETE
 # <title metal:fill-slot="title"><span tal:replace="context/title" />: Source
 # Packages</title>
 
-distroarchrelease_index = ContextTitle('Overview of  %s')
+distroarchrelease_index = ContextTitle('%s overview')
 
 distroarchrelease_pkgsearch = 'Binary Package Search'
 
@@ -250,6 +272,9 @@ def distrorelease_index(context, view):
 def distrorelease_new(context, view):
     return 'Create New Release of %s' % context.distribution.title
 
+distrorelease_packaging = ContextDisplayName('Mapping packages to upstream '
+    'for %s')
+
 distrorelease_search = ContextDisplayName('%s Packages')
 
 def distrorelease_sources(context, view):
@@ -264,18 +289,6 @@ distrorelease_translations = ContextTitle(
 distroreleaselanguage = ContextTitle('%s')
 
 distros_index = 'Overview of Distributions in Launchpad'
-
-doap_about = 'About the Launchpad Registry'
-
-doap_dashboard = 'Launchpad Project & Product Dashboard'
-
-doap_index = 'Project and Product Registration in Launchpad'
-
-doap_listall = 'Launchpad: Complete List'
-
-doap_review = 'Launchpad Content Review'
-
-doap_to_do = 'Launchpad To-Do List'
 
 errorservice_config = 'Configure Error Log'
 
@@ -325,6 +338,8 @@ def launchpad_addform(context, view):
 
 launchpad_editform = launchpad_addform
 
+launchpad_feedback = 'Help us improve Launchpad'
+
 launchpad_forbidden = 'Forbidden'
 
 launchpad_forgottenpassword = 'Forgot Your Launchpad Password?'
@@ -362,6 +377,12 @@ malone_index = 'Malone: Collaborative Open Source Bug Management'
 # malone_template is a means to include the mainmaster template
 
 malone_to_do = 'Malone ToDo'
+
+milestone_add = ContextDisplayName('Add Milestone for %s')
+
+milestone_bugs = ContextTitle('Bugs Targeted to %s')
+
+milestone_edit = ContextTitle('Edit %s')
 
 # messagechunk_snippet is a fragment
 
@@ -449,22 +470,15 @@ poll_edit = ContextTitle('Edit poll %s')
 
 poll_index = ContextTitle('%s')
 
+poll_newoption = ContextTitle('Create a new Option in poll %s')
+
 def poll_new(context, view):
     return 'Create a new Poll in team %s' % context.team.displayname
 
 def polloption_edit(context, view):
     return 'Edit option %s' % context.shortname
 
-def polloption_new(context, view):
-    return 'Create a new Option in poll %s' % context.poll.title
-
-def polloptions_list(context, view):
-    return 'Options in poll %s' % context.poll.title
-
-def polls_list(context, view):
-    return 'Polls in team %s' % context.team.displayname
-
-potemplage_admin = ContextTitle('%s admin in Rosetta')
+potemplate_add = 'Add a new template to Rosetta'
 
 # potemplate_chart is a fragment
 
@@ -486,9 +500,13 @@ product_add = 'Register a new Product with the Launchpad'
 
 product_bugs = ContextDisplayName('%s upstream bug reports')
 
+product_distros = ContextDisplayName('%s packages: Comparison of distributions')
+
 product_edit = ContextTitle('Edit Upstream Details: %s')
 
 product_index = ContextTitle('Product: %s')
+
+product_packages = ContextDisplayName('Packages of %s')
 
 product_translations = ContextTitle('Rosetta Translations for %s')
 
@@ -500,8 +518,7 @@ def productrelease_edit(context, view):
     return 'Edit Details for %s %s' % (
         context.product.displayname, context.version)
 
-def productrelease_new(context, view):
-    return 'Register a new release of %s' % view.product.displayname
+productrelease_add = ContextTitle('Register a new release of %s')
 
 productseries_translations = ContextTitle(
     'Rosetta Translation Templates for %s')
@@ -545,6 +562,18 @@ def reference_index(context, view):
 
 # references_index is a redirect
 
+registry_about = 'About the Launchpad Registry'
+
+registry_dashboard = 'Launchpad Project & Product Dashboard'
+
+registry_index = 'Project and Product Registration in Launchpad'
+
+registry_listall = 'Launchpad: Complete List'
+
+registry_review = 'Launchpad Content Review'
+
+registry_to_do = 'Launchpad To-Do List'
+
 related_bounties = ContextDisplayName('Bounties for %s')
 
 root_index = 'The Launchpad Home Page'
@@ -558,7 +587,7 @@ rosetta_preferences = 'Rosetta: Preferences'
 def series_edit(context, view):
     return 'Edit %s %s Details' % (context.product.displayname, context.name)
 
-series_new = ContextDisplayName('New Release Series for %s')
+series_new = ContextDisplayName('Register a new %s release series')
 
 def series_review(context, view):
     return 'Review %s %s Details' % (context.product.displayname, context.name)
@@ -577,9 +606,16 @@ signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 
+def sourcepackage_bugs(context, view):
+    return 'Bugs in %s %s' % (
+        context.distrorelease.distribution.name,
+        context.sourcepackagename)
+
 sourcepackage_buildlog = 'Source Package Build Log'
 
 sourcepackage_changelog = 'Source Package Changelog'
+
+sourcepackage_filebug = ContextTitle("Report a Bug in %s")
 
 def sourcepackage_index(context, view):
     return '%s Source Packages' % context.distrorelease.title
@@ -635,6 +671,10 @@ def team_members(context, view):
 def teammembership_index(context, view):
     return '%s: Member of %s' % (
         context.person.browsername, context.team.browsername)
+
+team_newpoll = ContextTitle('Create a new Poll in team %s')
+
+team_polls = ContextTitle('Polls in team %s')
 
 template_auto_add = 'Launchpad Auto-Add Form'
 

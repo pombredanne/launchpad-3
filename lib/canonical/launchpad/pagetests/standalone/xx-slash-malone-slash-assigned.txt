@@ -16,7 +16,7 @@ When we're logged in as Sample Person we can see our own bugs.
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...Malone Bugs assigned to Foo Bar...
+  ...Bugs assigned to Foo Bar...
 
 We can also see bugs assigned to other people.
 
@@ -28,7 +28,7 @@ We can also see bugs assigned to other people.
   ... 
   ... name=name12&minseverity=10&minpriority=10""")
   HTTP/1.1 200 Ok
-  ...Malone Bugs assigned to Sample Person...
+  ...Bugs assigned to Sample Person...
 
 
 If we specify a name that doesn't exist in Launchpad, we get a page

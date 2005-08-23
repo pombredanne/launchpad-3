@@ -29,7 +29,6 @@ from canonical.launchpad.database import (Distribution, DistroRelease,
 from canonical.launchpad.interfaces import IPersonSet, IBinaryPackageNameSet
 from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
 
-
 from canonical.database.sqlbase import quote
 
 from canonical.lp.dbschema import (PackagePublishingStatus,
@@ -39,6 +38,7 @@ from canonical.launchpad.scripts import log
 from canonical.database.constants import nowUTC
 from canonical.config import config
 from canonical import encoding
+from canonical.launchpad.validators.version import valid_debian_version
 
 priomap = {
     "low": SourcePackageUrgency.LOW,
@@ -539,7 +539,10 @@ class SourcePackageReleaseHandler:
 
 
     def createSourcePackageRelease(self, src, distrorelease):
-        """Create a SourcePackagerelease and db dependencies if needed."""
+        """Create a SourcePackagerelease and db dependencies if needed.
+        
+        Returns the created SourcePackageRelease, or None if it failed.
+        """
 
         displayname, emailaddress = src.maintainer
         try:
@@ -578,6 +581,9 @@ class SourcePackageReleaseHandler:
 
         name = self.ensureSourcePackageName(src.package)
 
+        if not valid_debian_version(src.version):
+            log.warn('%s has an invalid version %s', name.name, src.version)
+            return None
 
         spr = SourcePackageRelease(sourcepackagename=name.id,
                                    version=src.version,

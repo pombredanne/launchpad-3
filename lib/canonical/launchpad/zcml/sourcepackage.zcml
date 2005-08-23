@@ -17,7 +17,7 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.ISourcePackage"
         layer="canonical.launchpad.layers.MaloneLayer"
-        name="+malone-index" />
+        name="+bugs" />
 
     <browser:traverse
         for="canonical.launchpad.interfaces.ISourcePackage"
@@ -79,32 +79,16 @@
             template="../templates/object-pots.pt"
             lp:url="/distros/ubuntu/hoary/+sources/evolution/+potlist" />
 
-    <!-- SourcePackage Portlets -->
-        <browser:page
-            name="+portlet-status-legend"
-            template="../templates/portlet-rosetta-status-legend.pt"
-            lp:url="/distros/ubuntu/hoary/+sources/evolution/+portlet-status-legend" />
+        <!-- SourcePackage Portlets -->
         <browser:page
             name="+portlet-actions"
-            template="../templates/sourcepackage-portlet-actions.pt"
-        />
+            template="../templates/sourcepackage-portlet-actions.pt" />
+        <browser:page
+            name="+portlet-bugtasklist-actions"
+            template="../templates/sourcepackage-portlet-bugtasklist-actions.pt" />
         <browser:page
             name="+portlet-translations"
-            template="../templates/sourcepackage-portlet-translations.pt"
-        />
-        <browser:page
-            name="+portlet-pref-langs"
-            template="../templates/portlet-pref-langs.pt"
-        />
-        <browser:page
-            name="+portlet-country-langs"
-            template="../templates/portlet-country-langs.pt"
-        />
-        <browser:page
-            name="+portlet-browser-langs"
-            template="../templates/portlet-browser-langs.pt"
-        />
-
+            template="../templates/sourcepackage-portlet-translations.pt" />
     </browser:pages>
 
     <browser:pages
@@ -122,9 +106,9 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.packages.SourcePackageBugsView">
         <browser:page
-            name="+malone-index"
-            template="../templates/package-bugs.pt"
-            lp:url="malone/sourcepackage/$SourcePackage.name/+malone-index" />
+            name="+bugs"
+            template="../templates/sourcepackage-bugs.pt"
+            lp:url="distros/$distro.name/$distrorelease.name/+sources/$SourcePackage.name/+bugs" />
     </browser:pages>
 
     <browser:pages
@@ -136,6 +120,31 @@
             template="../templates/sourcepackage-packaging.pt"
             lp:url="/distros/ubuntu/hoary/+sources/apache2/+packaging" />
     </browser:pages>
+
+    <browser:addform
+        name="+filebug"
+        for="canonical.launchpad.interfaces.ISourcePackage"
+        schema="canonical.launchpad.interfaces.IBugAddForm"
+        label="Report Bug in a Distribution Source Package"
+        class="canonical.launchpad.browser.sourcepackage.SourcePackageFilebugView"
+        content_factory="canonical.launchpad.database.bug.BugFactory"
+        permission="launchpad.AnyPerson"
+        fields="title comment private owner"
+        keyword_arguments="title comment private owner"
+        template="../templates/sourcepackage-filebug.pt"
+        lp:url="/distros/ubuntu/hoary/+sources/apache2/+filebug">
+        <browser:widget
+           field="owner"
+           class="canonical.widgets.OwnerWidget" />
+        <browser:widget
+           field="title"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="55" />
+        <browser:widget
+           field="comment"
+           class="zope.app.form.browser.TextAreaWidget"
+           width="62" />
+    </browser:addform>
 
     <!-- SourcePackageSet -->
     <content class="canonical.launchpad.database.SourcePackageSet">

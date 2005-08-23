@@ -6,7 +6,6 @@
 # Copyright (c) 2003 Walter Landry
 
 import datetime
-import logging
 import os
 import sys
 

@@ -9,7 +9,8 @@ __all__ = [
 from zope.app.form.browser.add import AddView
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IPackaging, IPackagingUtil
+from canonical.launchpad.interfaces import (
+    IPackaging, IPackagingUtil, ILaunchBag)
 
 class PackagingAddView(AddView):
 
@@ -27,12 +28,15 @@ class PackagingAddView(AddView):
         distrorelease = data['distrorelease']
         packaging = data['packaging']
 
+        # get the user
+        user = getUtility(ILaunchBag).user
+
         # Invoke utility to create a packaging entry
         util = getUtility(IPackagingUtil)
         util.createPackaging(productseries, sourcepackagename,
-                             distrorelease, packaging)
+                             distrorelease, packaging, owner=user)
 
-        # back to Product Page 
+        # back to Product Series Page 
         self._nextURL = '.'
 
     def nextURL(self):

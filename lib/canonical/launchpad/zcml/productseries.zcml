@@ -97,23 +97,6 @@
             name="+portlet-potemplates"
             template="../templates/object-portlet-potemplates.pt"
             />
-        <browser:page
-            name="+portlet-status-legend"
-            template="../templates/portlet-rosetta-status-legend.pt"
-            />
-        <browser:page
-            name="+portlet-pref-langs"
-            template="../templates/portlet-pref-langs.pt"
-            />
-        <browser:page
-            name="+portlet-country"
-            template="../templates/portlet-country-langs.pt"
-            />
-        <browser:page
-            name="+portlet-browser-langs"
-            template="../templates/portlet-browser-langs.pt"
-            lp:url="/products/evolution/2.1.6/+portlet-browser-langs"
-            />
     </browser:pages>
 
     <browser:page
@@ -122,7 +105,8 @@
         permission="zope.Public"
         name="+rdf"
         lp:url="/products/$Product.name/+series/$ProductSeries.name/+rdf"
-        template="../templates/productseries-rdf.pt" />
+        attribute="__call__"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -132,11 +116,30 @@
             name="+edit"
             template="../templates/series-edit.pt"
             lp:url="/products/$Product.name/+series/$ProductSeries.name/+edit" />
-        <browser:page
-            name="+addrelease"
-            template="../templates/productrelease-new.pt"
-            lp:url="/products/$Product.name/+series/$ProductSeries.name/+addrelease" />
     </browser:pages>
+
+    <browser:addform
+        name="+addrelease"
+        for="canonical.launchpad.interfaces.IProductSeries"
+        schema="canonical.launchpad.interfaces.IProductRelease"
+        label="Register a New Release"
+        fields="productseries version title summary description owner
+                changelog"
+        class="canonical.launchpad.browser.ProductReleaseAddView"
+        permission="launchpad.AnyPerson"
+        template="../templates/productrelease-add.pt"
+        lp:url="/product/$Product.name/+series/$ProductSeries.name/+addrelease">
+        <browser:widget
+            field="productseries"
+            class="canonical.widgets.ContextWidget" />
+        <browser:widget
+            field="summary"
+            class="zope.app.form.browser.TextAreaWidget"
+            height="5" />
+        <browser:widget
+            field="owner"
+            class="canonical.widgets.OwnerWidget" />
+    </browser:addform>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeriesSource"
@@ -176,6 +179,25 @@
     </browser:editform>
 
     <browser:addform
+        name="+addpackage"
+        for="canonical.launchpad.interfaces.IProductSeries"
+        schema="canonical.launchpad.interfaces.IPackaging"
+        label="Add Distribution Packaging Record"
+        fields="productseries distrorelease sourcepackagename packaging
+                owner"
+        class="canonical.launchpad.browser.PackagingAddView"
+        permission="launchpad.Edit"
+        template="../templates/launchpad-addform.pt"
+        lp:url="/product/$Product.name/+series/$ProductSeries.name/+package">
+        <browser:widget
+            field="productseries"
+            class="canonical.widgets.ContextWidget" />
+        <browser:widget
+            field="owner"
+            class="canonical.widgets.OwnerWidget" />
+    </browser:addform>
+
+    <browser:addform
         name="+addpotemplate"
         for="canonical.launchpad.interfaces.IProductSeries"
         schema="canonical.launchpad.interfaces.IPOTemplateWithContent"
@@ -187,7 +209,7 @@
         keyword_arguments="potemplatename description iscurrent owner
                            path filename content"
         content_factory="canonical.launchpad.database.POTemplate"
-        permission="launchpad.Admin"
+        permission="launchpad.Append"
         template="../templates/potemplate-add.pt" >
         <browser:widget
           field="description"

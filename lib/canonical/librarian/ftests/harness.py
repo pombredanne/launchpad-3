@@ -34,11 +34,9 @@ class LibrarianTestSetup(TacTestSetup):
 
     """
     def setUpRoot(self):
-        os.makedirs(self.root, 0700)
-
-    def tearDownRoot(self):
         if os.path.isdir(self.root):
             shutil.rmtree(self.root)
+        os.makedirs(self.root, 0700)
 
     @property
     def root(self):
@@ -58,10 +56,6 @@ class LibrarianTestSetup(TacTestSetup):
     @property
     def logfile(self):
         return os.path.join(self.root, 'librarian.log')
-
-    @property
-    def spewbucket(self):
-        return os.path.join(self.root, 'spew.log')
 
 # Kill any librarian left lying around from a previous interrupted run.
 # Be paranoid since we trash the librarian directory as part of this.

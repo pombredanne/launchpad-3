@@ -16,6 +16,7 @@ Here's some database classes we'll be using.
     >>> from canonical.launchpad.database import Person
     >>> from canonical.launchpad.database import POTemplate
     >>> from canonical.launchpad.database import POFile
+    >>> from canonical.launchpad.utilities import LaunchpadCelebrities
 
 We need this for the Librarian to work properly.
 
@@ -216,6 +217,12 @@ This message set should be fuzzy, however.
     >>> messageSet.publishedfuzzy
     True
 
+And as we don't have a translation for it over the web, it should
+be the same for the active translation.
+
+    >>> messageSet.isfuzzy
+    True
+
 And this one should have the validation status with an error.
 
     >>> messageSet = pofile.messageSet(u'Foo %s')
@@ -271,27 +278,23 @@ Now, is time to check the notification email.
     <BLANKLINE>
     ...
 
-Here are the contents of another file we'll be importing. It has no errros.
+Here are the contents of another file we'll be importing. It has no errors.
 
+    >>> rosetta_experts = LaunchpadCelebrities().rosetta_expert
     >>> pofile_without_errors = r'''
     ... msgid ""
     ... msgstr ""
     ... "PO-Revision-Date: 2005-06-03 20:41+0100\n"
-    ... "Last-Translator: Carlos Perello Marin <carlos@canonical.com>\n"
+    ... "Last-Translator: Foo <no-priv@canonical.com>\n"
     ... "Content-Type: text/plain; charset=UTF-8\n"
     ... "Plural-Forms: nplurals=4; plural=n==1) ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3;\n"
     ...
     ... msgid "foo"
     ... msgstr "blah"
     ... '''
-    >>> pofile.attachRawFileData(pofile_without_errors, True, person)
+    >>> pofile.attachRawFileData(pofile_without_errors, True, rosetta_experts)
     >>> transaction.commit()
     >>> pofile.doRawImport(FakeLogger())
-
-And the number of activities performed is...
-
-    >>> len(person.activities)
-    3
 
 Check the notification email about the success of this import without errors.
 
@@ -305,7 +308,7 @@ Check the notification email about the success of this import without errors.
     >>> msg["Subject"]
     'Translation import - Welsh (cy) - firefox in Mozilla Firefox\n\tMilestone Releases'
     >>> print msg.get_payload(decode=True)
-    Hello Mark Shuttleworth,
+    Hello Rosetta Administrators,
     <BLANKLINE>
     ...
 
@@ -322,7 +325,7 @@ Now, is time to test a .pot import when we don't have any header.
 And the number of activities performed is...
 
     >>> len(person.activities)
-    4
+    3
 
 The header should be the old one as this one does not have any:
 
@@ -362,7 +365,7 @@ The rawimportstatus should be ignored.
 The number of activities shouldn't change as the import was rejected.
 
     >>> len(person.activities)
-    4
+    3
 
 And the date should be the old one
 

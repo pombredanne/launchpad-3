@@ -23,7 +23,10 @@ else
     # R0913 (Too many arguments)
     # R0914 (Too many local variables)
     # R0915 (Too many statements)
-    PYLINTOFF="$PYLINTOFF,W0131,R0912,R0913,R0914,R0915"
+    # W0511 (XXX and TODO listings)
+    # W0302 (Too many lines in module)
+    # R0902 (Too many instance attributes)
+    PYLINTOFF="$PYLINTOFF,W0131,R0912,R0913,R0914,R0915,W0511,W0302"
 fi
 
 # hint: use --include-ids=y to find out the ids of messages you want to
@@ -34,7 +37,8 @@ PYLINTOPTS="--reports=n --enable-metrics=n --include-ids=y
 # Disables:
 # E0213 (Method doesn't have "self" as first argument)
 # E0211 (Method has no argument)
-PYLINTOPTS_INT="$PYLINTOPTS,E0213,E0211"
+# W0613 (Unused argument)
+PYLINTOPTS_INT="$PYLINTOPTS,E0213,E0211,W0613"
 
 export PYTHONPATH=lib:$PYTHONPATH
 
