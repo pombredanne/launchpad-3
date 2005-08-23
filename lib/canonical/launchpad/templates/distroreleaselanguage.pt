@@ -17,8 +17,11 @@
 
   <h1>Programs you can translate</h1>
 
-  <p>
-    Choose a template name to begin translating.
+  <p class="documentDescription">Below, you can see all of the registered
+    translation templates in <span
+    tal:replace="context/distrorelease/distribution/displayname">Ubuntu</span>
+    <span tal:replace="context/distrorelease/version">5.04</span>. Choose a
+    template name to begin translating.
   </p>
 
   <table class="listing sortable" width="100%" id="translationstatuses">

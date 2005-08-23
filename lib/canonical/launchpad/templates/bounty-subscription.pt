@@ -7,81 +7,49 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-subscribers" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
 <div metal:fill-slot="main">
 
-      <h1>Subscribe to
-        &#8220;<span tal:replace="context/title">$Bounty.title</span>&#8221;
-      </h1>
-        <form action="." method="post">
-        <p>
-          What kind of subscription do you want for this bounty?
-        </p>
-        <div>
-          <label for="email">
-            <input
-              tal:condition="not: view/subscriptionTypeIsCC"
-              id="email"
-              type="radio"
-              name="subscription"
-              value="email"
-            /> 
-            <input
-              tal:condition="view/subscriptionTypeIsCC"
-              checked="checked"
-              id="email"
-              type="radio"
-              name="subscription"
-              value="email"
-            /> 
-            E-mail me whenever it changes
-          </label>
-        </div>
-        <div>
-          <label for="watch">
-            <input
-              tal:condition="not: view/subscriptionTypeIsWatch"
-              id="watch"
-              type="radio"
-              name="subscription"
-              value="watch"
-            />
-            <input
-              tal:condition="view/subscriptionTypeIsWatch"
-              checked="checked"
-              id="watch"
-              type="radio"
-              name="subscription"
-              value="watch"
-            />
-            Include in my Bounties page, but don't e-mail me
-          </label>
-        </div>
-        <div>
-          <label for="none">
-            <input
-              tal:condition="view/subscription"
-              id="none"
-              type="radio"
-              name="subscription"
-              value="none"
-            />
-            <input
-              tal:condition="not: view/subscription"
-              checked="checked"
-              id="none"
-              type="radio"
-              name="subscription"
-              value="none"
-            />
-            I&#8217;m not interested at all
-          </label>
-        </div>
-        <div class="actions">
-            <input type="submit"
-                   name="Subscribe"
-                   value="Set Subscription" />
-        </div>
-        </form>
+  <h1 tal:condition="not: view/subscription">Subscribe to Bounty</h1>
+  <h1 tal:condition="view/subscription">Unsubscribe From Bounty</h1>
+
+  <p class="documentDescription">
+    Bounty subscribers will be emailed copies of any comments made on
+    this bounty. If you subscribe to a bounty it will show up on your
+    personal pages, too.
+  </p>
+
+  <p>
+    Choose "Subscribe" to become a subscriber to this bounty, or "Cancel" to
+    return to the bounty page.
+  </p>
+
+  <form action="." method="POST">
+
+    <div>
+    </div>
+    <div class="actions">
+      <input type="submit"
+             name="cancel"
+             value="Cancel" />
+      <input tal:condition="not: view/subscription"
+             type="submit"
+             name="subscribe"
+             value="Subscribe" />
+      <input tal:condition="view/subscription"
+             type="submit"
+             name="subscribe"
+             value="Unsubscribe" />
+    </div>
+  </form>
 
 </div>
 

@@ -41,13 +41,16 @@ def update_karma_cache():
     for person_id in person_ids:
         ztm.begin()
         person = personset.get(person_id)
+        totalkarma = 0
         for cat in KarmaActionCategory.items:
             karmavalue = karmaset.getSumByPersonAndCategory(person, cat)
+            totalkarma += karmavalue
             cache = cacheset.getByPersonAndCategory(person, cat)
             if cache is None:
                 cache = cacheset.new(person, cat, karmavalue)
             else:
                 cache.karmavalue = karmavalue
+        person.karma = totalkarma
         ztm.commit()
 
 

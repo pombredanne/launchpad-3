@@ -1,4 +1,4 @@
-<div class="portlet" tal:condition="context/potemplates">
+<div class="portlet" tal:condition="context/currentpotemplates">
 
   <h4>Translation Templates on <span tal:replace="context/displayname">
         Mozilla</span>:</h4>
@@ -7,7 +7,7 @@
 
     <ul>
       <li class="translations"
-          tal:repeat="template context/potemplates">
+          tal:repeat="template context/currentpotemplates">
         <a tal:content="template/title"
                tal:attributes="href template/fmt:url">
           po template title</a>

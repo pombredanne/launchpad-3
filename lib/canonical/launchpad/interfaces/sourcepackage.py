@@ -99,18 +99,19 @@ class ISourcePackage(IBugTarget):
         "pocket. The result is a dictionary, with the pocket dbschema "
         "as a key, and a list of source package releases as the value.")
 
+    potemplates = Attribute(
+        _("Return an iterator over this distrorelease/sourcepackagename's"
+          " PO templates."))
+
+    currentpotemplates = Attribute(
+        _("Return an iterator over this distrorelease/sourcepackagename's"
+          " PO templates that have the 'iscurrent' flag set'."))
+
     def setPackaging(productseries, owner):
         """Update the existing packaging record, or create a new packaging
         record, that links the source package to the given productseries,
         and record that it was done by the owner.
         """
-
-    def potemplates():
-        """Returns the set of POTemplates that exist for this
-        distrorelease/sourcepackagename combination."""
-
-    potemplatecount = Attribute("The number of POTemplates for this "
-                        "SourcePackage.")
 
     def bugsCounter():
         """A bug counter widget for sourcepackage. This finds the number of

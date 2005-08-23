@@ -87,6 +87,10 @@ class IPerson(Interface):
             description=_("The password you will use to access "
                 "Launchpad services. ")
             )
+    karma = Int(
+            title=_('Karma'), readonly=False,
+            description=_('The cached karma for this person.')
+            )
     languages = Attribute(_('List of languages known by this person'))
 
     # this is not a date of birth, it is the date the person record was
@@ -106,7 +110,6 @@ class IPerson(Interface):
                       vocabulary='TimezoneName')
 
     # Properties of the Person object.
-    karma = Attribute("The cached karma for this person.")
     ubuntite = Attribute("Ubuntite Flag")
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")

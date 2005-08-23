@@ -2,19 +2,9 @@
 Testing TALES expressions
 =========================
 
-Set up a 'test_tales(expression, **context)' function for testing various
-TALES features.
+First, let's bring in a small helper function:
 
-    >>> from zope.app.pagetemplate.engine import Engine
-    >>> class Context:
-    ...     def __init__(self, **kw):
-    ...         self.vars = kw
-    ...
-    >>> def test_tales(expression, **kw):
-    ...     compiled_tales = Engine.compile(expression)
-    ...     return compiled_tales(Context(**kw))
-    ...
-
+    >>> from canonical.launchpad.ftests import test_tales
 
 Test the 'count:' namespace.
 
@@ -40,28 +30,6 @@ Test the 'fmt:' namespace where the context is a datetime.
    '16:22:00'
    >>> test_tales('dt/fmt:datetime', dt=dt)
    '2005-04-01 16:22:00'
-
-Test 'fmt:exactduration' where the context is a timedelta.
-
-   >>> td = timedelta(days=1, hours=2, minutes=3, seconds=4.567)
-   >>> test_tales('td/fmt:exactduration', td=td)
-   '1 day, 2 hours, 3 minutes, 4.6 seconds'
-   >>> td = timedelta(days=1, minutes=3, seconds=4.567)
-   >>> test_tales('td/fmt:exactduration', td=td)
-   '1 day, 0 hours, 3 minutes, 4.6 seconds'
-   >>> td = timedelta(minutes=3, seconds=4.567)
-   >>> test_tales('td/fmt:exactduration', td=td)
-   '3 minutes, 4.6 seconds'
-
-Test plural and singular values in fmt:exactduration output.
-
-   >>> td = timedelta(days=1, hours=1, minutes=1, seconds=1)
-   >>> test_tales('td/fmt:exactduration', td=td)
-   '1 day, 1 hour, 1 minute, 1.0 seconds'
-   >>> td = timedelta(days=2, hours=2, minutes=2, seconds=2)
-   >>> test_tales('td/fmt:exactduration', td=td)
-   '2 days, 2 hours, 2 minutes, 2.0 seconds'
-
 
 Test the 'lp:' namespace for presenting DBSchema classes.
 

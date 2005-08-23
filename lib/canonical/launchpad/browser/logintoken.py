@@ -267,7 +267,7 @@ class ValidateEmailView(BaseLoginTokenView):
                     'process to <a href="%s/+editgpgkey">find and import</a> '
                     'the new key.' % (lpkey.displayname, person_url))
             else:
-                gpgkeyset.activateGpgKey(lpkey.id)
+                gpgkeyset.activateGPGKey(lpkey.id)
                 self.infomessage = (
                     'The key %s was successfully revalidated. '
                     '<a href="%s/+editgpgkey">See more Information</a>'
@@ -296,7 +296,7 @@ class ValidateEmailView(BaseLoginTokenView):
 
         self.formProcessed = True
 
-        guessed, hijacked = self._guessGpgEmails(key.uids)
+        guessed, hijacked = self._guessGPGEmails(key.uids)
 
         if len(guessed):
             # build email list
@@ -321,7 +321,7 @@ class ValidateEmailView(BaseLoginTokenView):
                 % emails
                 )
 
-    def _guessGpgEmails(self, uids):
+    def _guessGPGEmails(self, uids):
         """Figure out which emails from the GPG UIDs are unknown in LP
         context, add them as NEW EmailAddresses (guessed) and return a
         list containing the just added address for UI feedback.

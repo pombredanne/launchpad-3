@@ -9,7 +9,7 @@
   <div class="portlet">
     <h4>About this page:</h4>
     <div class="portletBody portletContent">
-      
+
       <img src="/++resource++info_icon.gif" />
       This page shows the links from packages in the distribution to
       upstream branches. Those links enable us to share bugs and
@@ -39,7 +39,30 @@
     different to previous Ubuntu releases, to ensure we can collaborate
     effectively with upstream.
   </p>
-  
+
+  <h2>Unlinked Translatable Packages</h2>
+
+  <table class="listing">
+    <thead>
+      <tr>
+        <th>Source Package</th>
+        <th>Version</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="sp view/unlinked_translatables">
+        <td><a tal:content="sp/sourcepackagename/name"
+               tal:attributes="href string:${sp/fmt:url}/+packaging"
+               >evolution</a>
+        </td>
+        <td><span tal:condition="sp/currentrelease"
+                  tal:replace="sp/currentrelease/version">2.6.4-2</span>
+        </td>
+    </tr>
+  </table>
+
+  <h2>Known Upstream Links</h2>
+
   <table class="listing" tal:condition="context/packagings">
     <caption>Packaging data for all source packages in
       <span tal:replace="context/title">Ubuntu Hoary</span>
@@ -53,9 +76,9 @@
     </thead>
 
     <tbody>
-      <tr repeat="packaging context/packagings">
+      <tr tal:repeat="packaging context/packagings">
         <td><a tal:attributes="href
-        string:/distros/${packaging/distrorelease/distribution/name}/${packaging/distrorelease/name}/+sources/${packaging/sourcepackagename/name}/+packaging"
+                   string:${packaging/sourcepackage/fmt:url}/+packaging"
                tal:content="packaging/sourcepackagename/name">
           evolution</a>
         </td>
@@ -72,8 +95,6 @@
   also want to look for packaging information in those releases too. This
   page should list only the packaging details for packages which have been
   specifically modified inside this release.</p>
-  <!-- XXX sabdfl 21/06/05 we should show the users where packaging details
-  are not available -->
 
 </div> 
 </body>

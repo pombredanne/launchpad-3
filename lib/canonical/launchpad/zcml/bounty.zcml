@@ -28,16 +28,20 @@
         class="canonical.launchpad.browser.BountyView"
         permission="zope.Public">
         <browser:page
-            template="../templates/bounty.pt"
             name="+index"
+            template="../templates/bounty-index.pt"
             lp:url="/bounties/$Bounty.name/+index" />
         <browser:page
-            template="../templates/bounty-portlet-relateds.pt"
+            name="+portlet-details"
+            template="../templates/bounty-portlet-details.pt"
+            lp:url="/bounties/$Bounty.name/+portlet-details" />
+        <browser:page
             name="+portlet-relateds"
+            template="../templates/bounty-portlet-relateds.pt"
             lp:url="/bounties/$Bounty.name/+portlet-relateds" />
         <browser:page
-            template="../templates/bounty-portlet-subscribers.pt"
             name="+portlet-subscribers"
+            template="../templates/bounty-portlet-subscribers.pt"
             lp:url="/bounties/$Bounty.name/+portlet-subscribers" />
     </browser:pages>
 
@@ -46,28 +50,40 @@
         class="canonical.launchpad.browser.BountyView"
         permission="launchpad.AnyPerson">
         <browser:page
-            template="../templates/bounty-subscription.pt"
             name="+subscribe"
+            template="../templates/bounty-subscription.pt"
             lp:url="/bounties/$Bounty.name/+subscribe" />
     </browser:pages>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBounty"
+        class="canonical.launchpad.browser.BountyView"
         permission="zope.Public">
         <browser:page
+            name="+portlet-actions"
             template="../templates/bounty-portlet-actions.pt"
-            name="+portlet-actions" />
+            />
     </browser:pages>
 
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IBounty"
-        label="Modify Bounty:"
-        fields="name title summary usdvalue difficulty duration description"
-        permission="launchpad.AnyPerson"
-        template="../templates/launchpad-editform.pt"
-        lp:url="/bounties/+edit">
-    </browser:editform>
+        class="canonical.launchpad.browser.BountyEditView"
+        label="Modify Bounty Details"
+        fields="title bountystatus summary difficulty description"
+        permission="launchpad.Edit"
+        template="../templates/bounty-edit.pt"
+        />
+
+    <browser:editform
+        name="+admin"
+        schema="canonical.launchpad.interfaces.IBounty"
+        label="Administer Bounty"
+        fields="name title bountystatus summary usdvalue difficulty description"
+        permission="launchpad.Admin"
+        template="../templates/bounty-edit.pt"
+        />
+
 
     <!-- BountySet -->
     <content class="canonical.launchpad.database.BountySet">
@@ -103,12 +119,11 @@
         name="+new"
         for="canonical.launchpad.interfaces.IBountySet"
         schema="canonical.launchpad.interfaces.IBounty"
-        label="Create A New Bounty"
-        fields="name title summary usdvalue difficulty duration description"
-        content_factory="canonical.launchpad.database.Bounty"
-        class="canonical.launchpad.browser.BountySetAddView"
+        label="Register A New Bounty"
+        fields="name title summary usdvalue difficulty description"
+        class="canonical.launchpad.browser.BountyAddView"
         permission="launchpad.AnyPerson"
-        template="../templates/launchpad-addform.pt"
+        template="../templates/bounty-add.pt"
         lp:url="/bounties/+new">
     </browser:addform>
 

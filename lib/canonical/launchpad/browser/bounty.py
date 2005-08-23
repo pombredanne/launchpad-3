@@ -2,33 +2,27 @@
 
 __metaclass__ = type
 
-__all__ = ['BountyView', 'BountySetAddView']
+__all__ = [
+    'BountyView',
+    'BountyLinkView',
+    'BountyEditView',
+    'BountyAddView'
+    ]
 
 from zope.component import getUtility
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from zope.security.interfaces import Unauthorized
+from zope.app.form.browser.editview import EditView
 
-from canonical.launchpad.interfaces import IBounty, IBountySet, ILaunchBag
-from canonical.lp.dbschema import BountySubscription
+from canonical.launchpad.interfaces import (
+    IBounty, IBountySet, ILaunchBag, IProduct, IProject, IDistribution)
 
-class BountySubscriberPortletMixin:
-
-    def getWatches(self):
-        return [s for s in self.context.subscriptions
-                if s.subscription == BountySubscription.WATCH]
-
-    def getCCs(self):
-        return [s for s in self.context.subscriptions
-                if s.subscription == BountySubscription.CC]
-
-    def getIgnores(self):
-        return [s for s in self.context.subscriptions
-                if s.subscription == BountySubscription.IGNORE]
+from canonical.launchpad.webapp import canonical_url
 
 
-class BountyView(BountySubscriberPortletMixin):
+class BountyView:
 
     __used_for__ = IBounty
 
@@ -42,14 +36,13 @@ class BountyView(BountySubscriberPortletMixin):
         self.user = getUtility(ILaunchBag).user
 
         # establish if a subscription form was posted
-        formsub = request.form.get('Subscribe', None)
-        if formsub is not None:
-            newsub = request.form.get('subscription', None)
-            if newsub == 'watch':
-                self.context.subscribe(self.user, BountySubscription.WATCH)
-            elif newsub == 'email':
-                self.context.subscribe(self.user, BountySubscription.CC)
-            elif newsub == 'none':
+        # XXX sabdfl 18/08/05 this should only work on POST, not GET, as we
+        # have a requirement that GET is immutable for load balancing
+        newsub = request.form.get('subscribe', None)
+        if newsub is not None and self.user:
+            if newsub == 'Subscribe':
+                self.context.subscribe(self.user)
+            elif newsub == 'Unsubscribe':
                 self.context.unsubscribe(self.user)
             self.notices.append("Your subscription to this bounty has been "
                 "updated.")
@@ -58,19 +51,35 @@ class BountyView(BountySubscriberPortletMixin):
         if self.user is not None:
             for subscription in self.context.subscriptions:
                 if subscription.person.id == self.user.id:
-                    self.subscription = subscription.subscription
+                    self.subscription = subscription
                     break
 
-    def subscriptionTypeIsCC(self):
-        return self.subscription == BountySubscription.CC
 
-    def subscriptionTypeIsWatch(self):
-        return self.subscription == BountySubscription.WATCH
+class BountyEditView(EditView):
+
+    def changed(self):
+        self.request.response.redirect(canonical_url(self.context))
 
 
-class BountySetAddView(AddView):
+class BountyLinkView(AddView):
 
-    __used_for__ = IBountySet
+    def __init__(self, context, request):
+        self.request = request
+        self.context = context
+        self._nextURL = '.'
+        AddView.__init__(self, context, request)
+
+    def createAndAdd(self, data):
+        bounty = data['bounty']
+        bountylink = self.context.ensureRelatedBounty(bounty)
+        self._nextURL = canonical_url(self.context)
+        return bounty
+
+    def nextURL(self):
+        return self._nextURL
+
+
+class BountyAddView(AddView):
 
     def __init__(self, context, request):
         self.request = request
@@ -95,9 +104,16 @@ class BountySetAddView(AddView):
             usdvalue=data['usdvalue'],
             owner=owner,
             reviewer=reviewer)
+        # if the context is a product, or a project, or a distribution, then
+        # we need to link to it
+        if IProduct.providedBy(self.context) or \
+           IProject.providedBy(self.context) or \
+           IDistribution.providedBy(self.context):
+            self.context.ensureRelatedBounty(bounty)
         notify(ObjectCreatedEvent(bounty))
-        self._nextURL = data['name']
+        self._nextURL = canonical_url(bounty)
         return bounty
 
     def nextURL(self):
         return self._nextURL
+

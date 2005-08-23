@@ -108,7 +108,7 @@ class ProductView:
 
                 object_translatable = {
                     'title': sourcepackage.title,
-                    'potemplates': sourcepackage.potemplates,
+                    'potemplates': sourcepackage.currentpotemplates,
                     'base_url': '/distros/%s/%s/+sources/%s' % (
                         sourcepackage.distribution.name,
                         sourcepackage.distrorelease.name,
@@ -120,7 +120,7 @@ class ProductView:
 
                 object_translatable = {
                     'title': productseries.title,
-                    'potemplates': productseries.potemplates,
+                    'potemplates': productseries.currentpotemplates,
                     'base_url': '/products/%s/+series/%s' %(
                         self.context.name,
                         productseries.name)
@@ -143,7 +143,7 @@ class ProductView:
         if target is None:
             return []
         return [POTemplateView(template, self.request)
-                for template in target.potemplates]
+                for template in target.currentpotemplates]
 
     def requestCountry(self):
         return ICountry(self.request, None)

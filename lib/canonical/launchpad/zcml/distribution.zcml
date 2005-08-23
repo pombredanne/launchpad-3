@@ -198,6 +198,33 @@
         template="../templates/distribution-translators.pt"
         lp:url="/distros/$Distribution.name/+changetranslators" />
 
+    <browser:addform
+      name="+linkbounty"
+      for="canonical.launchpad.interfaces.IDistribution"
+      schema="canonical.launchpad.interfaces.IDistributionBounty"
+      class="canonical.launchpad.browser.bounty.BountyLinkView"
+      label="Link Existing Bounty"
+      fields="distribution bounty"
+      keyword_arguments="distribution bounty"
+      permission="launchpad.AnyPerson"
+      template="../templates/bounty-link.pt"
+      lp:url="/distributions/$Distribution.name/+linkbounty">
+      <browser:widget
+        field="distribution"
+        class="canonical.widgets.ContextWidget" />
+    </browser:addform>
+
+    <browser:addform
+      name="+addbounty"
+      for="canonical.launchpad.interfaces.IDistribution"
+      schema="canonical.launchpad.interfaces.IBounty"
+      label="Register A New Bounty"
+      fields="name title summary usdvalue difficulty description"
+      class="canonical.launchpad.browser.BountyAddView"
+      permission="launchpad.AnyPerson"
+      template="../templates/bounty-add.pt"
+      />
+
     <!-- DistributionSet -->
     <content class="canonical.launchpad.database.DistributionSet">
         <allow interface="canonical.launchpad.interfaces.IDistributionSet"/>
