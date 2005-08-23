@@ -9,7 +9,7 @@ Go to the page to add a new project.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <h1>Register a Project with The Launchpad!</h1>
+      <h1>Register a project with Launchpad</h1>
   ...
 
 Add a new project.
@@ -28,7 +28,7 @@ Add a new project.
   Location: apache
   <BLANKLINE>
   ...
-      <h1>Register a Project with The Launchpad!</h1>
+      <h1>Register a project with Launchpad</h1>
   ...
 
 Now see the new project.

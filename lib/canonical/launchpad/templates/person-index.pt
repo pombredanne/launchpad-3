@@ -90,9 +90,9 @@
         <h2>Team Memberships</h2>
 
         <p tal:condition="context/isTeam">
-          <span tal:replace="context/browsername">Ubuntu Members</a> is
+          <span tal:replace="context/browsername">Ubuntu Members</span> is
           a member of these teams, so all members of
-          <span tal:replace="context/browsername">Ubuntu Members</a> are
+          <span tal:replace="context/browsername">Ubuntu Members</span> are
           also members of these teams.
         </p>
         <p tal:condition="not: context/isTeam">

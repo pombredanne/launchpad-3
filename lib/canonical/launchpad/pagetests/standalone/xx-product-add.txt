@@ -9,7 +9,7 @@ Test that the page to add a new product loads.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-          <h1>Register an Open Source (Upstream) Product</h1>
+          <h1>Register an upstream open surce product</h1>
   ...
 
 Test that the page to add a new product works.
@@ -80,7 +80,7 @@ Test that the page to add a new product works.
   Location: testing
   <BLANKLINE>
   ...
-          <h1>Register an Open Source (Upstream) Product</h1>
+          <h1>Register an upstream open source product</h1>
   ...
 
 
