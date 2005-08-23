@@ -156,6 +156,11 @@ class IProduct(IHasOwner, IBugTarget):
     serieslist = Attribute(_("""An iterator over the ProductSeries for this
         product"""))
 
+
+    name_with_project = Attribute(_("Returns the product name prefixed "
+        "by the project name, if a project is associated with this "
+        "product; otherwise, simply returns the product name."))
+
     releases = Attribute(_("""An iterator over the ProductReleases for this
         product."""))
 

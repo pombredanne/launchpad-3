@@ -167,9 +167,7 @@
 </metal:header>
 
 <metal:header define-macro="item"
-    tal:define="product_name task/product/name|nothing;
-                project_name task/product/project/name|nothing;
-                package_name task/sourcepackagename/name|nothing">
+    tal:define="package_name task/sourcepackagename/name|nothing">
   <td tal:condition="mass_edit_allowed|nothing">
     <input type="checkbox" name="task" value=""
            tal:attributes="value task/id" />
@@ -187,11 +185,10 @@
       tal:content="python:package_name and package_name or '(none)'">
        (none)
   </td>
-  <td tal:condition="python:('product' in listing_columns) and product_name"
-      tal:content="python: (project_name == product_name) and product_name or
-                           (project_name + ' ' + product_name)"
+  <td tal:condition="python:('product' in listing_columns) and task.product"
+      tal:content="task/product/name_with_project"
       style="white-space: nowrap" >
-      product
+      [project] product
   </td>
   <td tal:condition="python:'severity' in listing_columns"
       tal:content="task/severity/title"
