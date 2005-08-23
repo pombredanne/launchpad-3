@@ -1,20 +1,18 @@
 <html metal:use-macro="context/@@main_template/master">
-
-<body>
-
-<div metal:fill-slot="main">
-
-<h3  i18n:translate="">
-  The page that you are trying to access is not available
-</h3>
-<br/> 
-<b  i18n:translate="">Please note the following:</b>
-<br/>
-<ol>
-   <li i18n:translate="">You might have miss-typed the url.</li>
-   <li i18n:translate="">You might be trying to access a non-existent
-   page.</li>
-</ol>
-</div>
-</body>
+  <body>
+    <div metal:fill-slot="main">
+      <h1 i18n:translate="">Page not found</h1>
+      <p i18n:translate="">
+        There&#8217;s no page with this address in Launchpad.
+      </p>
+      <p i18n:translate="">
+        If you got here from a link elsewhere on Launchpad,
+        sorry about that.
+        We&#8217;re working hard to fix those broken links.
+      </p>
+      <p i18n:translate="">
+        Otherwise, check that you typed the address correctly.
+      </p>
+    </div>
+  </body>
 </html>
