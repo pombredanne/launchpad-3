@@ -43,6 +43,7 @@ from canonical.launchpad.interfaces.infestation import *
 from canonical.launchpad.interfaces.irc import *
 from canonical.launchpad.interfaces.jabber import *
 from canonical.launchpad.interfaces.karma import *
+from canonical.launchpad.interfaces.keyring_trust_analyser import *
 from canonical.launchpad.interfaces.language import *
 from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.launchpadstatistic import *

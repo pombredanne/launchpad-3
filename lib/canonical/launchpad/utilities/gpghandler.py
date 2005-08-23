@@ -425,8 +425,8 @@ class PymeUserId:
     implements(IPymeUserId)
 
     def __init__(self, uid):
-        self.revoked = uid.revoked
-        self.invalid = uid.invalid
+        self.revoked = bool(uid.revoked)
+        self.invalid = bool(uid.invalid)
         self.validity = uid.validity
         self.uid = uid.uid
         self.name = uid.name
