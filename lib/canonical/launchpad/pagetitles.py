@@ -118,6 +118,10 @@ bounties = 'Launchpad Bounties'
 
 bounties_new = 'Register a New Bounty in Launchpad'
 
+bounty_add = 'Register a bounty in Launchpad'
+
+bounty_edit = ContextTitle('Edit bounty "%s"')
+
 bounty_index = ContextTitle('Launchpad Bounty: %s')
 
 bounty_subscription = 'Bounty Subscription'
