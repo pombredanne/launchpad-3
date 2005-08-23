@@ -645,50 +645,74 @@ class BugTaskSearchListingView:
         return release_bugs
 
     def getSortLink(self, colname):
-        """Return a link that can be used to sort the search results by colname.
-        """
+        """Return a link that can be used to sort results by colname."""
         form = self.request.form
         sortlink = ""
         if form.get("search") is None:
             # There is no search criteria to preserve.
             sortlink = "%s?search=Search&orderby=%s" % (
                 str(self.request.URL), colname)
-        else:
-            # There is search criteria to preserve.
-            sortlink = str(self.request.URL) + "?"
-            for fieldname in form:
-                fieldvalue = form.get(fieldname)
-                if isinstance(fieldvalue, (list, tuple)):
-                    fieldvalue = [value.encode("utf-8") for value in fieldvalue]
-                else:
-                    fieldvalue = fieldvalue.encode("utf-8")
+            return sortlink
 
-                if fieldname != "orderby":
-                    sortlink += "%s&" % urllib.urlencode(
-                        {fieldname : fieldvalue}, doseq=True)
+        # XXX: is it not possible to get the exact request supplied and
+        # just sneak a "-" in front of the orderby argument, if it
+        # exists? If so, the code below could be a lot simpler.
+        #       -- kiko, 2005-08-23
 
-            sortcol = colname
-            current_sort_column = form.get("orderby")
-            if current_sort_column is not None:
-                # The listing was already sorted by some column. If it
-                # was the column for which we're generating the sort
-                # link, generate a sort link that inverts the current
-                # sort ordering of the column.
-                if current_sort_column.startswith("-"):
-                    current_sort_column = current_sort_column[1:]
-                    generate_ascending_sort_link = True
-                else:
-                    generate_ascending_sort_link = False
+        # There is search criteria to preserve.
+        sortlink = str(self.request.URL) + "?"
+        for fieldname in form:
+            fieldvalue = form.get(fieldname)
+            if isinstance(fieldvalue, (list, tuple)):
+                fieldvalue = [value.encode("utf-8") for value in fieldvalue]
+            else:
+                fieldvalue = fieldvalue.encode("utf-8")
 
-                if current_sort_column == colname:
-                    if generate_ascending_sort_link:
-                        sortcol = colname
-                    else:
-                        sortcol = "-" + colname
+            if fieldname != "orderby":
+                sortlink += "%s&" % urllib.urlencode(
+                    {fieldname : fieldvalue}, doseq=True)
 
-            sortlink += "orderby=%s" % sortcol
+        sorted, ascending = self._getSortStatus(colname)
+        if sorted and ascending:
+            # If we are currently ascending, revert the direction
+            colname = "-" + colname
+
+        sortlink += "orderby=%s" % colname
 
         return sortlink
+
+    def getSortClass(self, colname):
+        """Return a class appropriate for sorted columns"""
+        sorted, ascending = self._getSortStatus(colname)
+        if not sorted:
+            return ""
+        if ascending:
+            return "sorted ascending"
+        return "sorted descending"
+
+    def _getSortStatus(self, colname):
+        """Finds out if the list is sorted by the column specified.
+
+        Returns a tuple (sorted, ascending), where sorted is true if the
+        list is currently sorted by the column specified, and ascending
+        is true if sorted in ascending order.
+        """
+        current_sort_column = self.request.form.get("orderby")
+        if current_sort_column is None:
+            return (False, False)
+
+        ascending = True
+        sorted = True
+        if current_sort_column.startswith("-"):
+            ascending = False
+            current_sort_column = current_sort_column[1:]
+
+        if current_sort_column != colname:
+            sorted = False
+
+        return (sorted, ascending)
+
+
 
     def _countTasks(self, **kwargs):
         search_params = BugTaskSearchParams(**kwargs)

@@ -92,34 +92,44 @@
     <th tal:condition="mass_edit_allowed|nothing">
       Select
     </th>
-    <th tal:condition="python:'id' in listing_columns">
+    <th tal:condition="python:'id' in listing_columns"
+        tal:attributes="class python:view.getSortClass('id')">
       <a href="#" tal:attributes="href python:view.getSortLink('id')">ID</a>
     </th>
-    <th tal:condition="python:'title' in listing_columns">
+    <th tal:condition="python:'title' in listing_columns"
+        tal:attributes="class python:view.getSortClass('title')">
        <a href="#" tal:attributes="href python:view.getSortLink('title')">Title</a>
     </th>
-    <th tal:condition="python:'package' in listing_columns">
+    <th tal:condition="python:'package' in listing_columns"
+        tal:attributes="class python:view.getSortClass('sourcepackagename')">
       <a href="#" tal:attributes="href python:view.getSortLink('sourcepackagename')">Package</a>
     </th>
-    <th tal:condition="python:'severity' in listing_columns">
+    <th tal:condition="python:'severity' in listing_columns"
+        tal:attributes="class python:view.getSortClass('severity')">
       <a href="#" tal:attributes="href python:view.getSortLink('severity')">Severity</a>
     </th>
-    <th tal:condition="python:'priority' in listing_columns">
+    <th tal:condition="python:'priority' in listing_columns"
+        tal:attributes="class python:view.getSortClass('priority')">
       <a href="#" tal:attributes="href python:view.getSortLink('priority')">Priority</a>
     </th>
-    <th tal:condition="python:'assignedto' in listing_columns">
+    <th tal:condition="python:'assignedto' in listing_columns"
+        tal:attributes="class python:view.getSortClass('assignee')">
       <a href="#" tal:attributes="href python:view.getSortLink('assignee')">Assignee</a>
     </th>
-    <th tal:condition="python:'status' in listing_columns">
+    <th tal:condition="python:'status' in listing_columns"
+        tal:attributes="class python:view.getSortClass('status')">
        <a href="#" tal:attributes="href python:view.getSortLink('status')">Status</a>
     </th>
-    <th tal:condition="python:'milestone' in listing_columns">
+    <th tal:condition="python:'milestone' in listing_columns"
+        tal:attributes="class python:view.getSortClass('milestone')">
        <a href="#" tal:attributes="href python:view.getSortLink('milestone')">Target</a>
     </th>
-    <th tal:condition="python:'submittedon' in listing_columns">
+    <th tal:condition="python:'submittedon' in listing_columns"
+        tal:attributes="class python:view.getSortClass('datecreated')">
       <a href="#" tal:attributes="href python:view.getSortLink('datecreated')">Reported</a>
     </th>
-    <th tal:condition="python:'submittedby' in listing_columns">
+    <th tal:condition="python:'submittedby' in listing_columns"
+        tal:attributes="class python:view.getSortClass('owner')">
       <a href="#" tal:attributes="href python:view.getSortLink('owner')">Reporter</a>
     </th>
   </tr>
