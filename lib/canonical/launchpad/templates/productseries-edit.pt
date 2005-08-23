@@ -102,12 +102,11 @@
             <label>Release Filename Pattern</label>
 
             <div class="formHelp">
-              Releases in this series match the following filename
-              pattern. We will use this pattern, together with the
-              root directory given above, to find new releases of
-              <span tal:replace="context/product/displayname" /> when
-              they are uploaded to that directory.
-              For example: <i>firefox-1.1.*.src.tgz</i>
+            A pattern-matching 'glob' expression that should match
+            all the releases made as part of this series. For
+            example, if release tarball filenames take the form
+            <i>apache-2.0.35.tar.gz</i> then the glob would be 
+            <i>apache-2.0.*.tar.gz</i>.
             </div>
 
             <input name="releasefileglob" size=40

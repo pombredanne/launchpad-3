@@ -289,7 +289,7 @@
         class="canonical.launchpad.browser.ProductSeriesAddView"
         keyword_arguments="name displayname summary"
         permission="launchpad.AnyPerson"
-        template="../templates/series-new.pt"
+        template="../templates/productseries-new.pt"
         lp:url="/products/$Product.name/+addseries">
         <browser:widget
            field="name"
