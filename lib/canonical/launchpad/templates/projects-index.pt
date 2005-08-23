@@ -8,6 +8,13 @@
 <metal:leftportlets fill-slot="portlets_one">
   <tal:statistics replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
+<metal:rightportlets fill-slot="portlets_two">
+  <div class="portlet portletBody portletContent">
+    <ul>
+      <li class="add"><a href="/projects/+new">Register a new product</a></li>
+    </ul>
+  </div>
+</metal:rightportlets>
 
     <div metal:fill-slot="main">
 
