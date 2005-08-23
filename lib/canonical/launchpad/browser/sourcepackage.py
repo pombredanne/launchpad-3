@@ -60,8 +60,7 @@ def traverseSourcePackage(sourcepackage, request, name):
         return potemplateset.getSubset(
                    distrorelease=sourcepackage.distrorelease,
                    sourcepackagename=sourcepackage.sourcepackagename)
-    else:
-        raise KeyError, 'No such suburl for Source Package: %s' % name
+    return None
 
 
 class SourcePackageFilebugView(SQLObjectAddView):
