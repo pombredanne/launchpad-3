@@ -9,121 +9,104 @@
 
     <tal:dummy condition="view/newproject" />
 
-    <h1>Register a Project with The Launchpad!</h1>
-
-    <div class="documentDescription">
-    Please fill in the details of your project in the spaces below
-    to register the project in Launchpad. Please read the description of
-    each field carefully, each field is used in a different way
-    in the system and is equally important.
-    </div>
-
-    <fieldset>
-
-        <legend>Project Details</legend>
+        <h1>Register a project with Launchpad</h1>
+        <p>Enter the details of your project below.</p>
         <form action="+new" method="post">
-        <div class="field">
-
-            <label>Name</label>
-
-            <span class="fieldRequired" title="Required">(Required)</span>
-
-                <div class="formHelp">
-                The name of the project is a short name - a unique
-                name that identifies the project, and is used in 
-                URLs and references to the project. All lowercase,
-                no special characters. Examples: <i>apache</i> and
-                <i>mozilla</i> and <i>gtk</i> and <i>gimp</i>.
-                </div>
-
+          <div class="field">
+            <div>
+              <label for="name">Name:</label>
+              <span class="fieldRequired">(Required)</span>
+            </div>
+            <div>
                 <input type="text" name="name" size="30"
                        value="" style="text-transform: lowercase" />
-        </div>
-        
-        <div class="field">
-
-            <label>Display Name</label>
-
-            <span class="fieldRequired" title="Required">(Required)</span>
-
-                <div class="formHelp">
-                The "display name" of the project. This is the name of the
-                project, appropriately capitalised, as you would expect to
-                find it in the middle of a paragraph text. For example,
-                <i>the Apache Project</i> or <i>the GiMP Project</i>.
-                Typically it ends in "Project".
-                </div>
-
+            </div>
+            <div class="formHelp">
+                A unique name, used in URLs, identifying the project.
+                All lowercase, no special characters.
+                Examples:
+                <samp>apache</samp>, <samp>mozilla</samp>, <samp>gimp</samp>.
+            </div>
+          </div>
+          <div class="field">
+            <div>
+              <label for="displayname">Display Name:</label>
+              <span class="fieldRequired">(Required)</span>
+            </div>
+            <div>
                 <input type="text" name="displayname" size="30"
                        value="" />
-        </div>
-
-        <div class="field">
-
-            <label>Title</label>
-
-            <span class="fieldRequired" title="Required">(Required)</span>
-
-                <div class="formHelp">
-                This is the full name of the project, can contain
-                spaces, special characters etc.
-                </div>
-
+            </div>
+            <div class="formHelp">
+                Appropriately capitalised, and typically ending in "Project".
+                Examples:
+                <samp>the Apache Project</samp>,
+                <samp>the Mozilla Project</samp>,
+                <samp>the Gimp Project</samp>.
+            </div>
+          </div>
+          <div class="field">
+            <div>
+              <label for="title">Title:</label>
+              <span class="fieldRequired" title="Required">(Required)</span>
+            </div>
+            <div>
                 <input type="text" name="title" size="30"
                        value="" />
-        </div>
-
-        <div class="field">
-
-            <label>Summary</label>
-
-                <div class="formHelp">
+            </div>
+            <div class="formHelp">
+                The full name of the project, which can contain
+                spaces, special characters <abbr>etc</abbr>.
+            </div>
+          </div>
+          <div class="field">
+            <div>
+              <label for="summary">Summary:</label>
+            </div>
+            <div>
+              <textarea cols="40" rows="5" name="summary"></textarea>
+            </div>
+            <div class="formHelp">
                 A brief (one paragraph) summary of the project.
-                </div>
+            </div>
+          </div>
+          <div class="field">
+            <div>
+              <label>Description:</label>
+            </div>
+            <div>
+              <textarea cols="40" rows="5" name="description"></textarea>
+            </div>
+            <div class="formHelp">
+                A detailed description of the project, including details like
+                when it was founded, how many contributors there are,
+                and how it is organised and coordinated.
+            </div>
+          </div>
 
-                <textarea cols="40" rows="5" name="summary"></textarea>
-        </div>
-
-        <div class="field">
-
-            <label>Description</label>
-
-                <div class="formHelp">
-                A detailed description of the project. Note that each
-                product for this project will have its own separate page and
-                description, so you should use this space to describe the
-                organisation of the project itself - when it was founded,
-                how many contributors there are, and how it is organised and
-                coordinated.
-                </div>
-
-                <textarea cols="40" rows="5" name="description"></textarea>
-        </div>
-
-        <div class="field">
-
-            <label>URL</label>
-
-                <div class="formHelp">
-                The project home page, if it exists.
-                </div>
-
+          <div class="field">
+            <div>
+              <label>URL:</label>
+            </div>
+            <div>
                 <input type="text" name="homepageurl" size="30"
                        value="http://" />
-        </div>
+            </div>
+            <div class="formHelp">
+                The project home page, if it exists.
+            </div>
+          </div>
 
 
         <div class="formControls">
 
-            <input class="context" type="submit"
+            <input type="submit"
                    name="Register"
                    value="Register Project" />
 
         </div>
 
         </form>
-
-    </fieldset>
 
 </div>
 

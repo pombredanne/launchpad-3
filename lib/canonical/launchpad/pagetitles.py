@@ -496,7 +496,7 @@ potemplatename_index = ContextTitle('%s in Rosetta')
 
 potemplatenames_index = 'Template names in Launchpad'
 
-product_add = 'Register a new Product with the Launchpad'
+product_add = 'Register a product with Launchpad'
 
 product_bugs = ContextDisplayName('%s upstream bug reports')
 
@@ -545,11 +545,11 @@ project_index = ContextTitle('Project: %s')
 
 project_interest = 'Rosetta: Project not translatable'
 
-project_new = 'Register a Project with the Launchpad'
+project_new = 'Register a project with Launchpad'
 
 project_rosetta_index = ContextTitle('Rosetta: %s')
 
-projects_index = 'Launchpad Project Registry'
+projects_index = 'Products in Launchpad'
 
 projects_request = 'Rosetta: Request a project'
 
