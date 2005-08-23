@@ -14,11 +14,11 @@ from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from zope.security.interfaces import Unauthorized
+from zope.app.form.browser.editview import EditView
 
 from canonical.launchpad.interfaces import (
     IBounty, IBountySet, ILaunchBag, IProduct, IProject, IDistribution)
 
-from canonical.launchpad.browser.editview import EditView
 from canonical.launchpad.webapp import canonical_url
 
 
