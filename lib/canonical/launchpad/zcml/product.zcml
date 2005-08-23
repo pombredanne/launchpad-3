@@ -233,7 +233,12 @@
         <browser:widget
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"
+           extra="tabindex=2"
            width="62" />
+        <browser:widget
+           field="private"
+           class="zope.app.form.browser.CheckBoxWidget"
+           extra="tabindex=3" />
     </browser:addform>
 
     <browser:addform
