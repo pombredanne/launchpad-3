@@ -279,6 +279,10 @@
         <browser:page name="+request"
             template="../templates/projects-request.pt"
             lp:url="Rosetta/projects/+request" />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/projectset-portlet-details.pt"
+            lp:url="/projects/+portlet-details" />
     </browser:pages>
 
     <securedutility

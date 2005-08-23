@@ -133,6 +133,9 @@ class ProjectSet:
             owner=owner,
             datecreated=UTC_NOW)
 
+    def count_all(self):
+        return Project.select().count()
+
     def forReview(self):
         return Project.select("reviewed IS FALSE")
 

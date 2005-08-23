@@ -628,6 +628,12 @@ table.listing>thead>tr>td {
   border: none;
 }
 
+/* Alternating "even" and "odd" colors are bong */
+
+.portlet {
+  background-color: #f7f9fa;
+}
+
 /* Not all of a <dt> should be bold: -- */
 
 dt {

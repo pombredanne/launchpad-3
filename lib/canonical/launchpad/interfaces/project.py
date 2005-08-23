@@ -176,6 +176,9 @@ class IProjectSet(Interface):
         Raises an KeyError if a project with that name already exists.
         """
 
+    def count_all():
+        """Return the total number of projects registered in Launchpad."""
+
     def search(text=None, soyuz=None,
                      rosetta=None, malone=None,
                      bazaar=None,

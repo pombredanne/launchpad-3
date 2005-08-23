@@ -6,25 +6,12 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div class="portlet">
-    <h4>Open Source Projects:</h4>
-
-    <div class="portletBody">
-      <div class="portletContent even">
-
-        <p>Enter a project name or detail, and press search to find all
-        projects matching those words in the Launchpad. You can also
-        <a href="/projects/+all">see all projects</a> registered in the
-        launchpad.</p>
-
-      </div>
-    </div>
-  </div>
+  <tal:statistics replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
     <div metal:fill-slot="main">
 
-      <h1>Find Projects in Launchpad</h1>
+      <h1>Projects in Launchpad</h1>
 
       <form method="get">
         <table>
@@ -73,10 +60,9 @@
                         ><dfn
                           tal:content="project/title"
                         >$project.title</dfn>
-                        (<span
-                          tal:replace="project/name"
-                        >$project.name
-                      </span>)</a>
+                      </a>
+                      (<code tal:content="project/name"
+                      >$project.name</code>)
                     </dt>
                     <dd tal:content="project/summary">
                       $project.shortdesc
