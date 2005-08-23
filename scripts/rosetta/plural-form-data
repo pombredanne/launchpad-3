@@ -1,10 +1,10 @@
 # arch-tag: 26f84e2a-1a75-48d5-bf0d-28672ebc61aa
 
-languages: fa,hu,ja,kr,jbo,ko,tr,vi,zh,bo
+languages: fa,hu,ja,kr,jbo,ko,tr,vi,zh,bo,ka
 nplurals:  1
 plural:    0
 
-languages: az,ca,da,nn,nl,en,eu,fo,gu,de,no,sv,es,fi,el,hi,he,it,is,ro,sq,pt,eo,ms,nb,pa,ta,an,zu,af,xh,bg,gl,ku
+languages: az,ca,da,nn,nl,en,eu,fo,gu,de,no,sv,es,fi,el,hi,he,it,is,ro,sq,pt,eo,ms,nb,pa,ta,an,zu,af,xh,bg,gl,ku,lb,la,et
 nplurals:  2
 plural:    n != 1
 
