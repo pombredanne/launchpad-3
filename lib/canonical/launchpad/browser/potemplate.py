@@ -55,10 +55,14 @@ class POTemplateFacets(StandardLaunchpadFacets):
         text = 'Translations'
         return DefaultLink(target, text)
 
+    # Bugs and calendar don't make sense for potemplates
+    # XXX: how does one disable links unconditionally?
+    #       -- kiko, 2005-08-23
     def bugs(self):
-        target = self._parent_url() + '/+bugs'
-        text = 'Bugs'
-        return Link(target, text)
+        return Link("", "Bugs", linked=False)
+
+    def calendar(self):
+        return Link("", "Calendar", linked=False)
 
 
 class POTemplateAppMenus(POFileAppMenus):
