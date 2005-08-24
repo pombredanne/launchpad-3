@@ -19,7 +19,7 @@
       </ul>
       <ul style="text-align: right">
         <li class="add">
-          <a tal:attributes="href string:$bug_url/attachments/+new">
+          <a tal:attributes="href string:$bug_url/+addattachment">
             Add
           </a>
         </li>

@@ -130,6 +130,19 @@
             class="canonical.widgets.bug.BugWidget" />
     </browser:editform>
 
+    <browser:addform
+        name="+addattachment"
+        schema="canonical.launchpad.interfaces.IBugAttachmentAddForm"
+        for="canonical.launchpad.interfaces.IBug"
+        class="canonical.launchpad.browser.BugAttachmentAddView"
+        label="Add an Attachment"
+        fields="filecontent patch title comment"
+        keyword_arguments="patch filecontent title comment"
+        permission="launchpad.AnyPerson"
+        template="../templates/bugattachment-add.pt"
+        lp:url="malone/bugs/$Bug.id/+addattachment"
+        />
+
     <browser:view
         for="canonical.launchpad.interfaces.IBug"
         name="+messages"

@@ -1,7 +1,7 @@
 First we add some more attachments.
 
   >>> print http(r"""
-  ... POST /malone/bugs/1/attachments/+new HTTP/1.1
+  ... POST /malone/bugs/1/+addattachment HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 615
   ... Content-Type: multipart/form-data; boundary=----------P7v4Oj3X8teE7hHMyHGM69
@@ -36,7 +36,7 @@ First we add some more attachments.
   ...
 
   >>> print http(r"""
-  ... POST /malone/bugs/2/attachments/+new HTTP/1.1
+  ... POST /malone/bugs/2/+addattachment HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 714
   ... Content-Type: multipart/form-data; boundary=----------vvmutbqRtMHDsEUHOtf3gM
@@ -75,7 +75,7 @@ First we add some more attachments.
   ...
 
   >>> print http(r"""
-  ... POST /malone/bugs/4/attachments/+new HTTP/1.1
+  ... POST /malone/bugs/4/+addattachment HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 714
   ... Content-Type: multipart/form-data; boundary=----------KNGhOUqXp3rG7Nr29s6MiJ

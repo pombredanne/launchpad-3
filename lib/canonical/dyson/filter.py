@@ -65,8 +65,8 @@ class Cache(object):
         """Check whether the cache contains the URL."""
         self.log.info("Checking cache for %s", url)
         (scheme, netloc, path, query, fragment) = urlsplit(url)
-        while path.startswith("/"):
-            path = path[1:]
+        for bad in ("/", "."):
+            path = path.replace(bad, "")
 
         cache_path = os.path.join(self.path, path[:2])
         self.log.debug("Cache file is %s", cache_path)

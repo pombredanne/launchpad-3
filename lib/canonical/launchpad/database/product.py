@@ -239,10 +239,7 @@ class Product(SQLBase):
                 ProductRelease.q.version == version),
             clauseTables=['ProductSeries'])
         if release is None:
-            # XXX: This needs a change in banzai, which depends on this method
-            #      raising IndexError.
-            #      SteveAlexander, 2005-04-25
-            raise IndexError
+            raise NotFoundError(version)
         return release
 
     def packagedInDistros(self):

@@ -7,11 +7,11 @@
     <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/bug/@@+portlet-details" />
   </metal:leftportlets>
-  
+
   <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-actions" />
     <div tal:replace="structure context/@@+portlet-alsoreportedin" />
-    <div tal:condition="context/product" 
+    <div tal:condition="context/product"
          tal:replace="structure context/product/@@+portlet-latest-bugs" />
   </metal:rightportlets>
 
@@ -23,7 +23,7 @@
            tal:attributes="href context/bug/duplicateof/fmt:url">bug
              #<span tal:replace="context/bug/duplicateof/id">42</span></a>
       </p>
-      
+
       <p tal:condition="not: context/required:launchpad.Edit"
          class="portalMessage">
         <span tal:condition="not: request/lp:person">
@@ -31,17 +31,17 @@
           you must be logged in as
           <span tal:condition="context/assignee">
             <a href="#"
-                       tal:attributes="href context/assignee/fmt:url" 
+                       tal:attributes="href context/assignee/fmt:url"
                        tal:content="context/assignee/displayname">
-          Scott James Remnant The Third</a> or 
+          Scott James Remnant The Third</a> or
           </span>
-          a maintainer of <span 
-                              tal:replace="context/contextname">product</span>.
+          a maintainer of <span
+                              tal:replace="context/targetname">product</span>.
         </span>
         <span tal:condition="request/lp:person">
         You cannot change this status page: you are not the assignee or
         a maintainer of <span
-        tal:replace="context/contextname">product</span>.
+        tal:replace="context/targetname">product</span>.
         </span>
       </p>
 
@@ -68,8 +68,8 @@
              Bug summary goes here if it exists.
           </div>
 
-          <h2>Status of 
-            <span tal:replace="context/contextname">upstream
+          <h2>Status of
+            <span tal:replace="context/targetname">upstream
             firefox</span> bug
             #<span tal:replace="context/bug/id">3224</span></h2>
 
