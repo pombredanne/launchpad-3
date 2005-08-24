@@ -46,6 +46,81 @@ Now we can create the bug attachment:
     >>> bug_one.attachments[0] == attachment
     True
 
+The librarian won't allow empty files, so the view that creates the
+attachment needs to handle that:
+
+    >>> from zope.component import getView
+    >>> from zope.publisher.browser import TestRequest
+    >>> login('test@canonical.com')
+    >>> filecontent = StringIO('')
+    >>> filecontent.filename = 'foo.bar'
+    >>> add_request = TestRequest(form={'field.title': u'Title',
+    ...                                 'field.comment': u'Some comment.',
+    ...                                 'field.filecontent': filecontent,
+    ...                                 'field.patch': u'',
+    ...                                 'UPDATE_SUBMIT': ''})
+    >>> add_attachment_view = getView(bug_one, '+addattachment', add_request)
+    >>> add_attachment_view.update()
+    u'An error ...'
+    >>> add_attachment_view.filecontent_widget.error()
+    u'...Cannot upload empty file...'
+
+
+It's possible to limit the maximum size of the attachments by setting
+max_bug_attachment_size in launchpad.conf. The default value for the
+testrunner is 1024, so let's create a file larger than that and try to
+upload it:
+
+    >>> filecontent = StringIO('x'*1025)
+    >>> filecontent.filename = 'foo.bar'
+    >>> add_request = TestRequest(form={'field.title': u'Title',
+    ...                                 'field.comment': u'Some comment.',
+    ...                                 'field.filecontent': filecontent,
+    ...                                 'field.patch': u'',
+    ...                                 'UPDATE_SUBMIT': ''})
+    >>> add_attachment_view = getView(bug_one, '+addattachment', add_request)
+    >>> add_attachment_view.update()
+    u'An error ...'
+    >>> add_attachment_view.filecontent_widget.error()
+    u'...Cannot upload files larger than 1024 bytes...'
+
+If we set the limit to 0 we can upload it, though, since a value of 0
+means no limit:
+
+    >>> from canonical.config import config
+    >>> old_max_bug_attachment_size = config.launchpad.max_bug_attachment_size
+    >>> config.launchpad.max_bug_attachment_size = 0
+    >>> add_request = TestRequest(form={'field.title': u'Title',
+    ...                                 'field.comment': u'Some comment.',
+    ...                                 'field.filecontent': filecontent,
+    ...                                 'field.patch': u'',
+    ...                                 'UPDATE_SUBMIT': ''})
+    >>> add_attachment_view = getView(bug_one, '+addattachment', add_request)
+    >>> len(add_attachment_view.errors)
+    0
+    >>> add_attachment_view.update()
+    ''
+
+Let's try uploading a file with some weird characters in them:
+
+    >>> filecontent.filename = u'fo\xf6 bar'
+    >>> add_request = TestRequest(form={'field.title': u'Title',
+    ...                                 'field.comment': u'Some comment.',
+    ...                                 'field.filecontent': filecontent,
+    ...                                 'field.patch': u'',
+    ...                                 'UPDATE_SUBMIT': ''})
+    >>> add_attachment_view = getView(bug_one, '+addattachment', add_request)
+    >>> len(add_attachment_view.errors)
+    0
+    >>> add_attachment_view.update()
+    ''
+    >>> bug_one.attachments[-1].libraryfile.filename
+    u'fo\xf6 bar'
+    >>> bug_one.attachments[-1].libraryfile.url
+    'http://.../fo%C3%B6%20bar'
+
+
+    >>> config.launchpad.max_bug_attachment_size = old_max_bug_attachment_size
 
 Security
 --------

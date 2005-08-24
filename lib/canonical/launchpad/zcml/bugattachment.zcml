@@ -27,19 +27,6 @@
         name="+edit"
         />
 
-    <browser:addform
-        name="+new"
-        schema="canonical.launchpad.interfaces.IBugAttachmentAddForm"
-        for="canonical.launchpad.interfaces.IBugAttachmentSet"
-        class="canonical.launchpad.browser.BugAttachmentAddView"
-        label="Add an Attachment"
-        fields="filecontent patch title comment"
-        keyword_arguments="patch filecontent title comment"
-        permission="launchpad.AnyPerson"
-        template="../templates/bugattachment-add.pt"
-        lp:url="malone/bugs/$Bug.id/attachments/+new"
-        />
-
     <browser:editform
         schema="canonical.launchpad.interfaces.IBugAttachmentEditForm"
         for="canonical.launchpad.interfaces.IBugAttachment"
