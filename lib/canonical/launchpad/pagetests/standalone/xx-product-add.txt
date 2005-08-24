@@ -9,7 +9,7 @@ Test that the page to add a new product loads.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-          <h1>Register an upstream open surce product</h1>
+          <h1>Register an upstream open source product</h1>
   ...
 
 Test that the page to add a new product works.
@@ -39,7 +39,7 @@ Test that the page to add a new product works.
   ... -----------------------------43746069110828506211603039137
   ... Content-Disposition: form-data; name="field.description"
   ... 
-  ... If you were describing a Test Produt this would be a little short but sweet.
+  ... If you were describing a Test Product this would be a little short but sweet.
   ... -----------------------------43746069110828506211603039137
   ... Content-Disposition: form-data; name="field.homepageurl"
   ... 
