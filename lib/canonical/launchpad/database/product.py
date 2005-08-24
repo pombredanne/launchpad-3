@@ -93,6 +93,13 @@ class Product(SQLBase):
     serieslist = MultipleJoin('ProductSeries', joinColumn='product')
 
     @property
+    def name_with_project(self):
+        """See lib.canonical.launchpad.interfaces.IProduct"""
+        if self.project:
+            return self.project.name + " " + self.name
+        return self.name
+
+    @property
     def releases(self):
         return ProductRelease.select(
             AND(ProductRelease.q.productseriesID == ProductSeries.q.id,

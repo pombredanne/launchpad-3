@@ -92,34 +92,44 @@
     <th tal:condition="mass_edit_allowed|nothing">
       Select
     </th>
-    <th tal:condition="python:'id' in listing_columns">
+    <th tal:condition="python:'id' in listing_columns"
+        tal:attributes="class python:view.getSortClass('id')">
       <a href="#" tal:attributes="href python:view.getSortLink('id')">ID</a>
     </th>
-    <th tal:condition="python:'title' in listing_columns">
+    <th tal:condition="python:'title' in listing_columns"
+        tal:attributes="class python:view.getSortClass('title')">
        <a href="#" tal:attributes="href python:view.getSortLink('title')">Title</a>
     </th>
-    <th tal:condition="python:'package' in listing_columns">
+    <th tal:condition="python:'package' in listing_columns"
+        tal:attributes="class python:view.getSortClass('sourcepackagename')">
       <a href="#" tal:attributes="href python:view.getSortLink('sourcepackagename')">Package</a>
     </th>
-    <th tal:condition="python:'severity' in listing_columns">
+    <th tal:condition="python:'severity' in listing_columns"
+        tal:attributes="class python:view.getSortClass('severity')">
       <a href="#" tal:attributes="href python:view.getSortLink('severity')">Severity</a>
     </th>
-    <th tal:condition="python:'priority' in listing_columns">
+    <th tal:condition="python:'priority' in listing_columns"
+        tal:attributes="class python:view.getSortClass('priority')">
       <a href="#" tal:attributes="href python:view.getSortLink('priority')">Priority</a>
     </th>
-    <th tal:condition="python:'assignedto' in listing_columns">
+    <th tal:condition="python:'assignedto' in listing_columns"
+        tal:attributes="class python:view.getSortClass('assignee')">
       <a href="#" tal:attributes="href python:view.getSortLink('assignee')">Assignee</a>
     </th>
-    <th tal:condition="python:'status' in listing_columns">
+    <th tal:condition="python:'status' in listing_columns"
+        tal:attributes="class python:view.getSortClass('status')">
        <a href="#" tal:attributes="href python:view.getSortLink('status')">Status</a>
     </th>
-    <th tal:condition="python:'milestone' in listing_columns">
+    <th tal:condition="python:'milestone' in listing_columns"
+        tal:attributes="class python:view.getSortClass('milestone')">
        <a href="#" tal:attributes="href python:view.getSortLink('milestone')">Target</a>
     </th>
-    <th tal:condition="python:'submittedon' in listing_columns">
+    <th tal:condition="python:'submittedon' in listing_columns"
+        tal:attributes="class python:view.getSortClass('datecreated')">
       <a href="#" tal:attributes="href python:view.getSortLink('datecreated')">Reported</a>
     </th>
-    <th tal:condition="python:'submittedby' in listing_columns">
+    <th tal:condition="python:'submittedby' in listing_columns"
+        tal:attributes="class python:view.getSortClass('owner')">
       <a href="#" tal:attributes="href python:view.getSortLink('owner')">Reporter</a>
     </th>
   </tr>
@@ -167,9 +177,7 @@
 </metal:header>
 
 <metal:header define-macro="item"
-    tal:define="product_name task/product/name|nothing;
-                project_name task/product/project/name|nothing;
-                package_name task/sourcepackagename/name|nothing">
+    tal:define="package_name task/sourcepackagename/name|nothing">
   <td tal:condition="mass_edit_allowed|nothing">
     <input type="checkbox" name="task" value=""
            tal:attributes="value task/id" />
@@ -187,11 +195,10 @@
       tal:content="python:package_name and package_name or '(none)'">
        (none)
   </td>
-  <td tal:condition="python:('product' in listing_columns) and product_name"
-      tal:content="python: (project_name == product_name) and product_name or
-                           (project_name + ' ' + product_name)"
+  <td tal:condition="python:('product' in listing_columns) and task.product"
+      tal:content="task/product/name_with_project"
       style="white-space: nowrap" >
-      product
+      [project] product
   </td>
   <td tal:condition="python:'severity' in listing_columns"
       tal:content="task/severity/title"
