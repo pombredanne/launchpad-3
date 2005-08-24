@@ -3127,7 +3127,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (343, 'roa', 'Romance (Other)', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (344, 'rm', 'Raeto-Romance', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (345, 'rom', 'Romany', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (346, 'ro', 'Romanian', NULL, 2, 'n != 1', true);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (346, 'ro', 'Romanian', NULL, 3, '(n == 1 ? 0: (((n % 100 > 19) || ((n % 100 == 0) && (n != 0))) ? 2: 1))', true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (347, 'rn', 'Rundi', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (348, 'ru', 'Russian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (349, 'sad', 'Sandawe', NULL, NULL, NULL, true);
