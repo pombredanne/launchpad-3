@@ -120,7 +120,42 @@ newline.
     <p>Here are two paragraphs with lots of whitespace between them.</p>
     <p>But they're still just two paragraphs.</p>
 
-Linkifying the text.  First, converting references to bugs into links.
+Linkifying the text. First, converting URLs into links:
+
+    >>> text = (
+    ...     'http://localhost:8086/bar/baz/foo.html\n'
+    ...     'http://localhost:8086/bar/baz/foo.bar.html\n'
+    ...     'http://localhost:8086/bar/baz/foo.bar.html.\n'
+    ...     'http://localhost:8086/bar/baz/foo.bar.html?\n'
+    ...     'http://localhost:8086/bar/baz/foo.bar.html,\n'
+    ...     '<http://localhost:8086/bar/baz/foo.bar.html>\n'
+    ...     '<http://localhost:8086/bar/baz/foo.bar.html>,\n'
+    ...     '<http://localhost:8086/bar/baz/foo.bar.html>.\n'
+    ...     '<http://localhost:8086/bar/baz/foo.bar.html>?\n'
+    ...     '(http://localhost:8086/bar/baz/foo.bar.html)\n'
+    ...     '(http://localhost:8086/bar/baz/foo.bar.html),\n'
+    ...     '(http://localhost:8086/bar/baz/foo.bar.html).\n'
+    ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a\n'
+    ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a.\n'
+    ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a,\n')
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <div><a rel="nofollow" href="http://localhost:8086/bar/baz/foo.html">http://localhost:8086/bar/baz/foo.html</a></div>
+    <div><a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a></div>
+    <div><a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>.</div>
+    <div><a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>?</div>
+    <div><a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>,</div>
+    <div>&lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;</div>
+    <div>&lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;,</div>
+    <div>&lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;.</div>
+    <div>&lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;?</div>
+    <div>(<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>)</div>
+    <div>(<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>),</div>
+    <div>(<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>).</div>
+    <div><a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a></div>
+    <div><a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>.</div>
+    <div><a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>,</div>
+
+Then, converting references to bugs into links.
 
     >>> text = (
     ...     'bug 123\n'
