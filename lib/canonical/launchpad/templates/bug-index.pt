@@ -48,8 +48,8 @@
 
   <tal:block repeat="message context/messages">
     <div class="boardComment"
-         tal:condition="python:context.description!=message.contents">
-      
+         tal:condition="python:context.description != message.contents">
+
       <div class="boardCommentDetails">
         <strong tal:content="message/title">$Bugmessage.title</strong>
 
