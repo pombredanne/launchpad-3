@@ -435,15 +435,25 @@ person_bounties = ContextDisplayName('Bounties for %s')
 
 person_branches = ContextDisplayName("%s's code branches in Launchpad")
 
+person_changepassword = 'Change your password'
+
 person_codesofconduct = ContextDisplayName('%s Signed Codes of Conduct')
 
 person_edit = ContextDisplayName('Edit %s Information')
 
-person_emails = ContextDisplayName('Edit %s Email Addresses')
+person_editemails = ContextDisplayName('Edit %s Email Addresses')
+
+person_editgpgkeys = ContextDisplayName('%s GPG Keys')
+
+person_editircnicknames = ContextDisplayName('%s IRC Nicknames')
+
+person_editjabberids = ContextDisplayName('%s Jabber IDs')
+
+person_editsshkeys = ContextDisplayName('%s SSH Keys')
+
+person_editwikinames = ContextDisplayName('%s Wiki Names')
 
 # person_foaf is an rdf file
-
-person_gpgkey = ContextDisplayName('%s GPG Keys')
 
 person_index = ContextDisplayName('%s: Launchpad Overview')
 
@@ -456,8 +466,6 @@ person_packages = ContextDisplayName('Packages Maintained By %s')
 person_reportedbugs = ContextDisplayName('Bugs Reported By %s')
 
 person_review = ContextDisplayName("Review %s' Information")
-
-person_sshkey = ContextDisplayName('%s SSH Keys')
 
 person_timezone = ContextDisplayName('Time Zone for %s')
 

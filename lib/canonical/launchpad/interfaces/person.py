@@ -21,7 +21,8 @@ __all__ = [
     ]
 
 from zope.schema import (
-    Choice, Datetime, Int, Text, TextLine, Password, ValidationError)
+    List, Tuple, Choice, Datetime, Int, Text, TextLine, Password,
+    ValidationError)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 from zope.i18nmessageid import MessageIDFactory
@@ -106,8 +107,10 @@ class IPerson(Interface):
 
     sshkeys = Attribute(_('List of SSH keys'))
 
-    timezone = Choice(title=_('Timezone Name'), required=True, readonly=False,
-                      vocabulary='TimezoneName')
+    timezone = Choice(
+            title=_('Timezone'), required=True, readonly=False,
+            description=_('The timezone of where you live.'),
+            vocabulary='TimezoneName')
 
     # Properties of the Person object.
     ubuntite = Attribute("Ubuntite Flag")
@@ -117,10 +120,12 @@ class IPerson(Interface):
     gpgkeys = Attribute("List of GPGkeys")
     pendinggpgkeys = Attribute("Set of GPG fingerprints pending validation")
     inactivegpgkeys = Attribute("List of inactive GPG keys in LP Context")
-    irc = Attribute("IRC")
-    wiki = Attribute("Wiki")
-    jabber = Attribute("Jabber")
-    archuser = Attribute("Arch user")
+    ubuntuwiki = Attribute("The Ubuntu WikiName of this Person.")
+    otherwikis = Attribute(
+        "All WikiNames of this Person that are not the Ubuntu one.")
+    allwikis = Attribute("All WikiNames of this Person.")
+    ircnicknames = Attribute("List of IRC nicknames of this Person.")
+    jabberids = Attribute("List of Jabber IDs of this Person.")
     packages = Attribute("A Selection of SourcePackageReleases")
     branches = Attribute("The branches for a person.")
     maintainerships = Attribute("This person's Maintainerships")

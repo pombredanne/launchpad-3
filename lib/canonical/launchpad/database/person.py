@@ -36,7 +36,7 @@ from canonical.launchpad.interfaces import (
     IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IMaintainershipSet,
     IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
     ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
-    ILoginTokenSet)
+    ILoginTokenSet, KEYSERVER_QUERY_URL)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -102,6 +102,8 @@ class Person(SQLBase):
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
     signedcocs = MultipleJoin('SignedCodeOfConduct', joinColumn='owner')
+    ircnicknames = MultipleJoin('IrcID', joinColumn='person')
+    jabberids = MultipleJoin('JabberID', joinColumn='person')
 
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
@@ -393,6 +395,25 @@ class Person(SQLBase):
         return EmailAddress.select(query)
 
     @property
+    def jabberids(self):
+        """See IPerson."""
+        return getUtility(IJabberIDSet).getByPerson(self)
+
+    @property
+    def ubuntuwiki(self):
+        """See IPerson."""
+        return getUtility(IWikiNameSet).getUbuntuWikiByPerson(self)
+
+    @property
+    def otherwikis(self):
+        """See IPerson."""
+        return getUtility(IWikiNameSet).getOtherWikisByPerson(self)
+
+    @property
+    def allwikis(self):
+        return getUtility(IWikiNameSet).getAllWikisByPerson(self)
+
+    @property
     def title(self):
         """See IPerson."""
         return self.browsername
@@ -573,6 +594,7 @@ class Person(SQLBase):
 
     @property
     def pendinggpgkeys(self):
+        """See IPerson."""
         logintokenset = getUtility(ILoginTokenSet)
         # XXX cprov 20050704
         # Use set to remove duplicated tokens, I'd appreciate something
@@ -582,50 +604,15 @@ class Person(SQLBase):
 
     @property
     def inactivegpgkeys(self):
+        """See IPerson."""
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id, active=False)
 
     @property
     def gpgkeys(self):
+        """See IPerson."""
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)
-
-    @property
-    def wiki(self):
-        """See IPerson."""
-        # XXX: salgado, 2005-01-14: This method will probably be replaced
-        # by a MultipleJoin since we have a good UI to add multiple Wikis.
-        return WikiName.selectOneBy(personID=self.id)
-
-    @property
-    def jabber(self):
-        """See IPerson."""
-        # XXX: salgado, 2005-01-14: This method will probably be replaced
-        # by a MultipleJoin since we have a good UI to add multiple
-        # JabberIDs.
-
-        # XXX: Needs system doc test.  SteveAlexander 2005-04-24.
-        return JabberID.selectOneBy(personID=self.id)
-
-    @property
-    def archuser(self):
-        """See IPerson."""
-        # XXX: salgado, 2005-01-14: This method will probably be replaced
-        # by a MultipleJoin since we have a good UI to add multiple
-        # ArchUserIDs.
-
-        # XXX: Needs system doc test.  SteveAlexander 2005-04-24.
-        return ArchUserID.selectOneBy(personID=self.id)
-
-    @property
-    def irc(self):
-        """See IPerson."""
-        # XXX: salgado, 2005-01-14: This method will probably be replaced
-        # by a MultipleJoin since we have a good UI to add multiple
-        # IrcIDs.
-
-        # XXX: Needs system doc test.  SteveAlexander 2005-04-24.
-        return IrcID.selectOneBy(personID=self.id)
 
     @property
     def maintainerships(self):
@@ -726,7 +713,7 @@ class PersonSet:
         wikinameset = getUtility(IWikiNameSet)
         wikiname = nickname.generate_wikiname(
                     person.displayname, wikinameset.exists)
-        wikinameset.new(person.id, UBUNTU_WIKI_URL, wikiname)
+        wikinameset.new(person, UBUNTU_WIKI_URL, wikiname)
         return person
 
     def ensurePerson(self, email, displayname):
@@ -1101,6 +1088,10 @@ class GPGKey(SQLBase):
     active = BoolCol(dbName='active', notNull=True)
 
     @property
+    def keyserverURL(self):
+        return KEYSERVER_QUERY_URL + self.fingerprint
+
+    @property
     def displayname(self):
         return '%s%s/%s' % (self.keysize, self.algorithm.title, self.keyid)
 
@@ -1242,9 +1233,33 @@ class WikiName(SQLBase):
 class WikiNameSet:
     implements(IWikiNameSet)
 
-    def new(self, personID, wiki, wikiname):
+    def getByWikiAndName(self, wiki, wikiname):
         """See IWikiNameSet."""
-        return WikiName(personID=personID, wiki=wiki, wikiname=wikiname)
+        return WikiName.selectOneBy(wiki=wiki, wikiname=wikiname)
+
+    def getUbuntuWikiByPerson(self, person):
+        """See IWikiNameSet."""
+        return WikiName.selectOneBy(personID=person.id, wiki=UBUNTU_WIKI_URL)
+
+    def getOtherWikisByPerson(self, person):
+        """See IWikiNameSet."""
+        return WikiName.select(AND(WikiName.q.personID==person.id,
+                                   WikiName.q.wiki!=UBUNTU_WIKI_URL))
+
+    def getAllWikisByPerson(self, person):
+        """See IWikiNameSet."""
+        return WikiName.selectBy(personID=person.id)
+
+    def get(self, id, default=None):
+        """See IWikiNameSet."""
+        wiki = WikiName.selectOneBy(id=id)
+        if wiki is None:
+            return default
+        return wiki
+
+    def new(self, person, wiki, wikiname):
+        """See IWikiNameSet."""
+        return WikiName(personID=person.id, wiki=wiki, wikiname=wikiname)
 
     def exists(self, wikiname, wiki=UBUNTU_WIKI_URL):
         """See IWikiNameSet."""
@@ -1263,8 +1278,20 @@ class JabberID(SQLBase):
 class JabberIDSet:
     implements(IJabberIDSet)
 
-    def new(self, personID, jabberid):
-        return JabberID(personID=personID, jabberid=jabberid)
+    def new(self, person, jabberid):
+        """See IJabberIDSet"""
+        return JabberID(personID=person.id, jabberid=jabberid)
+
+    def getByJabberID(self, jabberid, default=None):
+        """See IJabberIDSet"""
+        jabber = JabberID.selectOneBy(jabberid=jabberid)
+        if jabber is None:
+            return default
+        return jabber
+
+    def getByPerson(self, person):
+        """See IJabberIDSet"""
+        return JabberID.selectBy(personID=person.id)
 
 
 class IrcID(SQLBase):
@@ -1280,8 +1307,8 @@ class IrcID(SQLBase):
 class IrcIDSet:
     implements(IIrcIDSet)
 
-    def new(self, personID, network, nickname):
-        return IrcID(personID=personID, network=network, nickname=nickname)
+    def new(self, person, network, nickname):
+        return IrcID(personID=person.id, network=network, nickname=nickname)
 
 
 class TeamMembership(SQLBase):

@@ -1,0 +1,104 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-editdetails" />
+  </metal:rightportlets>
+
+  <div metal:fill-slot="main">
+
+    <h1>GPG Keys and Launchpad</h1> 
+
+    <p>You need to tell Launchpad about your GPG key(s) to be able to
+    sign the <a href="/codeofconduct">Ubuntu Code of Conduct</a> (and thus
+    become an Ubuntite) and to build packages using HCT.</p>
+
+    <div tal:define="msg view/form_action" tal:condition="msg" 
+         tal:content="structure msg" class="portalMessage">
+    </div>
+  
+    <form tal:condition="view/gpgkeysCount" 
+          name="gpg_actions" action="" method="POST">
+      <input type="hidden" name="action" value="deactivate_gpg" />
+
+      <h2>Valid Keys</h2>
+
+      <p><dfn>Deactivating</dfn> a key applies only to Launchpad, not
+      anywhere you use the key. If you deactivate a key, remember it will 
+      automatically deactivate any feature that uses that key, such as 
+      a signed code of conduct or comment on a bug report by e-mail.</p>
+
+      <div tal:repeat="key context/gpgkeys">
+        <label>
+          <input type="checkbox" name="DEACTIVATE_GPGKEY"
+                 tal:attributes="value key/id"/>
+          <span tal:replace="key/displayname">KEY</span>
+        </label>
+      </div>
+
+      <input type="submit" value="Deactivate Key" />
+    </form>
+
+    <form tal:condition="context/pendinggpgkeys" name="gpg_actions" 
+          action="" method="POST">
+      <input type="hidden" name="action" value="remove_gpgtoken" />
+
+      <h2>Keys Pending Validation</h2>
+
+      <p>If any of the following fingerprints is not from your keys, please
+      remove it.</p>
+
+      <div tal:repeat="fingerprint context/pendinggpgkeys">
+        <label>
+          <input type="checkbox" name="REMOVE_GPGTOKEN"
+                 tal:attributes="value fingerprint"/>
+                 <span tal:replace="fingerprint">TOKEN</span>
+        </label>
+      </div>
+      <input type="submit" value="Remove Key Validation" />
+    </form>
+
+    <form tal:condition="context/inactivegpgkeys" name="gpg_actions"
+          action="" method="POST">
+      <input type="hidden" name="action" value="revalidate_gpg" />
+
+      <h2>Deactivated Keys</h2>
+
+      <p>If you change your mind about deactivating a key, you can
+      <dfn>revalidate</dfn> it.</p>
+
+      <div tal:repeat="key context/inactivegpgkeys">
+        <label>
+        <input type="checkbox" name="REVALIDATE_GPGKEY"
+               tal:attributes="value key/id"/>
+               <span tal:replace="key/displayname">KEY</span>
+        </label>
+      </div>
+      <input type="submit" value="Revalidate Key" />
+    </form>
+
+    <div>
+    <form name="gpg_actions" action="" method="POST">
+      <input type="hidden" name="action" value="claim_gpg" />
+      <fieldset>
+        <legend>Find and Import a Key</legend>
+          <label>Key Fingerprint</label>
+          <div class="formHelp">
+            Paste the Key Fingerprint (use: <kbd>gpg --fingerprint YOU</kbd>,
+            can only be used with v4 keys). Launchpad will send a message to
+            <span tal:replace="context/preferredemail/email"/> containing the
+            instructions to conclude the process.
+          </div>
+          <input type="text" name="fingerprint" size="60"/>
+          <input type="submit" value="Find and Import"/>
+      </fieldset>
+    </form>
+    </div>
+
+  </div>
+</body>
+</html>

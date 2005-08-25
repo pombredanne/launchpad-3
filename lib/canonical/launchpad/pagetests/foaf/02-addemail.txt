@@ -6,7 +6,7 @@ The First One
   Type the new email address and submit the form.
 
   >>> print http(r"""
-  ... POST /people/foo/+emails HTTP/1.1
+  ... POST /people/foo/+editemails HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
@@ -25,7 +25,7 @@ The First One
   need another one.
 
   >>> print http(r"""
-  ... POST /people/foo/+emails HTTP/1.1
+  ... POST /people/foo/+editemails HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
@@ -102,7 +102,7 @@ The First One
   Now we can see it on the person's emails page.
 
   >>> print http(r"""
-  ... GET /people/foo/+emails HTTP/1.1
+  ... GET /people/foo/+editemails HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... """)
   HTTP/1.1 200 Ok
@@ -117,7 +117,7 @@ The First One
   error message explaining that it's already registered.
 
   >>> print http(r"""
-  ... POST /people/foo/+emails HTTP/1.1
+  ... POST /people/foo/+editemails HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
@@ -139,7 +139,7 @@ The Second One
   in after validating an email address.
 
   >>> print http(r"""
-  ... POST /people/foo/+emails HTTP/1.1
+  ... POST /people/foo/+editemails HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
