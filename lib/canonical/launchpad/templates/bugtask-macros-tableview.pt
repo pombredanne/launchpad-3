@@ -263,7 +263,7 @@
        milestone
   </td>
   <td tal:condition="python:'submittedon' in listing_columns"
-       tal:content="task/datecreated/strftime/fmt:date">
+       tal:content="task/datecreated/fmt:date">
        date
   </td>
   <td tal:condition="python:'submittedby' in listing_columns"

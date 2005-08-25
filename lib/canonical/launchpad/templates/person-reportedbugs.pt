@@ -15,7 +15,12 @@
 </metal:rightportlets>
 
   <div metal:fill-slot="main" 
-       tal:define="tasks view/reportedBugTasks;">
+       tal:define="tasks view/reportedBugTasks;
+                   listing_columns python:['id', 'product-or-package',
+                                           'title', 'status',
+                                           'severity',
+                                           'submittedon'
+                                           ];">
 
     <h1>Recently Reported Bugs</h1>
 
