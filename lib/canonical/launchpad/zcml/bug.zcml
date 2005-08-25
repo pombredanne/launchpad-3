@@ -122,7 +122,7 @@
         class="canonical.launchpad.browser.bug.SQLObjectEditView"
         label="Mark as Duplicate Bug Report"
         permission="launchpad.AnyPerson"
-        template="../templates/default-editform.pt"
+        template="../templates/bug-mark-as-duplicate.pt"
         fields="duplicateof"
         lp:url="malone/bugs/$Bug.id/+duplicate">
         <browser:widget
@@ -139,7 +139,7 @@
         fields="filecontent patch title comment"
         keyword_arguments="patch filecontent title comment"
         permission="launchpad.AnyPerson"
-        template="../templates/bugattachment-add.pt"
+        template="../templates/bug-attachment-add.pt"
         lp:url="malone/bugs/$Bug.id/+addattachment"
         />
 
