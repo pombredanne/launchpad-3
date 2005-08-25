@@ -105,7 +105,10 @@ def traverse_product(product, request, name):
             request.setTraversalStack(travstack)
 
             if nextstep.isdigit():
-                bug = getUtility(IBugSet).get(nextstep)
+                try:
+                    bug = getUtility(IBugSet).get(nextstep)
+                except NotFoundError:
+                    return None
                 return _get_task_for_context(bug, product)
 
     elif name == '+calendar':
@@ -143,7 +146,10 @@ def traverse_distribution(distribution, request, name):
             request.setTraversalStack(travstack)
 
             if nextstep.isdigit():
-                bug = getUtility(IBugSet).get(nextstep)
+                try:
+                    bug = getUtility(IBugSet).get(nextstep)
+                except NotFoundError:
+                    return None
                 return _get_task_for_context(bug, distribution)
     else:
         bag = getUtility(ILaunchBag)
@@ -172,7 +178,10 @@ def traverse_distrorelease(distrorelease, request, name):
             request.setTraversalStack(travstack)
 
             if nextstep.isdigit():
-                bug = getUtility(IBugSet).get(nextstep)
+                try:
+                    bug = getUtility(IBugSet).get(nextstep)
+                except NotFoundError:
+                    return None
                 return _get_task_for_context(bug, distrorelease)
 
     elif name == '+lang':
@@ -206,7 +215,8 @@ def _get_task_for_context(bug, context):
     user = getUtility(ILaunchBag).user
     search_params = BugTaskSearchParams(bug=bug, user=user)
     bugtasks = context.searchTasks(search_params)
-    assert bugtasks.count() == 1
+    if bugtasks.count() != 1: # id not found in context. Return a 404.
+        return None
     return bugtasks[0]
 
 

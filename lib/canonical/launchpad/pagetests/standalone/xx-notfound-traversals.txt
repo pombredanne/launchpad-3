@@ -19,6 +19,12 @@ spider -- StuartBishop 20050822
 ...     if invalid_rc != 404:
 ...         return "%s returned status %s instead of 404" % (
 ...             invalid_url, invalid_rc)
+...     # Some traversal is done by integer
+...     invalid_url = valid_url + '/98723'
+...     invalid_rc = http("GET %s HTTP/1.0" % invalid_url).getStatus()
+...     if invalid_rc != 404:
+...         return "%s returned status %s instead of 404" % (
+...             invalid_url, invalid_rc)
 
 
 >>> check("/")
@@ -36,6 +42,8 @@ spider -- StuartBishop 20050822
 >>> check("/products/firefox")
 >>> check("/products/firefox/+series")
 >>> check("/products/firefox/+series/1.0")
+>>> check("/products/firefox/+bugs")
+>>> check("/products/firefox/+bugs/1") # Deprecated?
 
 >>> check("/distros")
 >>> check("/distros/ubuntu")
