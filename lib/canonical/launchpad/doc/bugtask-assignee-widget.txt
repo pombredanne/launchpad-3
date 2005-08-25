@@ -177,6 +177,20 @@ Again, let's rebind the widget's context to the updated context:
   >>> context = field.bind(bugtask)
   >>> widget.context = context
 
+The "assigned_to" button will now be selected:
+
+  >>> request.form = {}
+  >>> widget.selectedRadioButton() == widget.assigned_to
+  True
+
+If we were to resubmit the form, without making any changes, the
+assignee would remain unchanged, so the input value is effectively the
+value of the current assignee:
+
+  >>> request.form = {'field.assignee.option' : 'assigned_to'}
+  >>> widget.getInputValue().name == 'name12'
+  True
+
 Assigning the bug to noone
 --------------------------
 

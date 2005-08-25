@@ -40,9 +40,9 @@ Now, let's go ahead and mark bug 2 as a duplicate of bug 1.
   ... """)
   HTTP/1.1 200 Ok
   ...
-            <h3>Mark as Duplicate Bug Report</h3>
+            <h1>Mark as Duplicate Bug Report</h1>
   <BLANKLINE>
-            <p>Updated on ...</p>
+  ...Updated on ...
   ...
 
 When the bug is marked as a duplicate, each subscriber will receive,

@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'IBugExternalRefsView',
     'IBugExternalRef',
     'IBugExternalRefSet',
     ]
@@ -13,14 +12,10 @@ __all__ = [
 from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Datetime, Int, TextLine
-from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad.fields import Title
 
 _ = MessageIDFactory('launchpad')
-
-class IBugExternalRefsView(IAddFormCustomization):
-    """BugExternalRef views"""
 
 class IBugExternalRef(Interface):
     """An external reference for a bug, not supported remote bug systems."""

@@ -95,8 +95,15 @@ class BugTaskAssigneeWidget(Widget):
         elif assignee_option == self.assign_to_me:
             # The user has choosen to 'take' this bug.
             return getUtility(ILaunchBag).user
+        elif assignee_option == self.assigned_to:
+            # This is effectively a no-op
+            field = self.context
+            bugtask = field.context
+            return bugtask.assignee
         elif assignee_option == self.assign_to_nobody:
             return None
+
+        raise WidgetInputError("Unknown assignee option chosen")
 
     def applyChanges(self, content):
         """See zope.app.form.interfaces.IInputWidget."""
