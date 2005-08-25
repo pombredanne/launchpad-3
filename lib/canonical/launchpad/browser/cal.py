@@ -8,7 +8,7 @@ __all__ = [
     'CalendarWeek',
     'CalendarMonth',
     'CalendarYear',
-    'ViewCalendar',
+    'CalendarView',
     'CalendarAppMenus',
     'CalendarRangeAppMenus',
     'CalendarDayView',
@@ -16,9 +16,9 @@ __all__ = [
     'CalendarMonthView',
     'CalendarYearView',
     'CalendarEventAddView',
-    'ViewCreateCalendar',
-    'ViewCalendarSubscriptions',
-    'ViewCalendarSubscribe',
+    'CalendarCreateView',
+    'CalendarSubscriptionsView',
+    'CalendarSubscribeView',
     'CalendarInfoPortletView',
     ]
 
@@ -151,7 +151,6 @@ def traverseCalendar(calendar, request, name):
     if name == 'today':
         return CalendarDay(calendar, now)
     elif name == 'this-week':
-        isoyear, isoweek, isoday = now.isocalendar()
         return CalendarWeek(calendar, now)
     elif name == 'this-month':
         return CalendarMonth(calendar, now)
@@ -265,7 +264,12 @@ class CalendarYear:
         return CalendarYear(self.calendar, day)
 
 
-class ViewCalendar:
+class CalendarView:
+    """View class for ICalendar (when not displaying a particular date
+    range)
+    """
+    __used_for__ = ICalendar
+    
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -279,6 +283,15 @@ class ViewCalendar:
 
 
 class CalendarAppMenus(ApplicationMenu):
+    """Application menus for the base calendar view.
+
+    The application menus take you to the day, week, month and year
+    views corresponding to a particular date.
+
+    In the case of the base calendar view, the date used is 'now' in
+    the user's preferred time zone.
+    """
+
     usedfor = ICalendar
     links = ['day', 'week', 'month', 'year']
     facet = 'calendar'
@@ -292,7 +305,6 @@ class CalendarAppMenus(ApplicationMenu):
             self.date = datetime.now(user_timezone)
     
     def day(self):
-        """Computes the URLs used to switch calendar views."""
         target =  canonical_url(CalendarDay(self.context, self.date))
         text = 'Day'
         return Link(target, text)
@@ -314,6 +326,12 @@ class CalendarAppMenus(ApplicationMenu):
 
 
 class CalendarRangeAppMenus(CalendarAppMenus):
+    """Application menus for the various calendar date range views.
+
+    The date used for the links comes from the current date range
+    being displayed.
+    """
+
     usedfor = ICalendarRange
 
     def __init__(self, context):
@@ -671,7 +689,7 @@ class CalendarEventAddView(AddView):
     def nextURL(self):
         return self._nextURL
 
-class ViewCreateCalendar:
+class CalendarCreateView:
     __used_for__ = ICalendarOwner
 
     def __init__(self, context, request):
@@ -688,7 +706,7 @@ class ViewCreateCalendar:
         self.request.response.redirect('+calendar')
 
 
-class ViewCalendarSubscriptions:
+class CalendarSubscriptionsView:
     colours = colours
 
     def __init__(self, context, request):
@@ -734,7 +752,7 @@ class ViewCalendarSubscriptions:
                     self._subscriptions.setColour(calendar, colour)
 
 
-class ViewCalendarSubscribe:
+class CalendarSubscribeView:
     colours = colours
 
     def __init__(self, context, request):

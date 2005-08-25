@@ -63,7 +63,7 @@
       for="canonical.launchpad.interfaces.ICalendarOwner"
       name="+calendar-create"
       permission="launchpad.Edit"
-      class="canonical.launchpad.browser.ViewCreateCalendar"
+      class="canonical.launchpad.browser.CalendarCreateView"
       attribute="__call__"
       lp:url="/$CalendarOwner/+calendar-create" />
 
@@ -90,7 +90,7 @@
   <browser:pages
       for="schoolbell.interfaces.ICalendar"
       permission="zope.Public"
-      class="canonical.launchpad.browser.ViewCalendar">
+      class="canonical.launchpad.browser.CalendarView">
     <browser:page
         template="../templates/calendar-index.pt"
         name="+index" />
@@ -111,7 +111,7 @@
       name="+subscribe"
       for="canonical.launchpad.interfaces.ILaunchpadCalendar"
       permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.ViewCalendarSubscribe"
+      class="canonical.launchpad.browser.CalendarSubscribeView"
       template="../templates/calendar-subscribe.pt"
       lp:url="$obj/calendar/+subscribe" />
 
@@ -314,7 +314,7 @@
   <browser:pages
       for="canonical.launchpad.interfaces.ILaunchpadMergedCalendar"
       permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.ViewCalendarSubscriptions">
+      class="canonical.launchpad.browser.CalendarSubscriptionsView">
     <browser:page
         name="+subscriptions"
         template="../templates/calendar-subscriptions.pt"
