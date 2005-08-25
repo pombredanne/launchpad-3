@@ -250,16 +250,17 @@ class BugTaskSet:
     implements(IBugTaskSet)
 
     _ORDERBY_COLUMN = {
-        "id" : "Bug.id",
-        "severity" : "BugTask.severity",
-        "priority" : "BugTask.priority",
+        "id": "Bug.id",
+        "severity": "BugTask.severity",
+        "priority": "BugTask.priority",
         "assignee": "BugTask.assignee",
-        "sourcepackagename" : "BugTask.sourcepackagename",
-        "status" : "BugTask.status",
-        "title" : "Bug.title",
-        "milestone" : "BugTask.milestone",
-        "dateassigned" : "BugTask.dateassigned",
-        "datecreated" : "BugTask.datecreated"}
+        "sourcepackagename": "BugTask.sourcepackagename",
+        "sourcepackagename": "BugTask.sourcepackagename",
+        "status": "BugTask.status",
+        "title": "Bug.title",
+        "milestone": "BugTask.milestone",
+        "dateassigned": "BugTask.dateassigned",
+        "datecreated": "BugTask.datecreated"}
 
     def __init__(self):
         self.title = 'A Set of Bug Tasks'
