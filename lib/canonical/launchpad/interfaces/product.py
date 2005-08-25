@@ -156,6 +156,11 @@ class IProduct(IHasOwner, IBugTarget):
     serieslist = Attribute(_("""An iterator over the ProductSeries for this
         product"""))
 
+
+    name_with_project = Attribute(_("Returns the product name prefixed "
+        "by the project name, if a project is associated with this "
+        "product; otherwise, simply returns the product name."))
+
     releases = Attribute(_("""An iterator over the ProductReleases for this
         product."""))
 
@@ -187,8 +192,6 @@ class IProduct(IHasOwner, IBugTarget):
         " Ubuntu package. Then tries the latest series for which we have"
         " potemplates.")
 
-    potemplatecount = Attribute("The number of POTemplates for this Product.")
-
     translationgroups = Attribute("The list of applicable translation "
         "groups for a product. There can be several: one from the product, "
         "and potentially one from the project, too.")
@@ -201,36 +204,15 @@ class IProduct(IHasOwner, IBugTarget):
         "used when the series doesn't supply one."))
 
     def getPackage(distrorelease):
-        """return a package in that distrorelease for this product."""
+        """Return a package in that distrorelease for this product."""
 
-    def potemplates():
-        """Returns an iterator over this product's PO templates."""
-
-    def poTemplatesToImport():
-        """Returns all PO templates from this product that have a rawfile
-        pending of import into Rosetta."""
+    def getMilestone(name):
+        """Return a milestone with the given name for this product, or
+        raise NotFoundError.
+        """
 
     def newSeries(name, displayname, summary):
         """Creates a new ProductSeries for this series."""
-
-    def messageCount():
-        """Returns the number of Current IPOMessageSets in all templates
-        inside this product."""
-
-    def currentCount(language):
-        """Returns the number of msgsets matched to a potemplate for this
-        product that have a non-fuzzy translation in its PO file for this
-        language when we last parsed it."""
-
-    def updatesCount(language):
-        """Returns the number of msgsets for this product where we have a
-        newer translation in rosetta than the one in the PO file for this
-        language, when we last parsed it."""
-
-    def rosettaCount(language):
-        """Returns the number of msgsets for all POTemplates in this Product
-        where we have a translation in Rosetta but there was no translation
-        in the PO file for this language when we last parsed it."""
 
     def getSeries(name):
         """Returns the series for this product that has the name given."""
@@ -241,6 +223,10 @@ class IProduct(IHasOwner, IBugTarget):
 
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
+
+    def ensureRelatedBounty(bounty):
+        """Ensure that the bounty is linked to this product. Return None.
+        """
 
 
 class IProductSet(Interface):
@@ -274,16 +260,15 @@ class IProductSet(Interface):
     def search(text=None, soyuz=None,
                rosetta=None, malone=None,
                bazaar=None):
-        """Search through the DOAP database for products that match the
+        """Search through the Registry database for products that match the
         query terms. text is a piece of text in the title / summary /
         description fields of product. soyuz, bazaar, malone etc are
         hints as to whether the search should be limited to products
         that are active in those Launchpad applications."""
 
-    def translatables(translationProject=None):
-        """Returns an iterator over products that have resources translatables
-        for translationProject, if it's None it returs all available products
-        with translatables resources."""
+    def translatables():
+        """Return an iterator over products that have resources translatables.
+        """
 
     def count_all():
         """Return a count of the total number of products registered in

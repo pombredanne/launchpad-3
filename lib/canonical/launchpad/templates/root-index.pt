@@ -4,64 +4,78 @@
 
 <body>
 
-  <div metal:fill-slot="main">
-    <h1 i18n:translate="">Welcome to The Launchpad!</h1>
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-rosetta" />
+  <div tal:replace="structure context/@@+portlet-foaf" />
+</metal:leftportlets>
 
-    <p i18n:translate="">The Launchpad is a collection of services for
-        projects in the open source universe. Here you can register your
-        project, and collaborate with your community on translations,
-        bug squashing and the code you write.</p>
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-malone" />
+</metal:rightportlets>
 
-    <h2><a i18n:attributes="title" title="Rosetta" href="rosetta"
-            i18n:translate="">Rosetta</a></h2>
+<div metal:fill-slot="main">
 
-    <p i18n:translate="rosetta-blurb">Rosetta is a
-        <b>web-based translation portal</b>.
-        If your application uses the open source standard <i>gettext</i>
-        system for software internationalisation, then you can easily have
-        users contribute translations for your software through Rosetta.
-        You simply upload the existing translations, point your community
-        at Rosetta and then download their translations before you make
-        your release. <a i18n:attributes="title" title="Rosetta"
-            href="rosetta" i18n:translate="">Translate now!</a></p>
+  <h1 i18n:translate="">Welcome to The Launchpad!</h1>
 
-    <h2><a i18n:attributes="title" title="Malone" href="malone"
-            i18n:translate="">Malone</a></h2>
+  <p i18n:translate="">The Launchpad is a collection of services for
+    projects in the open source universe. You can register your
+    project, and collaborate with the open source community on translations,
+    bug squashing and the code you write.
+  </p>
 
-    <p i18n:translate="malone-blurb">Malone is a
-        <b>web-based global bug tracking</b>
-        tool. It is designed to track bugs across the whole open source
-        process: it understands that the same code is re-used upstream
-        and in different distributions, and allows us to have a single
-        bug number for any bug, and track where it has been fixed and
-        where it is still a problem. <a i18n:attributes="title" title="Malone"
-            href="malone" i18n:translate="">Track bugs now!</a></p>
+  <form action="/products/" method="get">
+    <table>
+      <tr>
+        <td>
+          <input name="text" size="30" />
+          <input type="submit" value="Search" />
+        </td>
+      </tr>
+    </table>
+    <p class="formHelp">
+      Use this form to find an open source application. Enter any part of
+      the application name, title or description, and click "Search".
+    </p>
 
-    <h2><a i18n:attributes="title" title="Registry" href="doap"
-            i18n:translate="">Registry</a></h2>
+  </form>
 
-    <p i18n:translate="registry-blurb">A key part of the Launchpad is its
-        <b>registry of open source and related projects</b>. This registry,
-        inspired by the DOAP framework, allows us to keep track of all the
-        open source software which uses the Launchpad for translations,
-        bug management and distributed code management. You can register
-        individual open source applications, or whole projects, and track
-        the relationships between them. <a i18n:attributes="title"
-            title="Registry" href="doap" i18n:translate="">Find or register
-            apps now!</a></p>
+  <h2>Most Active Projects</h2>
 
-    <h2><a i18n:attributes="title" title="Soyuz" href="/distros/"
-            i18n:translate="">Soyuz - Distribution Management</a></h2>
+  <div style="font-size: 80%;">
+    <img src="/++resource++product_icon.gif" />
+    <b>The Ubuntu Distribution</b>
+    [<a href="/distros/ubuntu">View</a>]<br />
+    <div style="margin-left: 30px;">
+      Ubuntu is a Linux distribution that emphasises ease of use and free
+      global distribution.
+      The project uses the Launchpad for all translation and bug tracking.
+    </div>
 
-    <p i18n:translate="soyuz-blurb">The Launchpad also keeps track of
-        software in the Ubuntu distribution as well as other Linux
-        distributions. Using this aspect of Launchpad, which we call
-        Soyuz, you can see which versions of a package are published
-        in the distribution at any time. <a i18n:attributes="title"
-            title="Soyuz Distribution Interface" href="/distros/"
-            i18n:translate="">Explore Soyuz Now!</a></p>
+    <hr />
 
+    <img src="/++resource++product_icon.gif" />
+    <b>GnomeBaker - CD Burning Application</b>
+    [<a href="/products/gnomebaker">View</a>]<br />
+    <div style="margin-left: 30px;">
+      GnomeBaker is a popular CD burning GUI application for the Gnome desktop
+      environment. It uses the Launchpad primarily for translation services
+      through Rosetta.
+    </div>
+
+    <hr />
+
+    <img src="/++resource++product_icon.gif" />
+    <b>Bazaar - Distributed Revision Control</b>
+    [<a href="/products/bazaar">View</a>]<br />
+    <div style="margin-left: 30px;">
+      Bazaar is a distributed revision control system that is based on Arch. It
+      uses the Launchpad for bug tracking.
+    </div>
   </div>
+
+  <hr />
+
+</div>
 
 </body>
 </html>

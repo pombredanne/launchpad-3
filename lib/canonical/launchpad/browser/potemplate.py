@@ -55,10 +55,14 @@ class POTemplateFacets(StandardLaunchpadFacets):
         text = 'Translations'
         return DefaultLink(target, text)
 
+    # Bugs and calendar don't make sense for potemplates
+    # XXX: how does one disable links unconditionally?
+    #       -- kiko, 2005-08-23
     def bugs(self):
-        target = self._parent_url() + '/+bugs'
-        text = 'Bugs'
-        return Link(target, text)
+        return Link("", "Bugs", linked=False)
+
+    def calendar(self):
+        return Link("", "Calendar", linked=False)
 
 
 class POTemplateAppMenus(POFileAppMenus):
@@ -233,7 +237,7 @@ class POTemplateAddView(AddView):
         potemplatenameid = data.get('potemplatename')
         description = data.get('description')
         iscurrent = data.get('iscurrent')
-        ownerid = data.get('owner')
+        owner = data.get('owner')
         path = data.get('path')
         filename = data.get('filename')
         content = data.get('content')
@@ -241,10 +245,6 @@ class POTemplateAddView(AddView):
         # Get the POTemplateName
         potemplatenameset = getUtility(IPOTemplateNameSet)
         potemplatename = potemplatenameset.get(potemplatenameid)
-
-        # Get the Owner
-        personset = getUtility(IPersonSet)
-        owner = personset.get(ownerid)
 
         potemplateset = getUtility(IPOTemplateSet)
         potemplatesubset = potemplateset.getSubset(

@@ -5,51 +5,49 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<head>
-  <title metal:fill-slot="title">Validate email address</title>
-  <!-- Plone style sheet -->
-  <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Launchpad style sheet -->
-  <style type="text/css" media="screen">@import url(launchpad.css);</style>
-</head>
-
 <body>
 
 <div metal:fill-slot="main">
 
     <div tal:condition="not: view/successfullyProcessed">
-      <h1>Validate GPG key: <span tal:replace="context/fingerprint"/> by 
+      <h1>Confirm GPG key: <span tal:replace="context/fingerprint"/> by 
          <span tal:replace="context/requester/displayname"/></h1>
 
       <div tal:condition="view/errormessage" class="portalMessage"
            tal:content="structure view/errormessage">
       </div>
 
-      <p>To validate GPG key just enter your password on the field below.</p>
+      <p>To confirm your GPG key, please enter your Launchpad password.</p>
 
       <form autocomplete="off" name="validate" action="" method="POST">
-      <table>
-        <tr>
-          <td>Password:</td>
-          <td><input type="password" name="password" /></td>
-        </tr>
-        <tr>
-          <td colspan="2" align="right">
+        <div class="field">
+
+          <label>Launchpad Password</label>
+          <br>
+          <input type="password" size="30" name="password" />
+          <br>
+
+          <label>
+            <input type="checkbox" checked="checked" name="logmein" />
+            Log me in after validating my key.
+          </label><br />
+
+          <div class="formControls">
             <input type="submit" name="SUBMIT_CHANGES" value="Submit" />
-          </td>
-        </tr>
-      </table>
+          </div>
+
+        </div>
       </form>
     </div>
 
-    <div tal:condition="view/successfullyProcessed">
-      <h1>GPG was validated successfully.</h1>
+    <tal:success condition="view/successfullyProcessed">
+      <h1>Your GPG key has been confirmed successfully.</h1>
 
       <div tal:condition="view/infomessage" class="portalMessage"
            tal:content="structure view/infomessage">
       </div>
       
-    </div>
+    </tal:success>
 
 </div>
 

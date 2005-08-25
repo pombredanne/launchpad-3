@@ -27,10 +27,10 @@ from canonical.launchpad.interfaces import (
 
 class BugAttachmentAddView(SQLObjectAddView):
     """Add view for bug attachments."""
-    
+
     def create(self, comment=None, filecontent=None,
                patch=IBugAttachmentAddForm['patch'].default, title=None):
-        bug = getUtility(ILaunchBag).bug
+        bug = self.context
         # XXX: Write proper FileUpload field and widget instead of this
         #      hack. -- Bjorn Tillenius, 2005-06-16
         fileupload = self.request.form[self.filecontent_widget.name]
@@ -65,7 +65,7 @@ class BugAttachmentAddView(SQLObjectAddView):
 
     def nextURL(self):
         """Return the user to the bug page."""
-        return canonical_url(getUtility(ILaunchBag).bug)
+        return canonical_url(self.context)
 
 
 class BugAttachmentEdit:

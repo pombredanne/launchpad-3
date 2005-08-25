@@ -3,9 +3,9 @@
   <h4>Release Bugs:</h4>
 
   <ul>
-    <li class="info" tal:repeat="release_bugcount release_bugcounts">
+    <li class="bugs" tal:repeat="release_bugcount release_bugcounts">
       <a href=""
-         tal:content="string:Show Bugs in ${release_bugcount/releasename}"
+         tal:content="release_bugcount/releasename"
          tal:attributes="href release_bugcount/url">sid</a>
       (<span tal:replace="release_bugcount/bugcount">2</span>)
     </li>

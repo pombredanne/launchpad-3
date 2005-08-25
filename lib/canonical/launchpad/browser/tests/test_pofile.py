@@ -98,6 +98,9 @@ class DummyPOFile:
         self.pluralforms = language.pluralforms
         self.header = ''
 
+    def messageCount(self):
+        return len(self.potemplate)
+
     def translatedCount(self):
         return 3
 
@@ -429,8 +432,10 @@ def test_POFileView_URLs():
     >>> t = POFileView(context, request)
     >>> t.processTranslations()
 
+    If the offset is too high, it should drop to accomodate the count.
+
     >>> t.createURL()
-    'http://this.is.a/fake/url?count=43&offset=42'
+    'http://this.is.a/fake/url?count=43'
 
     >>> t.endURL()
     'http://this.is.a/fake/url?count=43'

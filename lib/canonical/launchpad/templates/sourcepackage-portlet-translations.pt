@@ -1,5 +1,5 @@
 <div class="portlet"
-     tal:condition="context/potemplates">
+     tal:condition="context/currentpotemplates">
 
     <h4>Translation Sets:</h4>
 
@@ -8,7 +8,8 @@
         <div class="portletContent even">
 
           <ul>
-            <li class="languages" tal:repeat="template context/potemplates">
+            <li class="languages"
+                tal:repeat="template context/currentpotemplates">
               <a tal:attributes="href template/fmt:url"
                  tal:content="template/title">template title</a>
             </li>

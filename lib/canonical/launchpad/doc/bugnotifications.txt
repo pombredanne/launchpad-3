@@ -418,7 +418,7 @@ this document:
     >>> from canonical.launchpad.interfaces import ICVERefSet
     >>> from canonical.lp.dbschema import CVEState
     >>> cveref = getUtility(ICVERefSet).createCVERef(
-    ...     bug = 1, cveref = "2004-0276", cvestate=CVEState.CVE,
+    ...     bug = 1, cveref = "2004-0276", cvestate=CVEState.ENTRY,
     ...     title="test", owner = 12)
     >>> cveref_added = SQLObjectCreatedEvent(cveref)
     >>> notify(cveref_added)

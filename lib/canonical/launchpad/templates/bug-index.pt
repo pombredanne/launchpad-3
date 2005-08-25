@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@malone_template/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
 <body>
@@ -61,7 +61,7 @@
         <tal:block condition="message/bugattachments">
         - with attachments:
           <tal:block repeat="attachment message/bugattachments">
-            <a tal:attributes="href attachment/fmt:url"
+            <a tal:attributes="href attachment/libraryfile/url"
                tal:content="attachment/libraryfile/filename">foo.txt</a>
           </tal:block>
         </tal:block>

@@ -24,22 +24,30 @@
     <h1>Bug Activity</h1>
     
     <table class="listing">
+    <thead>
     <tr>
       <th>Date</th>
+      <th>Who</th>
       <th>What changed</th>
       <th>Old value</th>
       <th>New value</th>
       <th>Message</th>
     </tr>
+    </thead>
+    <tbody>
     <tr tal:repeat="log context/activity">
       <td tal:content="python:log.datechanged.strftime('%d %b %y %H:%M')">
         13 Sep 04 14:15
       </td>
+      <td>
+        <a tal:content="log/person/displayname" 
+           tal:attributes="href log/person/fmt:url">person</a></td>
       <td tal:content="log/whatchanged">description</td>
       <td tal:content="log/oldvalue">this</td>
       <td tal:content="log/newvalue">that</td>
       <td tal:content="log/message">message</td>
     </tr>
+    </tbody>
   </table>
 
 </div>

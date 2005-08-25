@@ -2,14 +2,12 @@
 
   <h4>actions:</h4>
 
-  <div class="portletBody">
-    <div class="portletContent odd">
+  <div class="portletBody portletContent">
 
-      <ul>
-        <li class="add"><a href="+newbugtracker">Add Tracker</a></li>
-      </ul>
-
-    </div>
+    <ul>
+      <li class="add"><a href="+newbugtracker">Register New Bugtracker</a></li>
+    </ul>
+	
   </div>
 
 </div>

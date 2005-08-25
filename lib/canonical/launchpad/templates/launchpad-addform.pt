@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@malone_template/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
   <body>
@@ -59,11 +59,12 @@
       </div>
       <div class="row">
         <div class="controls"><hr />
-          <input type='submit' 
-                 value='Add'
-                 name='UPDATE_SUBMIT' 
+          <input type="submit"
+                 tabindex="1000"
+                 value="Add"
+                 name="UPDATE_SUBMIT"
                  style="float: right;"
-                 i18n:attributes='value add-button' />
+                 i18n:attributes="value add-button" />
         </div>
       </div>
 

@@ -48,10 +48,10 @@ class RosettaApplication:
             clauseTables=['POFile'],
             distinct=True).count())
 
-    def translatable_products(self, translationProject=None):
+    def translatable_products(self):
         """See IRosettaApplication."""
         products = getUtility(IProductSet)
-        return products.translatables(translationProject)
+        return products.translatables()
 
     def translatable_distroreleases(self):
         """See IRosettaApplication."""
@@ -86,6 +86,6 @@ class RosettaApplication:
         """See IRosettaApplication."""
         stats = getUtility(ILaunchpadStatisticSet)
         return stats.value('language_count')
-        
+
     name = 'Rosetta'
 

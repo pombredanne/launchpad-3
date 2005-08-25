@@ -1,13 +1,33 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
     <vocabulary
+        name="BountyDifficulty"
+        factory="canonical.launchpad.vocabularies.BountyDifficultyVocabulary"
+        />
+
+    <vocabulary
+        name="BountyStatus"
+        factory="canonical.launchpad.vocabularies.BountyStatusVocabulary"
+        />
+
+    <vocabulary
         name="BugTracker"
         factory="canonical.launchpad.vocabularies.BugTrackerVocabulary"
         />
 
     <vocabulary
+        name="BugTrackerType"
+        factory="canonical.launchpad.vocabularies.BugTrackerTypeVocabulary"
+        />
+
+    <vocabulary
         name="CVEState"
         factory="canonical.launchpad.vocabularies.CVEStateVocabulary"
+        />
+
+    <vocabulary
+        name="Bounty"
+        factory="canonical.launchpad.vocabularies.BountyVocabulary"
         />
 
     <vocabulary

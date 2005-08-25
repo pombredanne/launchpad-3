@@ -69,10 +69,6 @@
             template="../templates/product-portlet-details.pt"
             lp:url="/products/evolution/+portlet-details" />
         <browser:page
-            name="+portlet-branches"
-            template="../templates/product-portlet-branches.pt"
-            lp:url="/products/evolution/+portlet-branches" />
-        <browser:page
             name="+portlet-series"
             template="../templates/product-portlet-series.pt"
             lp:url="/products/evolution/+portlet-series" />
@@ -82,7 +78,7 @@
             lp:url="/products/evolution/+portlet-translations" />
         <browser:page
             name="+portlet-milestones"
-            template="../templates/product-portlet-milestones.pt"
+            template="../templates/object-portlet-milestones.pt"
             lp:url="/products/evolution/+portlet-milestones" />
         <browser:page
             name="+portlet-actions"
@@ -97,13 +93,13 @@
             template="../templates/product-portlet-packages.pt"
             lp:url="/products/evolution/+portlet-packages" />
         <browser:page
+            name="+portlet-releases"
+            template="../templates/product-portlet-releases.pt"
+            lp:url="/products/evolution/+portlet-releases" />
+        <browser:page
             name="+portlet-summary"
             template="../templates/object-portlet-summary.pt"
             lp:url="/products/evolution/+portlet-summary" />
-        <browser:page
-            name="+portlet-pref-lang"
-            template="../templates/portlet-pref-langs.pt"
-            lp:url="/products/evolution/+portlet-pref-langs" />
         <browser:page
             name="+portlet-translatables"
             template="../templates/product-portlet-translatables.pt"
@@ -116,7 +112,8 @@
         class="canonical.launchpad.browser.ProductRdfView"
         name="+rdf"
         lp:url="/projects/$Product.name/+rdf"
-        template="../templates/product-rdf.pt" />
+        attribute="__call__"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
@@ -159,16 +156,6 @@
             name="+bounties"
             template="../templates/related-bounties.pt"
             lp:url="/products/$Product.name/+bounties/" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.ProductView"
-        permission="launchpad.AnyPerson">
-        <browser:page
-            name="+addrelease"
-            template="../templates/productrelease-new.pt"
-            lp:url="/products/$Product.name/+addrelease" />
     </browser:pages>
 
     <browser:editform
@@ -246,8 +233,53 @@
         <browser:widget
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"
+           extra="tabindex=2"
            width="62" />
+        <browser:widget
+           field="private"
+           class="zope.app.form.browser.CheckBoxWidget"
+           extra="tabindex=3" />
     </browser:addform>
+
+    <browser:addform
+        name="+addmilestone"
+        for="canonical.launchpad.interfaces.IProduct"
+        schema="canonical.launchpad.interfaces.IMilestone"
+        class="canonical.launchpad.browser.milestone.MilestoneAddView"
+        label="Add a Milestone"
+        fields="name dateexpected"
+        keyword_arguments="name dateexpected"
+        permission="launchpad.Edit"
+        template="../templates/milestone-add.pt"
+        lp:url="/products/$Product.name/+addmilestone">
+    </browser:addform>
+
+    <browser:addform
+      name="+linkbounty"
+      for="canonical.launchpad.interfaces.IProduct"
+      schema="canonical.launchpad.interfaces.IProductBounty"
+      class="canonical.launchpad.browser.bounty.BountyLinkView"
+      label="Link Existing Bounty"
+      fields="product bounty"
+      keyword_arguments="product bounty"
+      permission="launchpad.AnyPerson"
+      template="../templates/bounty-link.pt"
+      lp:url="/products/$Product.name/+linkbounty">
+      <browser:widget
+        field="product"
+        class="canonical.widgets.ContextWidget" />
+    </browser:addform>
+
+    <browser:addform
+      name="+addbounty"
+      for="canonical.launchpad.interfaces.IProduct"
+      schema="canonical.launchpad.interfaces.IBounty"
+      label="Register A New Bounty"
+      fields="name title summary usdvalue difficulty description"
+      class="canonical.launchpad.browser.BountyAddView"
+      permission="launchpad.AnyPerson"
+      template="../templates/bounty-add.pt"
+      />
 
     <browser:addform
         name="+addseries"
@@ -257,7 +289,7 @@
         class="canonical.launchpad.browser.ProductSeriesAddView"
         keyword_arguments="name displayname summary"
         permission="launchpad.AnyPerson"
-        template="../templates/series-new.pt"
+        template="../templates/productseries-new.pt"
         lp:url="/products/$Product.name/+addseries">
         <browser:widget
            field="name"
@@ -310,7 +342,7 @@
             lp:url="/products/+index" />
         <browser:page
             name="+all"
-            template="../templates/doap-listall.pt"
+            template="../templates/registry-listall.pt"
             lp:url="/products/+all" />
         <browser:page
             name="+portlet-details"
@@ -324,7 +356,7 @@
         permission="launchpad.AnyPerson">
         <browser:page
             name="+review"
-            template="../templates/doap-review.pt"
+            template="../templates/registry-review.pt"
             lp:url="/products/+review" />
     </browser:pages>
 
@@ -340,7 +372,7 @@
         class="canonical.launchpad.browser.ProductSetAddView"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="doap/products/+new">
+        lp:url="products/+new">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
         <browser:widget
            field="name"

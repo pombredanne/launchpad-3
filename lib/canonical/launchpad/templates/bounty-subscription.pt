@@ -7,50 +7,49 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-subscribers" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
 <div metal:fill-slot="main">
 
-    <h1>Subscribe to <span tal:replace="context/title">$Bounty.title</span></h1>
+  <h1 tal:condition="not: view/subscription">Subscribe to Bounty</h1>
+  <h1 tal:condition="view/subscription">Unsubscribe From Bounty</h1>
 
-    <div class="documentDescription">
-        You can subscribe to this bounty.
+  <p class="documentDescription">
+    Bounty subscribers will be emailed copies of any comments made on
+    this bounty. If you subscribe to a bounty it will show up on your
+    personal pages, too.
+  </p>
+
+  <p>
+    Choose "Subscribe" to become a subscriber to this bounty, or "Cancel" to
+    return to the bounty page.
+  </p>
+
+  <form action="." method="POST">
+
+    <div>
     </div>
-
-    <fieldset>
-
-        <legend>Subscription Details</legend>
-
-        <form action="" method="post">
-
-        <div class="field">
-
-            <label>Subscription</label>
-
-            <span class="fieldRequired" title="Required">(Required)</span>
-
-              <div class="formHelp">
-                Choose "Watch" to have this bounty
-                show on your personal bounty lists, "CC" to be emailed whenever
-                the bounty status changes, or "None" to remove any
-                subscription you have to this bounty.
-              </div>
-
-            <span tal:replace="structure view/subselector">
-              Selector
-            </span>
-
-        </div>
-        
-        <div class="formControls">
-
-            <input class="context" type="submit"
-                   name="Subscribe"
-                   value="Set Subscription" />
-
-        </div>
-
-        </form>
-
-    </fieldset>
+    <div class="actions">
+      <input type="submit"
+             name="cancel"
+             value="Cancel" />
+      <input tal:condition="not: view/subscription"
+             type="submit"
+             name="subscribe"
+             value="Subscribe" />
+      <input tal:condition="view/subscription"
+             type="submit"
+             name="subscribe"
+             value="Unsubscribe" />
+    </div>
+  </form>
 
 </div>
 

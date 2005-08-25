@@ -1,0 +1,55 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <securedutility
+        class="canonical.launchpad.systemhomes.RegistryApplication"
+        provides="canonical.launchpad.interfaces.IRegistryApplication">
+        <allow
+            interface="canonical.launchpad.interfaces.IRegistryApplication" />
+    </securedutility>
+
+    <!-- This view registers 'registry' as a suburl of RootObject. -->
+    <browser:suburl
+        for="canonical.publication.RootObject"
+        utility="canonical.launchpad.interfaces.IRegistryApplication"
+        name="registry" />
+    <browser:url
+        for="canonical.launchpad.interfaces.IRegistryApplication"
+        path_expression="string:registry"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IRegistryApplication"
+        name="+index" />
+
+    <!-- general template for everything in registry -->
+    <browser:pages for="*" permission="zope.Public">
+        <browser:page name="launchpad_template"
+            template="../templates/main-template.pt" />
+    </browser:pages>
+
+    <!-- browser:pages for the registry application -->
+    <browser:pages 
+        for="canonical.launchpad.interfaces.IRegistryApplication"
+        permission="zope.Public"
+        lp:url="registry">
+        <browser:page name="+index"
+            template="../templates/registry-index.pt"
+            lp:url="registry/+index" />
+        <browser:page name="+about"
+            template="../templates/registry-about.pt"
+            lp:url="registry/+about" />
+        <browser:page name="+dashboard"
+            template="../templates/registry-dashboard.pt"
+            lp:url="registry/+dashboard" />
+        <browser:page name="+to-do"
+            template="../templates/registry-to-do.pt"
+            lp:url="registry/+to-do" />
+    </browser:pages>
+
+</configure>

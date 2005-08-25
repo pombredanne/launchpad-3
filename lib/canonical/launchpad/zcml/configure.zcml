@@ -34,7 +34,6 @@
     <include file="distrorelease.zcml" />
     <include file="distroreleaselanguage.zcml" />
     <include file="distroarchrelease.zcml" />
-    <include file="doap.zcml" />
     <include file="emailaddress.zcml" />
     <include file="files.zcml" />
     <include file="foaf.zcml" />
@@ -73,6 +72,7 @@
     <include file="product.zcml" />
     <include file="project.zcml" />
     <include file="publishedpackage.zcml" />
+    <include file="registry.zcml" />
     <include file="sourcepackage.zcml" />
     <include file="sourcepackagename.zcml" />
     <include file="sourcepackagerelease.zcml" />
@@ -96,7 +96,7 @@
     <!-- System homepages -->
     <include file="rosetta.zcml" />
     <include file="malone.zcml" />
-    <include file="doap.zcml" />
+    <include file="registry.zcml" />
     <include file="foaf.zcml" />
     <include file="bazaar.zcml" />
 

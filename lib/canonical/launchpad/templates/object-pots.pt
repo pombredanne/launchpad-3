@@ -1,7 +1,7 @@
   <!-- indicate if no templates are registered for this object and
      redirect to the mailing lists in case that is incorrect
   -->
-  <tal:block condition="not: context/potemplates">
+  <tal:block condition="not: context/currentpotemplates">
 
     <h2 i18n:translate="">No Translatable Templates Available</h2>
 
@@ -18,7 +18,7 @@
   <tal:block condition="view/templateviews">
 
     <!-- Listing of MANY templates -->
-    <tal:block tal:condition="python:context.potemplatecount > 5">
+    <tal:block tal:condition="python:len(context.currentpotemplates) > 5">
 
       <p>The templates below can all be translated through the Rosetta web
       interface. Click on your chosen template, then you will have the
@@ -47,7 +47,7 @@
     </tal:block>
 
     <!-- Listing of FEW templates. -->
-    <tal:block tal:condition="python:context.potemplatecount <= 5">
+    <tal:block tal:condition="python:len(context.currentpotemplates) <= 5">
 
       <div tal:condition="not: view/languages">
         <ul>
@@ -83,7 +83,7 @@
 
       </div>
 
-      <div tal:replace="structure context/@@+portlet-status-legend" />
+      <div tal:replace="structure context/@@+rosetta-status-legend" />
 
     </tal:block> <!-- the detailed template+language listing -->
 

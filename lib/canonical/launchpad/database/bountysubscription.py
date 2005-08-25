@@ -11,7 +11,7 @@ from canonical.launchpad.interfaces import \
     IBountySubscription, IBountySubscriptionSet
 
 from canonical.database.sqlbase import SQLBase
-from canonical.lp.dbschema import EnumCol, BountySubscription
+from canonical.lp.dbschema import EnumCol
 
 
 class BountySubscription(SQLBase):
@@ -22,7 +22,6 @@ class BountySubscription(SQLBase):
     _table='BountySubscription'
     bounty = ForeignKey(dbName='bounty', foreignKey='Bounty', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
-    subscription = EnumCol(notNull=True, schema=BountySubscription)
 
 
 class BountySubscriptionSet:

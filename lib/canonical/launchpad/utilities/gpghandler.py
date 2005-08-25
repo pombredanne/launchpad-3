@@ -6,10 +6,12 @@ __all__ = ['GPGHandler', 'PymeSignature', 'PymeKey']
 
 # standard
 import os
+import tempfile
 import shutil
 import urllib
 import urllib2
 import re
+import atexit
 
 # launchpad
 from canonical.config import config
@@ -39,29 +41,39 @@ class GPGHandler:
 
     def __init__(self):
         """Initialize environment variable."""
-        self.home = config.gpghandler.home
-        self._setHome()
+        self._setNewHome()
         os.environ['GNUPGHOME'] = self.home
 
-    # XXX cprov 20050516
-    # Is not thread safe ... should it be ?
-    def _setHome(self):
-        """Recreate the directory and the configuration file."""
-        # remove if it already exists
-        if os.access(self.home, os.F_OK):
-            shutil.rmtree(self.home)
+    def _setNewHome(self):
+        """Create a new directory containing the required configuration.
 
-        os.mkdir(self.home)
+        This method is called inside the class constructor and genereates
+        a new directory (name ramdomly generated with the 'gpg-' prefix)
+        containing the proper file configuration and options.
+
+        Also installs an atexit handler to remove the directory on normal
+        process termination.
+        """
+        self.home = tempfile.mkdtemp(prefix='gpg-')
         confpath = os.path.join(self.home, 'gpg.conf')
         conf = open(confpath, 'w')
+        # set needed GPG options, 'auto-key-retrieve' is necessary for
+        # automatically retrieve from the keyserver unknown key when
+        # verifying signatures and 'no-auto-check-trustdb' avoid wasting
+        # time verifying the local keyring consistence.
         conf.write ('keyserver hkp://%s\n'
                     'keyserver-options auto-key-retrieve\n'
                     'no-auto-check-trustdb\n' % config.gpghandler.host)
         conf.close()
-
-    # XXX cprov 20050414
-    # Instantiate a pyme.core.Context() per method, in that way
-    # we can perform action in parallel (thread safe)
+        # create a local atexit handler to remove the configuration directory
+        # on normal termination.
+        def removeHome(home):
+            """Remove GNUPGHOME directory."""
+            if os.path.exists(home):
+                shutil.rmtree(home)
+                
+        atexit.register(removeHome, self.home)
+        
     def verifySignature(self, content, signature=None):
         """See IGPGHandler."""
 

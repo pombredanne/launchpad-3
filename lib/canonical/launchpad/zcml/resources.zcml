@@ -16,11 +16,24 @@
     <resource name="launchpad.png" file="../images/launchpad.png" />
 
     <!-- General Images -->
+    <resource name="bounty" file="../images/bounty.jpg" />
+    <resource name="arrowBottom.gif" file="../images/arrowBottom.gif" />
+    <resource name="arrowDown.gif" file="../images/arrowDown.gif" />
+    <resource name="arrowDownAlternative.gif"
+              file="../images/arrowDownAlternative.gif" />
+    <resource name="arrowRight.gif" file="../images/arrowRight.gif" />
+    <resource name="arrowBlank.gif" file="../images/arrowBlank.gif" />
     <resource name="green-bar.png" file="../images/green-bar.png" />
     <resource name="blue-bar.png" file="../images/blue-bar.png" />
     <resource name="red-bar.png" file="../images/red-bar.png" />
     <resource name="purple-bar.png" file="../images/purple-bar.png" />
     <resource name="bullet.gif" file="../images/bullet.gif" />
+    <resource name="bug" file="../images/bug.png" />
+    <resource name="bug-high" file="../images/bug-high.png" />
+    <resource name="bug-medium" file="../images/bug-medium.png" />
+    <resource name="bug-low" file="../images/bug-low.png" />
+    <resource name="bug-remote" file="../images/bug-remote.png" />
+    <resource name="bugs" file="../images/bugs.png" />
     <resource name="required.gif" file="../images/required.gif" />
     <resource name="favorite_icon.gif" file="../images/favorite_icon.gif" />
 
@@ -31,12 +44,6 @@
     <resource name="download.png" file="../images/download.png" />
     <resource name="close_icon.png" file="../images/close_icon.png" />
 
-    <resource name="arrowBottom.gif" file="../images/arrowBottom.gif" />
-    <resource name="arrowDown.gif" file="../images/arrowDown.gif" />
-    <resource name="arrowDownAlternative.gif"
-              file="../images/arrowDownAlternative.gif" />
-    <resource name="arrowRight.gif" file="../images/arrowRight.gif" />
-    <resource name="arrowBlank.gif" file="../images/arrowBlank.gif" />
     <resource name="treeExpanded.gif" file="../images/treeExpanded.gif" />
     <resource name="treeCollapsed.gif" file="../images/treeCollapsed.gif" />
 
@@ -58,6 +65,7 @@
     <resource name="file_icon.gif" file="../images/file_icon.gif" />
     <resource name="mail_icon.gif" file="../images/mail_icon.gif" />
     <resource name="linkOpaque.gif" file="../images/linkOpaque.gif" />
+    <resource name="target" file="../images/target.png" />
     <resource name="topic_icon.gif" file="../images/topic_icon.gif" />
     <resource name="translations" file="../images/rosetta-icon.png" />
     <resource name="document_icon.gif" file="../images/document_icon.gif" />

@@ -11,10 +11,10 @@
   objects we have. We do the same with the portlets.
 </tal:comment>
 <metal:rightportlets fill-slot="portlets_two"
-    tal:condition="python:context.potemplatecount <= 5">
-    <div tal:replace="structure context/@@+portlet-pref-langs" />
-    <div tal:replace="structure context/@@+portlet-country-langs" />
-    <div tal:replace="structure context/@@+portlet-browser-langs" />
+    tal:condition="python:context.currentpotemplate/count:len <= 5">
+    <div tal:replace="structure context/@@+portlet-preflangs" />
+    <div tal:replace="structure context/@@+portlet-countrylangs" />
+    <div tal:replace="structure context/@@+portlet-browserlangs" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">

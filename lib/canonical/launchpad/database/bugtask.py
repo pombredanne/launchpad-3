@@ -26,7 +26,7 @@ from canonical.launchpad.database.maintainership import Maintainership
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.helpers import shortlist
 
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces import (BugTaskSearchParams,
     IBugTask, IBugTasksReport, IBugTaskSet, IUpstreamBugTask,
     IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, IAuthorization)
 
@@ -45,7 +45,7 @@ debbugsseveritymap = {'wishlist': BugTaskSeverity.WISHLIST,
 
 def bugtask_sort_key(bugtask):
     """A sort key for a set of bugtasks. We want:
-          
+
           - products first
           - distro tasks, followed by their distrorelease tasks
           - ubuntu first among the distros
@@ -141,17 +141,15 @@ class BugTask(SQLBase):
         else:
             return None
 
-    # XXX 2005-06-25 kiko: rename context and contextname to target or
-    # location or whatever. context is overloaded.
     @property
-    def context(self):
+    def target(self):
         distro = self.distribution
         distrorelease = self.distrorelease
         if distro or distrorelease:
             parent = distrorelease or distro
             # XXX 2005-06-25 kiko: This needs API and fixages in Soyuz,
             # but I don't want to leave us with broken links meanwhile.
-            # Filed bugs 1146 and 1147. 
+            # Filed bugs 1146 and 1147.
             return parent
             # if self.sourcepackagename:
             #     return parent.getSourcePackage(self.sourcepackagename)
@@ -164,22 +162,22 @@ class BugTask(SQLBase):
         else:
             raise AssertionError
 
-    # XXX 2005-06-25 kiko: if context actually works, we can probably
+    # XXX 2005-06-25 kiko: if target actually works, we can probably
     # nuke this or simplify it significantly.
     @property
-    def contextname(self):
+    def targetname(self):
         """See canonical.launchpad.interfaces.IBugTask.
 
         Depending on whether the task has a distribution,
         distrorelease, sourcepackagename, binarypackagename, and/or
-        product, the contextname will have one of these forms:
+        product, the targetname will have one of these forms:
         * distribution.displayname
         * distribution.displayname sourcepackagename.name
         * distribution.displayname sourcepackagename.name binarypackagename.name
         * distribution.displayname distrorelease.displayname
-        * distribution.displayname distrorelease.displayname 
+        * distribution.displayname distrorelease.displayname
           sourcepackagename.name
-        * distribution.displayname distrorelease.displayname 
+        * distribution.displayname distrorelease.displayname
           sourcepackagename.name binarypackagename.name
         * upstream product.name
         """
@@ -212,10 +210,10 @@ class BugTask(SQLBase):
     @property
     def title(self):
         """Generate the title for this bugtask based on the id of the bug
-        and the bugtask's contextname.  See IBugTask.
+        and the bugtask's targetname.  See IBugTask.
         """
         title = 'Bug #%s in %s: "%s"' % (
-            self.bug.id, self.contextname, self.bug.title)
+            self.bug.id, self.targetname, self.bug.title)
         return title
 
     def _init(self, *args, **kw):
@@ -256,10 +254,11 @@ class BugTaskSet:
         "severity" : "BugTask.severity",
         "priority" : "BugTask.priority",
         "assignee": "BugTask.assignee",
-        "sourcepackagename" : "SourcePackageName.name",
+        "sourcepackagename" : "BugTask.sourcepackagename",
         "status" : "BugTask.status",
         "title" : "Bug.title",
         "milestone" : "BugTask.milestone",
+        "dateassigned" : "BugTask.dateassigned",
         "datecreated" : "BugTask.datecreated"}
 
     def __init__(self):
@@ -283,51 +282,44 @@ class BugTaskSet:
         try:
             bugtask = BugTask.get(task_id)
         except SQLObjectNotFound:
-            raise NotFoundError("BugTask with ID %s does not exist" % 
+            raise NotFoundError("BugTask with ID %s does not exist" %
                                 str(task_id))
         return bugtask
 
-    def search(self, bug=None, searchtext=None, status=None, priority=None,
-               severity=None, product=None, distribution=None,
-               distrorelease=None, milestone=None, assignee=None,
-               sourcepackagename=None, binarypackagename=None,
-               owner=None, statusexplanation=None, attachmenttype=None,
-               user=None, orderby=None, omit_dupes=False):
+    def search(self, params):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
-
-        # A dict of search argument names and values that will be
-        # looped through to construct part of the SQL WHERE clause.
-        search_args = {
-            'bug': bug,
-            'product': product,
-            'distribution': distribution,
-            'distrorelease': distrorelease,
-            'milestone': milestone,
-            'assignee': assignee,
-            'owner': owner,
-            'status': status,
-            'priority': priority,
-            'severity': severity,
-            'sourcepackagename': sourcepackagename,
-            'binarypackagename': binarypackagename
-        }
-        clauseTables = ['BugTask', 'Bug']
+        assert isinstance(params, BugTaskSearchParams)
 
         extra_clauses = []
-        # Loop through the search arguments and build the appropriate
-        # SQL WHERE clause. Note that arg_value will be one of:
+        clauseTables = ['BugTask', 'Bug']
+
+        # These arguments can be processed in a loop without any other
+        # special handling.
+        standard_args = {
+            'bug': params.bug,
+            'status': params.status,
+            'priority': params.priority,
+            'severity': params.severity,
+            'product': params.product,
+            'distribution': params.distribution,
+            'distrorelease': params.distrorelease,
+            'milestone': params.milestone,
+            'assignee': params.assignee,
+            'sourcepackagename': params.sourcepackagename,
+            'binarypackagename': params.binarypackagename,
+            'owner': params.owner,
+        }
+        # Loop through the standard, "normal" arguments and build the
+        # appropriate SQL WHERE clause. Note that arg_value will be one
+        # of:
         #
         # * a searchbuilder.any object, representing a set of acceptable filter
         #   values
-        #
         # * a searchbuilder.NULL object
-        #
         # * an sqlobject
-        #
         # * a dbschema item
-        #
         # * None (meaning no filter criteria specified for that arg_name)
-        for arg_name, arg_value in search_args.items():
+        for arg_name, arg_value in standard_args.items():
             if arg_value is None:
                 continue
             if zope_isinstance(arg_value, any):
@@ -350,35 +342,38 @@ class BugTaskSet:
                     clause = "BugTask.%s = %d" % (arg_name, int(arg_value.value))
             extra_clauses.append(clause)
 
-        if omit_dupes:
+        #
+        # Handle special cases
+        #
+
+        if params.omit_dupes:
             extra_clauses.append("Bug.duplicateof is NULL")
 
-        # Build the part of the query for attachment type.
-        if attachmenttype is not None:
+        if params.attachmenttype is not None:
             clauseTables.append('BugAttachment')
-            if isinstance(attachmenttype, any):
+            if isinstance(params.attachmenttype, any):
                 where_cond = "BugAttachment.type IN (%s)" % ", ".join(
-                    sqlvalues(*attachmenttype.query_values))
+                    sqlvalues(*params.attachmenttype.query_values))
             else:
                 where_cond = "BugAttachment.type = %s" % sqlvalues(
-                    attachmenttype)
+                    params.attachmenttype)
             extra_clauses.append("BugAttachment.bug = BugTask.bug")
             extra_clauses.append(where_cond)
 
-        if searchtext:
+        if params.searchtext:
             extra_clauses.append(
-                "(Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s))" % 
-                sqlvalues(searchtext, searchtext))
+                "(Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s))" %
+                sqlvalues(params.searchtext, params.searchtext))
 
-        if statusexplanation:
-            extra_clauses.append("BugTask.fti @@ ftq(%s)" % 
-                                 sqlvalues(statusexplanation))
+        if params.statusexplanation:
+            extra_clauses.append("BugTask.fti @@ ftq(%s)" %
+                                 sqlvalues(params.statusexplanation))
 
-        if user:
-            # This part of the query includes private bugs that the
-            # user has permission to access.
-            #
-            # A subselect is used here, because joining through
+        #
+        # Handle privacy
+        #
+        if params.user:
+            # A subselect is used here because joining through
             # TeamParticipation is only relevant to the "user-aware"
             # part of the WHERE condition (i.e. the bit below.) The
             # other half of this condition (see code above) does not
@@ -391,17 +386,18 @@ class BugTaskSet:
                           FROM Bug, BugSubscription, TeamParticipation
                           WHERE Bug.id = BugSubscription.bug AND
                                 TeamParticipation.person = %(personid)s AND
-                                BugSubscription.person = 
+                                BugSubscription.person =
                                   TeamParticipation.team AND
                                 BugSubscription.subscription IN
                                     (%(cc)s, %(watch)s))))""" %
-                      sqlvalues(personid=user.id,
+                      sqlvalues(personid=params.user.id,
                                 cc=BugSubscription.CC,
                                 watch=BugSubscription.WATCH))
         else:
             clause = "BugTask.bug = Bug.id AND Bug.private = FALSE"
         extra_clauses.append(clause)
 
+        orderby = params.orderby
         if orderby is None:
             orderby = []
         elif not zope_isinstance(orderby, (list, tuple)):
@@ -448,7 +444,7 @@ class BugTaskSet:
             owner=owner,
             milestone=milestone)
 
-    def assignedBugTasks(self, person, minseverity=None, minpriority=None,
+    def maintainedBugTasks(self, person, minseverity=None, minpriority=None,
                          showclosed=False, orderBy=None, user=None):
         if showclosed:
             showclosed = ""
@@ -504,21 +500,13 @@ class BugTaskSet:
             maintainedProductBugTasksQuery + filters,
             clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
 
-        assignedBugTasksQuery = ('''
-            BugTask.assignee = TeamParticipation.team AND
-            TeamParticipation.person = %s''' % person.id)
-
-        assignedBugTasks = BugTask.select(
-            assignedBugTasksQuery + filters,
-            clauseTables=['TeamParticipation', 'BugTask', 'Bug'])
-
-        results = assignedBugTasks.union(maintainedProductBugTasks)
-        return results.union(maintainedPackageBugTasks, orderBy=orderBy)
+        return maintainedProductBugTasks.union(
+            maintainedPackageBugTasks, orderBy=orderBy)
 
     def bugTasksWithSharedInterest(self, person1, person2, orderBy=None,
                                    user=None):
-        person1Tasks = self.assignedBugTasks(person1, user=user)
-        person2Tasks = self.assignedBugTasks(person2, user=user)
+        person1Tasks = self.maintainedBugTasks(person1, user=user)
+        person2Tasks = self.maintainedBugTasks(person2, user=user)
         return person1Tasks.intersect(person2Tasks, orderBy=orderBy)
 
 
@@ -611,6 +599,7 @@ class BugTasksReport:
             user, minseverity, minpriority, showclosed):
             bugs.add(bugtask.bug)
 
+        # XXX kiko: use a key instead of this DSU
         buglistwithdates = [(bug.datecreated, bug) for bug in bugs]
         buglistwithdates.sort()
         buglistwithdates.reverse()

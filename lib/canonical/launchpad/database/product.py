@@ -23,10 +23,12 @@ from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, BugTaskSeverity, BugTaskStatus,
     RosettaImportStatus)
 from canonical.launchpad.database.productseries import ProductSeries
+from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner)
@@ -74,23 +76,10 @@ class Product(SQLBase):
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
 
-    def searchBugs(self, bug=None, searchtext=None, status=None, priority=None,
-                   severity=None, milestone=None, assignee=None, owner=None,
-                   statusexplanation=None, attachmenttype=None, user=None,
-                   orderby=None, omit_dupes=False):
+    def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
-        # As an initial refactoring, we're wrapping BugTaskSet.search.
-        # It's possible that the search code will live inside this
-        # method instead at some point.
-        #
-        # The implementor who would make such a change should be
-        # mindful of bug privacy.
-        return BugTaskSet().search(
-            product=self, bug=bug, searchtext=searchtext, status=status,
-            priority=priority, severity=severity, milestone=milestone,
-            assignee=assignee, owner=owner, attachmenttype=attachmenttype,
-            statusexplanation=statusexplanation, user=user, orderby=orderby,
-            omit_dupes=omit_dupes)
+        search_params.setProduct(self)
+        return BugTaskSet().search(search_params)
 
     def getOrCreateCalendar(self):
         if not self.calendar:
@@ -102,6 +91,13 @@ class Product(SQLBase):
     bugtasks = MultipleJoin('BugTask', joinColumn='product')
     branches = MultipleJoin('Branch', joinColumn='product')
     serieslist = MultipleJoin('ProductSeries', joinColumn='product')
+
+    @property
+    def name_with_project(self):
+        """See lib.canonical.launchpad.interfaces.IProduct"""
+        if self.project:
+            return self.project.name + " " + self.name
+        return self.name
 
     @property
     def releases(self):
@@ -132,6 +128,7 @@ class Product(SQLBase):
                 for r in ret]
 
     def getPackage(self, distrorelease):
+        """See IProduct."""
         if isinstance(distrorelease, Distribution):
             distrorelease = distrorelease.currentrelease
         for pkg in self.sourcepackages:
@@ -140,12 +137,22 @@ class Product(SQLBase):
         else:
             raise NotFoundError(distrorelease)
 
+    def getMilestone(self, name):
+        """See IProduct."""
+        milestone = Milestone.selectOne("""
+            product = %s AND
+            name = %s
+            """ % sqlvalues(self.id, name))
+        if milestone is None:
+            raise NotFoundError(name)
+        return milestone
+
     @property
     def translatable_packages(self):
         """See IProduct."""
         packages = sets.Set([package
                             for package in self.sourcepackages
-                            if package.potemplatecount > 0])
+                            if len(package.currentpotemplates) > 0])
         # Sort the list of packages by distrorelease.name and package.name
         L = [(item.distrorelease.name + item.name, item)
              for item in packages]
@@ -212,58 +219,6 @@ class Product(SQLBase):
         # a better way.
         return max(perms)
 
-    def potemplates(self):
-        """See IProduct."""
-        # XXX sabdfl 30/03/05 this method is really obsolete, because what
-        # we really care about now is ProductSeries.potemplates
-        warn("Product.potemplates is obsolete, should be on ProductRelease",
-             DeprecationWarning, stacklevel=2)
-        templates = []
-        for series in self.serieslist:
-            for potemplate in series.potemplates:
-                templates.append(potemplate)
-
-        return templates
-
-    @property
-    def potemplatecount(self):
-        """See IProduct."""
-        target = self.primary_translatable
-        if target is None:
-            return 0
-        return len(target.potemplates)
-
-    def poTemplatesToImport(self):
-        # XXX sabdfl 30/03/05 again, i think we want to be using
-        # ProductRelease.poTemplatesToImport
-        for template in iter(self.potemplates):
-            if template.rawimportstatus == RosettaImportStatus.PENDING:
-                yield template
-
-    def messageCount(self):
-        count = 0
-        for t in self.potemplates:
-            count += len(t)
-        return count
-
-    def currentCount(self, language):
-        count = 0
-        for t in self.potemplates:
-            count += t.currentCount(language)
-        return count
-
-    def updatesCount(self, language):
-        count = 0
-        for t in self.potemplates:
-            count += t.updatesCount(language)
-        return count
-
-    def rosettaCount(self, language):
-        count = 0
-        for t in self.potemplates:
-            count += t.rosettaCount(language)
-        return count
-
     def getSeries(self, name):
         """See IProduct."""
         series = ProductSeries.selectOneBy(productID=self.id, name=name)
@@ -284,10 +239,7 @@ class Product(SQLBase):
                 ProductRelease.q.version == version),
             clauseTables=['ProductSeries'])
         if release is None:
-            # XXX: This needs a change in banzai, which depends on this method
-            #      raising IndexError.
-            #      SteveAlexander, 2005-04-25
-            raise IndexError
+            raise NotFoundError(version)
         return release
 
     def packagedInDistros(self):
@@ -329,6 +281,14 @@ class Product(SQLBase):
                 statusline.append(bugmatrix[severity][status])
             resultset.append(statusline)
         return resultset
+
+    def ensureRelatedBounty(self, bounty):
+        """See IProduct."""
+        for curr_bounty in self.bounties:
+            if bounty.id == curr_bounty.id:
+                return None
+        linker = ProductBounty(product=self, bounty=bounty)
+        return None
 
 
 class ProductSet:
@@ -408,11 +368,8 @@ class ProductSet:
             query += ' AND Product.active IS TRUE \n'
         return Product.select(query, distinct=True, clauseTables=clauseTables)
 
-    def translatables(self, translationProject=None):
+    def translatables(self):
         """See IProductSet"""
-
-        # XXX kiko: translationProject is unused. Why?
-
         translatable_set = set()
         upstream = Product.select('''
             Product.id = ProductSeries.product AND

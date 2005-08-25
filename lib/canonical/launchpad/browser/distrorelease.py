@@ -1,5 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""View classes related to IDistroRelease."""
+
 __metaclass__ = type
 
 __all__ = [
@@ -24,7 +26,6 @@ from canonical.launchpad.interfaces import (IDistroReleaseLanguageSet,
     IDistroReleaseSet, ILaunchBag)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
-
 
 class DistroReleaseFacets(StandardLaunchpadFacets):
     usedfor = IDistroRelease
@@ -63,7 +64,7 @@ class DistroReleaseView:
 
     def templateviews(self):
         return [POTemplateView(template, self.request)
-                for template in self.context.potemplates]
+                for template in self.context.currentpotemplates]
 
     def distroreleaselanguages(self):
         """Yields a DistroReleaseLanguage object for each language this
@@ -87,11 +88,20 @@ class DistroReleaseView:
                 drl = drlangset.getDummy(self.context, lang)
                 drlangs.append(drl)
         drlangs.sort(key=lambda a: a.language.englishname)
-        
+
         return drlangs
 
+    def unlinked_translatables(self):
+        """Return a list of sourcepackage that don't have a link to a product.
+        """
+        result = []
+        for sp in self.context.translatable_sourcepackages:
+            if sp.productseries is None:
+                result.append(sp)
+        return result
+
     def redirectToDistroFileBug(self):
-        """Redirects to the distribution's filebug page
+        """Redirect to the distribution's filebug page.
 
         Filing a bug on a distribution release is not directly
         permitted; we redirect to the distribution's file
@@ -113,6 +123,7 @@ class DistroReleaseBugsView(BugTaskSearchListingView):
         """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
         return [
             "id", "package", "title", "status", "submittedby", "assignedto"]
+
 
 class DistroReleaseAddView(AddView):
     __used_for__ = IDistroRelease

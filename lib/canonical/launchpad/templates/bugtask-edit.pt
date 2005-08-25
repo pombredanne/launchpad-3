@@ -1,17 +1,17 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@malone_template/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
   <body>
   <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-status" />
+    <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/bug/@@+portlet-details" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-actions" />
     <div tal:replace="structure context/@@+portlet-alsoreportedin" />
-    <div tal:replace="structure context/context/@@+portlet-latest-bugs" />
+    <div tal:replace="structure context/target/@@+portlet-latest-bugs" />
   </metal:rightportlets>
 
     <div metal:fill-slot="main">
@@ -30,12 +30,6 @@
           method="post"
           enctype="multipart/form-data">
           <div metal:define-macro="formbody">
-            <!-- XXX: Brad Bollenbach, 2005-06-02: Implement this after
-                  merging initial task page changes.
-            <p class="portalMessage">
-              Updated: status, assignee, status explanation
-            </p>
-            -->
             <p class="portalMessage"
                tal:define="status view/update|nothing"
                tal:condition="status"
@@ -52,7 +46,7 @@
             <p tal:condition="not: context/required:launchpad.Edit"
                class="portalMessage">
               You are not the assignee, or the maintainer of
-              <span tal:replace="context/contextname">product</span> so you
+              <span tal:replace="context/targetname">product</span> so you
               cannot edit this status page.
             </p>
           </div>
@@ -84,7 +78,7 @@
                   Priority
                 </label>
               </td>
-              <td tal:condition="context/product">
+              <td>
                 <label tal:attributes="for view/milestone_widget/name"
                        tal:content="view/milestone_widget/label">
                   Target
@@ -95,8 +89,7 @@
               <td tal:content="structure view/status_widget" />
               <td tal:content="structure view/severity_widget" />
               <td tal:content="structure view/priority_widget" />
-              <td tal:condition="context/product"
-                  tal:content="structure view/milestone_widget" />
+              <td tal:content="structure view/milestone_widget" />
             </tr>
             <tr tal:condition="python:context.distribution or 
                                       context.distrorelease">

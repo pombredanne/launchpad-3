@@ -12,6 +12,8 @@ from sqlobject import (
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.distributionbounty import \
+    DistributionBounty
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.bugtask import BugTaskSet
@@ -46,25 +48,13 @@ class Distribution(SQLBase):
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistroBounty')
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
+    milestones = MultipleJoin('Milestone', joinColumn='distribution')
     lucilleconfig = StringCol(notNull=False, default=None)
 
-    def searchBugs(self, bug=None, searchtext=None, status=None, priority=None,
-                   severity=None, milestone=None, assignee=None, owner=None,
-                   statusexplanation=None, attachmenttype=None, user=None,
-                   orderby=None, omit_dupes=False):
+    def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
-        # As an initial refactoring, we're wrapping BugTaskSet.search.
-        # It's possible that the search code will live inside this
-        # method instead at some point.
-        #
-        # The implementor who would make such a change should be
-        # mindful of bug privacy.
-        return BugTaskSet().search(
-            distribution=self, bug=bug, searchtext=searchtext, status=status,
-            priority=priority, severity=severity, milestone=milestone,
-            assignee=assignee, owner=owner, attachmenttype=attachmenttype,
-            statusexplanation=statusexplanation, user=user, orderby=orderby,
-            omit_dupes=omit_dupes)
+        search_params.setDistribution(self)
+        return BugTaskSet().search(search_params)
 
     @property
     def open_cve_bugtasks(self):
@@ -168,6 +158,24 @@ class Distribution(SQLBase):
     def getSourcePackage(self, name):
         """See IDistribution."""
         return SourcePackage(name, self.currentrelease)
+
+    def getMilestone(self, name):
+        """See IDistribution."""
+        milestone = Milestone.selectOne("""
+            distribution = %s AND
+            name = %s
+            """ % sqlvalues(self.id, name))
+        if milestone is None:
+            raise NotFoundError(name)
+        return milestone
+
+    def ensureRelatedBounty(self, bounty):
+        """See IDistribution."""
+        for curr_bounty in self.bounties:
+            if bounty.id == curr_bounty.id:
+                return None
+        linker = DistributionBounty(distribution=self, bounty=bounty)
+        return None
 
 
 class DistributionSet:

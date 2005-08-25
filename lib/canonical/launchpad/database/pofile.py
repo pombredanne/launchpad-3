@@ -379,6 +379,15 @@ class POFile(SQLBase, RosettaStats):
         """See IRosettaStats."""
         return self.rosettacount
 
+    @property
+    def fuzzy_count(self):
+        """See IPOFile."""
+        return POMsgSet.select("""
+            pofile = %s AND
+            isfuzzy IS TRUE AND
+            sequence > 0
+            """ % sqlvalues(self.id)).count()
+
     # IEditPOFile
     def expireAllMessages(self):
         """See IEditPOFile."""
@@ -751,17 +760,20 @@ class DummyPOFile(RosettaStats):
     that language for this template.
     """
     implements(IPOFile)
+
     def __init__(self, potemplate, language, owner=None, header=''):
         self.potemplate = potemplate
         self.language = language
         self.owner = owner
         self.header = header
         self.latestsubmission = None
-        self.messageCount = len(potemplate)
         self.pluralforms = language.pluralforms
         self.translationpermission = self.potemplate.translationpermission
         self.lasttranslator = None
         self.contributors = []
+
+    def messageCount(self):
+        return len(self.potemplate)
 
     @property
     def title(self):
@@ -817,7 +829,7 @@ class DummyPOFile(RosettaStats):
         return 0
 
     def untranslatedCount(self):
-        return self.messageCount
+        return self.messageCount()
 
     def currentPercentage(self):
         return 0.0

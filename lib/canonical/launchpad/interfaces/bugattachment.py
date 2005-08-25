@@ -18,6 +18,8 @@ from zope.schema import Object, Choice, Int, TextLine, Text, Bytes, Bool
 from canonical.lp import dbschema
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.fields import Title
+from canonical.launchpad.validators.bugattachment import (
+    bug_attachment_size_constraint)
 
 
 _ = MessageIDFactory('launchpad')
@@ -74,7 +76,9 @@ class IBugAttachmentAddForm(Interface):
         title=u"Comment",
         description=u"A comment describing the attachment more in detail.",
         required=True)
-    filecontent = Bytes(title=u"Attachment", required=True)
+    filecontent = Bytes(
+        title=u"Attachment", required=True,
+        constraint=bug_attachment_size_constraint)
 
 
 class IBugAttachmentEditForm(Interface):

@@ -84,10 +84,9 @@
             template="../templates/bugtask-portlet-alsoreportedin.pt"
             lp:url="malone/tasks/+portlet-alsoreportedin" />
         <browser:page
-            name="+portlet-status"
-            template="../templates/bugtask-portlet-status.pt"
-            lp:url="malone/tasks/+portlet-status" />
-        
+            name="+portlet-details"
+            template="../templates/bugtask-portlet-details.pt"
+            lp:url="malone/tasks/+portlet-details" />
     </browser:pages>
 
     <!-- XXX: Brad Bollenbach, 2005-01-18: We need to sort out the +upstreamtask
@@ -131,6 +130,9 @@
           field="statusexplanation"
           class="zope.app.form.browser.TextAreaWidget"
           height="2" />
+        <browser:widget
+          field="assignee"
+          class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
     </browser:editform>
 
     <browser:schemadisplay
@@ -173,7 +175,7 @@
         for="canonical.launchpad.interfaces.IDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename
+        fields="sourcepackagename binarypackagename milestone
                 status priority severity assignee bugwatch statusexplanation"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
@@ -183,6 +185,9 @@
           field="statusexplanation"
           class="zope.app.form.browser.TextAreaWidget"
           height="2" />
+        <browser:widget
+          field="assignee"
+          class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
     </browser:editform>
 
     <browser:schemadisplay
@@ -197,6 +202,14 @@
         template="../templates/bugtask-view.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:schemadisplay>
+
+    <browser:page
+        name="+target"
+        for="canonical.launchpad.interfaces.IDistroBugTask"
+        class="canonical.launchpad.browser.BugTaskReleaseTargetingView"
+        permission="launchpad.AnyPerson"
+        template="../templates/bugtask-release-targeting.pt"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
@@ -223,7 +236,7 @@
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename
+        fields="sourcepackagename binarypackagename milestone
                 status priority severity assignee bugwatch statusexplanation"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
@@ -233,6 +246,9 @@
           field="statusexplanation"
           class="zope.app.form.browser.TextAreaWidget"
           height="2" />
+        <browser:widget
+          field="assignee"
+          class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
     </browser:editform>
 
     <browser:schemadisplay
@@ -247,6 +263,14 @@
         template="../templates/bugtask-view.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:schemadisplay>
+
+    <browser:page
+        name="+target"
+        for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
+        class="canonical.launchpad.browser.BugTaskReleaseTargetingView"
+        permission="launchpad.AnyPerson"
+        template="../templates/bugtask-release-targeting.pt"
+        />
 
     <!-- BugTaskDelta -->
     <content class="canonical.launchpad.components.bugtask.BugTaskDelta">

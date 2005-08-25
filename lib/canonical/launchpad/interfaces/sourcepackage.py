@@ -12,9 +12,11 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
+from canonical.launchpad.interfaces import IBugTarget
+
 _ = MessageIDFactory('launchpad')
 
-class ISourcePackage(Interface):
+class ISourcePackage(IBugTarget):
     """A SourcePackage. See the MagicSourcePackage specification. This
     interface preserves as much as possible of the old SourcePackage
     interface from the SourcePackage table, with the new table-less
@@ -75,7 +77,7 @@ class ISourcePackage(Interface):
     releases = Attribute("The full set of source package releases that "
         "have been published in this distrorelease under this source "
         "package name. The list should be sorted by version number.")
-    
+
     releasehistory = Attribute("A list of all the source packages ever "
         "published in this Distribution (across all distroreleases) with "
         "this source package name. Note that the list spans "
@@ -97,18 +99,19 @@ class ISourcePackage(Interface):
         "pocket. The result is a dictionary, with the pocket dbschema "
         "as a key, and a list of source package releases as the value.")
 
+    potemplates = Attribute(
+        _("Return an iterator over this distrorelease/sourcepackagename's"
+          " PO templates."))
+
+    currentpotemplates = Attribute(
+        _("Return an iterator over this distrorelease/sourcepackagename's"
+          " PO templates that have the 'iscurrent' flag set'."))
+
     def setPackaging(productseries, owner):
         """Update the existing packaging record, or create a new packaging
         record, that links the source package to the given productseries,
         and record that it was done by the owner.
         """
-
-    def potemplates():
-        """Returns the set of POTemplates that exist for this
-        distrorelease/sourcepackagename combination."""
-
-    potemplatecount = Attribute("The number of POTemplates for this "
-                        "SourcePackage.")
 
     def bugsCounter():
         """A bug counter widget for sourcepackage. This finds the number of
@@ -119,12 +122,12 @@ class ISourcePackage(Interface):
         """Returns the SourcePackageRelease that had the name of this
         SourcePackage and the given version, and was published in this
         distribution. NB:
-        
+
           1. Currently, we have no PublishingMorgue, so this will only find
              SourcePackageReleases that are *still* published (even if they
              have been superceded, as long as they have not yet been
              deleted).
-        
+
           2. It will look across the entire distribution, not just in the
           current distrorelease. In Ubuntu and RedHat, and similar
           distributions, a sourcepackagerelease name+version is UNIQUE

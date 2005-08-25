@@ -13,7 +13,10 @@
 
 <div metal:fill-slot="main">
 
-    <h1><span tal:replace="context/title">$Branch.title</span></h1>
+    <h1>
+      &#8220;<span tal:replace="context/title">title</span>&#8221;
+      branch
+    </h1>
 
     <div class="documentDescription" tal:content="context/summary">
         $Branch.summary goes here. This should be quite short,

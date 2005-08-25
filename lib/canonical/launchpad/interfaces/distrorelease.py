@@ -72,7 +72,8 @@ class IDistroRelease(IHasOwner, IBugTarget):
     sourcecount = Attribute("Source Packages Counter")
     binarycount = Attribute("Binary Packages Counter")
     potemplates = Attribute("The set of potemplates in the release")
-    potemplatecount = Attribute("The number of potemplates for this release")
+    currentpotemplates = Attribute("The set of potemplates in the release"
+        " with the iscurrent flag set")
     architecturecount = Attribute("The number of architectures in this "
         "release.")
     architectures = Attribute("The Architecture-specific Releases")
@@ -82,6 +83,9 @@ class IDistroRelease(IHasOwner, IBugTarget):
         "release.")
     datelastlangpack = Attribute(
         "The date of the last base language pack export for this release.")
+
+    translatable_sourcepackages = Attribute("Source packages in this "
+        "distrorelease that can be translated.")
 
     # related joins
     packagings = Attribute("All of the Packaging entries for this "
@@ -134,6 +138,11 @@ class IDistroRelease(IHasOwner, IBugTarget):
         """Return the DistroReleaseLanguage for this distrorelease and the
         given language, or None if there's no DistroReleaseLanguage for this
         distribution and the given language.
+        """
+
+    def getDistroReleaseLanguageOrDummy(language):
+        """Return the DistroReleaseLanguage for this distrorelease and the
+        given language, or a DummyDistroReleaseLanguage.
         """
 
 

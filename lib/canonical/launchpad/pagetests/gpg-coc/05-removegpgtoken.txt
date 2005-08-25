@@ -37,7 +37,7 @@ End up with the pending token.
 Listify pending keys result to avoid warnings about slicing an unordered
 select result.
 
-  >>> pendingkeys = list(tokenset.getPendingGpgKeys())
+  >>> pendingkeys = list(tokenset.getPendingGPGKeys())
   >>> tokenfingerprint = pendingkeys[0].fingerprint.encode('ascii')
 
 Finish the current Interaction

@@ -92,6 +92,10 @@
             template="../templates/distribution-portlet-releases.pt"
             lp:url="/distros/$Distribution.name/+portlet-releases" />
         <browser:page
+            name="+portlet-milestones"
+            template="../templates/object-portlet-milestones.pt"
+            lp:url="/distros/$Distribution.name/+portlet-milestones" />
+        <browser:page
             name="+portlet-bounties"
             template="../templates/object-portlet-bounties.pt"
             lp:url="/distros/$Distribution.name/+portlet-bounties" />
@@ -128,6 +132,18 @@
             class="canonical.widgets.OwnerWidget" />
     </browser:addform>
 
+    <browser:addform
+        name="+addmilestone"
+        for="canonical.launchpad.interfaces.IDistribution"
+        schema="canonical.launchpad.interfaces.IMilestone"
+        class="canonical.launchpad.browser.milestone.MilestoneAddView"
+        label="Add a Milestone"
+        fields="name dateexpected"
+        keyword_arguments="name dateexpected"
+        permission="launchpad.Edit"
+        template="../templates/milestone-add.pt"
+        lp:url="/distros/$Distribution.name/+addmilestone">
+    </browser:addform>
 
     <browser:addform
         name="+filebug"
@@ -181,6 +197,33 @@
         label="Select A New Translation Group"
         template="../templates/distribution-translators.pt"
         lp:url="/distros/$Distribution.name/+changetranslators" />
+
+    <browser:addform
+      name="+linkbounty"
+      for="canonical.launchpad.interfaces.IDistribution"
+      schema="canonical.launchpad.interfaces.IDistributionBounty"
+      class="canonical.launchpad.browser.bounty.BountyLinkView"
+      label="Link Existing Bounty"
+      fields="distribution bounty"
+      keyword_arguments="distribution bounty"
+      permission="launchpad.AnyPerson"
+      template="../templates/bounty-link.pt"
+      lp:url="/distributions/$Distribution.name/+linkbounty">
+      <browser:widget
+        field="distribution"
+        class="canonical.widgets.ContextWidget" />
+    </browser:addform>
+
+    <browser:addform
+      name="+addbounty"
+      for="canonical.launchpad.interfaces.IDistribution"
+      schema="canonical.launchpad.interfaces.IBounty"
+      label="Register A New Bounty"
+      fields="name title summary usdvalue difficulty description"
+      class="canonical.launchpad.browser.BountyAddView"
+      permission="launchpad.AnyPerson"
+      template="../templates/bounty-add.pt"
+      />
 
     <!-- DistributionSet -->
     <content class="canonical.launchpad.database.DistributionSet">

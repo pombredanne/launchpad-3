@@ -1,7 +1,7 @@
 Page to edit a product - does the page load?
 
   >>> print http(r"""
-  ... GET /doap/products/firefox/+edit HTTP/1.1
+  ... GET /products/firefox/+edit HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

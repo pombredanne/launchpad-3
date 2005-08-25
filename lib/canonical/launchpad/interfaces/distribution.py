@@ -80,6 +80,11 @@ class IDistribution(IHasOwner, IBugTarget):
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugtasks = Attribute("The bug tasks filed in this distro.")
     bugCounter = Attribute("The distro bug counter")
+    milestones = Attribute(_(
+        "The release milestones associated with this distribution. "
+        "Release milestones are primarily used by the QA team to assign "
+        "specific bugs for fixing by specific milestones."))
+
 
     # properties
     currentrelease = Attribute(
@@ -112,10 +117,22 @@ class IDistribution(IHasOwner, IBugTarget):
         """Return the DistroReleases which are marked as in development."""
 
     def getRelease(name_or_version):
-        """Return the source package release with the name or version given."""
+        """Return the source package release with the name or version
+        given.
+        """
 
     def getSourcePackage(self, name):
         """Return the source package with the name given."""
+
+    def getMilestone(name):
+        """Return a milestone with the given name for this distribution, or
+        raise NotFoundError.
+        """
+
+    def ensureRelatedBounty(bounty):
+        """Ensure that the bounty is linked to this distribution. Return
+        None.
+        """
 
 
 class IDistributionSet(Interface):

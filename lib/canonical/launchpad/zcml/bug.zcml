@@ -130,6 +130,19 @@
             class="canonical.widgets.bug.BugWidget" />
     </browser:editform>
 
+    <browser:addform
+        name="+addattachment"
+        schema="canonical.launchpad.interfaces.IBugAttachmentAddForm"
+        for="canonical.launchpad.interfaces.IBug"
+        class="canonical.launchpad.browser.BugAttachmentAddView"
+        label="Add an Attachment"
+        fields="filecontent patch title comment"
+        keyword_arguments="patch filecontent title comment"
+        permission="launchpad.AnyPerson"
+        template="../templates/bugattachment-add.pt"
+        lp:url="malone/bugs/$Bug.id/+addattachment"
+        />
+
     <browser:view
         for="canonical.launchpad.interfaces.IBug"
         name="+messages"
@@ -159,6 +172,7 @@
         name="+index"
         for="canonical.launchpad.interfaces.IBugSet"
         class="canonical.launchpad.browser.BugSetView"
+        attribute="redirectToBug"
         permission="zope.Public" />
 
     <browser:traverse
@@ -228,4 +242,5 @@
     <content class="canonical.launchpad.components.bug.BugDelta">
         <allow interface="canonical.launchpad.interfaces.IBugDelta" />
     </content>
+
 </configure>

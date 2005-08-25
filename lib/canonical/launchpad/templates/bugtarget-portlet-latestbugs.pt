@@ -2,7 +2,7 @@
   <h4>Latest Bugs in <span tal:replace="context/displayname" />:</h4>
   <div class="portletBody">
     <div class="portletContent even">
-      <ul> 
+      <ul class="bug"> 
         <li tal:repeat="bugtask view/latestBugTasks">
           <a href="#"
              style="text-decoration: underline"
@@ -17,7 +17,7 @@
       </ul>
 
       <ul>
-        <li class="info" tal:condition="view/latestBugTasks">
+        <li class="bugs" tal:condition="view/latestBugTasks">
           <a tal:attributes="href string:${context/fmt:url}/+bugs">
             View bug reports for <span tal:replace="context/displayname" />
           </a>
