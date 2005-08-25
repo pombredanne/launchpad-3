@@ -26,6 +26,11 @@ spider -- StuartBishop 20050822
 ...         return "%s returned status %s instead of 404" % (
 ...             invalid_url, invalid_rc)
 
+>>> def check404(url):
+...     rc = http("GET %s HTTP/1.0" % url).getStatus()
+...     if rc != 404:
+...         return "%s returned status %s instead of 404" % (url, rc)
+
 
 >>> check("/")
 >>> check("/legal")
@@ -44,6 +49,8 @@ spider -- StuartBishop 20050822
 >>> check("/products/firefox/+series/1.0")
 >>> check("/products/firefox/+bugs")
 >>> check("/products/firefox/+bugs/1") # Deprecated?
+>>> check404("/products/firefox/+milestone")
+>>> check("/products/firefox/+milestone/1.0")
 
 >>> check("/distros")
 >>> check("/distros/ubuntu")
@@ -58,4 +65,18 @@ spider -- StuartBishop 20050822
 >>> check("/people/+peoplelist")
 >>> check("/people/+teamlist")
 >>> check("/people/+ubuntitelist")
+
+>>> check("/malone")
+>>> check("/malone/assigned")
+>>> check("/malone/bugs")
+>>> check("/malone/bugs/1")
+>>> check("/malone/bugs/1/activity")
+>>> check("/malone/distros")
+>>> check("/malone/distros/ubuntu")
+>>> check("/malone/projects")
+>>> check("/malone/projects/gnome")
+>>> check("/malone/products")
+>>> check("/malone/products/firefox")
+>>> # check("/malone/packages") Broken!!!
+>>> check("/malone/bugtrackers")
 
