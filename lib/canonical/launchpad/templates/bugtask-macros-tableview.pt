@@ -2,15 +2,20 @@
   <tal:comment replace="nothing">
   This macro expects the following variables defined:
       :task_batch_navigator: an IBatchNavigator
-      :listing_columns: a list of strings specifying columns to display
   Optional:
+      :listing_columns: a list of strings specifying columns to display
       :mass_edit_allowed: specifies whether a column for selection should
                          be included
   </tal:comment>
 
   <table class="listing data" width="67%"
-         tal:define=" tasks task_batch_navigator/batch;">
-    <thead>
+         tal:define="tasks task_batch_navigator/batch;
+                     default_columns python:['id', 'product-or-package',
+                                             'title', 'status', 'priority',
+                                             'severity'];
+                     listing_columns listing_columns|default_columns">
+
+    <thead tal:define="listing_columns listing_columns|default_columns">
       <tr metal:use-macro="context/@@+bugtask-macros-tableview/batching-header" />
       <tr metal:use-macro="context/@@+bugtask-macros-tableview/sortable-header" />
     </thead>
@@ -26,13 +31,17 @@
   <tal:comment replace="nothing">
   This macro expects the following variables defined:
       :tasks: a list of task instances
-      :listing_columns: a list of strings specifying columns to display
   Optional:
+      :listing_columns: a list of strings specifying columns to display
       :mass_edit_allowed: specifies whether a column for selection should
                          be included
   </tal:comment>
 
-  <table class="sortable listing" id="bugtask-table" width="67%">
+  <table class="sortable listing" id="bugtask-table" width="67%"
+         tal:define="default_columns python:['id', 'product-or-package',
+                                             'title', 'status', 'priority',
+                                             'severity'];
+                     listing_columns listing_columns|default_columns">
     <thead>
       <tr metal:use-macro="context/@@+bugtask-macros-tableview/header" />
     </thead>
@@ -103,6 +112,10 @@
     <th tal:condition="python:'package' in listing_columns"
         tal:attributes="class python:view.getSortClass('sourcepackagename')">
       <a href="#" tal:attributes="href python:view.getSortLink('sourcepackagename')">Package</a>
+    </th>
+    <th tal:condition="python:'product' in listing_columns"
+        tal:attributes="class python:view.getSortClass('product')">
+      <a href="#" tal:attributes="href python:view.getSortLink('product')">Product</a>
     </th>
     <th tal:condition="python:'severity' in listing_columns"
         tal:attributes="class python:view.getSortClass('severity')">
