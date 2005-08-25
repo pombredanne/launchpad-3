@@ -47,12 +47,12 @@ class BugPageTitle:
 class BugTaskPageTitle:
     def __call__(self, context, view):
         return "Bug #%d in %s - %s" % (
-            context.bug.id, context.contextname, context.bug.title)
+            context.bug.id, context.targetname, context.bug.title)
 
 
 class BugTaskTargetingTitle:
     def __call__(self, context, view):
-        task_target = context.context
+        task_target = context.target
         if IDistribution.providedBy(task_target):
             distribution_title = task_target.title
         elif IDistroRelease.providedBy(task_target):
@@ -116,9 +116,11 @@ binarypackagerelease_license = 'Binary Package Licence'
 
 bounties = 'Launchpad Bounties'
 
-bounty_subscription = 'Bounty Subscription'
+bounties_new = 'Register a New Bounty in Launchpad'
 
-bounty = ContextTitle('Launchpad Bounty: %s')
+bounty_index = ContextTitle('Launchpad Bounty: %s')
+
+bounty_subscription = 'Bounty Subscription'
 
 branch_index = ContextTitle('Bazaar Branch: %s')
 
@@ -269,6 +271,9 @@ def distrorelease_index(context, view):
 
 def distrorelease_new(context, view):
     return 'Create New Release of %s' % context.distribution.title
+
+distrorelease_packaging = ContextDisplayName('Mapping packages to upstream '
+    'for %s')
 
 distrorelease_search = ContextDisplayName('%s Packages')
 
@@ -579,15 +584,15 @@ rosetta_index = 'Rosetta'
 
 rosetta_preferences = 'Rosetta: Preferences'
 
-def series_edit(context, view):
+def productseries_edit(context, view):
     return 'Edit %s %s Details' % (context.product.displayname, context.name)
 
-series_new = ContextDisplayName('Register a new %s release series')
+productseries_new = ContextDisplayName('Register a new %s release series')
 
-def series_review(context, view):
+def productseries_review(context, view):
     return 'Review %s %s Details' % (context.product.displayname, context.name)
 
-def series(context, view):
+def productseries(context, view):
     return '%s Release Series: %s' % (
         context.product.displayname, context.displayname)
 

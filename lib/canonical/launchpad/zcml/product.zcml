@@ -69,10 +69,6 @@
             template="../templates/product-portlet-details.pt"
             lp:url="/products/evolution/+portlet-details" />
         <browser:page
-            name="+portlet-branches"
-            template="../templates/product-portlet-branches.pt"
-            lp:url="/products/evolution/+portlet-branches" />
-        <browser:page
             name="+portlet-series"
             template="../templates/product-portlet-series.pt"
             lp:url="/products/evolution/+portlet-series" />
@@ -237,7 +233,12 @@
         <browser:widget
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"
+           extra="tabindex=2"
            width="62" />
+        <browser:widget
+           field="private"
+           class="zope.app.form.browser.CheckBoxWidget"
+           extra="tabindex=3" />
     </browser:addform>
 
     <browser:addform
@@ -254,6 +255,33 @@
     </browser:addform>
 
     <browser:addform
+      name="+linkbounty"
+      for="canonical.launchpad.interfaces.IProduct"
+      schema="canonical.launchpad.interfaces.IProductBounty"
+      class="canonical.launchpad.browser.bounty.BountyLinkView"
+      label="Link Existing Bounty"
+      fields="product bounty"
+      keyword_arguments="product bounty"
+      permission="launchpad.AnyPerson"
+      template="../templates/bounty-link.pt"
+      lp:url="/products/$Product.name/+linkbounty">
+      <browser:widget
+        field="product"
+        class="canonical.widgets.ContextWidget" />
+    </browser:addform>
+
+    <browser:addform
+      name="+addbounty"
+      for="canonical.launchpad.interfaces.IProduct"
+      schema="canonical.launchpad.interfaces.IBounty"
+      label="Register A New Bounty"
+      fields="name title summary usdvalue difficulty description"
+      class="canonical.launchpad.browser.BountyAddView"
+      permission="launchpad.AnyPerson"
+      template="../templates/bounty-add.pt"
+      />
+
+    <browser:addform
         name="+addseries"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IProductSeries"
@@ -261,7 +289,7 @@
         class="canonical.launchpad.browser.ProductSeriesAddView"
         keyword_arguments="name displayname summary"
         permission="launchpad.AnyPerson"
-        template="../templates/series-new.pt"
+        template="../templates/productseries-new.pt"
         lp:url="/products/$Product.name/+addseries">
         <browser:widget
            field="name"

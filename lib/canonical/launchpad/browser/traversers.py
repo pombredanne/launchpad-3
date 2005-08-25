@@ -75,7 +75,10 @@ def traverse_project(project, request, name):
     if name == '+calendar':
         return ICalendarOwner(project).calendar
     else:
-        return project.getProduct(name)
+        try:
+            return project.getProduct(name)
+        except NotFoundError:
+            return None
 
 
 def traverse_product(product, request, name):
@@ -102,13 +105,19 @@ def traverse_product(product, request, name):
             request.setTraversalStack(travstack)
 
             if nextstep.isdigit():
-                bug = getUtility(IBugSet).get(nextstep)
+                try:
+                    bug = getUtility(IBugSet).get(nextstep)
+                except NotFoundError:
+                    return None
                 return _get_task_for_context(bug, product)
 
     elif name == '+calendar':
         return ICalendarOwner(product).calendar
     else:
-        return product.getRelease(name)
+        try:
+            return product.getRelease(name)
+        except NotFoundError:
+            return None
 
     return None
 
@@ -137,10 +146,17 @@ def traverse_distribution(distribution, request, name):
             request.setTraversalStack(travstack)
 
             if nextstep.isdigit():
-                bug = getUtility(IBugSet).get(nextstep)
+                try:
+                    bug = getUtility(IBugSet).get(nextstep)
+                except NotFoundError:
+                    return None
                 return _get_task_for_context(bug, distribution)
     else:
-        return getUtility(ILaunchBag).distribution[name]
+        bag = getUtility(ILaunchBag)
+        try:
+            return bag.distribution[name]
+        except KeyError:
+            return None
 
 def traverse_distrorelease(distrorelease, request, name):
     """Traverse an IDistroRelease."""
@@ -162,7 +178,10 @@ def traverse_distrorelease(distrorelease, request, name):
             request.setTraversalStack(travstack)
 
             if nextstep.isdigit():
-                bug = getUtility(IBugSet).get(nextstep)
+                try:
+                    bug = getUtility(IBugSet).get(nextstep)
+                except NotFoundError:
+                    return None
                 return _get_task_for_context(bug, distrorelease)
 
     elif name == '+lang':
@@ -186,14 +205,18 @@ def traverse_distrorelease(distrorelease, request, name):
             drlangset = getUtility(IDistroReleaseLanguageSet)
             return drlangset.getDummy(distrorelease, lang)
     else:
-        return distrorelease[name]
+        try:
+            return distrorelease[name]
+        except KeyError:
+            return None
 
 
 def _get_task_for_context(bug, context):
     user = getUtility(ILaunchBag).user
     search_params = BugTaskSearchParams(bug=bug, user=user)
     bugtasks = context.searchTasks(search_params)
-    assert bugtasks.count() == 1
+    if bugtasks.count() != 1: # id not found in context. Return a 404.
+        return None
     return bugtasks[0]
 
 

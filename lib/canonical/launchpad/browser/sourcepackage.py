@@ -60,8 +60,7 @@ def traverseSourcePackage(sourcepackage, request, name):
         return potemplateset.getSubset(
                    distrorelease=sourcepackage.distrorelease,
                    sourcepackagename=sourcepackage.sourcepackagename)
-    else:
-        raise KeyError, 'No such suburl for Source Package: %s' % name
+    return None
 
 
 class SourcePackageFilebugView(SQLObjectAddView):
@@ -292,7 +291,7 @@ class SourcePackageView:
 
     def templateviews(self):
         return [POTemplateView(template, self.request)
-                for template in self.context.potemplates]
+                for template in self.context.currentpotemplates]
 
     def potemplatenames(self):
         potemplatenames = []

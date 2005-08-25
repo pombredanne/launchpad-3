@@ -65,7 +65,7 @@ class IBugTask(IHasDateCreated):
         title=_('Severity'), vocabulary='BugTaskSeverity',
         default=dbschema.BugTaskSeverity.NORMAL)
     assignee = Choice(
-        title=_('Assignee'), required=False, vocabulary='ValidAssignee')
+        title=_('Assigned to:'), required=False, vocabulary='ValidAssignee')
     binarypackagename = Choice(
         title=_('Binary PackageName'), required=False,
         vocabulary='BinaryPackageName')
@@ -84,8 +84,8 @@ class IBugTask(IHasDateCreated):
     maintainer_displayname = TextLine(
         title=_("Maintainer"), required=True, readonly=True)
 
-    context = Attribute("What the task's location is")
-    contextname = Attribute("Description of the task's location.")
+    target = Attribute("The software in which this bug should be fixed")
+    targetname = Attribute("The short, descriptive name of the target")
     title = Attribute("The title used for a task's Web page.")
 
     def setStatusFromDebbugs(status):

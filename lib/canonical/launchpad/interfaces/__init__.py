@@ -31,6 +31,7 @@ from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
 from canonical.launchpad.interfaces.cveref import *
 from canonical.launchpad.interfaces.distribution import *
+from canonical.launchpad.interfaces.distributionbounty import *
 from canonical.launchpad.interfaces.distroarchrelease import *
 from canonical.launchpad.interfaces.distrorelease import *
 from canonical.launchpad.interfaces.distroreleaselanguage import *
@@ -75,9 +76,11 @@ from canonical.launchpad.interfaces.poselection import *
 from canonical.launchpad.interfaces.posubmission import *
 from canonical.launchpad.interfaces.processor import *
 from canonical.launchpad.interfaces.product import *
+from canonical.launchpad.interfaces.productbounty import *
 from canonical.launchpad.interfaces.productrelease import *
 from canonical.launchpad.interfaces.productseries import *
 from canonical.launchpad.interfaces.project import *
+from canonical.launchpad.interfaces.projectbounty import *
 from canonical.launchpad.interfaces.publishedpackage import *
 from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.pyarch import *

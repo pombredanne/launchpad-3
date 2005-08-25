@@ -37,9 +37,10 @@ class IGPGKeySet(Interface):
             algorithm, active=True):
         """Create a new GPGKey pointing to the given Person."""
 
-    def get(id, default=None):
+    def get(key_id, default=None):
         """Return the GPGKey object for the given id.
-        Return the given default if there's now object with the given id.
+
+        Return the given default if there's no object with the given id.
         """
 
     def getByFingerprint(fingerprint, default=None):
@@ -47,13 +48,19 @@ class IGPGKeySet(Interface):
         inactive ones.
         """
 
-    def deactivateGpgKey(keyid):
-        """Deactivate a Key inside Launchpad Context """
+    def deactivateGPGKey(key_id):
+        """Deactivate a Key inside Launchpad Context.
 
-    def activateGpgKey(keyid):
-        """Reactivate a Key inside Launchpad Context """
+        Returns the modified key or None if the key wasn't found.
+        """
+
+    def activateGPGKey(key_id):
+        """Reactivate a Key inside Launchpad Context.
+
+        Returns the modified key or None if the key wasn't found.
+        """
         
-    def getGpgKeys(ownerid=None, active=True):
+    def getGPGKeys(ownerid=None, active=True):
         """Return GPG keys, optionally for a given owner and or a given
         status.
         """ 

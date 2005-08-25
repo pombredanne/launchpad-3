@@ -1,0 +1,25 @@
+
+Now, let's subscribe to the Bounty. First, we want to display the
+"subscribe" page.
+
+  >>> print http(r"""
+  ... GET /bounties/mozilla-svg/+subscribe HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Subscribe to Bounty...
+
+Now, let's POST our subscription. The POST should be directed to the
+bounty page itself, and we should see a message.
+
+  >>> print http(r"""
+  ... POST /bounties/mozilla-svg/ HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 19
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... subscribe=Subscribe""")
+  HTTP/1.1 200 Ok
+  ...Your subscription to this bounty has been updated...
+
+

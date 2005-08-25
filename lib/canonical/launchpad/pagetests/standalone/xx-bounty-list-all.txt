@@ -1,0 +1,9 @@
+
+The /bounties/ page should show all registered bounties.
+
+  >>> print http(r"""
+  ... GET /bounties HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Launchpad Bounties...
+

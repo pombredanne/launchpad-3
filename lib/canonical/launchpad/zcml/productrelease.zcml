@@ -42,7 +42,6 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductRelease"
-        class="canonical.launchpad.browser.ProductReleaseView"
         permission="zope.Public">
         <browser:page
             name="+index"
@@ -77,7 +76,7 @@
       name="+edit"
       for="canonical.launchpad.interfaces.IProductRelease"
       schema="canonical.launchpad.interfaces.IProductRelease"
-      class="canonical.launchpad.browser.productrelease.ProductReleaseView"
+      class="canonical.launchpad.browser.productrelease.ProductReleaseEditView"
       label="Edit Product Release Details:"
       fields="title summary description changelog"
       permission="launchpad.Edit"

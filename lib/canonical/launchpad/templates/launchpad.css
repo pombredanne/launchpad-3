@@ -392,6 +392,9 @@ ul.alert>li, li.alert {
 ul.architecture>li, li.architecture {
   list-style-image: url(/++resource++architecture);
 }
+ul.bounty>li, li.bounty {
+  list-style-image: url(/++resource++bounty);
+}
 ul.bug>li, li.bug {
   list-style-image: url(/++resource++bug);
 }
@@ -1042,6 +1045,18 @@ table.sortable a.sortheader {
 
 table.sortable img.sortarrow {
     padding-left: 2px;
+}
+
+th.ascending {
+  background-image: url(/++resource++arrowDown.gif);
+  background-position: center right;
+  background-repeat: no-repeat;
+}
+
+th.descending {
+  background-image: url(/++resource++arrowUp.gif);
+  background-position: center right;
+  background-repeat: no-repeat;
 }
 
 /*

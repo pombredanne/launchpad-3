@@ -26,6 +26,7 @@ from canonical.launchpad.interfaces import (
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, ImportStatus)
 from canonical.launchpad.database.product import Product
+from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.cal import Calendar
 
 
@@ -85,6 +86,14 @@ class Project(SQLBase):
 
     def getProduct(self, name):
         return Product.selectOneBy(projectID=self.id, name=name)
+
+    def ensureRelatedBounty(self, bounty):
+        """See IProject."""
+        for curr_bounty in self.bounties:
+            if bounty.id == curr_bounty.id:
+                return None
+        linker = ProjectBounty(project=self, bounty=bounty)
+        return None
 
 
 class ProjectSet:

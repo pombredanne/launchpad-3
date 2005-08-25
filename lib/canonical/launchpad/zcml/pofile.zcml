@@ -43,14 +43,11 @@
             name="+index"
             template="../templates/pofile-index.pt"
             lp:url="/products/$Product.name/$POTemplate.name/$POFile.language"/>
-        <browser:page
-            name="+barchart"
-            template="../templates/pofile-barchart.pt" />
 
         <!-- POFile Portlets -->
         <browser:page
             name="+portlet-about"
-            template="../templates/portlet-rosetta-about.pt" />
+            template="../templates/pofile-portlet-about.pt" />
         <browser:page
             name="+portlet-actions"
             template="../templates/pofile-portlet-actions.pt" />
@@ -65,7 +62,7 @@
             template="../templates/pofile-portlet-translators.pt" />
         <browser:page
             name="+portlet-quickhelp"
-            template="../templates/portlet-rosetta-quickhelp.pt" />
+            template="../templates/pofile-portlet-quickhelp.pt" />
         <browser:page
             name="+portlet-stats"
             template="../templates/pofile-portlet-stats.pt" />

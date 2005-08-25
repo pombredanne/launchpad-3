@@ -16,6 +16,7 @@
     <resource name="launchpad.png" file="../images/launchpad.png" />
 
     <!-- General Images -->
+    <resource name="bounty" file="../images/bounty.jpg" />
     <resource name="arrowBottom.gif" file="../images/arrowBottom.gif" />
     <resource name="arrowDown.gif" file="../images/arrowDown.gif" />
     <resource name="arrowDownAlternative.gif"

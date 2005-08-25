@@ -7,29 +7,24 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-subscribers" />
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-subscribers" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
-    <div tal:replace="structure context/@@+portlet-relateds" />
+  <div tal:replace="structure context/@@+portlet-actions" />
+  <div tal:replace="structure context/@@+portlet-relateds" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
-      <p
-        tal:repeat="notice view/notices"
-        tal:content="notice"
-        class="portalMessage"
-      >Notification Message</p>
 
-      <h2>
-        Description
-        <a href="+edit"><img 
-          alt="[Edit]"
-          src="/++resource++edit.gif"
-          title="Lets you edit the description."
-        ></a>
-      </h2>
+    <h1>Bounty Overview</h1>
+
+      <p tal:repeat="notice view/notices"
+         tal:content="notice"
+         class="portalMessage"
+         >Notification Message</p>
+
     <p class="documentDescription" tal:content="context/summary">
         $Bounty.summary goes here. This should be quite short,
         just a single paragraph of text really, giving a summary of

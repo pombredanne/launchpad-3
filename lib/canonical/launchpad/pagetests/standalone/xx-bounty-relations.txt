@@ -1,0 +1,68 @@
+
+Relations
+=========
+
+Now, let's look at how another bounty is related to a product, a
+distribution, and a project. We'll look at foomatic-widgets. We can see that
+it mentions Ubuntu, Mozilla Firefox, and the Mozilla Project.
+
+  >>> print http(r"""
+  ... GET /bounties/foomatic-widgets/ HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...ubuntu...
+  ...Mozilla Firefox...
+  ...the Mozilla Project...
+
+
+So now let's also make sure that we have a relateds portlet for a bounty.
+
+  >>> print http(r"""
+  ... GET /bounties/foomatic-widgets/+portlet-relateds HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+
+And one for details.
+
+  >>> print http(r"""
+  ... GET /bounties/foomatic-widgets/+portlet-details HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+
+And a portlet for subscribers.
+
+  >>> print http(r"""
+  ... GET /bounties/foomatic-widgets/+portlet-subscribers HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+
+Just for fun we will check the reverse, we will check the bounties portlets
+on Ubuntu, Mozilla Firefox and the Mozilla Project.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+portlet-bounties HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...foomatic-widgets...
+
+
+  >>> print http(r"""
+  ... GET /products/firefox/+portlet-bounties HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...foomatic-widgets...
+
+
+  >>> print http(r"""
+  ... GET /projects/mozilla/+portlet-bounties HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...foomatic-widgets...
+
+

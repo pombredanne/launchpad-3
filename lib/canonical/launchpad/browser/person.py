@@ -480,20 +480,20 @@ class PersonView:
                 % (self.context.preferredemail.email, key.displayname))
 
     def deactivate_gpg(self):
-        keyids = self.request.form.get('DEACTIVATE_GPGKEY')
+        key_ids = self.request.form.get('DEACTIVATE_GPGKEY')
         
-        if keyids is not None:
+        if key_ids is not None:
             comment = 'Key(s):<code>'
             
             # verify if we have multiple entries to deactive
-            if not isinstance(keyids, list):
-                keyids = [keyids]
+            if not isinstance(key_ids, list):
+                key_ids = [key_ids]
 
             gpgkeyset = getUtility(IGPGKeySet)
 
-            for keyid in keyids:
-                gpgkeyset.deactivateGpgKey(keyid)
-                gpgkey = gpgkeyset.get(keyid)
+            for key_id in key_ids:
+                gpgkeyset.deactivateGPGKey(key_id)
+                gpgkey = gpgkeyset.get(key_id)
                 comment += ' %s' % gpgkey.displayname
 
             comment += '</code> deactivated'
@@ -525,21 +525,21 @@ class PersonView:
         return 'No Token(s) selected for deletion.'
 
     def revalidate_gpg(self):
-        keyids = self.request.form.get('REVALIDATE_GPGKEY')
+        key_ids = self.request.form.get('REVALIDATE_GPGKEY')
 
-        if keyids is not None:
+        if key_ids is not None:
             found = []
             notfound = []
             # verify if we have multiple entries to deactive
-            if not isinstance(keyids, list):
-                keyids = [keyids]
+            if not isinstance(key_ids, list):
+                key_ids = [key_ids]
                 
             gpghandler = getUtility(IGPGHandler)
             keyset = getUtility(IGPGKeySet)
             
-            for keyid in keyids:
+            for key_id in key_ids:
                 # retrieve key info from LP
-                gpgkey = keyset.get(keyid)
+                gpgkey = keyset.get(key_id)
                 result, key = gpghandler.retrieveKey(gpgkey.fingerprint)
                 if not result:
                     notfound.append(gpgkey.fingerprint) 
@@ -609,7 +609,7 @@ class PersonView:
                                   fingerprint=key.fingerprint)
 
         appurl = self.request.getApplicationURL()
-        token.sendGpgValidationRequest(appurl, key, encrypt=True)
+        token.sendGPGValidationRequest(appurl, key, encrypt=True)
 
 
 class TeamJoinView(PersonView):

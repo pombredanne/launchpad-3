@@ -25,6 +25,12 @@
       <li class="search">
         <a href="+packages">Search Packages</a>
       </li>
+      <li class="add">
+        <a href="+linkbounty">Link Existing Bounty</a>
+      </li>
+      <li class="add">
+        <a href="+addbounty">Register New Bounty</a>
+      </li>
       <li class="add"
           tal:condition="context/required:launchpad.Admin">
         <a href="+add">Add New Distribution Release</a>

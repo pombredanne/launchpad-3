@@ -8,6 +8,8 @@ import sets
 from zope.interface import implements
 from zope.component import getUtility
 
+from sqlobject import SQLObjectNotFound
+
 from canonical.database.sqlbase import (quote, sqlvalues,
     flush_database_updates)
 from canonical.database.constants import UTC_NOW
@@ -189,12 +191,16 @@ class SourcePackage:
             distroreleaseID=self.distrorelease.id,
             sourcepackagenameID=self.sourcepackagename.id)
         result = list(result)
-        result.sort(key=lambda x: x.potemplatename.name)
-        return result
+        return sorted(result, key=lambda x: x.potemplatename.name)
 
     @property
-    def potemplatecount(self):
-        return len(self.potemplates)
+    def currentpotemplates(self):
+        result = POTemplate.selectBy(
+            distroreleaseID=self.distrorelease.id,
+            sourcepackagenameID=self.sourcepackagename.id,
+            iscurrent=True)
+        result = list(result)
+        return sorted(result, key=lambda x: x.potemplatename.name)
 
     @property
     def product(self):
@@ -417,7 +423,7 @@ class SourcePackageSet(object):
     def __getitem__(self, name):
         try:
             spname = SourcePackageName.byName(name)
-        except IndexError:
+        except SQLObjectNotFound:
             raise KeyError, 'No source package name %s' % name
         return SourcePackage(sourcepackagename=spname,
                              distrorelease=self.distrorelease)

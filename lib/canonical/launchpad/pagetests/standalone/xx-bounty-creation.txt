@@ -1,0 +1,90 @@
+Creating Bounties
+=================
+
+We should be able to create a bounty directly, without any connected product
+or project or distribution. Note this is a bad idea.
+
+  >>> print http(r"""
+  ... GET /bounties/+new HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Now let's create a bounty for the Firefox product.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+addbounty HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 1948
+  ... Content-Type: multipart/form-data; boundary=---------------------------33938214415580350852058287477
+  ... 
+  ... -----------------------------33938214415580350852058287477
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... new-ff-bounty
+  ... -----------------------------33938214415580350852058287477
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... fs dsdfkjhsdlkhjslkjdf sdlkjf slkjd hfsdhfsdh
+  ... -----------------------------33938214415580350852058287477
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... hfs lskjdhf zlkjdshf zslkdjlkj hzdl hflz hlhvlkjc hvlkjhdsflkhdsf lskd lkjsz hlkjds flzkshflkjsz lkjsz hlkjz flkjszh lkfzhlkz lkjzs flkjsz hflksz hlkzs hflkj hdszlkjhs dlkfhsdlkjh sdlkjh slkjs hfdlkjs hfdlkjs hdlkshlkj hdlksjhdslkjh fslkjhslkdhflkds hlkjds hfslkjd hflksjhslkjh lkjd sd s.s sd fhsk s sdfs.
+  ... -----------------------------33938214415580350852058287477
+  ... Content-Disposition: form-data; name="field.usdvalue"
+  ... 
+  ... 230.00
+  ... -----------------------------33938214415580350852058287477
+  ... Content-Disposition: form-data; name="field.difficulty"
+  ... 
+  ... Difficult
+  ... -----------------------------33938214415580350852058287477
+  ... Content-Disposition: form-data; name="field.difficulty-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------33938214415580350852058287477
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... kjsd hkjs hfksd hfksdj hfkjds hfskdj hskdjhf skdhf skdhf sdkj skj hfdkjsdh fksjd hfkjshd fkjshfdkshd fksksjd hfksjd hfkshfdksjdhf ksjhsd fkjhskjhsdkfh skdhfksdhfksdjhf kks hdfkjshd ksj hks ksjdhfks hks ks kjdshfksjdh fkjsh ksj hfkshf skjhd ksjh fks hdfkshd fksjhkjshd fks h.
+  ... 
+  ... sdf lksjflskjdflks dlkfsdlkf slusdou s shd fkjshdfkjshdf kskj hfkskjs hksjhfd kshflzkjdhfkhvllkjfd vlnb belk i  d f,mbd,mbelkh lv lkdjh lk jkmd,ks  jhlkjh lkcj hfdkjh skjh kjds fkjdshf skdjhf lkuvcyiuyvlkejre ,nb ,m siu yvdyieyerkjekjfdkksd skdjh dskh kdsjhfkjsd.
+  ... -----------------------------33938214415580350852058287477
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------33938214415580350852058287477--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../bounties/new-ff-bounty
+  ...
+
+And let's view it, making sure it is linked to Firefox.
+
+  >>> print http(r"""
+  ... GET /bounties/new-ff-bounty HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Mozilla Firefox...
+
+
+OK, we should also be able to see the +addbounty page on a Project.
+
+  >>> print http(r"""
+  ... GET /projects/mozilla/+addbounty HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+And lastly, on a Distribution.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+addbounty HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+

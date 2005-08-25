@@ -76,12 +76,13 @@ class ProductSeries(SQLBase):
     def potemplates(self):
         result = POTemplate.selectBy(productseriesID=self.id)
         result = list(result)
-        result.sort(key=lambda x: x.potemplatename.name)
-        return result
+        return sorted (result, key=lambda x: x.potemplatename.name)
 
     @property
-    def potemplatecount(self):
-        return len(self.potemplates)
+    def currentpotemplates(self):
+        result = POTemplate.selectBy(productseriesID=self.id, iscurrent=True)
+        result = list(result)
+        return sorted(result, key=lambda x: x.potemplatename.name)
 
     def getPOTemplate(self, name):
         template = POTemplate.selectOne(
@@ -90,7 +91,7 @@ class ProductSeries(SQLBase):
             "POTemplateName.name = %s" % sqlvalues(self.id, name),
             clauseTables=['ProductRelease', 'POTemplateName'])
 
-        if template is None: 
+        if template is None:
             raise NotFoundError(name)
         return template
 

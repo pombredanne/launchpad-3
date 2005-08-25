@@ -350,6 +350,37 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
                                                 'test@canonical.com')
         self.assertEqual(userDict, userDict2)
         
+    def testTeamDict(self):
+        # The user dict from a V2 storage should include a 'teams' element with
+        # a list of team dicts, one for each team the user is in, including
+        # the user.
+
+        # Get a user dict
+        storage = DatabaseUserDetailsStorageV2(None)
+        userDict = storage._getUserInteraction(self.cursor, 'mark@hbd.com')
+
+        # Sort the teams by id, they may be returned in any order.
+        teams = sorted(userDict['teams'], key=lambda teamDict: teamDict['id'])
+
+        # Mark should be in his own team, Ubuntu Team, Launchpad Administrators
+        # and testing Spanish team.
+        self.assertEqual(
+            [{'displayname': u'Mark Shuttleworth', 'id': 1, 'name': u'sabdfl'},
+             {'displayname': u'Ubuntu Team', 'id': 17, 'name': u'name17'},
+             {'displayname': u'Launchpad Administrators',
+              'id': 25,
+              'name': u'admins'},
+             {'displayname': u'testing Spanish team',
+              'id': 53,
+              'name': u'testing-spanish-team'},],
+            teams
+        )
+
+        # The dict returned by authUser should be identical.
+        userDict2 = storage._authUserInteraction(self.cursor, 
+                                                 'mark@hbd.com', 'test')
+        self.assertEqual(userDict, userDict2)
+
 
 def test_suite():
     suite = unittest.TestSuite()

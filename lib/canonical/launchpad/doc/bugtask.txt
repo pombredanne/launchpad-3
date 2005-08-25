@@ -121,25 +121,25 @@ zope.exceptions.NotFoundError:
       ...
     NotFoundError: 'BugTask with ID -1 does not exist'
 
-Each task has a "contextname", a string describing the site of the
+Each task has a "targetname", a string describing the site of the
 task. It concatenates the display names of the distribution,
 
     >>> bugtask = bugtaskset.get(1)
-    >>> bugtask.contextname
+    >>> bugtask.targetname
     u'upstream ubuntu'
 
 distro release, or product;
 
     >>> bugtask = bugtaskset.get(2)
-    >>> bugtask.contextname
+    >>> bugtask.targetname
     u'upstream firefox'
 
 the name of the source package (if any); and the name of the binary
 package (but only if it's named differently from the source
 package).
 
-Let's thoroughly test BugTask.contextname.  We'll set up a dummy bugtask
-class into which we put a copy of the contextname method, so we can test
+Let's thoroughly test BugTask.targetname.  We'll set up a dummy bugtask
+class into which we put a copy of the targetname method, so we can test
 it in isolation.
 
     >>> from canonical.launchpad.database import BugTask
@@ -152,7 +152,7 @@ it in isolation.
     ...
     ...     # This next line is a hack to take a copy of the method and
     ...     # add it to this class.
-    ...     contextname = BugTask.contextname.fget
+    ...     targetname = BugTask.targetname.fget
     >>> class NamedThing:
     ...     def __init__(self, name):
     ...         self.name = '[%s.name]' % name
@@ -162,7 +162,7 @@ When all the important attributes are None, then the bugtask is in an invalid
 state.
 
     >>> bugtask = DummyBugTask()
-    >>> bugtask.contextname()
+    >>> bugtask.targetname()
     Traceback (most recent call last):
     ...
     AssertionError
@@ -170,7 +170,7 @@ state.
 Product alone:
 
     >>> bugtask.product = NamedThing('product')
-    >>> bugtask.contextname()
+    >>> bugtask.targetname()
     'upstream [product.name]'
 
 Put things back the way they were.
@@ -180,19 +180,19 @@ Put things back the way they were.
 Distribution alone.
 
     >>> bugtask.distribution = NamedThing('distribution')
-    >>> bugtask.contextname()
+    >>> bugtask.targetname()
     '[distribution.displayname]'
 
 Distribution and sourcepackagename.
 
     >>> bugtask.sourcepackagename = NamedThing('spn')
-    >>> bugtask.contextname()
+    >>> bugtask.targetname()
     '[distribution.displayname] [spn.name]'
 
 Distribution and sourcepackagename and binarypackagename.
 
     >>> bugtask.binarypackagename = NamedThing('bpn')
-    >>> bugtask.contextname()
+    >>> bugtask.targetname()
     '[distribution.displayname] [spn.name] [bpn.name]'
 
 Reset the state of our bugtask.
@@ -205,19 +205,19 @@ Just a distrorelease.
 
     >>> bugtask.distrorelease = NamedThing('distrorelease')
     >>> bugtask.distrorelease.distribution = NamedThing('distribution')
-    >>> bugtask.contextname()
+    >>> bugtask.targetname()
     '[distribution.displayname] [distrorelease.displayname]'
 
 Distrorelease and sourcepackagename.
 
     >>> bugtask.sourcepackagename = NamedThing('spn')
-    >>> bugtask.contextname()
+    >>> bugtask.targetname()
     '[distribution.displayname] [distrorelease.displayname] [spn.name]'
 
 Distrorelease, sourcepackagename and binarypackagename.
 
     >>> bugtask.binarypackagename = NamedThing('bpn')
-    >>> bugtask.contextname()
+    >>> bugtask.targetname()
     '[distribution.displayname] [distrorelease.displayname] [spn.name] [bpn.name]'
 
 Note that we haven't tested any combinations that shouldn't occur, except
@@ -591,7 +591,7 @@ Let's just make sure that the tasks on bug_one sort correctly.
 
     >>> tasks = bug_one.bugtasks
     >>> for task in tasks:
-    ...     print task.contextname
+    ...     print task.targetname
     upstream evolution
     upstream firefox
     upstream foo-product

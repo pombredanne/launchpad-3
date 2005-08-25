@@ -15,6 +15,7 @@ from canonical.functional import FunctionalDocFileSuite
 from canonical.launchpad.ftests.harness import _disconnect_sqlos
 from canonical.launchpad.ftests.harness import _reconnect_sqlos
 from canonical.librarian.ftests.harness import LibrarianTestSetup
+from canonical.launchpad.ftests import logout
 
 here = os.path.dirname(os.path.realpath(__file__))
 
@@ -23,6 +24,7 @@ _db_is_setup = False
 class StartStory(unittest.TestCase):
     def setUp(self):
         """Setup the database"""
+        logout() # Other tests are leaving crud :-(
         LaunchpadFunctionalTestSetup().setUp()
         LibrarianTestSetup().setUp()
         global _db_is_setup

@@ -11,7 +11,7 @@
             permission="zope.Public"
             interface="canonical.launchpad.interfaces.IEditPOTemplate"
             set_attributes="potemplatename description header iscurrent
-                            owner productrelease distrorelease
+                            owner productseries distrorelease
                             sourcepackagename sourcepackageversion
                             binarypackagename languagepack path filename"
             />
@@ -57,7 +57,7 @@
         />
         <browser:page
             name="+portlet-relateds"
-            template="../templates/portlet-potemplate-relateds.pt"
+            template="../templates/potemplate-portlet-relateds.pt"
         />
         <browser:page
             name="+portlet-for"

@@ -101,7 +101,6 @@ class Person(SQLBase):
     subscribedBounties = RelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
-    gpgkeys = MultipleJoin('GPGKey', joinColumn='owner', orderBy='id')
     signedcocs = MultipleJoin('SignedCodeOfConduct', joinColumn='owner')
 
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
@@ -579,17 +578,17 @@ class Person(SQLBase):
         # Use set to remove duplicated tokens, I'd appreciate something
         # SQL DISTINCT-like functionality available for sqlobject
         return sets.Set([token.fingerprint for token in
-                         logintokenset.getPendingGpgKeys(requesterid=self.id)])
+                         logintokenset.getPendingGPGKeys(requesterid=self.id)])
 
     @property
     def inactivegpgkeys(self):
         gpgkeyset = getUtility(IGPGKeySet)
-        return gpgkeyset.getGpgKeys(ownerid=self.id, active=False)
+        return gpgkeyset.getGPGKeys(ownerid=self.id, active=False)
 
     @property
     def gpgkeys(self):
         gpgkeyset = getUtility(IGPGKeySet)
-        return gpgkeyset.getGpgKeys(ownerid=self.id)
+        return gpgkeyset.getGPGKeys(ownerid=self.id)
 
     @property
     def wiki(self):
@@ -680,7 +679,7 @@ class PersonSet:
 
     def topPeople(self):
         """See IPersonSet."""
-        return Person.select('password IS NOT NULL', orderBy='-karma')
+        return Person.select('password IS NOT NULL', orderBy='-karma')[:5]
 
     def newTeam(self, **kw):
         """See IPersonSet."""
@@ -1118,40 +1117,44 @@ class GPGKeySet:
 
     def new(self, ownerID, keyid, fingerprint, keysize,
             algorithm, active=True):
-        # add new key in DB
+        """See IGPGKeySet"""
         return GPGKey(owner=ownerID, keyid=keyid,
                       fingerprint=fingerprint, keysize=keysize,
                       algorithm=algorithm, active=active)
 
-    def get(self, id, default=None):
+    def get(self, key_id, default=None):
+        """See IGPGKeySet"""
         try:
-            return GPGKey.get(id)
+            return GPGKey.get(key_id)
         except SQLObjectNotFound:
             return default
 
     def getByFingerprint(self, fingerprint, default=None):
+        """See IGPGKeySet"""
         result = GPGKey.selectOneBy(fingerprint=fingerprint)
         if result is None:
             return default
         return result
 
-    def deactivateGpgKey(self, keyid):
+    def deactivateGPGKey(self, key_id):
+        """See IGPGKeySet"""
         try:
-            key = GPGKey.get(keyid)
+            key = GPGKey.get(key_id)
         except SQLObjectNotFound:
             return None
         key.active = False
         return key
 
-    def activateGpgKey(self, keyid):
+    def activateGPGKey(self, key_id):
+        """See IGPGKeySet"""
         try:
-            key = GPGKey.get(keyid)
+            key = GPGKey.get(key_id)
         except SQLObjectNotFound:
             return None
         key.active = True
         return key
     
-    def getGpgKeys(self, ownerid=None, active=True):
+    def getGPGKeys(self, ownerid=None, active=True):
         """See IGPGKeySet"""
         if active is False:
             query =('active=false AND fingerprint NOT IN '
