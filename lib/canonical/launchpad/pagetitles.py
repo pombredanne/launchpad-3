@@ -208,7 +208,7 @@ bugtrackers_add = 'Register External Bugtracker in Malone'
 
 bugtrackers_index = 'Malone-Registered Bug Trackers'
 
-calendar = ContextTitle('%s')
+calendar_index = ContextTitle('%s')
 
 calendar_event_addform = ContextTitle('Add Event to Calendar "%s"')
 
