@@ -67,6 +67,11 @@ from canonical.launchpad.database.bountysubscription import *
 from canonical.launchpad.database.message import *
 from canonical.launchpad.database.queue import *
 from canonical.launchpad.database.country import *
+from canonical.launchpad.database.specification import *
+from canonical.launchpad.database.specificationbug import *
+from canonical.launchpad.database.specificationdependency import *
+from canonical.launchpad.database.specificationreview import *
+from canonical.launchpad.database.specificationsubscription import *
 from canonical.launchpad.database.spokenin import *
 from canonical.launchpad.database.cal import *
 from canonical.launchpad.database.logintoken import *

@@ -40,6 +40,14 @@
         path_expression="string:+bugs/${bug/id}"
         attribute_to_parent="distrorelease" />
 
+    <browser:pages
+      for="canonical.launchpad.interfaces.IBugTask"
+      permission="zope.Public">
+      <browser:page
+        name="+listing-detailed"
+        template="../templates/bugtask-listing-detailed.pt" />
+    </browser:pages>
+
     <!-- BugTaskSet -->
     <content class="canonical.launchpad.database.BugTaskSet">
       <allow interface="canonical.launchpad.interfaces.IBugTaskSet" />
@@ -112,7 +120,7 @@
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bug.id/+upstreamtask">
-        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
     <browser:editform
@@ -166,7 +174,7 @@
         lp:url="malone/bugs/$Bug.id/+distrotask">
         <browser:widget
           field="owner"
-          class="canonical.widgets.OwnerWidget"
+          class="canonical.widgets.HiddenUserWidget"
           />
     </browser:addform>
 
@@ -228,7 +236,7 @@
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bug.id/tasks/+distroreleasetask">
-        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
     <browser:editform

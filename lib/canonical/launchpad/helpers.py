@@ -17,6 +17,7 @@ import re
 import sha
 import tarfile
 import time
+import urllib
 import warnings
 from StringIO import StringIO
 from select import select
@@ -325,7 +326,6 @@ class Snapshot:
                 setattr(self, name, getattr(ob, name))
         if providing is not None:
             directlyProvides(self, providing)
-
 
 def get_attribute_names(ob):
     """Gets all the attribute names ob provides.

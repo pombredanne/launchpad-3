@@ -108,3 +108,8 @@ class BountySet:
             ownerID=owner.id,
             reviewerID=reviewer.id)
 
+    @property
+    def top_bounties(self):
+        """See IBountySet."""
+        return Bounty.select(orderBy=['-usdvalue'])[:5]
+

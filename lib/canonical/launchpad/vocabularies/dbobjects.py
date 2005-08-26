@@ -12,29 +12,32 @@ __all__ = [
     'IHugeVocabulary',
     'SQLObjectVocabularyBase',
     'NamedSQLObjectVocabulary',
-    'BountyVocabulary',
     'BinaryPackageNameVocabulary',
+    'BinaryPackageVocabulary',
+    'BountyVocabulary',
+    'BugTrackerVocabulary',
+    'BugWatchVocabulary',
+    'DistributionVocabulary',
+    'DistroReleaseVocabulary',
+    'FilteredDistroReleaseVocabulary',
+    'FilteredProductSeriesVocabulary',
+    'LanguageVocabulary',
+    'MilestoneVocabulary',
+    'PackageReleaseVocabulary',
+    'PersonAccountToMergeVocabulary',
+    'POTemplateNameVocabulary',
+    'ProductReleaseVocabulary',
+    'ProductSeriesVocabulary',
     'ProductVocabulary',
     'ProjectVocabulary',
-    'BinaryPackageVocabulary',
-    'BugTrackerVocabulary',
-    'LanguageVocabulary',
+    'SchemaVocabulary',
+    'SourcePackageNameVocabulary',
+    'SpecificationVocabulary',
+    'SpecificationDependenciesVocabulary',
     'TranslationGroupVocabulary',
-    'PersonAccountToMergeVocabulary',
     'ValidPersonOrTeamVocabulary',
     'ValidTeamMemberVocabulary',
     'ValidTeamOwnerVocabulary',
-    'ProductReleaseVocabulary',
-    'ProductSeriesVocabulary',
-    'FilteredProductSeriesVocabulary',
-    'MilestoneVocabulary',
-    'BugWatchVocabulary',
-    'PackageReleaseVocabulary',
-    'SourcePackageNameVocabulary',
-    'DistributionVocabulary',
-    'DistroReleaseVocabulary',
-    'POTemplateNameVocabulary',
-    'SchemaVocabulary',
     ]
 
 from zope.component import getUtility
@@ -51,7 +54,8 @@ from canonical.launchpad.database import (
     Distribution, DistroRelease, Person, SourcePackageRelease,
     SourcePackageName, BinaryPackage, BugWatch, BinaryPackageName, Language,
     Milestone, Product, Project, ProductRelease, ProductSeries,
-    TranslationGroup, BugTracker, POTemplateName, Schema, Bounty)
+    TranslationGroup, BugTracker, POTemplateName, Schema, Bounty,
+    Specification)
 from canonical.launchpad.interfaces import (
     ILaunchBag, ITeam, ITeamMembershipSubset, IPersonSet, IEmailAddressSet)
 
@@ -611,22 +615,40 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
                 yield self._toTerm(o)
 
 
+class FilteredDistroReleaseVocabulary(SQLObjectVocabularyBase):
+    """Describes the releases of a particular distribution."""
+    _table = DistroRelease
+    _orderBy = 'version'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(
+            obj, obj.id, obj.distribution.name + " " + obj.name)
+
+    def __iter__(self):
+        kw = {}
+        if self._orderBy:
+            kw['orderBy'] = self._orderBy
+        launchbag = getUtility(ILaunchBag)
+        if launchbag.distribution:
+            distribution = launchbag.distribution
+            for distrorelease in self._table.selectBy(
+                distributionID=distribution.id, **kw):
+                yield self._toTerm(distrorelease)
+
+
 class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
     """Describes ProductSeries of a particular product."""
     _table = ProductSeries
-    _orderBy = 'product'
+    _orderBy = ['product', 'name']
 
     def _toTerm(self, obj):
         return SimpleTerm(
             obj, obj.id, obj.product.name + " " + obj.name)
 
     def __iter__(self):
-        kw = {}
-        if self._orderBy:
-            kw['orderBy'] = self._orderBy
-        if self.context.product:
-            product = self.context.product
-            for series in self._table.selectBy(productID=product.id, **kw):
+        launchbag = getUtility(ILaunchBag)
+        if launchbag.product is not None:
+            for series in launchbag.product.serieslist:
                 yield self._toTerm(series)
 
 
@@ -638,17 +660,73 @@ class MilestoneVocabulary(NamedSQLObjectVocabulary):
         return SimpleTerm(obj, obj.name, obj.name)
 
     def __iter__(self):
-        product = getUtility(ILaunchBag).product
+        launchbag = getUtility(ILaunchBag)
+        product = launchbag.product
         if product is not None:
             target = product
 
-        distribution = getUtility(ILaunchBag).distribution
+        distribution = launchbag.distribution
         if distribution is not None:
             target = distribution
 
         if target is not None:
             for ms in target.milestones:
                 yield SimpleTerm(ms, ms.name, ms.name)
+
+
+class SpecificationVocabulary(NamedSQLObjectVocabulary):
+    """List specifications for the current product or distribution in
+    ILaunchBag, EXCEPT for the current spec in LaunchBag if one exists.
+    """
+
+    _table = Specification
+    _orderBy = 'name'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.name)
+
+    def __iter__(self):
+        launchbag = getUtility(ILaunchBag)
+        product = launchbag.product
+        if product is not None:
+            target = product
+
+        distribution = launchbag.distribution
+        if distribution is not None:
+            target = distribution
+
+        if target is not None:
+            for spec in target.specifications:
+                # we will not show the current specification in the
+                # launchbag
+                if spec == launchbag.specification:
+                    continue
+                # we will not show a specification that is blocked on the
+                # current specification in the launchbag. this is because
+                # the widget is currently used to select new dependencies,
+                # and we do not want to introduce circular dependencies.
+                if launchbag.specification is not None:
+                    if spec in launchbag.specification.all_blocked():
+                        continue
+                yield SimpleTerm(spec, spec.name, spec.title)
+
+
+class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
+    """List specifications on which the current specification depends."""
+
+    _table = Specification
+    _orderBy = 'name'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.name)
+
+    def __iter__(self):
+        launchbag = getUtility(ILaunchBag)
+        curr_spec = launchbag.specification
+
+        if curr_spec is not None:
+            for spec in curr_spec.dependencies:
+                yield SimpleTerm(spec, spec.name, spec.title)
 
 
 class BugWatchVocabulary(SQLObjectVocabularyBase):

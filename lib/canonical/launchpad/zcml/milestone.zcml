@@ -20,7 +20,7 @@
     
     <browser:defaultView
         for="canonical.launchpad.interfaces.IMilestone"
-        name="+bugs" />
+        name="+index" />
 
     <browser:url
         for="canonical.launchpad.interfaces.IMilestone"
@@ -28,13 +28,16 @@
         attribute_to_parent="target"
         />
 
+    <browser:menus
+        module="canonical.launchpad.browser.milestone"
+        classes="MilestoneFacets" />
+
     <browser:pages
       for="canonical.launchpad.interfaces.IMilestone"
       permission="zope.Public">
       <browser:page
-        name="+bugs"
-        template="../templates/milestone-bugs.pt"
-        lp:url="/products/$Product.name/+milestone/$Milestone.name/+bugs" />
+        name="+index"
+        template="../templates/milestone-index.pt" />
       <browser:page
         name="+portlet-actions"
         template="../templates/milestone-portlet-actions.pt" />

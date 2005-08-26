@@ -71,6 +71,9 @@ class ProductSeries(SQLBase):
                              orderBy=['version'])
     packagings = MultipleJoin('Packaging', joinColumn='productseries',
                               orderBy=['-id'])
+    specifications = MultipleJoin('Specification',
+        joinColumn='productseries', orderBy='-datecreated')
+
 
     @property
     def potemplates(self):
@@ -116,11 +119,15 @@ class ProductSeries(SQLBase):
         ret.sort(key=lambda a: a.distribution.name + a.sourcepackagename.name)
         return ret
 
+    def getSpecification(self, name):
+        """See ISpecificationTarget."""
+        return self.product.getSpecification(name)
+
     def getRelease(self, version):
         for release in self.releases:
             if release.version==version:
                 return release
-        raise NotFoundError(version)
+        return None
 
     def getPackage(self, distrorelease):
         """See IProductSeries."""

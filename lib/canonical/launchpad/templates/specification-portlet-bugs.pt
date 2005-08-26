@@ -1,0 +1,21 @@
+<div class="portlet">
+
+  <h4>Related Bugs:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li class="bug" tal:repeat="bug context/bugs">
+        <a tal:attributes="href bug/fmt:url">
+          #<span tal:replace="bug/id">122</span>:
+          <span tal:replace="bug/title">foo bar baz</span>
+        </a>
+      </li>
+      <li class="info" tal:condition="not: context/bugs">
+        <i>No related bugs.</i>
+      </li>
+    </ul>
+	
+  </div>
+
+</div>

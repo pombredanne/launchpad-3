@@ -224,7 +224,7 @@
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="/products/$Product.name/+filebug">
-        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
@@ -373,7 +373,7 @@
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
         lp:url="products/+new">
-        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="name"
            class="zope.app.form.browser.TextWidget"

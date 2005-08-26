@@ -10,6 +10,7 @@ __all__ = [
     'FOAFSearchView',
     'PersonRdfView',
     'PersonView',
+    'PersonAdminView',
     'TeamJoinView',
     'TeamLeaveView',
     'PersonEditEmailsView',
@@ -27,6 +28,7 @@ from canonical.database.sqlbase import flush_database_updates
 
 from zope.event import notify
 from zope.app.form.browser.add import AddView
+from zope.app.form.browser.editview import EditView
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
@@ -61,6 +63,9 @@ class PersonFacets(StandardLaunchpadFacets):
 
     usedfor = IPerson
 
+    links = ['overview', 'bugs', 'specs', 'bounties', 'translations',
+             'calendar']
+
     def overview(self):
         target = ''
         text = 'Overview'
@@ -73,6 +78,24 @@ class PersonFacets(StandardLaunchpadFacets):
         target = '+assignedbugs'
         text = 'Bugs'
         return Link(target, text)
+
+    def specs(self):
+        target = '+specs'
+        text = 'Specs'
+        summary = 'Feature specifications related to %s' % \
+            self.context.browsername
+        return Link(target, text, summary)
+
+    def bounties(self):
+        target = '+bounties'
+        text = 'Bounties'
+        return Link(target, text)
+
+    def code(self):
+        target = '+branches'
+        text = 'Code'
+        summary = 'Branches and revisions by %s' % self.context.browsername
+        return Link(target, text, summary)
 
     def translations(self):
         target = '+translations'
@@ -1237,4 +1260,10 @@ class TeamReassignmentView(ObjectReassignmentView):
         flush_database_updates()
         team.setMembershipStatus(newOwner, TeamMembershipStatus.ADMIN)
         team.setMembershipStatus(oldOwner, TeamMembershipStatus.ADMIN)
+
+
+class PersonAdminView(EditView):
+
+    def changed(self):
+        self.request.response.redirect(canonical_url(self.context))
 

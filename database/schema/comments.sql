@@ -50,15 +50,6 @@ COMMENT ON COLUMN ProjectRelationship.label IS 'The nature of the relationship. 
 COMMENT ON COLUMN EmailAddress.email IS 'An email address used by a Person. The email address is stored in a casesensitive way, but must be case insensitivly unique.';
 COMMENT ON INDEX emailaddress_person_key IS 'Ensures that a person only has one preferred email address';
 
--- ProjectRole
-/*
-COMMENT ON TABLE ProjectRole IS 'Project Roles. This table records the explicit roles that people play in an open source project, with the exception of the \'ownership\' role, which is encoded in Project.owner. Types of roles are enumerated in dbschema.py DOAPRole.';
-COMMENT ON COLUMN ProjectRole.person IS 'The person playing the role.';
-COMMENT ON COLUMN ProjectRole.role IS 'The role, an integer enumeration documented in dbschema.py ProjectRole.';
-COMMENT ON COLUMN ProjectRole.project IS 'The project in which the person plays a role.';
-*/
-
-
 -- Product
 COMMENT ON TABLE Product IS 'Product: a DOAP Product. This table stores core information about an open source product. In Launchpad, anything that can be shipped as a tarball would be a product, and in some cases there might be products for things that never actually ship, depending on the project. For example, most projects will have a \'website\' product, because that allows you to file a Malone bug against the project website. Note that these are not actual product releases, which are stored in the ProductRelease table.';
 COMMENT ON COLUMN Product.owner IS 'The Product owner would typically be the person who createed this product in Launchpad. But we will encourage the upstream maintainer of a product to become the owner in Launchpad. The Product owner can edit any aspect of the Product, as well as appointing people to specific roles with regard to the Product. Also, the owner can add a new ProductRelease and also edit Rosetta POTemplates associated with this product.';
@@ -84,14 +75,6 @@ COMMENT ON COLUMN Product.calendar IS 'The calendar associated with this product
 COMMENT ON TABLE ProductLabel IS 'The Product label table. We have not yet clearly defined the nature of product labels, so please do not refer to this table yet. If you have a need for tags or labels on Products, please contact Mark.';
 
 
-
--- ProductRole
-/*
-COMMENT ON TABLE ProductRole IS 'Product Roles: this table documents the roles that people play with regard to a specific product. Note that if the project only has one product then it\'s best to document these roles at the project level, not at the product level. If a project has many products, then this table allows you to identify people playing a role that is specific to one of them.';
-COMMENT ON COLUMN ProductRole.person IS 'The person playing the role.';
-COMMENT ON COLUMN ProductRole.role IS 'The role being played. Valid roles are documented in dbschema.py DOAPRole. The roles are exactly the same as those used for ProjectRole.';
-COMMENT ON COLUMN ProductRole.product IS 'The product where the person plays this role.';
-*/
 
 
 -- ProductSeries
@@ -394,13 +377,27 @@ COMMENT ON COLUMN BugTracker.contactdetails IS 'The contact details of the peopl
 COMMENT ON COLUMN BugTracker.baseurl IS 'The base URL for this bug tracker. Using our knowledge of the bugtrackertype, and the details in the BugWatch table we are then able to calculate relative URL\'s for relevant pages in the bug tracker based on this baseurl.';
 COMMENT ON COLUMN BugTracker.owner IS 'The person who created this bugtracker entry and who thus has permission to modify it. Ideally we would like this to be the person who coordinates the running of the actual bug tracker upstream.';
 
-/* Soyuz */
 
-COMMENT ON COLUMN SourcePackageName.name IS
-    'A lowercase name identifying one or more sourcepackages';
-COMMENT ON COLUMN BinaryPackageName.name IS
-    'A lowercase name identifying one or more binarypackages';
-COMMENT ON COLUMN BinaryPackage.architecturespecific IS 'This field indicates whether or not a binarypackage is architecture-specific. If it is not specific to any given architecture then it can automatically be included in all the distroarchreleases which pertain.';
+-- Calendar
+COMMENT ON TABLE Calendar IS 'A Calendar attached to some other Launchpad object (currently People, Projects or Products)';
+COMMENT ON COLUMN Calendar.title IS 'The title of the Calendar';
+COMMENT ON COLUMN Calendar.revision IS 'An monotonically increasing counter indicating a particular version of the calendar';
+
+
+-- CalendarSubscription
+COMMENT ON TABLE CalendarSubscription IS 'A subscription relationship between two calendars';
+COMMENT ON COLUMN CalendarSubscription.subject IS 'The subject of the subscription relationship';
+COMMENT ON COLUMN CalendarSubscription.object IS 'The object of the subscription relationship';
+COMMENT ON COLUMN CalendarSubscription.colour IS 'The colour used to display events from calendar \'object\' when in the context of calendar \'subject\'';
+
+COMMENT ON TABLE CalendarEvent IS 'Events belonging to calendars';
+COMMENT ON COLUMN CalendarEvent.uid IS 'A globally unique identifier for the event.  This identifier should be preserved through when importing events from a desktop calendar application';
+COMMENT ON COLUMN CalendarEvent.calendar IS 'The calendar this event belongs to';
+COMMENT ON COLUMN CalendarEvent.dtstart IS 'The start time for the event in UTC';
+COMMENT ON COLUMN CalendarEvent.duration IS 'The duration of the event';
+COMMENT ON COLUMN CalendarEvent.title IS 'A one line description of the event';
+COMMENT ON COLUMN CalendarEvent.description IS 'A multiline description of the event';
+COMMENT ON COLUMN CalendarEvent.location IS 'A location associated with the event';
 
 
 /* Distribution */
@@ -451,6 +448,14 @@ COMMENT ON TABLE DistroReleaseQueueBuild IS 'An upload queue binary build. This 
 COMMENT ON COLUMN DistroReleaseQueueBuild.distroreleasequeue IS 'This integer field refers to the DistroQueue row that this source belongs to.';
 
 COMMENT ON COLUMN DistroReleaseQueueBuild.build IS 'This integer field refers to the Build record related to this upload.';
+
+-- SourcePackageName
+COMMENT ON COLUMN SourcePackageName.name IS
+    'A lowercase name identifying one or more sourcepackages';
+COMMENT ON COLUMN BinaryPackageName.name IS
+    'A lowercase name identifying one or more binarypackages';
+COMMENT ON COLUMN BinaryPackage.architecturespecific IS 'This field indicates whether or not a binarypackage is architecture-specific. If it is not specific to any given architecture then it can automatically be included in all the distroarchreleases which pertain.';
+
 
 -- SourcePackageRelease
 COMMENT ON COLUMN SourcePackageRelease.section IS 'This integer field references the Section which the source package claims to be in';
@@ -528,19 +533,6 @@ COMMENT ON COLUMN LaunchpadDatabaseRevision.major IS 'Major number. This is incr
 COMMENT ON COLUMN LaunchpadDatabaseRevision.minor IS 'Minor number. Patches made during development each increment the minor number.';
 COMMENT ON COLUMN LaunchpadDatabaseRevision.patch IS 'The patch number will hopefully always be ''0'', as it exists to support emergency patches made to the production server. eg. If production is running ''4.0.0'' and needs to have a patch applied ASAP, we would create a ''4.0.1'' patch and roll it out. We then may need to refactor all the existing ''4.x.0'' patches.';
 
--- Person
-COMMENT ON TABLE Person IS 'Central user and group storage. A row represents a person if teamowner is NULL, and represents a team (group) if teamowner is set.';
-COMMENT ON COLUMN Person.displayname IS 'Person or group''s name as it should be rendered to screen';
-COMMENT ON COLUMN Person.givenname IS 'Component of a person''s full name used for secondary sorting. Generally the person''s given or christian name.';
-COMMENT ON COLUMN Person.familyname IS 'Component of a person''s full name used for sorting. Generally the person''s family name.';
-COMMENT ON COLUMN Person.password IS 'SSHA digest encrypted password.';
-COMMENT ON COLUMN Person.teamowner IS 'id of the team owner. Team owners will have authority to add or remove people from the team.';
-COMMENT ON COLUMN Person.teamdescription IS 'Informative description of the team. Format and restrictions are as yet undefined.';
-COMMENT ON COLUMN Person.name IS 'Short mneumonic name uniquely identifying this person or team. Useful for url traversal or in places where we need to unambiguously refer to a person or team (as displayname is not unique).';
-COMMENT ON COLUMN Person.language IS 'Preferred language for this person (unset for teams). UI should be displayed in this language wherever possible.';
-COMMENT ON COLUMN Person.calendar IS 'The calendar associated with this person.';
-COMMENT ON COLUMN Person.timezone IS 'The name of the time zone this person prefers (if unset, UTC is used).  UI should display dates and times in this time zone wherever possible.';
-
 -- Karma
 COMMENT ON TABLE Karma IS 'Used to quantify all the ''operations'' a user performs inside the system, which maybe reporting and fixing bugs, uploading packages, end-user support, wiki editting, etc.';
 COMMENT ON COLUMN Karma.action IS 'A foreign key to the KarmaAction table.';
@@ -558,6 +550,19 @@ COMMENT ON TABLE KarmaCache IS 'Stores a cached value of a person\'s karma point
 COMMENT ON COLUMN KarmaCache.Person IS 'The person which performed the actions of this category, and thus got the karma.';
 COMMENT ON COLUMN KarmaCache.Category IS 'The category of the actions.';
 COMMENT ON COLUMN KarmaCache.KarmaValue IS 'The karma points of all actions of this category performed by this person.';
+
+-- Person
+COMMENT ON TABLE Person IS 'Central user and group storage. A row represents a person if teamowner is NULL, and represents a team (group) if teamowner is set.';
+COMMENT ON COLUMN Person.displayname IS 'Person or group''s name as it should be rendered to screen';
+COMMENT ON COLUMN Person.givenname IS 'Component of a person''s full name used for secondary sorting. Generally the person''s given or christian name.';
+COMMENT ON COLUMN Person.familyname IS 'Component of a person''s full name used for sorting. Generally the person''s family name.';
+COMMENT ON COLUMN Person.password IS 'SSHA digest encrypted password.';
+COMMENT ON COLUMN Person.teamowner IS 'id of the team owner. Team owners will have authority to add or remove people from the team.';
+COMMENT ON COLUMN Person.teamdescription IS 'Informative description of the team. Format and restrictions are as yet undefined.';
+COMMENT ON COLUMN Person.name IS 'Short mneumonic name uniquely identifying this person or team. Useful for url traversal or in places where we need to unambiguously refer to a person or team (as displayname is not unique).';
+COMMENT ON COLUMN Person.language IS 'Preferred language for this person (unset for teams). UI should be displayed in this language wherever possible.';
+COMMENT ON COLUMN Person.calendar IS 'The calendar associated with this person.';
+COMMENT ON COLUMN Person.timezone IS 'The name of the time zone this person prefers (if unset, UTC is used).  UI should display dates and times in this time zone wherever possible.';
 
 -- Bounty
 COMMENT ON TABLE Bounty IS 'A set of bounties for work to be done by the open source community. These bounties will initially be offered only by Canonical, but later we will create the ability for people to offer the bounties themselves, using us as a clearing house.';
@@ -672,6 +677,38 @@ For a package which was uploaded into Hoary, this would show Hoary.';
 
 COMMENT ON TABLE SourcePackageName IS 'SourcePackageName: A soyuz source package name.';
 
+-- Specification
+COMMENT ON TABLE Specification IS 'A feature specification. At the moment we do not store the actual specification, we store a URL for the spec, which is managed in a wiki somewhere else. We store the overall state of the spec, as well as queueing information about who needs to review the spec, and why.';
+COMMENT ON COLUMN Specification.assignee IS 'The person who has been assigned to implement this specification.';
+COMMENT ON COLUMN Specification.drafter IS 'The person who has been asked to draft this specification. They are responsible for getting the spec to "approved" state.';
+COMMENT ON COLUMN Specification.approver IS 'The person who is responsible for approving the specification in due course, and who will probably be required to review the code itself when it is being implemented.';
+COMMENT ON COLUMN Specification.product IS 'The product for which this is a feature specification. The specification must be connected either to a product, or to a distribution.';
+COMMENT ON COLUMN Specification.distribution IS 'The distribution for which this is a feature specification. The specification must be connected either to a product, or to a distribution.';
+COMMENT ON COLUMN Specification.distrorelease IS 'If this is not NULL, then it means that the release managers have targeted this feature to be released in the given distrorelease. It is not necessary to target a distrorelease, but this is a useful way of know which specifications are, for example, BreezyGoals.';
+COMMENT ON COLUMN Specification.productseries IS 'This is an indicator that the specification is planned, or targeted, for implementation in a given product series. It is not necessary to target a spec to a series, but it is a useful way of showing which specs are planned to implement for a given series.';
+COMMENT ON COLUMN Specification.milestone IS 'This is an indicator that the feature defined in this specification is expected to be delivered for a given milestone. Note that milestones are not necessarily releases, they are a way of identifying a point in time and grouping bugs and features around that.';
+COMMENT ON COLUMN Specification.status IS 'An enum called SpecificationStatus that shows what the current status (braindump, draft, implemented etc) the spec is currently in.';
+COMMENT ON COLUMN Specification.priority IS 'An enum that gives the implementation priority (low, medium, high, emergency) of the feature defined in this specification.';
+COMMENT ON COLUMN Specification.specurl IS 'The URL where the specification itself can be found. This is usually a wiki page somewhere.';
+COMMENT ON COLUMN Specification.whiteboard IS 'As long as the specification is somewhere else (i.e. not in Launchpad) it will be useful to have a place to hold some arbitrary message or status flags that have meaning to the project, not Launchpad. This whiteboard is just the place for it.';
+
+-- SpecificationReview
+COMMENT ON TABLE SpecificationReview IS 'A table representing a review request of a specification, from one user to another, with an optional message.';
+COMMENT ON COLUMN SpecificationReview.reviewer IS 'The person who has been asked to do the review.';
+COMMENT ON COLUMN SpecificationReview.requestor IS 'The person who made the request.';
+COMMENT ON COLUMN SpecificationReview.queuemsg IS 'An optional text message for the reviewer, from the requestor.';
+
+-- SpecificationBug
+COMMENT ON TABLE SpecificationBug IS 'A table linking a specification and a bug. This is used to provide for easy navigation from bugs to specs.';
+
+-- SpecificationSubscription
+COMMENT ON TABLE SpecificationSubscription IS 'A table capturing a subscription of a person to a specification.';
+
+-- SpecificationDependency
+COMMENT ON TABLE SpecificationDependency IS 'A table that stores information about which specification needs to be implemented before another specification can be implemented. We can create a chain of dependencies, and use that information for scheduling and prioritisation of work.';
+COMMENT ON COLUMN SpecificationDependency.specification IS 'The spec for which we are creating a dependency.';
+COMMENT ON COLUMN SpecificationDependency.dependency IS 'The spec on which it is dependant.';
+
 -- BinaryPackage
 
 COMMENT ON TABLE BinaryPackage IS 'BinaryPackage: A soyuz binary package representation. This table stores the records for each binary package uploaded into the system. Each sourcepackagerelease may build various binarypackages on various architectures.';
@@ -752,21 +789,6 @@ COMMENT ON COLUMN DistroRelease.owner IS 'The ultimate owner of this distrorelea
 COMMENT ON TABLE DistroArchRelease IS 'DistroArchRelease: A soyuz distribution release for a given architecture. A distrorelease runs on various architectures. The distroarchrelease groups that architecture-specific stuff.';
 COMMENT ON COLUMN DistroArchRelease.distrorelease IS 'The distribution which this distroarchrelease is part of.';
 
--- DistributionRole
-/*
-COMMENT ON TABLE DistributionRole IS 'DistributionRole: A soyuz distribution role. This table represents a role played by a specific person in a given distribution.';
-COMMENT ON COLUMN DistributionRole.person IS 'The person undertaking the represented role.';
-COMMENT ON COLUMN DistributionRole.distribution IS 'The distribution in which this role is undertaken';
-COMMENT ON COLUMN DistributionRole.role IS 'The role that the identified person takes in the referenced distribution';
-*/
-
--- DistroReleaseRole
-/*
-COMMENT ON TABLE DistroReleaseRole IS 'DistroReleaseRole: A soyuz distribution release role. This table represents a role played by a specific person in a specific distrorelease of a distribution.';
-COMMENT ON COLUMN DistroReleaseRole.person IS 'The person undertaking the represented role.';
-COMMENT ON COLUMN DistroReleaseRole.distrorelease IS 'The distrorelease in which the role is undertaken.';
-COMMENT ON COLUMN DistroReleaseRole.role IS 'The role that the identified person undertakes in the referenced distrorelease.';
-*/
 
 -- LibraryFileContent
 
@@ -956,28 +978,6 @@ COMMENT ON COLUMN GPGKey.active IS 'True if this key is active for use in Launch
 COMMENT ON COLUMN GPGKey.algorithm IS 'The algorithm used to generate this key. Valid values defined in dbschema.GPGKeyAlgorithms';
 COMMENT ON COLUMN GPGKey.keysize IS 'Size of the key in bits, as reported by GPG. We may refuse to deal with keysizes < 768 bits in the future.';
 
--- Calendar
-COMMENT ON TABLE Calendar IS 'A Calendar attached to some other Launchpad object (currently People, Projects or Products)';
-COMMENT ON COLUMN Calendar.title IS 'The title of the Calendar';
-COMMENT ON COLUMN Calendar.revision IS 'An monotonically increasing counter indicating a particular version of the calendar';
-
-
--- CalendarSubscription
-COMMENT ON TABLE CalendarSubscription IS 'A subscription relationship between two calendars';
-COMMENT ON COLUMN CalendarSubscription.subject IS 'The subject of the subscription relationship';
-COMMENT ON COLUMN CalendarSubscription.object IS 'The object of the subscription relationship';
-COMMENT ON COLUMN CalendarSubscription.colour IS 'The colour used to display events from calendar \'object\' when in the context of calendar \'subject\'';
-
-COMMENT ON TABLE CalendarEvent IS 'Events belonging to calendars';
-COMMENT ON COLUMN CalendarEvent.uid IS 'A globally unique identifier for the event.  This identifier should be preserved through when importing events from a desktop calendar application';
-COMMENT ON COLUMN CalendarEvent.calendar IS 'The calendar this event belongs to';
-COMMENT ON COLUMN CalendarEvent.dtstart IS 'The start time for the event in UTC';
-COMMENT ON COLUMN CalendarEvent.duration IS 'The duration of the event';
-COMMENT ON COLUMN CalendarEvent.title IS 'A one line description of the event';
-COMMENT ON COLUMN CalendarEvent.description IS 'A multiline description of the event';
-COMMENT ON COLUMN CalendarEvent.location IS 'A location associated with the event';
-
-
 -- Poll
 COMMENT ON TABLE Poll IS 'The polls belonging to teams.';
 COMMENT ON COLUMN Poll.team IS 'The team this poll belongs to';
@@ -1009,4 +1009,5 @@ COMMENT ON COLUMN Vote.token IS 'A unique token that\'s give to the user so he c
 COMMENT ON TABLE VoteCast IS 'Here we store who has already voted in a poll, to ensure they do not vote again, and potentially to notify people that they may still vote.';
 COMMENT ON COLUMN VoteCast.person IS 'The person who voted.';
 COMMENT ON COLUMN VoteCast.poll IS 'The poll in which this person voted.';
+
 

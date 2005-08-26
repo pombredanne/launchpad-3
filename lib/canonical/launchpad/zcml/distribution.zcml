@@ -129,7 +129,7 @@
         lp:url="/distros/Distro.name/+add">
         <browser:widget
             field="owner"
-            class="canonical.widgets.OwnerWidget" />
+            class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
     <browser:addform
@@ -158,7 +158,7 @@
         lp:url="/distros/$Distribution.name/+filebug">
         <browser:widget
            field="owner"
-           class="canonical.widgets.OwnerWidget" />
+           class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
@@ -297,7 +297,7 @@
         lp:url="/distros/+add">
         <browser:widget
             field="owner"
-            class="canonical.widgets.OwnerWidget" />
+            class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
     <browser:menus

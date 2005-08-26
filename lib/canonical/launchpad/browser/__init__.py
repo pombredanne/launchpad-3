@@ -44,6 +44,11 @@ from canonical.launchpad.browser.publishedpackage import *
 from canonical.launchpad.browser.rosetta import *
 from canonical.launchpad.browser.sourcepackage import *
 from canonical.launchpad.browser.sourcepackagename import *
+from canonical.launchpad.browser.specification import *
+from canonical.launchpad.browser.specificationbug import *
+from canonical.launchpad.browser.specificationdependency import *
+from canonical.launchpad.browser.specificationreview import *
+from canonical.launchpad.browser.specificationtarget import *
 from canonical.launchpad.browser.team import *
 from canonical.launchpad.browser.translationgroup import *
 from canonical.launchpad.browser.translator import *

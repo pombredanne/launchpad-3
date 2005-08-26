@@ -31,31 +31,31 @@
         </thead>
         <tbody>
           <tr tal:repeat="group context">
-              <td>
-                <span tal:condition="group/distributions" tal:omit-tag="">
-                  <span tal:repeat="distro group/distributions" tal:omit-tag>
-                    <span tal:replace="distro/name">ubuntu</span>,
-                  </span>
+            <td>
+              <span tal:condition="group/distributions" tal:omit-tag="">
+                <span tal:repeat="distro group/distributions" tal:omit-tag>
+                  <span tal:replace="distro/name">ubuntu</span>,
                 </span>
-                <span tal:condition="group/projects" tal:omit-tag="">
-                  <span tal:repeat="project group/projects" tal:omit-tag>
-                    <span tal:replace="project/name">gnome</span>,
-                  </span>
+              </span>
+              <span tal:condition="group/projects" tal:omit-tag="">
+                <span tal:repeat="project group/projects" tal:omit-tag>
+                  <span tal:replace="project/name">gnome</span>,
                 </span>
-                <span tal:condition="group/products" tal:omit-tag="">
-                  <span tal:repeat="product group/products" tal:omit-tag>
-                    <span tal:replace="product/name">a52dec</span>,
-                  </span>
+              </span>
+              <span tal:condition="group/products" tal:omit-tag="">
+                <span tal:repeat="product group/products" tal:omit-tag>
+                  <span tal:replace="product/name">a52dec</span>,
                 </span>
-              </td>
-              <td><a tal:content="group/title/fmt:shorten/57"
-                    tal:attributes="href group/name">title</a>
-              </td>
-              <td tal:content="python:group.datecreated.strftime('%d %b %y')">
-                date
-              </td>
-          </tr>
-        </tbody>
+              </span>
+            </td>
+            <td><a tal:content="group/title/fmt:shorten/57"
+                   tal:attributes="href group/name">title</a>
+            </td>
+            <td tal:content="python:group.datecreated.strftime('%d %b %y')">
+              date
+            </td>
+        </tr>
+      </tbody>
     </table>
 
   </div>

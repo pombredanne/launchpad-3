@@ -52,7 +52,7 @@ class IBugTask(IHasDateCreated):
         title=_("Distribution Release"), required=False,
         vocabulary='DistroRelease')
     milestone = Choice(
-        title=_('Target'), required=False, vocabulary='Milestone')
+        title=_('Milestone'), required=False, vocabulary='Milestone')
     status = Choice(
         title=_('Status'), vocabulary='BugTaskStatus',
         default=dbschema.BugTaskStatus.NEW)

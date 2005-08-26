@@ -14,12 +14,13 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces import IHasOwner, IBugTarget
+from canonical.launchpad.interfaces import (
+    IHasOwner, IBugTarget, ISpecificationTarget)
 from canonical.launchpad.validators.name import name_validator
 
 _ = MessageIDFactory('launchpad')
 
-class IProduct(IHasOwner, IBugTarget):
+class IProduct(IHasOwner, IBugTarget, ISpecificationTarget):
     """A Hatchery Product.
 
     TheHatchery describes the open source world as Projects and
@@ -208,7 +209,7 @@ class IProduct(IHasOwner, IBugTarget):
 
     def getMilestone(name):
         """Return a milestone with the given name for this product, or
-        raise NotFoundError.
+        None.
         """
 
     def newSeries(name, displayname, summary):

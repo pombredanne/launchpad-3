@@ -1,0 +1,19 @@
+<div class="portlet">
+
+  <h4>Blocks:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li class="spec" tal:repeat="spec context/blocked_specs">
+        <a tal:attributes="href spec/fmt:url"
+           tal:content="spec/title">Spec Title Goes Here</a>
+      </li>
+      <li class="info" tal:condition="not: context/blocked_specs">
+        <i>No specs blocked on this one.</i>
+      </li>
+    </ul>
+	
+  </div>
+
+</div>

@@ -190,7 +190,7 @@
         permission="launchpad.AnyPerson"
         template="../templates/product-add.pt"
         lp:url="/projects/$Project.name/+newproduct">
-        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="homepageurl"
            class="zope.app.form.browser.TextWidget"

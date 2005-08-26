@@ -83,12 +83,12 @@ def traverse_product(product, request, name):
     """Traverse an IProduct."""
     if name == '+series':
         return ProductSeriesSet(product=product)
+    elif name == '+spec':
+        spec_name = _skip_one(product, request)
+        return product.getSpecification(spec_name)
     elif name == '+milestone':
         milestone_name = _skip_one(product, request)
-        try:
-            return product.getMilestone(milestone_name)
-        except NotFoundError:
-            return None
+        return product.getMilestone(milestone_name)
     elif name == '+bugs':
         travstack = request.getTraversalStack()
         if len(travstack) == 0:
@@ -112,10 +112,7 @@ def traverse_product(product, request, name):
     elif name == '+calendar':
         return ICalendarOwner(product).calendar
     else:
-        try:
-            return product.getRelease(name)
-        except NotFoundError:
-            return None
+        return product.getRelease(name)
 
     return None
 
@@ -126,10 +123,10 @@ def traverse_distribution(distribution, request, name):
         return getUtility(IPublishedPackageSet)
     elif name == '+milestone':
         milestone_name = _skip_one(distribution, request)
-        try:
-            return distribution.getMilestone(milestone_name)
-        except NotFoundError:
-            return None
+        return distribution.getMilestone(milestone_name)
+    elif name == '+spec':
+        spec_name = _skip_one(distribution, request)
+        return distribution.getSpecification(spec_name)
     elif name == '+bugs':
         # XXX, Brad Bollenbach, 2005-07-20: This
         # request.setTraversalStack stuff is nasty. I've discussed

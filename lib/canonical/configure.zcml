@@ -89,6 +89,16 @@
 
     <browser:pages
         for="canonical.publication.RootObject"
+        class="canonical.launchpad.browser.BountySetView"
+        permission="zope.Public"
+        >
+        <browser:page
+          name="+portlet-bounties"
+          template="launchpad/templates/root-portlet-bounties.pt" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.publication.RootObject"
         class="canonical.launchpad.browser.RosettaApplicationView"
         permission="zope.Public"
         >
