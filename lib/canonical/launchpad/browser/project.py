@@ -5,7 +5,7 @@
 __metaclass__ = type
 
 __all__ = ['ProjectView', 'ProjectEditView', 'ProjectAddProductView',
-           'ProjectSetView', 'ProjectSetAddView', 'ProjectRdfView']
+           'ProjectSetView', 'ProjectAddView', 'ProjectRdfView']
 
 from urllib import quote as urlquote
 
@@ -17,6 +17,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
     IPerson, IProject, IProjectSet, IProductSet, ICalendarOwner)
 from canonical.launchpad import helpers
@@ -173,7 +174,6 @@ class ProjectAddProductView(AddView):
     def __init__(self, context, request):
         self.request = request
         self.context = context
-        self._nextURL = '.'
         AddView.__init__(self, context, request)
 
     def createAndAdd(self, data):
@@ -203,7 +203,8 @@ class ProjectAddProductView(AddView):
         return product
 
     def nextURL(self):
-        return self._nextURL
+        # Always redirect to the project's page
+        return '.'
  
 
 
@@ -241,17 +242,16 @@ class ProjectSetView(object):
         self.matches = self.results.count()
         return self.results
 
-class ProjectSetAddView(AddView):
+class ProjectAddView(AddView):
+    
+    _nextURL = '.'
 
     def createAndAdd(self, data):
         """
         Create the new Project instance if a form with details
         was submitted.
         """
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-
+        kw = data
         owner = IPerson(self.request.principal)
         self.name = kw['name'].lower()
 
@@ -264,9 +264,12 @@ class ProjectSetAddView(AddView):
                           description=kw['description'],
                           owner=owner,
                           homepageurl=kw['homepageurl'])
+        notify(ObjectCreatedEvent(project))
+        self._nextURL = canonical_url(project)
+        return project
 
     def nextURL(self):
-        return self.name
+        return self._nextURL
 
 class ProjectRdfView(object):
     """A view that sets its mime-type to application/rdf+xml"""

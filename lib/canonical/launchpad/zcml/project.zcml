@@ -127,7 +127,7 @@
         label="Register a project with Launchpad"
         fields="name displayname title summary description homepageurl"
         content_factory="canonical.launchpad.database.Project"
-        class="canonical.launchpad.browser.ProjectSetAddView"
+        class="canonical.launchpad.browser.ProjectAddView"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
         lp:url="products/+new">

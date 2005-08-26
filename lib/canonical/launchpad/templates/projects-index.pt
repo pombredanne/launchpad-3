@@ -11,7 +11,7 @@
 <metal:rightportlets fill-slot="portlets_two">
   <div class="portlet portletBody portletContent">
     <ul>
-      <li class="add"><a href="/projects/+new">Register a new product</a></li>
+      <li class="add"><a href="/projects/+new">Register a new project</a></li>
     </ul>
   </div>
 </metal:rightportlets>

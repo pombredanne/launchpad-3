@@ -14,12 +14,28 @@ __all__ = [
 from canonical.launchpad.fields import Title, Summary
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces.launchpad import IHasOwner
+from canonical.launchpad.interfaces.person import NameAlreadyTaken
 
+from zope.component import getUtility
 from zope.schema import Bool, Choice, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 _ = MessageIDFactory('launchpad')
+
+
+class ProjectNameField(TextLine):
+
+    def _validate(self, value):
+        TextLine._validate(self, value)
+        if (IProject.providedBy(self.context) and 
+            value == getattr(self.context, self.__name__)):
+            # The name wasn't changed.
+            return
+
+        project = getUtility(IProjectSet)[value]
+        if project is not None:
+            raise NameAlreadyTaken(value)
 
 
 class IProject(IHasOwner):
@@ -34,7 +50,7 @@ class IProject(IHasOwner):
         description=_("""Project owner, it can either a valid
             Person or Team inside Launchpad context."""))
 
-    name = TextLine(
+    name = ProjectNameField(
         title=_('Name'),
         required=True,
         description=_("""A unique name, used in URLs, identifying the project.
