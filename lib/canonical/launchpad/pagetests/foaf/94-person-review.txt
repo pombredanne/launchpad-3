@@ -127,7 +127,7 @@ Now change the password correctly.
   ... Change
   ... -----------------------------16539223822440519001173234445--
   ... """)
-  HTTP/1.1 303 See Other
+  HTTP/1.1 200 Ok
   ...
   <p class="portalMessage">Updated on ...</p>
   ...
@@ -171,7 +171,7 @@ current value'. Also ensure other fields can be changed.
   ... Change
   ... -----------------------------1828846877754354973268517541--
   ... """)
-  HTTP/1.1 303 See Other
+  HTTP/1.1 200 Ok
   ...Stuart Bishop Changed...
                   <div><input class="textType" id="field.displayname" name="field.displayname" size="20" type="text" value="Stuart Bishop Changed"  /></div>
   ...
