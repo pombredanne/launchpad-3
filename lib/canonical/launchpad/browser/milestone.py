@@ -20,9 +20,7 @@ from canonical.launchpad.webapp import StandardLaunchpadFacets, DefaultLink
 
 
 class MilestoneFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for
-    an IMilestone.
-    """
+    """The links that will appear in the facet menu for an IMilestone."""
 
     usedfor = IMilestone
 

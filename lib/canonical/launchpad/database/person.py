@@ -981,6 +981,9 @@ class PersonSet:
                 WHERE person = %(to_id)d
                 )
             ''' % vars())
+        cur.execute('''
+            DELETE FROM BountySubscription WHERE person=%(from_id)d
+            ''' % vars())
         skip.append(('bountysubscription', 'person'))
 
         # Update the SpecificationReview entries that will not conflict
