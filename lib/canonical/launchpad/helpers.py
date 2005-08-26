@@ -1174,3 +1174,34 @@ def getBinaryPackageFormat(fname):
         return BinaryPackageFormat.UDEB
     if fname.endswith(".rpm"):
         return BinaryPackageFormat.RPM
+
+def normalize_whitespaces(template, text):
+    """Return 'text' with the same trailing and leading whitespaces
+    that 'template' has.
+
+    If any of the arguments is None, 'text' is returned without
+    changes.
+    'template' and 'text' are strings.
+    """
+    if template is None or text is None:
+        return text
+
+    stripped_template = template.strip()
+    stripped_text = text.strip()
+    new_text = None
+
+    if len(stripped_template) != len(template):
+        # There are whitespaces that we should copy to the 'text'
+        # after stripping it.
+        prefix = template[:-len(template.lstrip())]
+        postfix = template[len(template.rstrip()):]
+        new_text = '%s%s%s' % (prefix, stripped_text, postfix)
+    elif len(stripped_text) != len(text):
+        # The template does not have any whitespace, we need to remove
+        # the extra ones added to this text.
+        new_text = stripped_text
+    else:
+        # The text is not changed.
+        new_text = text
+
+    return new_text

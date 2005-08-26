@@ -30,8 +30,6 @@ Rosetta.
   ...
             <h2>Rosetta Translation Groups</h2>
   ...
-          <tr onclick="window.location='polyglot'">
-              <td>...</td>
-              <td><b>The PolyGlot Translation Group</b>
+              <td><a...>The PolyGlot Translation Group</a>
   ...
 

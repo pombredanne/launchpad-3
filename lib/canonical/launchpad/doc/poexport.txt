@@ -296,6 +296,12 @@ Then get the PO file from the exporter.
   "automatically update the feed URL to the new address.</p>"
   msgstr ""
   <BLANKLINE>
+  #: lib/getopt.c:629 lib/getopt.c:641
+  #, c-format
+  msgid ""
+  "%s: option `%s' is ambiguous\n"
+  msgstr ""
+  <BLANKLINE>
   #~ msgid "_Add Group"
   #~ msgstr "_Añadir grupo"
 

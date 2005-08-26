@@ -6,6 +6,7 @@
 Buildd-Slave monitor, support multiple slaves and requires LPDB access.
 """
 from string import join
+from sqlobject import SQLObjectNotFound
 
 from canonical.lp import initZopeless
 from canonical.launchpad.database import Builder
@@ -21,7 +22,6 @@ class BuilddSlaveMonitorApp:
     """
     def __init__(self, write):
         self.write = write
-        self.slave = None
 
     def requestReceived(self, line):
         """Process requests typed in."""
@@ -38,21 +38,32 @@ class BuilddSlaveMonitorApp:
             args = join(request[1:])
             meth = getattr(self, cmd)
             d = defer.maybeDeferred(meth, args)
-        else:
-            if not self.slave:
-                self.write('No Buildd Slave selected\n')
-                self.prompt()
+            d.addCallbacks(self._printResult).addErrback(self._printError)
+            return
+        
+        elif len(request) > 1:
+            try:
+                builder_id = request.pop(1)
+                bid = int(builder_id)
+                builder = Builder.get(bid)
+            except ValueError:
+                self.write('Wrong builder ID: %s' % builder_id)
+            except SQLObjectNotFound:
+                self.write('Builder Not Found: %s' % bid)
+            else:
+                slave = Proxy(builder.url.encode('ascii'))
+                d = slave.callRemote(*request)
+                d.addCallbacks(self._printResult).addErrback(self._printError)
                 return
-            d = self.slave.callRemote(*request)
+        else:
+            self.write('Syntax Error: %s' % request)
 
-        d.addCallbacks(self._printResult).addErrback(self._printError)
+        self.prompt()
+        return
     
     def prompt(self):
         """Simple display a prompt according with current state."""
-        if self.slave:
-            self.write('\n%s >>> ' % self.builder.name.encode('ascii'))
-        else:
-            self.write('\n>>> ')
+        self.write('\nbuildd-monitor>>> ')
             
     def cmd_quit(self, data=None):
         """Ohh my ! stops the reactor, i.e., QUIT, if requested.""" 
@@ -60,30 +71,25 @@ class BuilddSlaveMonitorApp:
 
     def cmd_builders(self, data=None):
         """Read access through initZopeless."""
-        builders = Builder.select()
+        builders = Builder.select(orderBy='id')
+        blist = 'List of Builders\n'
         for builder in builders:
             name = builder.name.encode('ascii')
             url = builder.url.encode('ascii')
-            return ('%s - %s - %s\n' % (builder.id, name, url))
+            blist += '%s - %s - %s\n' % (builder.id, name, url)
+        return blist
         
-    def cmd_connect(self, data=None):
-        """Select an slave to be monitored."""
-        if data:
-            self.builder = Builder.get(int(data))
-            self.url = self.builder.url.encode('ascii')
-
-        self.slave = Proxy(self.url)
-        return 'Connected to %s\n' % self.builder.name.encode('ascii')
-
-    def cmd_disconnect(self, data=None):
-        """Release the slave."""
-        self.slave = None
+    def cmd_help(self, data=None):
+        return ('Command Help\n'
+                'builders - list available builders\n'
+                'quit - exit the program\n'
+                'Usage: <CMD> <BUILDERID> <ARGS>\n')
             
     def _printResult(self, result):
         """Callback for connections."""
         if result is None:
             return
-        self.write('Got: ' + repr(result))
+        self.write('Got: %s' % str(result).strip())
         self.prompt()
             
     def _printError(self, error):

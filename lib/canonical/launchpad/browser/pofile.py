@@ -57,6 +57,14 @@ class POFileFacets(StandardLaunchpadFacets):
         text = 'Translations'
         return DefaultLink(target, text)
 
+    # Bugs and calendar don't make sense for pofiles
+    # XXX: how does one disable links unconditionally?
+    #       -- kiko, 2005-08-23
+    def bugs(self):
+        return Link("", "Bugs", linked=False)
+
+    def calendar(self):
+        return Link("", "Calendar", linked=False)
 
 class POFileAppMenus(ApplicationMenu):
     usedfor = IPOFile

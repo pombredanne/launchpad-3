@@ -141,6 +141,9 @@ on the calendar view pages include a date in the query string:
   ...
 
 
+When we add the event, we get redirected to the week view page
+containing the event's start date:
+
   >>> print http(r"""
   ... POST /people/name12/+calendar/+add HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -180,7 +183,7 @@ on the calendar view pages include a date in the query string:
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  Location: .
+  Location: .../people/name12/+calendar/2005-W13
   <BLANKLINE>
   ...
 
@@ -200,7 +203,7 @@ user's preferred time zone:
   ...
       <title>Sample Person's Calendar - 1 April 2005</title>
   ...
-                        <a href="../events/.../">
+                        <a href=".../people/name12/+calendar/events/...">
                         09:00
                         -
                         April Fools
@@ -218,7 +221,7 @@ user's preferred time zone:
   ...
       <title>Sample Person's Calendar - 1 April 2005</title>
   ...
-                        <a href="../events/.../">
+                        <a href=".../people/name12/+calendar/events/...">
                         01:00
                         -
                         April Fools

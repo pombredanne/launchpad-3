@@ -122,13 +122,26 @@
         class="canonical.launchpad.browser.bug.SQLObjectEditView"
         label="Mark as Duplicate Bug Report"
         permission="launchpad.AnyPerson"
-        template="../templates/default-editform.pt"
+        template="../templates/bug-mark-as-duplicate.pt"
         fields="duplicateof"
         lp:url="malone/bugs/$Bug.id/+duplicate">
         <browser:widget
             field="duplicateof"
             class="canonical.widgets.bug.BugWidget" />
     </browser:editform>
+
+    <browser:addform
+        name="+addattachment"
+        schema="canonical.launchpad.interfaces.IBugAttachmentAddForm"
+        for="canonical.launchpad.interfaces.IBug"
+        class="canonical.launchpad.browser.BugAttachmentAddView"
+        label="Add an Attachment"
+        fields="filecontent patch title comment"
+        keyword_arguments="patch filecontent title comment"
+        permission="launchpad.AnyPerson"
+        template="../templates/bug-attachment-add.pt"
+        lp:url="malone/bugs/$Bug.id/+addattachment"
+        />
 
     <browser:view
         for="canonical.launchpad.interfaces.IBug"

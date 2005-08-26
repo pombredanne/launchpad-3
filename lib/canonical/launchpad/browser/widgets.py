@@ -29,3 +29,4 @@ class DescriptionWidget(TextAreaWidget):
     implements(IText)
     width = 60
     height = 10
+

@@ -21,7 +21,7 @@
 
         <ul style="text-align: right;">
           <li class="add">
-            <a tal:condition="not: context/isTeam" href="+emails">
+            <a tal:condition="not: context/isTeam" href="+editemails">
               Manage...
             </a>
             <a tal:condition="context/isTeam" href="+editemail">

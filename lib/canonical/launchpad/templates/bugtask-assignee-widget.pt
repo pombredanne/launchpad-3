@@ -1,50 +1,51 @@
 <tal:assigneewidget define="widget_name string:${view/name}.option">
-  <input type="radio"
-         tal:attributes="checked python:view.selectedRadioButton() == view.assign_to_nobody;
-                         name widget_name;
-                         value view/assign_to_nobody">
-  nobody
+  <label style="font-weight: normal"
+         tal:attributes="for view/assign_to_nobody">
+    <input type="radio"
+           tal:attributes="name widget_name;
+                           id view/assign_to_nobody;
+                           value view/assign_to_nobody;
+                           checked python:view.selectedRadioButton() ==
+                                          view.assign_to_nobody">
+    nobody
+  </label>
   <br />
 
-  <tal:assigned condition="view/getAssigneeDisplayValue">
-    <tal:assigned_to_current_user condition="view/assignedToCurrentUser">
-      <input type="radio"
-             tal:attributes="name widget_name;
-                             value view/assign_to_me;
-                             checked python:view.selectedRadioButton() == view.assign_to_me">
-      me
-    </tal:assigned_to_current_user>
-
-    <tal:assigned_to_another_user condition="view/assignedToAnotherUser">
-      <input type="radio"
-             tal:attributes="name widget_name;
-                             value view/assigned_to;
-                             checked python:view.selectedRadioButton() == view.assigned_to">
-      <tal:assignee content="view/getAssigneeDisplayValue" />
-    </tal:assigned_to_another_user>
-
-    <br />
-
+  <label style="font-weight: normal"
+         tal:attributes="for view/assign_to_me">
     <input type="radio"
            tal:attributes="name widget_name;
-                           value view/assign_to;
-                           checked python:view.selectedRadioButton() == view.assign_to">
-    <tal:assignee_chooser content="structure view/assignee_chooser_widget" />
+                           id view/assign_to_me;
+                           value view/assign_to_me;
+                           checked python:view.selectedRadioButton() ==
+                                          view.assign_to_me">
+    me
+  </label>
+
+  <tal:assigned condition="view/getAssigneeDisplayValue">
+    <tal:assigned_to_another_user condition="view/assignedToAnotherUser">
+      <br />
+      <label style="font-weight: normal"
+             tal:attributes="for view/assigned_to">
+        <input type="radio"
+               tal:attributes="name widget_name;
+                               id view/assigned_to;
+                               value view/assigned_to;
+                               checked python:view.selectedRadioButton() ==
+                                              view.assigned_to">
+        <tal:assignee content="view/getAssigneeDisplayValue" />
+      </label>
+    </tal:assigned_to_another_user>
   </tal:assigned>
 
-  <tal:unassigned condition="not:view/getAssigneeDisplayValue">
-    <input type="radio"
-           tal:attributes="name widget_name;
-                           value view/assign_to_me;
-                           checked python:view.selectedRadioButton() == view.assign_to_me">
-    me
+  <br />
 
-    <br />
+  <input type="radio"
+         tal:attributes="name widget_name;
+                         id view/assign_to;
+                         value view/assign_to;
+                         checked python:view.selectedRadioButton() ==
+                                        view.assign_to">
+  <tal:assignee_chooser content="structure view/assignee_chooser_widget" />
 
-    <input type="radio"
-           tal:attributes="name widget_name;
-                           value view/assign_to;
-                           checked python:view.selectedRadioButton() == view.assign_to">
-    <tal:assignee_chooser content="structure view/assignee_chooser_widget" />
-  </tal:unassigned>
 </tal:assigneewidget>

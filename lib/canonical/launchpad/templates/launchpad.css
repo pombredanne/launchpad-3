@@ -1067,6 +1067,18 @@ table.sortable img.sortarrow {
     padding-left: 2px;
 }
 
+th.ascending {
+  background-image: url(/++resource++arrowDown.gif);
+  background-position: center right;
+  background-repeat: no-repeat;
+}
+
+th.descending {
+  background-image: url(/++resource++arrowUp.gif);
+  background-position: center right;
+  background-repeat: no-repeat;
+}
+
 /*
 Calendar stuff.
 */

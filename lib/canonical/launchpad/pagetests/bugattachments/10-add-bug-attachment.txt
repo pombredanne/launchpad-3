@@ -1,19 +1,19 @@
 We need to login in order to add attachments.
 
   >>> print http(r"""
-  ... GET /malone/bugs/1/attachments/+new HTTP/1.1
+  ... GET /malone/bugs/1/+addattachment HTTP/1.1
   ... """)
   HTTP/1.1 303 See Other
   Content-Length: 0
   Content-Type: text/plain;charset=utf-8
-  Location: http://localhost:9000/malone/bugs/1/attachments/+new/+login
+  Location: http://localhost:9000/malone/bugs/1/+addattachment/+login
   <BLANKLINE>
 
 
 When we're logged in we can access the page.
 
   >>> print http(r"""
-  ... GET /malone/bugs/1/attachments/+new HTTP/1.1
+  ... GET /malone/bugs/1/+addattachment HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -27,7 +27,7 @@ redirected to the bug page. We need to start the Librarian first.
   >>> LibrarianTestSetup().setUp()
 
   >>> print http(r"""
-  ... POST /malone/bugs/1/attachments/+new HTTP/1.1
+  ... POST /malone/bugs/1/+addattachment HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 615
   ... Content-Type: multipart/form-data; boundary=----------P7v4Oj3X8teE7hHMyHGM69
