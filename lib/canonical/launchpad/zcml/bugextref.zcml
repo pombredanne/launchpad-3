@@ -34,14 +34,14 @@
         name="+new"
         schema="canonical.launchpad.interfaces.IBugExternalRef"
         for="canonical.launchpad.interfaces.IBugExternalRefSet"
-        class="canonical.launchpad.browser.addview.SQLObjectAddView"
+        class="canonical.launchpad.browser.bugextref.BugExternalRefAddView"
         label="Add External Reference"
         fields="url title"
         content_factory="canonical.launchpad.database.BugExternalRefFactory"
         arguments=""
         keyword_arguments="url title"
         permission="launchpad.AnyPerson"
-        template="../templates/launchpad-addform.pt"
+        template="../templates/bug-extref-add.pt"
         lp:url="malone/bugs/$Bugs.id/references/+new">
         <browser:widget
             field="url"

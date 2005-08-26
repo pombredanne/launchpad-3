@@ -247,7 +247,7 @@ class ValidateEmailView(BaseLoginTokenView):
             self.errormessage = (
                 'Launchpad could not import GPG key, the reason was: %s .'
                 'Check if you published it correctly in the global key ring '
-                '(using <kbd>gpg --send-keys KEY</kbd>) and that you add '
+                '(using <kbd>gpg --send-keys KEY</kbd>) and that you '
                 'entered the fingerprint correctly (as produced by <kbd>'
                 'gpg --fingerprint YOU</kdb>). Try later or '
                 '<a href="%s/+editgpgkey">cancel your request</a>.'
@@ -306,7 +306,7 @@ class ValidateEmailView(BaseLoginTokenView):
                 '<p>Some e-mail addresses were found in your key but are '
                 'not registered with Launchpad:<code>%s</code>. If you '
                 'want to use these addressess with Launchpad, you need to '
-                '<a href="%s/+emails\">confirm them</a>.</p>'
+                '<a href="%s/+editemails\">confirm them</a>.</p>'
                 % (emails, person_url))
 
         if len(hijacked):

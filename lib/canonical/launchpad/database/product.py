@@ -95,8 +95,8 @@ class Product(SQLBase):
     @property
     def name_with_project(self):
         """See lib.canonical.launchpad.interfaces.IProduct"""
-        if self.project:
-            return self.project.name + " " + self.name
+        if self.project and self.project.name != self.name:
+            return self.project.name + ": " + self.name
         return self.name
 
     @property
