@@ -53,8 +53,6 @@ def traverse_malone_application(malone_application, request, name):
         return getUtility(IProjectSet)
     elif name == "products":
         return getUtility(IProductSet)
-    elif name == "packages":
-        return getUtility(ISourcePackageSet)
     elif name == "bugtrackers":
         return getUtility(IBugTrackerSet)
 

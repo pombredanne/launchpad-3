@@ -142,6 +142,15 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
         return self.obj.id == user.id or user.inTeam(admins)
 
 
+class EditPersonBySelf(AuthorizationBase):
+    permission = 'launchpad.Special'
+    usedfor = IPerson
+
+    def checkAuthenticated(self, user):
+        """A user can edit the Person who is herself."""
+        return self.obj.id == user.id
+
+
 class EditPollByTeamOwnerOrTeamAdminsOrAdmins(
         EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins):
     permission = 'launchpad.Edit'

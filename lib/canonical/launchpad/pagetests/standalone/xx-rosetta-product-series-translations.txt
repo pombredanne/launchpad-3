@@ -13,5 +13,5 @@ series is working.
           <td>
             <a href="http://.../products/evolution/+series/main/+pots/evolution-2.2/af/+translate">Afrikaans</a>
           </td>
-          <td class="amount">22</td>
+          <td class="amount">23</td>
   ...

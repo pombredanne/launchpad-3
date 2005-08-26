@@ -12,7 +12,7 @@ __all__ = [
     'PersonView',
     'TeamJoinView',
     'TeamLeaveView',
-    'PersonEditView',
+    'PersonEditEmailsView',
     'RequestPeopleMergeView',
     'FinishedPeopleMergeRequestView',
     'RequestPeopleMergeMultipleEmailsView',
@@ -41,11 +41,11 @@ from canonical.lp.batching import BatchNavigator
 
 from canonical.launchpad.interfaces import (
     ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
-    IJabberIDSet, IIrcIDSet, IArchUserIDSet, ILaunchBag, ILoginTokenSet,
-    IPasswordEncryptor, ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler,
-    IKarmaActionSet, IKarmaSet, UBUNTU_WIKI_URL, ITeamMembershipSet,
-    IObjectReassignment, ITeamReassignment, IPollSubset, IPerson,
-    ICalendarOwner, BugTaskSearchParams)
+    IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
+    ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, IKarmaActionSet,
+    IKarmaSet, UBUNTU_WIKI_URL, ITeamMembershipSet, IObjectReassignment,
+    ITeamReassignment, IPollSubset, IPerson, ICalendarOwner,
+    BugTaskSearchParams)
 
 from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
@@ -53,7 +53,7 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, DefaultLink)
+    StandardLaunchpadFacets, Link, DefaultLink, canonical_url)
 
 
 class PersonFacets(StandardLaunchpadFacets):
@@ -206,7 +206,7 @@ class PersonRdfView:
 
 
 class PersonView:
-    """A simple View class to be used in all Person's pages."""
+    """A View class used in almost all Person's pages."""
 
     def __init__(self, context, request):
         self.context = context
@@ -421,6 +421,148 @@ class PersonView:
 
             return True
 
+    def processIRCForm(self):
+        """Process the IRC nicknames form."""
+        if self.request.method != "POST":
+            # Nothing to do
+            return ""
+
+        form = self.request.form
+        for ircnick in self.context.ircnicknames:
+            # XXX: We're exposing IrcID IDs here because that's the only
+            # unique column we have, so we don't have anything else that we
+            # can use to make field names that allow us to uniquely identify
+            # them. -- GuilhermeSalgado 25/08/2005
+            if form.get('remove_%d' % ircnick.id):
+                ircnick.destroySelf()
+            else:
+                nick = form.get('nick_%d' % ircnick.id)
+                network = form.get('network_%d' % ircnick.id)
+                if not (nick and network):
+                    return "Neither Nickname nor Network can be empty."
+                ircnick.nickname = nick
+                ircnick.network = network
+
+        nick = form.get('newnick')
+        network = form.get('newnetwork')
+        if nick or network:
+            if nick and network:
+                getUtility(IIrcIDSet).new(self.context, network, nick)
+            else:
+                self.newnick = nick
+                self.newnetwork = network
+                return "Neither Nickname nor Network can be empty."
+
+        return ""
+            
+    def processJabberForm(self):
+        """Process the Jabber ID form."""
+        if self.request.method != "POST":
+            # Nothing to do
+            return ""
+
+        form = self.request.form
+        for jabber in self.context.jabberids:
+            if form.get('remove_%s' % jabber.jabberid):
+                jabber.destroySelf()
+            else:
+                jabberid = form.get('jabberid_%s' % jabber.jabberid)
+                if not jabberid:
+                    return "You cannot save an empty Jabber ID."
+                jabber.jabberid = jabberid
+
+        jabberid = form.get('newjabberid')
+        if jabberid:
+            jabberset = getUtility(IJabberIDSet)
+            existingjabber = jabberset.getByJabberID(jabberid) 
+            if existingjabber is None:
+                jabberset.new(self.context, jabberid)
+            elif existingjabber.person != self.context:
+                return ('The Jabber ID %s is already registered by '
+                        '<a href="%s">%s</a>.'
+                        % (jabberid, canonical_url(existingjabber.person),
+                           cgi.escape(existingjabber.person.browsername)))
+            else:
+                return 'The Jabber ID %s already belongs to you.' % jabberid
+
+        return ""
+
+    def _sanitizeWikiURL(self, url):
+        """Strip whitespaces and make sure :url ends in a single '/'."""
+        if not url:
+            return url
+        return '%s/' % url.strip().rstrip('/')
+
+    def processWikiForm(self):
+        """Process the WikiNames form."""
+        if self.request.method != "POST":
+            # Nothing to do
+            return ""
+
+        form = self.request.form
+        context = self.context
+        wikinameset = getUtility(IWikiNameSet)
+        ubuntuwikiname = form.get('ubuntuwikiname')
+        existingwiki = wikinameset.getByWikiAndName(
+            UBUNTU_WIKI_URL, ubuntuwikiname)
+
+        if not ubuntuwikiname:
+            return "Your Ubuntu WikiName cannot be empty."
+        elif existingwiki is not None and existingwiki.person != context:
+            return ('The Ubuntu WikiName %s is already registered by '
+                    '<a href="%s">%s</a>.' 
+                    % (ubuntuwikiname, canonical_url(existingwiki.person),
+                       cgi.escape(existingwiki.person.browsername)))
+        context.ubuntuwiki.wikiname = ubuntuwikiname
+
+        for w in context.otherwikis:
+            # XXX: We're exposing WikiName IDs here because that's the only
+            # unique column we have. If we don't do this we'll have to
+            # generate the field names using the WikiName.wiki and
+            # WikiName.wikiname columns (because these two columns make
+            # another unique identifier for WikiNames), but that's tricky and
+            # not worth the extra work. -- GuilhermeSalgado 25/08/2005
+            if form.get('remove_%d' % w.id):
+                w.destroySelf()
+            else:
+                wiki = self._sanitizeWikiURL(form.get('wiki_%d' % w.id))
+                wikiname = form.get('wikiname_%d' % w.id)
+                if not (wiki and wikiname):
+                    return "Neither Wiki nor WikiName can be empty."
+                # Try to make sure people will have only a single Ubuntu
+                # WikiName registered. Although this is almost impossible
+                # because they can do a lot of tricks with the URLs to make
+                # them look different from UBUNTU_WIKI_URL but still point to
+                # the same place.
+                elif wiki == UBUNTU_WIKI_URL:
+                    return "You cannot have two Ubuntu WikiNames."
+                w.wiki = wiki
+                w.wikiname = wikiname
+
+        wiki = self._sanitizeWikiURL(form.get('newwiki'))
+        wikiname = form.get('newwikiname')
+        if wiki or wikiname:
+            if wiki and wikiname:
+                existingwiki = wikinameset.getByWikiAndName(wiki, wikiname)
+                if existingwiki and existingwiki.person != context:
+                    return ('The WikiName %s%s is already registered by '
+                            '<a href="%s">%s</a>.' 
+                            % (wiki, wikiname,
+                               canonical_url(existingwiki.person),
+                               cgi.escape(existingwiki.person.browsername)))
+                elif existingwiki:
+                    return ('The WikiName %s%s already belongs to you.'
+                            % (wiki, wikiname))
+                elif wiki == UBUNTU_WIKI_URL:
+                    return "You cannot have two Ubuntu WikiNames."
+                wikinameset.new(context, wiki, wikiname)
+            else:
+                self.newwiki = wiki
+                self.newwikiname = wikiname
+                return "Neither Wiki nor WikiName can be empty."
+
+        return ""
+            
     # restricted set of methods to be proxied by form_action()
     permitted_actions = ['claim_gpg', 'deactivate_gpg', 'remove_gpgtoken',
                          'revalidate_gpg', 'add_ssh', 'remove_ssh']
@@ -611,6 +753,28 @@ class PersonView:
         appurl = self.request.getApplicationURL()
         token.sendGPGValidationRequest(appurl, key, encrypt=True)
 
+    def processPasswordChangeForm(self):
+        if self.request.method != 'POST':
+            return
+        
+        form = self.request.form
+        currentpassword = form.get('currentpassword')
+        encryptor = getUtility(IPasswordEncryptor)
+        if not encryptor.validate(currentpassword, self.context.password):
+            self.message = (
+                "The provided password doesn't match your current password.")
+            return
+
+        newpassword = form.get('newpassword')
+        newpassword2 = form.get('newpassword2')
+        if not (newpassword or newpassword2):
+            self.message = "Your new password cannot be empty"
+        elif newpassword != newpassword2:
+            self.message = "Passwords did not match"
+        else:
+            self.context.password = encryptor.encrypt(newpassword)
+            self.message = "Password changed successfully"
+
 
 class TeamJoinView(PersonView):
 
@@ -642,7 +806,7 @@ class TeamLeaveView(PersonView):
         self.request.response.redirect('./')
 
 
-class PersonEditView:
+class PersonEditEmailsView:
 
     def __init__(self, context, request):
         self.context = context
@@ -651,92 +815,6 @@ class PersonEditView:
         self.message = None
         self.badlyFormedEmail = None
         self.user = getUtility(ILaunchBag).user
-
-    def edit_action(self):
-        if self.request.method != "POST":
-            # Nothing to do
-            return False
-
-        person = self.context
-        request = self.request
-
-        password = request.form.get("password")
-        newpassword = request.form.get("newpassword")
-        newpassword2 = request.form.get("newpassword2")
-        displayname = request.form.get("displayname")
-
-        encryptor = getUtility(IPasswordEncryptor)
-        if not encryptor.validate(password, person.password):
-            self.errormessage = "Wrong password. Please try again."
-            return False
-
-        if not displayname:
-            self.errormessage = "Your display name cannot be emtpy."
-            return False
-
-        if newpassword:
-            if newpassword != newpassword2:
-                self.errormessage = "New password didn't match."
-                return False
-            else:
-                newpassword = encryptor.encrypt(newpassword)
-                person.password = newpassword
-
-        person.displayname = displayname
-        person.givenname = request.form.get("givenname")
-        person.familyname = request.form.get("familyname")
-
-        # XXX: wiki is hard-coded for Launchpad 1.0
-        #      - Andrew Bennetts, 2005-06-14
-        #wiki = request.form.get("wiki")
-        wikiname = request.form.get("wikiname")
-        network = request.form.get("network")
-        nickname = request.form.get("nickname")
-        jabberid = request.form.get("jabberid")
-        archuserid = request.form.get("archuserid")
-
-        #WikiName
-        # Assertions that should be true at least until 1.0
-        assert person.wiki, 'People should always have wikinames'
-        if person.wiki.wikiname != wikiname:
-            if getUtility(IWikiNameSet).exists(wikiname):
-                self.errormessage = (
-                    'The wikiname %s for %s is already taken' 
-                    % (wikiname, UBUNTU_WIKI_URL,))
-                return False
-            person.wiki.wikiname = wikiname
-
-        #IrcID
-        if (network and not nickname) or (nickname and not network):
-            self.errormessage = ('You cannot provide the irc nickname without '
-                                 'an irc network, or the irc network without '
-                                 'a nickname.')
-            return False
-        elif network and nickname and person.irc is not None:
-            person.irc.network = network
-            person.irc.nickname = nickname
-        elif network and nickname and person.irc is None:
-            getUtility(IIrcIDSet).new(person.id, network, nickname)
-        elif person.irc is not None:
-            person.irc.destroySelf()
-
-        #JabberID
-        if jabberid and person.jabber is not None:
-            person.jabber.jabberid = jabberid
-        elif jabberid and person.jabber is None:
-            getUtility(IJabberIDSet).new(person.id, jabberid)
-        elif person.jabber is not None:
-            person.jabber.destroySelf()
-
-        #ArchUserID
-        if archuserid and person.archuser is not None:
-            person.archuser.archuserid = archuserid
-        elif archuserid and person.archuser is None:
-            getUtility(IArchUserIDSet).new(person.id, archuserid)
-        elif person.archuser is not None:
-            person.archuser.destroySelf()
-
-        return True
 
     def unvalidatedAndGuessedEmails(self):
         """Return a Set containing all unvalidated and guessed emails."""
@@ -867,14 +945,17 @@ class PersonEditView:
             # we don't need to escape email addresses because they are always
             # validated (which means they can't have html tags) before being
             # inserted in the database.
-            browsername = cgi.escape(email.person.browsername)
+            owner = email.person
+            browsername = cgi.escape(owner.browsername)
+            merge_url = ('%s/+requestmerge?field.dupeaccount=%s'
+                         % (canonical_url(getUtility(IPersonSet)), owner.name))
             self.message = (
-                    "The email address '%s' was already registered by user "
-                    "'%s'. If you think that is a duplicated account, you "
-                    "can go to the <a href=\"../+requestmerge\">Merge "
-                    "Accounts</a> page to claim this email address and "
-                    "everything that is owned by that account."
-                    % (email.email, browsername))
+                    "The email address '%s' is already registered by "
+                    "<a href=\"%s\">%s</a>. If you think that is a "
+                    "duplicated account, you can <a href=\"%s\">merge it</a> "
+                    "into your account. "
+                    % (email.email, canonical_url(owner), browsername,
+                       merge_url))
             return
 
         token = logintokenset.new(
