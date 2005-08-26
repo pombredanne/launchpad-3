@@ -11,50 +11,32 @@ from optparse import OptionParser
 from canonical.lp import initZopeless
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.database import (POTranslation, POSubmission,
-    POSelection)
+    POSelection, POFile)
 from canonical.launchpad.scripts import db_options
 from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad import helpers
 
 def fix_submission(submission, translation):
-    msgid = submission.pomsgset.potmsgset.primemsgid_
-    striped_msgid = msgid.msgid.strip()
-    striped_translation = translation.translation.strip()
-    newtranslation = None
-    newvalue = None
-    if len(striped_msgid) == 0:
-        newvalue = ''
-    if len(striped_msgid) != len(msgid.msgid):
-        # There are whitespaces that we should copy to the translation
-        # after stripping it.
-        length = len(msgid.msgid)
-        length_prefix = length - len(msgid.msgid.lstrip())
-        length_postfix = length - len(msgid.msgid.rstrip())
-        prefix = msgid.msgid[:length_prefix]
-        if length_postfix == 0:
-            postfix = ''
-        else:
-            postfix = msgid.msgid[-length_postfix:]
-        newvalue = '%s%s%s' % (
-                prefix, striped_translation, postfix)
-    elif len(striped_translation) != len(translation.translation):
-        # The msgid does not have any whitespace, we need to remove
-        # the extra ones added to this translation.
-        newvalue = striped_translation
+    """Fix the submission (if needed)."""
+    new_text = helpers.normalize_whitespaces(
+        submission.pomsgset.potmsgset.primemsgid_.msgid,
+        translation.translation)
 
-    if newvalue == translation.translation:
+    if new_text == translation.translation:
+        # Nothing changed.
         return
 
     # If we already have the fixed value in our database, we use it instead of
     # change the old one.
     try:
-        newtranslation = POTranslation.byTranslation(newvalue)
+        newtranslation = POTranslation.byTranslation(new_text)
     except SQLObjectNotFound:
         newtranslation = None
 
     if newtranslation is not None:
         submission.potranslation = newtranslation
-    elif newvalue is not None:
-        translation.translation = newvalue
+    elif new_text is not None:
+        translation.translation = new_text
 
 
 def main():
@@ -77,7 +59,7 @@ def main():
     count = 0
     started = time.time()
     for id in ids:
-	id = int(id)
+        id = int(id)
         count += 1
         translation = POTranslation.get(id)
         submissions = POSubmission.selectBy(potranslationID=translation.id)
@@ -132,6 +114,22 @@ def main():
                 poselection.publishedsubmission = None
             poselection.sync()
 
+        # Update all POFile.latestsubmission fields:
+        pofiles = POFile.select("latestsubmission=%d" % (submission.id))
+        for pofile in pofiles:
+            results = POSubmission.select('''
+                POSubmission.pomsgset = POMsgSet.id AND
+                POMsgSet.pofile = %d''' % pofile.id,
+                orderBy='-datecreated',
+                clauseTables=['POMsgSet'])
+            if len(results) > 2:
+                # Latest one is going to be removed, we pick previous
+                # submission.
+                pofile.latestsubmission = results[1]
+            elif len(results) == 1:
+                # There was only this submission, we don't have any
+                # translation for this pofile!.
+                pofile.latestsubmission = None
         submission.pomsgset.iscomplete = False
         POSubmission.delete(submission)
     POTranslation.delete(empty_translation)

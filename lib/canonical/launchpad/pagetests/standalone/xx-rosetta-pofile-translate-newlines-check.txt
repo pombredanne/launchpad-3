@@ -76,3 +76,92 @@ And finally, a line that does not start with a new line so we are sure we don't 
   <BLANKLINE>
                           <div>
   ...
+
+Now, Check that even though the user forgot the trailing new line char, Rosetta
+adds it automatically
+
+  >>> print http(r"""
+  ... POST /products/evolution/+series/main/+pots/evolution-2.2/es/+translate HTTP/1.1
+  ... Content-Length: 127
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... 
+  ... count=1&show=all&set_165_msgid=&set_165_translation_es_0=%25s%3A+la+opcion+%C2%AB%25s%C2%BB+es+ambigua&SUBMIT=Save+%26+Continue""")
+  HTTP/1.1 200 Ok
+  ...
+            <input type="hidden" name="offset" value="1" />
+            <input type="hidden" name="count" value="1" />
+  ...
+
+This is the check, as we can see, we get the trailing new line char
+
+  >>> print http(r"""
+  ... GET /products/evolution/+series/main/+pots/evolution-2.2/es/+translate?offset=22&count=1 HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+                          <textarea rows="2"
+      name="set_165_translation_es_0" tabindex="1">
+  %s: la opcion «%s» es ambigua
+  </textarea>
+  ...
+
+Now, we do the right submit, with one trailing new line...
+
+  >>> print http(r"""
+  ... POST /products/evolution/+series/main/+pots/evolution-2.2/es/+translate HTTP/1.1
+  ... Content-Length: 133
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... 
+  ... count=1&show=all&set_165_msgid=&set_165_translation_es_0=%25s%3A+la+opcion+%C2%AB%25s%C2%BB+es+ambigua%0D%0A&SUBMIT=Save+%26+Continue""")
+  HTTP/1.1 200 Ok
+  ...
+            <input type="hidden" name="offset" value="1" />
+            <input type="hidden" name="count" value="1" />
+  ...
+
+And we get the same output, just one trailing new line.
+
+  >>> print http(r"""
+  ... GET /products/evolution/+series/main/+pots/evolution-2.2/es/+translate?offset=22&count=1 HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+                          <textarea rows="2"
+      name="set_165_translation_es_0" tabindex="1">
+  %s: la opcion «%s» es ambigua
+  </textarea>
+  ...
+
+Last check, the user sends two new line chars instead of just one...
+
+  >>> print http(r"""
+  ... POST /products/evolution/+series/main/+pots/evolution-2.2/es/+translate HTTP/1.1
+  ... Content-Length: 139
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... 
+  ... count=1&show=all&set_165_msgid=&set_165_translation_es_0=%25s%3A+la+opcion+%C2%AB%25s%C2%BB+es+ambigua%0D%0A%0D%0A&SUBMIT=Save+%26+Continue""")
+  HTTP/1.1 200 Ok
+  ...
+            <input type="hidden" name="offset" value="1" />
+            <input type="hidden" name="count" value="1" />
+  ...
+
+
+And Rosetta comes to the rescue and stores just one!.
+
+  >>> print http(r"""
+  ... GET /products/evolution/+series/main/+pots/evolution-2.2/es/+translate?offset=22&count=1 HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+                          <textarea rows="2"
+      name="set_165_translation_es_0" tabindex="1">
+  %s: la opcion «%s» es ambigua
+  </textarea>
+  ...
