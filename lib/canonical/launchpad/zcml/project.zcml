@@ -124,7 +124,7 @@
         name="+new"
         for="canonical.launchpad.interfaces.IProjectSet"
         schema="canonical.launchpad.interfaces.IProject"
-        label="Register an open source project"
+        label="Register a project with Launchpad"
         fields="name displayname title summary description homepageurl"
         content_factory="canonical.launchpad.database.Project"
         class="canonical.launchpad.browser.ProjectSetAddView"
@@ -146,7 +146,7 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IProject"
         schema="canonical.launchpad.interfaces.IProject"
-        label="Edit Open Source Project Details:"
+        label="Edit project details"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl"
         class="canonical.launchpad.browser.ProjectEditView"
