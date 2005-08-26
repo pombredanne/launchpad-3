@@ -1,0 +1,38 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_addform/addform">
+
+    <div metal:fill-slot="extra_info" class="documentDescription">
+      Use this form to remove the link between the spec and a given
+      bug number.
+    </div>
+
+  </div>
+
+  <div>
+    NB, this will <b>remove</b> any link between this spec and the bug
+    number!
+  </div>
+
+</div>
+    
+</body>
+</html>
+

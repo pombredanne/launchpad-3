@@ -117,7 +117,9 @@ binarypackagerelease_license = 'Binary Package Licence'
 
 bounties = 'Launchpad Bounties'
 
-bounties_new = 'Register a New Bounty in Launchpad'
+bounty_add = 'Register a New Bounty in Launchpad'
+
+bounty_edit = ContextTitle('Edit Bounty: %s')
 
 bounty_index = ContextTitle('Launchpad Bounty: %s')
 
@@ -208,7 +210,7 @@ bugtrackers_add = 'Register External Bugtracker in Malone'
 
 bugtrackers_index = 'Malone-Registered Bug Trackers'
 
-calendar = ContextTitle('%s')
+calendar_index = ContextTitle('%s')
 
 calendar_event_addform = ContextTitle('Add Event to Calendar "%s"')
 
@@ -396,7 +398,7 @@ malone_to_do = 'Malone ToDo'
 
 milestone_add = ContextDisplayName('Add Milestone for %s')
 
-milestone_bugs = ContextTitle('Bugs Targeted to %s')
+milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
 
@@ -435,15 +437,25 @@ person_bounties = ContextDisplayName('Bounties for %s')
 
 person_branches = ContextDisplayName("%s's code branches in Launchpad")
 
+person_changepassword = 'Change your password'
+
 person_codesofconduct = ContextDisplayName('%s Signed Codes of Conduct')
 
 person_edit = ContextDisplayName('Edit %s Information')
 
-person_emails = ContextDisplayName('Edit %s Email Addresses')
+person_editemails = ContextDisplayName('Edit %s Email Addresses')
+
+person_editgpgkeys = ContextDisplayName('%s GPG Keys')
+
+person_editircnicknames = ContextDisplayName('%s IRC Nicknames')
+
+person_editjabberids = ContextDisplayName('%s Jabber IDs')
+
+person_editsshkeys = ContextDisplayName('%s SSH Keys')
+
+person_editwikinames = ContextDisplayName('%s Wiki Names')
 
 # person_foaf is an rdf file
-
-person_gpgkey = ContextDisplayName('%s GPG Keys')
 
 person_index = ContextDisplayName('%s: Launchpad Overview')
 
@@ -456,8 +468,6 @@ person_packages = ContextDisplayName('Packages Maintained By %s')
 person_reportedbugs = ContextDisplayName('Bugs Reported By %s')
 
 person_review = ContextDisplayName("Review %s' Information")
-
-person_sshkey = ContextDisplayName('%s SSH Keys')
 
 person_timezone = ContextDisplayName('Time Zone for %s')
 
@@ -664,6 +674,46 @@ sourcesource_index = 'Upstream Source Import'
 soyuz_about = 'About Soyuz'
 
 soyuz_index = 'Soyuz: Linux Distribution Management'
+
+specification_add = 'Register A New Feature Specification'
+
+specification_bug = 'Link this Specification to Bug'
+
+specification_removebug = 'Remove Link to Bug'
+
+specification_dependency = 'Create a Specification Dependency'
+
+specification_deptree = 'Complete Dependency Tree'
+
+specification_milestone = 'Target Feature to Milestone'
+
+specification_people = 'Change the Specification Assignee, Drafter and Reviewer'
+
+specification_distrorelease = 'Target Feature Specification at Distribution Release'
+
+specification_productseries = 'Target Feature Specification at Series'
+
+specification_removedep = 'Remove a Dependency'
+
+specification_doreview = 'Conduct Specification Review'
+
+specification_requestreview = 'Request a Review of This Specification'
+
+specification_edit = 'Edit Specification Details'
+
+specification_status = 'Edit Specification Status'
+
+specification_index = ContextTitle('Feature Specification: %s')
+
+specification_subscription = 'Subscribe to Feature Specification'
+
+specification_queue = 'Queue Feature Specification for Review'
+
+specifications_index = ContextTitle('%s')
+
+specificationtarget_specs = ContextTitle('Specifications for %s')
+
+specificationtarget_specplan = ContextTitle('Project Plan for %s')
 
 def team_addmember(context, view):
     return '%s: Add members' % context.team.browsername

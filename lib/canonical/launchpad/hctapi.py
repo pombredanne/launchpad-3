@@ -194,7 +194,7 @@ def get_object(url, resolve=False):
             # point in the schema (products or distros) or the name of
             # anything else.  Check for the former first, then go through
             # the tables in precedence order looking for the records.
-            if part == "products" or part == "upstream":
+            if part in ["products", "upstream"]:
                 try:
                     product = parts.pop(0)
                     obj = Product.byName(product)
@@ -259,23 +259,21 @@ def get_object(url, resolve=False):
             # version or a series name, check series first as that's less
             # specific and you can always specify /2.0/2.0 to get to the
             # release.
-            try:
-                obj = obj.getSeries(part)
-            except KeyError:
-                try:
-                    obj = obj.getRelease(part)
-                except NotFoundError:
-                    raise LaunchpadError(
-                            "Product series or release '%s'"
-                            " not found in URL: '%s'" % (part, url)
-                            )
+            series = obj.getSeries(part)
+            release = obj.getRelease(part)
+            if release is not None:
+                obj = release
+            if series is not None:
+                obj = series
+            if release is None and series is None:
+                raise LaunchpadError("Product series or release '%s' "
+                    "not found in URL: '%s'" % (part, url))
 
         elif isinstance(obj, ProductSeries):
             # The part of a URL after a product series is always a release
             # version.
-            try:
-                obj = obj.getRelease(part)
-            except NotFoundError:
+            obj = obj.getRelease(part)
+            if obj is None:
                 raise LaunchpadError("Release '%s' not found in URL: '%s'"
                                      % (part, url))
 
@@ -360,10 +358,10 @@ def get_object(url, resolve=False):
                     )
 
     if resolve:
-        try:
+        #try:
             return resolve_object(obj)
-        except UrlError:
-            raise LaunchpadError("URL not found: '%s'" % url)
+        #except UrlError:
+        #    raise LaunchpadError("URL was not found: '%s'" % url)
     else:
         return obj
 
@@ -452,7 +450,6 @@ def resolve_object(obj):
     if isinstance(obj, ProductRelease):
         return obj
 
-
     if isinstance(obj, SourcePackage):
         if obj.currentrelease is None:
             raise LaunchpadError(
@@ -469,10 +466,9 @@ def resolve_object(obj):
     if isinstance(obj, SourcePackageRelease):
         return obj
 
+    raise LaunchpadError("Unable to resolve object to manifest "
+        "holder: %r" % obj)
 
-    raise LaunchpadError(
-            "Unable to resolve object to manifest holder: %r" % obj
-            )
 
 def get_branch_from(obj):
     """Get hct Branch from database object.
@@ -575,14 +571,12 @@ def get_release(url, release):
     try:
         obj = get_object(url)
         if isinstance(obj, Product):
-            try:
-                rel = obj.getRelease(release)
-            except NotFoundError:
+            rel = obj.getRelease(release)
+            if rel is None:
                 return None
         elif isinstance(obj, ProductSeries):
-            try:
-                rel = obj.getRelease(release)
-            except KeyError:
+            rel = obj.getRelease(release)
+            if rel is None:
                 return None
         elif isinstance(obj, SourcePackage):
             # FIXME more intelligence for version parsing (using sourcerer.deb)

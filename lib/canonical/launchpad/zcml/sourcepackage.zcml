@@ -135,7 +135,7 @@
         lp:url="/distros/ubuntu/hoary/+sources/apache2/+filebug">
         <browser:widget
            field="owner"
-           class="canonical.widgets.OwnerWidget" />
+           class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"

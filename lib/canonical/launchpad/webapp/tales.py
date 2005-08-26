@@ -532,10 +532,10 @@ class PageTemplateContextsAPI:
         name = name.replace('-', '_')
         titleobj = getattr(canonical.launchpad.pagetitles, name, None)
         if titleobj is None:
-            warnings.warn(
+            # sabdfl 25/0805 page titles are now mandatory hence the assert
+            raise AssertionError(
                  "No page title in canonical.launchpad.pagetitles for %s"
                  % name)
-            return canonical.launchpad.pagetitles.DEFAULT_LAUNCHPAD_TITLE
         elif isinstance(titleobj, basestring):
             return titleobj
         else:

@@ -133,6 +133,11 @@ class POMsgSet(SQLBase):
         # By default all translations are correct.
         validation_status = TranslationValidationStatus.OK
 
+        # Fix the trailing and leading whitespaces
+        for index, value in new_translations.items():
+            new_translations[index] = helpers.normalize_whitespaces(
+                msgids_text[0], value)
+
         # Validate the translation we got from the translation form
         # to know if gettext is unhappy with the input.
         try:

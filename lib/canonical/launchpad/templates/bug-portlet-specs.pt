@@ -1,0 +1,19 @@
+<div class="portlet">
+
+  <h4>Related Specifications:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li class="spec" tal:repeat="spec context/specifications">
+        <a tal:attributes="href spec/fmt:url"
+           tal:content="spec/title">spec title here</a>
+      </li>
+      <li class="info" tal:condition="not: context/specifications">
+        <i>No related specifications.</i>
+      </li>
+    </ul>
+	
+  </div>
+
+</div>

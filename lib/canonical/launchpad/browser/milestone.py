@@ -4,16 +4,36 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
-
-from canonical.launchpad.interfaces import (
-    IProduct, IDistribution, IMilestoneSet)
-from canonical.launchpad.browser.editview import SQLObjectEditView
-
 __all__ = [
+    'MilestoneFacets',
     'MilestoneAddView',
     'MilestoneEditView',
     ]
+
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces import (
+    IProduct, IDistribution, IMilestone, IMilestoneSet)
+from canonical.launchpad.browser.editview import SQLObjectEditView
+
+from canonical.launchpad.webapp import StandardLaunchpadFacets, DefaultLink
+
+
+class MilestoneFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for
+    an IMilestone.
+    """
+
+    usedfor = IMilestone
+
+    links = ['overview']
+
+    def overview(self):
+        target = ''
+        text = 'Overview'
+        summary = 'General information about %s' % self.context.displayname
+        return DefaultLink(target, text, summary)
+
 
 class MilestoneAddView:
     def create(self, name, dateexpected=None):

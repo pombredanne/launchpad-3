@@ -1,0 +1,275 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:lp="http://launchpad.canonical.com"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
+
+  <!-- Specification -->
+  <content class="canonical.launchpad.database.Specification">
+    <allow interface="canonical.launchpad.interfaces.ISpecification" />
+    <require
+      permission="launchpad.AnyPerson"
+      set_schema="canonical.launchpad.interfaces.ISpecification" />
+  </content>
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ISpecification"
+    name="+index" />
+
+  <browser:url
+    for="canonical.launchpad.interfaces.ISpecification"
+    path_expression="string:+spec/${name}"
+    attribute_to_parent="target" />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationView"
+    permission="zope.Public">
+    <browser:page
+      name="+index"
+      template="../templates/specification-index.pt" />
+    <browser:page
+      name="+deptree"
+      template="../templates/specification-deptree.pt" />
+    <browser:page
+      name="+listing-detailed"
+      template="../templates/specification-listing-detailed.pt" />
+    <browser:page
+      name="+portlet-actions"
+      template="../templates/specification-portlet-actions.pt" />
+    <browser:page
+      name="+portlet-details"
+      template="../templates/specification-portlet-details.pt" />
+    <browser:page
+      name="+portlet-subscribers"
+      template="../templates/specification-portlet-subscribers.pt" />
+    <browser:page
+      name="+portlet-dependencies"
+      template="../templates/specification-portlet-dependencies.pt" />
+    <browser:page
+      name="+portlet-blocked"
+      template="../templates/specification-portlet-blocked.pt" />
+    <browser:page
+      name="+portlet-bugs"
+      template="../templates/specification-portlet-bugs.pt" />
+    <browser:page
+      name="+portlet-reviewqueue"
+      template="../templates/specification-portlet-reviewqueue.pt" />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationView"
+    permission="launchpad.AnyPerson">
+    <browser:page
+      name="+subscribe"
+      template="../templates/specification-subscription.pt" />
+    <browser:page
+      name="+doreview"
+      template="../templates/specification-doreview.pt" />
+  </browser:pages>
+
+  <browser:editform
+    name="+edit"
+    schema="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditView"
+    label="Edit Summary and Title"
+    fields="title specurl summary whiteboard"
+    permission="launchpad.Edit"
+    template="../templates/specification-edit.pt">
+    <browser:widget
+      field="whiteboard"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="5" />
+  </browser:editform>
+
+  <browser:editform
+    name="+people"
+    schema="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditView"
+    label="Change People"
+    fields="assignee drafter approver whiteboard"
+    permission="launchpad.Edit"
+    template="../templates/specification-people.pt">
+    <browser:widget
+      field="whiteboard"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="5" />
+  </browser:editform>
+
+  <browser:editform
+    name="+setdistrorelease"
+    schema="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditView"
+    label="Target Specific DistroRelease"
+    fields="distrorelease whiteboard"
+    permission="launchpad.Edit"
+    template="../templates/specification-distrorelease.pt">
+    <browser:widget
+      field="whiteboard"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="5" />
+  </browser:editform>
+
+  <browser:editform
+    name="+setseries"
+    schema="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditView"
+    label="Target Specific Series"
+    fields="productseries whiteboard"
+    permission="launchpad.Edit"
+    template="../templates/specification-productseries.pt">
+    <browser:widget
+      field="whiteboard"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="5" />
+  </browser:editform>
+
+  <browser:editform
+    name="+status"
+    schema="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditView"
+    label="Change Status"
+    fields="status priority whiteboard"
+    permission="launchpad.Edit"
+    template="../templates/specification-status.pt">
+    <browser:widget
+      field="whiteboard"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="5" />
+  </browser:editform>
+
+  <browser:editform
+    name="+milestone"
+    schema="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditView"
+    label="Target to Milestone"
+    fields="milestone whiteboard"
+    permission="launchpad.Edit"
+    template="../templates/specification-milestone.pt">
+    <browser:widget
+      field="whiteboard"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="5" />
+  </browser:editform>
+
+  <browser:editform
+    name="+admin"
+    schema="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditView"
+    label="Administer Specification"
+    fields="name"
+    permission="launchpad.Admin"
+    template="../templates/specification-edit.pt"
+  />
+
+  <browser:addform
+    name="+requestreview"
+    for="canonical.launchpad.interfaces.ISpecification"
+    schema="canonical.launchpad.interfaces.ISpecificationReview"
+    class="canonical.launchpad.browser.SpecificationReviewAddView"
+    label="Request Review of Specification"
+    fields="reviewer requestor queuemsg"
+    keyword_arguments="reviewer requestor queuemsg"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-requestreview.pt">
+    <browser:widget
+      field="requestor"
+      class="canonical.widgets.HiddenUserWidget" />
+    <browser:widget
+      field="queuemsg"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="5" />
+  </browser:addform>
+
+  <browser:addform
+    name="+linkbug"
+    for="canonical.launchpad.interfaces.ISpecification"
+    schema="canonical.launchpad.interfaces.ISpecificationBug"
+    class="canonical.launchpad.browser.SpecificationBugAddView"
+    label="Link Specification and Bug"
+    fields="bug"
+    keyword_arguments="bug"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-bug.pt">
+  </browser:addform>
+
+  <browser:addform
+    name="+unlinkbug"
+    for="canonical.launchpad.interfaces.ISpecification"
+    schema="canonical.launchpad.interfaces.ISpecificationBug"
+    class="canonical.launchpad.browser.SpecificationBugRemoveView"
+    label="Remove Link between Specification and Bug"
+    fields="bug"
+    keyword_arguments="bug"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-removebug.pt">
+  </browser:addform>
+
+  <browser:addform
+    name="+linkdependency"
+    for="canonical.launchpad.interfaces.ISpecification"
+    schema="canonical.launchpad.interfaces.ISpecificationDependency"
+    class="canonical.launchpad.browser.SpecificationDependencyAddView"
+    label="Add a Dependency"
+    fields="dependency"
+    keyword_arguments="dependency"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-dependency.pt">
+  </browser:addform>
+
+  <browser:addform
+    name="+removedependency"
+    for="canonical.launchpad.interfaces.ISpecification"
+    schema="canonical.launchpad.interfaces.ISpecificationDependencyRemoval"
+    class="canonical.launchpad.browser.SpecificationDependencyRemoveView"
+    label="Remove a Dependency"
+    fields="dependency"
+    keyword_arguments="dependency"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-removedep.pt">
+  </browser:addform>
+
+
+  <!-- SpecificationSet -->
+  <content class="canonical.launchpad.database.SpecificationSet">
+    <allow interface="canonical.launchpad.interfaces.ISpecificationSet" />
+  </content>
+
+  <securedutility
+    class="canonical.launchpad.database.SpecificationSet"
+    provides="canonical.launchpad.interfaces.ISpecificationSet" >
+      <allow interface="canonical.launchpad.interfaces.ISpecificationSet" />
+  </securedutility>
+
+  <browser:suburl
+    for="canonical.publication.RootObject"
+    utility="canonical.launchpad.interfaces.ISpecificationSet"
+    name="features" />
+
+  <browser:url
+    for="canonical.launchpad.interfaces.ISpecificationSet"
+    path_expression="string:features"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+  />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ISpecificationSet"
+    name="+index" />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.ISpecificationSet"
+    permission="zope.Public">
+    <browser:page
+      name="+index"
+      template="../templates/specifications-index.pt" />
+    <browser:page
+      name="+portlet-actions"
+      template="../templates/specifications-portlet-actions.pt" />
+    <browser:page
+      name="+portlet-details"
+      template="../templates/specifications-portlet-details.pt" />
+  </browser:pages>
+
+</configure>

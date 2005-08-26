@@ -29,6 +29,6 @@ class IIrcID(Interface):
 class IIrcIDSet(Interface):
     """The set of IrcIDs."""
 
-    def new(personID, network, nickname):
+    def new(person, network, nickname):
         """Create a new IrcID pointing to the given Person."""
 

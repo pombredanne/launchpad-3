@@ -7,28 +7,16 @@
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/target/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-actions" />
-  <div tal:replace="structure context/target/@@+portlet-milestones" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-  <h1>Bugs Targeted</h1>
+  <h1>Feature Tracking in Launchpad</h1>
 
-  <ul>
-    <li tal:repeat="bugtask context/bugtasks">
-      <a tal:content="bugtask/bug/title"
-         tal:attributes="href bugtask/bug/fmt:url">#3223 Firefox is busted</a>
-    </li>
-    <li tal:condition="not: context/bugtasks">
-      <i>No bugs targeted to this milestone.</i>
-    </li>
-  </ul>
-
-</div> 
+</div>
 </body>
 </html>

@@ -9,24 +9,26 @@ __metaclass__ = type
 
 __all__ = [
     'vocab_factory',
-    'SubscriptionVocabulary',
     'BountyDifficultyVocabulary',
     'BountyStatusVocabulary',
     'BugAttachmentTypeVocabulary',
-    'BugTaskStatusVocabulary',
+    'BugRefVocabulary',
     'BugTaskPriorityVocabulary',
     'BugTaskSeverityVocabulary',
-    'BugRefVocabulary',
+    'BugTaskStatusVocabulary',
     'BugTrackerTypeVocabulary',
-    'InfestationStatusVocabulary',
-    'PackagingTypeVocabulary',
-    'TranslationPermissionVocabulary',
-    'KarmaActionCategoryVocabulary',
-    'TeamSubscriptionPolicyVocabulary',
-    'GPGKeyAlgorithmVocabulary',
     'CVEStateVocabulary',
+    'GPGKeyAlgorithmVocabulary',
+    'InfestationStatusVocabulary',
+    'KarmaActionCategoryVocabulary',
+    'PackagingTypeVocabulary',
     'PollAlgorithmVocabulary',
-    'PollSecrecyVocabulary'
+    'PollSecrecyVocabulary',
+    'SpecificationStatusVocabulary',
+    'SpecificationPriorityVocabulary',
+    'SubscriptionVocabulary',
+    'TeamSubscriptionPolicyVocabulary',
+    'TranslationPermissionVocabulary',
     ]
 
 from canonical.lp import dbschema
@@ -55,7 +57,6 @@ def vocab_factory(schema, noshow=[]):
 
 # DB Schema Vocabularies
 
-SubscriptionVocabulary = vocab_factory(dbschema.BugSubscription)
 BountyDifficultyVocabulary = vocab_factory(dbschema.BountyDifficulty)
 BountyStatusVocabulary = vocab_factory(dbschema.BountyStatus)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
@@ -65,15 +66,17 @@ BugTaskSeverityVocabulary = vocab_factory(dbschema.BugTaskSeverity)
 BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
 BugTrackerTypeVocabulary = vocab_factory(dbschema.BugTrackerType,
     noshow=[dbschema.BugTrackerType.DEBBUGS])
-InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
-PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
-TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
-KarmaActionCategoryVocabulary = vocab_factory(dbschema.KarmaActionCategory)
-TeamSubscriptionPolicyVocabulary = vocab_factory(
-        dbschema.TeamSubscriptionPolicy)
+CVEStateVocabulary = vocab_factory(dbschema.CVEState)
 GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
+InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
+KarmaActionCategoryVocabulary = vocab_factory(dbschema.KarmaActionCategory)
+PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
 PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
 PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
-CVEStateVocabulary = vocab_factory(dbschema.CVEState)
-
+SpecificationStatusVocabulary =  vocab_factory(dbschema.SpecificationStatus)
+SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
+SubscriptionVocabulary = vocab_factory(dbschema.BugSubscription)
+TeamSubscriptionPolicyVocabulary = vocab_factory(
+        dbschema.TeamSubscriptionPolicy)
+TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
 

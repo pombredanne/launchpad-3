@@ -82,6 +82,9 @@ class Bug(SQLBase):
             'BugSubscription', joinColumn='bug', orderBy='id')
     duplicates = MultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
     attachments = MultipleJoin('BugAttachment', joinColumn='bug', orderBy='id')
+    specifications = RelatedJoin('Specification', joinColumn='bug',
+        otherColumn='specification', intermediateTable='SpecificationBug',
+        orderBy='-datecreated')
 
     @property
     def bugtasks(self):
