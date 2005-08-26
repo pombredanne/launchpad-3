@@ -8,6 +8,11 @@
           Add Event
         </a>
       </li>
+      <tal:comment replace="nothing">
+        The merged calendar view at "/calendar" is not stored in the
+        database, so has no ID.  Therefore, it can't be subscribed to,
+        so we leave out the link.
+      </tal:comment>
       <tal:block condition="context/id">
         <li class="edit">
           <a tal:attributes="href string:${context/fmt:url}/+subscribe">
