@@ -7606,6 +7606,66 @@ INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (5, 'langua
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'launchpadstatistic'::pg_catalog.regclass;
 
 
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'specification'::pg_catalog.regclass;
+
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (1, 'extension-manager-upgrades', 'Extension Manager Upgrades', 'Simplify the way extensions are installed and registered so that: 1. third party applications can easily register and deregister extensions that live with their code. 2. developers can easily register extensions that they are developing out of a location apart from their build (e.g. their home directory), and  3. developers can easily install extensions for testing.', 16, 13, NULL, NULL, '2005-08-24 16:03:46.479655', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://wiki.mozilla.org/Firefox:1.1_Product_Team', NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (2, 'canvas', 'Support <canvas> Objects', 'With the Firefox 1.1 Developer Preview Release, Firefox includes a new HTML element for programmable graphics. <canvas> is based on the WhatWG canvas specification (http://www.whatwg.org/specs/web-apps/current-work/#graphics), which itself is based on Apple''s <canvas> implemented in Safari. It can be used for rendering graphs, UI elements, and other custom graphics on the client.', 16, NULL, NULL, NULL, '2005-08-24 16:05:03.406307', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://developer.mozilla.org/en/docs/Drawing_Graphics_with_Canvas', NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (3, 'svg-support', 'Support Native SVG Objects', 'Scalable Vector Graphics (SVG) is an XML markup language for describing two-dimensional vector graphics. Mozilla should natively support embedded SVG images in HTML documents, or SVG served directly, much as PNG or JPEG images can be served.', 16, 13, 2, NULL, '2005-08-24 16:10:05.078543', 4, NULL, NULL, NULL, NULL, 10, 70, 'http://developer.mozilla.org/en/docs/SVG', NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (4, 'e4x', 'Support E4X in EcmaScript', 'E4X adds native XML datatypes to the ECMAScript language, extends the semantics of familiar ECMAScript operators for manipulating XML objects and adds a small set of new operators for common XML operations, such as searching and filtering. It also adds support for XML literals, namespaces, qualified names and other mechanisms to facilitate XML processing.', 16, 14, 28, NULL, '2005-08-24 16:11:37.431981', 4, NULL, NULL, NULL, 1, 20, 0, 'http://www.ecma-international.org/publications/standards/Ecma-357.htm', 'This is the status whiteboard. Dig it?');
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'specification'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'specificationbug'::pg_catalog.regclass;
+
+INSERT INTO specificationbug (id, specification, bug) VALUES (1, 3, 1);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'specificationbug'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'specificationsubscription'::pg_catalog.regclass;
+
+INSERT INTO specificationsubscription (id, specification, person) VALUES (1, 3, 16);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'specificationsubscription'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'specificationdependency'::pg_catalog.regclass;
+
+INSERT INTO specificationdependency (id, specification, dependency) VALUES (1, 4, 3);
+INSERT INTO specificationdependency (id, specification, dependency) VALUES (2, 2, 4);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'specificationdependency'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'specificationreview'::pg_catalog.regclass;
+
+INSERT INTO specificationreview (id, specification, reviewer, requestor, queuemsg) VALUES (1, 3, 13, 16, 'Please make sure this reflects your implementation plan.');
+INSERT INTO specificationreview (id, specification, reviewer, requestor, queuemsg) VALUES (2, 4, 16, 1, 'Please confirm this meets your requirements.');
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'specificationreview'::pg_catalog.regclass;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -36,16 +36,13 @@
         for="canonical.launchpad.interfaces.IPOTemplate"
         class="canonical.launchpad.browser.POTemplateView"
         permission="zope.Public">
-
         <browser:page
             name="+index"
-            template="../templates/potemplate-index.pt"
-            lp:url="Rosetta/products/$Product.name/$POTemplate.name/+index"
-        />
+            template="../templates/potemplate-index.pt" />
         <browser:page
             name="+chart"
-            template="../templates/potemplate-chart.pt"
-        />
+            template="../templates/potemplate-chart.pt" />
+
         <!-- Potemplate Portlets -->
         <browser:page
             name="+portlet-actions"

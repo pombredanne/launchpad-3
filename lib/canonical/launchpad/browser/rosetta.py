@@ -23,9 +23,14 @@ class RosettaApplicationView:
         self.request = request
         self.languages = helpers.request_languages(self.request)
 
+    @property
+    def ubuntu_translationrelease(self):
+        release = getUtility(ILaunchpadCelebrities).ubuntu.currentrelease
+        return release
+
     def ubuntu_languages(self):
         langs = []
-        release = getUtility(ILaunchpadCelebrities).ubuntu.currentrelease
+        release = self.ubuntu_translationrelease
         for language in self.languages:
             langs.append(release.getDistroReleaseLanguageOrDummy(language))
         return langs

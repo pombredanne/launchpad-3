@@ -11,6 +11,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-malone" />
+  <div tal:replace="structure context/@@+portlet-bounties" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -24,6 +25,7 @@
   </p>
 
   <form action="/products/" method="get">
+
     <table>
       <tr>
         <td>
@@ -32,12 +34,15 @@
         </td>
       </tr>
     </table>
+
     <p class="formHelp">
       Use this form to find an open source application. Enter any part of
       the application name, title or description, and click "Search".
     </p>
 
   </form>
+
+  <hr />
 
   <h2>Most Active Projects</h2>
 

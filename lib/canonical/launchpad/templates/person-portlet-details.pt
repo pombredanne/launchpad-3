@@ -4,7 +4,8 @@
   <div class="portletBody portletContent">
 	
     <b>Name:</b>
-    <span tal:replace="context/name">sabdfl</span><br />
+    <a tal:attributes="href context/fmt:url"
+       tal:content="context/name">sabdfl</a><br />
 
     <tal:block condition="not: context/teamowner">
       <b>Display name:</b><br />

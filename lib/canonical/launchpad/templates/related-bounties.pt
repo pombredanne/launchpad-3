@@ -36,7 +36,7 @@ with all of these context objects.-->
         <th>Date Created</th>
         <th>Title</th>
         <th>USD Value<sup>*</sup></th>
-        <th>Est. Difficulty</th>
+        <th>Difficulty</th>
       </tr>
     </thead>
     <tbody>
@@ -45,7 +45,7 @@ with all of these context objects.-->
         <td><a tal:content="bounty/title/fmt:shorten/45"
                tal:attributes="href bounty/fmt:url">title</a></td>
         <td tal:content="bounty/usdvalue">usdvalue</td>
-        <td tal:content="bounty/difficulty">difficulty</td>
+        <td tal:content="bounty/difficulty/title">difficulty</td>
       </tr>
     </tbody>
   </table>

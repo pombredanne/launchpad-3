@@ -105,6 +105,24 @@ class Person(SQLBase):
     ircnicknames = MultipleJoin('IrcID', joinColumn='person')
     jabberids = MultipleJoin('JabberID', joinColumn='person')
 
+    # specification-related joins
+    approver_specs = MultipleJoin('Specification', joinColumn='approver',
+        orderBy=['-datecreated'])
+    assigned_specs = MultipleJoin('Specification', joinColumn='assignee',
+        orderBy=['-datecreated'])
+    created_specs = MultipleJoin('Specification', joinColumn='owner',
+        orderBy=['-datecreated'])
+    drafted_specs = MultipleJoin('Specification', joinColumn='drafter',
+        orderBy=['-datecreated'])
+    review_specs = RelatedJoin('Specification', joinColumn='reviewer',
+        otherColumn='specification',
+        intermediateTable='SpecificationReview',
+        orderBy=['-datecreated'])
+    subscribed_specs = RelatedJoin('Specification', joinColumn='person',
+        otherColumn='specification',
+        intermediateTable='SpecificationSubscription',
+        orderBy=['-datecreated'])
+
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
 
@@ -204,6 +222,18 @@ class Person(SQLBase):
             return ' '.join(L)
         else:
             return self.name
+
+    @property
+    def specifications(self):
+        ret = set(self.created_specs)
+        ret = ret.union(self.approver_specs)
+        ret = ret.union(self.assigned_specs)
+        ret = ret.union(self.drafted_specs)
+        ret = ret.union(self.review_specs)
+        ret = ret.union(self.subscribed_specs)
+        ret = sorted(ret, key=lambda a: a.datecreated)
+        ret.reverse()
+        return ret
 
     def isTeam(self):
         """See IPerson."""
@@ -944,14 +974,48 @@ class PersonSet:
         cur.execute('''
             UPDATE BountySubscription
             SET person=%(to_id)d
-            WHERE person=%(from_id)d AND id NOT IN (
-                SELECT a.id
-                FROM BountySubscription AS a, BountySubscription AS b
-                WHERE a.person = %(from_id)d AND b.person = %(to_id)d
-                AND a.bounty = b.bounty
+            WHERE person=%(from_id)d AND bounty NOT IN
+                (
+                SELECT bounty
+                FROM BountySubscription 
+                WHERE person = %(to_id)d
                 )
             ''' % vars())
         skip.append(('bountysubscription', 'person'))
+
+        # Update the SpecificationReview entries that will not conflict
+        # and trash the rest
+        cur.execute('''
+            UPDATE SpecificationReview
+            SET reviewer=%(to_id)d
+            WHERE reviewer=%(from_id)d AND specification NOT IN
+                (
+                SELECT specification
+                FROM SpecificationReview
+                WHERE reviewer = %(to_id)d
+                )
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM SpecificationReview WHERE reviewer=%(from_id)d
+            ''' % vars())
+        skip.append(('specificationreview', 'reviewer'))
+
+        # Update the SpecificationSubscription entries that will not conflict
+        # and trash the rest
+        cur.execute('''
+            UPDATE SpecificationSubscription
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND specification NOT IN
+                (
+                SELECT specification
+                FROM SpecificationSubscription
+                WHERE person = %(to_id)d
+                )
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM SpecificationSubscription WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('specificationsubscription', 'person'))
 
         # Update only the POSubscriptions that will not conflict
         # XXX: Add sampledata and test to confirm this case
@@ -1391,7 +1455,7 @@ class TeamParticipation(SQLBase):
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
 
-def _getAllMembers(team, orderBy=None):
+def _getAllMembers(team, orderBy='name'):
     query = ('Person.id = TeamParticipation.person AND '
              'TeamParticipation.team = %d' % team.id)
     return Person.select(query, clauseTables=['TeamParticipation'],

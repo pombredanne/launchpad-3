@@ -7,7 +7,7 @@
           <a href="#"
              style="text-decoration: underline"
              tal:attributes="href bugtask/bug/fmt:url" 
-             tal:content="string: Bug #${bugtask/bug/id}" />: 
+             tal:content="string: #${bugtask/bug/id}" />: 
              <span tal:replace="bugtask/bug/title">bug
              title</span> [<span tal:replace="bugtask/status/title" />]
         </li>

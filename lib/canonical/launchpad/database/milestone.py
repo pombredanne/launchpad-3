@@ -24,7 +24,11 @@ class Milestone(SQLBase):
     dateexpected = DateCol(notNull=False, default=None)
     visible = BoolCol(notNull=True, default=True)
 
-    bugtasks = MultipleJoin('BugTask', joinColumn='milestone')
+    # joins
+    bugtasks = MultipleJoin('BugTask', joinColumn='milestone',
+        orderBy=['-priority', '-datecreated', '-severity'])
+    specifications = MultipleJoin('Specification', joinColumn='milestone',
+        orderBy=['-priority', 'status', 'title'])
 
     @property
     def target(self):

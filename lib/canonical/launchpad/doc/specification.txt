@@ -1,0 +1,35 @@
+Specifications
+==============
+
+A feature specification is a document that describes an idea for an
+enhancement to a product. Launchpad allows you to register your
+specification and then walk it through the approval process. You can have
+specifications for products, and also for distributions.
+
+All Milestone creation and retrieval is done through IMilestoneSet.
+IMilestoneSet can be accessed as a utility.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import ISpecificationSet
+    >>> specset = getUtility(ISpecificationSet)
+
+To create a new Specification, use ISpecificationSet.new:
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> productset = getUtility(IProductSet)
+    >>> upstream_firefox = productset.get(4)
+    >>> from canonical.launchpad.database import Person
+    >>> from canonical.lp.dbschema import SpecificationPriority
+    >>> from canonical.lp.dbschema import SpecificationStatus
+    >>> sabdfl = Person.byName('sabdfl')
+    >>> newspec = specset.new('mng', 'Support MNG Format', 'http://www.silly.me/SpecName', 'we really need this', SpecificationPriority.EMERGENCY, SpecificationStatus.APPROVED, sabdfl, product=upstream_firefox)
+    >>> print newspec.name
+    mng
+
+A specification could be attached to a distribution, or a product. We call
+this the specification target.
+
+    >>> print newspec.target.name
+    firefox
+
+

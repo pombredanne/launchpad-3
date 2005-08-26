@@ -1,0 +1,152 @@
+
+Specification Dependencies
+==========================
+
+Specifications support the idea of spec dependencies. So, one spec can
+require that another spec has been implemented before it's own
+implementation can begin. We store those dependencies in Launchpad.
+
+Lets look at the dependencies of the "canvas" spec for Firefox. It depends
+on another spec, the "e4x" spec. Also, we should note that no specs depend
+on the "canvas" spec itself.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+spec/canvas HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...No specs blocked on this one...
+  ...Support E4X in EcmaScript...
+
+let's add a new dependency for the "canvas" spec. We'll add the
+"extension-manager-upgrades" spec as a dependency. First, we confirm we can
+see the page to add a dependency.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+spec/canvas/+linkdependency HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Now, lets POST the form, saying we want extention-manager-upgrades as the
+dependency.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+spec/canvas/+linkdependency HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 465
+  ... Content-Type: multipart/form-data; boundary=---------------------------14076136604849835101350748509
+  ... 
+  ... -----------------------------14076136604849835101350748509
+  ... Content-Disposition: form-data; name="field.dependency"
+  ... 
+  ... extension-manager-upgrades
+  ... -----------------------------14076136604849835101350748509
+  ... Content-Disposition: form-data; name="field.dependency-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------14076136604849835101350748509
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------14076136604849835101350748509--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/firefox/+spec/canvas
+  ...
+
+But we don't want to keep that, so we will remove it as a dependency. First
+we make sure we can see the link to remove a dependency.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+spec/canvas HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Remove Dependency...
+
+Now, we make sure we can load the page. It should show two potential
+dependencies we could remove. The extension manager one, and "e4x".
+
+  >>> print http(r"""
+  ... GET /products/firefox/+spec/canvas/+removedependency HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...<option value="extension-manager-upgrades">...
+  ...<option value="e4x">...
+
+
+We'll POST the form selecting "extension-manager-upgrades" for removal. We
+expect to be redirected to the spec home page.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+spec/canvas/+removedependency HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 445
+  ... Content-Type: multipart/form-data; boundary=---------------------------910619684974131307920910
+  ... 
+  ... -----------------------------910619684974131307920910
+  ... Content-Disposition: form-data; name="field.dependency"
+  ... 
+  ... extension-manager-upgrades
+  ... -----------------------------910619684974131307920910
+  ... Content-Disposition: form-data; name="field.dependency-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------910619684974131307920910
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------910619684974131307920910--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/firefox/+spec/canvas
+  ...
+
+Now, let's look at the "e4x" spec. We know that it blocks the "canvas" spec
+from the previous test. Also, we should see that it has a dependency of its
+own, on the "svg-support" spec.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+spec/e4x HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Blocks:...
+  ...+spec/canvas...
+  ...Depends:...
+  ...+spec/svg-support...
+
+We know that no specs depend on "canvas", but "canvas" depends on "e4x"
+and "e4x" depends on "svg-support". So the big picture is that "canvas"
+needs to have both "e4x" and "svg-support" implemented before it can be
+implemented, and nothing depends on having "canvas" implemented. The
+"dependency tree" page for "canvas" should show exactly that.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+spec/canvas/+deptree HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Specifications that must be implemented first...
+  ...Support Native SVG Objects...
+  ...Support E4X in EcmaScript...
+  ...This specification...
+  ...Support &lt;canvas&gt; Objects...
+  ...Specifications that can then be implemented...
+  ...No specs depend on this one...
+
+Also, since we have these specs with their priorities and dependencies
+mapped out, we should be able to see a project plan for Mozilla Firefox.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+specplan HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+And lets look for the dangling spec - this is deliberately bad data, it
+should never happen in real life!
+  
+  XXX
+

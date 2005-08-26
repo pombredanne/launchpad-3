@@ -156,7 +156,21 @@ class IPerson(Interface):
     members = Attribute("The list of TeamMemberships for people who are "
         "members or proposed members of this team, sorted by membership "
         "state.")
-
+    specifications = Attribute("Any specifications related to this "
+        "person, either because the are a subscriber, or an assignee, or "
+        "a drafter, or the creator. Sorted newest-first.")
+    approver_specs = Attribute("Specifications that this person is "
+        "supposed to approve in due course, newest first.")
+    assigned_specs = Attribute("Specifications that are assigned to "
+        "this person, sorted newest first.")
+    drafted_specs = Attribute("Specifications that are being drafted by "
+        "this person, sorted newest first.")
+    created_specs = Attribute("Specifications that were created by "
+        "this person, sorted newest first.")
+    review_specs = Attribute("Specifications which this person "
+        "has been asked to review, sorted newest first.")
+    subscribed_specs = Attribute("Specifications to which this person "
+        "has subscribed, sorted newest first.")
     teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
                        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,

@@ -6,7 +6,8 @@ __all__ = [
     'BountyView',
     'BountyLinkView',
     'BountyEditView',
-    'BountyAddView'
+    'BountyAddView',
+    'BountySetView'
     ]
 
 from zope.component import getUtility
@@ -19,6 +20,7 @@ from zope.app.form.browser.editview import EditView
 from canonical.launchpad.interfaces import (
     IBounty, IBountySet, ILaunchBag, IProduct, IProject, IDistribution)
 
+from zope.app.form.browser.editview import EditView
 from canonical.launchpad.webapp import canonical_url
 
 
@@ -36,10 +38,8 @@ class BountyView:
         self.user = getUtility(ILaunchBag).user
 
         # establish if a subscription form was posted
-        # XXX sabdfl 18/08/05 this should only work on POST, not GET, as we
-        # have a requirement that GET is immutable for load balancing
         newsub = request.form.get('subscribe', None)
-        if newsub is not None and self.user:
+        if newsub is not None and self.user and request.method == 'POST':
             if newsub == 'Subscribe':
                 self.context.subscribe(self.user)
             elif newsub == 'Unsubscribe':
@@ -116,4 +116,15 @@ class BountyAddView(AddView):
 
     def nextURL(self):
         return self._nextURL
+
+
+class BountySetView:
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.bounties = getUtility(IBountySet)
+
+    def top_bounties(self):
+        return self.bounties.top_bounties
 
