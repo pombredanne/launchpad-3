@@ -111,7 +111,7 @@ o ProductVocabulary - the list of selectable products. Results are
     >>> l[2:4]
     [u'The Gnome Panel Applets', u'Ubuntu']
     >>> l[4:]
-    [u'python gnome2 dev']
+    [u'Gnome Baker', u'python gnome2 dev']
     >>> arch = product_vocabulary.getTermByToken("arch-mirrors")
     >>> arch.title 
     u'Arch archive mirrors'
