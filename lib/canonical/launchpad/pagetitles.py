@@ -529,7 +529,7 @@ productseries_translations = ContextTitle(
 
 productseries_ubuntupkg = 'Ubuntu Source Package'
 
-products_index = 'Products in Launchpad'
+products_index = 'Launchpad product registry'
 
 products_search = 'Launchpad: Advanced Upstream Product Search'
 
@@ -553,7 +553,7 @@ project_new = 'Register a project with Launchpad'
 
 project_rosetta_index = ContextTitle('Rosetta: %s')
 
-projects_index = 'Products in Launchpad'
+projects_index = 'Launchpad project registry'
 
 projects_request = 'Rosetta: Request a project'
 

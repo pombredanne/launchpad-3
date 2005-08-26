@@ -104,6 +104,8 @@
               lp:url="/project/$project.id/+reassign" />
     </browser:pages>
 
+
+
     <browser:addform
         name="+newbugtracker"
         permission="launchpad.AnyPerson"
@@ -117,6 +119,28 @@
         template="../templates/bugtrackers-add.pt"
         lp:url="/projects/$Project.name/+newbugtracker"
         />
+
+    <browser:addform
+        name="+new"
+        for="canonical.launchpad.interfaces.IProjectSet"
+        schema="canonical.launchpad.interfaces.IProject"
+        label="Register an open source project"
+        fields="name displayname title summary description homepageurl"
+        content_factory="canonical.launchpad.database.Project"
+        class="canonical.launchpad.browser.ProjectSetAddView"
+        permission="launchpad.AnyPerson"
+        template="../templates/launchpad-addform.pt"
+        lp:url="products/+new">
+        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget
+           field="name"
+           class="zope.app.form.browser.TextWidget"
+           extra="tabindex=1" />
+        <browser:widget
+           field="homepageurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+    </browser:addform>
 
     <browser:editform
         name="+edit"
@@ -264,14 +288,6 @@
             template="../templates/bazaar-sync-review.pt"
             lp:url="/projects/+syncreview" />
     </browser:pages>
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IProjectSet"
-        name="+new"
-        class="canonical.launchpad.browser.ProjectSetView"
-        permission="launchpad.AnyPerson"
-        template="../templates/project-new.pt"
-        lp:url="/projects/+new" />
 
     <browser:pages for="canonical.launchpad.interfaces.IProjectSet"
         permission="zope.Public"

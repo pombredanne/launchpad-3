@@ -19,7 +19,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Products in Launchpad</h1>
+    <h1>Launchpad product registry</h1>
 
     <form method="get">
         <table>

@@ -5,110 +5,24 @@
 
 <body>
 
-<div metal:fill-slot="main">
+    <div metal:fill-slot="main">
 
-    <tal:dummy condition="view/newproject" />
+      <div metal:use-macro="context/@@launchpad_addform/addform">
 
-        <h1>Register a project with Launchpad</h1>
-        <p>Enter the details of your project below.</p>
-        <form action="+new" method="post">
-          <div class="field">
-            <div>
-              <label for="name">Name:</label>
-              <span class="fieldRequired">(Required)</span>
-            </div>
-            <div>
-                <input type="text" name="name" size="30"
-                       value="" style="text-transform: lowercase" />
-            </div>
-            <div class="formHelp">
-                A unique name, used in URLs, identifying the project.
-                All lowercase, no special characters.
-                Examples:
-                <samp>apache</samp>, <samp>mozilla</samp>, <samp>gimp</samp>.
-            </div>
-          </div>
-          <div class="field">
-            <div>
-              <label for="displayname">Display Name:</label>
-              <span class="fieldRequired">(Required)</span>
-            </div>
-            <div>
-                <input type="text" name="displayname" size="30"
-                       value="" />
-            </div>
-            <div class="formHelp">
-                Appropriately capitalised, and typically ending in "Project".
-                Examples:
-                <samp>the Apache Project</samp>,
-                <samp>the Mozilla Project</samp>,
-                <samp>the Gimp Project</samp>.
-            </div>
-          </div>
-          <div class="field">
-            <div>
-              <label for="title">Title:</label>
-              <span class="fieldRequired" title="Required">(Required)</span>
-            </div>
-            <div>
-                <input type="text" name="title" size="30"
-                       value="" />
-            </div>
-            <div class="formHelp">
-                The full name of the project, which can contain
-                spaces, special characters <abbr>etc</abbr>.
-            </div>
-          </div>
-          <div class="field">
-            <div>
-              <label for="summary">Summary:</label>
-            </div>
-            <div>
-              <textarea cols="40" rows="5" name="summary"></textarea>
-            </div>
-            <div class="formHelp">
-                A brief (one paragraph) summary of the project.
-            </div>
-          </div>
-          <div class="field">
-            <div>
-              <label>Description:</label>
-            </div>
-            <div>
-              <textarea cols="40" rows="5" name="description"></textarea>
-            </div>
-            <div class="formHelp">
-                A detailed description of the project, including details like
-                when it was founded, how many contributors there are,
-                and how it is organised and coordinated.
-            </div>
-          </div>
+        <h3 tal:condition="view/label"
+            tal:content="view/label"
+            metal:fill-slot="heading">Heading from ZCML label="xxx"</h3>
 
-          <div class="field">
-            <div>
-              <label>URL:</label>
-            </div>
-            <div>
-                <input type="text" name="homepageurl" size="30"
-                       value="http://" />
-            </div>
-            <div class="formHelp">
-                The project home page, if it exists.
-            </div>
-          </div>
-
-
-        <div class="formControls">
-
-            <input type="submit"
-                   name="Register"
-                   value="Register Project" />
-
+        <div metal:fill-slot="extra_info">
+          Enter the details of your project below.
         </div>
 
-        </form>
+        <legend metal:fill-slot="addform_legend">Upstream
+        Product Details</legend>
 
-</div>
+      </div>
+
+    </div>
 
 </body>
 </html>

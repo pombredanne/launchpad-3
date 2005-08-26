@@ -5,7 +5,7 @@
 __metaclass__ = type
 
 __all__ = ['ProjectView', 'ProjectEditView', 'ProjectAddProductView',
-           'ProjectSetView', 'ProjectRdfView']
+           'ProjectSetView', 'ProjectSetAddView', 'ProjectRdfView']
 
 from urllib import quote as urlquote
 
@@ -18,8 +18,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
-    IPerson, IProject, IProjectSet, IProductSet, IProjectBugTrackerSet,
-    ICalendarOwner)
+    IPerson, IProject, IProjectSet, IProductSet, ICalendarOwner)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
@@ -242,43 +241,32 @@ class ProjectSetView(object):
         self.matches = self.results.count()
         return self.results
 
-    def newproject(self):
+class ProjectSetAddView(AddView):
+
+    def createAndAdd(self, data):
         """
         Create the new Project instance if a form with details
         was submitted.
         """
-        # Check that a field called "Register" was set to "Register
-        # Project". This method should continue only if the form was
-        # submitted. We do this because it is ALWAYS called, by the
-        # tal:dummy item in the page template.
-        #
-        if not self.form.get("Register", None)=="Register Project":
-            return
-        if not self.request.method == "POST":
-            return
-        # Enforce lowercase project name
-        self.form['name'] = self.form['name'].lower()
-        # Extract the details from the form
-        name = self.form['name']
-        displayname = self.form['displayname']
-        title = self.form['title']
-        summary = self.form['summary']
-        description = self.form['description']
-        homepageurl = self.form['homepageurl']
-        # get the launchpad person who is creating this product
+        kw = {}
+        for key, value in data.items():
+            kw[str(key)] = value
+
         owner = IPerson(self.request.principal)
+        self.name = kw['name'].lower()
+
         # Now create a new project in the db
         project = getUtility(IProjectSet).new(
-                          name=name,
-                          title=title,
-                          displayname=displayname,
-                          summary=summary,
-                          description=description,
+                          name=self.name,
+                          title=kw['title'],
+                          displayname=kw['displayname'],
+                          summary=kw['summary'],
+                          description=kw['description'],
                           owner=owner,
-                          homepageurl=homepageurl)
-        # now redirect to the page to view it
-        self.request.response.redirect(name)
+                          homepageurl=kw['homepageurl'])
 
+    def nextURL(self):
+        return self.name
 
 class ProjectRdfView(object):
     """A view that sets its mime-type to application/rdf+xml"""

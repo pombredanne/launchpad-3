@@ -37,38 +37,33 @@ class IProject(IHasOwner):
     name = TextLine(
         title=_('Name'),
         required=True,
-        description=_("""The short
-            name of this project, which must be unique among all the products.
-            It should be at least one lowercase letters or number followed by
-            one or more chars, numbers, plusses, dots or hyphens and will be
-            part of the url to this project in the Launchpad."""),
+        description=_("""A unique name, used in URLs, identifying the project.
+            All lowercase, no special characters.
+            Examples: apache, mozilla, gimp."""),
         constraint=valid_name)
 
     displayname = TextLine(
         title=_('Display Name'),
-        description=_("""The display name of the project is a short name,
-            appropriately capitalised, for this product. For example,
-            if you were referring to this project in a paragraph of text,
-            you would use this name. Examples: the Apache Project, the
-            Mozilla Project, the GIMP Project."""))
+        description=_("""Appropriately capitalised,
+            and typically ending in "Project".
+            Examples: the Apache Project, the Mozilla Project,
+            the Gimp Project."""))
 
     title = Title(
         title=_('Title'),
-        description=_("""This is the full title of the project, can contain
-            spaces, special characters etc.  This is what you would imagine
-            seeing at the top of a page about the project. For example,
-            The Apache Project, The Mozilla Project."""))
+        description=_("""The full name of the project,
+            which can contain spaces, special characters etc."""))
 
     summary = Summary(
         title=_('Project Summary'),
-        description=_("""A summary of the project, in a single
-            short paragraph."""))
+        description=_("""A brief (one-paragraph) summary of the project."""))
 
     description = Text(
         title=_('Description'),
-        description=_("""A couple of paragraphs describing the project
-            in more detail, from the history of the project to current
-            organisational structure, goals and release strategy."""))
+        description=_("""A detailed description of the project,
+            including details like when it was founded, 
+            how many contributors there are,
+            and how it is organised and coordinated."""))
 
     datecreated = TextLine(
         title=_('Date Created'),
@@ -167,8 +162,7 @@ class IProjectSet(Interface):
     def __getitem__(name):
         """Get a project by its name."""
 
-    # XXX needs displayname, summary, NO url
-    def new(name, title, url, description, owner):
+    def new(name, title, displayname, summary, description, owner, url):
         """Creates a new project with the given name.
 
         Returns that project.
