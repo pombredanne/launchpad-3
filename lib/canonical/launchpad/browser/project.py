@@ -251,19 +251,18 @@ class ProjectAddView(AddView):
         Create the new Project instance if a form with details
         was submitted.
         """
-        kw = data
         owner = IPerson(self.request.principal)
-        self.name = kw['name'].lower()
+        self.name = data['name'].lower()
 
         # Now create a new project in the db
         project = getUtility(IProjectSet).new(
                           name=self.name,
-                          title=kw['title'],
-                          displayname=kw['displayname'],
-                          summary=kw['summary'],
-                          description=kw['description'],
+                          title=data['title'],
+                          displayname=data['displayname'],
+                          summary=data['summary'],
+                          description=data['description'],
                           owner=owner,
-                          homepageurl=kw['homepageurl'])
+                          homepageurl=data['homepageurl'])
         notify(ObjectCreatedEvent(project))
         self._nextURL = canonical_url(project)
         return project

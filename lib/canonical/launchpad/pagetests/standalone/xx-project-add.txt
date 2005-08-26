@@ -55,7 +55,7 @@ Add a new project.
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  Location: apache
+  Location: http://localhost:9000/projects/apache
   <BLANKLINE>
   ...
       <h1>Register a project with Launchpad</h1>

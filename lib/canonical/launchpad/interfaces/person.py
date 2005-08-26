@@ -18,6 +18,7 @@ __all__ = [
     'IObjectReassignment',
     'ITeamReassignment',
     'ITeamCreation',
+    'NameAlreadyTaken'
     ]
 
 from zope.schema import (
@@ -37,7 +38,8 @@ _ = MessageIDFactory('launchpad')
 
 class NameAlreadyTaken(ValidationError):
     __doc__ = _("""This name is already in use""")
-
+    # XXX mpt 20050826: This should be moved out of person to be more generic.
+    # (It's currently used by projects too.)
 
 class PersonNameField(TextLine):
 

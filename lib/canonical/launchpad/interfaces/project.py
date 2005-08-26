@@ -33,8 +33,11 @@ class ProjectNameField(TextLine):
             # The name wasn't changed.
             return
 
-        project = getUtility(IProjectSet)[value]
-        if project is not None:
+        try:
+            project = getUtility(IProjectSet)[value]
+        except KeyError:
+            pass
+        else:
             raise NameAlreadyTaken(value)
 
 
