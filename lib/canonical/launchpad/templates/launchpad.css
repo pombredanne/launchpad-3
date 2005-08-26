@@ -634,6 +634,26 @@ table.listing>thead>tr>td {
   border: none;
 }
 
+/* Alternating "even" and "odd" colors are bong */
+
+.portlet {
+  background-color: #f7f9fa;
+}
+
+/* Abbreviations should only be marked if they actually have explanations */
+
+abbr, acronym, .explain {
+  border-bottom: none;
+  color: inherit;
+  cursor: inherit;
+}
+abbr[title], acronym[title], .explain[title] {
+  border-bottom: 1px dotted Black;
+  color: Black;
+  background-color: transparent;
+  cursor: help;
+}
+
 /* Not all of a <dt> should be bold: -- */
 
 dt {

@@ -91,12 +91,11 @@
 
       <!-- Members of this team -->
       <tal:block condition="context/isTeam">
-        <h2>Team Members</h2>
-
-        <p><span tal:replace="context/browsername">Ubuntu Members</span>
-        is a team, and includes the following people (and teams) as
-        members:</p>
-
+        <h2>Team members</h2>
+        <p>
+          These people and/or teams are members of
+          <span tal:replace="context/browsername">Ubuntu Members</span>.
+        </p>
         <ul>
           <li tal:repeat="member context/members">
             <a tal:content="member/person/browsername"
@@ -106,27 +105,27 @@
         </ul>
       </tal:block>
 
-      <!-- Teams which I'm a member -->
+      <!-- Teams of which I'm a member -->
       <tal:block condition="context/memberships">
         <h2>Team Memberships</h2>
 
         <p tal:condition="context/isTeam">
-          Note: this is a team, which is in turn a member of the following
-          teams. That means that all the members of THIS team are also
-          members in the teams below.
+          <span tal:replace="context/browsername">Ubuntu Members</span> is
+          a member of these teams, so all members of
+          <span tal:replace="context/browsername">Ubuntu Members</span> are
+          also members of these teams.
         </p>
-
-        <p><span tal:replace="context/browsername">Foo Bar</span> is a
-        member of the following teams:</p>
-        
+        <p tal:condition="not: context/isTeam">
+          <span tal:replace="context/browsername">Foo Bar</span> is
+          a member of these teams.
+        </p>
         <ul>
           <li class="person"
               tal:repeat="membership context/memberships">
             <a tal:attributes="href string:../${membership/team/name}"
                tal:content="membership/team/browsername">foo</a>
             (<span tal:replace="membership/statusname">
-              Administrator
-            </span>)
+              Administrator</span>)
           </li>
         </ul>
       </tal:block>
@@ -136,7 +135,7 @@
 
         <p tal:condition="not: request/lp:person">
           You must <a href="+login">log in</a>
-          before you can join or leave this team.
+          to join or leave this team.
         </p>
         <tal:block condition="request/lp:person">
           <tal:block condition="view/userIsOwner">
