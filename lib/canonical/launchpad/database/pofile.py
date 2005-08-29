@@ -730,7 +730,7 @@ class POFile(SQLBase, RosettaStats):
             return None
         else:
             alias_set = getUtility(ILibraryFileAliasSet)
-            return alias_set[self.exportfile].read()
+            return alias_set[self.exportfile.id].read()
 
     def uncachedExport(self):
         """Export this PO file without looking in the cache."""

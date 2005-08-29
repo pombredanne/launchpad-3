@@ -90,11 +90,6 @@ class SQLBase(SQLOS):
         finally:
             self._SO_writeLock.release()
 
-    def __int__(self):
-        '''Cast to integer, returning the primary key value'''
-        # All our SQLBase objects have an integer primary key called 'id'
-        return self.id
-
 
 class _ZopelessConnectionDescriptor(object):
     """Descriptor for SQLObject._connection.

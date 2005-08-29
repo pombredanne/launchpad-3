@@ -181,6 +181,13 @@ class IProjectSet(Interface):
     def __getitem__(name):
         """Get a project by its name."""
 
+    def get(productid):
+        """Get a project by its id.
+
+        If the product can't be found a zope.exceptions.NotFoundError will be
+        raised.
+        """
+
     def new(name, title, displayname, summary, description, owner, url):
         """Creates a new project with the given name.
 

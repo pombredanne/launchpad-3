@@ -1123,7 +1123,7 @@ class EmailAddressSet:
             return email
 
     def getByPerson(self, person):
-        return EmailAddress.selectBy(personID=person.id)
+        return EmailAddress.selectBy(personID=person.id, orderBy='email')
 
     def getByEmail(self, email, default=None):
         try:
