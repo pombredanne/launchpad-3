@@ -27,35 +27,39 @@
        Release summary
     </div>
             
-    <tal:architectures condition="context/architectures">
-      <h2>Architectures</h2>
+        <tal:architectures condition="context/architectures">
+          <h2>Architectures</h2>
 
-      <table class="listing">
-        <thead>
-          <tr>
-            <th>Architecture</th>
-            <th>Processor Family</th>
-            <th>Binary Packages</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr tal:repeat="arch context/architectures">
-	        <td>
-              <a tal:attributes="href arch/architecturetag"
-                 tal:content="arch/architecturetag">i386</a>
-            </td>
-	        <td tal:content="arch/processorfamily/name" />
-            <td tal:content="arch/binarycount" />
-          </tr>
+        <table class="listing">
+          <thead>          
+            <tr>
+              <th> Family </th>
+              <th> Title </th>
+              <th> Architecture </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="arch context/architectures"
+                tal:attributes="onclick string:window.location='${arch/architecturetag}'">
+              <td tal:content="arch/processorfamily/name">processorfamily</td>
+              <td>
+	      <a tal:attributes="href arch/architecturetag"
+                 tal:content="arch/processorfamily/title">
+                architecturename 
+              </a>
+              </td>
+              <td tal:content="arch/architecturetag">architecturetag</td>
+            </tr>
+          </tbody>
       </table>
-    </tal:architectures>
+      </tal:architectures>
 
-    <tal:description content="structure context/description/fmt:text-to-html">
-      description
-    </tal:description>
+        <tal:description content="structure context/description/fmt:text-to-html">
+          description
+        </tal:description>
 
-    <tal:block tal:define="sourcecount context/sourcecount "
-               tal:condition="sourcecount" tal:omit-tag>
+      <tal:block tal:define="sourcecount context/sourcecount "
+                 tal:condition="sourcecount" tal:omit-tag>
       <h2>Packages</h2>
 
       <p>This release of

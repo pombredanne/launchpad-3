@@ -147,7 +147,7 @@
                 The database user wich will be used to make the
                 package imports.
             </description>
-	</key>
+        </key>
         <multisection name="+" type="gina_target"
             attribute="target" required="no" />
     </sectiontype>
@@ -258,7 +258,7 @@
             <description>
                 Directory to be created to store the pre-installed key-files
             </description>
-	</key>
+        </key>
     </sectiontype>
 
     <sectiontype name="statistician">
@@ -268,14 +268,14 @@
     <sectiontype name="dyson">
         <key name="dbuser" datatype="string" default="dyson" />
 
-	<!-- Not 'existing-directory' because dyson will create it -->
-	<key name="cache_path" datatype="string" required="yes">
-	    <description>
-	        Location on disk to store the visited URL cache, used to
-		avoid utterly killing remote sites each time and play
-		nice with the world.
-	    </description>
-	</key>
+       <!-- Not 'existing-directory' because dyson will create it -->
+       <key name="cache_path" datatype="string" required="yes">
+            <description>
+              Location on disk to store the visited URL cache, used to
+              avoid utterly killing remote sites each time and play
+              nice with the world.
+            </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="karmacacheupdater">
@@ -284,7 +284,7 @@
                 The database user wich will be used to update the karmacache
                 table.
             </description>
-	</key>
+        </key>
     </sectiontype>
 
     <sectiontype name="trebuchet_server">

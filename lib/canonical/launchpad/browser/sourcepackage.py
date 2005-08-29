@@ -130,7 +130,7 @@ class SourcePackageReleasePublishingView:
         return self.context.sourcepackage.currentrelease.version
 
     def binaries(self):
-        """Format binary packeges into binarypackagename and archtags"""
+        """Format binary packages into binarypackagename and archtags"""
 
         all_arch = [] # all archtag in this distrorelease
         for arch in self.context.distrorelease.architectures:
