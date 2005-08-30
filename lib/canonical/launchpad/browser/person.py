@@ -8,9 +8,9 @@ __all__ = [
     'TeamListView',
     'UbuntiteListView',
     'FOAFSearchView',
+    'PersonEditView',
     'PersonRdfView',
     'PersonView',
-    'PersonAdminView',
     'TeamJoinView',
     'TeamLeaveView',
     'PersonEditEmailsView',
@@ -23,12 +23,12 @@ __all__ = [
 
 import cgi
 import sets
+from datetime import datetime
 
 from canonical.database.sqlbase import flush_database_updates
 
 from zope.event import notify
 from zope.app.form.browser.add import AddView
-from zope.app.form.browser.editview import EditView
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
@@ -49,6 +49,7 @@ from canonical.launchpad.interfaces import (
     ITeamReassignment, IPollSubset, IPerson, ICalendarOwner,
     BugTaskSearchParams)
 
+from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
@@ -799,6 +800,21 @@ class PersonView:
             self.message = "Password changed successfully"
 
 
+class PersonEditView(SQLObjectEditView):
+
+    def changed(self):
+        """Redirect to the person page.
+
+        We need this because people can now change their names, and this will
+        make their canonical_url to change too. If we don't redirect them here
+        they'll get a page with all links broken and in an URL that doesn't
+        exist anymore.
+        """
+        url = '%s/+edit?updated=%s' % (canonical_url(self.context),
+                                       datetime.utcnow().ctime())
+        self.request.response.redirect(url)
+
+
 class TeamJoinView(PersonView):
 
     def processForm(self):
@@ -1260,10 +1276,4 @@ class TeamReassignmentView(ObjectReassignmentView):
         flush_database_updates()
         team.setMembershipStatus(newOwner, TeamMembershipStatus.ADMIN)
         team.setMembershipStatus(oldOwner, TeamMembershipStatus.ADMIN)
-
-
-class PersonAdminView(EditView):
-
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
 

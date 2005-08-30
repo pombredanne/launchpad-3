@@ -6,7 +6,7 @@
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure view/launchbag/distribution/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure view/launchbag/distrorelease/@@+portlet-details" />
     <div tal:replace="structure view/launchbag/distroarchrelease/@@+portlet-details" />
   </metal:leftportlets>
@@ -28,63 +28,21 @@
 
     <p tal:content="context/description" />
 
-      <table>
-        <tbody>
-          <tr>
-            <th><label>Package version:</label></th>
-            <td tal:content="context/version">1.0.3</td>
-          </tr>
-          <tr>
-            <th><label>Status:</label></th>
-            <td tal:content="context/status">gift-wrapped</td>
-          </tr>
-          <tr>
-            <th><label>Component:</label></th>
-            <td tal:content="context/component/name">pulley</td>
-          </tr>
-          <tr>
-            <th><label>Priority:</label></th>
-            <td tal:content="context/priority/title">YAGNI</td>
-          </tr>
-          <tr>
-            <th><label>Download:</label></th>
-            <td tal:define="files context/files_url">
-
-          <ul tal:condition="files">
-            <li tal:repeat="file files">
-              <a tal:content="file/filename"
-                 tal:attributes="href file/fileurl" /> 
-            </li>
-          </ul>
-          <div tal:condition="not:files">
-            No files available for download.
-          </div>
-
-            </td>
-          </tr>
-          <tr>
-            <th>Source package:</th>
-            <td>
-
+        <b>Source package:</b>
         <a tal:define="spackage context/build/sourcepackagerelease"
            tal:content="spackage/name"
            tal:attributes="href string:../../+sources/${spackage/name}">
            SOURCEPACKAGE</a>
 
-            </td>
-          </tr>
-          <tr>
-            <td colspan="2"><h2>Relationship to other packages</h2></td>
-          </tr>
+        <h2>Relationship to other packages</h2>
           
 
-          <tr>
+      <table>
+        <tbody>
+          <tr tal:condition="view/provides">
             <th><label>Provides:</label></th>
             <td>
-              <div tal:condition="not:view/provides">
-                unknown
-              </div>
-              <ul tal:condition="view/provides">
+              <ul >
                 <li tal:repeat="binprovides view/provides">
 
 	      <span tal:content="binprovides/name" />
@@ -96,13 +54,11 @@
               </ul>
             </td>
           </tr>
-          <tr>
+
+          <tr  tal:condition="view/depends">
             <th><label>Depends on:</label></th>
             <td>
-              <div tal:condition="not:view/depends">
-                unknown
-              </div>
-              <ul tal:condition="view/depends">
+              <ul>
                 <li tal:repeat="bindepends view/depends">
                   
 	        <a tal:content="bindepends/name"
@@ -110,21 +66,17 @@
 		<tal:dummy condition="bindepends/signal">
 		              (<span tal:replace="bindepends/signal" /> 
 		              <span tal:replace="bindepends/version" />)
-<!-- 		  <a tal:content="bindepends/version" -->
-<!-- 		  tal:attributes="href string:../../../${bindepends/name}/${bindepends/version}" /> ) -->
 		</tal:dummy> 
 
 	              </li>
 	            </ul>
             </td>
           </tr>
-          <tr>
+
+          <tr tal:condition="view/recommends">
             <th><label>Recommends:</label></th>
             <td>
-              <div tal:condition="not:view/recommends">
-                unknown
-              </div>
-              <ul tal:condition="view/recommends">
+              <ul>
                 <li tal:repeat="binrecommends view/recommends">
 
 	        <a tal:content="binrecommends/name"
@@ -138,13 +90,11 @@
         	    </ul>
             </td>
           </tr>
-          <tr>
+
+          <tr  tal:condition="view/suggests">
             <th><label>Suggests:</label></th>
             <td>
-              <div tal:condition="not:view/suggests">
-                unknown
-              </div>
-              <ul tal:condition="view/suggests">
+              <ul>
                 <li tal:repeat="binsuggests view/suggests">
 
 	        <a tal:content="binsuggests/name"
@@ -158,13 +108,11 @@
               </ul>
             </td>
           </tr>
-          <tr>
+
+          <tr tal:condition="view/conflicts">
             <th><label>Conflicts with:</label></th>
             <td>
-              <div tal:condition="not:view/conflicts">
-                unknown
-              </div>
-              <ul condition="view/conflicts">
+              <ul>
                 <li tal:repeat="binconflicts view/conflicts">
 
 	        <a tal:content="binconflicts/name"
@@ -179,13 +127,11 @@
 
             </td>
           </tr>
-          <tr>
+
+          <tr tal:condition="view/replaces">
             <th><label>Replaces:</label></th>
             <td>
-              <div tal:condition="not:view/replaces">
-                unknown
-              </div>
-              <ul tal:condition="view/replaces">
+              <ul>
                 <li tal:repeat="binreplaces view/replaces">
 
 	        <a tal:content="binreplaces/name"
@@ -201,6 +147,7 @@
           </tr>
         </tbody>
       </table>
+
     </div>
   </body>
 </html>

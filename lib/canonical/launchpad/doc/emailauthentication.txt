@@ -79,3 +79,14 @@ the From header states it's from Foo Bar:
     Traceback (most recent call last):
       ...
     InvalidSignature:...
+
+Also if the signature is invalid, that is it won't verify properly,
+InvalidSignature will be raised:
+
+    >>> msg = read_test_message('signed_detached_invalid_signature.txt')
+    >>> name, addr = email.Utils.parseaddr(msg['From'])
+    >>> from_user = getUtility(IPersonSet).getByEmail(addr)
+    >>> principal = authenticateEmail(msg)
+    Traceback (most recent call last):
+      ...
+    InvalidSignature:...

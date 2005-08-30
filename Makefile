@@ -96,7 +96,7 @@ start: inplace stop
 
 # Kill launchpad last - other services will probably shutdown with it,
 # so killing them after is a race condition.
-stop:
+stop: build
 	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
 	    utilities/killservice.py librarian trebuchet launchpad
 

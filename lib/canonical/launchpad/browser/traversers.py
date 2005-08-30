@@ -112,7 +112,10 @@ def traverse_product(product, request, name):
     elif name == '+calendar':
         return ICalendarOwner(product).calendar
     else:
-        return product.getRelease(name)
+        try:
+            return product.getRelease(name)
+        except NotFoundError:
+            return None
 
     return None
 

@@ -273,7 +273,7 @@ if __name__ == "__main__":
         target.getSectionName() for target in config.gina.target
         ]
 
-    if options.all:
+    if options.all: 
         targets = possible_targets[:]
     else:
         if not targets:

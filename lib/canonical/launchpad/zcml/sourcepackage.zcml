@@ -87,8 +87,18 @@
             name="+portlet-bugtasklist-actions"
             template="../templates/sourcepackage-portlet-bugtasklist-actions.pt" />
         <browser:page
+            name="+portlet-details"
+            template="../templates/sourcepackage-portlet-details.pt"
+        />
+        <browser:page
             name="+portlet-translations"
-            template="../templates/sourcepackage-portlet-translations.pt" />
+            template="../templates/sourcepackage-portlet-translations.pt"
+        />
+        <browser:page
+            name="+portlet-upstream-details"
+            template="../templates/sourcepackage-portlet-upstreamdetails.pt"
+        />
+
     </browser:pages>
 
     <browser:pages

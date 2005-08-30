@@ -1,0 +1,31 @@
+<div class="portlet">
+  <h4> Upstream Details:</h4>
+
+  <div class="portletBody portletContent">
+  
+    <ul tal:condition="context/productseries">
+      <li tal:condition="context/productseries/product/project"><b>Project:</b>
+        <a tal:define="project context/productseries/product/project"
+           tal:content="project/displayname"
+           tal:attributes="href project/fmt:url">
+         Project</a></li>
+      <li><b>Product: </b>
+        <a tal:define="product context/productseries/product"
+           tal:content="product/displayname"
+           tal:attributes="href product/fmt:url">
+        Product</a></li>
+      <li><b>Branch: </b>
+        <a tal:define="productseries context/productseries"
+           tal:content="productseries/name"
+           tal:attributes="href productseries/fmt:url">
+         ProductSeries</a></li>
+    </ul>
+  <i tal:condition="not:context/productseries">
+  <img src="/++resource++info_icon.gif" />
+    No upstream details for this source package. If you know that
+    the upstream product and branch of this source package are
+    registered in the Launchpad then please link them up in 
+    <a href="+packaging">Edit Upstream Link</a>!
+  </i>
+  </div>
+</div>
