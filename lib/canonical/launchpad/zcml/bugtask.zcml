@@ -11,6 +11,12 @@
         permission="zope.Public"
         template="../templates/bugtask-macros-tableview.pt" />
 
+    <browser:page
+        for="*"
+        name="+bugtask-macros-listview"
+        permission="zope.Public"
+        template="../templates/bugtask-macros-listview.pt" />
+
     <!-- IBugTask -->
     <content class="canonical.launchpad.database.BugTask">
         <require

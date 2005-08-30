@@ -99,9 +99,8 @@ class SourcePackage:
 
     @property
     def displayname(self):
-        dn = ' the ' + self.sourcepackagename.name + ' source package in '
-        dn += self.distrorelease.displayname
-        return dn
+        return "%s %s" % (
+            self.distrorelease.displayname, self.sourcepackagename.name)
 
     @property
     def title(self):

@@ -234,7 +234,7 @@ For upstream:
     >>> from canonical.launchpad.database import Product
     >>> from canonical.launchpad.interfaces import BugTaskSearchParams
     >>> upstream_mozilla = Product.get(4)
-    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.NEW, 
+    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.NEW,
     ...                                         BugTaskStatus.ACCEPTED),
     ...                              orderby="id", user=None)
     >>> bugtasks = upstream_mozilla.searchTasks(params)
@@ -248,7 +248,7 @@ For a distribution:
 
     >>> debian = distroset.get(3)
     >>> sample_person = personset.get(12)
-    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.NEW, 
+    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.NEW,
     ...                                         BugTaskStatus.ACCEPTED),
     ...                              orderby="id", user=None,
     ...                              assignee=sample_person)
@@ -488,7 +488,7 @@ one of the maintainers on this bug report, Foo Bar will see the bug in
 searches:
 
     >>> firefox = productset.get(4)
-    >>> params = BugTaskSearchParams(status=any(STATUS_NEW, 
+    >>> params = BugTaskSearchParams(status=any(STATUS_NEW,
     ...                                         STATUS_ACCEPTED),
     ...                              user=foobar)
     >>> firefox_bugtasks = firefox.searchTasks(params)
@@ -496,7 +496,7 @@ searches:
     [1, 4, 5, 6]
 
 If logged in as Foo Bar we query for all bugtasks reported on all
-packages/products he maintains, we'll see that bug 1 is there (we'll 
+packages/products he maintains, we'll see that bug 1 is there (we'll
 not see it if we query logged in as a user who can't see that bug).
 
     >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
@@ -512,7 +512,7 @@ Now, if we log in as David Allouche:
 The same search as above yields only three bugs, because David
 Allouche can't see the private bug.
 
-    >>> params = BugTaskSearchParams(status=any(STATUS_NEW, 
+    >>> params = BugTaskSearchParams(status=any(STATUS_NEW,
     ...                                         STATUS_ACCEPTED),
     ...                              orderby="id", user=ddaa)
     >>> bugtasks = upstream_mozilla.searchTasks(params)
@@ -560,7 +560,7 @@ But, logged in as the Firefox maintainer:
 We'll find all four IBugTasks that match the search criteria, as the maintainer
 is also an explicit subscriber in this case.
 
-    >>> params = BugTaskSearchParams(status=any(STATUS_NEW, 
+    >>> params = BugTaskSearchParams(status=any(STATUS_NEW,
     ...                                         STATUS_ACCEPTED),
     ...                              orderby="id", user=sample_person)
     >>> bugtasks = upstream_mozilla.searchTasks(params)
@@ -600,8 +600,6 @@ Let's just make sure that the tasks on bug_one sort correctly.
     ubuntu mozilla-firefox
     ubuntu hoary
     debian mozilla-firefox
-
-
 
 Handling IntegrityError
 -----------------------

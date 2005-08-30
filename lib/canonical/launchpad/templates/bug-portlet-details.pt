@@ -9,7 +9,7 @@
        style="text-decoration: underline"
        tal:attributes="href context/fmt:url">
        Bug #<span tal:replace="context/id">3252543</span></a><br />
-   
+
     <tal:nickname tal:condition="context/name">
       <b>Nickname:</b><br />
       <span tal:replace="context/name" /><br />
