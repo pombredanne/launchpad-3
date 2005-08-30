@@ -5,6 +5,7 @@ import urllib2
 from xml.dom import minidom
 
 from canonical.lp.dbschema import BugTrackerType
+from canonical.launchpad.scripts import log
 
 class UnknownBugTrackerTypeError(Exception):
     """
