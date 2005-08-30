@@ -469,12 +469,6 @@ def resolve_object(obj):
     raise LaunchpadError("Unable to resolve object to manifest "
         "holder: %r" % obj)
 
-<<<<<<< TREE
-    raise LaunchpadError(
-            "Unable to resolve object to manifest holder: %r" % obj
-            )
-=======
->>>>>>> MERGE-SOURCE
 
 def get_branch_from(obj):
     """Get hct Branch from database object.
@@ -577,14 +571,8 @@ def get_release(url, release):
     try:
         obj = get_object(url)
         if isinstance(obj, Product):
-<<<<<<< TREE
-            try:
-                rel = obj.getRelease(release)
-            except NotFoundError:
-=======
             rel = obj.getRelease(release)
             if rel is None:
->>>>>>> MERGE-SOURCE
                 return None
         elif isinstance(obj, ProductSeries):
             rel = obj.getRelease(release)
