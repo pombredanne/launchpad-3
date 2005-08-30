@@ -80,7 +80,7 @@ for file in $pyfiles; do
     if echo $file | grep -qs "launchpad/interfaces/"; then
         OPTS=$PYLINTOPTS_INT
     fi
-    output=`pylint $file $OPTS 2>/dev/null | grep -v '^*'`
+    output=`pylint.python2.4 $file $OPTS 2>/dev/null | grep -v '^*'`
     if [ ! -z "$output" ]; then
         echo "============================================================="
         echo "Pylint notices on $file"

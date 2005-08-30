@@ -354,8 +354,7 @@ associate the same bug with this product:
     >>> policy = TeamSubscriptionPolicy.OPEN
     >>> foobar = personset.get(16)
     >>> foo_team = personset.newTeam(
-    ...     subscriptionpolicy=policy, name='foo',
-    ...     displayname="The Foo Team", teamownerID=foobar.id)
+    ...     foobar, 'foo', "The Foo Team", subscriptionpolicy=policy)
     >>> foo_product = productset.createProduct(
     ...     owner=foo_team.id, name='foo-product',
     ...     displayname='foo product', title='Foo',
