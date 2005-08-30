@@ -6,6 +6,7 @@
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/distrorelease/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-hctstatus" />
   </metal:leftportlets>
@@ -13,6 +14,7 @@
 
   <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-actions" />
+    <div tal:replace="structure context/@@+portlet-upstream-details" />
     <div tal:replace="structure context/@@+portlet-releases" />
     <div tal:replace="structure context/@@+portlet-translations" />
   </metal:rightportlets>
@@ -51,36 +53,60 @@
     </tal:block>
   </tal:block>
 
-  <h2>Upstream Details</h2>
+  <tal:block tal:condition="context/currentrelease"
+             tal:define="current context/currentrelease">
 
-  <p tal:condition="context/productseries">
-    This shows the best guess of the Launchpad system as to the upstream
-    product series (or branch) which is being published in this source
-    package:
-  </p>
+        <h2>Binary Packages
+               <span tal:condition="not:current/changelog" tal:omit-tag>
+                   (No Changelog for this Source Release)
+               </span></h2>
+        
+        <ul tal:define="binaries view/binaries">
+           <li tal:condition="not:binaries">
+              <i>No binaries generated for this
+              SourcePackageRelease</i>
+           </li>
+           <li tal:repeat="bin_name binaries" >
+               <span tal:replace="bin_name" /> 
+                 <span tal:repeat="archtag python:binaries[bin_name]">
+                 (<a tal:content="archtag" tal:attributes="href 
+                          string:../../${archtag}/${bin_name}" />) 
+                 </span>
+            </li>
+        </ul>
+          <h2 tal:condition="python:(view.builddepends() or view.builddependsindep())">
+            Package Relationship
+          </h2>
 
-    <ul tal:condition="context/productseries">
-      <li tal:condition="context/productseries/product/project"><b>Project: </b>
-        <a tal:define="project context/productseries/product/project"
-           tal:content="project/displayname"
-           tal:attributes="href string:/projects/${project/name}">
-         Project</a></li>
-      <li><b>Product: </b>
-        <a tal:define="product context/productseries/product"
-           tal:content="product/displayname"
-           tal:attributes="href string:/products/${product/name}">
-        Product</a></li>
-      <li><b>Branch: </b>
-        <a tal:define="productseries context/productseries"
-           tal:content="productseries/name"
-           tal:attributes="href string:/products/${productseries/product/name}/+series/${productseries/name}">
-         ProductSeries</a></li>
-    </ul>
+       <table width="100%" valign="top">
+       <tr>
+       <td tal:condition="view/builddepends">
+       <h4>Build Dependencies</h4>
+       <ul>
+         <li tal:repeat="dep view/builddepends">
+           <a tal:content="dep/name"
+              tal:attributes="href string:../../i386/${dep/name}" />
+           <span tal:condition="dep/signal"
+                  tal:content="string:(${dep/signal} ${dep/version})" />
+         </li>
+       </ul>
+       </td>
 
-    <p class="portalMessage" tal:condition="not:context/productseries">
-      The Launchpad has no record of the upstream product for this source
-      package. Please <a href="+packaging">link the package to upstream</a>.
-    </p>
+       <td tal:condition="view/builddependsindep">
+       <h4>Platform-independent Build Dependencies</h4>
+       <ul>
+         <li tal:repeat="dep view/builddependsindep">
+           <a tal:content="dep/name"
+              tal:attributes="href string:../../i386/${dep/name}" />
+           <span tal:condition="dep/signal"
+                  tal:content="string:(${dep/signal} ${dep/version})" />
+         </li>
+        </ul>
+        </td>
+        </tr>
+        </table>
+
+  </tal:block>
 
   </div>
 </body>

@@ -5,7 +5,7 @@
 __metaclass__ = type
 
 __all__ = ['ProjectView', 'ProjectEditView', 'ProjectAddProductView',
-           'ProjectSetView', 'ProjectRdfView']
+           'ProjectSetView', 'ProjectAddView', 'ProjectRdfView']
 
 from urllib import quote as urlquote
 
@@ -17,9 +17,9 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
-    IPerson, IProject, IProjectSet, IProductSet, IProjectBugTrackerSet,
-    ICalendarOwner)
+    IPerson, IProject, IProjectSet, IProductSet, ICalendarOwner)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
@@ -174,7 +174,6 @@ class ProjectAddProductView(AddView):
     def __init__(self, context, request):
         self.request = request
         self.context = context
-        self._nextURL = '.'
         AddView.__init__(self, context, request)
 
     def createAndAdd(self, data):
@@ -204,7 +203,8 @@ class ProjectAddProductView(AddView):
         return product
 
     def nextURL(self):
-        return self._nextURL
+        # Always redirect to the project's page
+        return '.'
  
 
 
@@ -242,43 +242,33 @@ class ProjectSetView(object):
         self.matches = self.results.count()
         return self.results
 
-    def newproject(self):
+class ProjectAddView(AddView):
+    
+    _nextURL = '.'
+
+    def createAndAdd(self, data):
         """
         Create the new Project instance if a form with details
         was submitted.
         """
-        # Check that a field called "Register" was set to "Register
-        # Project". This method should continue only if the form was
-        # submitted. We do this because it is ALWAYS called, by the
-        # tal:dummy item in the page template.
-        #
-        if not self.form.get("Register", None)=="Register Project":
-            return
-        if not self.request.method == "POST":
-            return
-        # Enforce lowercase project name
-        self.form['name'] = self.form['name'].lower()
-        # Extract the details from the form
-        name = self.form['name']
-        displayname = self.form['displayname']
-        title = self.form['title']
-        summary = self.form['summary']
-        description = self.form['description']
-        homepageurl = self.form['homepageurl']
-        # get the launchpad person who is creating this product
         owner = IPerson(self.request.principal)
+        self.name = data['name'].lower()
+
         # Now create a new project in the db
         project = getUtility(IProjectSet).new(
-                          name=name,
-                          title=title,
-                          displayname=displayname,
-                          summary=summary,
-                          description=description,
+                          name=self.name,
+                          title=data['title'],
+                          displayname=data['displayname'],
+                          summary=data['summary'],
+                          description=data['description'],
                           owner=owner,
-                          homepageurl=homepageurl)
-        # now redirect to the page to view it
-        self.request.response.redirect(name)
+                          homepageurl=data['homepageurl'])
+        notify(ObjectCreatedEvent(project))
+        self._nextURL = canonical_url(project)
+        return project
 
+    def nextURL(self):
+        return self._nextURL
 
 class ProjectRdfView(object):
     """A view that sets its mime-type to application/rdf+xml"""

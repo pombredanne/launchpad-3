@@ -59,11 +59,11 @@
       </div>
       <div class="row">
         <div class="controls"><hr />
-          <input type='submit' 
-                 value='Add'
-                 name='UPDATE_SUBMIT' 
-                 style="float: right;"
-                 i18n:attributes='value add-button' />
+          <input type="submit"
+                 tabindex="1000"
+                 value="Add"
+                 name="UPDATE_SUBMIT"
+                 i18n:attributes="value add-button" />
         </div>
       </div>
 

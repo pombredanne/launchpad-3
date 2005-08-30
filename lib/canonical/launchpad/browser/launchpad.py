@@ -13,7 +13,7 @@ from canonical.launchpad.webapp import (
 
 class LaunchpadRootFacets(StandardLaunchpadFacets):
     usedfor = ILaunchpadRoot
-    links = ['overview', 'bugs', 'translations', 'calendar']
+    links = ['overview', 'bugs', 'bounties', 'translations', 'calendar']
 
     def overview(self):
         target = ''
@@ -29,6 +29,12 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         target = 'malone'
         text = 'Bugs'
         return Link(target, text)
+
+    def bounties(self):
+        target = 'bounties'
+        text = 'Bounties'
+        summary = 'The Launchpad Universal Bounty Tracker'
+        return Link(target, text, summary)
 
     def calendar(self):
         target = 'calendar'

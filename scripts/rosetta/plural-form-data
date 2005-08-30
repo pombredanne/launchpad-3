@@ -1,10 +1,10 @@
 # arch-tag: 26f84e2a-1a75-48d5-bf0d-28672ebc61aa
 
-languages: fa,hu,ja,kr,jbo,ko,tr,vi,zh,bo
+languages: fa,hu,ja,kr,jbo,ko,tr,vi,zh,bo,ka
 nplurals:  1
 plural:    0
 
-languages: az,ca,da,nn,nl,en,eu,fo,gu,de,no,sv,es,fi,el,hi,he,it,is,ro,sq,pt,eo,ms,nb,pa,ta,an,zu,af,xh,bg,gl,ku
+languages: az,ca,da,nn,nl,en,eu,fo,gu,de,no,sv,es,fi,el,hi,he,it,is,sq,pt,eo,ms,nb,pa,ta,an,zu,af,xh,bg,gl,ku,lb,la,et,fur,ast
 nplurals:  2
 plural:    n != 1
 
@@ -39,6 +39,10 @@ plural:    n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=
 languages: pl
 nplurals:  3
 plural:    n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
+
+languages: ro
+nplurals:  3
+plural:    n==1 ? 0 : (((n % 100 > 19) || (( n % 100 == 0) && (n != 0))) ? 2 : 1)
 
 languages: cy
 nplurals:  4

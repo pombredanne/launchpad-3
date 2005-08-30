@@ -10,6 +10,11 @@
 
   <permission id="launchpad.Admin" title="Administer something" />
 
+  <!-- XXX: To be removed soon, this is only needed by the page to upload SSH
+  keys, cause we decided to not allow admins to upload keys in behalf of other
+  users. GuilhermeSalgado 25/08/2005 -->
+  <permission id="launchpad.Special" title="Special permissions" />
+
   <permission id="launchpad.WEGSND" title="What even god should not do" />
 
 </configure>

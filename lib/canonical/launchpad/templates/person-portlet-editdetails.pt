@@ -1,0 +1,20 @@
+<div class="portlet">
+
+  <h4>Edit:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li class="edit"><a href="+edit">Personal Details</a></li>
+      <li class="edit"><a href="+editemails">E-mail Addresses</a></li>
+      <li class="edit"><a href="+editwikinames">WikiNames</a></li>
+      <li class="edit"><a href="+editircnicknames">IRC Nicknames</a></li>
+      <li class="edit"><a href="+editjabberids">Jabber ID</a></li>
+      <li class="edit"><a href="+editgpgkeys">GPG Keys</a></li>
+      <li class="edit"><a href="+editsshkeys">SSH Keys</a></li>
+      <li class="edit"><a href="+changepassword">Password</a></li>
+    </ul>
+
+  </div>
+
+</div>

@@ -13,6 +13,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-actions" />
+    <div tal:replace="structure context/@@+portlet-calendar" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -30,13 +31,41 @@
   <tal:block condition="context/ownedBounties">
     <h2>Bounties Issued</h2>
 
-      <table width="100%" class="listing">
+      <table width="100%" class="listing sortable" id="issued">
+        <thead>
+          <tr>
+            <th>Date Created</th>
+            <th>Title</th>
+            <th>USD Value<sup>*</sup></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="bounty context/ownedBounties">
+            <td tal:content="bounty/datecreated/fmt:date">
+              date
+            </td>
+            <td><a tal:content="bounty/title/fmt:shorten/45"
+                   tal:attributes="href bounty/fmt:url">title</a>
+            </td>
+            <td tal:content="bounty/usdvalue">usdvalue</td>
+          </tr>
+        </tbody>
+    </table>
+  </tal:block>
+
+  <tal:block condition="context/claimedBounties">
+    <h2>Bounties Claimed</h2>
+
+    <table width="100%" class="listing sortable" id="claimed">
+      <thead>
         <tr>
           <th>Date Created</th>
           <th>Title</th>
           <th>USD Value<sup>*</sup></th>
         </tr>
-        <tr tal:repeat="bounty context/ownedBounties">
+      </thead>
+      <tbody>
+        <tr tal:repeat="bounty context/claimedBounties">
           <td tal:content="bounty/datecreated/fmt:date">
             date
           </td>
@@ -45,69 +74,57 @@
           </td>
           <td tal:content="bounty/usdvalue">usdvalue</td>
         </tr>
-    </table>
-  </tal:block>
-
-  <tal:block condition="context/claimedBounties">
-    <h2>Bounties Claimed</h2>
-
-    <table width="100%" class="listing">
-      <tr>
-        <th>Date Created</th>
-        <th>Title</th>
-        <th>USD Value<sup>*</sup></th>
-      </tr>
-      <tr tal:repeat="bounty context/claimedBounties">
-        <td tal:content="bounty/datecreated/fmt:date">
-          date
-        </td>
-        <td><a tal:content="bounty/title/fmt:shorten/45"
-               tal:attributes="href bounty/fmt:url">title</a>
-        </td>
-        <td tal:content="bounty/usdvalue">usdvalue</td>
-      </tr>
+      </tbody>
     </table>
   </tal:block>
 
   <tal:block condition="context/reviewerBounties">
     <h2>Bounties Reviewed:</h2>
 
-    <table width="100%" class="listing">
-      <tr>
-        <th>Date Created</th>
-        <th>Title</th>
-        <th>USD Value<sup>*</sup></th>
-      </tr>
-      <tr tal:repeat="bounty context/reviewerBounties">
-        <td tal:content="bounty/datecreated/fmt:date">
-          date
-        </td>
-        <td><a tal:content="bounty/title/fmt:shorten/45"
-               tal:attributes="href bounty/fmt:url">title</a>
-        </td>
-        <td tal:content="bounty/usdvalue">usdvalue</td>
-      </tr>
+    <table width="100%" class="listing sortable" id="reviewer">
+      <thead>
+        <tr>
+          <th>Date Created</th>
+          <th>Title</th>
+          <th>USD Value<sup>*</sup></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="bounty context/reviewerBounties">
+          <td tal:content="bounty/datecreated/fmt:date">
+            date
+          </td>
+          <td><a tal:content="bounty/title/fmt:shorten/45"
+                 tal:attributes="href bounty/fmt:url">title</a>
+          </td>
+          <td tal:content="bounty/usdvalue">usdvalue</td>
+        </tr>
+      </tbody>
     </table>
   </tal:block>
 
   <tal:block condition="context/subscribedBounties">
     <h2>Bounties Subscribed:</h2>
 
-    <table width="100%" class="listing">
-      <tr>
-        <th>Date Created</th>
-        <th>Title</th>
-        <th>USD Value<sup>*</sup></th>
-      </tr>
-      <tr tal:repeat="bounty context/subscribedBounties">
-        <td tal:content="bounty/datecreated/fmt:date">
-          date
-        </td>
-        <td><a tal:content="bounty/title/fmt:shorten/45"
-               tal:attributes="href bounty/fmt:url">title</a>
-        </td>
-        <td tal:content="bounty/usdvalue">usdvalue</td>
-      </tr>
+    <table width="100%" class="listing sortable" id="subscribed">
+      <thead>
+        <tr>
+          <th>Date Created</th>
+          <th>Title</th>
+          <th>USD Value<sup>*</sup></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="bounty context/subscribedBounties">
+          <td tal:content="bounty/datecreated/fmt:date">
+            date
+          </td>
+          <td><a tal:content="bounty/title/fmt:shorten/45"
+                 tal:attributes="href bounty/fmt:url">title</a>
+          </td>
+          <td tal:content="bounty/usdvalue">usdvalue</td>
+        </tr>
+      </tbody>
     </table>
   </tal:block>
 

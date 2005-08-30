@@ -52,7 +52,7 @@ class IBugTask(IHasDateCreated):
         title=_("Distribution Release"), required=False,
         vocabulary='DistroRelease')
     milestone = Choice(
-        title=_('Target'), required=False, vocabulary='Milestone')
+        title=_('Milestone'), required=False, vocabulary='Milestone')
     status = Choice(
         title=_('Status'), vocabulary='BugTaskStatus',
         default=dbschema.BugTaskStatus.NEW)
@@ -84,8 +84,8 @@ class IBugTask(IHasDateCreated):
     maintainer_displayname = TextLine(
         title=_("Maintainer"), required=True, readonly=True)
 
-    context = Attribute("What the task's location is")
-    contextname = Attribute("Description of the task's location.")
+    target = Attribute("The software in which this bug should be fixed")
+    targetname = Attribute("The short, descriptive name of the target")
     title = Attribute("The title used for a task's Web page.")
 
     def setStatusFromDebbugs(status):

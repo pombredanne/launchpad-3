@@ -96,6 +96,10 @@ class FileUploadClient:
             raise TypeError('No data')
         if size <= 0:
             raise UploadFailed('No data')
+
+        if isinstance(name, unicode):
+            name = name.encode('utf-8')
+
         self._connect()
         try:
             # Import in this method to avoid a circular import
@@ -265,7 +269,8 @@ class FileDownloadClient:
 
         :param aliasID: A unique ID for the alias
 
-        :returns: String Path
+        :returns: String path, url-escaped.  Unicode is UTF-8 encoded before
+            url-escaping, as described in section 2.2.5 of RFC 2718.
         """
         aliasID = int(aliasID)
         q = """
@@ -282,7 +287,8 @@ class FileDownloadClient:
         if row is None:
             raise DownloadFailed, 'Alias %r not found' % (aliasID,)
         contentID, filename = row
-        return '/%d/%d/%s' % (contentID, aliasID, quote(filename))
+        return '/%d/%d/%s' % (contentID, aliasID, 
+                              quote(filename.encode('utf-8')))
 
     def getURLForAlias(self, aliasID):
         """Returns the url for talking to the librarian about the given

@@ -14,28 +14,23 @@
 
 <div metal:fill-slot="main">
 
-  <h1>List of Rosetta Translation Groups:</h1>
+  <h1>Rosetta Translation Groups</h1>
 
   <div class="documentDescription">
     This is a listing of all of the registered translation groups in
     Rosetta. Click on a group for further information about it.
   </div>
 
-    <table class="listing rowNavigation" width="100%">
-        <tr>
-            <th>Date Created</th>
-            <th>Title</th>
-            <th>Translations</th>
-        </tr>
-        <tr tal:repeat="group context"
-            tal:attributes="onclick
-                string:window.location='${group/name}';">
-            <td tal:content="python:group.datecreated.strftime('%d %b %y')">
-              date
-            </td>
-            <td><b><span tal:replace="group/title/fmt:shorten/57">
-               title</span></b>
-            </td>
+    <table class="sortable listing" id="translation-groups" width="100%">
+        <thead>
+          <tr>
+              <th>Translations</th>
+              <th>Group</th>
+              <th>Date Created</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="group context">
             <td>
               <span tal:condition="group/distributions" tal:omit-tag="">
                 <span tal:repeat="distro group/distributions" tal:omit-tag>
@@ -53,7 +48,14 @@
                 </span>
               </span>
             </td>
+            <td><a tal:content="group/title/fmt:shorten/57"
+                   tal:attributes="href group/name">title</a>
+            </td>
+            <td tal:content="python:group.datecreated.strftime('%d %b %y')">
+              date
+            </td>
         </tr>
+      </tbody>
     </table>
 
   </div>

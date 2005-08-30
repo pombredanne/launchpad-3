@@ -11,7 +11,7 @@
   <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-actions" />
     <div tal:replace="structure context/@@+portlet-alsoreportedin" />
-    <div tal:replace="structure context/context/@@+portlet-latest-bugs" />
+    <div tal:replace="structure context/target/@@+portlet-latest-bugs" />
   </metal:rightportlets>
 
     <div metal:fill-slot="main">
@@ -46,7 +46,7 @@
             <p tal:condition="not: context/required:launchpad.Edit"
                class="portalMessage">
               You are not the assignee, or the maintainer of
-              <span tal:replace="context/contextname">product</span> so you
+              <span tal:replace="context/targetname">product</span> so you
               cannot edit this status page.
             </p>
           </div>

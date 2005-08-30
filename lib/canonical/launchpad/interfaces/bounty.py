@@ -88,10 +88,8 @@ class IBounty(IHasOwner):
     distributions = Attribute('The distributions to which this bounty is related.')
 
     # subscription-related methods
-    def subscribe(person, subscription):
-        """Subscribe this person to the bounty, using the given level of
-        subscription. Returns the BountySubscription that this would have
-        created or updated."""
+    def subscribe(person):
+        """Subscribe this person to the bounty."""
 
     def unsubscribe(person):
         """Remove this person's subscription to this bounty."""
@@ -102,6 +100,8 @@ class IBountySet(IAddFormCustomization):
     """A container for bounties."""
 
     title = Attribute('Title')
+
+    top_bounties = Attribute('The top 5 bounties in the system')
 
     def __getitem__(key):
         """Get a bounty."""

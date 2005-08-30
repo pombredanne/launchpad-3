@@ -27,10 +27,8 @@ from canonical.launchpad.interfaces import (
 
 class BugAttachmentAddView(SQLObjectAddView):
     """Add view for bug attachments."""
-    
     def create(self, comment=None, filecontent=None,
                patch=IBugAttachmentAddForm['patch'].default, title=None):
-        bug = getUtility(ILaunchBag).bug
         # XXX: Write proper FileUpload field and widget instead of this
         #      hack. -- Bjorn Tillenius, 2005-06-16
         fileupload = self.request.form[self.filecontent_widget.name]
@@ -57,15 +55,15 @@ class BugAttachmentAddView(SQLObjectAddView):
         add_comment = getUtility(IMessageSet).fromText(
             subject=title, owner=getUtility(ILaunchBag).user, content=comment)
 
-        bug.linkMessage(add_comment) 
+        self.context.linkMessage(add_comment)
 
         return getUtility(IBugAttachmentSet).create(
-            bug=bug, filealias=filealias, attach_type=attach_type, title=title,
+            bug=self.context, filealias=filealias, attach_type=attach_type, title=title,
             message=add_comment)
 
     def nextURL(self):
         """Return the user to the bug page."""
-        return canonical_url(getUtility(ILaunchBag).bug)
+        return canonical_url(self.context)
 
 
 class BugAttachmentEdit:
@@ -77,7 +75,7 @@ class BugAttachmentEdit:
     def __init__(self, attachment):
         self.attachment = attachment
 
-    def _set_contenttype(self, new_contenttype): 
+    def _set_contenttype(self, new_contenttype):
         # If it's a patch, 'text/plain' is always used.
         if self.patch and new_contenttype != 'text/plain':
             return
@@ -101,7 +99,7 @@ class BugAttachmentEdit:
             # Patches are always text.
             self.contenttype = 'text/plain'
         else:
-            self.attachment.type = BugAttachmentType.UNSPECIFIED  
+            self.attachment.type = BugAttachmentType.UNSPECIFIED
     patch = property(
         lambda self: self.attachment.type == BugAttachmentType.PATCH,
         _set_patch)
@@ -110,6 +108,6 @@ class BugAttachmentEdit:
 class BugAttachmentEditView(SQLObjectEditView):
     """Edit view for bug attachments."""
 
-    def changed(self): 
+    def changed(self):
         """Return the user to the bug page."""
         self.request.response.redirect(canonical_url(self.context.bug))

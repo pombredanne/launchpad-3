@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'IBugExternalRefsView',
     'IBugExternalRef',
     'IBugExternalRefSet',
     ]
@@ -13,40 +12,32 @@ __all__ = [
 from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Datetime, Int, TextLine
-from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad.fields import Title
+from canonical.launchpad.interfaces.validation import valid_webref
 
 _ = MessageIDFactory('launchpad')
 
-class IBugExternalRefsView(IAddFormCustomization):
-    """BugExternalRef views"""
 
 class IBugExternalRef(Interface):
     """An external reference for a bug, not supported remote bug systems."""
 
     id = Int(
-            title=_('ID'), required=True, readonly=True
-            )
+            title=_('ID'), required=True, readonly=True)
     bug = Int(
-            title=_('Bug ID'), required=True, readonly=True,
-            )
+            title=_('Bug ID'), required=True, readonly=True)
     url = TextLine(
             title=_('URL'), required=True, readonly=False,
             description = _("""The url of the content that is related to
-            this bug.""")
-            )
+            this bug."""), constraint=valid_webref)
     title = Title(
             title=_('Title'), required=True, readonly=False,
             description=_("""A brief description of the content that is
-            being linked to.""")
-            )
+            being linked to."""))
     datecreated = Datetime(
-            title=_('Date Created'), required=True, readonly=True,
-            )
+            title=_('Date Created'), required=True, readonly=True,)
     owner = Int(
-            title=_('Owner'), required=False, readonly=True,
-            )
+            title=_('Owner'), required=False, readonly=True,)
 
 
 class IBugExternalRefSet(Interface):

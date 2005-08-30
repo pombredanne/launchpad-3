@@ -12,7 +12,7 @@ import sets
 import os.path
 import warnings
 from zope.interface import Interface, Attribute, implements
-from zope.component import getAdapter, getUtility, queryAdapter
+from zope.component import getUtility, queryAdapter
 
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
@@ -24,7 +24,6 @@ from canonical.launchpad.interfaces import (
     IApplicationMenu, IExtraApplicationMenu, NoCanonicalUrl,
     IBugSet)
 import canonical.lp.dbschema
-from canonical.lp import decorates
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url, nearest_menu
 from canonical.launchpad.webapp.publisher import get_current_browser_request
@@ -78,7 +77,6 @@ class MenuAPI:
         selected facet.
         """
         facetmenu = self.facet()
-        selectedfacetname = None
         for link in facetmenu:
             if link.selected:
                 return link.name
@@ -252,6 +250,8 @@ class NoneFormatter:
                 raise TraversalError(
                     "you need to traverse a number after fmt:shorten")
             maxlength = int(furtherPath.pop())
+            # XXX: why is maxlength not used here at all?
+            #       - kiko, 2005-08-24
             return ''
         elif name in self.allowed_names:
             return ''
@@ -532,10 +532,10 @@ class PageTemplateContextsAPI:
         name = name.replace('-', '_')
         titleobj = getattr(canonical.launchpad.pagetitles, name, None)
         if titleobj is None:
-            warnings.warn(
+            # sabdfl 25/0805 page titles are now mandatory hence the assert
+            raise AssertionError(
                  "No page title in canonical.launchpad.pagetitles for %s"
                  % name)
-            return canonical.launchpad.pagetitles.DEFAULT_LAUNCHPAD_TITLE
         elif isinstance(titleobj, basestring):
             return titleobj
         else:
@@ -602,14 +602,16 @@ class FormattersAPI:
             url = match.group('url')
             # The url might end in a spurious &gt;.  If so, remove it
             # and put it outside the url text.
+            trail = ''
+            gt = ''
+            if url[-1] in (",", ".", "?"):
+                trail = url[-1]
+                url = url[:-1]
             if url.lower().endswith('&gt;'):
                 gt = url[-4:]
                 url = url[:-4]
-            else:
-                gt = ''
-                url = url
-            return '<a rel="nofollow" href="%s">%s</a>%s' % (
-                url.replace('"', '&quot;'), url, gt)
+            return '<a rel="nofollow" href="%s">%s</a>%s%s' % (
+                url.replace('"', '&quot;'), url, gt, trail)
         else:
             raise AssertionError("Unknown pattern matched.")
 

@@ -56,7 +56,7 @@ class FileUploadProtocol(basic.LineReceiver):
     
     delimiter = '\r\n'  # same as HTTP
     state = 'command'
-    
+
     def lineReceived(self, line):
         try:
             getattr(self, 'line_' + self.state, self.badLine)(line)
@@ -104,6 +104,11 @@ class FileUploadProtocol(basic.LineReceiver):
             # If that's ok, we're ready to receive the file.
             self.state = 'file'
             self.setRawMode()
+
+            # Make sure rawDataReceived is *always* called, so that zero-byte
+            # uploads don't hang.  It's harmless the rest of the time.
+            self.rawDataReceived('')
+
             return
 
         # Simple RFC 822-ish header parsing
@@ -122,7 +127,7 @@ class FileUploadProtocol(basic.LineReceiver):
 
     def command_STORE(self, args):
         try:
-            size, name = args.split(None, 2)
+            size, name = args.split(None, 1)
             try:
                 name = name.decode('utf-8')
             except:
@@ -162,7 +167,7 @@ class FileUploadProtocol(basic.LineReceiver):
 
         if self.bytesLeft == 0:
             # Store file
-            deferred = deferToThread(self.newFile.store)
+            deferred = self._storeFile()
             def _sendID((fileID, aliasID)):
                 # Send ID to client
                 if self.newFile.contentID is None:
@@ -176,6 +181,9 @@ class FileUploadProtocol(basic.LineReceiver):
             # Treat remaining bytes (if any) as a new command
             self.state = 'command'
             self.setLineMode(rest)
+
+    def _storeFile(self):
+        return deferToThread(self.newFile.store)
 
 
 class FileUploadFactory(protocol.Factory):

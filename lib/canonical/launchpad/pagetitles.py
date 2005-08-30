@@ -32,8 +32,9 @@ after the helpers.
 """
 __metaclass__ = type
 
+from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IProduct, IDistribution, IDistroRelease)
+    IProduct, IDistribution, IDistroRelease, ILaunchBag)
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
@@ -47,12 +48,12 @@ class BugPageTitle:
 class BugTaskPageTitle:
     def __call__(self, context, view):
         return "Bug #%d in %s - %s" % (
-            context.bug.id, context.contextname, context.bug.title)
+            context.bug.id, context.targetname, context.bug.title)
 
 
 class BugTaskTargetingTitle:
     def __call__(self, context, view):
-        task_target = context.context
+        task_target = context.target
         if IDistribution.providedBy(task_target):
             distribution_title = task_target.title
         elif IDistroRelease.providedBy(task_target):
@@ -116,7 +117,13 @@ binarypackagerelease_license = 'Binary Package Licence'
 
 bounties = 'Launchpad Bounties'
 
-bounties_new = 'Register a New Bounty in Launchpad'
+bounty_add = 'Register a New Bounty in Launchpad'
+
+bounty_edit = ContextTitle('Edit Bounty: %s')
+
+bounty_add = 'Register a bounty in Launchpad'
+
+bounty_edit = ContextTitle('Edit bounty "%s"')
 
 bounty_index = ContextTitle('Launchpad Bounty: %s')
 
@@ -124,7 +131,7 @@ bounty_subscription = 'Bounty Subscription'
 
 branch_index = ContextTitle('Bazaar Branch: %s')
 
-bug_activity = ContextId('Bug #%s: Activity Log')
+bug_activity = ContextId('Bug #%s - Activity Log')
 
 def bug_add(context, view):
     # XXX, Brad Bollenbach, 2005-07-15: This is a hack until our fancy
@@ -141,19 +148,34 @@ def bug_add(context, view):
     else:
         return "Report a bug"
 
+def bug_attachment_add(context, view):
+    return 'Bug #%d - Add an Attachment' % getUtility(ILaunchBag).bug.id
+
 bug_attachments = ContextId('Malone Bug Attachments for Bug #%s')
+
+def bug_cveref_add(context, view):
+    return "Bug #%d - Add CVE Reference" % getUtility(ILaunchBag).bug.id
 
 bug_edit = BugPageTitle()
 
+def bug_extref_add(context, view):
+    return "Bug #%d - Add External Web Link" % getUtility(ILaunchBag).bug.id
+
 bug_index = BugPageTitle()
+
+bug_mark_as_duplicate = ContextId('Bug #%d - Mark as Duplicate')
 
 bug_references = ContextId('External references for bug #%s')
 
 bug_secrecy = ContextId('Set secrecy for bug #%s')
 
-bug_secrecy = ContextId('Make Malone Bug #%d Public or Secret')
+bug_secrecy = ContextId('Bug #%d - Set Bug Secrecy')
 
-bugattachment_add = 'Add an Attachment'
+def bug_subscriber_add(context, view):
+    return "Bug #%d - Add Subscriber" % getUtility(ILaunchBag).bug.id
+
+def bug_watch_add(context, view):
+    return 'Bug #%d - Add an External Bug Watch' % getUtility(ILaunchBag).bug.id
 
 bugwatch_editform = ContextTitle('Edit the Watch on %s')
 
@@ -192,7 +214,7 @@ bugtrackers_add = 'Register External Bugtracker in Malone'
 
 bugtrackers_index = 'Malone-Registered Bug Trackers'
 
-calendar = ContextTitle('%s')
+calendar_index = ContextTitle('%s')
 
 calendar_event_addform = ContextTitle('Add Event to Calendar "%s"')
 
@@ -380,7 +402,7 @@ malone_to_do = 'Malone ToDo'
 
 milestone_add = ContextDisplayName('Add Milestone for %s')
 
-milestone_bugs = ContextTitle('Bugs Targeted to %s')
+milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
 
@@ -419,15 +441,25 @@ person_bounties = ContextDisplayName('Bounties for %s')
 
 person_branches = ContextDisplayName("%s's code branches in Launchpad")
 
+person_changepassword = 'Change your password'
+
 person_codesofconduct = ContextDisplayName('%s Signed Codes of Conduct')
 
 person_edit = ContextDisplayName('Edit %s Information')
 
-person_emails = ContextDisplayName('Edit %s Email Addresses')
+person_editemails = ContextDisplayName('Edit %s Email Addresses')
+
+person_editgpgkeys = ContextDisplayName('%s GPG Keys')
+
+person_editircnicknames = ContextDisplayName('%s IRC Nicknames')
+
+person_editjabberids = ContextDisplayName('%s Jabber IDs')
+
+person_editsshkeys = ContextDisplayName('%s SSH Keys')
+
+person_editwikinames = ContextDisplayName('%s Wiki Names')
 
 # person_foaf is an rdf file
-
-person_gpgkey = ContextDisplayName('%s GPG Keys')
 
 person_index = ContextDisplayName('%s: Launchpad Overview')
 
@@ -440,8 +472,6 @@ person_packages = ContextDisplayName('Packages Maintained By %s')
 person_reportedbugs = ContextDisplayName('Bugs Reported By %s')
 
 person_review = ContextDisplayName("Review %s' Information")
-
-person_sshkey = ContextDisplayName('%s SSH Keys')
 
 person_timezone = ContextDisplayName('Time Zone for %s')
 
@@ -496,7 +526,7 @@ potemplatename_index = ContextTitle('%s in Rosetta')
 
 potemplatenames_index = 'Template names in Launchpad'
 
-product_add = 'Register a new Product with the Launchpad'
+product_add = 'Register a product with Launchpad'
 
 product_bugs = ContextDisplayName('%s upstream bug reports')
 
@@ -525,7 +555,7 @@ productseries_translations = ContextTitle(
 
 productseries_ubuntupkg = 'Ubuntu Source Package'
 
-products_index = 'Products in Launchpad'
+products_index = 'Launchpad product registry'
 
 products_search = 'Launchpad: Advanced Upstream Product Search'
 
@@ -545,11 +575,11 @@ project_index = ContextTitle('Project: %s')
 
 project_interest = 'Rosetta: Project not translatable'
 
-project_new = 'Register a Project with the Launchpad'
+project_new = 'Register a project with Launchpad'
 
 project_rosetta_index = ContextTitle('Rosetta: %s')
 
-projects_index = 'Launchpad Project Registry'
+projects_index = 'Launchpad project registry'
 
 projects_request = 'Rosetta: Request a project'
 
@@ -584,15 +614,15 @@ rosetta_index = 'Rosetta'
 
 rosetta_preferences = 'Rosetta: Preferences'
 
-def series_edit(context, view):
+def productseries_edit(context, view):
     return 'Edit %s %s Details' % (context.product.displayname, context.name)
 
-series_new = ContextDisplayName('Register a new %s release series')
+productseries_new = ContextDisplayName('Register a new %s release series')
 
-def series_review(context, view):
+def productseries_review(context, view):
     return 'Review %s %s Details' % (context.product.displayname, context.name)
 
-def series(context, view):
+def productseries(context, view):
     return '%s Release Series: %s' % (
         context.product.displayname, context.displayname)
 
@@ -648,6 +678,46 @@ sourcesource_index = 'Upstream Source Import'
 soyuz_about = 'About Soyuz'
 
 soyuz_index = 'Soyuz: Linux Distribution Management'
+
+specification_add = 'Register A New Feature Specification'
+
+specification_bug = 'Link this Specification to Bug'
+
+specification_removebug = 'Remove Link to Bug'
+
+specification_dependency = 'Create a Specification Dependency'
+
+specification_deptree = 'Complete Dependency Tree'
+
+specification_milestone = 'Target Feature to Milestone'
+
+specification_people = 'Change the Specification Assignee, Drafter and Reviewer'
+
+specification_distrorelease = 'Target Feature Specification at Distribution Release'
+
+specification_productseries = 'Target Feature Specification at Series'
+
+specification_removedep = 'Remove a Dependency'
+
+specification_doreview = 'Conduct Specification Review'
+
+specification_requestreview = 'Request a Review of This Specification'
+
+specification_edit = 'Edit Specification Details'
+
+specification_status = 'Edit Specification Status'
+
+specification_index = ContextTitle('Feature Specification: %s')
+
+specification_subscription = 'Subscribe to Feature Specification'
+
+specification_queue = 'Queue Feature Specification for Review'
+
+specifications_index = ContextTitle('%s')
+
+specificationtarget_specs = ContextTitle('Specifications for %s')
+
+specificationtarget_specplan = ContextTitle('Project Plan for %s')
 
 def team_addmember(context, view):
     return '%s: Add members' % context.team.browsername

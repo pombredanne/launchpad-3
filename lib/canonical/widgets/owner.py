@@ -62,11 +62,11 @@ class RequestWidget(object):
         '''See zope.app.form.browser.interfaces.IBrowserWidget'''
         return ''
 
-class IOwnerWidget(Interface):
+class IUserWidget(Interface):
     pass
 
-class OwnerWidget(RequestWidget):
-    implements(IOwnerWidget)
+class HiddenUserWidget(RequestWidget):
+    implements(IUserWidget)
     def getInputValue(self):
         return IPerson(self.request.principal)
 

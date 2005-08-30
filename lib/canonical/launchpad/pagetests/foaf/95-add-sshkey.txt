@@ -1,8 +1,8 @@
 
-  Go to the +editsshkey page.
+  Go to the +editsshkeys page.
 
   >>> print http(r"""
-  ... GET /people/salgado/+editsshkey HTTP/1.1
+  ... GET /people/salgado/+editsshkeys HTTP/1.1
   ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
   ... """)
   HTTP/1.1 200 Ok
@@ -18,7 +18,7 @@
   Paste the sshkey on the form and click 'Submit'
 
   >>> print http(r"""
-  ... POST /people/salgado/+editsshkey HTTP/1.1
+  ... POST /people/salgado/+editsshkeys HTTP/1.1
   ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
@@ -29,4 +29,14 @@
   Content-Type: text/html;charset=utf-8
   ...
   ...SSH public key added...
+  ...
+
+
+  Launchpad administrators are not allowed to add ssh keys to other people.
+
+  >>> print http(r"""
+  ... GET /people/salgado/+editsshkeys HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 403 Forbidden
   ...

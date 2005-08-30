@@ -51,10 +51,12 @@ __all__ = (
 'EmailAddressStatus',
 'HashAlgorithm',
 'ImportTestStatus',
+'ImportStatus',
 'KarmaActionCategory',
 'KarmaActionName',
 'LoginTokenType',
 'ManifestEntryType',
+'MirrorFreshness',
 'PackagePublishingPriority',
 'PackagePublishingStatus',
 'PackagePublishingPocket',
@@ -63,13 +65,15 @@ __all__ = (
 'ProjectRelationship',
 'ProjectStatus',
 'RevisionControlSystems',
+'RosettaFileFormat',
 'RosettaImportStatus',
 'RosettaTranslationOrigin',
 'SourcePackageFileType',
 'SourcePackageFormat',
 'SourcePackageRelationships',
 'SourcePackageUrgency',
-'ImportStatus',
+'SpecificationStatus',
+'SpecificationPriority',
 'SSHKeyType',
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
@@ -79,8 +83,6 @@ __all__ = (
 'DistroReleaseQueueStatus',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
-'MirrorFreshness',
-'RosettaFileFormat',
 )
 
 from canonical.database.constants import DEFAULT
@@ -1013,6 +1015,118 @@ class SourcePackageUrgency(DBSchema):
         as possible after appropriate review.
         """)
 
+
+class SpecificationPriority(DBSchema):
+    """The Priority with with a Specification must be implemented.
+
+    This enum is used to prioritise work.
+    """
+
+    WISHLIST = Item(0, """
+        Wishlist
+
+        This specification is on the "nice to have" list, but is unlikely to
+        be implemented as part of a specific release unless somebody
+        develops an irresistable itch to do so, on their own initiative.
+        """)
+
+    LOW = Item(10, """
+        Low
+
+        The specification is low priority. We would like to have it in the
+        code, but it's not on any critical path and is likely to get bumped
+        in favour of higher-priority work.
+        """)
+
+    MEDIUM = Item(50, """
+        Medium
+
+        The specification is of a medium, or normal priority. We will
+        definitely get to this feature but perhaps not in the next month or
+        two.
+        """)
+
+    HIGH = Item(70, """
+        High
+
+        The specification is definitely desired for the next major release,
+        and should be the focal point of developer attention right now.
+        """)
+
+    EMERGENCY = Item(90, """
+        Emergency
+
+        The specification is required immediately, and should be implemented
+        in such a way that it can be moved to production as soon as it is
+        ready, perhaps by publishing a new stable product release rather
+        than waiting for a new major release.
+        """)
+
+
+class SpecificationStatus(DBSchema):
+    """The current status of a Specification
+
+    This enum tells us whether or not a specification is approved, or still
+    being drafted, or implemented, or obsolete in some way. The ordinality
+    of the values is important, it's the order (lowest to highest) in which
+    we probably want them displayed by default.
+    """
+
+    APPROVED = Item(10, """
+        Approved
+
+        This specification has been approved. The project team believe that
+        is ready to be implemented.
+        """)
+
+    PENDING = Item(20, """
+        Pending Approval
+
+        This spec has been put in a reviewers queue. The reviewer will
+        either move it to "approved" or bump it back to "draft", making
+        review comments for consideration at the bottom.
+        """)
+
+    DRAFT = Item(30, """
+        Draft
+
+        The specification is in Draft status. The drafter has made a start
+        on reviewing the document.
+        """)
+
+    BRAINDUMP = Item(40, """
+        Braindump
+
+        The specification is just a thought, or collection of thoughts, with
+        no attention paid to implementation strategy, dependencies or
+        presentation/UI issues.
+        """)
+
+    IMPLEMENTED = Item(50, """
+        Implemented
+
+        The specification has been implemented, and has landed in the
+        codebase to which it was targeted.
+        """)
+
+    SUPERCEDED = Item(60, """
+        Superceded
+
+        This specification is still interesting, but has been superceded by
+        a newer spec, or set of specs, that clarify or describe a newer way
+        to implement the desired feature(s). Please use the newer specs and
+        not this one.
+        """)
+
+    OBSOLETE = Item(70, """
+        Obsolete
+
+        This specification has been obsoleted. Probably, we decided not to
+        implement it for some reason. It should not be displayed, and people
+        should not put any effort into implementing it.
+        """)
+
+
 class ImportStatus(DBSchema):
     """This schema describes the states that a SourceSource record can take
     on."""
@@ -1079,6 +1193,7 @@ class ImportStatus(DBSchema):
         amend the previous ProductSeries.  In theory, a STOPPED
         ProductSeries can be set to Sync again, but this requires serious
         Bazaar fu, and the buttsource team.  """)
+
 
 class SourcePackageFileType(DBSchema):
     """Source Package File Type

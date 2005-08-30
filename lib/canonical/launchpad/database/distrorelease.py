@@ -71,6 +71,8 @@ class DistroRelease(SQLBase):
     architectures = MultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease',
         orderBy='architecturetag')
+    specifications = MultipleJoin('Specification',
+        joinColumn='distrorelease', orderBy='-datecreated')
     datelastlangpack = UtcDateTimeCol(dbName='datelastlangpack', notNull=False,
                                    default=None)
     messagecount = IntCol(notNull=True, default=0)
@@ -167,6 +169,10 @@ class DistroRelease(SQLBase):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setDistributionRelease(self)
         return BugTaskSet().search(search_params)
+
+    def getSpecification(self, name):
+        """See ISpecificationTarget."""
+        return self.distribution.getSpecification(name)
 
     def getBugSourcePackages(self):
         """See IDistroRelease."""

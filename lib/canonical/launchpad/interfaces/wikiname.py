@@ -22,11 +22,36 @@ class IWikiName(Interface):
     wikiname = TextLine(title=_("Wikiname"), required=True)
     url = Attribute("The URL for this wiki home page.")
 
+    def destroySelf():
+        """Remove this WikiName from the database."""
+
 
 class IWikiNameSet(Interface):
     """The set of WikiNames."""
 
-    def new(personID, wiki, wikiname):
+    def getByWikiAndName(self, wiki, wikiname):
+        """Return the WikiName with the given wiki and wikiname.
+        
+        Return None if it doesn't exists.
+        """
+
+    def getUbuntuWikiByPerson(self, person):
+        """Return the Ubuntu WikiName for the given person."""
+
+    def getOtherWikisByPerson(self, person):
+        """Return all WikiNames of the given person that are not the Ubuntu
+        one."""
+
+    def getAllWikisByPerson(self, person):
+        """Return all WikiNames of the given person."""
+
+    def get(id, default=None):
+        """Return the WikiName with the given id.
+        
+        Return the default value if nof found.
+        """
+
+    def new(person, wiki, wikiname):
         """Create a new WikiName pointing to the given Person."""
 
     def exists(wikiname, wiki=UBUNTU_WIKI_URL):

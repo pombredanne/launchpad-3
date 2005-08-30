@@ -12,21 +12,15 @@ Sample Person may edit the bug task:
 
   >>> print http(r"""
   ... GET /products/firefox/+bugs/4/+edit HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-            <h2>...in upstream firefox...</h2>
-  ...
+  ...in upstream firefox...
 
 Edit the target:
 
   >>> print http(r"""
   ... POST /products/firefox/+bugs/4/+edit HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1442
   ... Content-Type: multipart/form-data; boundary=---------------------------9725916581164147154144110168
@@ -147,9 +141,7 @@ Now Foo Bar may edit the bug, since he's part of the maintainer team:
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-            <h2>...in upstream firefox...</h2>
-  ...
+  ...in upstream firefox...
 
 
   >>> print http(r"""

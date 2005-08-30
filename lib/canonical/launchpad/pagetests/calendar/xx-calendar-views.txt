@@ -10,19 +10,20 @@ interesting at the moment).
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Sample Person's Calendar</title>
+  <title>Sample Person's Calendar</title>
   ...
-              <a href="today">Day</a>
+  <a href=".../people/name12/+calendar/...">Day</a>
   ...
-              <a href="this-week">Week</a>
+  <a href=".../people/name12/+calendar/...">Week</a>
   ...
-              <a href="this-month">Month</a>
+  <a href=".../people/name12/+calendar/...">Month</a>
   ...
-              <a href="this-year">Year</a>
+  <a href=".../people/name12/+calendar/...">Year</a>
   ...
 
 
-Get a year view for the calendar.  Items of note:
+Get a year view for the calendar. Items of note:
+
  * links through to the other calendar views containing the first day of 2005
  * back and forward navigation links to adjacent years.
  * highlighting of days containing events
@@ -31,37 +32,46 @@ Get a year view for the calendar.  Items of note:
   ... GET /people/name12/+calendar/2005 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
   ...
-      <title>Sample Person's Calendar - 2005</title>
+  ...Sample Person's Calendar - 2005...
+
+
+  >>> print http(r"""
+  ... GET /people/name12/+calendar/2005 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
   ...
-              <a href="../2005-01-01">Day</a>
+  ...<a href=".../people/name12/+calendar/2005-01-01">Day</a>...
+  ...<a href=".../people/name12/+calendar/2004-W53">Week</a>...
+  ...<a href=".../people/name12/+calendar/2005-01">Month</a>...
+
+
+  >>> print http(r"""
+  ... GET /people/name12/+calendar/2005 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
   ...
-              <a href="../2004-W53">Week</a>
+  ...<a href=".../people/name12/+calendar/2004">&#8592; Previous</a>...
+  ...<a href="../this-year">Today</a>...
+  ...<a href=".../people/name12/+calendar/2006">Next &#8594;</a>...
+
+
+  >>> print http(r"""
+  ... GET /people/name12/+calendar/2005 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
   ...
-              <a href="../2005-01">Month</a>
+  <a href="../2005-01-02"
+     class="cal-freeday">2</a>
   ...
-              <a href="../2005">Year</a>
+  <a href="../2005-01-03"
+     class="cal-busyday">3</a>
   ...
-                  <a href="../2004">&#8592; Previous</a>
+  <a href="../2005-01-04"
+     class="cal-busyday">4</a>
   ...
-                  <a href="../this-year">Today</a>
-  ...
-                  <a href="../2006">Next &#8594;</a>
-  ...
-                        <a href="../2005-01-02"
-                           class="cal-freeday">2</a>
-  ...
-                        <a href="../2005-01-03"
-                           class="cal-busyday">3</a>
-  ...
-                        <a href="../2005-01-04"
-                           class="cal-busyday">4</a>
-  ...
-                        <a href="../2005-01-05"
-                           class="cal-freeday">5</a>
+  <a href="../2005-01-05"
+     class="cal-freeday">5</a>
   ...
 
 
@@ -76,42 +86,26 @@ Get a month view for January 2005:
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Sample Person's Calendar - January 2005</title>
+  <div class="cal-dayhead">
+    <a href="../2005-01-03">3</a>
+  </div>
   ...
-              <a href="../2005-01-01">Day</a>
+  <a href=".../people/name12/+calendar/events/1">
+  08:00
   ...
-              <a href="../2004-W53">Week</a>
+  <a href=".../people/name12/+calendar/events/2">
+  10:00
   ...
-              <a href="../2005-01">Month</a>
+  <div class="cal-dayhead">
+     <a href="../2005-01-04">4</a>
+  </div>
   ...
-              <a href="../2005">Year</a>
+  <a href=".../people/name12/+calendar/events/3">
+  08:00
   ...
-                  <a href="../2004-12">&#8592; Previous</a>
-  ...
-                  <a href="../this-month">Today</a>
-  ...
-                  <a href="../2005-02">Next &#8594;</a>
-  ...
-                  <div class="cal-dayhead">
-                    <a href="../2005-01-03">3</a>
-                  </div>
-  ...
-                      <a href="../events/1/">
-                      08:00
-  ...
-                      <a href="../events/2/">
-                      10:00
-  ...
-                  <div class="cal-dayhead">
-                    <a href="../2005-01-04">4</a>
-                  </div>
-  ...
-                      <a href="../events/3/">
-                      08:00
-  ...
-                  <div class="cal-dayhead">
-                    <a href="../2005-01-31">31</a>
-                  </div>
+  <div class="cal-dayhead">
+    <a href="../2005-01-31">31</a>
+  </div>
   ...
 
 
@@ -122,46 +116,27 @@ Get a week view for the first ISO week of January 2005 (3rd - 9th):
   ... GET /people/name12/+calendar/2005-W01 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
   ...
-      <title>Sample Person's Calendar - Week 1, 2005</title>
+  <div class="cal-dayhead">
+     <a href="../2005-01-03">Monday, 3 January</a>
+  </div>
   ...
-              <a href="../2005-01-03">Day</a>
+  <a href=".../people/name12/+calendar/events/1">
+  08:00
   ...
-              <a href="../2005-W01">Week</a>
+  <a href=".../people/name12/+calendar/events/2">
+  10:00
   ...
-              <a href="../2005-01">Month</a>
+  <div class="cal-dayhead">
+    <a href="../2005-01-04">Tuesday, 4 January</a>
+  </div>
   ...
-              <a href="../2005">Year</a>
+  <a href=".../people/name12/+calendar/events/3">
+  08:00
   ...
-                  <a href="../2004-W53">&#8592; Previous</a>
-  ...
-                  <a href="../this-week">Today</a>
-  ...
-                  <a href="../2005-W02">Next &#8594;</a>
-  ...
-              <div class="cal-dayhead">
-                <a href="../2005-01-03">Monday, 3 January</a>
-              </div>
-  ...
-                  <a href="../events/1/">
-                  08:00
-  ...
-                  <a href="../events/2/">
-                  10:00
-  ...
-              <div class="cal-dayhead">
-                <a href="../2005-01-04">Tuesday, 4 January</a>
-              </div>
-  ...
-                  <a href="../events/3/">
-                  08:00
-  ...
-              <div class="cal-dayhead">
-                <a href="../2005-01-09">Sunday, 9 January</a>
-              </div>
+  <div class="cal-dayhead">
+    <a href="../2005-01-09">Sunday, 9 January</a>
+  </div>
   ...
 
 
@@ -172,37 +147,17 @@ Get a day view for 3rd January, 2005:
   ... GET /people/name12/+calendar/2005-01-03 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
   ...
-      <title>Sample Person's Calendar - 3 January 2005</title>
+  08:00
+  -
+  Event 1
+  </a>
   ...
-              <a href="../2005-01-03">Day</a>
-  ...
-              <a href="../2005-W01">Week</a>
-  ...
-              <a href="../2005-01">Month</a>
-  ...
-              <a href="../2005">Year</a>
-  ...
-                  <a href="../2005-01-02">&#8592; Previous</a>
-  ...
-                  <a href="../today">Today</a>
-  ...
-                  <a href="../2005-01-04">Next &#8594;</a>
-  ...
-                        <a href="../events/1/">
-                        08:00
-                        -
-                        Event 1
-                        </a>
-  ...
-                        <a href="../events/2/">
-                        10:00
-                        -
-                        Event 2
-                        </a>
+  <a href=".../people/name12/+calendar/events/2">
+  10:00
+  -
+  Event 2
+  </a>
   ...
 
 
@@ -220,17 +175,17 @@ hours:
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Sample Person's Calendar - 3 January 2005</title>
+  <title>Sample Person's Calendar - 3 January 2005</title>
   ...
-                        <a href="../events/1/">
-                        16:00
-                        -
-                        Event 1
-                        </a>
+  <a href=".../people/name12/+calendar/events/1">
+  16:00
+  -
+  Event 1
+  </a>
   ...
-                        <a href="../events/2/">
-                        18:00
-                        -
-                        Event 2
-                        </a>
+  <a href=".../people/name12/+calendar/events/2">
+  18:00
+  -
+  Event 2
+  </a>
   ...

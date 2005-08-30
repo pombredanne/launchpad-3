@@ -224,7 +224,7 @@
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="/products/$Product.name/+filebug">
-        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
@@ -233,7 +233,12 @@
         <browser:widget
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"
+           extra="tabindex=2"
            width="62" />
+        <browser:widget
+           field="private"
+           class="zope.app.form.browser.CheckBoxWidget"
+           extra="tabindex=3" />
     </browser:addform>
 
     <browser:addform
@@ -284,7 +289,7 @@
         class="canonical.launchpad.browser.ProductSeriesAddView"
         keyword_arguments="name displayname summary"
         permission="launchpad.AnyPerson"
-        template="../templates/series-new.pt"
+        template="../templates/productseries-new.pt"
         lp:url="/products/$Product.name/+addseries">
         <browser:widget
            field="name"
@@ -359,7 +364,7 @@
         name="+new"
         for="canonical.launchpad.interfaces.IProductSet"
         schema="canonical.launchpad.interfaces.IProduct"
-        label="Register an Open Source (Upstream) Product"
+        label="Register an upstream open source product"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
                 downloadurl programminglang"
@@ -368,7 +373,7 @@
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
         lp:url="products/+new">
-        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="name"
            class="zope.app.form.browser.TextWidget"

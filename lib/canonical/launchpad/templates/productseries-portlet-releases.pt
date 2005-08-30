@@ -6,7 +6,7 @@
       The following releases have been made from this branch:
       <ul>
         <li tal:repeat="release context/releases">
-           <a tal:attributes="href string:${release/version}">
+           <a tal:attributes="href release/fmt:url">
              <span tal:replace="release/version">2.1.6</span>
            </a>
         </li>

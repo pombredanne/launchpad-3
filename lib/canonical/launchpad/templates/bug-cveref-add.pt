@@ -1,0 +1,37 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure view/bug/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure view/bug/@@+portlet-actions" />
+  <div tal:replace="structure view/bug/@@+portlet-cve" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_addform/addform">
+
+    <div metal:fill-slot="extra_info" class="documentDescription">
+      A CVE reference provides a common name for a known security
+      vulnerability or exposure. By associating CVE references to bugs
+      in Malone, you can track which security problems are still "at
+      large" in your distribution or product, and which have been fixed.
+    </div>
+
+
+  </div>
+
+</div>
+
+</body>
+</html>
+

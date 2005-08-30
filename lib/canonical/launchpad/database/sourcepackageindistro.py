@@ -10,7 +10,7 @@ from sqlobject import StringCol, ForeignKey
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.lp.dbschema import EnumCol, PackagePublishingStatus, \
-        SourcePackageFormat
+        SourcePackageFormat, PackagePublishingPocket
 
 from canonical.launchpad.interfaces import \
     ISourcePackageInDistro, ISourcePackageInDistroSet
@@ -44,6 +44,12 @@ class SourcePackageInDistro(SQLBase):
 
     distrorelease = ForeignKey(foreignKey='DistroRelease',
                                dbName='distrorelease')
+
+    status = EnumCol(dbName='status',
+                     schema=PackagePublishingStatus)
+
+    pocket = EnumCol(dbName='pocket',
+                     schema=PackagePublishingPocket)
 
 
 class SourcePackageInDistroSet:

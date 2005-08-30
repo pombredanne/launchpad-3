@@ -18,7 +18,7 @@
   <tbody>
     <tr tal:repeat="bugtask context/bugtasks">
       <td>
-        <span tal:replace="bugtask/contextname">upstream rosetta</span>
+        <span tal:replace="bugtask/targetname">upstream rosetta</span>
 
         <!--indicate if there is a linked watch -->
         <img tal:condition="bugtask/bugwatch"
@@ -49,12 +49,12 @@
       <td style="text-align:center">
         <tal:editabletask condition="bugtask/required:launchpad.Edit">
           [<a tal:attributes="href string:${bugtask/fmt:url}/+edit;
-              title string:Click to edit status, assignee in ${bugtask/contextname}"
+              title string:Click to edit status, assignee in ${bugtask/targetname}"
               >edit</a>]
         </tal:editabletask>
         <tal:readonlytask condition="not:bugtask/required:launchpad.Edit">
           [<a tal:attributes="href string:${bugtask/fmt:url}/+index;
-              title string:Click to view status in ${bugtask/contextname}"
+              title string:Click to view status in ${bugtask/targetname}"
               >view</a>]
         </tal:readonlytask>
       </td>

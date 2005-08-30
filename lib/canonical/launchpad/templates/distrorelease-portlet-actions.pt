@@ -1,17 +1,32 @@
 <div class="portlet">
-    <h4>Distribution Release Actions:</h4>
+  <h4>Distribution Release Actions:</h4>
 
   <div class="portletBody portletContent">
 
     <ul>
-      <li class="edit"><a href="+edit">Edit Details</a></li>
-      <li class="edit" tal:condition="context/required:launchpad.Edit">
-        <a href="+reassign">Change Admin</a>
+      <li class="edit">
+        <a tal:attributes="href string:${context/fmt:url}/+edit">Edit 
+            Details</a></li>
+      <li class="info">
+        <a tal:attributes="href string:${context/fmt:url}/+specs">
+          Show Specifications</a>
       </li>
-      <li class="packages"><a href="+sources">View Source Packages</a></li>
-      <li class="bugs"><a href="+bugs">View Release Bugs</a></li>
-      <li class="translations"><a href="+translations">View Translations</a></li>
-      <li class="info"><a href="+packaging">View Upstream Links</a></li>
+      <li class="edit" tal:condition="context/required:launchpad.Edit">
+        <a tal:attributes="href string:${context/fmt:url}/+reassign">Change 
+            Admin</a>
+      </li>
+      <li class="packages">
+        <a tal:attributes="href string:${context/fmt:url}/+sources">View 
+            Source Packages</a></li>
+      <li class="bugs">
+        <a tal:attributes="href string:${context/fmt:url}/+bugs">View 
+            Release Bugs</a></li>
+      <li class="translations">
+        <a tal:attributes="href string:${context/fmt:url}/+translations">View 
+            Translations</a></li>
+      <li class="info">
+        <a tal:attributes="href string:${context/fmt:url}/+packaging">View 
+            Upstream Links</a></li>
     </ul>
   </div>
 </div>

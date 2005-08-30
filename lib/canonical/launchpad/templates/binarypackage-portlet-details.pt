@@ -1,0 +1,27 @@
+<div class="portlet">
+  <h4><span tal:replace="context/name" /> Details:</h4>
+
+  <div class="portletBody portletContent">
+
+      <ul tal:define="files context/files"  >
+        <li><b>Package version:</b>
+            <span tal:replace="context/version" /></li>
+        <li><b>Status:</b>
+            <span tal:replace="context/status" /></li>
+        <li><b>Component:</b>
+            <span tal:replace="context/component/name" /></li>
+        <li><b>Priority:</b>
+            <span tal:replace="context/priority/title" /></li>
+        <li><b>Download:</b>
+            <div tal:define="files context/files">
+              <ul tal:condition="files">
+                  <li tal:repeat="file files">
+                      <a tal:content="file/url/filename"
+                         tal:attributes="href file/url/fileurl" /></li>
+              </ul>
+              <i tal:condition="not:files">No files available for download.</i>
+	    </div>
+	</li>
+       </ul>
+  </div>
+</div>

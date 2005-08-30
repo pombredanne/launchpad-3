@@ -45,7 +45,7 @@ debbugsseveritymap = {'wishlist': BugTaskSeverity.WISHLIST,
 
 def bugtask_sort_key(bugtask):
     """A sort key for a set of bugtasks. We want:
-          
+
           - products first
           - distro tasks, followed by their distrorelease tasks
           - ubuntu first among the distros
@@ -141,17 +141,15 @@ class BugTask(SQLBase):
         else:
             return None
 
-    # XXX 2005-06-25 kiko: rename context and contextname to target or
-    # location or whatever. context is overloaded.
     @property
-    def context(self):
+    def target(self):
         distro = self.distribution
         distrorelease = self.distrorelease
         if distro or distrorelease:
             parent = distrorelease or distro
             # XXX 2005-06-25 kiko: This needs API and fixages in Soyuz,
             # but I don't want to leave us with broken links meanwhile.
-            # Filed bugs 1146 and 1147. 
+            # Filed bugs 1146 and 1147.
             return parent
             # if self.sourcepackagename:
             #     return parent.getSourcePackage(self.sourcepackagename)
@@ -164,22 +162,22 @@ class BugTask(SQLBase):
         else:
             raise AssertionError
 
-    # XXX 2005-06-25 kiko: if context actually works, we can probably
+    # XXX 2005-06-25 kiko: if target actually works, we can probably
     # nuke this or simplify it significantly.
     @property
-    def contextname(self):
+    def targetname(self):
         """See canonical.launchpad.interfaces.IBugTask.
 
         Depending on whether the task has a distribution,
         distrorelease, sourcepackagename, binarypackagename, and/or
-        product, the contextname will have one of these forms:
+        product, the targetname will have one of these forms:
         * distribution.displayname
         * distribution.displayname sourcepackagename.name
         * distribution.displayname sourcepackagename.name binarypackagename.name
         * distribution.displayname distrorelease.displayname
-        * distribution.displayname distrorelease.displayname 
+        * distribution.displayname distrorelease.displayname
           sourcepackagename.name
-        * distribution.displayname distrorelease.displayname 
+        * distribution.displayname distrorelease.displayname
           sourcepackagename.name binarypackagename.name
         * upstream product.name
         """
@@ -212,10 +210,10 @@ class BugTask(SQLBase):
     @property
     def title(self):
         """Generate the title for this bugtask based on the id of the bug
-        and the bugtask's contextname.  See IBugTask.
+        and the bugtask's targetname.  See IBugTask.
         """
         title = 'Bug #%s in %s: "%s"' % (
-            self.bug.id, self.contextname, self.bug.title)
+            self.bug.id, self.targetname, self.bug.title)
         return title
 
     def _init(self, *args, **kw):
@@ -252,16 +250,17 @@ class BugTaskSet:
     implements(IBugTaskSet)
 
     _ORDERBY_COLUMN = {
-        "id" : "Bug.id",
-        "severity" : "BugTask.severity",
-        "priority" : "BugTask.priority",
+        "id": "Bug.id",
+        "severity": "BugTask.severity",
+        "priority": "BugTask.priority",
         "assignee": "BugTask.assignee",
-        "sourcepackagename" : "BugTask.sourcepackagename",
-        "status" : "BugTask.status",
-        "title" : "Bug.title",
-        "milestone" : "BugTask.milestone",
-        "dateassigned" : "BugTask.dateassigned",
-        "datecreated" : "BugTask.datecreated"}
+        "sourcepackagename": "BugTask.sourcepackagename",
+        "product": "BugTask.product",
+        "status": "BugTask.status",
+        "title": "Bug.title",
+        "milestone": "BugTask.milestone",
+        "dateassigned": "BugTask.dateassigned",
+        "datecreated": "BugTask.datecreated"}
 
     def __init__(self):
         self.title = 'A Set of Bug Tasks'
@@ -284,7 +283,7 @@ class BugTaskSet:
         try:
             bugtask = BugTask.get(task_id)
         except SQLObjectNotFound:
-            raise NotFoundError("BugTask with ID %s does not exist" % 
+            raise NotFoundError("BugTask with ID %s does not exist" %
                                 str(task_id))
         return bugtask
 
@@ -364,11 +363,11 @@ class BugTaskSet:
 
         if params.searchtext:
             extra_clauses.append(
-                "(Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s))" % 
+                "(Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s))" %
                 sqlvalues(params.searchtext, params.searchtext))
 
         if params.statusexplanation:
-            extra_clauses.append("BugTask.fti @@ ftq(%s)" % 
+            extra_clauses.append("BugTask.fti @@ ftq(%s)" %
                                  sqlvalues(params.statusexplanation))
 
         #
@@ -388,7 +387,7 @@ class BugTaskSet:
                           FROM Bug, BugSubscription, TeamParticipation
                           WHERE Bug.id = BugSubscription.bug AND
                                 TeamParticipation.person = %(personid)s AND
-                                BugSubscription.person = 
+                                BugSubscription.person =
                                   TeamParticipation.team AND
                                 BugSubscription.subscription IN
                                     (%(cc)s, %(watch)s))))""" %

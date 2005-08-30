@@ -77,6 +77,11 @@
     <include file="sourcepackagename.zcml" />
     <include file="sourcepackagerelease.zcml" />
     <include file="sourcepackagereleaseindistro.zcml" />
+    <include file="specification.zcml" />
+    <include file="specificationdependency.zcml" />
+    <include file="specificationreview.zcml" />
+    <include file="specificationsubscription.zcml" />
+    <include file="specificationtarget.zcml" />
     <include file="vsourcepackagereleasepublishing.zcml" />
     <include file="sshkey.zcml" />
     <include file="teammembership.zcml" />
