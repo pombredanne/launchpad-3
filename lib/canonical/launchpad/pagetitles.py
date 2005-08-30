@@ -647,6 +647,8 @@ sourcepackage_changelog = 'Source Package Changelog'
 
 sourcepackage_filebug = ContextTitle("Report a Bug in %s")
 
+sourcepackage_hctstatus = ContextTitle('Source Package HCT Status - %s')
+
 def sourcepackage_index(context, view):
     return '%s Source Packages' % context.distrorelease.title
 
