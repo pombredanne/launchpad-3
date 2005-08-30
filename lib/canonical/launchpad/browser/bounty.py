@@ -20,7 +20,6 @@ from zope.app.form.browser.editview import EditView
 from canonical.launchpad.interfaces import (
     IBounty, IBountySet, ILaunchBag, IProduct, IProject, IDistribution)
 
-from zope.app.form.browser.editview import EditView
 from canonical.launchpad.webapp import canonical_url
 
 
