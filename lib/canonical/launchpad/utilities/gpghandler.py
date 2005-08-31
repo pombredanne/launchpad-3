@@ -76,7 +76,15 @@ class GPGHandler:
                 shutil.rmtree(home)
                 
         atexit.register(removeHome, self.home)
-        
+
+    def reset_local_state(self):
+        """See IGPGHandler."""
+        # remove the public keyring, private keyring and the trust DB
+        for filename in ['pubring.gpg', 'secring.gpg', 'trustdb.gpg']:
+            filename = os.path.join(self.home, filename)
+            if os.path.exists(filename):
+                os.remove(filename)
+
     def verifySignature(self, content, signature=None):
         """See IGPGHandler."""
 

@@ -23,6 +23,7 @@ class TestImportKeyRing(FunctionalTestCase):
         """Zero out the gpg database"""
         #FIXME RBC: this should be a zope test cleanup thing per SteveA.
         self.gpg_handler.reset_local_state()
+        FunctionalTestCase.tearDown(self)
 
     # This sequence might fit better as a doctest. Hmm.
     def testEmptyGetKeys(self):
