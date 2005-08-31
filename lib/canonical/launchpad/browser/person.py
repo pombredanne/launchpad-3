@@ -1242,8 +1242,7 @@ class ObjectReassignmentView:
                 return None
 
             owner = personset.newTeam(
-                    teamownerID=self.user.id, name=owner_name,
-                    displayname=owner_name.capitalize())
+                self.user, owner_name, owner_name.capitalize())
 
         return owner
 
@@ -1263,17 +1262,24 @@ class TeamReassignmentView(ObjectReassignmentView):
 
         When a user creates a new team, he is added as an administrator of
         that team. To be consistent with this, we must make the new owner an
-        administrator of the team.
-        Also, the ObjectReassignment spec says that we must make the old owner
-        an administrator of the team, and so we do.
+        administrator of the team. This rule is ignored only if the new owner
+        is an inactive member of the team, as that means he's not interested
+        in being a member. The same applies to the old owner.
         """
-        team.addMember(newOwner)
-        team.addMember(oldOwner)
-        # Need to flush all database updates so the setMembershipStatus method
-        # will see both old and new owners as active members of the team.
-        # Otherwise it'll complain (with an AssertionError) because only 
-        # active members can be promoted to adminsitrators.
+        # Both new and old owners won't be added as administrators of the team
+        # only if they're inactive members. If they're either active or
+        # proposed members they'll be made administrators of the team.
+        if newOwner not in team.inactivemembers:
+            team.addMember(newOwner)
+        if oldOwner not in team.inactivemembers:
+            team.addMember(oldOwner)
+
+        # Need to flush all database updates, otherwise we won't see the
+        # updated membership statuses in the rest of this method.
         flush_database_updates()
-        team.setMembershipStatus(newOwner, TeamMembershipStatus.ADMIN)
-        team.setMembershipStatus(oldOwner, TeamMembershipStatus.ADMIN)
+        if newOwner not in team.inactivemembers:
+            team.setMembershipStatus(newOwner, TeamMembershipStatus.ADMIN)
+
+        if oldOwner not in team.inactivemembers:
+            team.setMembershipStatus(oldOwner, TeamMembershipStatus.ADMIN)
 

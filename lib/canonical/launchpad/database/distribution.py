@@ -16,6 +16,7 @@ from canonical.launchpad.database.distributionbounty import \
     DistributionBounty
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification

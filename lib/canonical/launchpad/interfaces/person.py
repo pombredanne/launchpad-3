@@ -29,6 +29,7 @@ from zope.component import getUtility
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.email import valid_email
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, EmailAddressStatus)
@@ -435,14 +436,10 @@ class IPersonSet(Interface):
         on the displayname or other arguments.
         """
 
-    def newTeam(**kwargs):
-        """Create a new Team with given keyword arguments.
-
-        These keyword arguments will be passed to Person, which is an
-        SQLBase class and will do all the checks needed before inserting
-        anything in the database. Please refer to the Person implementation
-        to see what keyword arguments are allowed.
-        """
+    def newTeam(teamowner, name, displayname, teamdescription=None,
+                subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
+                defaultmembershipperiod=None, defaultrenewalperiod=None):
+        """Create and return a new Team with given arguments."""
 
     def get(personid, default=None):
         """Return the person with the given id.
@@ -757,5 +754,6 @@ class ITeamCreation(ITeam):
             "team. If no contact address is chosen, notifications directed to "
             "this team will be sent to all team members. After finishing the "
             "team creation, a new message will be sent to this address with "
-            "instructions on how to finish its registration."))
+            "instructions on how to finish its registration."),
+        constraint=valid_email)
 

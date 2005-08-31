@@ -1,0 +1,12 @@
+Packaging data for a source package can be viewed on the source
+package's +hctstatus page.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/mozilla-firefox/+hctstatus HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... Cookie: launchpad=4o1GST.3tv1yEZTX.PXLwt.77Tks5RtY8pC.6I5wS05nPrhIGi5dHk
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+    <h2>Packaging data for hoary mozilla-firefox</h2>
+  ...

@@ -268,12 +268,13 @@ class Person(SQLBase):
 
     def hasMembershipEntryFor(self, team):
         """See IPerson."""
-        results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
-        return bool(results.count())
+        return bool(TeamMembership.selectOneBy(personID=self.id,
+                                               teamID=team.id))
 
     def hasParticipationEntryFor(self, team):
-        results = TeamParticipation.selectBy(personID=self.id, teamID=team.id)
-        return bool(results.count())
+        """See IPerson."""
+        return bool(TeamParticipation.selectOneBy(personID=self.id,
+                                                  teamID=team.id))
 
     def leave(self, team):
         """See IPerson."""
@@ -352,10 +353,11 @@ class Person(SQLBase):
                 "be added as a member of '%s'" 
                 % (self.name, person.name, person.name, self.name))
 
-        if person.hasMembershipEntryFor(self):
-            # <person> is already a member.
-            return 
+        if person in self.activemembers:
+            # Make it a no-op if this person is already a member.
+            return
 
+        assert not person.hasMembershipEntryFor(self)
         assert status in [TeamMembershipStatus.APPROVED,
                           TeamMembershipStatus.PROPOSED]
 
@@ -698,14 +700,18 @@ class PersonSet:
         """See IPersonSet."""
         return Person.select('password IS NOT NULL', orderBy='-karma')[:5]
 
-    def newTeam(self, **kw):
+    def newTeam(self, teamowner, name, displayname, teamdescription=None,
+                subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
+                defaultmembershipperiod=None, defaultrenewalperiod=None):
         """See IPersonSet."""
-        ownerID = kw.get('teamownerID')
-        assert ownerID
-        owner = Person.get(ownerID)
-        team = Person(**kw)
-        team.addMember(owner)
-        team.setMembershipStatus(owner, TeamMembershipStatus.ADMIN)
+        assert teamowner
+        team = Person(teamowner=teamowner, name=name, displayname=displayname,
+                teamdescription=teamdescription,
+                defaultmembershipperiod=defaultmembershipperiod,
+                defaultrenewalperiod=defaultrenewalperiod,
+                subscriptionpolicy=subscriptionpolicy)
+        team.addMember(teamowner)
+        team.setMembershipStatus(teamowner, TeamMembershipStatus.ADMIN)
         return team
 
     def createPersonAndEmail(self, email, name=None, displayname=None,
