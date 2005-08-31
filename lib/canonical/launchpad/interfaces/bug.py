@@ -54,7 +54,7 @@ class IBug(Interface):
         description that should capture the essence of the bug, where it
         has been observed, and what triggers it."""))
     description = Text(
-        title=_('Description'), required=False,
+        title=_('Description'), required=True,
         description=_("""A detailed description of the problem,
         including the steps required to reproduce it."""))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
