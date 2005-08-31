@@ -240,6 +240,9 @@ or invalid leading operators
     >>> ftq('(and hi or hello) and mom')
     (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
 
+    >>> ftq('() hi mom ( ) :-)')
+    hi&mom <=> 'hi' & 'mom'
+
 
 Phrase Searching
 ----------------
