@@ -12,36 +12,39 @@ __all__ = [
     'IHugeVocabulary',
     'SQLObjectVocabularyBase',
     'NamedSQLObjectVocabulary',
-    'BountyVocabulary',
     'BinaryPackageNameVocabulary',
+    'BinaryPackageVocabulary',
+    'BountyVocabulary',
+    'BugTrackerVocabulary',
+    'BugWatchVocabulary',
+    'DistributionVocabulary',
+    'DistroReleaseVocabulary',
+    'FilteredDistroReleaseVocabulary',
+    'FilteredProductSeriesVocabulary',
+    'LanguageVocabulary',
+    'MilestoneVocabulary',
+    'PackageReleaseVocabulary',
+    'PersonAccountToMergeVocabulary',
+    'POTemplateNameVocabulary',
+    'ProductReleaseVocabulary',
+    'ProductSeriesVocabulary',
     'ProductVocabulary',
     'ProjectVocabulary',
-    'BinaryPackageVocabulary',
-    'BugTrackerVocabulary',
-    'LanguageVocabulary',
+    'SchemaVocabulary',
+    'SourcePackageNameVocabulary',
+    'SpecificationVocabulary',
+    'SpecificationDependenciesVocabulary',
     'TranslationGroupVocabulary',
-    'PersonAccountToMergeVocabulary',
     'ValidPersonOrTeamVocabulary',
     'ValidTeamMemberVocabulary',
     'ValidTeamOwnerVocabulary',
-    'ProductReleaseVocabulary',
-    'ProductSeriesVocabulary',
-    'FilteredProductSeriesVocabulary',
-    'MilestoneVocabulary',
-    'BugWatchVocabulary',
-    'PackageReleaseVocabulary',
-    'SourcePackageNameVocabulary',
-    'DistributionVocabulary',
-    'DistroReleaseVocabulary',
-    'POTemplateNameVocabulary',
-    'SchemaVocabulary',
     ]
 
 from zope.component import getUtility
 from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
-from zope.security.proxy import removeSecurityProxy
+from zope.security.proxy import isinstance as zisinstance
 
 from sqlobject import AND, OR, CONTAINSSTRING
 
@@ -51,7 +54,8 @@ from canonical.launchpad.database import (
     Distribution, DistroRelease, Person, SourcePackageRelease,
     SourcePackageName, BinaryPackage, BugWatch, BinaryPackageName, Language,
     Milestone, Product, Project, ProductRelease, ProductSeries,
-    TranslationGroup, BugTracker, POTemplateName, Schema, Bounty)
+    TranslationGroup, BugTracker, POTemplateName, Schema, Bounty,
+    Specification)
 from canonical.launchpad.interfaces import (
     ILaunchBag, ITeam, ITeamMembershipSubset, IPersonSet, IEmailAddressSet)
 
@@ -105,13 +109,15 @@ class SQLObjectVocabularyBase:
         return len(list(iter(self)))
 
     def __contains__(self, obj):
-        try:
-            objs = list(self._table.select(self._table.q.id == int(obj)))
-            if len(objs) > 0:
-                return True
-        except ValueError:
-            pass
-        return False
+        # Sometimes this method is called with an SQLBase instance, but
+        # z3 form machinery sends through integer ids. This might be due
+        # to a bug somewhere.
+        if zisinstance(obj, SQLBase):
+            found_obj = self._table.selectOne(self._table.q.id == obj.id)
+            return found_obj is not None and found_obj == obj
+        else:
+            found_obj = self._table.selectOne(self._table.q.id == int(obj))
+            return found_obj is not None
 
     def getQuery(self):
         return None
@@ -119,7 +125,7 @@ class SQLObjectVocabularyBase:
     def getTerm(self, value):
         # Short circuit. There is probably a design problem here since we
         # sometimes get the id and sometimes an SQLBase instance.
-        if isinstance(removeSecurityProxy(value), SQLBase):
+        if zisinstance(value, SQLBase):
             return self._toTerm(value)
 
         try:
@@ -128,12 +134,14 @@ class SQLObjectVocabularyBase:
             raise LookupError(value)
 
         try:
-            objs = list(self._table.select(self._table.q.id==value))
+            obj = self._table.selectOne(self._table.q.id == value)
         except ValueError:
             raise LookupError(value)
-        if len(objs) == 0:
+
+        if obj is None:
             raise LookupError(value)
-        return self._toTerm(objs[0])
+
+        return self._toTerm(obj)
 
     def getTermByToken(self, token):
         return self.getTerm(token)
@@ -184,29 +192,46 @@ class ProductVocabulary(SQLObjectVocabularyBase):
     _table = Product
     _orderBy = 'displayname'
 
+    def __iter__(self):
+        params = {}
+        if self._orderBy:
+            params['orderBy'] = self._orderBy
+        for obj in self._table.select("active = 't'", **params):
+            yield self._toTerm(obj)
+
+    def __contains__(self, obj):
+        # Sometimes this method is called with an SQLBase instance, but
+        # z3 form machinery sends through integer ids. This might be due
+        # to a bug somewhere.
+        where = "active='t' AND id=%d"
+        if zisinstance(obj, SQLBase):
+            product = self._table.selectOne(where % obj.id)
+            return product is not None and product == obj
+        else:
+            product = self._table.selectOne(where % int(obj))
+            return product is not None
+
     def _toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.title)
 
     def getTermByToken(self, token):
-        obj = self._table.selectOne(self._table.q.name == token)
-        if obj is None:
+        product = self._table.selectOneBy(name=token, active=True)
+        if product is None:
             raise LookupError(token)
-        return self._toTerm(obj)
+        return self._toTerm(product)
 
     def search(self, query):
         """Returns products where the product name, displayname, title,
         summary, or description contain the given query. Returns an empty list
         if query is None or an empty string.
-
-        Note that this cannot use an index - if it is too slow we need
-        full text searching.
-
         """
         if query:
             query = query.lower()
             like_query = "'%%' || %s || '%%'" % quote_like(query)
             fti_query = quote(query)
-            sql = "fti @@ ftq(%s)" % fti_query
+            sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
+                    like_query, fti_query
+                    )
             return [self._toTerm(r)
                 for r in self._table.select(sql, orderBy=self._orderBy)]
 
@@ -218,31 +243,44 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
     _table = Project
     _orderBy = 'displayname'
 
+    def __iter__(self):
+        params = {}
+        if self._orderBy:
+            params['orderBy'] = self._orderBy
+        for obj in self._table.select("active = 't'", **params):
+            yield self._toTerm(obj)
+
+    def __contains__(self, obj):
+        where = "active='t' and id=%d"
+        if zisinstance(obj, SQLBase):
+            project = self._table.selectOne(where % obj.id)
+            return project is not None and project == obj
+        else:
+            project = self._table.selectOne(where % int(obj))
+            return project is not None
+
     def _toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.title)
 
     def getTermByToken(self, token):
-        objs = self._table.select(self._table.q.name == token)
-        if len(objs) != 1:
+        project = self._table.selectOneBy(name=token, active=True)
+        if project is None:
             raise LookupError(token)
-        return self._toTerm(objs[0])
+        return self._toTerm(project)
 
     def search(self, query):
         """Returns projects where the project name, displayname, title,
         summary, or description contain the given query. Returns an empty list
         if query is None or an empty string.
-
-        Note that this cannot use an index - if it is too slow we need
-        full text searching.
-
         """
         if query:
             query = query.lower()
             like_query = "'%%' || %s || '%%'" % quote_like(query)
             fti_query = quote(query)
-            sql = "fti @@ ftq(%s)" % fti_query
+            sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
+                    like_query, fti_query
+                    )
             return [self._toTerm(r) for r in self._table.select(sql)]
-
         return []
 
 
@@ -611,22 +649,40 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
                 yield self._toTerm(o)
 
 
+class FilteredDistroReleaseVocabulary(SQLObjectVocabularyBase):
+    """Describes the releases of a particular distribution."""
+    _table = DistroRelease
+    _orderBy = 'version'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(
+            obj, obj.id, obj.distribution.name + " " + obj.name)
+
+    def __iter__(self):
+        kw = {}
+        if self._orderBy:
+            kw['orderBy'] = self._orderBy
+        launchbag = getUtility(ILaunchBag)
+        if launchbag.distribution:
+            distribution = launchbag.distribution
+            for distrorelease in self._table.selectBy(
+                distributionID=distribution.id, **kw):
+                yield self._toTerm(distrorelease)
+
+
 class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
     """Describes ProductSeries of a particular product."""
     _table = ProductSeries
-    _orderBy = 'product'
+    _orderBy = ['product', 'name']
 
     def _toTerm(self, obj):
         return SimpleTerm(
             obj, obj.id, obj.product.name + " " + obj.name)
 
     def __iter__(self):
-        kw = {}
-        if self._orderBy:
-            kw['orderBy'] = self._orderBy
-        if self.context.product:
-            product = self.context.product
-            for series in self._table.selectBy(productID=product.id, **kw):
+        launchbag = getUtility(ILaunchBag)
+        if launchbag.product is not None:
+            for series in launchbag.product.serieslist:
                 yield self._toTerm(series)
 
 
@@ -638,17 +694,73 @@ class MilestoneVocabulary(NamedSQLObjectVocabulary):
         return SimpleTerm(obj, obj.name, obj.name)
 
     def __iter__(self):
-        product = getUtility(ILaunchBag).product
+        launchbag = getUtility(ILaunchBag)
+        product = launchbag.product
         if product is not None:
             target = product
 
-        distribution = getUtility(ILaunchBag).distribution
+        distribution = launchbag.distribution
         if distribution is not None:
             target = distribution
 
         if target is not None:
             for ms in target.milestones:
                 yield SimpleTerm(ms, ms.name, ms.name)
+
+
+class SpecificationVocabulary(NamedSQLObjectVocabulary):
+    """List specifications for the current product or distribution in
+    ILaunchBag, EXCEPT for the current spec in LaunchBag if one exists.
+    """
+
+    _table = Specification
+    _orderBy = 'name'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.name)
+
+    def __iter__(self):
+        launchbag = getUtility(ILaunchBag)
+        product = launchbag.product
+        if product is not None:
+            target = product
+
+        distribution = launchbag.distribution
+        if distribution is not None:
+            target = distribution
+
+        if target is not None:
+            for spec in target.specifications:
+                # we will not show the current specification in the
+                # launchbag
+                if spec == launchbag.specification:
+                    continue
+                # we will not show a specification that is blocked on the
+                # current specification in the launchbag. this is because
+                # the widget is currently used to select new dependencies,
+                # and we do not want to introduce circular dependencies.
+                if launchbag.specification is not None:
+                    if spec in launchbag.specification.all_blocked():
+                        continue
+                yield SimpleTerm(spec, spec.name, spec.title)
+
+
+class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
+    """List specifications on which the current specification depends."""
+
+    _table = Specification
+    _orderBy = 'name'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.name)
+
+    def __iter__(self):
+        launchbag = getUtility(ILaunchBag)
+        curr_spec = launchbag.specification
+
+        if curr_spec is not None:
+            for spec in curr_spec.dependencies:
+                yield SimpleTerm(spec, spec.name, spec.title)
 
 
 class BugWatchVocabulary(SQLObjectVocabularyBase):

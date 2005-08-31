@@ -138,7 +138,7 @@
             height="5" />
         <browser:widget
             field="owner"
-            class="canonical.widgets.OwnerWidget" />
+            class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
     <browser:pages
@@ -194,7 +194,7 @@
             class="canonical.widgets.ContextWidget" />
         <browser:widget
             field="owner"
-            class="canonical.widgets.OwnerWidget" />
+            class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
     <browser:addform

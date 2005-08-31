@@ -117,7 +117,13 @@ binarypackagerelease_license = 'Binary Package Licence'
 
 bounties = 'Launchpad Bounties'
 
-bounties_new = 'Register a New Bounty in Launchpad'
+bounty_add = 'Register a New Bounty in Launchpad'
+
+bounty_edit = ContextTitle('Edit Bounty: %s')
+
+bounty_add = 'Register a bounty in Launchpad'
+
+bounty_edit = ContextTitle('Edit bounty "%s"')
 
 bounty_index = ContextTitle('Launchpad Bounty: %s')
 
@@ -396,7 +402,7 @@ malone_to_do = 'Malone ToDo'
 
 milestone_add = ContextDisplayName('Add Milestone for %s')
 
-milestone_bugs = ContextTitle('Bugs Targeted to %s')
+milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
 
@@ -520,7 +526,7 @@ potemplatename_index = ContextTitle('%s in Rosetta')
 
 potemplatenames_index = 'Template names in Launchpad'
 
-product_add = 'Register a new Product with the Launchpad'
+product_add = 'Register a product with Launchpad'
 
 product_bugs = ContextDisplayName('%s upstream bug reports')
 
@@ -549,7 +555,7 @@ productseries_translations = ContextTitle(
 
 productseries_ubuntupkg = 'Ubuntu Source Package'
 
-products_index = 'Products in Launchpad'
+products_index = 'Launchpad product registry'
 
 products_search = 'Launchpad: Advanced Upstream Product Search'
 
@@ -569,11 +575,11 @@ project_index = ContextTitle('Project: %s')
 
 project_interest = 'Rosetta: Project not translatable'
 
-project_new = 'Register a Project with the Launchpad'
+project_new = 'Register a project with Launchpad'
 
 project_rosetta_index = ContextTitle('Rosetta: %s')
 
-projects_index = 'Launchpad Project Registry'
+projects_index = 'Launchpad project registry'
 
 projects_request = 'Rosetta: Request a project'
 
@@ -641,6 +647,8 @@ sourcepackage_changelog = 'Source Package Changelog'
 
 sourcepackage_filebug = ContextTitle("Report a Bug in %s")
 
+sourcepackage_hctstatus = ContextTitle('Source Package HCT Status - %s')
+
 def sourcepackage_index(context, view):
     return '%s Source Packages' % context.distrorelease.title
 
@@ -672,6 +680,46 @@ sourcesource_index = 'Upstream Source Import'
 soyuz_about = 'About Soyuz'
 
 soyuz_index = 'Soyuz: Linux Distribution Management'
+
+specification_add = 'Register A New Feature Specification'
+
+specification_bug = 'Link this Specification to Bug'
+
+specification_removebug = 'Remove Link to Bug'
+
+specification_dependency = 'Create a Specification Dependency'
+
+specification_deptree = 'Complete Dependency Tree'
+
+specification_milestone = 'Target Feature to Milestone'
+
+specification_people = 'Change the Specification Assignee, Drafter and Reviewer'
+
+specification_distrorelease = 'Target Feature Specification at Distribution Release'
+
+specification_productseries = 'Target Feature Specification at Series'
+
+specification_removedep = 'Remove a Dependency'
+
+specification_doreview = 'Conduct Specification Review'
+
+specification_requestreview = 'Request a Review of This Specification'
+
+specification_edit = 'Edit Specification Details'
+
+specification_status = 'Edit Specification Status'
+
+specification_index = ContextTitle('Feature Specification: %s')
+
+specification_subscription = 'Subscribe to Feature Specification'
+
+specification_queue = 'Queue Feature Specification for Review'
+
+specifications_index = ContextTitle('%s')
+
+specificationtarget_specs = ContextTitle('Specifications for %s')
+
+specificationtarget_specplan = ContextTitle('Project Plan for %s')
 
 def team_addmember(context, view):
     return '%s: Add members' % context.team.browsername

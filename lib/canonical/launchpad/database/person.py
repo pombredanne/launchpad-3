@@ -105,6 +105,24 @@ class Person(SQLBase):
     ircnicknames = MultipleJoin('IrcID', joinColumn='person')
     jabberids = MultipleJoin('JabberID', joinColumn='person')
 
+    # specification-related joins
+    approver_specs = MultipleJoin('Specification', joinColumn='approver',
+        orderBy=['-datecreated'])
+    assigned_specs = MultipleJoin('Specification', joinColumn='assignee',
+        orderBy=['-datecreated'])
+    created_specs = MultipleJoin('Specification', joinColumn='owner',
+        orderBy=['-datecreated'])
+    drafted_specs = MultipleJoin('Specification', joinColumn='drafter',
+        orderBy=['-datecreated'])
+    review_specs = RelatedJoin('Specification', joinColumn='reviewer',
+        otherColumn='specification',
+        intermediateTable='SpecificationReview',
+        orderBy=['-datecreated'])
+    subscribed_specs = RelatedJoin('Specification', joinColumn='person',
+        otherColumn='specification',
+        intermediateTable='SpecificationSubscription',
+        orderBy=['-datecreated'])
+
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
 
@@ -205,6 +223,18 @@ class Person(SQLBase):
         else:
             return self.name
 
+    @property
+    def specifications(self):
+        ret = set(self.created_specs)
+        ret = ret.union(self.approver_specs)
+        ret = ret.union(self.assigned_specs)
+        ret = ret.union(self.drafted_specs)
+        ret = ret.union(self.review_specs)
+        ret = ret.union(self.subscribed_specs)
+        ret = sorted(ret, key=lambda a: a.datecreated)
+        ret.reverse()
+        return ret
+
     def isTeam(self):
         """See IPerson."""
         return self.teamowner is not None
@@ -238,12 +268,13 @@ class Person(SQLBase):
 
     def hasMembershipEntryFor(self, team):
         """See IPerson."""
-        results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
-        return bool(results.count())
+        return bool(TeamMembership.selectOneBy(personID=self.id,
+                                               teamID=team.id))
 
     def hasParticipationEntryFor(self, team):
-        results = TeamParticipation.selectBy(personID=self.id, teamID=team.id)
-        return bool(results.count())
+        """See IPerson."""
+        return bool(TeamParticipation.selectOneBy(personID=self.id,
+                                                  teamID=team.id))
 
     def leave(self, team):
         """See IPerson."""
@@ -322,10 +353,11 @@ class Person(SQLBase):
                 "be added as a member of '%s'" 
                 % (self.name, person.name, person.name, self.name))
 
-        if person.hasMembershipEntryFor(self):
-            # <person> is already a member.
-            return 
+        if person in self.activemembers:
+            # Make it a no-op if this person is already a member.
+            return
 
+        assert not person.hasMembershipEntryFor(self)
         assert status in [TeamMembershipStatus.APPROVED,
                           TeamMembershipStatus.PROPOSED]
 
@@ -668,14 +700,18 @@ class PersonSet:
         """See IPersonSet."""
         return Person.select('password IS NOT NULL', orderBy='-karma')[:5]
 
-    def newTeam(self, **kw):
+    def newTeam(self, teamowner, name, displayname, teamdescription=None,
+                subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
+                defaultmembershipperiod=None, defaultrenewalperiod=None):
         """See IPersonSet."""
-        ownerID = kw.get('teamownerID')
-        assert ownerID
-        owner = Person.get(ownerID)
-        team = Person(**kw)
-        team.addMember(owner)
-        team.setMembershipStatus(owner, TeamMembershipStatus.ADMIN)
+        assert teamowner
+        team = Person(teamowner=teamowner, name=name, displayname=displayname,
+                teamdescription=teamdescription,
+                defaultmembershipperiod=defaultmembershipperiod,
+                defaultrenewalperiod=defaultrenewalperiod,
+                subscriptionpolicy=subscriptionpolicy)
+        team.addMember(teamowner)
+        team.setMembershipStatus(teamowner, TeamMembershipStatus.ADMIN)
         return team
 
     def createPersonAndEmail(self, email, name=None, displayname=None,
@@ -944,14 +980,51 @@ class PersonSet:
         cur.execute('''
             UPDATE BountySubscription
             SET person=%(to_id)d
-            WHERE person=%(from_id)d AND id NOT IN (
-                SELECT a.id
-                FROM BountySubscription AS a, BountySubscription AS b
-                WHERE a.person = %(from_id)d AND b.person = %(to_id)d
-                AND a.bounty = b.bounty
+            WHERE person=%(from_id)d AND bounty NOT IN
+                (
+                SELECT bounty
+                FROM BountySubscription 
+                WHERE person = %(to_id)d
                 )
             ''' % vars())
+        cur.execute('''
+            DELETE FROM BountySubscription WHERE person=%(from_id)d
+            ''' % vars())
         skip.append(('bountysubscription', 'person'))
+
+        # Update the SpecificationReview entries that will not conflict
+        # and trash the rest
+        cur.execute('''
+            UPDATE SpecificationReview
+            SET reviewer=%(to_id)d
+            WHERE reviewer=%(from_id)d AND specification NOT IN
+                (
+                SELECT specification
+                FROM SpecificationReview
+                WHERE reviewer = %(to_id)d
+                )
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM SpecificationReview WHERE reviewer=%(from_id)d
+            ''' % vars())
+        skip.append(('specificationreview', 'reviewer'))
+
+        # Update the SpecificationSubscription entries that will not conflict
+        # and trash the rest
+        cur.execute('''
+            UPDATE SpecificationSubscription
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND specification NOT IN
+                (
+                SELECT specification
+                FROM SpecificationSubscription
+                WHERE person = %(to_id)d
+                )
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM SpecificationSubscription WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('specificationsubscription', 'person'))
 
         # Update only the POSubscriptions that will not conflict
         # XXX: Add sampledata and test to confirm this case
@@ -1056,7 +1129,7 @@ class EmailAddressSet:
             return email
 
     def getByPerson(self, person):
-        return EmailAddress.selectBy(personID=person.id)
+        return EmailAddress.selectBy(personID=person.id, orderBy='email')
 
     def getByEmail(self, email, default=None):
         try:
@@ -1391,7 +1464,7 @@ class TeamParticipation(SQLBase):
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
 
-def _getAllMembers(team, orderBy=None):
+def _getAllMembers(team, orderBy='name'):
     query = ('Person.id = TeamParticipation.person AND '
              'TeamParticipation.team = %d' % team.id)
     return Person.select(query, clauseTables=['TeamParticipation'],

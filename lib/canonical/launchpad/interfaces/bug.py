@@ -18,8 +18,8 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
+from canonical.launchpad.interfaces import non_duplicate_bug
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.validators.bug import non_duplicate_bug
 from canonical.launchpad.fields import Title, Summary
 
 _ = MessageIDFactory('launchpad')
@@ -95,6 +95,7 @@ class IBug(Interface):
     duplicates = Attribute(
         'MultiJoin of the bugs which are dups of this one')
     attachments = Attribute("List of bug attachments.")
+    specifications = Attribute("List of related specifications.")
 
     def followup_subject():
         """Return a candidate subject for a followup message."""

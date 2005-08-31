@@ -8,6 +8,7 @@ __all__ = [
     'TeamListView',
     'UbuntiteListView',
     'FOAFSearchView',
+    'PersonEditView',
     'PersonRdfView',
     'PersonView',
     'TeamJoinView',
@@ -22,6 +23,7 @@ __all__ = [
 
 import cgi
 import sets
+from datetime import datetime
 
 from canonical.database.sqlbase import flush_database_updates
 
@@ -47,6 +49,7 @@ from canonical.launchpad.interfaces import (
     ITeamReassignment, IPollSubset, IPerson, ICalendarOwner,
     BugTaskSearchParams)
 
+from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
@@ -61,6 +64,9 @@ class PersonFacets(StandardLaunchpadFacets):
 
     usedfor = IPerson
 
+    links = ['overview', 'bugs', 'specs', 'bounties', 'translations',
+             'calendar']
+
     def overview(self):
         target = ''
         text = 'Overview'
@@ -73,6 +79,24 @@ class PersonFacets(StandardLaunchpadFacets):
         target = '+assignedbugs'
         text = 'Bugs'
         return Link(target, text)
+
+    def specs(self):
+        target = '+specs'
+        text = 'Specs'
+        summary = 'Feature specifications related to %s' % \
+            self.context.browsername
+        return Link(target, text, summary)
+
+    def bounties(self):
+        target = '+bounties'
+        text = 'Bounties'
+        return Link(target, text)
+
+    def code(self):
+        target = '+branches'
+        text = 'Code'
+        summary = 'Branches and revisions by %s' % self.context.browsername
+        return Link(target, text, summary)
 
     def translations(self):
         target = '+translations'
@@ -776,6 +800,21 @@ class PersonView:
             self.message = "Password changed successfully"
 
 
+class PersonEditView(SQLObjectEditView):
+
+    def changed(self):
+        """Redirect to the person page.
+
+        We need this because people can now change their names, and this will
+        make their canonical_url to change too. If we don't redirect them here
+        they'll get a page with all links broken and in an URL that doesn't
+        exist anymore.
+        """
+        url = '%s/+edit?updated=%s' % (canonical_url(self.context),
+                                       datetime.utcnow().ctime())
+        self.request.response.redirect(url)
+
+
 class TeamJoinView(PersonView):
 
     def processForm(self):
@@ -1203,8 +1242,7 @@ class ObjectReassignmentView:
                 return None
 
             owner = personset.newTeam(
-                    teamownerID=self.user.id, name=owner_name,
-                    displayname=owner_name.capitalize())
+                self.user, owner_name, owner_name.capitalize())
 
         return owner
 
@@ -1224,17 +1262,24 @@ class TeamReassignmentView(ObjectReassignmentView):
 
         When a user creates a new team, he is added as an administrator of
         that team. To be consistent with this, we must make the new owner an
-        administrator of the team.
-        Also, the ObjectReassignment spec says that we must make the old owner
-        an administrator of the team, and so we do.
+        administrator of the team. This rule is ignored only if the new owner
+        is an inactive member of the team, as that means he's not interested
+        in being a member. The same applies to the old owner.
         """
-        team.addMember(newOwner)
-        team.addMember(oldOwner)
-        # Need to flush all database updates so the setMembershipStatus method
-        # will see both old and new owners as active members of the team.
-        # Otherwise it'll complain (with an AssertionError) because only 
-        # active members can be promoted to adminsitrators.
+        # Both new and old owners won't be added as administrators of the team
+        # only if they're inactive members. If they're either active or
+        # proposed members they'll be made administrators of the team.
+        if newOwner not in team.inactivemembers:
+            team.addMember(newOwner)
+        if oldOwner not in team.inactivemembers:
+            team.addMember(oldOwner)
+
+        # Need to flush all database updates, otherwise we won't see the
+        # updated membership statuses in the rest of this method.
         flush_database_updates()
-        team.setMembershipStatus(newOwner, TeamMembershipStatus.ADMIN)
-        team.setMembershipStatus(oldOwner, TeamMembershipStatus.ADMIN)
+        if newOwner not in team.inactivemembers:
+            team.setMembershipStatus(newOwner, TeamMembershipStatus.ADMIN)
+
+        if oldOwner not in team.inactivemembers:
+            team.setMembershipStatus(oldOwner, TeamMembershipStatus.ADMIN)
 

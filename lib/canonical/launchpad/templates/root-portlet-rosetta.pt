@@ -7,9 +7,10 @@
          href="rosetta" i18n:translate="">Rosetta</a> is a
       <b>web-based translation portal</b>.
       You can easily collaborate with translators for your software
-      through Rosetta. Just for fun, this is what the current Ubuntu release
-      total translation coverage looks like:<br />
+      through Rosetta.<br />
       <hr />
+      <b><span tal:replace="view/ubuntu_translationrelease/displayname">
+        Ubuntu 5.04</span> Translations:</b><br />
       <tal:block repeat="drl view/ubuntu_languages">
         <span tal:replace="drl/language/englishname">Latin</span>:<br />
         <a tal:attributes="href drl/fmt:url"

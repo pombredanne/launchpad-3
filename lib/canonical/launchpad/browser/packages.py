@@ -100,6 +100,14 @@ class SourcePackageBugsView:
         self.context = context
         self.request = request
 
+    def showTableView(self):
+        """Should the search results be displayed as a table?"""
+        return False
+
+    def showListView(self):
+        """Should the search results be displayed as a list?"""
+        return True
+
     @property
     def unresolved_release_bugs(self):
         """Return the unresolved bugtasks for the context's distrorelease."""

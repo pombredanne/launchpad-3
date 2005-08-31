@@ -18,6 +18,7 @@ __all__ = [
     'IObjectReassignment',
     'ITeamReassignment',
     'ITeamCreation',
+    'NameAlreadyTaken'
     ]
 
 from zope.schema import (
@@ -28,6 +29,7 @@ from zope.component import getUtility
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.email import valid_email
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, EmailAddressStatus)
@@ -37,7 +39,8 @@ _ = MessageIDFactory('launchpad')
 
 class NameAlreadyTaken(ValidationError):
     __doc__ = _("""This name is already in use""")
-
+    # XXX mpt 20050826: This should be moved out of person to be more generic.
+    # (It's currently used by projects too.)
 
 class PersonNameField(TextLine):
 
@@ -156,7 +159,21 @@ class IPerson(Interface):
     members = Attribute("The list of TeamMemberships for people who are "
         "members or proposed members of this team, sorted by membership "
         "state.")
-
+    specifications = Attribute("Any specifications related to this "
+        "person, either because the are a subscriber, or an assignee, or "
+        "a drafter, or the creator. Sorted newest-first.")
+    approver_specs = Attribute("Specifications that this person is "
+        "supposed to approve in due course, newest first.")
+    assigned_specs = Attribute("Specifications that are assigned to "
+        "this person, sorted newest first.")
+    drafted_specs = Attribute("Specifications that are being drafted by "
+        "this person, sorted newest first.")
+    created_specs = Attribute("Specifications that were created by "
+        "this person, sorted newest first.")
+    review_specs = Attribute("Specifications which this person "
+        "has been asked to review, sorted newest first.")
+    subscribed_specs = Attribute("Specifications to which this person "
+        "has subscribed, sorted newest first.")
     teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
                        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
@@ -419,14 +436,10 @@ class IPersonSet(Interface):
         on the displayname or other arguments.
         """
 
-    def newTeam(**kwargs):
-        """Create a new Team with given keyword arguments.
-
-        These keyword arguments will be passed to Person, which is an
-        SQLBase class and will do all the checks needed before inserting
-        anything in the database. Please refer to the Person implementation
-        to see what keyword arguments are allowed.
-        """
+    def newTeam(teamowner, name, displayname, teamdescription=None,
+                subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
+                defaultmembershipperiod=None, defaultrenewalperiod=None):
+        """Create and return a new Team with given arguments."""
 
     def get(personid, default=None):
         """Return the person with the given id.
@@ -741,5 +754,6 @@ class ITeamCreation(ITeam):
             "team. If no contact address is chosen, notifications directed to "
             "this team will be sent to all team members. After finishing the "
             "team creation, a new message will be sent to this address with "
-            "instructions on how to finish its registration."))
+            "instructions on how to finish its registration."),
+        constraint=valid_email)
 

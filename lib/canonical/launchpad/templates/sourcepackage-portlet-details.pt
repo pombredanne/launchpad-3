@@ -1,0 +1,28 @@
+<div class="portlet" tal:condition="context/currentrelease"
+                     tal:define="current context/currentrelease">
+  <h4><span tal:replace="context/name" /> Details:</h4>
+
+  <div class="portletBody portletContent">
+      <ul>
+        <li><b>Current Version:</b>
+            <span tal:replace="current/version" /></li>
+        <li><b>Upload Date:</b>
+            <span tal:replace="current/dateuploaded/fmt:date" /></li>
+        <li><b>Urgency:</b>
+               <span tal:content="current/urgency/title" /></li>
+        <li><b>Component:</b>
+               <span tal:content="current/component/name"/></li>
+        <li><b>Download:</b>
+            <div tal:define="files current/files">
+              <ul tal:condition="files">
+                 <li tal:repeat="file files">
+                   <a tal:content="file/url/filename"
+                      tal:attributes="href file/url/fileurl" /></li>
+              </ul>
+              <i tal:condition="not:files">No files available for download.</i>
+            </div>
+        </li>
+      </ul>
+
+  </div>
+</div>

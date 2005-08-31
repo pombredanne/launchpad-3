@@ -1,0 +1,10 @@
+<div class="portlet portletBody portletContent">
+  <p>
+    There are currently
+    <strong tal:content="context/count_all">5</strong>
+    projects registered in Launchpad.
+  </p>
+  <ul>
+    <li class="list"><a href="/projects/+all">List all projects</a></li>
+  </ul>
+</div>

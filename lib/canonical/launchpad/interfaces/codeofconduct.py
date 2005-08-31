@@ -90,7 +90,13 @@ class ICodeOfConductSet(Interface):
     title = Attribute('Page Title propose')
 
     def __getitem__(version):
-        """Get a original CoC Release by its version."""
+        """Get a original CoC Release by its version
+
+        The version 'console' is a special bind for 'Adminitrative Console
+        Interface via ISignedCodeOfConductSet.
+        If the requested version was not found in the filesystem, it returns
+        None, generating a NotFoundError.
+        """
 
     def __iter__():
         """Iterate through the original CoC releases in this set."""

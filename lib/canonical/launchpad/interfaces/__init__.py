@@ -10,6 +10,10 @@ from persistent import IPersistent
 # file, one of person, project, bug, etc.
 #
 from canonical.launchpad.interfaces.launchpad import *
+from canonical.launchpad.interfaces.validation import *
+
+# these need to be at the top, because the others depend on them sometimes
+from canonical.launchpad.interfaces.specificationtarget import *
 
 from canonical.launchpad.interfaces.archuser import *
 from canonical.launchpad.interfaces.binarypackage import *
@@ -93,6 +97,11 @@ from canonical.launchpad.interfaces.sourcepackage import *
 from canonical.launchpad.interfaces.sourcepackageindistro import *
 from canonical.launchpad.interfaces.sourcepackagename import *
 from canonical.launchpad.interfaces.sourcepackagerelease import *
+from canonical.launchpad.interfaces.specification import *
+from canonical.launchpad.interfaces.specificationbug import *
+from canonical.launchpad.interfaces.specificationdependency import *
+from canonical.launchpad.interfaces.specificationreview import *
+from canonical.launchpad.interfaces.specificationsubscription import *
 from canonical.launchpad.interfaces.spokenin import *
 from canonical.launchpad.interfaces.ssh import *
 from canonical.launchpad.interfaces.translationgroup import *

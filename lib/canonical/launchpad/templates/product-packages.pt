@@ -1,7 +1,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad">
 
 <body>
 
@@ -57,8 +57,8 @@
 
     <div style="text-align: right;" tal:condition="series/packagings">
       <img src="/++resource++add.gif" />
-      <a tal:attributes="href string:${series/product/fmt:url}/+addpackage">
-      Add Packaging Record</a>
+      <a tal:attributes="href string:${series/fmt:url}/+addpackage">
+      Add Packaging Hint</a>
     </div>
 
     <p class="portalMessage" tal:condition="not: series/packagings">

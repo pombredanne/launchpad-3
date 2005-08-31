@@ -1,5 +1,6 @@
-# Copyright 2004 Canonical Ltd
-#
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Database constants."""
 
 from sqlobject.sqlbuilder import SQLConstant
 

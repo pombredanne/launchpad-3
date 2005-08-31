@@ -43,12 +43,11 @@ class IBinaryPackage(Interface):
     licence = Text(required=False)
     architecturespecific = Bool(required=True)
 
-    files = Attribute("This BinaryPackage file")
+    files = Attribute("Related list of IBinaryPackageFile entries")
 
     title = TextLine(required=True, readonly=True)
     name = Attribute("Binary Package Name")
     status = Attribute("The BinaryPackageStatus Title")
-    files_url = Attribute("Return an URL to Download this Package")
 
     def current(distroRelease):
         """Get the current BinaryPackage in a distrorelease"""

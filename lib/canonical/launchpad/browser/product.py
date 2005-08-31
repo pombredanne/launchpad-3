@@ -37,11 +37,8 @@ class ProductFacets(StandardLaunchpadFacets):
 
     usedfor = IProduct
 
-    # These links are inherited from StandardLaunchpadFacets.
-    # The items in the list refer to method names, and
-    # will appear on the page in the order they appear
-    # in the list.
-    # links = ['overview', 'bugs', 'translations']
+    links = ['overview', 'bugs', 'bounties', 'specs', 'translations',
+             'calendar']
 
     def overview(self):
         target = ''
@@ -53,6 +50,18 @@ class ProductFacets(StandardLaunchpadFacets):
         target = '+bugs'
         text = 'Bugs'
         summary = 'Bugs reported about %s' % self.context.displayname
+        return Link(target, text, summary)
+
+    def bounties(self):
+        target = '+bounties'
+        text = 'Bounties'
+        summary = 'Bounties related to %s' % self.context.displayname
+        return Link(target, text, summary)
+
+    def specs(self):
+        target = '+specs'
+        text = 'Specs'
+        summary = 'Feature specifications for %s' % self.context.displayname
         return Link(target, text, summary)
 
     def translations(self):
@@ -75,7 +84,7 @@ def _sort_distros(a, b):
         return -1
     return cmp(a['name'], b['name'])
         
-# A View Class for Product
+
 class ProductView:
 
     __used_for__ = IProduct

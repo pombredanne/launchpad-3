@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Milestone', 'MilestoneSet'] 
+__all__ = ['Milestone', 'MilestoneSet']
 
 from zope.interface import implements
 from zope.exceptions import NotFoundError
@@ -24,7 +24,11 @@ class Milestone(SQLBase):
     dateexpected = DateCol(notNull=False, default=None)
     visible = BoolCol(notNull=True, default=True)
 
-    bugtasks = MultipleJoin('BugTask', joinColumn='milestone')
+    # joins
+    bugtasks = MultipleJoin('BugTask', joinColumn='milestone',
+        orderBy=['-priority', '-datecreated', '-severity'])
+    specifications = MultipleJoin('Specification', joinColumn='milestone',
+        orderBy=['-priority', 'status', 'title'])
 
     @property
     def target(self):

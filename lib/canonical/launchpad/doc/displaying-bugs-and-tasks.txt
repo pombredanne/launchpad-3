@@ -1,0 +1,136 @@
+Displaying Information on Bugs and Bug Tasks
+============================================
+
+This document discusses TALES techniques and IBugTask object
+attributes that may be useful to you, if you're writing some code to
+display bug and bug task information.
+
+Displaying an Icon with fmt:icon
+--------------------------------
+
+fmt:icon is a TALES adapter that can be used to render an <img> tag
+containing the appropriate icon for a bugtask. Currently, the icon
+display is dependant on the priority of the IBugTask object.
+
+Let's use a few examples to demonstrate:
+
+  XXX: Brad Bollenbach, 2005-08-30: removeSecurityProxy usage in this
+  test is a workaround for the following bug:
+
+    https://launchpad.net/malone/bugs/1971
+
+  >>> from zope.security.proxy import removeSecurityProxy
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import IBugTaskSet
+  >>> from canonical.launchpad.ftests import test_tales
+
+  >>> bugtaskset = getUtility(IBugTaskSet)
+  >>> high_priority_task = bugtaskset.get(4)
+  >>> medium_priority_task = bugtaskset.get(13)
+  >>> low_priority_task = bugtaskset.get(3)
+  >>> wontfix_priority_task = bugtaskset.get(2)
+
+  >>> test_tales("bugtask/fmt:icon", bugtask=high_priority_task)
+  '<img alt="(high priority)" src="/++resource++bug-high" />'
+
+  >>> test_tales("bugtask/fmt:icon", bugtask=medium_priority_task)
+  '<img alt="(medium priority)" src="/++resource++bug-medium" />'
+
+  >>> test_tales("bugtask/fmt:icon", bugtask=low_priority_task)
+  '<img alt="(low priority)" src="/++resource++bug-low" />'
+
+  >>> test_tales("bugtask/fmt:icon", bugtask=wontfix_priority_task)
+  '<img alt="(wontfix priority)" src="/++resource++bug" />'
+
+Displaying Status
+-----------------
+
+Sometimes it's useful to display the status of an IBugTask as a
+human-readable string. So, instead of displaying something like:
+
+  Status: Accepted, Assignee: foo.bar@canonical.com
+
+you might prefer that to read, simply:
+
+  assigned to Foo Bar
+
+Let's see some examples of how this works:
+
+  >>> from canonical.launchpad.ftests import login
+  >>> from canonical.launchpad.interfaces import ILaunchBag
+  >>> from canonical.lp.dbschema import BugTaskStatus
+  >>> login("foo.bar@canonical.com")
+  >>> foobar = getUtility(ILaunchBag).user
+
+  >>> ORIGINAL_STATUS = high_priority_task.status
+  >>> ORIGINAL_ASSIGNEE = high_priority_task.assignee
+
+  >>> high_priority_task.assignee = None
+  >>> high_priority_task.statusdisplayhtml
+  'not assigned'
+
+  >>> high_priority_task.assignee = foobar
+  >>> high_priority_task.status = BugTaskStatus.NEW
+  >>> high_priority_task.statusdisplayhtml
+  u'assigned to <img src="/++resource++user.gif" /> <a href=".../malone/assigned?name=name16">Foo Bar</a>'
+
+  >>> high_priority_task.status = BugTaskStatus.ACCEPTED
+  >>> high_priority_task.statusdisplayhtml
+  u'accepted by <img src="/++resource++user.gif" /> <a href=".../malone/assigned?name=name16">Foo Bar</a>'
+
+  >>> high_priority_task.status = BugTaskStatus.REJECTED
+  >>> high_priority_task.statusdisplayhtml
+  u'rejected by <img src="/++resource++user.gif" /> <a href=".../malone/assigned?name=name16">Foo Bar</a>'
+
+  >>> high_priority_task.assignee = None
+  >>> high_priority_task.statusdisplayhtml
+  'rejected'
+
+  >>> high_priority_task.status = BugTaskStatus.FIXED
+  >>> high_priority_task.statusdisplayhtml
+  'fixed'
+
+  >>> high_priority_task.assignee = foobar
+  >>> high_priority_task.statusdisplayhtml
+  u'fixed by <img src="/++resource++user.gif" /> <a href=".../malone/assigned?name=name16">Foo Bar</a>'
+
+Lastly, some cleanup:
+
+  >>> high_priority_task.status = removeSecurityProxy(ORIGINAL_STATUS)
+  >>> high_priority_task.assignee = ORIGINAL_ASSIGNEE
+
+Status Elsewhere
+----------------
+
+It's often useful to present information about the status of a bug in
+other contexts. IBugTask.statuselsewhere provides a human-readable
+string containing such information.
+
+The main questions of interest, in order, are:
+
+  1. Has this bug been fixed elsewhere?
+
+  2. Has this bug been reported elsewhere?
+
+Let's see some examples:
+
+  >>> medium_priority_task.statuselsewhere
+  'Not filed elsewhere'
+
+  >>> wontfix_priority_task.statuselsewhere
+  'Filed in 3 other places'
+
+  >>> low_priority_task.statuselsewhere
+  'Filed in 1 other place'
+
+Let's take a random task related to wontfix_priority_task, mark it
+Fixed, and see how the statuselsewhere value is affected:
+
+  >>> related_task = wontfix_priority_task.related_tasks[0]
+  >>> ORIGINAL_STATUS = related_task.status
+  >>> related_task.status = BugTaskStatus.FIXED
+
+  >>> wontfix_priority_task.statuselsewhere
+  'Fixed in 1 of 4 places'
+
+  >>> related_task.status = removeSecurityProxy(ORIGINAL_STATUS)

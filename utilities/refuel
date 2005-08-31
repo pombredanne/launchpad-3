@@ -15,13 +15,12 @@ source ~/.rocketfuel
 # checkout location
 if [ ! $LAUNCHPAD ]; then
   echo "Your ~/.rocketfuel file must include a line giving the location"
-  echo "of your launchpad directory, of the form:"
-  echo
+  echo "of your launchpad directory, of the form"
   echo "LAUNCHPAD=~/projects/ubuntu"
   echo
   echo "Of course, use the correct location for your setup. The"
   echo "directory you specify should at least contain your configs"
-  echo "(in a directory called configs) and your launchpd checkout"
+  echo "(in a directory called configs) and your launchpad checkout"
   echo "in a directory called launchpad."
   exit 1
 fi

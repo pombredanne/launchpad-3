@@ -1,0 +1,16 @@
+<img src="/++resource++bug" />
+<span tal:replace="context/status/title">High</span>:
+<a tal:attributes="href context/bug/fmt:url"
+   tal:content="context/bug/title">Bug Title Here</a>
+<tal:block condition="context/assignee">
+  (<img src="/++resource++user.gif" />&nbsp;<a
+      tal:attributes="href context/assignee/fmt:url"
+      tal:content="context/assignee/browsername">Foo Bar</a>)
+</tal:block>
+<br />
+<div style="font-size: 80%; margin-left: 25px;"
+     tal:content="context/bug/summary"
+     tal:condition="context/bug/summary">
+  Sumary Goes Here
+</div>
+<hr />

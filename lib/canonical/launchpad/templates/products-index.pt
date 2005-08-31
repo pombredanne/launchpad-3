@@ -6,30 +6,20 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div class="portlet">
-    <h4>Open Source Products:</h4>
-
-    <div class="portletBody">
-      <div class="portletContent even">
-  
-        <p>Enter a product name or detail, and press search to find all
-        products matching those words in the Launchpad. You can also
-        <a href="/products/+all">see all products</a> registered in the
-        launchpad.</p>
-
-      </div>
-    </div>
-  </div>
+  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-details" />
+  <div class="portlet portletBody portletContent">
+    <ul>
+      <li class="add"><a href="/products/+new">Register a new product</a></li>
+    </ul>
+  </div>
 </metal:rightportlets>
-
 
 <div metal:fill-slot="main">
 
-    <h1>Find Products in The Launchpad</h1>
+    <h1>Launchpad product registry</h1>
 
     <form method="get">
         <table>

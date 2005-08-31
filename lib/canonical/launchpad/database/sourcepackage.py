@@ -77,9 +77,15 @@ class SourcePackage:
         # Set self.currentrelease based on current published sourcepackage
         # with this name in the distrorelease.  If none is published, leave
         # self.currentrelease as None
+
+        # XXX: Daniel Debonzi
+        # Getting only for pocket RELEASE.. to do not get more than one result.
+        # Figure out what should be done to access another pockets
         package = SourcePackageInDistro.selectOneBy(
-                    sourcepackagenameID=sourcepackagename.id,
-                    distroreleaseID = self.distrorelease.id)
+            sourcepackagenameID=sourcepackagename.id,
+            distroreleaseID=self.distrorelease.id,
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.RELEASE)
         if package is None:
             self.currentrelease = None
         else:
@@ -93,9 +99,8 @@ class SourcePackage:
 
     @property
     def displayname(self):
-        dn = ' the ' + self.sourcepackagename.name + ' source package in '
-        dn += self.distrorelease.displayname
-        return dn
+        return "%s %s" % (
+            self.distrorelease.displayname, self.sourcepackagename.name)
 
     @property
     def title(self):
@@ -120,9 +125,32 @@ class SourcePackage:
 
     @property
     def changelog(self):
-        if not self.currentrelease:
-            return None
-        return self.currentrelease.changelog
+        """See ISourcePackage"""
+
+        clauseTables = ('SourcePackageName', 'SourcePackageRelease',
+                        'SourcePackagePublishing','DistroRelease')
+
+        query = ('SourcePackageRelease.sourcepackagename = '
+                 'SourcePackageName.id AND '
+                 'SourcePackageName = %d AND '
+                 'SourcePackagePublishing.distrorelease = '
+                 'DistroRelease.Id AND '
+                 'SourcePackagePublishing.distrorelease = %d AND '
+                 'SourcePackagePublishing.sourcepackagerelease = '
+                 'SourcePackageRelease.id'
+                 % (self.sourcepackagename.id,
+                    self.distrorelease.id)
+                 ) 
+
+        spreleases = SourcePackageRelease.select(query,
+                                                 clauseTables=clauseTables,
+                                                 orderBy='version').reversed()
+        changelog = ''
+
+        for spr in spreleases:
+            changelog += '%s \n\n' % spr.changelog
+        
+        return changelog
 
     @property
     def manifest(self):

@@ -104,6 +104,8 @@
               lp:url="/project/$project.id/+reassign" />
     </browser:pages>
 
+
+
     <browser:addform
         name="+newbugtracker"
         permission="launchpad.AnyPerson"
@@ -118,11 +120,33 @@
         lp:url="/projects/$Project.name/+newbugtracker"
         />
 
+    <browser:addform
+        name="+new"
+        for="canonical.launchpad.interfaces.IProjectSet"
+        schema="canonical.launchpad.interfaces.IProject"
+        label="Register a project with Launchpad"
+        fields="name displayname title summary description homepageurl"
+        content_factory="canonical.launchpad.database.Project"
+        class="canonical.launchpad.browser.ProjectAddView"
+        permission="launchpad.AnyPerson"
+        template="../templates/launchpad-addform.pt"
+        lp:url="products/+new">
+        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
+        <browser:widget
+           field="name"
+           class="zope.app.form.browser.TextWidget"
+           extra="tabindex=1" />
+        <browser:widget
+           field="homepageurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+    </browser:addform>
+
     <browser:editform
         name="+edit"
         for="canonical.launchpad.interfaces.IProject"
         schema="canonical.launchpad.interfaces.IProject"
-        label="Edit Open Source Project Details:"
+        label="Edit project details"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl"
         class="canonical.launchpad.browser.ProjectEditView"
@@ -166,7 +190,7 @@
         permission="launchpad.AnyPerson"
         template="../templates/product-add.pt"
         lp:url="/projects/$Project.name/+newproduct">
-        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="homepageurl"
            class="zope.app.form.browser.TextWidget"
@@ -265,20 +289,16 @@
             lp:url="/projects/+syncreview" />
     </browser:pages>
 
-    <browser:page
-        for="canonical.launchpad.interfaces.IProjectSet"
-        name="+new"
-        class="canonical.launchpad.browser.ProjectSetView"
-        permission="launchpad.AnyPerson"
-        template="../templates/project-new.pt"
-        lp:url="/projects/+new" />
-
     <browser:pages for="canonical.launchpad.interfaces.IProjectSet"
         permission="zope.Public"
         class="canonical.launchpad.browser.ProjectSetView">
         <browser:page name="+request"
             template="../templates/projects-request.pt"
             lp:url="Rosetta/projects/+request" />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/projectset-portlet-details.pt"
+            lp:url="/projects/+portlet-details" />
     </browser:pages>
 
     <securedutility

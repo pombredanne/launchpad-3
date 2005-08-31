@@ -7,8 +7,8 @@
 
 <metal:leftportlets fill-slot="portlets_one">
   <div class="portlet">
-    <div class="portletBody portletContent">
-      
+    <h4>What&#8217;s this all about? </h4>
+    <div class="portletBody portletContent">      
       <img src="/++resource++info_icon.gif" />
       The change log is uploaded by the package maintainer when a new
       package release is made. It should document all the latest information
@@ -31,7 +31,8 @@
       package:</p>
     
       <pre>
-        <span tal:replace="structure view/linkified_changelog" />
+<!-- No identation on pre structure -->
+<span tal:replace="structure view/linkified_changelog" />
       </pre>
     </tal:block>
 

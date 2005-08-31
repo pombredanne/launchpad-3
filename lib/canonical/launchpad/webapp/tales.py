@@ -11,6 +11,7 @@ import re
 import sets
 import os.path
 import warnings
+
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter
 
@@ -19,11 +20,12 @@ from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.app.traversing.interfaces import ITraversable
 from zope.exceptions import NotFoundError
 from zope.security.interfaces import Unauthorized
+
 from canonical.launchpad.interfaces import (
     IPerson, ILaunchBag, IFacetMenu, IExtraFacetMenu,
     IApplicationMenu, IExtraApplicationMenu, NoCanonicalUrl,
     IBugSet)
-import canonical.lp.dbschema
+from canonical.lp import dbschema
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url, nearest_menu
 from canonical.launchpad.webapp.publisher import get_current_browser_request
@@ -202,10 +204,10 @@ class DBSchemaAPI:
     implements(ITraversable)
 
     _all = {}
-    for name in canonical.lp.dbschema.__all__:
-        schema = getattr(canonical.lp.dbschema, name)
-        if (schema is not canonical.lp.dbschema.DBSchema and
-            issubclass(schema, canonical.lp.dbschema.DBSchema)):
+    for name in dbschema.__all__:
+        schema = getattr(dbschema, name)
+        if (schema is not dbschema.DBSchema and
+            issubclass(schema, dbschema.DBSchema)):
             _all[name] = schema
 
     def __init__(self, number):
@@ -239,6 +241,7 @@ class NoneFormatter:
         'pagetitle',
         'text-to-html',
         'url',
+        'icon'
         ])
 
     def __init__(self, context):
@@ -260,7 +263,10 @@ class NoneFormatter:
 
 
 class ObjectFormatterAPI:
-    """Adapter from any object to a formatted string.  Used for fmt:url."""
+    """Adapter from any object to a formatted string.
+
+    Used for fmt:url.
+    """
 
     def __init__(self, context):
         self._context = context
@@ -268,6 +274,40 @@ class ObjectFormatterAPI:
     def url(self):
         request = get_current_browser_request()
         return canonical_url(self._context, request)
+
+
+class BugTaskFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IBugTask objects to a formatted string.
+
+    Used for fmt:icon.
+    """
+
+    def icon(self):
+        """Return the appropriate <img> tag for the bugtask icon.
+
+        The icon displayed is calculated based on the IBugTask.priority.
+        """
+        priority_title = self._context.priority.title.lower()
+        if priority_title == 'wontfix':
+            # Special-case Wontfix by returning the "generic" bug icon
+            # because we actually hope to eliminate Wontfix
+            # entirely. See
+            # https://wiki.launchpad.canonical.com/SimplifyingMalone
+            return '<img alt="(wontfix priority)" src="/++resource++bug" />'
+        else:
+            return '<img alt="(%s priority)" src="/++resource++bug-%s" />' % (
+                priority_title, priority_title)
+
+
+class MilestoneFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IMilestone objects to a formatted string.
+
+    Used for fmt:icon.
+    """
+
+    def icon(self):
+        """Return the appropriate <img> tag for the milestone icon."""
+        return '<img alt="" src="/++resource++target" />'
 
 
 class DateTimeFormatterAPI:
@@ -532,10 +572,10 @@ class PageTemplateContextsAPI:
         name = name.replace('-', '_')
         titleobj = getattr(canonical.launchpad.pagetitles, name, None)
         if titleobj is None:
-            warnings.warn(
+            # sabdfl 25/0805 page titles are now mandatory hence the assert
+            raise AssertionError(
                  "No page title in canonical.launchpad.pagetitles for %s"
                  % name)
-            return canonical.launchpad.pagetitles.DEFAULT_LAUNCHPAD_TITLE
         elif isinstance(titleobj, basestring):
             return titleobj
         else:

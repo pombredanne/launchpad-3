@@ -20,24 +20,31 @@
 </head>
 
   <body>
-    <img
-      style="position: relative; float: left; left: -12px; top: 1em;"
-      src="/@@/launchpad.png"
-      alt=""
-    />
-    <div class="header">
-      <div
-        class="login"
-        tal:replace="structure context/@@login_status"
-      >
-        Logged in or logged out
-      </div>
-      <div
-        class="hierarchy"
-        tal:content="structure request/fmt:breadcrumbs"
+    <table class="header" style="width: 100%;">
+      <tr>
+        <td
+          class="hierarchy"
+          tal:content="structure request/fmt:breadcrumbs"
+        />
+        <td
+          class="login"
+          tal:content="structure context/@@login_status"
+        />
+      </tr>
+    </table>
+    <h2 class="lpcontext">
+      <img
+        style="float: left;"
+        src="/@@/launchpad.png"
+        alt=""
       />
+      <metal:block
+        define-slot="titleheader"
+        tal:content="context/title | default"
+      >Launchpad</metal:block>
+    </h2>    
       <ul
-        class="facets"
+        class="facets app"
         tal:define="facetmenu context/menu:facet"
       >
         <tal:block condition="facetmenu">
@@ -72,41 +79,6 @@
           </tal:block>
         </tal:block>
       </ul>
-    </div>
-    <h2><metal:block
-        define-slot="titleheader"
-        tal:content="context/title | default"
-    >Launchpad</metal:block></h2>
-    <ul
-      tal:define="appmenu context/menu:application"
-      tal:condition="appmenu"
-      class="app"
-    >
-      <tal:block repeat="link appmenu">
-        <li
-          tal:condition="link/selected"
-          class="current"
-        >
-          <tal:block condition="link/linked">
-            <strong>
-              <a 
-                tal:attributes="href link/url"
-                tal:content="link/text"
-              >link text</a>
-            </strong>
-          </tal:block>
-          <tal:block condition="not: link/linked">
-            <strong tal:content="link/text">link text</strong>
-          </tal:block>
-        </li>
-        <li tal:condition="not: link/selected">
-          <a
-            tal:attributes="href link/url"
-            tal:content="link/text"
-          >link text</a>
-        </li>
-      </tal:block>
-    </ul>
 
     <!-- Menus -->
 
@@ -137,6 +109,38 @@
             metal:define-slot="column_two"
             rowspan="2"
           >
+            <div
+              tal:define="appmenu context/menu:application"
+              tal:condition="appmenu"
+              class="portlet portletBody portletContent"
+            >
+              <ul class="menu">
+                <tal:block repeat="link appmenu">
+                  <li
+                    tal:condition="link/selected"
+                    class="current"
+                  >
+                    <tal:block condition="link/linked">
+                      <strong>
+                        <a 
+                          tal:attributes="href link/url"
+                          tal:content="link/text"
+                        >link text</a>
+                      </strong>
+                    </tal:block>
+                    <tal:block condition="not: link/linked">
+                      <strong tal:content="link/text">link text</strong>
+                    </tal:block>
+                  </li>
+                  <li tal:condition="not: link/selected">
+                    <a
+                      tal:attributes="href link/url"
+                      tal:content="link/text"
+                    >link text</a>
+                  </li>
+                </tal:block>
+              </ul>
+            </div>
                         <metal:portlets define-slot="portlets_two">
 
                         </metal:portlets>

@@ -1,9 +1,8 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BinaryPackage', 'BinaryPackageSet', 'DownloadURL']
+__all__ = ['BinaryPackage', 'BinaryPackageSet']
 
-from urllib2 import URLError
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -13,8 +12,9 @@ from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
 
-from canonical.launchpad.interfaces import IBinaryPackage, IDownloadURL
-from canonical.launchpad.interfaces import IBinaryPackageSet
+from canonical.launchpad.interfaces import (
+    IBinaryPackage, IBinaryPackageSet)
+
 from canonical.launchpad.database.publishing import PackagePublishing
 
 from canonical.lp import dbschema
@@ -50,8 +50,7 @@ class BinaryPackage(SQLBase):
     licence = StringCol(dbName='licence')
     architecturespecific = BoolCol(dbName='architecturespecific')
 
-    files = MultipleJoin('BinaryPackageFile',
-                         joinColumn='binarypackage')
+    files = MultipleJoin('BinaryPackageFile', joinColumn='binarypackage')
 
     def title(self):
         return '%s-%s' % (self.binarypackagename.name, self.version)
@@ -117,25 +116,6 @@ class BinaryPackage(SQLBase):
             raise KeyError('BinaryPackage not found in PackagePublishing')
         return packagepublishing.status.title
     status = property(status)
-
-    def files_url(self):
-        """Return an URL to Download this Package."""
-        downloader = getUtility(ILibrarianClient)
-
-        urls = []
-
-        for _file in self.files:
-            try:
-                url = downloader.getURLForAlias(_file.libraryfile.id)
-            except URLError:
-                # librarian not runnig or file not avaiable
-                pass
-            else:
-                name = _file.libraryfile.filename
-                urls.append(DownloadURL(name, url))
-
-        return urls
-    files_url = property(files_url)
 
     def __getitem__(self, version):
         clauseTables = ["Build"]
@@ -291,12 +271,4 @@ class BinaryPackageSet:
         # XXX sabdfl this is not yet done 12/12/04
         # XXX What is not yet done?  Raise a NotImplementedError.
         raise NotImplementedError
-
-
-class DownloadURL:
-    implements(IDownloadURL)
-
-    def __init__(self, filename, fileurl):
-        self.filename = filename
-        self.fileurl = fileurl
 
