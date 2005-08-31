@@ -6,7 +6,6 @@ from canonical.functional import FunctionalTestCase
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.ftests import keys_for_tests 
 from canonical.launchpad.interfaces import IGPGHandler
-from canonical.launchpad.utilities.keyring_trust_analyser import KeyringTrustAnalyser
 from zope.component import getUtility
 from pyme.constants import validity
 
@@ -68,7 +67,7 @@ class TestImportKeyRing(FunctionalTestCase):
         self.assertNotEqual(len(keyring), 0)
         self.assertTrue(importedkeys.issubset(keyring))
 
-    def testSetOwnertrust(self):
+    def testSetOwnerTrust(self):
         """Import a key and set the ownertrust."""
         self.testEmptyGetKeys()
         for email in keys_for_tests.iter_test_key_emails():
@@ -78,7 +77,7 @@ class TestImportKeyRing(FunctionalTestCase):
         iterator = self.gpg_handler.local_keys()
         key = iterator.next()
         self.assertEqual(key.owner_trust, validity.UNKNOWN)
-        key.owner_trust = validity.FULL
+        key.setOwnerTrust(validity.FULL)
         self.assertEqual(key.owner_trust, validity.FULL)
         other_iterator = self.gpg_handler.local_keys()
         other_key_instance = other_iterator.next()
@@ -96,21 +95,6 @@ class TestImportKeyRing(FunctionalTestCase):
             self.gpg_handler.importKeyringFile(ring)
         self.assertEqual(self.gpg_handler.checkTrustDb(), 0)
 
-# this is what we want to end up with.
-# result = []
-# handler=getUtility (IGPGHandler)
-# ubuntu = handler.import_key_ring (path_to_ubuntu_keyring)
-# debian = handler.import_key_ring (path_to_debian_keyring)
-# for key in ubuntu:
-#   key.set_ownertrust (GPGME_VALIDITY_MARGINAL)
-# for key in debian:
-#   key.set_ownertrust (GPGME_VALIDITY_MARGINAL)
-# scc = handler.import_key_ring (path_to_scc)
-# for key in scc:
-#   uid = key.uids
-#   while uid is not None:
-#     if validity > GPGME_VALIDITY_MARGINAL:
-#       result.append ((key, uid->email))
 
 def test_suite():
     loader=unittest.TestLoader()

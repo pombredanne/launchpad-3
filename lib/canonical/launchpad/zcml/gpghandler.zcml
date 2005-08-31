@@ -22,7 +22,10 @@
 
     <content class="canonical.launchpad.utilities.PymeKey">
         <allow interface="canonical.launchpad.interfaces.IPymeKey" />
-        <require permission="zope.Public" set_attributes="owner_trust" />
+    </content>
+
+    <content class="canonical.launchpad.utilities.PymeUserId">
+        <allow interface="canonical.launchpad.interfaces.IPymeUserId" />
     </content>
 
 </configure>

@@ -2,7 +2,7 @@
 
 __metaclass__ = type
 
-__all__ = ['GPGHandler', 'PymeSignature', 'PymeKey']
+__all__ = ['GPGHandler', 'PymeSignature', 'PymeKey', 'PymeUserId']
 
 # standard
 import os
@@ -393,7 +393,7 @@ class PymeKey:
         self.algorithm = GPGKeyAlgorithm.items[key.subkeys.pubkey_algo].title
         self.revoked = key.subkeys.revoked
         self.keysize = key.subkeys.length
-        self._owner_trust = key.owner_trust
+        self.owner_trust = key.owner_trust
 
         # copy the UIDs 
         self.uids = []
@@ -413,11 +413,7 @@ class PymeKey:
         context = pyme.core.Context()
         return context.get_key(fingerprint.encode('ascii'), 0)
 
-    def owner_trust(self):
-        """The owner trust value for the key"""
-        return self._owner_trust
-        
-    def set_owner_trust(self, value): 
+    def setOwnerTrust(self, value): 
         """Set the ownertrust on the actual gpg key"""
         if value not in (validity.UNDEFINED, validity.NEVER,
                          validity.MARGINAL, validity.FULL,
@@ -428,11 +424,8 @@ class PymeKey:
         key = context.get_key(self.fingerprint.encode('ascii'), False)
         context.op_edit_trust(key, value)
         # set the cached copy of owner_trust
-        self._owner_trust = value
+        self.owner_trust = value
     
-    owner_trust = property(owner_trust, set_owner_trust)
-    del set_owner_trust
-
     @property
     def displayname(self):
         return '%s%s/%s' % (self.keysize, self.algorithm, self.keyid)

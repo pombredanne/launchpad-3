@@ -64,10 +64,14 @@ def import_secret_test_key():
 
     seckey = open(os.path.join(gpgkeysdir, 'test@canonical.com.sec')).read()
     gpghandler.importKey(seckey)               
-            
+
+def test_pubkey_file_from_email(email_addr):
+    """Get the file name for a test pubkey by email address."""
+    return os.path.join(gpgkeysdir, email_addr + '.pub')
+
 def test_pubkey_from_email(email_addr):
     """Get the on disk content for a test pubkey by email address."""
-    return open(os.path.join(gpgkeysdir, email_addr + '.pub')).read()
+    return open(test_pubkey_file_from_email(email_addr)).read()
 
 def test_keyrings():
     """Iterate over the filenames for test keyrings."""

@@ -105,6 +105,9 @@ class IPymeKey(Interface):
     displayname = Attribute("Key displayname: <size><type>/<keyid>")
     owner_trust = Attribute("The owner trust")
 
+    def setOwnerTrust(value):
+        """Set the owner_trust value for this key."""
+
 class IPymeUserId(Interface):
     """pyME user ID"""
 
