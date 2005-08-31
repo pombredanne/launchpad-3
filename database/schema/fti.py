@@ -225,9 +225,12 @@ def setup(con, configuration=DEFAULT_CONFIG):
         # Trailing &, | or !
         query = re.sub(r"[\&\|\!\s]+$", "", query)
 
+        # Empty brackets
+        query = re.sub(r"\(\s*\)", "", query)
+
         # If we have nothing but whitespace and tsearch2 operators,
         # return NULL.
-        if re.search(r"^[\&\|\!\s]*$", query) is not None:
+        if re.search(r"^[\&\|\!\s\(\)]*$", query) is not None:
             return None
 
         # Convert back to UTF-8

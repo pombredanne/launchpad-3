@@ -121,7 +121,8 @@ The following examples show the text version of the query using
     ...     cur = cursor()
     ...     cur.execute("SELECT _ftq(%s), ftq(%s)", (query, query))
     ...     uncompiled, compiled = cur.fetchone()
-    ...     uncompiled = uncompiled.replace(' ','')
+    ...     if uncompiled is not None:
+    ...         uncompiled = uncompiled.replace(' ','')
     ...     print '%s <=> %s' % (uncompiled, compiled)
 
 
@@ -189,10 +190,24 @@ from queries by tsearch2.
 
 
 Note that some queries will return None after compilation, because they
-contained nothing but stop words.
+contained nothing but stop words or punctuation.
 
     >>> ftq("don't do it!")
     don't&do&it <=> None
+
+    >>> ftq(",,,")
+    ,,, <=> None
+
+
+Queries containing nothing except whitespace, boolean operators and
+punctuation will just return None.
+
+    >>> ftq(" ")
+    None <=> None
+    >>> ftq("and")
+    None <=> None
+    >>> ftq(" and (!)")
+    None <=> None
 
 
 Words are also stemmed by tsearch2 (using the English stemmer).
