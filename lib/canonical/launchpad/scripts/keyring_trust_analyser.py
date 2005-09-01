@@ -126,6 +126,7 @@ def _mergeOrAddEmails(personset, emailset, cluster):
             for email in emailset.getByPerson(otherperson):
                 email.person = person
         flush_database_updates()
+
         # merge people
         for otherperson in people:
             personset.merge(otherperson, person)
@@ -144,8 +145,6 @@ def _mergeOrAddEmails(personset, emailset, cluster):
     for newemail in cluster.difference(existing):
         emailset.new(newemail, person)
 
-    flush_database_updates()
-
     return person
 
 def mergeClusters(clusters, ztm=None):
@@ -156,5 +155,8 @@ def mergeClusters(clusters, ztm=None):
     personset = getUtility(IPersonSet)
     emailset = getUtility(IEmailAddressSet)
     for cluster in clusters:
-        person = _mergeOrAddEmails(personset, emailset, cluster)
+        if not cluster: continue
 
+        if ztm: ztm.begin()
+        _mergeOrAddEmails(personset, emailset, cluster)
+        if ztm: ztm.commit()
