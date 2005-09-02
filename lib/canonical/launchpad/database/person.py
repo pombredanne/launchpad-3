@@ -43,6 +43,7 @@ from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.karma import KarmaCache, KarmaAction, Karma
+from canonical.launchpad.database.shipit import ShippingRequest
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
@@ -65,6 +66,15 @@ class Person(SQLBase):
     familyname = StringCol(dbName='familyname', default=None)
     displayname = StringCol(dbName='displayname', notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
+
+    city = StringCol(default=None)
+    phone = StringCol(default=None)
+    country = ForeignKey(dbName='country', foreignKey='Country', default=None)
+    province = StringCol(default=None)
+    postcode = StringCol(default=None)
+    addressline1 = StringCol(default=None)
+    addressline2 = StringCol(default=None)
+    organization = StringCol(default=None)
 
     teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
                            default=None)
@@ -238,6 +248,13 @@ class Person(SQLBase):
     def isTeam(self):
         """See IPerson."""
         return self.teamowner is not None
+
+    def currentShipItRequest(self):
+        """See IPerson."""
+        query = AND(ShippingRequest.q.recipientID==self.id,
+                    ShippingRequest.q.shipmentID==None,
+                    ShippingRequest.q.cancelled==False)
+        return ShippingRequest.selectOne(query)
 
     def assignKarma(self, action_name):
         """See IPerson."""

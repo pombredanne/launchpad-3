@@ -83,6 +83,7 @@
     <include file="specificationsubscription.zcml" />
     <include file="specificationtarget.zcml" />
     <include file="vsourcepackagereleasepublishing.zcml" />
+    <include file="shipit.zcml" />
     <include file="sshkey.zcml" />
     <include file="teammembership.zcml" />
     <include file="teamparticipation.zcml" />

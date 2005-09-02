@@ -78,6 +78,7 @@ from canonical.launchpad.database.logintoken import *
 from canonical.launchpad.database.codeofconduct import *
 from canonical.launchpad.database.component import *
 from canonical.launchpad.database.section import *
+from canonical.launchpad.database.shipit import *
 from canonical.launchpad.database.vpoexport import *
 from canonical.launchpad.database.karma import *
 from canonical.launchpad.database.poexportrequest import *

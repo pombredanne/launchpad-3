@@ -184,11 +184,21 @@
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"
       permission="launchpad.Edit"
+      class="canonical.launchpad.browser.PersonShipItView">
+      <browser:page
+          name="+shipit"
+          template="../templates/person-shipit.pt"
+          lp:url="/people/$person.id/+shipit" />
+  </browser:pages>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.IPerson"
+      permission="launchpad.Edit"
       class="canonical.launchpad.browser.PersonEditEmailsView">
-        <browser:page
-            name="+editemails"
-            template="../templates/person-editemails.pt"
-            lp:url="/people/$person.id/+editemails" />
+      <browser:page
+          name="+editemails"
+          template="../templates/person-editemails.pt"
+          lp:url="/people/$person.id/+editemails" />
   </browser:pages>
 
   <browser:pages

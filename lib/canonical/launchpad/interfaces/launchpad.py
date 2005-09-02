@@ -34,6 +34,7 @@ class ILaunchpadCelebrities(Interface):
     debian = Attribute("The debian Distribution.")
     rosetta_expert = Attribute("The Rosetta Experts team.")
     debbugs = Attribute("The Debian Bug Tracker")
+    shipit_admin = Attribute("The ShipIt Administrators.")
 
 
 class ICrowd(Interface):

@@ -17,6 +17,7 @@ __all__ = [
     'BountyVocabulary',
     'BugTrackerVocabulary',
     'BugWatchVocabulary',
+    'CountryNameVocabulary',
     'DistributionVocabulary',
     'DistroReleaseVocabulary',
     'FilteredDistroReleaseVocabulary',
@@ -54,7 +55,7 @@ from canonical.launchpad.database import (
     Distribution, DistroRelease, Person, SourcePackageRelease,
     SourcePackageName, BinaryPackageRelease, BugWatch, BinaryPackageName, Language,
     Milestone, Product, Project, ProductRelease, ProductSeries,
-    TranslationGroup, BugTracker, POTemplateName, Schema, Bounty,
+    TranslationGroup, BugTracker, POTemplateName, Schema, Bounty, Country,
     Specification)
 from canonical.launchpad.interfaces import (
     ILaunchBag, ITeam, ITeamMembershipSubset, IPersonSet, IEmailAddressSet)
@@ -149,7 +150,7 @@ class SQLObjectVocabularyBase:
 
 class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
     """A SQLObjectVocabulary base for database tables that have a unique
-    name column.
+    *and* ASCII name column.
 
     Provides all methods required by IHugeVocabulary, although it
     doesn't actually specify this interface since it may not actually
@@ -178,6 +179,16 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
                 )
             for o in objs:
                 yield self._toTerm(o)
+
+
+class CountryNameVocabulary(SQLObjectVocabularyBase):
+    """A vocabulary for country names."""
+
+    _table = Country
+    _orderBy = 'name'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.id, obj.name)
 
 
 class BinaryPackageNameVocabulary(NamedSQLObjectVocabulary):

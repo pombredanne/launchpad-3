@@ -482,15 +482,13 @@ person_index = ContextDisplayName('%s: Launchpad Overview')
 
 person_karma = ContextDisplayName('Karma for %s')
 
-person_key = ContextDisplayName('%s GPG Key')
-
 person_packages = ContextDisplayName('Packages Maintained By %s')
 
 person_reportedbugs = ContextDisplayName('Bugs Reported By %s')
 
 person_review = ContextDisplayName("Review %s' Information")
 
-person_timezone = ContextDisplayName('Time Zone for %s')
+person_shipit = "Your ShipIt Orders"
 
 person_translations = ContextDisplayName('Translations Made By %s')
 
@@ -643,6 +641,10 @@ def productseries(context, view):
     return '%s Release Series: %s' % (
         context.product.displayname, context.displayname)
 
+shipitrequests_index = 'ShipIt Requests'
+
+shipitrequest_edit = 'Edit ShipIt Request'
+
 signedcodeofconduct_index = ContextDisplayName('%s')
 
 signedcodeofconduct_add = ContextTitle('Sign %s')
@@ -737,6 +739,12 @@ specifications_index = ContextTitle('%s')
 specificationtarget_specs = ContextTitle('Specifications for %s')
 
 specificationtarget_specplan = ContextTitle('Project Plan for %s')
+
+standardshipitrequests_index = 'Standard ShipIt Requests'
+
+standardshipitrequest_new = 'Create a New Standard ShipIt Request'
+
+standardshipitrequest_edit = 'Edit Standard ShipIt Request'
 
 def team_addmember(context, view):
     return '%s: Add members' % context.team.browsername
