@@ -39,7 +39,7 @@
       or delete this section altogether, or just leave it and it will
       be deleted by the tal:replace=nothing.
     </div>
-        
+
     <div class="row" metal:fill-slot="extra_bottom" tal:replace="nothing">
       <div class="label">Extra bottom</div>
       <div class="field"><input type="text" style="width:100%" /></div>
@@ -54,7 +54,7 @@
       tal:replace=nothing.
     </div>
   </div>
-    
+
 </div>
 </body>
 </html>

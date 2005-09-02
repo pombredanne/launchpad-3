@@ -4,13 +4,7 @@
 
 __metaclass__ = type
 
-__all__ = [
-    'BugExternalRefsView',
-    'BugExternalRefAddView']
-
-from zope.component import getUtility
-from canonical.launchpad.interfaces import ILaunchBag
-from canonical.launchpad.browser.addview import SQLObjectAddView
+__all__ = ['BugExternalRefsView']
 
 class BugExternalRefsView:
 
@@ -23,10 +17,3 @@ class BugExternalRefsView:
 
     def nextURL(self):
         return '..'
-
-
-class BugExternalRefAddView(SQLObjectAddView):
-
-    def __init__(self, context, request):
-        SQLObjectAddView.__init__(self, context, request)
-        self.bug = getUtility(ILaunchBag).bug
