@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces.validation import *
 from canonical.launchpad.interfaces.specificationtarget import *
 
 from canonical.launchpad.interfaces.archuser import *
-from canonical.launchpad.interfaces.binarypackage import *
+from canonical.launchpad.interfaces.binarypackagerelease import *
 from canonical.launchpad.interfaces.binarypackagename import *
 from canonical.launchpad.interfaces.bounty import *
 from canonical.launchpad.interfaces.bountysubscription import *

@@ -399,6 +399,12 @@ COMMENT ON COLUMN CalendarEvent.title IS 'A one line description of the event';
 COMMENT ON COLUMN CalendarEvent.description IS 'A multiline description of the event';
 COMMENT ON COLUMN CalendarEvent.location IS 'A location associated with the event';
 
+COMMENT ON COLUMN SourcePackageName.name IS
+    'A lowercase name identifying one or more sourcepackages';
+COMMENT ON COLUMN BinaryPackageName.name IS
+    'A lowercase name identifying one or more binarypackages';
+COMMENT ON COLUMN BinaryPackageRelease.architecturespecific IS 'This field indicates whether or not a binarypackage is architecture-specific. If it is not specific to any given architecture then it can automatically be included in all the distroarchreleases which pertain.';
+
 
 /* Distribution */
 
@@ -454,13 +460,14 @@ COMMENT ON COLUMN SourcePackageName.name IS
     'A lowercase name identifying one or more sourcepackages';
 COMMENT ON COLUMN BinaryPackageName.name IS
     'A lowercase name identifying one or more binarypackages';
-COMMENT ON COLUMN BinaryPackage.architecturespecific IS 'This field indicates whether or not a binarypackage is architecture-specific. If it is not specific to any given architecture then it can automatically be included in all the distroarchreleases which pertain.';
+
+COMMENT ON COLUMN BinaryPackageRelease.architecturespecific IS 'This field indicates whether or not a binarypackage is architecture-specific. If it is not specific to any given architecture then it can automatically be included in all the distroarchreleases which pertain.';
 
 
 -- SourcePackageRelease
 COMMENT ON COLUMN SourcePackageRelease.section IS 'This integer field references the Section which the source package claims to be in';
 
-/* SourcePackagePublishing and PackagePublishing */
+/* SourcePackagePublishing and BinaryPackagePublishing */
 
 COMMENT ON COLUMN SourcePackagePublishing.datepublished IS 'This column contains the timestamp at which point the SourcePackageRelease progressed from a pending publication to being published in the respective DistroRelease';
 
@@ -472,27 +479,27 @@ COMMENT ON COLUMN SourcePackagePublishing.scheduleddeletiondate IS 'This column 
 
 COMMENT ON COLUMN SourcePackagePublishing.status IS 'This column contains the status of the publishing record. The valid states are described in dbschema.py in PackagePublishingStatus. Example states are "Pending" and "Published"';
 
-COMMENT ON COLUMN PackagePublishing.status IS 'This column contains the status of the publishing record. The valid states are described in dbschema.py in PackagePublishingStatus. Example states are "Pending" and "Published"';
+COMMENT ON COLUMN BinaryPackagePublishing.status IS 'This column contains the status of the publishing record. The valid states are described in dbschema.py in PackagePublishingStatus. Example states are "Pending" and "Published"';
 
--- PackagePublishingHistory
-COMMENT ON TABLE PackagePublishingHistory IS 'PackagePublishingHistory: The history of a PackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
-COMMENT ON COLUMN PackagePublishingHistory.binarypackage IS 'The binarypackage being published.';
-COMMENT ON COLUMN PackagePublishingHistory.distroarchrelease IS 'The distroarchrelease into which the binarypackage is being published.';
-COMMENT ON COLUMN PackagePublishingHistory.status IS 'The current status of the publishing.';
-COMMENT ON COLUMN PackagePublishingHistory.component IS 'The component into which the publishing takes place.';
-COMMENT ON COLUMN PackagePublishingHistory.section IS 'The section into which the publishing takes place.';
-COMMENT ON COLUMN PackagePublishingHistory.priority IS 'The priority at which the publishing takes place.';
-COMMENT ON COLUMN PackagePublishingHistory.datecreated IS 'The date/time on which the publishing record was created.';
-COMMENT ON COLUMN PackagePublishingHistory.datepublished IS 'The date/time on which the source was actually published into an archive.';
-COMMENT ON COLUMN PackagePublishingHistory.datesuperseded IS 'The date/time on which the source was superseded by a new source.';
-COMMENT ON COLUMN PackagePublishingHistory.supersededby IS 'The build which superseded this package. This seems odd but it is important because a new build may not actually build a given binarypackage and we need to supersede it appropriately';
-COMMENT ON COLUMN PackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
-COMMENT ON COLUMN PackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the package is/was scheduled to be deleted.';
-COMMENT ON COLUMN PackagePublishingHistory.dateremoved IS 'The date/time at which the package was actually deleted.';
-COMMENT ON COLUMN PackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distrorelease name such as the UPDATES pocket (-updates) or the SECURITY pocket (-security).';
-COMMENT ON COLUMN PackagePublishingHistory.embargo IS 'The publishing record is embargoed from publication if this is set to TRUE. When TRUE, this column prevents the publication record from even showing up in the publishing tables.';
-COMMENT ON COLUMN PackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
-COMMENT ON VIEW PackagePublishingPublicHistory IS 'View on PackagePublishingHistory that restricts access to embargoed entries';
+-- SecureBinaryPackagePublishingHistory
+COMMENT ON TABLE SecureBinaryPackagePublishingHistory IS 'PackagePublishingHistory: The history of a BinaryPackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.binarypackagerelease IS 'The binarypackage being published.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.distroarchrelease IS 'The distroarchrelease into which the binarypackage is being published.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.status IS 'The current status of the publishing.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.component IS 'The component into which the publishing takes place.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.section IS 'The section into which the publishing takes place.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.priority IS 'The priority at which the publishing takes place.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.datecreated IS 'The date/time on which the publishing record was created.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.datepublished IS 'The date/time on which the source was actually published into an archive.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.datesuperseded IS 'The date/time on which the source was superseded by a new source.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.supersededby IS 'The build which superseded this package. This seems odd but it is important because a new build may not actually build a given binarypackage and we need to supersede it appropriately';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the package is/was scheduled to be deleted.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.dateremoved IS 'The date/time at which the package was actually deleted.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distrorelease name such as the UPDATES pocket (-updates) or the SECURITY pocket (-security).';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.embargo IS 'The publishing record is embargoed from publication if this is set to TRUE. When TRUE, this column prevents the publication record from even showing up in the publishing tables.';
+COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
+COMMENT ON VIEW BinaryPackagePublishingHistory IS 'View on SecureBinaryPackagePublishingHistory that restricts access to embargoed entries';
 
 -- PersonLanguage
 COMMENT ON TABLE PersonLanguage IS 'PersonLanguage: This table stores the preferred languages that a Person has, it''s used in Rosetta to select the languages that should be showed to be translated.';
@@ -613,7 +620,7 @@ COMMENT ON COLUMN MessageChunk.sequence IS 'Order of a particular chunk. Chunks 
 COMMENT ON VIEW SourcePackageFilePublishing IS 'This view is used mostly by Lucille while performing publishing and unpublishing operations. It lists all the files associated with a sourcepackagerelease and collates all the textual representations needed for publishing components etc to allow rapid queries from SQLObject.';
 COMMENT ON VIEW BinaryPackageFilePublishing IS 'This view is used mostly by Lucille while performing publishing and unpublishing operations. It lists all the files associated with a binarypackage and collates all the textual representations needed for publishing components etc to allow rapid queries from SQLObject.';
 COMMENT ON VIEW SourcePackagePublishingView IS 'This view is used mostly by Lucille while performing publishing¸ unpublishing, domination, superceding and other such operations. It provides an ID equal to the underlying SourcePackagePublishing record to permit as direct a change to publishing details as is possible. The view also collates useful textual data to permit override generation etc.';
-COMMENT ON VIEW BinaryPackagePublishingView IS 'This view is used mostly by Lucille while performing publishing¸ unpublishing, domination, superceding and other such operations. It provides an ID equal to the underlying PackagePublishing record to permit as direct a change to publishing details as is possible. The view also collates useful textual data to permit override generation etc.';
+COMMENT ON VIEW BinaryPackagePublishingView IS 'This view is used mostly by Lucille while performing publishing¸ unpublishing, domination, superceding and other such operations. It provides an ID equal to the underlying BinaryPackagePublishing record to permit as direct a change to publishing details as is possible. The view also collates useful textual data to permit override generation etc.';
 
 -- SourcePackageRelease
 
@@ -709,56 +716,41 @@ COMMENT ON TABLE SpecificationDependency IS 'A table that stores information abo
 COMMENT ON COLUMN SpecificationDependency.specification IS 'The spec for which we are creating a dependency.';
 COMMENT ON COLUMN SpecificationDependency.dependency IS 'The spec on which it is dependant.';
 
--- BinaryPackage
+-- BinaryPackageRelease
 
-COMMENT ON TABLE BinaryPackage IS 'BinaryPackage: A soyuz binary package representation. This table stores the records for each binary package uploaded into the system. Each sourcepackagerelease may build various binarypackages on various architectures.';
-COMMENT ON COLUMN BinaryPackage.binarypackagename IS 'A reference to the name of the binary package';
-COMMENT ON COLUMN BinaryPackage.version IS 'The version of the binary package. E.g. "1.0-2"';
-COMMENT ON COLUMN BinaryPackage.summary IS 'A summary of the binary package. Commonly used on listings of binary packages';
-COMMENT ON COLUMN BinaryPackage.description IS 'A longer more detailed description of the binary package';
-COMMENT ON COLUMN BinaryPackage.build IS 'The build in which this binarypackage was produced';
-COMMENT ON COLUMN BinaryPackage.binpackageformat IS 'The binarypackage format. E.g. RPM, DEB etc';
-COMMENT ON COLUMN BinaryPackage.component IS 'The archive component that this binarypackage is in. E.g. main, universe etc';
-COMMENT ON COLUMN BinaryPackage.section IS 'The archive section that this binarypackage is in. E.g. devel, libdevel, editors';
-COMMENT ON COLUMN BinaryPackage.priority IS 'The priority that this package has. E.g. Base, Standard, Extra, Optional';
-COMMENT ON COLUMN BinaryPackage.shlibdeps IS 'The shared library dependencies of this binary package';
-COMMENT ON COLUMN BinaryPackage.depends IS 'The list of packages this binarypackage depends on';
-COMMENT ON COLUMN BinaryPackage.recommends IS 'The list of packages this binarypackage recommends. Recommended packages often enhance the behaviour of a package.';
-COMMENT ON COLUMN BinaryPackage.suggests IS 'The list of packages this binarypackage suggests.';
-COMMENT ON COLUMN BinaryPackage.conflicts IS 'The list of packages this binarypackage conflicts with.';
-COMMENT ON COLUMN BinaryPackage.replaces IS 'The list of packages this binarypackage replaces files in. Often this is used to provide an upgrade path between two binarypackages of different names';
-COMMENT ON COLUMN BinaryPackage.provides IS 'The list of virtual packages (or real packages under some circumstances) which this binarypackage provides.';
-COMMENT ON COLUMN BinaryPackage.essential IS 'Whether or not this binarypackage is essential to the smooth operation of a base system';
-COMMENT ON COLUMN BinaryPackage.installedsize IS 'What the installed size of the binarypackage is. This is represented as a number of kilobytes of storage.';
-COMMENT ON COLUMN BinaryPackage.copyright IS 'The copyright associated with this binarypackage. Often in the case of debian packages this is found in /usr/share/doc/<binarypackagename>/copyright';
-COMMENT ON COLUMN BinaryPackage.licence IS 'The licence that this binarypackage is under.';
+COMMENT ON TABLE BinaryPackageRelease IS 'BinaryPackageRelease: A soyuz binary package representation. This table stores the records for each binary package uploaded into the system. Each sourcepackagerelease may build various binarypackages on various architectures.';
+COMMENT ON COLUMN BinaryPackageRelease.binarypackagename IS 'A reference to the name of the binary package';
+COMMENT ON COLUMN BinaryPackageRelease.version IS 'The version of the binary package. E.g. "1.0-2"';
+COMMENT ON COLUMN BinaryPackageRelease.summary IS 'A summary of the binary package. Commonly used on listings of binary packages';
+COMMENT ON COLUMN BinaryPackageRelease.description IS 'A longer more detailed description of the binary package';
+COMMENT ON COLUMN BinaryPackageRelease.build IS 'The build in which this binarypackage was produced';
+COMMENT ON COLUMN BinaryPackageRelease.binpackageformat IS 'The binarypackage format. E.g. RPM, DEB etc';
+COMMENT ON COLUMN BinaryPackageRelease.component IS 'The archive component that this binarypackage is in. E.g. main, universe etc';
+COMMENT ON COLUMN BinaryPackageRelease.section IS 'The archive section that this binarypackage is in. E.g. devel, libdevel, editors';
+COMMENT ON COLUMN BinaryPackageRelease.priority IS 'The priority that this package has. E.g. Base, Standard, Extra, Optional';
+COMMENT ON COLUMN BinaryPackageRelease.shlibdeps IS 'The shared library dependencies of this binary package';
+COMMENT ON COLUMN BinaryPackageRelease.depends IS 'The list of packages this binarypackage depends on';
+COMMENT ON COLUMN BinaryPackageRelease.recommends IS 'The list of packages this binarypackage recommends. Recommended packages often enhance the behaviour of a package.';
+COMMENT ON COLUMN BinaryPackageRelease.suggests IS 'The list of packages this binarypackage suggests.';
+COMMENT ON COLUMN BinaryPackageRelease.conflicts IS 'The list of packages this binarypackage conflicts with.';
+COMMENT ON COLUMN BinaryPackageRelease.replaces IS 'The list of packages this binarypackage replaces files in. Often this is used to provide an upgrade path between two binarypackages of different names';
+COMMENT ON COLUMN BinaryPackageRelease.provides IS 'The list of virtual packages (or real packages under some circumstances) which this binarypackage provides.';
+COMMENT ON COLUMN BinaryPackageRelease.essential IS 'Whether or not this binarypackage is essential to the smooth operation of a base system';
+COMMENT ON COLUMN BinaryPackageRelease.installedsize IS 'What the installed size of the binarypackage is. This is represented as a number of kilobytes of storage.';
+COMMENT ON COLUMN BinaryPackageRelease.copyright IS 'The copyright associated with this binarypackage. Often in the case of debian packages this is found in /usr/share/doc/<binarypackagename>/copyright';
+COMMENT ON COLUMN BinaryPackageRelease.licence IS 'The licence that this binarypackage is under.';
 
 
 -- BinaryPackageFile
 
 COMMENT ON TABLE BinaryPackageFile IS 'BinaryPackageFile: A soyuz <-> librarian link table. This table represents the ownership in the librarian of a file which represents a binary package';
-COMMENT ON COLUMN BinaryPackageFile.binarypackage IS 'The binary package which is represented by the file';
+COMMENT ON COLUMN BinaryPackageFile.binarypackagerelease IS 'The binary package which is represented by the file';
 COMMENT ON COLUMN BinaryPackageFile.libraryfile IS 'The file in the librarian which represents the package';
 COMMENT ON COLUMN BinaryPackageFile.filetype IS 'The "type" of the file. E.g. DEB, RPM';
 
 -- BinaryPackageName
 
 COMMENT ON TABLE BinaryPackageName IS 'BinaryPackageName: A soyuz binary package name.';
-
--- OSFile
-
-COMMENT ON TABLE OSFile IS 'OSFile: Soyuz\'s representation of files on disk. BinaryPackages put files in installations.';
-COMMENT ON COLUMN OSFile.path IS 'The filepath';
-
-
--- OSFileInPackage
-
-COMMENT ON TABLE OSFileInPackage IS 'OSFileInPackage: Soyuz\'s representation of files in packages. This table stores the metadata associated with files which can be found in binarypackages.';
-COMMENT ON COLUMN OSFileInPackage.osfile IS 'The OSFile (path) in question';
-COMMENT ON COLUMN OSFileInPackage.binarypackage IS 'The binarypackage which contains this';
-COMMENT ON COLUMN OSFileInPackage.unixperms IS 'The unix permissions assigned to the file';
-COMMENT ON COLUMN OSFileInPackage.conffile IS 'Whether or not the file is a conffile in this package';
-COMMENT ON COLUMN OSFileInPackage.createdoninstall IS 'Whether or not the file is created during the installation of the package on the system. It may also be used to store jeff''s mum''s pants';
 
 -- Distribution
 
@@ -807,18 +799,18 @@ COMMENT ON COLUMN LibraryFileAlias.mimetype IS 'The mime type of the file. E.g. 
 
 -- PackagePublishing
 
-COMMENT ON VIEW PackagePublishing IS 'PackagePublishing: Publishing records for Soyuz/Lucille. Lucille publishes binarypackages in distroarchreleases. This view represents the publishing of each binarypackage not yet deleted from the distroarchrelease.';
-COMMENT ON COLUMN PackagePublishing.binarypackage IS 'The binarypackage which is being published';
-COMMENT ON COLUMN PackagePublishing.distroarchrelease IS 'The distroarchrelease in which the binarypackage is published';
-COMMENT ON COLUMN PackagePublishing.component IS 'The component in which the binarypackage is published';
-COMMENT ON COLUMN PackagePublishing.section IS 'The section in which the binarypackage is published';
-COMMENT ON COLUMN PackagePublishing.priority IS 'The priority at which the binarypackage is published';
-COMMENT ON COLUMN PackagePublishing.scheduleddeletiondate IS 'The datetime at which this publishing entry is scheduled to be removed from the distroarchrelease';
-COMMENT ON COLUMN PackagePublishing.status IS 'The current status of the packagepublishing record. For example "PUBLISHED" "PENDING" or "PENDINGREMOVAL"';
+COMMENT ON VIEW BinaryPackagePublishing IS 'PackagePublishing: Publishing records for Soyuz/Lucille. Lucille publishes binarypackages in distroarchreleases. This view represents the publishing of each binarypackage not yet deleted from the distroarchrelease.';
+COMMENT ON COLUMN BinaryPackagePublishing.binarypackagerelease IS 'The binarypackage which is being published';
+COMMENT ON COLUMN BinaryPackagePublishing.distroarchrelease IS 'The distroarchrelease in which the binarypackage is published';
+COMMENT ON COLUMN BinaryPackagePublishing.component IS 'The component in which the binarypackage is published';
+COMMENT ON COLUMN BinaryPackagePublishing.section IS 'The section in which the binarypackage is published';
+COMMENT ON COLUMN BinaryPackagePublishing.priority IS 'The priority at which the binarypackage is published';
+COMMENT ON COLUMN BinaryPackagePublishing.scheduleddeletiondate IS 'The datetime at which this publishing entry is scheduled to be removed from the distroarchrelease';
+COMMENT ON COLUMN BinaryPackagePublishing.status IS 'The current status of the packagepublishing record. For example "PUBLISHED" "PENDING" or "PENDINGREMOVAL"';
 
 -- SourcePackagePublishing
 
-COMMENT ON VIEW SourcePackagePublishing IS 'SourcePackagePublishing: Publishing records for Soyuz/Lucille. Lucille publishes sourcepackagereleases in distroreleases. This table represents the currently active publishing of each sourcepackagerelease. For history see SourcePackagePublishingHistory.';
+COMMENT ON VIEW SourcePackagePublishing IS 'SourcePackagePublishing: Publishing records for Soyuz/Lucille. Lucille publishes sourcepackagereleases in distroreleases. This table represents the currently active publishing of each sourcepackagerelease. For history see SecureSourcePackagePublishingHistory.';
 COMMENT ON COLUMN SourcePackagePublishing.distrorelease IS 'The distrorelease which is having the sourcepackagerelease being published into it.';
 COMMENT ON COLUMN SourcePackagePublishing.sourcepackagerelease IS 'The sourcepackagerelease being published into the distrorelease.';
 COMMENT ON COLUMN SourcePackagePublishing.status IS 'The current status of the sourcepackage publishing record. For example "PUBLISHED" "PENDING" or "PENDINGREMOVAL"';
@@ -888,24 +880,25 @@ COMMENT ON TABLE MirrorSourceContent IS 'Stores which distrorelease and componen
 COMMENT ON COLUMN MirrorSourceContent.distrorelease IS 'A distrorelease that this mirror contains.';
 COMMENT ON COLUMN MirrorSourceContent.component IS 'What component of the distrorelease that this sourcepackage mirror contains.';
 
--- SourcePackagePublishingHistory
-COMMENT ON TABLE SourcePackagePublishingHistory IS 'SourcePackagePublishingHistory: The history of a SourcePackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.sourcepackagerelease IS 'The sourcepackagerelease being published.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.distrorelease IS 'The distrorelease into which the sourcepackagerelease is being published.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.status IS 'The current status of the publishing.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.component IS 'The component into which the publishing takes place.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.section IS 'The section into which the publishing takes place.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.datecreated IS 'The date/time on which the publishing record was created.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.datepublished IS 'The date/time on which the source was actually published into an archive.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.datesuperseded IS 'The date/time on which the source was superseded by a new source.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.supersededby IS 'The source which superseded this one.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the source is/was scheduled to be deleted.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.dateremoved IS 'The date/time at which the source was actually deleted.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distrorelease name such as the UPDATES pocket (-updates), the SECURITY pocket (-security) and the PROPOSED pocket (-proposed)';
-COMMENT ON COLUMN SourcePackagePublishingHistory.embargo IS 'The publishing record is embargoed from publication if this is set to TRUE. When TRUE, this column prevents the publication record from even showing up in the publishing tables.';
-COMMENT ON COLUMN SourcePackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
-COMMENT ON VIEW SourcePackagePublishingPublicHistory IS 'A view on SourcePackagePublishingHistory that restricts access to embargoed entries';
+-- SecureSourcePackagePublishingHistory
+COMMENT ON TABLE SecureSourcePackagePublishingHistory IS 'SourcePackagePublishingHistory: The history of a SourcePackagePublishing record. This table represents the lifetime of a publishing record from inception to deletion. Records are never removed from here and in time the publishing table may become a view onto this table. A column being NULL indicates there''s no data for that state transition. E.g. a package which is removed without being superseded won''t have datesuperseded or supersededby filled in.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.sourcepackagerelease IS 'The sourcepackagerelease being published.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.distrorelease IS 'The distrorelease into which the sourcepackagerelease is being published.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.status IS 'The current status of the publishing.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.component IS 'The component into which the publishing takes place.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.section IS 'The section into which the publishing takes place.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.datecreated IS 'The date/time on which the publishing record was created.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.datepublished IS 'The date/time on which the source was actually published into an archive.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.datesuperseded IS 'The date/time on which the source was superseded by a new source.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.supersededby IS 'The source which superseded this one.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.datemadepending IS 'The date/time on which this publishing record was made to be pending removal from the archive.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.scheduleddeletiondate IS 'The date/time at which the source is/was scheduled to be deleted.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.dateremoved IS 'The date/time at which the source was actually deleted.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.pocket IS 'The pocket into which this record is published. The RELEASE pocket (zero) provides behaviour as normal. Other pockets may append things to the distrorelease name such as the UPDATES pocket (-updates), the SECURITY pocket (-security) and the PROPOSED pocket (-proposed)';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.embargo IS 'The publishing record is embargoed from publication if this is set to TRUE. When TRUE, this column prevents the publication record from even showing up in the publishing tables.';
+COMMENT ON COLUMN SecureSourcePackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
+COMMENT ON VIEW SourcePackagePublishingHistory IS 'A view on SecureSourcePackagePublishingHistory that restricts access to embargoed entries';
+
 
 -- Packaging
 COMMENT ON TABLE Packaging IS 'DO NOT JOIN THROUGH THIS TABLE. This is a set

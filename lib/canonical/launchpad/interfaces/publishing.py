@@ -5,14 +5,14 @@
 __metaclass__ = type
 
 __all__ = [
-    'IPackagePublishing',
+    'IBinaryPackagePublishing',
     'ISourcePackagePublishing',
     'ISourcePackageFilePublishing',
     'IBinaryPackageFilePublishing',
     'ISourcePackagePublishingView',
     'IBinaryPackagePublishingView',
-    'ISourcePackagePublishingHistory',
-    'IPackagePublishingHistory',
+    'ISecureSourcePackagePublishingHistory',
+    'ISecureBinaryPackagePublishingHistory',
     ]
 
 from zope.schema import Bool, Datetime, Int, TextLine
@@ -21,13 +21,13 @@ from zope.i18nmessageid import MessageIDFactory
 
 _ = MessageIDFactory('launchpad')
 
-class IPackagePublishing(Interface):
+class IBinaryPackagePublishing(Interface):
     """A binary package publishing record."""
 
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
-    binarypackage = Int(
+    binarypackagerelease = Int(
             title=_('The binary package being published'), required=False,
             readonly=False,
             )
@@ -244,7 +244,7 @@ class IBinaryPackagePublishingView(Interface):
             title=_('Package publishing status'), required=True, readonly=True,
             )
 
-class ISourcePackagePublishingHistory(Interface):
+class ISecureSourcePackagePublishingHistory(Interface):
     """A source package publishing history record."""
 
     sourcepackagerelease = Int(
@@ -316,13 +316,13 @@ class ISourcePackagePublishingHistory(Interface):
             required=False, readonly=False,
             )
 
-class IPackagePublishingHistory(Interface):
+class ISecureBinaryPackagePublishingHistory(Interface):
     """A binary package publishing record."""
 
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
-    binarypackage = Int(
+    binarypackagerelease = Int(
             title=_('The binary package being published'), required=False,
             readonly=False,
             )

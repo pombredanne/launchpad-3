@@ -92,7 +92,7 @@ class PublishedPackageSetView:
             version = drversions.versions.get( \
                 package.binarypackageversion,
                 PkgVersion(package.binarypackageversion) )
-            version.builds.append(PkgBuild(package.binarypackage,
+            version.builds.append(PkgBuild(package.binarypackagerelease,
                                            package.processorfamilyname,
                                            package.build.distroarchrelease))
             drversions.versions[package.binarypackageversion] = version
