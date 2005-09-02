@@ -48,7 +48,7 @@ def main():
     outf = open('/tmp/rosids.out','w')
     while True:
         row = c.fetchone()
-        if row is None:
+    if row is None:
             break
         print >> outf, row[0]
         total_potranslations += 1
@@ -88,9 +88,9 @@ def main():
             "activesubmission=%d OR publishedsubmission=%d" % (
             submission.id, submission.id))
         for poselection in poselections:
-            if poselection.activesubmission == submission:
+            if poselection.activesubmissionID == submission.id:
                 poselection.activesubmission = None
-            if poselection.publishedsubmission == submission:
+            if poselection.publishedsubmissionID == submission.id:
                 poselection.publishedsubmission = None
             poselection.sync()
 
@@ -99,7 +99,8 @@ def main():
         for pofile in pofiles:
             results = POSubmission.select('''
                 POSubmission.pomsgset = POMsgSet.id AND
-                POMsgSet.pofile = %d''' % pofile.id,
+                POMsgSet.pofile = %d AND
+		POSubmission.id <> %d''' % (pofile.id, submission.id),
                 orderBy='-datecreated',
                 clauseTables=['POMsgSet'])
             if len(results) > 2:
@@ -110,8 +111,10 @@ def main():
                 # There was only this submission, we don't have any
                 # translation for this pofile!.
                 pofile.latestsubmission = None
+        ztm.commit()
         submission.pomsgset.iscomplete = False
         submission.destroySelf()
+        ztm.commit()
     POTranslation.delete(empty_translation.id)
     ztm.commit()
 
