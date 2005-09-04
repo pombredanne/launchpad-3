@@ -7,6 +7,7 @@
   <include package="canonical.launchpad.webapp" />
   <include package="canonical.launchpad.vocabularies" />
   <include file="links.zcml" />
+  <include package="canonical.launchpad.validators" />
   <include package="canonical.launchpad.zcml" />
   <authorizations module="canonical.launchpad.security" />
 
