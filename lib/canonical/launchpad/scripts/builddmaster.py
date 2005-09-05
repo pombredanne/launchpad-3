@@ -36,6 +36,8 @@ from canonical.lp.dbschema import (
     BinaryPackageFormat, BinaryPackageFileType
     )
 
+from canonical import encoding
+
 from canonical.lp.dbschema import BuildStatus as DBBuildStatus
 
 from canonical.librarian.client import LibrarianClient
@@ -343,7 +345,12 @@ class BuilderGroup:
                              logtail):
         """Build still building, Simple collects the logtail"""
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
-        queueItem.logtail = logtail
+        # XXX cprov 20050902:
+        # guess() can fail if it receives an incomplete multibyte sequence,
+        # which could be possible since we are spliting the string in the
+        # slave side. Is it possible to ensure we are spliting it properly,
+        # whatever is the original charset ?
+        queueItem.logtail = encoding.guess(logtail)
 
     def updateBuild_ABORTED(self, queueItem, slave, librarian, buildid):
         """Build was ABORTED, 'clean' the builder for another jobs. """
