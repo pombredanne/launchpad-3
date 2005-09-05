@@ -2227,55 +2227,46 @@ class KarmaActionName(DBSchema):
     BUGCREATED = Item(1, """
         New Bug Created
 
-        New Bug Created.
         """)
 
     BUGCOMMENTADDED = Item(2, """
         New Comment
 
-        New Comment
         """)
 
     BUGTITLECHANGED = Item(3, """
         Bug Title Changed
 
-        Bug Title Changed
         """)
 
     BUGSUMMARYCHANGED = Item(4, """
         Bug Summary Changed
 
-        Bug Summary Changed
         """)
 
     BUGDESCRIPTIONCHANGED = Item(5, """
         Bug Description Changed
 
-        Bug Description Changed
         """)
 
-    BUGEXTREFCHANGED = Item(6, """
-        Bug External Reference Changed
+    BUGEXTREFADDED = Item(6, """
+        Bug External Reference Added
 
-        Bug External Reference Changed
         """)
 
-    BUGCVEREFCHANGED = Item(7, """
-        Bug CVE Reference Changed
+    BUGCVEREFADDED = Item(7, """
+        Bug CVE Reference Added
 
-        Bug CVE Reference Changed
         """)
 
     BUGFIXED = Item(8, """
         Bug Status Changed to FIXED
 
-        Bug Status Changed to FIXED
         """)
 
     BUGTASKCREATED = Item(9, """
         New Bug Task Created
 
-        New Bug Task Created
         """)
 
     TRANSLATIONTEMPLATEIMPORT = Item(10, """
@@ -2305,6 +2296,36 @@ class KarmaActionName(DBSchema):
 
     TRANSLATIONREVIEW = Item(15, """
         Translation Review
+
+        """)
+
+    BUGREJECTED = Item(16, """
+        Bug Status Changed to REJECTED
+
+        """)
+
+    BUGACCEPTED = Item(17, """
+        Bug Status Changed to ACCEPTED
+
+        """)
+
+    BUGTASKSEVERITYCHANGED = Item(18, """
+        Change the Severity of a Bug Task
+
+        """)
+
+    BUGTASKPRIORITYCHANGED = Item(19, """
+        Change the Priority of a Bug Task
+
+        """)
+
+    BUGMARKEDASDUPLICATE = Item(20, """
+        Mark a Bug as a Duplicate
+
+        """)
+
+    BUGWATCHADDED = Item(21, """
+        New Bug Watch Added
 
         """)
 

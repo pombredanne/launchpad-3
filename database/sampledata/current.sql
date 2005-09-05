@@ -7499,7 +7499,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'karmaaction'::pg_catalog.regclass;
 
 INSERT INTO karmaaction (id, name, category, points) VALUES (1, 1, 2, 10);
-INSERT INTO karmaaction (id, name, category, points) VALUES (2, 2, 2, 1);
+INSERT INTO karmaaction (id, name, category, points) VALUES (2, 2, 2, 0);
 INSERT INTO karmaaction (id, name, category, points) VALUES (3, 3, 2, 1);
 INSERT INTO karmaaction (id, name, category, points) VALUES (4, 4, 2, 2);
 INSERT INTO karmaaction (id, name, category, points) VALUES (5, 5, 2, 3);
@@ -7513,6 +7513,12 @@ INSERT INTO karmaaction (id, name, category, points) VALUES (12, 12, 3, 5);
 INSERT INTO karmaaction (id, name, category, points) VALUES (13, 13, 3, 1);
 INSERT INTO karmaaction (id, name, category, points) VALUES (14, 14, 3, 1);
 INSERT INTO karmaaction (id, name, category, points) VALUES (15, 15, 3, 1);
+INSERT INTO karmaaction (id, name, category, points) VALUES (16, 16, 2, 3);
+INSERT INTO karmaaction (id, name, category, points) VALUES (17, 17, 2, 5);
+INSERT INTO karmaaction (id, name, category, points) VALUES (18, 18, 2, 1);
+INSERT INTO karmaaction (id, name, category, points) VALUES (19, 19, 2, 1);
+INSERT INTO karmaaction (id, name, category, points) VALUES (20, 20, 2, 5);
+INSERT INTO karmaaction (id, name, category, points) VALUES (21, 21, 2, 10);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'karmaaction'::pg_catalog.regclass;

@@ -76,7 +76,7 @@ class IMessageSet(Interface):
         If no such messages exist, raise NotFoundError.
         """
 
-    def fromText(title, content, owner=None):
+    def fromText(subject, content, owner=None):
         """Construct a Message from a text string and return it."""
 
     def fromEmail(email_message, owner=None, filealias=None,
