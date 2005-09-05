@@ -197,3 +197,6 @@ ALTER TABLE Revision ADD CONSTRAINT revision_revision_author_fk
 ALTER TABLE Revision DROP CONSTRAINT "$3";
 ALTER TABLE Revision ADD CONSTRAINT revision_gpgkey_fk
     FOREIGN KEY (gpgkey) REFERENCES GPGKey;
+
+-- Shazzham!
+INSERT INTO LaunchpadDatabaseRevision VALUES (25, 99, 0);
