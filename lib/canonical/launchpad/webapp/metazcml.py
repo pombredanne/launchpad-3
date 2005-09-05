@@ -12,36 +12,39 @@ from zope.component import getUtility
 from zope.component.interfaces import IDefaultViewName
 from zope.schema import TextLine, Id
 from zope.configuration.fields import (
-    GlobalObject, PythonIdentifier, Path, Tokens
-    )
+    GlobalObject, PythonIdentifier, Path, Tokens)
+
 from zope.security.checker import CheckerPublic, Checker
 from zope.security.proxy import ProxyFactory
-from zope.publisher.interfaces.browser import IBrowserPublisher
+from zope.publisher.interfaces.browser import (
+    IBrowserPublisher, IBrowserRequest)
 from zope.publisher.interfaces import NotFound
-from zope.app import zapi
 from zope.app.component.metaconfigure import (
-    handler, adapter, utility, view, PublicPermission
-    )
+    handler, adapter, utility, view, PublicPermission)
+
 from zope.app.component.contentdirective import ContentDirective
 from zope.app.component.interface import provideInterface
 from zope.app.security.fields import Permission
 from zope.app.pagetemplate.engine import Engine
 from zope.app.component.fields import LayerField
 from zope.app.file.image import Image
-from zope.app.publisher.browser.viewmeta import page
 import zope.app.publisher.browser.metadirectives
+from zope.app.publisher.browser.viewmeta import (
+    pages as original_pages,
+    page as original_page)
+
+from zope.app.publisher.browser.metaconfigure import (
+    defaultView as original_defaultView)
 
 from canonical.launchpad.layers import setAdditionalLayer
 from canonical.launchpad.interfaces import (
     IAuthorization, IOpenLaunchBag, ICanonicalUrlData,
-    IFacetMenu, IExtraFacetMenu, IApplicationMenu, IExtraApplicationMenu
-    )
+    IFacetMenu, IExtraFacetMenu, IApplicationMenu, IExtraApplicationMenu)
 
 try:
     from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 except ImportError:
     # This code can go once we've upgraded Zope.
-    from zope.publisher.interfaces.browser import IBrowserRequest
     IDefaultBrowserLayer = IBrowserRequest
 
 
@@ -164,6 +167,7 @@ class SubURLTraverser:
         view_name = getDefaultViewName(self.context, request)
         return self.context, (view_name,)
 
+
 class IDefaultViewDirective(
     zope.app.publisher.browser.metadirectives.IDefaultViewDirective):
 
@@ -171,6 +175,7 @@ class IDefaultViewDirective(
         title=u"The layer to declare this default view for",
         required=False
         )
+
 
 class ISubURLDirective(Interface):
 
@@ -374,6 +379,7 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
 
     view(_context, factory, type, name, [for_], permission=permission)
 
+
 class URLTraverse:
     """Use the operation named by _getter to traverse an app component."""
 
@@ -439,7 +445,6 @@ class URLTraverseByFunction:
     def browserDefault(self, request):
         view_name = getDefaultViewName(self.context, request)
         return self.context, (view_name,)
-
 
 def menus(_context, module, classes):
     """Handler for the IMenusDirective."""
@@ -587,6 +592,7 @@ def url(_context, for_, path_expression=None, urldata=None,
     provides = ICanonicalUrlData
     adapter(_context, factory, provides, [for_])
 
+
 class FaviconRendererBase:
 
     # subclasses must provide a 'fileobj' member that has 'contentType'
@@ -597,7 +603,6 @@ class FaviconRendererBase:
                                         self.file.contentType)
         return self.file.data
 
-
 def favicon(_context, for_, file):
     fileobj = Image(open(file, 'rb').read())
     class Favicon(FaviconRendererBase):
@@ -605,24 +610,149 @@ def favicon(_context, for_, file):
 
     name = "favicon.ico"
     permission = CheckerPublic
-    page(_context, name, permission, for_, class_=Favicon)
+    original_page(_context, name, permission, for_, class_=Favicon)
 
-# This is pretty much copied from the browser publisher's metaconfigure
-# module, but with the `layer` as an argument rather than hard-coded.
-# When zope has the same change, we can remove this code, and the related
-# override-include.
+
+class HackableContext:
+    """A zcml directive context that we can pass into a directive, and then
+    alter its state before actually getting it processed.
+    """
+
+    def __init__(self, original_context, action_processor):
+        self.original_context = original_context
+        self.action_processor = action_processor
+        self.info = original_context.info
+
+    def action(self, discriminator, callable, args):
+        action_processor = self.action_processor
+        action_processor.setstate(discriminator, callable, args)
+        action_processor()
+        self.original_context.action(
+            action_processor.discriminator,
+            action_processor.callable,
+            action_processor.args)
+
+
+class ActionProcessor:
+    """An object that is used by a HackableContext and an overridden zcml
+    directive to allow the output actions to be mutated.
+
+    The HackableContext uses setstate(discriminator, callable, args) to
+    set the action state, then __call__ is used to mutate the state.
+    The HackableContext gets the discriminator, callable and args attributes
+    to use for the output action.
+    """
+
+    def setstate(self, discriminator, callable, args):
+        self.discriminator = discriminator
+        self.callable = callable
+        self.args = args
+
+    def __call__(self):
+        # Override this in subclasses
+        pass
+
+
+# The original defaultView directive is defined in the browser publisher code.
+# In it, the `layer` is hard-coded rather than available as an argument.
+# See zope/app/publisher/browser/metaconfigure.py.
+# `layer` here is called `type` there, but is not available as an argument.
+class DefaultViewProcessor(ActionProcessor):
+    """ActionProcessor class to carefully alter the output of the zcml
+    parser to deal with default views.
+    """
+    # XXX: put this back to the cut-and-pasted code if I end up not using
+    #      ActionProcessor for anything else.  The cut-and-pasted code was
+    #      simpler.
+
+    def __init__(self, layer):
+        self.layer = layer
+
+    def __call__(self):
+        if self.discriminator and self.discriminator[0] == 'defaultViewName':
+            # Hack the discriminator.
+            directivename, for_, layer, name = self.discriminator
+            assert layer is IBrowserRequest
+            layer = self.layer
+            self.discriminator = (directivename, for_, layer, name)
+            # Hack the args.
+            argiterator = iter(self.args)
+            adapters_service = argiterator.next()
+            register_string = argiterator.next()
+            assert register_string == 'register'
+            (for_, layer) = argiterator.next()
+            assert layer is IBrowserRequest
+            layer = self.layer
+            idefaultviewname = argiterator.next()
+            assert idefaultviewname is IDefaultViewName
+            emptystring = argiterator.next()
+            assert emptystring == ''
+            name = argiterator.next()
+            info = argiterator.next()
+            extraitems = [item for item in argiterator]
+            assert not extraitems, (
+                "Extra args found in defaultViewName directive.", extraitems)
+            self.args = (adapters_service, register_string,
+                (for_, layer), idefaultviewname, emptystring, name, info)
+
 def defaultView(_context, name, for_=None, layer=IDefaultBrowserLayer):
+    hackable_context = HackableContext(_context, DefaultViewProcessor(layer))
+    original_defaultView(hackable_context, name, for_=for_)
 
-    _context.action(
-        discriminator = ('defaultViewName', for_, layer, name),
-        callable = handler,
-        args = (zapi.servicenames.Adapters, 'register',
-                (for_, layer), IDefaultViewName, '', name, _context.info)
-        )
 
-    if for_ is not None:
-        _context.action(
-            discriminator = None,
-            callable = provideInterface,
-            args = ('', for_)
-            )
+class IAssociatedWithAFacet(Interface):
+    """A zcml schema for something that can be associated with a facet."""
+
+    facet = TextLine(
+        title=u"The name of the facet this page is associated with.",
+        required=False)
+
+
+class IPageDirective(
+    zope.app.publisher.browser.metadirectives.IPageDirective,
+    IAssociatedWithAFacet):
+    """Extended browser:page directive to have an extra 'facet' attribute."""
+
+
+def page(_context, name, permission, for_,
+         layer=IBrowserRequest, template=None, class_=None,
+         allowed_interface=None, allowed_attributes=None,
+         attribute='__call__', menu=None, title=None,
+         facet=None
+         ):
+    """Like the standard 'page' directive, but with an added 'facet' optional
+    argument.
+
+    If a facet is specified, then it will be available from the view class
+    as __launchpad_facetname__.
+    """
+    if facet is None:
+        new_class = class_
+    else:
+        cdict = {'__launchpad_facetname__': facet}
+        if class_ is None:
+            new_class = type('SimpleLaunchpadViewClass', (), cdict)
+        else:
+            new_class = type(class_.__name__, (class_, object), cdict)
+
+    original_page(_context, name, permission, for_,
+        layer=layer, template=template, class_=new_class,
+        allowed_interface=allowed_interface,
+        allowed_attributes=allowed_attributes,
+        attribute=attribute, menu=menu, title=title)
+
+
+class IPagesPageSubdirective(
+    zope.app.publisher.browser.metadirectives.IPagesPageSubdirective,
+    IAssociatedWithAFacet):
+    """Extended complex browser:pages directive to have an extra 'facet'
+    attribute."""
+
+
+class pages(original_pages):
+
+    def page(self, _context, name, attribute='__call__', template=None,
+             menu=None, title=None, facet=None):
+        page(_context, name=name, attribute=attribute, template=template,
+             menu=menu, title=title, facet=facet, **(self.opts))
+
