@@ -1112,8 +1112,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'binarypackagerelease'::pg_catalog.regclass;
 
-INSERT INTO binarypackagerelease (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', NULL, NULL, NULL, 'mozilla-firefox', NULL, NULL, NULL, NULL, true);
-INSERT INTO binarypackagerelease (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false);
+INSERT INTO binarypackagerelease (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', NULL, NULL, NULL, 'mozilla-firefox', NULL, NULL, NULL, NULL, true, '''web'':3C,7 ''browser'':4C,8 ''firefox'':2C,6 ''mozilla'':1C,5');
+INSERT INTO binarypackagerelease (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''pmount'':1C,3 ''descript'':4 ''shortdesc'':2C');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'binarypackagerelease'::pg_catalog.regclass;
@@ -1131,7 +1131,6 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'packageselection'::p
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'packageselection'::pg_catalog.regclass;
-
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'pomsgid'::pg_catalog.regclass;
@@ -6061,6 +6060,7 @@ INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, dist
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (8, 20, 3, 3, 1, 1, '2005-04-18 17:34:15.308434', '2005-04-18 17:34:15.308434', '2005-08-24 17:01:15.308434', NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (9, 21, 3, 2, 1, 1, '2005-08-24 17:01:15.308434', '2005-08-24 17:01:15.308434', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 
+
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'securesourcepackagepublishinghistory'::pg_catalog.regclass;
 
 
@@ -7689,12 +7689,12 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'shippingrequest'::pg_catalog.regclass;
 
-INSERT INTO ShippingRequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (1, 52, NULL, 55, FALSE, NULL, '2005-08-01 18:38:24.526648', TRUE, NULL, 'noreason');
-INSERT INTO ShippingRequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (2, 22, NULL, NULL, FALSE, NULL, '2005-09-01 18:38:24.526648', TRUE, NULL, NULL);
-INSERT INTO ShippingRequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (3, 51, NULL, NULL, FALSE, NULL, '2005-07-01 18:38:24.526648', TRUE, NULL, NULL);
-INSERT INTO ShippingRequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (4, 29, NULL, NULL, FALSE, NULL, '2005-06-01 18:38:24.526648', TRUE, NULL, NULL);
-INSERT INTO ShippingRequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (5, 23, NULL, NULL, FALSE, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason');
-INSERT INTO ShippingRequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (6, 28, NULL, NULL, TRUE, 55, '2005-04-01 18:38:24.526648', NULL, NULL, 'noreason');
+INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (1, 52, NULL, 55, false, NULL, '2005-08-01 18:38:24.526648', true, NULL, 'noreason');
+INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (2, 22, NULL, NULL, false, NULL, '2005-09-01 18:38:24.526648', true, NULL, NULL);
+INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (3, 51, NULL, NULL, false, NULL, '2005-07-01 18:38:24.526648', true, NULL, NULL);
+INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (4, 29, NULL, NULL, false, NULL, '2005-06-01 18:38:24.526648', true, NULL, NULL);
+INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (5, 23, NULL, NULL, false, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason');
+INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (6, 28, NULL, NULL, true, 55, '2005-04-01 18:38:24.526648', NULL, NULL, 'noreason');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'shippingrequest'::pg_catalog.regclass;
@@ -7702,25 +7702,25 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'requestedcds'::pg_catalog.regclass;
 
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (1, 1, 10, 1, 1, 1, 10);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (2, 1, 9, 1, 1, 2, 9);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (3, 1, 2, 1, 1, 3, 3);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (4, 2, 10, 1, 1, 1, 10);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (5, 2, 3, 1, 1, 2, 3);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (6, 2, 2, 1, 1, 3, 2);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (7, 3, 5, 1, 1, 1, 5);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (8, 3, 3, 1, 1, 2, 3);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (9, 3, 2, 1, 1, 3, 2);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (10, 4, 0, 1, 1, 1, 0);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (11, 4, 3, 1, 1, 2, 3);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (12, 4, 0, 1, 1, 3, 0);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (13, 5, 9, 1, 1, 1, NULL);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (14, 5, 3, 1, 1, 2, NULL);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (15, 5, 9, 1, 1, 3, NULL);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (16, 6, 9, 1, 1, 1, NULL);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (17, 6, 9, 1, 1, 2, NULL);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (18, 6, 9, 1, 1, 3, NULL);
 
-INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (1, 1, 10, 1, 1, 1, 10);
-INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (2, 1, 9, 1, 1, 2, 9);
-INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (3, 1, 2, 1, 1, 3, 3);
-INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (4, 2, 10, 1, 1, 1, 10);
-INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (5, 2, 3, 1, 1, 2, 3);
-INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (6, 2, 2, 1, 1, 3, 2);
-INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (7, 3, 5, 1, 1, 1, 5);
-INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (8, 3, 3, 1, 1, 2, 3);
-INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (9, 3, 2, 1, 1, 3, 2);
-INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (10, 4, 0, 1, 1, 1, 0);
-INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (11, 4, 3, 1, 1, 2, 3);
-INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (12, 4, 0, 1, 1, 3, 0);
-INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (13, 5, 9, 1, 1, 1, NULL);
-INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (14, 5, 3, 1, 1, 2, NULL);
-INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (15, 5, 9, 1, 1, 3, NULL);
-INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (16, 6, 9, 1, 1, 1, NULL);
-INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (17, 6, 9, 1, 1, 2, NULL);
-INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (18, 6, 9, 1, 1, 3, NULL);
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'requestedcds'::pg_catalog.regclass;
 
@@ -7736,9 +7736,6 @@ INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, 
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'standardshipitrequest'::pg_catalog.regclass;
-
-
-
 
 
 
