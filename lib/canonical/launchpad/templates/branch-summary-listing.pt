@@ -1,11 +1,15 @@
 <img src="/++resource++lock_icon.gif" />
 <b tal:content="context/title"></b>
 - <img src="/++resource++user.gif" />
-  <a class="dummy">Foo Bar</a><br />
-
-<span class="dummy">
+  <a tal:attributes="href context/owner/fmt:url"
+     tal:content="context/owner/displayname"
+  >Foo Bar</a><br />
+<span tal:replace="context/summary">
   This branch has a summary like this, it's a very simple description of
   what the branch does.
+</span>
+
+<span class="dummy">
   35 patches, 1477 lines.
   Status: Ready<br />
   <img src="/++resource++favorite_icon.gif" />
@@ -17,4 +21,3 @@
 </span>
 
 <hr />
-
