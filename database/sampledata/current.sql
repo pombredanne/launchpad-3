@@ -1438,7 +1438,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'potranslation'::pg_c
 
 INSERT INTO potranslation (id, translation) VALUES (1, 'libreta de direcciones de Evolution');
 INSERT INTO potranslation (id, translation) VALUES (2, 'carpeta de libretas de direcciones actual');
-INSERT INTO potranslation (id, translation) VALUES (3, 'tiene');
+INSERT INTO potranslation (id, translation) VALUES (3, 'tiene ');
 INSERT INTO potranslation (id, translation) VALUES (4, ' tarjetas');
 INSERT INTO potranslation (id, translation) VALUES (5, 'La ubicación y jerarquía de las carpetas de contactos de Evolution ha cambiado desde Evolution 1.x.
 
@@ -1753,6 +1753,7 @@ INSERT INTO potranslation (id, translation) VALUES (139, '%s --lock <enhet> <pid
   for. Dette gjør det mulig å låse en enhet av flere uavhengige
   prosesser, og unngår uendelig låsing av krasjede prosesser
   (pids som ikke finnes blir ryddet før forsøk på en montering).
+
 ');
 INSERT INTO potranslation (id, translation) VALUES (140, '%s --unlock <enhet> <pid>
   Fjerner låsen på <enhet> for prosess <pid>.
@@ -1887,6 +1888,7 @@ INSERT INTO potranslation (id, translation) VALUES (201, 'Použití:
   zadáno,   připojovací bod bude %s/<jméno>, jinak to bude%s
   <zařízení>. Jestliže připojovací bod neexistuje, 
   bude vytvořen.
+
 ');
 INSERT INTO potranslation (id, translation) VALUES (202, '%s --lock <zařízení><pid>
   Zabrání příštím pmounts <zařízení> dokud není znovu odemčeno.
@@ -1894,6 +1896,7 @@ INSERT INTO potranslation (id, translation) VALUES (202, '%s --lock <zařízení
   zařízení několika nezávislými procesy a zabrání nekonečnému
   uzamčení havarovanými procesy (neexistující pid jsou smazány
   před mount)
+
 ');
 INSERT INTO potranslation (id, translation) VALUES (203, '%s --unlock <device> <pid>
   Odstranit znovu zámek na <device> pro proces <pid>.
@@ -1907,7 +1910,7 @@ INSERT INTO potranslation (id, translation) VALUES (204, 'Volby:
   -c <charset>: použít danou znakovou sadu (výchozí: ''utf8'' jestliže je
                 v nějakém lokálním UTF-8 , jinak výchozí pro mount)
   -d, --debug : povolit ladící výstupy (mnoho hlášek)
-  -h, --help : vypíše nápovědu a ukončí se ');
+  -h, --help : vypíše nápovědu a ukončí se');
 INSERT INTO potranslation (id, translation) VALUES (205, 'Chyba: make_mount_name: neplatné zařízení %s (musí být v /dev/)
 ');
 INSERT INTO potranslation (id, translation) VALUES (206, 'Chyba: jméno nesmí být prázdné
@@ -2002,7 +2005,7 @@ INSERT INTO potranslation (id, translation) VALUES (248, 'Vnitřní chyba: nelze
 INSERT INTO potranslation (id, translation) VALUES (249, 'Chyba: připojovací bod %s není pod %s
 ');
 INSERT INTO potranslation (id, translation) VALUES (250, 'Chyba: nelze spustit umount');
-INSERT INTO potranslation (id, translation) VALUES (251, 'Chyba: nelze čekat na spuštěný proces umount ');
+INSERT INTO potranslation (id, translation) VALUES (251, 'Chyba: nelze čekat na spuštěný proces umount');
 INSERT INTO potranslation (id, translation) VALUES (252, 'Chyba: umount selhal
 ');
 INSERT INTO potranslation (id, translation) VALUES (253, 'Chyba: nedostatek paměti
@@ -2028,6 +2031,7 @@ INSERT INTO potranslation (id, translation) VALUES (264, 'Uso:
   requisitos de seguridad (ver detalles en pmount(1)). Si se pone
   <etiqueta>, el punto de montaje será %s/<etiqueta>, si no, será
   %s<dispositivo>. Si el punto de montaje no existe, se creará.
+
 ');
 INSERT INTO potranslation (id, translation) VALUES (265, '%s --lock <dispositivo> <pid>↵
   Previene posteriores montajes del <dispositivo> hasta que se desbloquee.
@@ -2035,9 +2039,11 @@ INSERT INTO potranslation (id, translation) VALUES (265, '%s --lock <dispositivo
   bloquear un dispositivo a varios procesos independendientes evitando
   bloqueos indefinidos por procesos caídos (los pids inexistentes se
   limpian antes de intentar un montaje).
+
 ');
 INSERT INTO potranslation (id, translation) VALUES (266, '%s --unlock <dispositivo> <pid>
   Quita el bloqueo del proceso <pid> al <dispositivo>.
+
 ');
 INSERT INTO potranslation (id, translation) VALUES (267, 'Opciones:
   -a, --async : montar <dispositivo> con la opción ''async'' (por defecto: ''sync'')
@@ -2330,6 +2336,7 @@ INSERT INTO potranslation (id, translation) VALUES (391, '%s --lock <périphéri
 ');
 INSERT INTO potranslation (id, translation) VALUES (392, '%s --unlock <périphérique> <pid>
   Retire le verrou sur le <périphérique> pour le processus <pid>.
+
 ');
 INSERT INTO potranslation (id, translation) VALUES (393, 'Options:
   -a, --async : monte le <périphérique> avec l''option ''async'' (par défaut: ''sync'')
@@ -2410,7 +2417,8 @@ INSERT INTO potranslation (id, translation) VALUES (430, 'Erreur : le périphér
 ');
 INSERT INTO potranslation (id, translation) VALUES (431, 'Erreur : le périphérique %s n''a pas été monté par vous
 ');
-INSERT INTO potranslation (id, translation) VALUES (432, 'Erreur : le périphérique %s n''est pas amovible');
+INSERT INTO potranslation (id, translation) VALUES (432, 'Erreur : le périphérique %s n''est pas amovible
+');
 INSERT INTO potranslation (id, translation) VALUES (433, 'Erreur : le périphérique %s est vérrouillé
 ');
 INSERT INTO potranslation (id, translation) VALUES (434, 'Erreur : le répertoire %s contient déja un système de fichiers
@@ -2448,7 +2456,7 @@ INSERT INTO potranslation (id, translation) VALUES (447, 'Erreur : le répertoir
 ');
 INSERT INTO potranslation (id, translation) VALUES (448, 'Erreur : ''%s'' n''est pas un nombre valide
 ');
-INSERT INTO potranslation (id, translation) VALUES (449, 'Erreur interne : n''a pas pu changer pour l''uid effectif de root ');
+INSERT INTO potranslation (id, translation) VALUES (449, 'Erreur interne : n''a pas pu changer pour l''uid effectif de root');
 INSERT INTO potranslation (id, translation) VALUES (450, 'Erreur interne : n''a pas pu changer de l''uid effectif pour le véritable id de l''utilisateur');
 INSERT INTO potranslation (id, translation) VALUES (451, 'Erreur interne : n''a pas pu changer pour le gid effectif de root');
 INSERT INTO potranslation (id, translation) VALUES (452, 'Erreur interne : n''a pas pu changer de l''id effectif de groupe pour le véritable id du groupe');
@@ -2461,10 +2469,6 @@ INSERT INTO potranslation (id, translation) VALUES (453, 'Utilizzo:
   il punto di mount sarà %s/<etichetta>, altrimenti %s<dispositivo>.
   Se il punto di mount non esiste verrà creato.
 
-
-
-  
-
 ');
 INSERT INTO potranslation (id, translation) VALUES (454, '%s --lock <dispositivo> <pid>
   Impedisce ulteriori pmount di <dispositivo> finché questo non è sbloccato
@@ -2472,6 +2476,7 @@ INSERT INTO potranslation (id, translation) VALUES (454, '%s --lock <dispositivo
   permette a diversi processi indipendenti di fare il lock ad un dispositivo
   ed evita lock illimitati da parte di processi andati in crash (id di processi
   non esistenti sono ripuliti prima di tentare un mount).
+
 ');
 INSERT INTO potranslation (id, translation) VALUES (455, '%s --unlock <dispsitivo> <pid>
   Rimuove il lock sul <dispositivo> per il processo <pid>.
@@ -2769,10 +2774,11 @@ INSERT INTO potranslation (id, translation) VALUES (640, 'Manchmal hängt Mozill
 INSERT INTO potranslation (id, translation) VALUES (641, 'Automatische Sprach-/Regionenauswahl aktivieren?');
 INSERT INTO potranslation (id, translation) VALUES (642, 'Diese Einstellung ermöglicht eine automatische Auswahl der Sprach-/Regionenpakete in Mozilla mittels der »locale«-Einstellungen. Dies mag Systemadministratoren helfen, die sich Hunderten von nicht Englisch sprechenden Neulingen gegenüber sehen.');
 INSERT INTO potranslation (id, translation) VALUES (643, 'Bitte setzen Sie Ihre »LC_MESSAGE«- oder »LC_ALL«-Variable entsprechend, so dass diese Einstellung korrekt funktioniert.');
-INSERT INTO potranslation (id, translation) VALUES (644, 'caratas');
-INSERT INTO potranslation (id, translation) VALUES (645, '                        ');
-INSERT INTO potranslation (id, translation) VALUES (648, 'Srprise! (non-editor)');
+INSERT INTO potranslation (id, translation) VALUES (644, ' caratas');
+INSERT INTO potranslation (id, translation) VALUES (648, ' Srprise! (non-editor)');
 INSERT INTO potranslation (id, translation) VALUES (649, ' bang bang in evo hoary');
+INSERT INTO potranslation (id, translation) VALUES (652, 'This is a suggestion added by a non-editor for a multiline entry.
+It should work! :-P');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'potranslation'::pg_catalog.regclass;
@@ -5053,7 +5059,7 @@ INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, com
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (596, 7, 12, false, false, false, '', 136, false, false, false);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (597, 8, 12, false, false, false, '', 137, false, false, false);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (598, 9, 12, false, false, false, '', 138, false, false, false);
-INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (599, 10, 12, true, false, false, '', 139, false, false, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (599, 10, 12, false, false, false, '', 139, false, false, false);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (600, 11, 12, false, false, false, '', 140, false, false, false);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (601, 12, 12, false, false, false, '', 141, false, false, false);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (602, 13, 12, false, false, false, '', 142, false, false, false);
@@ -6613,7 +6619,7 @@ INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datec
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (513, 537, 0, 274, 1, '2005-05-06 20:13:10.405056', 41, 0);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (514, 538, 0, 275, 1, '2005-05-06 20:13:10.405056', 41, 0);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (515, 539, 0, 276, 1, '2005-05-06 20:13:10.405056', 41, 0);
-INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (516, 540, 0, 502, 1, '2005-05-06 20:13:10.405056', 41, 0);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (516, 540, 0, 277, 1, '2005-05-06 20:13:10.405056', 41, 0);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (517, 541, 0, 278, 1, '2005-05-06 20:13:10.405056', 41, 0);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (518, 542, 0, 279, 1, '2005-05-06 20:13:10.405056', 41, 0);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (519, 543, 0, 280, 1, '2005-05-06 20:13:10.405056', 41, 0);
@@ -6783,9 +6789,9 @@ INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datec
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (683, 730, 0, 642, 1, '2005-05-06 21:12:42.747648', 51, 0);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (684, 731, 0, 643, 1, '2005-05-06 21:12:42.747648', 51, 0);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (685, 594, 0, 644, 2, '2005-06-06 19:42:48.236409', 16, 0);
-INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (686, 599, 0, 645, 2, '2005-06-06 19:42:48.236409', 16, 0);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (689, 594, 0, 648, 2, '2005-06-06 20:05:03.244905', 50, 0);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (690, 5, 0, 649, 2, '2005-06-06 20:08:02.521892', 1, 0);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (693, 14, 0, 652, 2, '2005-08-29 16:16:58.010285', 52, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'posubmission'::pg_catalog.regclass;
@@ -7477,7 +7483,7 @@ INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsu
 INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission) VALUES (682, 729, 0, 682, 682);
 INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission) VALUES (683, 730, 0, 683, 683);
 INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission) VALUES (684, 731, 0, 684, 684);
-INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission) VALUES (685, 599, 0, 686, NULL);
+INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission) VALUES (685, 599, 0, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'poselection'::pg_catalog.regclass;
