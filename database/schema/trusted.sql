@@ -27,7 +27,7 @@ COMMENT ON FUNCTION valid_name(text)
 CREATE OR REPLACE FUNCTION valid_branch_name(text) RETURNS boolean AS '
     import re
     name = args[0]
-    pat = r"^(?i)[a-z0-9][a-z0-9\\+\\.\\-\\@]+$"
+    pat = r"^(?i)[a-z0-9][a-z0-9\\+\\.\\-\\@_]+$"
     if re.match(pat, name):
         return 1
     return 0
