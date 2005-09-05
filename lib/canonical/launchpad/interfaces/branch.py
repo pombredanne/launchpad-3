@@ -12,7 +12,7 @@ from zope.i18nmessageid import MessageIDFactory
 
 from zope.interface import Interface, Attribute
 
-from zope.schema import Choice, TextLine
+from zope.schema import Bool, Choice, Text, TextLine
 
 from canonical.launchpad.fields import Summary, Title, TimeInterval
 from canonical.launchpad.validators.name import valid_name
@@ -39,35 +39,80 @@ class IBranch(IHasOwner):
         title=_('Summary'), required=True, description=_("A "
         "single-paragraph description of the branch. This will also be "
         "displayed in most branch listings."))
-    owner = Choice(title=_('Owner'), required=True, readonly=True,
-        vocabulary='ValidPersonOrTeam')
     url = TextLine(
         title=_('Branch URL'), required=True,
-        description=_('The URL of the branch. This is usually the URL used to'
-                      ' checkout the branch.'), constraint=valid_webref)
+        description=_("The URL of the branch. This is usually the URL used to"
+                      " checkout the branch."), constraint=valid_webref)
+    whiteboard = Text(title=_('Status Whiteboard'), required=False,
+        description=_('Any notes on the status of this branch you would '
+        'like to make. This field is a general whiteboard, your changes '
+        'will override the previous version.'))
 
-    # product
-    # registrant
-    # branch_product_name
-    # product_locked
-    # home_page
-    # branch_home_page
+    # People attributes
+    owner = Choice(
+        title=_('Owner'), required=True, readonly=True,
+        vocabulary='ValidPersonOrTeam')
+    registrant = Choice(
+        title=_('Registrant'), required=False, vocabulary='ValidPersonOrTeam')
 
-    # starred
-    # whiteboard
-    # branch_status
-    # landing_target
-    # current_delta_url
-    # current_conflicts_url
-    # current_diff_adds
-    # current_diff_deletes
-    # stats_updated
-    # current_activity
-    # mirror_status
-    # last_mirrored
-    # last_mirror_attempt
-    # mirror_failures
-    # cache_url
+    # Product attributes
+    product = Choice(
+        title=_('Product'), required=True, vocabulary='Product',
+        description=_("The product to which this branch belongs."))
+    branch_product_name = Attribute(
+        "The product name specified within the branch.")
+    product_locked = Bool(
+        title=_("Product Locked"),
+        description=_("Whether the product name specified within the branch "
+                      " is overriden by the product name set in Launchpad."))
 
-    # # joins
-    # revisions
+    # Home page attributes
+    home_page = TextLine(
+        title=_('Home Page URL'), required=True,
+        description=_("The URL of the branch home page, describing the "
+                      "purpose of the branch."), constraint=valid_webref)
+    branch_home_page = Attribute(
+        "The home page URL specified within the branch.")
+    home_page_locked = Bool(
+        title=_("Home Page Locked"),
+        description=_("Whether the home page specified within the branch "
+                      " is overriden by the home page set in Launchpad."))
+
+    # Stats and status attributes
+    starred = Attribute("How many stars this branch has.")
+
+    # TODO: branch_status, needs a BranchStatus EnumCol
+    # -- DavidAllouche 2005-09-05
+
+    # TODO: landing_target, needs a BranchVocabulaty
+    # -- DavidAllouche 2005-09-05
+
+    current_delta_url = Attribute(
+        "URL of a page showing the delta produced "
+        "by merging this branch into the landing branch.")
+    current_diff_adds = Attribute(
+        "Count of lines added in merge delta.")
+    current_diff_deletes = Attribute(
+        "Count of lines deleted in the merge delta.")
+    current_conflicts_url = Attribute(
+        "URL of a pag showing the conflicts produced "
+        "by merging this branch into the landing branch.")
+    current_activity = Attribute("Current branch activity.")
+    stats_updated = Attribute("Last time the branch stats were updated.")
+
+    # Mirroring attributes
+
+    # TODO: mirror_status, needs a MirrorStatus EnumCol
+    # -- DavidAllouche 2005-09-05
+
+    last_mirrored = Attribute(
+        "Last time this branch was successfully mirrored.")
+    last_mirror_attempt = Attribute(
+        "Last time a mirror of this branch was attempted.")
+    mirror_failures = Attribute(
+        "Number of failed mirror attempts since the last successful mirror.")
+
+    cache_url = Attribute("Private mirror of the branch, for internal use.")
+
+    # Joins
+    revisions = Attribute("The sequence of revisions in that branch.")
