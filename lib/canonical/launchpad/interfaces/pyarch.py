@@ -27,7 +27,6 @@ __all__ = [
     'IArchiveItem',
     'IArchiveLocation',
     'IArchSourceTree',
-    'IBranch',
     'IBranchFactory',
     'IBranchItem',
     'IBranchIterable',

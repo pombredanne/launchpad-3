@@ -1,12 +1,70 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BranchRelationship', 'BranchLabel']
+__all__ = ['Branch', 'BranchRelationship', 'BranchLabel']
 
-from sqlobject import ForeignKey, IntCol
+from zope.interface import implements
 
+from sqlobject import ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.datetimecol import UtcDateTimeCol
+
+from canonical.launchpad.interfaces import IBranch
+
 from canonical.lp import dbschema
+
+
+class Branch(SQLBase):
+    """An ordered revision sequence in arch"""
+
+    implements(IBranch)
+
+    _table = 'Branch'
+    name = StringCol(unique=True, notNull=True)
+    title = StringCol(notNull=True)
+    summary = StringCol(notNull=True)
+    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    url = StringCol(dbName='url')
+
+    product = ForeignKey(dbName='product', foreignKey='Product', default=None)
+    registrant = ForeignKey(dbName='registrant', foreignKey='Person',
+                            notNull=True)
+    branch_product_name = StringCol()
+    product_locked = BoolCol(default=False, notNull=True)
+    home_page = StringCol()
+    branch_home_page = StringCol()
+    home_page_locked = BoolCol(default=False, notNull=True)
+    starred = IntCol(default=1, notNull=True)
+    whiteboard = StringCol()
+    # branch_status = EnumCol(schema=BranchStatus, notNull=True,
+    #                         default=BranchStatus.XXX)
+    landing_target = ForeignKey(dbName='landing_target', foreignKey='Branch')
+    current_delta_url = StringCol()
+    current_conflicts_url = StringCol()
+    current_diff_adds = IntCol()
+    current_diff_deletes = IntCol()
+    stats_updated = UtcDateTimeCol()
+    current_activity = IntCol(default=0, notNull=True)
+    # mirror_status = EnumCol(schema=MirrorStatus, default=MirrorStatus.XXX,
+    #                         notNull=True)
+    last_mirrored = UtcDateTimeCol()
+    last_mirror_attempt = UtcDateTimeCol()
+    mirror_failures = IntCol(default=0, notNull=True)
+    cache_url = StringCol()
+
+    revisions = MultipleJoin('Revision', joinColumn='branch')
+    # XXX: changesets is a compatibility attribute, must be removed before
+    # landing, if you are a reviewer, it is your duty to prevent that from
+    # landing -- David Allouche 2005-09-05
+    changesets = MultipleJoin('Revision', joinColumn='branch')
+    subjectRelations = MultipleJoin('BranchRelationship', joinColumn='subject')
+    objectRelations = MultipleJoin('BranchRelationship', joinColumn='object')
+
+    def createRelationship(self, branch, relationship):
+        BranchRelationship(subject=self, object=branch, label=relationship)
+
+    def getRelations(self):
+        return tuple(self.subjectRelations) + tuple(self.objectRelations)
 
 
 class BranchRelationship(SQLBase):
