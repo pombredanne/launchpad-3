@@ -16,7 +16,7 @@
     <b>Creator:</b><br />
     <ul class="people">
       <li><a tal:content="context/owner/browsername"
-             tal:attributes="href string:/people/${context/owner/name}/">
+             tal:attributes="href context/owner/fmt:url">
         Creator</a>
       </li>
     </ul>

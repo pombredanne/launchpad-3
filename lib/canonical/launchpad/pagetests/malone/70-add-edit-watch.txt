@@ -69,9 +69,7 @@ the bug to be watched in that system.
   HTTP/1.1 200 Ok
   ...
   <BLANKLINE>
-  ...
-            <h2>Blackhole Trash folder</h2>
-  ...
+  ...Blackhole Trash folder...
 
 If you make a mistake when entering the bug watch information, the
 watch can be edited.
@@ -112,10 +110,7 @@ watch can be edited.
   ... Change
   ... ------------0xKhTmLbOuNdArY--
   ... """)
-  HTTP/1.1 200 Ok
+  HTTP/1.1 303 See Other
   ...
-  <BLANKLINE>
+  Location: http://localhost:9000/malone/bugs/2
   ...
-            <h3>Change Bug Watch</h3>
-  ...
-

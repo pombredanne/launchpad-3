@@ -55,10 +55,6 @@
             template="../templates/bugtasklist-portlet-actions.pt"
             lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-actions" />
         <browser:page
-            name="+portlet-bugtasklist-statsforcontext"
-            template="../templates/bug-portlet-statsforcontext.pt"
-            lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-statsforcontext" />
-        <browser:page
             name="+portlet-bugtasklist-releasebugs"
             template="../templates/bugtask-portlet-releasebugs.pt"
             lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-releasebugs" />
@@ -68,69 +64,36 @@
         for="canonical.launchpad.interfaces.IDistroRelease"
         class="canonical.launchpad.browser.DistroReleaseView"
         permission="zope.Public">
-
+        <browser:page
+            name="+filebug"
+            attribute="redirectToDistroFileBug" />
         <browser:page
             name="+index"
-            template="../templates/distrorelease-index.pt"
-            lp:url="/distros/$Distribution.name/$Release.name/+index"
-            />
+            template="../templates/distrorelease-index.pt" />
         <browser:page
             name="+translations"
-            template="../templates/distrorelease-translations.pt"
-            lp:url="/distros/ubuntu/hoary/+translations"
-            />
+            template="../templates/distrorelease-translations.pt" />
         <browser:page
             name="+packaging"
-            template="../templates/distrorelease-packaging.pt"
-            lp:url="/distros/ubuntu/hoary/+packaging"
-            />
+            template="../templates/distrorelease-packaging.pt" />
         <browser:page
             name="+potlist"
-            template="../templates/object-pots.pt"
-            lp:url="/distros/ubuntu/hoary/+potlist"
-            />
+            template="../templates/object-pots.pt" />
         <browser:page
             name="+portlet-details"
-            template="../templates/distrorelease-portlet-details.pt"
-            />
+            template="../templates/distrorelease-portlet-details.pt" />
         <browser:page
             name="+portlet-actions"
-            template="../templates/distrorelease-portlet-actions.pt"
-            />
+            template="../templates/distrorelease-portlet-actions.pt" />
         <browser:page
             name="+portlet-translations"
-            template="../templates/distrorelease-portlet-translations.pt"
-            lp:url="/distros/ubuntu/hoary/+portlet-translations"
-            />
+            template="../templates/distrorelease-portlet-translations.pt" />
         <browser:page
             name="+portlet-langstats"
-            template="../templates/distrorelease-portlet-langstats.pt"
-            />
+            template="../templates/distrorelease-portlet-langstats.pt" />
         <browser:page
             name="+portlet-aboutlangs"
-            template="../templates/distrorelease-portlet-aboutlangs.pt"
-            lp:url="/distros/ubuntu/hoary/+portlet-aboutlangs"
-            />
-        <browser:page
-            name="+portlet-status-legend"
-            template="../templates/portlet-rosetta-status-legend.pt"
-            lp:url="/distros/ubuntu/hoary/+portlet-status-legend"
-            />
-        <browser:page
-            name="+portlet-pref-langs"
-            template="../templates/portlet-pref-langs.pt"
-            lp:url="/distros/ubuntu/hoary/+portlet-pref-langs"
-            />
-        <browser:page
-            name="+portlet-country-langs"
-            template="../templates/portlet-country-langs.pt"
-            lp:url="/distros/ubuntu/hoary/+portlet-country-langs"
-            />
-        <browser:page
-            name="+portlet-browser-langs"
-            template="../templates/portlet-browser-langs.pt"
-            lp:url="/distros/ubuntu/hoary/+portlet-browser-langs"
-            />
+            template="../templates/distrorelease-portlet-aboutlangs.pt" />
     </browser:pages>
 
     <browser:pages

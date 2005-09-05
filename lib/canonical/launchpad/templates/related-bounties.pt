@@ -7,42 +7,47 @@
 
 <body>
 
+<div tal:replace="nothing">
 <!-- NB maintainer, this page is used to show bounties that are related to
 project, products *and* distributions. Make sure that your changes will work
-with all of these context objects. -->
+with all of these context objects.-->
+</div>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-  <h1>Bounties for
-    <span tal:replace="context/displayname">Context</span>
-  </h1>
+  <h1>Related Bounties</h1>
 
   <p class="documentDescription">These are the bounties that are related to
   <span tal:replace="context/displayname">Context</span>. Click on a column
   header to sort by that header.
   </p>
 
-    <table width="100%" class="listing rowNavigation">
+  <table width="100%" class="listing sortable" id="bountylist">
+    <thead>
       <tr>
         <th>Date Created</th>
         <th>Title</th>
         <th>USD Value<sup>*</sup></th>
-        <th>Est. Difficulty</th>
-        <th>Est. Duration</th>
+        <th>Difficulty</th>
       </tr>
-      <tr tal:repeat="bounty context/bounties"
-          tal:attributes="onclick
-              string:window.location='/bounties/${bounty/name}/';">
-        <td tal:content="python:bounty.datecreated.strftime('%d %b %y')">
-          date
-        </td>
-        <td><b><span tal:replace="bounty/title/fmt:shorten/45">title</span>
-            </b>
-        </td>
+    </thead>
+    <tbody>
+      <tr tal:repeat="bounty context/bounties">
+        <td tal:content="bounty/datecreated/fmt:date">date</td>
+        <td><a tal:content="bounty/title/fmt:shorten/45"
+               tal:attributes="href bounty/fmt:url">title</a></td>
         <td tal:content="bounty/usdvalue">usdvalue</td>
-        <td tal:content="bounty/difficulty">difficulty</td>
-        <td tal:content="bounty/duration">duration</td>
+        <td tal:content="bounty/difficulty/title">difficulty</td>
       </tr>
+    </tbody>
   </table>
 
   <p><sup>*</sup> A bounty may include contributions in several currencies,

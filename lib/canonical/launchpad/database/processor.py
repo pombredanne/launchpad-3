@@ -20,7 +20,6 @@ class Processor(SQLBase):
     name = StringCol(dbName='name', notNull=True)
     title = StringCol(dbName='title', notNull=True)
     description = StringCol(dbName='description', notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
 
 class ProcessorFamily(SQLBase):
@@ -30,5 +29,4 @@ class ProcessorFamily(SQLBase):
     name = StringCol(dbName='name', notNull=True)
     title = StringCol(dbName='title', notNull=True)
     description = StringCol(dbName='description', notNull=True)
-    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 

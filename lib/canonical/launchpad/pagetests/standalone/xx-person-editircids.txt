@@ -1,0 +1,54 @@
+  Try to add a new ircid with an empty nickname.
+
+
+  >>> print http(r"""
+  ... POST /people/name16/+editircnicknames HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... newnetwork=irc.freenode.net&newnick=&SAVE=Save+Changes""")
+  HTTP/1.1 200 Ok
+  ...
+  ...Neither Nickname nor Network can be empty...
+  ...
+
+
+  Now try to add a new one with an empty network.
+
+  >>> print http(r"""
+  ... POST /people/name16/+editircnicknames HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... newnetwork=&newnick=sabdfl&SAVE=Save+Changes""")
+  HTTP/1.1 200 Ok
+  ...
+  ...Neither Nickname nor Network can be empty...
+
+
+  Now do it properly, with a non-empty nickname and network.
+
+  >>> print http(r"""
+  ... POST /people/name16/+editircnicknames HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... newnetwork=irc.freenode.net&newnick=sabdfl&SAVE=Save+Changes""")
+  HTTP/1.1 200 Ok
+  ...
+  ...Your IRC nicknames...
+  ...value="irc.freenode.net"...
+  ...value="sabdfl"...
+  ...
+
+
+  And now, remove it.
+
+  >>> print http(r"""
+  ... POST /people/name16/+editircnicknames HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... network_11=irc.freenode.net&nick_11=sabdfl&remove_11=Remove&newnetwork=&newnick=&SAVE=Save+Changes""")
+  HTTP/1.1 200 Ok
+  ...

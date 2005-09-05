@@ -43,16 +43,21 @@ class Packaging(SQLBase):
         return SourcePackage(distrorelease=self.distrorelease,
             sourcepackagename=self.sourcepackagename)
 
+    def searchTasks(self, search_params):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        search_params.setDistributionRelease(self.distrorelease)
+        return BugTaskSet().search(search_params)
+
 
 class PackagingUtil:
     """Utilities for Packaging."""
     implements(IPackagingUtil)
 
     def createPackaging(self, productseries, sourcepackagename,
-                              distrorelease, packaging):
+                              distrorelease, packaging, owner):
         """Create new Packaging entry."""
         Packaging(productseries=productseries,
                   sourcepackagename=sourcepackagename,
                   distrorelease=distrorelease,
-                  packaging=packaging)
-
+                  packaging=packaging,
+                  owner=owner)

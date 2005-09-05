@@ -1,12 +1,14 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@malone_template/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-people" />
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-subscribers" />
+    <div tal:replace="structure context/@@+portlet-maintainers" />
     <div tal:replace="structure context/@@+portlet-productinfestation" />
     <div tal:replace="structure context/@@+portlet-packageinfestation" />
     <div tal:replace="structure context/@@+portlet-duplicates" />
@@ -14,6 +16,9 @@
 
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-actions" />
+    <div tal:condition="context/specifications"
+         tal:replace="structure context/@@+portlet-specs" />
+    <div tal:replace="structure context/@@+portlet-attachments" />
     <div tal:replace="structure context/@@+portlet-cve" />
     <div tal:replace="structure context/@@+portlet-reference" />
     <div tal:replace="structure context/@@+portlet-watch" />
@@ -29,25 +34,6 @@
        tal:content="string:bug #${context/duplicateof/id}">bug 42</a>
   </p>
 
-  <div class="discreet">
-
-    <tal:block condition="context/name">
-      Malone bug "<a href="." tal:content="context/name">$Bug.name</a>",
-    </tal:block>
-    <tal:block condition="not: context/name">
-      Malone <a href="#" tal:attributes="href context/fmt:url">
-      bug #<span tal:replace="context/id">33</span></a>,
-    </tal:block>
-
-    submitted
-    <span tal:replace="context/datecreated/fmt:date">13 Sep 04 12:15</span>
-    
-    by <a tal:content="context/owner/browsername"
-          tal:attributes="href
-            string:/people/${context/owner/name}/">owner</a>.
-
-  </div>
-
   <p class="documentDescription"
      tal:condition="context/summary"
      tal:content="context/summary">
@@ -62,21 +48,10 @@
       $Bug.description
     </tal:description>
 
-    <fieldset class="collapsible collapsed">
-      <legend>New comment on this bug</legend>
-        <form action="+messages/+new" method="post">
-          <b>Subject:</b>
-          <input name="field.subject" type="text" size="50" 
-                 tal:attributes="value context/followup_subject" /><br />
-          <b>Comment:</b> <textarea name="field.content" rows="10"></textarea>
-          <input type="submit" name="UPDATE_SUBMIT" value="Add" />
-        </form>
-    </fieldset>
-
   <tal:block repeat="message context/messages">
     <div class="boardComment"
-         tal:condition="python:context.description!=message.contents">
-      
+         tal:condition="python:context.description != message.contents">
+
       <div class="boardCommentDetails">
         <strong tal:content="message/title">$Bugmessage.title</strong>
 
@@ -84,7 +59,14 @@
                               tal:content="message/owner/browsername|string:(none)">
           $Person.browsername</a>
         at <span tal:replace="message/datecreated/fmt:datetime">Thursday 
-                                                                13:21</span>
+        13:21</span>
+        <tal:block condition="message/bugattachments">
+        - with attachments:
+          <tal:block repeat="attachment message/bugattachments">
+            <a tal:attributes="href attachment/libraryfile/url"
+               tal:content="attachment/libraryfile/filename">foo.txt</a>
+          </tal:block>
+        </tal:block>
       </div>
 
       <div class="boardCommentBody">
@@ -97,6 +79,24 @@
 
     </div>
   </tal:block> <!-- repeating over message -->
+
+  <tal:logged-in condition="request/lp:person">
+    <fieldset class="collapsible collapsed">
+      <legend>Add comment to this bug</legend>
+        <form action="+messages/+new" method="post">
+          <b>Subject:</b>
+          <input name="field.subject" type="text" size="50" 
+                 tal:attributes="value context/followup_subject" /><br />
+          <b>Comment:</b> <textarea name="field.content" rows="10"></textarea>
+        <input type="submit" name="UPDATE_SUBMIT" value="Post Comment" />
+        </form>
+    </fieldset>
+  </tal:logged-in>
+  <tal:not-logged-in condition="not: request/lp:person">
+    <div align="center">
+      To post a comment you must <a href="+login">log in</a>.
+    </div>
+  </tal:not-logged-in>
 
 </div>
 </body>

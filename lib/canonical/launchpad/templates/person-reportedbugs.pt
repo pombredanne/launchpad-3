@@ -12,44 +12,26 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-actions" />
+  <div tal:replace="structure context/@@+portlet-calendar" />
 </metal:rightportlets>
 
+  <div metal:fill-slot="main" 
+       tal:define="tasks view/reportedBugTasks;
+                   listing_columns python:['id', 'product-or-package',
+                                           'title', 'status',
+                                           'severity',
+                                           'submittedon'
+                                           ];">
 
-  <div metal:fill-slot="main">
+    <h1>Recently Reported Bugs</h1>
 
-   <h1>Bugs Reported</h1>
+    <p tal:condition="not: tasks">No bugs have been 
+      reported by <span tal:replace="context/browsername" />.
+    </p>
 
-    <p tal:condition="not: context/reportedbugs">No bugs have been reported by <span
-    tal:replace="context/browsername" />. You can use the Launchpad to
-    report a bug on any product or distribution package.</p>
-
-    <table tal:condition="context/reportedbugs"
-           class="listing lpListing rowNavigation" width="90%">
-      <tr>
-        <th>#</th>
-        <th>title</th>
-        <th>upstream / package</th>
-        <th>status</th>
-        <th>priority</th>
-        <th>severity</th>
-      </tr>
-
-      <tr tal:repeat="bugtask context/reportedbugs" class="rowLinkified">
-        <tal:block tal:define="url string:/malone/bugs/${bugtask/bug/id}">
-        <td><a tal:attributes="href url"><span tal:replace="bugtask/bug/id" /></a></td>
-        <td tal:attributes="title bugtask/bug/summary">
-          <a tal:attributes="href url"><span tal:replace="bugtask/bug/title" /></a></td>
-        <td><a tal:attributes="href url" 
-               tal:content="bugtask/product/displayname|default">-</a></td>
-        <td><a tal:attributes="href url" 
-               tal:content="bugtask/status/title">status</a></td>
-        <td><a tal:attributes="href url"
-               tal:content="bugtask/priority/title|default">-</a></td>
-        <td><a tal:attributes="href url"
-               tal:content="bugtask/severity/title|default">-</a></td>
-        </tal:block>
-      </tr>
-    </table>
+      <tal:assignedbugs
+           condition="tasks"
+           metal:use-macro="context/@@+bugtask-macros-tableview/table" />
 
   </div>
 

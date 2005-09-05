@@ -20,6 +20,8 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.bountysubscription import BountySubscription
 
+from canonical.lp.dbschema import EnumCol, BountyDifficulty, BountyStatus
+
 
 class Bounty(SQLBase):
     """A bounty."""
@@ -35,8 +37,10 @@ class Bounty(SQLBase):
     summary = StringCol(notNull=True)
     description = StringCol( notNull=True)
     usdvalue = CurrencyCol(notNull=True)
-    difficulty = IntCol(notNull=True, default=50)
-    duration = IntervalCol(notNull=True, default=datetime.timedelta(7))
+    bountystatus = EnumCol(schema=BountyStatus, notNull=True,
+        default=BountyStatus.OPEN)
+    difficulty = EnumCol(schema=BountyDifficulty, notNull=True,
+        default=BountyDifficulty.NORMAL)
     reviewer = ForeignKey(dbName='reviewer', notNull=True, foreignKey='Person')
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
@@ -57,17 +61,15 @@ class Bounty(SQLBase):
                     otherColumn='distribution')
 
     # subscriptions
-    def subscribe(self, person, subscription):
+    def subscribe(self, person):
         # first see if a relevant subscription exists, and if so, update it
         for sub in self.subscriptions:
             if sub.person.id == person.id:
-                sub.subscription = subscription
                 return sub
         # since no previous subscription existed, create a new one
         return BountySubscription(
             bounty=self,
-            person=person,
-            subscription=subscription)
+            person=person)
 
     def unsubscribe(self, person):
         # see if a relevant subscription exists, and if so, delete it
@@ -105,4 +107,9 @@ class BountySet:
             usdvalue=usdvalue,
             ownerID=owner.id,
             reviewerID=reviewer.id)
+
+    @property
+    def top_bounties(self):
+        """See IBountySet."""
+        return Bounty.select(orderBy=['-usdvalue'])[:5]
 

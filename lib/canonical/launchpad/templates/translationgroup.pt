@@ -15,7 +15,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Rosetta Translation Group Overview</h1>
+  <h1>Translation Group Overview</h1>
 
   <p class="documentDescription" tal:content="context/summary">
       $TranslationGroup.summary goes here. This should be quite short,
@@ -36,7 +36,7 @@
   additional translators <a href="+appoint">here</a>, or select the relevant
   link to change or remove them.</p>
 
-  <table class="listing">
+  <table class="sortable listing" id="group-members">
     <thead>
       <tr>
         <th>Language</th>

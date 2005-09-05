@@ -23,8 +23,7 @@ To create a new Milestone, use IMilestoneSet.new:
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> productset = getUtility(IProductSet)
     >>> upstream_firefox = productset.get(4)
-    >>> firefox_ms = milestoneset.new(product = upstream_firefox, name = "1.1",
-    ...                               title = "one dot one")
+    >>> firefox_ms = milestoneset.new(product = upstream_firefox, name = "1.1")
     >>> print firefox_ms.name
     1.1
 

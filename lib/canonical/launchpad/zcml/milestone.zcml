@@ -6,73 +6,63 @@
     i18n_domain="launchpad">
     
     <!-- Milestone -->
-    <!-- CONTENT CLASSES -->
     <content class="canonical.launchpad.database.Milestone">
         <allow interface="canonical.launchpad.interfaces.IMilestone" />
         <allow interface="canonical.launchpad.interfaces.IAuthorization" />
         <require
             permission="launchpad.AnyPerson"
-            set_attributes="name title" />
+            set_attributes="name dateexpected visible" />
     </content>
 
-    <!-- UTILITIES -->
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IMilestoneSet"
+        getter="__getitem__" />
+    
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IMilestone"
+        name="+index" />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IMilestone"
+        path_expression="string:+milestone/${name}"
+        attribute_to_parent="target"
+        />
+
+    <browser:menus
+        module="canonical.launchpad.browser.milestone"
+        classes="MilestoneFacets" />
+
+    <browser:pages
+      for="canonical.launchpad.interfaces.IMilestone"
+      permission="zope.Public">
+      <browser:page
+        name="+index"
+        template="../templates/milestone-index.pt" />
+      <browser:page
+        name="+portlet-actions"
+        template="../templates/milestone-portlet-actions.pt" />
+      <browser:page
+        name="+portlet-details"
+        template="../templates/milestone-portlet-details.pt" />
+    </browser:pages>
+
+    <browser:editform
+        name="+edit"
+        for="canonical.launchpad.interfaces.IMilestone"
+        class="canonical.launchpad.browser.milestone.MilestoneEditView"
+        schema="canonical.launchpad.interfaces.IMilestone"
+        fields="name dateexpected visible"
+        label="Edit Milestone"
+        permission="launchpad.Edit"
+        template="../templates/milestone-edit.pt"
+        lp:url="/products/$Product.name/+milestone/$Milestone.name/+edit">
+    </browser:editform>
+
+    <!-- IMilestoneSet -->
     <securedutility
         class="canonical.launchpad.database.MilestoneSet"
         provides="canonical.launchpad.interfaces.IMilestoneSet">
         <allow interface="canonical.launchpad.interfaces.IMilestoneSet" />
     </securedutility>
-
-    <!-- VOCABULARIES -->
-
-    <!--TRAVERSALS-->
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IMilestoneSet"
-        getter="__getitem__" />
-    
-    <!--BROWSER DEFAULTVIEWS-->
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IMilestone"
-        name="+index" />
-
-    <!--PAGE DECLARATIONS-->
-
-    <!--FORMS-->
-    <browser:addform
-        name="+milestone"
-        for="canonical.launchpad.interfaces.IProduct"
-        schema="canonical.launchpad.interfaces.IMilestone"
-        class="canonical.launchpad.browser.milestone.ProductMilestoneAddView"
-        label="Add a Milestone for this Product"
-        fields="name title"
-        content_factory="canonical.launchpad.database.milestone.ProductMilestoneFactory"
-        keyword_arguments="name title"
-        permission="launchpad.Edit"
-        template="../templates/launchpad-addform.pt"
-        lp:url="doap/products/$Product.name/+milestone">
-        <browser:widget
-           field="title"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="55" />
-    </browser:addform>
-
-    <browser:editform
-        name="+edit"
-        for="canonical.launchpad.interfaces.IMilestone"
-        schema="canonical.launchpad.interfaces.IMilestone"
-        fields="name title"
-        label="Edit Product Milestone"
-        permission="launchpad.Edit"
-        template="../templates/launchpad-editform.pt"
-        lp:url="doap/products/$Product.name/milestones/$Milestone.name/+edit">
-        <browser:widget
-           field="title"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="55" />
-    </browser:editform>
-
-    <!-- ProductMilestoneSet -->
-    <content class="canonical.launchpad.database.ProductMilestoneSet">
-        <allow interface="canonical.launchpad.interfaces.IMilestoneSet" />
-    </content>
 
 </configure>

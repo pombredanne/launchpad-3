@@ -15,6 +15,54 @@
   ...
 
 
+  If we try to merge a nonexistent account, we'll get an error page.
+
+  >>> print http(r"""
+  ... POST /people/+requestmerge HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: multipart/form-data; boundary=---------------------------153178557535218118471519623
+  ... 
+  ... -----------------------------153178557535218118471519623
+  ... Content-Disposition: form-data; name="field.dupeaccount"
+  ... 
+  ... bar
+  ... -----------------------------153178557535218118471519623
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Submit
+  ... -----------------------------153178557535218118471519623--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...There are <strong>1</strong> input errors...
+  ...
+
+
+  The same will happen if we try to merge a team.
+
+  >>> print http(r"""
+  ... POST /people/+requestmerge HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: multipart/form-data; boundary=---------------------------153178557535218118471519623
+  ... 
+  ... -----------------------------153178557535218118471519623
+  ... Content-Disposition: form-data; name="field.dupeaccount"
+  ... 
+  ... support@canonical.com
+  ... -----------------------------153178557535218118471519623
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Submit
+  ... -----------------------------153178557535218118471519623--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...There are <strong>1</strong> input errors...
+  ...
+
+
   Then we find the dupe account and request the merge.
 
   >>> print http(r"""

@@ -55,7 +55,7 @@ class LoginToken(SQLBase):
         subject = "Launchpad: Validate your email address"
         simple_sendmail(fromaddress, self.email, subject, message)
 
-    def sendGpgValidationRequest(self, appurl, key, encrypt=None):
+    def sendGPGValidationRequest(self, appurl, key, encrypt=None):
         """See ILoginToken."""
         formatted_uids = ''
         for email in key.uids:
@@ -77,7 +77,8 @@ class LoginToken(SQLBase):
         # encrypt message if requested
         if encrypt:
             gpghandler = getUtility(IGPGHandler)
-            message = gpghandler.encryptContent(message, key.fingerprint)
+            message = gpghandler.encryptContent(message.encode('utf-8'),
+                                                key.fingerprint)
 
         subject = "Launchpad: Validate your GPG Key"
         simple_sendmail(fromaddress, self.email, subject, message)
@@ -111,7 +112,7 @@ class LoginTokenSet:
         return LoginToken.select(AND(LoginToken.q.fingerprint==fingerprint,
                                      LoginToken.q.requesterID==requester.id))
 
-    def getPendingGpgKeys(self, requesterid=None):
+    def getPendingGPGKeys(self, requesterid=None):
         """See ILoginTokenSet."""
         query = 'tokentype=%s ' % LoginTokenType.VALIDATEGPG.value
 

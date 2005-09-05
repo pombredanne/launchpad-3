@@ -50,13 +50,7 @@
         <browser:page
             name="+index"
             template="../templates/rosetta-index.pt"
-            lp:url="Rosetta/+index" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IRosettaApplication"
-        permission="zope.Public"
-        lp:url="Rosetta">
+            lp:url="/rosetta/+index" />
         <browser:page
             name="+about"
             template="../templates/rosetta-about.pt"
@@ -65,6 +59,13 @@
             name="+interest"
             template="../templates/project-interest.pt"
             lp:url="Rosetta/project/+interest" />
+        <!-- portlets -->
+        <browser:page
+            name="+portlet-stats"
+            template="../templates/rosetta-portlet-stats.pt" />
+        <browser:page
+            name="+portlet-groups"
+            template="../templates/rosetta-portlet-groups.pt" />
     </browser:pages>
 
     <browser:pages
@@ -84,6 +85,25 @@
     <browser:page
       name="+barchart"
       template="../templates/pofile-barchart.pt" />
+  </browser:pages>
+
+  <!-- portlets to show language prefs -->
+  <browser:pages
+    for="*"
+    class="canonical.launchpad.browser.RosettaApplicationView"
+    permission="zope.Public">
+    <browser:page
+        name="+portlet-preflangs"
+        template="../templates/object-portlet-preflangs.pt" />
+    <browser:page
+        name="+portlet-countrylangs"
+        template="../templates/object-portlet-countrylangs.pt" />
+    <browser:page
+        name="+portlet-browserlangs"
+        template="../templates/object-portlet-browserlangs.pt" />
+    <browser:page
+        name="+rosetta-status-legend"
+        template="../templates/rosetta-status-legend.pt" />
   </browser:pages>
 
 </configure>

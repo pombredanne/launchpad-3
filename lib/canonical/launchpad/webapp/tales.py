@@ -5,25 +5,27 @@
 """
 __metaclass__ = type
 
+import bisect
 import cgi
 import re
 import sets
 import os.path
 import warnings
+
 from zope.interface import Interface, Attribute, implements
-from zope.component import getAdapter, getUtility, queryAdapter
+from zope.component import getUtility, queryAdapter
 
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.app.traversing.interfaces import ITraversable
 from zope.exceptions import NotFoundError
 from zope.security.interfaces import Unauthorized
+
 from canonical.launchpad.interfaces import (
     IPerson, ILaunchBag, IFacetMenu, IExtraFacetMenu,
     IApplicationMenu, IExtraApplicationMenu, NoCanonicalUrl,
     IBugSet)
-import canonical.lp.dbschema
-from canonical.lp import decorates
+from canonical.lp import dbschema
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url, nearest_menu
 from canonical.launchpad.webapp.publisher import get_current_browser_request
@@ -77,7 +79,6 @@ class MenuAPI:
         selected facet.
         """
         facetmenu = self.facet()
-        selectedfacetname = None
         for link in facetmenu:
             if link.selected:
                 return link.name
@@ -203,10 +204,10 @@ class DBSchemaAPI:
     implements(ITraversable)
 
     _all = {}
-    for name in canonical.lp.dbschema.__all__:
-        schema = getattr(canonical.lp.dbschema, name)
-        if (schema is not canonical.lp.dbschema.DBSchema and
-            issubclass(schema, canonical.lp.dbschema.DBSchema)):
+    for name in dbschema.__all__:
+        schema = getattr(dbschema, name)
+        if (schema is not dbschema.DBSchema and
+            issubclass(schema, dbschema.DBSchema)):
             _all[name] = schema
 
     def __init__(self, number):
@@ -236,9 +237,11 @@ class NoneFormatter:
         'time',
         'datetime',
         'exactduration',
+        'approximateduration',
         'pagetitle',
         'text-to-html',
         'url',
+        'icon'
         ])
 
     def __init__(self, context):
@@ -250,6 +253,8 @@ class NoneFormatter:
                 raise TraversalError(
                     "you need to traverse a number after fmt:shorten")
             maxlength = int(furtherPath.pop())
+            # XXX: why is maxlength not used here at all?
+            #       - kiko, 2005-08-24
             return ''
         elif name in self.allowed_names:
             return ''
@@ -258,7 +263,10 @@ class NoneFormatter:
 
 
 class ObjectFormatterAPI:
-    """Adapter from any object to a formatted string.  Used for fmt:url."""
+    """Adapter from any object to a formatted string.
+
+    Used for fmt:url.
+    """
 
     def __init__(self, context):
         self._context = context
@@ -266,6 +274,40 @@ class ObjectFormatterAPI:
     def url(self):
         request = get_current_browser_request()
         return canonical_url(self._context, request)
+
+
+class BugTaskFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IBugTask objects to a formatted string.
+
+    Used for fmt:icon.
+    """
+
+    def icon(self):
+        """Return the appropriate <img> tag for the bugtask icon.
+
+        The icon displayed is calculated based on the IBugTask.priority.
+        """
+        priority_title = self._context.priority.title.lower()
+        if priority_title == 'wontfix':
+            # Special-case Wontfix by returning the "generic" bug icon
+            # because we actually hope to eliminate Wontfix
+            # entirely. See
+            # https://wiki.launchpad.canonical.com/SimplifyingMalone
+            return '<img alt="(wontfix priority)" src="/++resource++bug" />'
+        else:
+            return '<img alt="(%s priority)" src="/++resource++bug-%s" />' % (
+                priority_title, priority_title)
+
+
+class MilestoneFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IMilestone objects to a formatted string.
+
+    Used for fmt:icon.
+    """
+
+    def icon(self):
+        """Return the appropriate <img> tag for the milestone icon."""
+        return '<img alt="" src="/++resource++target" />'
 
 
 class DateTimeFormatterAPI:
@@ -322,6 +364,136 @@ class DurationFormatterAPI:
             parts.append('%0.1f seconds' % seconds)
 
         return ', '.join(parts)
+
+    def approximateduration(self):
+        """Return a nicely-formatted approximate duration.
+
+        E.g. 'an hour', 'three minutes', '1 hour 10 minutes' and so
+        forth.
+
+        See https://wiki.launchpad.canonical.com/PresentingLengthsOfTime.
+        """
+        # NOTE: There are quite a few "magic numbers" in this
+        # implementation; they are generally just figures pulled
+        # directly out of the PresentingLengthsOfTime spec, and so
+        # it's not particularly easy to give each and every number of
+        # a useful name. It's also unlikely that these numbers will be
+        # changed.
+
+        # Calculate the total number of seconds in the duration,
+        # including the decimal part.
+        seconds = self._duration.days * (3600 * 24)
+        seconds += self._duration.seconds
+        seconds += (float(self._duration.microseconds) / 10**6)
+
+        # First we'll try to calculate an approximate number of
+        # seconds up to a minute. We'll start by defining a sorted
+        # list of (boundary, display value) tuples.  We want to show
+        # the display value corresponding to the lowest boundary that
+        # 'seconds' is less than, if one exists.
+        representation_in_seconds = (
+            (1.5, '1 second'),
+            (2.5, '2 seconds'),
+            (3.5, '3 seconds'),
+            (4.5, '4 seconds'),
+            (7.5, '5 seconds'),
+            (12.5, '10 seconds'),
+            (17.5, '15 seconds'),
+            (22.5, '20 seconds'),
+            (27.5, '25 seconds'),
+            (35, '30 seconds'),
+            (45, '40 seconds'),
+            (55, '50 seconds'),
+            (90, 'a minute'),
+        )
+
+        # Break representation_in_seconds into two pieces, to simplify
+        # finding the correct display value, through the use of the
+        # built-in bisect module.
+        second_boundaries, display_values = zip(*representation_in_seconds)
+
+        # Is seconds small enough that we can produce a representation
+        # in seconds (up to 'a minute'?)
+        if seconds < second_boundaries[-1]:
+            # Use the built-in bisection algorithm to locate the index
+            # of the item which "seconds" sorts after.
+            matching_element_index = bisect.bisect(second_boundaries, seconds)
+
+            # Return the corresponding display value.
+            return display_values[matching_element_index]
+
+        # More than a minute, approximately; our calculation strategy
+        # changes. From this point forward, we may also need a
+        # "verbal" representation of the number. (We never need a
+        # verbal representation of "1", because we tend to special
+        # case the number 1 for various approximations, and we usually
+        # use a word like "an", instead of "one", e.g. "an hour")
+        number_name = {
+            2: 'two', 3: 'three', 4: 'four', 5: 'five',
+            6: 'six', 7: 'seven', 8: 'eight', 9: 'nine',
+            10: 'ten'}
+
+        # Convert seconds into minutes, and round it.
+        minutes, remaining_seconds = divmod(seconds, 60)
+        minutes += remaining_seconds / 60.0
+        minutes = int(round(minutes))
+
+        if minutes <= 59:
+            number_as_text = number_name.get(minutes, str(minutes))
+            return number_as_text + " minutes"
+
+        # Is the duration less than an hour and 5 minutes?
+        if seconds < (60 + 5) * 60:
+            return "an hour"
+
+        # Next phase: try and calculate an approximate duration
+        # greater than one hour, but fewer than ten hours, to a 10
+        # minute granularity.
+        hours, remaining_seconds = divmod(seconds, 3600)
+        ten_minute_chunks = int(round(remaining_seconds / 600.0))
+        minutes = ten_minute_chunks * 10
+        hours += (minutes / 60)
+        minutes %= 60
+        if hours < 10:
+            if minutes:
+                # If there is a minutes portion to display, the number
+                # of hours is always shown as a digit.
+                if hours == 1:
+                    return "1 hour %s minutes" % minutes
+                else:
+                    return "%d hours %s minutes" % (hours, minutes)
+            else:
+                number_as_text = number_name.get(hours, str(hours))
+                return "%s hours" % number_as_text
+
+        # Is the duration less than ten and a half hours?
+        if seconds < (10.5 * 3600):
+            return 'ten hours'
+
+        # Try to calculate the approximate number of hours, to a
+        # maximum of 47.
+        hours = int(round(seconds / 3600.0))
+        if hours <= 47:
+            return "%d hours" % hours
+
+        # Is the duration fewer than two and a half days?
+        if seconds < (2.5 * 24 * 3600):
+            return 'two days'
+
+        # Try to approximate to day granularity, up to a maximum of 13
+        # days.
+        days = int(round(seconds / (24 * 3600)))
+        if days <= 13:
+            return "%s days" % number_name.get(days, str(days))
+
+        # Is the duration fewer than two and a half weeks?
+        if seconds < (2.5 * 7 * 24 * 3600):
+            return 'two weeks'
+
+        # If we've made it this far, we'll calculate the duration to a
+        # granularity of weeks, once and for all.
+        weeks = int(round(seconds / (7 * 24 * 3600.0)))
+        return "%s weeks" % number_name.get(weeks, str(weeks))
 
 
 def clean_path_segments(request):
@@ -400,10 +572,10 @@ class PageTemplateContextsAPI:
         name = name.replace('-', '_')
         titleobj = getattr(canonical.launchpad.pagetitles, name, None)
         if titleobj is None:
-            warnings.warn(
+            # sabdfl 25/0805 page titles are now mandatory hence the assert
+            raise AssertionError(
                  "No page title in canonical.launchpad.pagetitles for %s"
                  % name)
-            return canonical.launchpad.pagetitles.DEFAULT_LAUNCHPAD_TITLE
         elif isinstance(titleobj, basestring):
             return titleobj
         else:
@@ -470,14 +642,16 @@ class FormattersAPI:
             url = match.group('url')
             # The url might end in a spurious &gt;.  If so, remove it
             # and put it outside the url text.
+            trail = ''
+            gt = ''
+            if url[-1] in (",", ".", "?"):
+                trail = url[-1]
+                url = url[:-1]
             if url.lower().endswith('&gt;'):
                 gt = url[-4:]
                 url = url[:-4]
-            else:
-                gt = ''
-                url = url
-            return '<a rel="nofollow" href="%s">%s</a>%s' % (
-                url.replace('"', '&quot;'), url, gt)
+            return '<a rel="nofollow" href="%s">%s</a>%s%s' % (
+                url.replace('"', '&quot;'), url, gt, trail)
         else:
             raise AssertionError("Unknown pattern matched.")
 

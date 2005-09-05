@@ -19,8 +19,8 @@ a test email that's signed and try to authenticate the user who sent it:
     >>> msg = read_test_message('signed_detached.txt')
     >>> principal = authenticateEmail(msg)
 
-If the authentication fails, None is return, if it succeeds the
-authenticated principal:
+If the user isn't registered in Launchpad, None is return, if it
+succeeds the authenticated principal:
 
     >>> principal is not None
     True
@@ -38,7 +38,7 @@ user in the launch bag:
     True
     >>> launchbag.login
     'test@canonical.com'
-    
+
 In the above email the GPG signature was detached from the actual
 message. Inline signatures are supported as well. 
 
@@ -54,7 +54,7 @@ message. Inline signatures are supported as well.
     'test@canonical.com'
 
 As well as signed multipart messages:
-   
+
     >>> msg = read_test_message('signed_multipart.txt')
     >>> principal = authenticateEmail(msg)
     >>> principal is not None
@@ -73,6 +73,17 @@ shown below where the email was signed with Sample Person's key, but
 the From header states it's from Foo Bar:
 
     >>> msg = read_test_message('signed_incorrect_from.txt')
+    >>> name, addr = email.Utils.parseaddr(msg['From'])
+    >>> from_user = getUtility(IPersonSet).getByEmail(addr)
+    >>> principal = authenticateEmail(msg)
+    Traceback (most recent call last):
+      ...
+    InvalidSignature:...
+
+Also if the signature is invalid, that is it won't verify properly,
+InvalidSignature will be raised:
+
+    >>> msg = read_test_message('signed_detached_invalid_signature.txt')
     >>> name, addr = email.Utils.parseaddr(msg['From'])
     >>> from_user = getUtility(IPersonSet).getByEmail(addr)
     >>> principal = authenticateEmail(msg)

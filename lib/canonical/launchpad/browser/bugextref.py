@@ -4,16 +4,10 @@
 
 __metaclass__ = type
 
-__all__ = [
-    'BugExternalRefsView',
-    ]
+__all__ = ['BugExternalRefsView']
 
-from zope.interface import implements
+class BugExternalRefsView:
 
-from canonical.launchpad.interfaces import IBugExternalRefsView
-
-class BugExternalRefsView(object):
-    implements(IBugExternalRefsView)
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -23,5 +17,3 @@ class BugExternalRefsView(object):
 
     def nextURL(self):
         return '..'
-
-

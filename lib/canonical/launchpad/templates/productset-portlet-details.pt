@@ -1,26 +1,23 @@
-<div class="portlet">
-
-    <h4>launchpad product registry statistics:</h4>
-
-    <div class="portletBody">
-        <div class="portletContent even">
-
-        <ul>
-            <li><span tal:replace="context/count_all">5</span> 
-            registered</li>
-
+<div class="portlet portletBody portletContent">
+  <p>
+    There are currently
+    <strong tal:content="context/count_all">5</strong>
+    products registered in Launchpad, of which:
+  </p>
+  <ul>
             <li><span tal:replace="context/count_translatable">5</span> 
-            with translations</li>
+            have translations</li>
 
             <li><span tal:replace="context/count_buggy">5</span> 
-            with bugs filed</li>
+            have bugs reported</li>
 
             <li><span tal:replace="context/count_bounties">5</span> 
-            with bounties</li>
+            have bounties</li>
 
             <li><span tal:replace="context/count_reviewed">5</span> 
-            reviewed</li>
-
-        </div>
-    </div>
+            have been reviewed.</li>
+  </ul>
+  <ul>
+    <li class="list"><a href="/products/+all">List all products</a></li>
+  </ul>
 </div>

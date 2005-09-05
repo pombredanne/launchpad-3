@@ -34,7 +34,7 @@ class PublishedPackage(SQLBase):
                                       schema=PackagePublishingStatus)
     component = StringCol(immutable=True)
     section = StringCol(immutable=True)
-    binarypackage = IntCol(immutable=True)
+    binarypackagerelease = IntCol(immutable=True)
     binarypackagename = StringCol(immutable=True)
     binarypackagesummary = StringCol(immutable=True)
     binarypackagedescription = StringCol(immutable=True)

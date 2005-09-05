@@ -91,7 +91,8 @@
         permission="zope.Public"
         name="+rdf"
         lp:url="/projects/$Project.name/+rdf"
-        template="../templates/project-rdf.pt" />
+        attribute="__call__"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProject"
@@ -103,21 +104,49 @@
               lp:url="/project/$project.id/+reassign" />
     </browser:pages>
 
-    <browser:pages
+
+
+    <browser:addform
+        name="+newbugtracker"
+        permission="launchpad.AnyPerson"
+        label="Register an External Bug Tracker"
+        class="canonical.launchpad.browser.BugTrackerAddView"
         for="canonical.launchpad.interfaces.IProject"
-        class="canonical.launchpad.browser.ProjectView"
-        permission="launchpad.AnyPerson" >
-        <browser:page
-            name="+newbugtracker"
-            template="../templates/bugtracker-new.pt"
-            lp:url="/projects/$Project.name/+newbugtracker" />
-    </browser:pages>
+        schema="canonical.launchpad.interfaces.IBugTracker"
+        fields="name bugtrackertype title summary baseurl contactdetails"
+        keyword_arguments="name bugtrackertype title summary baseurl
+                           contactdetails"
+        template="../templates/bugtrackers-add.pt"
+        lp:url="/projects/$Project.name/+newbugtracker"
+        />
+
+    <browser:addform
+        name="+new"
+        for="canonical.launchpad.interfaces.IProjectSet"
+        schema="canonical.launchpad.interfaces.IProject"
+        label="Register a project with Launchpad"
+        fields="name displayname title summary description homepageurl"
+        content_factory="canonical.launchpad.database.Project"
+        class="canonical.launchpad.browser.ProjectAddView"
+        permission="launchpad.AnyPerson"
+        template="../templates/launchpad-addform.pt"
+        lp:url="products/+new">
+        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
+        <browser:widget
+           field="name"
+           class="zope.app.form.browser.TextWidget"
+           extra="tabindex=1" />
+        <browser:widget
+           field="homepageurl"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="60" />
+    </browser:addform>
 
     <browser:editform
         name="+edit"
         for="canonical.launchpad.interfaces.IProject"
         schema="canonical.launchpad.interfaces.IProject"
-        label="Edit Open Source Project Details:"
+        label="Edit project details"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl"
         class="canonical.launchpad.browser.ProjectEditView"
@@ -161,7 +190,7 @@
         permission="launchpad.AnyPerson"
         template="../templates/product-add.pt"
         lp:url="/projects/$Project.name/+newproduct">
-        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="homepageurl"
            class="zope.app.form.browser.TextWidget"
@@ -180,6 +209,32 @@
            displayWidth="60" />
     </browser:addform>
 
+    <browser:addform
+      name="+linkbounty"
+      for="canonical.launchpad.interfaces.IProject"
+      schema="canonical.launchpad.interfaces.IProjectBounty"
+      class="canonical.launchpad.browser.bounty.BountyLinkView"
+      label="Link Existing Bounty"
+      fields="project bounty"
+      keyword_arguments="project bounty"
+      permission="launchpad.AnyPerson"
+      template="../templates/bounty-link.pt"
+      lp:url="/projects/$Project.name/+linkbounty">
+      <browser:widget
+        field="project"
+        class="canonical.widgets.ContextWidget" />
+    </browser:addform>
+
+    <browser:addform
+      name="+addbounty"
+      for="canonical.launchpad.interfaces.IProject"
+      schema="canonical.launchpad.interfaces.IBounty"
+      label="Register A New Bounty"
+      fields="name title summary usdvalue difficulty description"
+      class="canonical.launchpad.browser.BountyAddView"
+      permission="launchpad.AnyPerson"
+      template="../templates/bounty-add.pt"
+      />
 
     <!-- ProjectSet-->
     <content class="canonical.launchpad.database.ProjectSet">
@@ -212,7 +267,7 @@
         lp:url="/projects/">
         <browser:page
             name="+all" 
-            template="../templates/doap-listall.pt"
+            template="../templates/registry-listall.pt"
             lp:url="/projects/+all" />
         <browser:page
             name="+index" 
@@ -226,7 +281,7 @@
         permission="launchpad.AnyPerson">
         <browser:page
             name="+review"
-            template="../templates/doap-review.pt"
+            template="../templates/registry-review.pt"
             lp:url="/projects/+review" />
         <browser:page
             name="+syncreview"
@@ -234,20 +289,16 @@
             lp:url="/projects/+syncreview" />
     </browser:pages>
 
-    <browser:page
-        for="canonical.launchpad.interfaces.IProjectSet"
-        name="+new"
-        class="canonical.launchpad.browser.ProjectSetView"
-        permission="launchpad.AnyPerson"
-        template="../templates/project-new.pt"
-        lp:url="/projects/+new" />
-
     <browser:pages for="canonical.launchpad.interfaces.IProjectSet"
         permission="zope.Public"
         class="canonical.launchpad.browser.ProjectSetView">
         <browser:page name="+request"
             template="../templates/projects-request.pt"
             lp:url="Rosetta/projects/+request" />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/projectset-portlet-details.pt"
+            lp:url="/projects/+portlet-details" />
     </browser:pages>
 
     <securedutility

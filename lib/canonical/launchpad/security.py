@@ -9,12 +9,15 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IAuthorization, IHasOwner, IPerson, ITeam, ITeamMembershipSubset,
+    IDistribution,
     ITeamMembership, IProductSeriesSource, IProductSeriesSourceAdmin,
     IMilestone, IBug, IBugTask, IUpstreamBugTask, IDistroBugTask,
     IDistroReleaseBugTask, ITranslator, IProduct, IProductSeries,
     IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
-    ILaunchpadCelebrities, IDistroRelease, IBugTracker, IPoll, IPollSubset,
-    IPollOption, IPollOptionSubset)
+    ILaunchpadCelebrities, IDistroRelease, IBugTracker, IBugAttachment,
+    IPoll, IPollSubset, IPollOption, IPollOptionSubset, IProductRelease,
+    IShippingRequest, IShippingRequestSet, IRequestedCDs,
+    IStandardShipItRequestSet, IStandardShipItRequest)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -53,17 +56,6 @@ class EditByOwnersOrAdmins(AuthorizationBase):
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
 
-class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IDistroRelease
-
-    def checkAuthenticated(self, user):
-        admins = getUtility(ILaunchpadCelebrities).admin
-        return (user.inTeam(self.obj.owner) or
-                user.inTeam(self.obj.distribution.owner) or
-                user.inTeam(admins))
-
-
 class AdminSeriesSourceByButtSource(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = IProductSeriesSourceAdmin
@@ -71,6 +63,48 @@ class AdminSeriesSourceByButtSource(AuthorizationBase):
     def checkAuthenticated(self, user):
         buttsource = getUtility(ILaunchpadCelebrities).buttsource
         return user.inTeam(buttsource)
+
+
+class EditRequestedCDsByRecipientOrShipItAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IRequestedCDs
+
+    def checkAuthenticated(self, user):
+        shipitadmins = getUtility(ILaunchpadCelebrities).shipit_admin
+        return user == self.obj.request.recipient or user.inTeam(shipitadmins)
+
+
+class EditShippingRequestByRecipientOrShipItAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IShippingRequest
+
+    def checkAuthenticated(self, user):
+        shipitadmins = getUtility(ILaunchpadCelebrities).shipit_admin
+        return user == self.obj.recipient or user.inTeam(shipitadmins)
+
+
+class AdminShippingRequestByShipItAdmins(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = IShippingRequest
+
+    def checkAuthenticated(self, user):
+        shipitadmins = getUtility(ILaunchpadCelebrities).shipit_admin
+        return user.inTeam(shipitadmins)
+
+
+class AdminStandardShipItOrderSetByShipItAdmins(
+        AdminShippingRequestByShipItAdmins):
+    usedfor = IStandardShipItRequestSet
+
+
+class AdminStandardShipItOrderByShipItAdmins(
+        AdminShippingRequestByShipItAdmins):
+    usedfor = IStandardShipItRequest
+
+
+class AdminShippingRequestSetByShipItAdmins(AdminShippingRequestByShipItAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = IShippingRequestSet
 
 
 class EditSeriesSourceByButtSource(AuthorizationBase):
@@ -86,13 +120,16 @@ class EditSeriesSourceByButtSource(AuthorizationBase):
         return False
 
 
-class EditMilestoneByProductMaintainer(AuthorizationBase):
+class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IMilestone
 
     def checkAuthenticated(self, user):
-        """Authorize the product maintainer."""
-        return user.inTeam(self.obj.product.owner)
+        """Authorize the product or distribution owner."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+        if user.inTeam(admins):
+            return True
+        return user.inTeam(self.obj.target.owner)
 
 
 class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
@@ -150,6 +187,15 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
         return self.obj.id == user.id or user.inTeam(admins)
 
 
+class EditPersonBySelf(AuthorizationBase):
+    permission = 'launchpad.Special'
+    usedfor = IPerson
+
+    def checkAuthenticated(self, user):
+        """A user can edit the Person who is herself."""
+        return self.obj.id == user.id
+
+
 class EditPollByTeamOwnerOrTeamAdminsOrAdmins(
         EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins):
     permission = 'launchpad.Edit'
@@ -183,6 +229,53 @@ class EditPollOptionSubsetByTeamOwnerOrTeamAdminsOrAdmins(
     permission = 'launchpad.Edit'
     usedfor = IPollOptionSubset
 
+
+class AdminDistribution(AdminByAdminsTeam):
+    """Soyuz involves huge chunks of data in the archive and librarian,
+    so for the moment we are locking down admin and edit on distributions
+    and distroreleases to the Launchpad admin team."""
+    permission = 'launchpad.Admin'
+    usedfor = IDistribution
+
+
+class EditDistribution(AdminByAdminsTeam):
+    """Soyuz involves huge chunks of data in the archive and librarian,
+    so for the moment we are locking down admin and edit on distributions
+    and distroreleases to the Launchpad admin team."""
+    permission = 'launchpad.Edit'
+    usedfor = IDistribution
+
+
+class AdminDistroRelease(AdminByAdminsTeam):
+    """Soyuz involves huge chunks of data in the archive and librarian,
+    so for the moment we are locking down admin and edit on distributions
+    and distroreleases to the Launchpad admin team."""
+    permission = 'launchpad.Admin'
+    usedfor = IDistroRelease
+
+
+class EditDistroRelease(AdminByAdminsTeam):
+    """Soyuz involves huge chunks of data in the archive and librarian,
+    so for the moment we are locking down admin and edit on distributions
+    and distroreleases to the Launchpad admin team."""
+    permission = 'launchpad.Edit'
+    usedfor = IDistroRelease
+
+
+# Mark Shuttleworth - I've commented out the below configuration, because
+# of the risk of a distrorelease edit causing huge movements of files in the
+# archive and publisher and librarian. Please discuss with me before
+# changing it.
+#
+#class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
+#    permission = 'launchpad.Edit'
+#    usedfor = IDistroRelease
+#
+#    def checkAuthenticated(self, user):
+#        admins = getUtility(ILaunchpadCelebrities).admin
+#        return (user.inTeam(self.obj.owner) or
+#                user.inTeam(self.obj.distribution.owner) or
+#                user.inTeam(admins))
 
 
 class EditUpstreamBugTask(AuthorizationBase):
@@ -312,6 +405,33 @@ class PublicToAllOrPrivateToExplicitSubscribersForBug(AuthorizationBase):
         return not self.obj.private
 
 
+class ViewBugAttachment(PublicToAllOrPrivateToExplicitSubscribersForBug):
+    """Security adapter for viewing a bug attachment.
+
+    If the user is authorized to view the bug, he's allowed to view the
+    attachment.
+    """
+    permission = 'launchpad.View'
+    usedfor = IBugAttachment
+
+    def __init__(self, bugattachment):
+        self.obj = bugattachment.bug
+
+
+class EditBugAttachment(
+    EditPublicByLoggedInUserAndPrivateByExplicitSubscribers):
+    """Security adapter for editing a bug attachment.
+
+    If the user is authorized to view the bug, he's allowed to edit the
+    attachment.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = IBugAttachment
+
+    def __init__(self, bugattachment):
+        self.obj = bugattachment.bug
+
+
 class UseApiDoc(AuthorizationBase):
     permission = 'zope.app.apidoc.UseAPIDoc'
     usedfor = Interface
@@ -407,4 +527,8 @@ class EditPOTemplateNameSet(OnlyRosettaExpertsAndAdmins):
 class EditBugTracker(EditByOwnersOrAdmins):
     permission = 'launchpad.Edit'
     usedfor = IBugTracker
+
+class EditProductRelease(EditByOwnersOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = IProductRelease
 

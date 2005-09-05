@@ -16,17 +16,21 @@ __all__ = [
     'ITeamParticipation',
     'IRequestPeopleMerge',
     'IObjectReassignment',
+    'IShipItCountry',
     'ITeamReassignment',
     'ITeamCreation',
+    'NameAlreadyTaken'
     ]
 
 from zope.schema import (
-    Choice, Datetime, Int, Text, TextLine, Password, ValidationError)
+    List, Tuple, Choice, Datetime, Int, Text, TextLine, Password,
+    ValidationError)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.email import valid_email
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, EmailAddressStatus)
@@ -36,7 +40,8 @@ _ = MessageIDFactory('launchpad')
 
 class NameAlreadyTaken(ValidationError):
     __doc__ = _("""This name is already in use""")
-
+    # XXX mpt 20050826: This should be moved out of person to be more generic.
+    # (It's currently used by projects too.)
 
 class PersonNameField(TextLine):
 
@@ -87,6 +92,45 @@ class IPerson(Interface):
             description=_("The password you will use to access "
                 "Launchpad services. ")
             )
+    karma = Int(
+            title=_('Karma'), readonly=False,
+            description=_('The cached karma for this person.')
+            )
+    addressline1 = TextLine(
+            title=_('Address'), required=True, readonly=False,
+            description=_('Your address (Line 1)')
+            )
+    addressline2 = TextLine(
+            title=_('Address'), required=False, readonly=False,
+            description=_('Your address (Line 2)')
+            )
+    city = TextLine(
+            title=_('City'), required=True, readonly=False,
+            description=_('The City/Town/Village/etc to where the CDs should '
+                          'be shipped.')
+            )
+    province = TextLine(
+            title=_('Province'), required=True, readonly=False,
+            description=_('The State/Province/etc to where the CDs should '
+                          'be shipped.')
+            )
+    country = Choice(
+            title=_('Country'), required=True, readonly=False,
+            vocabulary='CountryName',
+            description=_('The Country to where the CDs should be shipped.')
+            )
+    postcode = TextLine(
+            title=_('Postcode'), required=True, readonly=False,
+            description=_('The Postcode to where the CDs should be shipped.')
+            )
+    phone = TextLine(
+            title=_('Phone'), required=True, readonly=False,
+            description=_('[(+CountryCode) number] e.g. (+55) 16 33619445')
+            )
+    organization = TextLine(
+            title=_('Organization'), required=False, readonly=False,
+            description=_('The Organization requesting the CDs')
+            )
     languages = Attribute(_('List of languages known by this person'))
 
     # this is not a date of birth, it is the date the person record was
@@ -102,11 +146,12 @@ class IPerson(Interface):
 
     sshkeys = Attribute(_('List of SSH keys'))
 
-    timezone = Choice(title=_('Timezone Name'), required=True, readonly=False,
-                      vocabulary='TimezoneName')
+    timezone = Choice(
+            title=_('Timezone'), required=True, readonly=False,
+            description=_('The timezone of where you live.'),
+            vocabulary='TimezoneName')
 
     # Properties of the Person object.
-    karma = Attribute("The cached karma for this person.")
     ubuntite = Attribute("Ubuntite Flag")
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
@@ -114,11 +159,12 @@ class IPerson(Interface):
     gpgkeys = Attribute("List of GPGkeys")
     pendinggpgkeys = Attribute("Set of GPG fingerprints pending validation")
     inactivegpgkeys = Attribute("List of inactive GPG keys in LP Context")
-    irc = Attribute("IRC")
-    reportedbugs = Attribute("All Bugs reported by this Person.")
-    wiki = Attribute("Wiki")
-    jabber = Attribute("Jabber")
-    archuser = Attribute("Arch user")
+    ubuntuwiki = Attribute("The Ubuntu WikiName of this Person.")
+    otherwikis = Attribute(
+        "All WikiNames of this Person that are not the Ubuntu one.")
+    allwikis = Attribute("All WikiNames of this Person.")
+    ircnicknames = Attribute("List of IRC nicknames of this Person.")
+    jabberids = Attribute("List of Jabber IDs of this Person.")
     packages = Attribute("A Selection of SourcePackageReleases")
     branches = Attribute("The branches for a person.")
     maintainerships = Attribute("This person's Maintainerships")
@@ -149,7 +195,21 @@ class IPerson(Interface):
     members = Attribute("The list of TeamMemberships for people who are "
         "members or proposed members of this team, sorted by membership "
         "state.")
-
+    specifications = Attribute("Any specifications related to this "
+        "person, either because the are a subscriber, or an assignee, or "
+        "a drafter, or the creator. Sorted newest-first.")
+    approver_specs = Attribute("Specifications that this person is "
+        "supposed to approve in due course, newest first.")
+    assigned_specs = Attribute("Specifications that are assigned to "
+        "this person, sorted newest first.")
+    drafted_specs = Attribute("Specifications that are being drafted by "
+        "this person, sorted newest first.")
+    created_specs = Attribute("Specifications that were created by "
+        "this person, sorted newest first.")
+    review_specs = Attribute("Specifications which this person "
+        "has been asked to review, sorted newest first.")
+    subscribed_specs = Attribute("Specifications to which this person "
+        "has subscribed, sorted newest first.")
     teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
                        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
@@ -241,7 +301,13 @@ class IPerson(Interface):
         a member of himself (i.e. person1.inTeam(person1)).
         """
 
-    def validateAndEnsurePreferredEmail(self, email):
+    def currentShipItRequest():
+        """Return this person's unshipped ShipIt request, if there's one.
+        
+        Return None otherwise.
+        """
+
+    def validateAndEnsurePreferredEmail(email):
         """Ensure this person has a preferred email.
 
         If this person doesn't have a preferred email, <email> will be set as
@@ -384,6 +450,9 @@ class IPersonSet(Interface):
 
         Raise KeyError if there is no such person.
         """
+    
+    def topPeople():
+        """Return the top 5 people by Karma score in the Launchpad."""
 
     def createPersonAndEmail(email, name=None, displayname=None, givenname=None,
             familyname=None, password=None, passwordEncrypted=False):
@@ -409,14 +478,10 @@ class IPersonSet(Interface):
         on the displayname or other arguments.
         """
 
-    def newTeam(**kwargs):
-        """Create a new Team with given keyword arguments.
-
-        These keyword arguments will be passed to Person, which is an
-        SQLBase class and will do all the checks needed before inserting
-        anything in the database. Please refer to the Person implementation
-        to see what keyword arguments are allowed.
-        """
+    def newTeam(teamowner, name, displayname, teamdescription=None,
+                subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
+                defaultmembershipperiod=None, defaultrenewalperiod=None):
+        """Create and return a new Team with given arguments."""
 
     def get(personid, default=None):
         """Return the person with the given id.
@@ -472,31 +537,49 @@ class IPersonSet(Interface):
     def teamsCount():
         """Return the number of teams in the database."""
 
-    def findByName(name, orderBy=None):
-        """Return all non-merged Persons and Teams with name matching.
+    def find(text, orderBy=None):
+        """Return all non-merged Persons and Teams whose name, displayname,
+        givenname, familyname or email address match <text>.
 
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
         If no orderBy is specified the results will be ordered using the
         default ordering specified in Person._defaultOrder.
+
+        While we don't have Full Text Indexes in the emailaddress table, we'll
+        be trying to match the text only against the beginning of an email
+        address.
         """
 
-    def findPersonByName(name, orderBy=None):
-        """Return all not-merged Persons with name matching.
+    def findPerson(text="", orderBy=None):
+        """Return all non-merged Persons with at least one email address whose
+        name, displayname, givenname, familyname or email address match <text>.
+
+        If text is an empty string, all persons with at least one email
+        address will be returned.
 
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
         If no orderBy is specified the results will be ordered using the
         default ordering specified in Person._defaultOrder.
+
+        While we don't have Full Text Indexes in the emailaddress table, we'll
+        be trying to match the text only against the beginning of an email
+        address.
         """
 
-    def findTeamByName(name, orderBy=None):
-        """Return all Teams with name matching.
+    def findTeam(text, orderBy=None):
+        """Return all Teams whose name, displayname, givenname, familyname or
+        email address match <text>.
 
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
         If no orderBy is specified the results will be ordered using the
         default ordering specified in Person._defaultOrder.
+
+        While we don't have Full Text Indexes in the emailaddress table, we'll
+        be trying to match the text only against the beginning of an email
+        address.
         """
 
     def getUbuntites(orderBy=None):
@@ -547,7 +630,7 @@ class IEmailAddressSet(Interface):
         Return the default value if there is no such email address.
         """
 
-    def getByPerson(personid):
+    def getByPerson(person):
         """Return all email addresses for the given person."""
 
     def getByEmail(email, default=None):
@@ -713,5 +796,13 @@ class ITeamCreation(ITeam):
             "team. If no contact address is chosen, notifications directed to "
             "this team will be sent to all team members. After finishing the "
             "team creation, a new message will be sent to this address with "
-            "instructions on how to finish its registration."))
+            "instructions on how to finish its registration."),
+        constraint=valid_email)
+
+
+class IShipItCountry(Interface):
+    """This schema is only to get the Country widget."""
+
+    country = Choice(title=_('Country'), required=True, 
+                     vocabulary='CountryName')
 

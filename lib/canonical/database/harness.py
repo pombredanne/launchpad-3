@@ -13,6 +13,7 @@ import sys
 sys.path.insert(0, '../..')
 #sys.path.insert(0, '..')
 
+from zope.component import getUtility
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 execute_zcml_for_scripts()
 

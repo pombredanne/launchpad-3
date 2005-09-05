@@ -1,10 +1,11 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['PackagePublishing', 'SourcePackagePublishing',
+__all__ = ['BinaryPackagePublishing', 'SourcePackagePublishing',
            'SourcePackageFilePublishing', 'BinaryPackageFilePublishing',
            'SourcePackagePublishingView', 'BinaryPackagePublishingView',
-           'SourcePackagePublishingHistory', 'PackagePublishingHistory'
+           'SecureSourcePackagePublishingHistory',
+           'SecureBinaryPackagePublishingHistory'
            ]
 
 from zope.interface import implements
@@ -14,23 +15,24 @@ from canonical.database.sqlbase import SQLBase
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import \
-    IPackagePublishing, ISourcePackagePublishing, \
+    IBinaryPackagePublishing, ISourcePackagePublishing, \
     ISourcePackagePublishingView, IBinaryPackagePublishingView, \
     ISourcePackageFilePublishing, IBinaryPackageFilePublishing, \
-    ISourcePackagePublishingHistory, IPackagePublishingHistory
+    ISecureSourcePackagePublishingHistory, \
+    ISecureBinaryPackagePublishingHistory
 
 from canonical.lp.dbschema import \
     EnumCol, BinaryPackagePriority, PackagePublishingStatus, \
     PackagePublishingPocket
 
 
-class PackagePublishing(SQLBase):
+class BinaryPackagePublishing(SQLBase):
     """A binary package publishing record."""
 
-    implements(IPackagePublishing)
+    implements(IBinaryPackagePublishing)
 
-    binarypackage = ForeignKey(foreignKey='BinaryPackage',
-                               dbName='binarypackage')
+    binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
+                                      dbName='binarypackagerelease')
     distroarchrelease = ForeignKey(foreignKey='DistroArchRelease',
                                    dbName='distroarchrelease')
     component = ForeignKey(foreignKey='Component', dbName='component')
@@ -183,10 +185,10 @@ class BinaryPackagePublishingView(SQLBase):
                                schema=PackagePublishingStatus)
 
 
-class SourcePackagePublishingHistory(SQLBase):
+class SecureSourcePackagePublishingHistory(SQLBase):
     """A source package release publishing record."""
 
-    implements(ISourcePackagePublishingHistory)
+    implements(ISecureSourcePackagePublishingHistory)
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
                                       dbName='sourcepackagerelease')
@@ -220,13 +222,13 @@ class SourcePackagePublishingHistory(SQLBase):
                      cls).selectBy(*args, **kwargs)
 
 
-class PackagePublishingHistory(SQLBase):
+class SecureBinaryPackagePublishingHistory(SQLBase):
     """A binary package publishing record."""
 
-    implements(IPackagePublishingHistory)
+    implements(ISecureBinaryPackagePublishingHistory)
 
-    binarypackage = ForeignKey(foreignKey='BinaryPackage',
-                               dbName='binarypackage')
+    binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
+                                      dbName='binarypackagerelease')
     distroarchrelease = ForeignKey(foreignKey='DistroArchRelease',
                                    dbName='distroarchrelease')
     component = ForeignKey(foreignKey='Component', dbName='component')

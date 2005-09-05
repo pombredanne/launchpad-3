@@ -53,7 +53,7 @@ def main(options, target_section):
         pocket = getattr(PackagePublishingPocket, pocket.upper())
     else:
         log.error(
-            "Could not found a correspondent pocket schema for %s" % pocket
+            "Could not find a pocket schema for %s" % pocket
             )
         sys.exit(1)
 
@@ -273,7 +273,7 @@ if __name__ == "__main__":
         target.getSectionName() for target in config.gina.target
         ]
 
-    if options.all:
+    if options.all: 
         targets = possible_targets[:]
     else:
         if not targets:

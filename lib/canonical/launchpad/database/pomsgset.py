@@ -119,10 +119,11 @@ class POMsgSet(SQLBase):
     # IEditPOMsgSet
 
     def updateTranslationSet(self, person, new_translations, fuzzy,
-        published, ignore_errors=False):
+        published, ignore_errors=False, force_edition_rights=False):
         """See IEditPOMsgSet."""
         # Is the person allowed to edit translations?
-        is_editor = self.pofile.canEditTranslations(person)
+        is_editor = (force_edition_rights or
+                     self.pofile.canEditTranslations(person))
 
         # First, check that the translations are correct.
         pot_set = self.potmsgset
@@ -131,6 +132,11 @@ class POMsgSet(SQLBase):
 
         # By default all translations are correct.
         validation_status = TranslationValidationStatus.OK
+
+        # Fix the trailing and leading whitespaces
+        for index, value in new_translations.items():
+            new_translations[index] = helpers.normalize_whitespaces(
+                msgids_text[0], value)
 
         # Validate the translation we got from the translation form
         # to know if gettext is unhappy with the input.
@@ -159,9 +165,21 @@ class POMsgSet(SQLBase):
         # keep track of whether or not this msgset is complete. We assume
         # it's complete and then flag it during the process if it is not
         complete = True
-        # it's definitely not complete if it has too few translations
-        if len(new_translations) < self.pluralforms:
+        new_translation_count = len(new_translations)
+        if new_translation_count < self.pluralforms:
+            # it's definitely not complete if it has too few translations
             complete = False
+            # And we should reset the selection for the non updated plural forms.
+            for pluralform in range(self.pluralforms)[new_translation_count:]:
+                selection = self.selection(pluralform)
+                if selection is None:
+                    continue
+
+                if published:
+                    selection.publishedsubmission = None
+                else:
+                    selection.activesubmission = None
+
         # now loop through the translations and submit them one by one
         for index in new_translations.keys():
             newtran = new_translations[index]
@@ -174,51 +192,80 @@ class POMsgSet(SQLBase):
                 complete = False
             # make the new sighting or submission. note that this may not in
             # fact create a whole new submission
-            submission = self.makeSubmission(
+            submission = self._makeSubmission(
                 person=person,
                 text=newtran,
                 pluralform=index,
                 published=published,
-                validation_status=validation_status)
+                validation_status=validation_status,
+                force_edition_rights=is_editor)
 
         # We set the fuzzy flag first, and completeness flags as needed:
-        if published and is_editor:
-            self.publishedfuzzy = fuzzy
-            self.publishedcomplete = complete
-        elif is_editor:
-            self.isfuzzy = fuzzy
-            self.iscomplete = complete
+        if is_editor:
+            if published:
+                self.publishedfuzzy = fuzzy
+                self.publishedcomplete = complete
+                # Now is time to check if the fuzzy flag should be copied to
+                # the web flag
+                matches = 0
+                for pluralform in range(self.pluralforms):
+                    if (self.activeSubmission(pluralform) ==
+                        self.publishedSubmission(pluralform)):
+                        matches += 1
+                if matches == self.pluralforms:
+                    # The active submission is exactly the same as the
+                    # published one, so the fuzzy and complete flags should be
+                    # also the same.
+                    self.isfuzzy = self.publishedfuzzy
+                    self.iscomplete = self.publishedcomplete
+            else:
+                self.isfuzzy = fuzzy
+                self.iscomplete = complete
 
         # update the pomsgset statistics
         self.updateStatistics()
 
-    def makeSubmission(self, person, text, pluralform, published,
-            validation_status=TranslationValidationStatus.UNKNOWN):
+    def _makeSubmission(self, person, text, pluralform, published,
+            validation_status=TranslationValidationStatus.UNKNOWN,
+            force_edition_rights=False):
+        """Record a translation submission by the given person.
+
+        If "published" then this is a submission noticed in the published po
+        file, otherwise it is a rosetta submission. It is assumed that any
+        new submission will become the active translation (branding?), and
+        if published is true then it will also become the published
+        submission.
+
+        This is THE KEY method in the whole of rosetta. It deals with the
+        sighting or submission of a translation for a pomsgset and plural
+        form, either online or in the published po file. It has to decide
+        exactly what to do with that submission or sighting: whether to
+        record it or ignore it, whether to make it the active or published
+        translation, etc.
+
+        It takes all the key information in the sighting/submission and
+        records that in the db. It returns either the record of the
+        submission, a POSubmission, or None if it decided to record
+        nothing at all. Note that it may return a submission that was
+        created previously, if it decides that there is not enough new
+        information in this submission to justify recording it.
+
+        The "published" field indicates whether or not this has come from
+        the published po file. It should NOT be set for an arbitrary po
+        file upload, it should ONLY be set if this is genuinely the
+        published po file.
+
+        The "validation_status" field is a value of
+        TranslationValidationStatus that indicates the status of the
+        translation.
+
+        The "force_edition_rights" is a flag that 'forces' that this submition
+        is handled as coming from an editor, no matter if it's really an
+        editor or not
+        """
         # Is the person allowed to edit translations?
-        is_editor = self.pofile.canEditTranslations(person)
-
-        # this is THE KEY method in the whole of rosetta. It deals with the
-        # sighting or submission of a translation for a pomsgset and plural
-        # form, either online or in the published po file. It has to decide
-        # exactly what to do with that submission or sighting: whether to
-        # record it or ignore it, whether to make it the active or published
-        # translation, etc.
-
-        # It takes all the key information in the sighting/submission and
-        # records that in the db. It returns either the record of the
-        # submission, a POSubmission, or None if it decided to record
-        # nothing at all. Note that it may return a submission that was
-        # created previously, if it decides that there is not enough new
-        # information in this submission to justify recording it.
-
-        # The "published" field indicates whether or not this has come from
-        # the published po file. It should NOT be set for an arbitrary po
-        # file upload, it should ONLY be set if this is genuinely the
-        # published po file.
-
-        # The "is_editor" field indicates whether or not this person is
-        # allowed to edit the active translation in Rosetta. If not, we will
-        # still create a submission if needed, but we won't make it active.
+        is_editor = (force_edition_rights or
+                     self.pofile.canEditTranslations(person))
 
         # It makes no sense to have a "published" submission from someone
         # who is not an editor, so let's sanity check that first
@@ -241,7 +288,7 @@ class POMsgSet(SQLBase):
         # submitting an empty (None) translation gets rid of the published
         # or active selection for that translation. But a null published
         # translation does not remove the active submission.
-        if text is None and selection:
+        if text is None and selection is not None:
             # Remove the existing active/published selection
             # XXX sabdfl now we have no record of WHO made the translation
             # null, if it was not null previously. This needs to be
@@ -250,8 +297,8 @@ class POMsgSet(SQLBase):
                 selection.publishedsubmission = None
             elif (is_editor and
                   validation_status == TranslationValidationStatus.OK):
-                # activesubmission is updated only if the translation is valid and
-                # it's an editor.
+                # activesubmission is updated only if the translation is
+                # valid and it's an editor.
                 selection.activesubmission = None
 
         # If nothing was submitted, return None
@@ -293,7 +340,7 @@ class POMsgSet(SQLBase):
 
         # test if we are working with the published pofile, and if this
         # translation is already published
-        if published and selection.publishedsubmission:
+        if published and selection.publishedsubmission is not None:
             if selection.publishedsubmission.potranslation == translation:
                 # Sets the validation status to the current status.
                 # We do it always so the changes in our validation code will
@@ -359,23 +406,6 @@ class POMsgSet(SQLBase):
 
         notify(SQLObjectModifiedEvent(
             selection, object_before_modification, fields))
-
-        # we cannot properly update the statistics here, because we don't
-        # know if the "fuzzy" or completeness status is changing at a higher
-        # level. But we can make a good guess in some cases
-
-        # first, if it was published complete, it is still complete, and
-        # this new submission was not from a pofile, and we were not
-        # updated, then we are now updated!
-        if not published and is_editor:
-            if self.publishedcomplete and not self.publishedfuzzy:
-                if self.iscomplete and not self.isfuzzy:
-                    if not self.isupdated:
-                        self.isupdated = True
-                        self.pofile.updatescount += 1
-
-        # flush these updates to the db so we can reuse them
-        flush_database_updates()
 
         # return the submission we have just made
         return submission

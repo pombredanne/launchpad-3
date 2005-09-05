@@ -23,11 +23,13 @@ from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, BugTaskSeverity, BugTaskStatus,
     RosettaImportStatus)
 from canonical.launchpad.database.productseries import ProductSeries
+from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtask import BugTaskSet
-from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner)
@@ -75,21 +77,13 @@ class Product(SQLBase):
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
 
-    def search(self, bug=None, searchtext=None, status=None, priority=None,
-               severity=None, milestone=None, assignee=None, owner=None,
-               orderby=None, statusexplanation=None, user=None):
+    specifications = MultipleJoin('Specification', joinColumn='product',
+        orderBy=['-datecreated', 'id'])
+
+    def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
-        # As an initial refactoring, we're wrapping BugTaskSet.search.
-        # It's possible that the search code will live inside this
-        # method instead at some point.
-        #
-        # The implementor who would make such a change should be
-        # mindful of bug privacy.
-        return BugTaskSet().search(
-            product=self, bug=bug, searchtext=searchtext, status=status,
-            priority=priority, severity=severity, milestone=milestone,
-            assignee=assignee, owner=owner, orderby=orderby,
-            statusexplanation=statusexplanation, user=user)
+        search_params.setProduct(self)
+        return BugTaskSet().search(search_params)
 
     def getOrCreateCalendar(self):
         if not self.calendar:
@@ -98,9 +92,19 @@ class Product(SQLBase):
                 revision=0)
         return self.calendar
 
-    bugtasks = MultipleJoin('BugTask', joinColumn='product')
-    branches = MultipleJoin('Branch', joinColumn='product')
-    serieslist = MultipleJoin('ProductSeries', joinColumn='product')
+    bugtasks = MultipleJoin('BugTask', joinColumn='product',
+        orderBy='id')
+    branches = MultipleJoin('Branch', joinColumn='product',
+        orderBy='id')
+    serieslist = MultipleJoin('ProductSeries', joinColumn='product',
+        orderBy='name')
+
+    @property
+    def name_with_project(self):
+        """See lib.canonical.launchpad.interfaces.IProduct"""
+        if self.project and self.project.name != self.name:
+            return self.project.name + ": " + self.name
+        return self.name
 
     @property
     def releases(self):
@@ -131,6 +135,7 @@ class Product(SQLBase):
                 for r in ret]
 
     def getPackage(self, distrorelease):
+        """See IProduct."""
         if isinstance(distrorelease, Distribution):
             distrorelease = distrorelease.currentrelease
         for pkg in self.sourcepackages:
@@ -139,12 +144,19 @@ class Product(SQLBase):
         else:
             raise NotFoundError(distrorelease)
 
+    def getMilestone(self, name):
+        """See IProduct."""
+        return Milestone.selectOne("""
+            product = %s AND
+            name = %s
+            """ % sqlvalues(self.id, name))
+
     @property
     def translatable_packages(self):
         """See IProduct."""
         packages = sets.Set([package
                             for package in self.sourcepackages
-                            if package.potemplatecount > 0])
+                            if len(package.currentpotemplates) > 0])
         # Sort the list of packages by distrorelease.name and package.name
         L = [(item.distrorelease.name + item.name, item)
              for item in packages]
@@ -211,83 +223,25 @@ class Product(SQLBase):
         # a better way.
         return max(perms)
 
-    def potemplates(self):
+    def getSpecification(self, name):
         """See IProduct."""
-        # XXX sabdfl 30/03/05 this method is really obsolete, because what
-        # we really care about now is ProductSeries.potemplates
-        warn("Product.potemplates is obsolete, should be on ProductRelease",
-             DeprecationWarning, stacklevel=2)
-        templates = []
-        for series in self.serieslist:
-            for potemplate in series.potemplates:
-                templates.append(potemplate)
-
-        return templates
-
-    @property
-    def potemplatecount(self):
-        """See IProduct."""
-        target = self.primary_translatable
-        if target is None:
-            return 0
-        return len(target.potemplates)
-
-    def poTemplatesToImport(self):
-        # XXX sabdfl 30/03/05 again, i think we want to be using
-        # ProductRelease.poTemplatesToImport
-        for template in iter(self.potemplates):
-            if template.rawimportstatus == RosettaImportStatus.PENDING:
-                yield template
-
-    def messageCount(self):
-        count = 0
-        for t in self.potemplates:
-            count += len(t)
-        return count
-
-    def currentCount(self, language):
-        count = 0
-        for t in self.potemplates:
-            count += t.currentCount(language)
-        return count
-
-    def updatesCount(self, language):
-        count = 0
-        for t in self.potemplates:
-            count += t.updatesCount(language)
-        return count
-
-    def rosettaCount(self, language):
-        count = 0
-        for t in self.potemplates:
-            count += t.rosettaCount(language)
-        return count
+        return Specification.selectOneBy(productID=self.id, name=name)
 
     def getSeries(self, name):
         """See IProduct."""
-        series = ProductSeries.selectOneBy(productID=self.id, name=name)
-        if series is None:
-            raise NotFoundError(name)
-        return series
+        return ProductSeries.selectOneBy(productID=self.id, name=name)
 
     def newSeries(self, name, displayname, summary):
         return ProductSeries(product=self, name=name, displayname=displayname,
                              summary=summary)
 
-
     def getRelease(self, version):
-        #return ProductRelease.selectBy(productID=self.id, version=version)[0]
-        release = ProductRelease.selectOne(
-            AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
-                ProductSeries.q.productID == self.id,
-                ProductRelease.q.version == version),
+        return ProductRelease.selectOne("""
+            ProductRelease.productseries = ProductSeries.id AND
+            ProductSeries.product = %s AND
+            ProductRelease.version = %s
+            """ % sqlvalues(self.id, version),
             clauseTables=['ProductSeries'])
-        if release is None:
-            # XXX: This needs a change in banzai, which depends on this method
-            #      raising IndexError.
-            #      SteveAlexander, 2005-04-25
-            raise IndexError
-        return release
 
     def packagedInDistros(self):
         distros = Distribution.select(
@@ -328,6 +282,14 @@ class Product(SQLBase):
                 statusline.append(bugmatrix[severity][status])
             resultset.append(statusline)
         return resultset
+
+    def ensureRelatedBounty(self, bounty):
+        """See IProduct."""
+        for curr_bounty in self.bounties:
+            if bounty.id == curr_bounty.id:
+                return None
+        linker = ProductBounty(product=self, bounty=bounty)
+        return None
 
 
 class ProductSet:
@@ -407,9 +369,8 @@ class ProductSet:
             query += ' AND Product.active IS TRUE \n'
         return Product.select(query, distinct=True, clauseTables=clauseTables)
 
-    def translatables(self, translationProject=None):
+    def translatables(self):
         """See IProductSet"""
-
         translatable_set = set()
         upstream = Product.select('''
             Product.id = ProductSeries.product AND

@@ -8,18 +8,23 @@
     <div metal:fill-slot="body">
       <h1>Help us improve</h1>
       <p>
-        Launchpad is a work in progress, and we welcome your feedback on how to make it better.
+        Launchpad is a work in progress, and we welcome your feedback on how
+        to make it better.
       </p>
       <ul>
         <li>
           <p>
-            If a problem in Launchpad is preventing you from reporting bugs,
-            <a href="mailto:launchpad-error-reports@lists.canonical.com">tell us the problem by e-mail</a>.
+            If you have general questions or suggestions,
+            <a href="irc://irc.freenode.net/#launchpad">join us on IRC</a> &#8212;
+            network <code>irc.freenode.net</code>,
+            channel <code>#launchpad</code>.
           </p>
         </li>
         <li>
           <p>
-            Otherwise, the best way to report problems in Launchpad is in the Malone bug tracker. You can report bugs about:
+            Found a bug in Launchpad?
+            Check that it&#8217;s reported in the Malone bug tracker.
+            Report bugs about:
           </p>
           <ul>
             <li>
@@ -29,25 +34,24 @@
               <a href="/products/rosetta/+bugs">Rosetta</a>
             </li>
             <li>
-              <a href="/products/foaf/+bugs">Launchpad accounts and teams</a>
-            </li>
-            <li>
-              <a href="/products/doap/+bugs">product and project registration</a>
-            </li>
-            <li>
-              <a href="/products/soyuz/+bugs">distribution and package registration</a>
-            </li>
-            <li>
               <a href="/products/launchpad/+bugs">any other aspect of Launchpad</a>.
             </li>
           </ul>
         </li>
         <li>
           <p>
-            If you have general questions or suggestions,
-            <a href="irc://irc.freenode.net/#launchpad">join us on IRC</a> &#8212;
-            network <code>irc.freenode.net</code>,
-            channel <code>#launchpad</code>.
+            If a problem in Launchpad prevents you from reporting bugs,
+            <a href="mailto:launchpad-error-reports@lists.canonical.com">tell us the problem by e-mail</a>.
+          </p>
+        </li>
+        <li>
+          <p>
+            Got an idea for a new feature? Search
+            <a href="http://wiki.launchpad.canonical.com/">the Launchpad wiki</a>
+            to see if it&#8217;s planned.
+            If not,
+            write a specification on the wiki,
+            and discuss it with us on IRC.
           </p>
         </li>
       </ul>

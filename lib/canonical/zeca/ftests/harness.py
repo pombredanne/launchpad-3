@@ -35,12 +35,9 @@ class ZecaTestSetup(TacTestSetup):
     """
     def setUpRoot(self):
         """Recreate root directory and copy needed keys"""
-        if os.access(self.root, os.F_OK):
+        if os.path.isdir(self.root):
             shutil.rmtree(self.root)
         shutil.copytree(keysdir, self.root)
-
-    def tearDownRoot(self):
-        shutil.rmtree(self.root)
 
     @property
     def root(self):
@@ -60,8 +57,4 @@ class ZecaTestSetup(TacTestSetup):
     @property
     def logfile(self):
         return os.path.join(self.root, 'zeca.log')
-
-    @property
-    def spewbucket(self):
-        return os.path.join(self.root, 'spew.log')
 

@@ -65,7 +65,7 @@ class ILoginToken(Interface):
     def sendEmailValidationRequest(appurl):
         """Send an email message with a magic URL to validate self.email."""
 
-    def sendGpgValidationRequest(appurl, fingerprint=None):
+    def sendGPGValidationRequest(appurl, fingerprint=None):
         """Send an email message with a magic URL to validate gpg key.
         if fingerprint is set send encrypted email.
         """
@@ -95,7 +95,7 @@ class ILoginTokenSet(Interface):
         and requester.
         """
 
-    def getPendingGpgKeys(self, requesterid=None):
+    def getPendingGPGKeys(self, requesterid=None):
         """Return Tokens for GPG Keys pending validation, optionally for
         a single user.
         """

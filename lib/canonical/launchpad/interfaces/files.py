@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 from zope.schema import Int
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 _ = MessageIDFactory('launchpad')
@@ -34,6 +34,7 @@ class IBinaryPackageFile(Interface):
     filetype = Int(
             title=_('The type of this file'), required=True, readonly=False,
             )
+    url = Attribute("IDownloadURL instance")
 
 class ISourcePackageReleaseFile(Interface):
     """A source package release to librarian link record."""
@@ -55,3 +56,4 @@ class ISourcePackageReleaseFile(Interface):
             title=_('The type of this file'), required=True, readonly=False,
             )
 
+    url = Attribute("IDownloadURL instance")

@@ -8,8 +8,8 @@
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-translations" />
-    <div tal:condition="context/required:launchpad.Edit"
-         tal:replace="structure context/@@+portlet-milestones" />
+    <div tal:replace="structure context/@@+portlet-milestones" />
+    <div tal:replace="structure context/@@+portlet-latestspecs" />
     <div tal:condition="context/project"
          tal:replace="structure context/project/@@+portlet-details" />
 </metal:leftportlets>
@@ -36,29 +36,27 @@
     $Product.description goes here. This should be a longer piece of
     text, up to three paragraphs in length, which gives much more
     detailed information about the open source product in question.
-    Ideally, this text is formatted using some formatting convention
-    which we have not yet determined (HTML, reStructuredText or
-    something else, for example).
   </div>
 
-  <tal:block condition="context/serieslist">
-
-    <tal:block repeat="series context/serieslist">
-
-      <h3>Product Series: <span tal:replace="series/name">seriesname</span>
-        (<span tal:replace="series/datecreated/fmt:date">4-12-45</span>)
-      </h3>
-      
-      <p><span tal:replace="structure series/summary/fmt:text-to-html">
-        A summary of the series
-        details and status.</span>
-        [<a tal:attributes="href
-        string:+series/${series/name}">More</a>]
+  <tal:hasseries condition="context/serieslist">
+    <h2>Product series</h2>
+    <dl>
+      <tal:block repeat="series context/serieslist">
+        <dt>
+          <dfn>
+            <a
+              tal:attributes="href series/fmt:url"
+              tal:content="series/displayname"
+            >seriesname</a>
+          </dfn>
+          (<span tal:replace="series/datecreated/fmt:date">4-12-45</span>)
+        </dt>
+        <dd>
+      <p tal:content="structure series/summary/fmt:text-to-html">
+        A summary of the series details and status.
       </p>
             
-      <div style="margin-left: 15px;" tal:condition="series/releases">
-
-        <table class="listing">
+        <table class="listing" tal:condition="series/releases">
           <thead>
             <tr>
               <th>Version</th>
@@ -81,35 +79,24 @@
           </tbody>
         </table>
 
-      </div>
-
     </tal:block>
 
-  </tal:block>
+  </tal:hasseries>
 
   <tal:block condition="context/branches">
 
-    <h3>Bazaar Branches</h3>
+    <h2>Bazaar branches</h2>
 
-    <div style="margin-left: 15px;">
+    <div>
 
-      <table class="listing">
-        <thead>
-          <tr>
-            <th>Title</th>
-            <th>Url</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr tal:repeat="branch context/branches">
-              <td tal:content="branch/title">title</td>
-              <td> http://bazaar.ubuntu.com/<span 
-                  tal:content="branch/getPackageName">category
-                </span>
-              </td>
-          </tr>
-        </tbody>
-      </table>
+      <ul>
+        <li tal:repeat="branch context/branches">
+          <a
+            tal:attributes="href string:http://bazaar.ubuntu.com/${branch/getPackageName}"
+            tal:content="branch/title"
+          >branch title</a>
+        </li>
+      </ul>
 
     </div>
 

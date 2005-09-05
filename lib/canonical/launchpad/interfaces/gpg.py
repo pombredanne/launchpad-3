@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'IGPGKey',
     'IGPGKeySet',
+    'KEYSERVER_QUERY_URL',
     ]
 
 from zope.schema import Bool, Int, TextLine, Choice
@@ -14,6 +15,10 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 
 from canonical.launchpad.validators.gpg import valid_fingerprint, valid_keyid
+
+KEYSERVER_QUERY_URL = (
+    'http://keyserver.ubuntu.com:11371/pks/lookup?op=get&search=0x')
+
 
 class IGPGKey(Interface):
     """GPG support"""
@@ -29,6 +34,8 @@ class IGPGKey(Interface):
     active = Bool(title=_("Active"), required=True)
     displayname = Attribute("Key Display Name")
     revoked = Attribute("Workarrounded Revoked flag, temporary.")
+    keyserverURL = Attribute("The URL to retrieve this key from the keyserver.")
+
 
 class IGPGKeySet(Interface):
     """The set of GPGKeys."""
@@ -37,9 +44,10 @@ class IGPGKeySet(Interface):
             algorithm, active=True):
         """Create a new GPGKey pointing to the given Person."""
 
-    def get(id, default=None):
+    def get(key_id, default=None):
         """Return the GPGKey object for the given id.
-        Return the given default if there's now object with the given id.
+
+        Return the given default if there's no object with the given id.
         """
 
     def getByFingerprint(fingerprint, default=None):
@@ -47,13 +55,19 @@ class IGPGKeySet(Interface):
         inactive ones.
         """
 
-    def deactivateGpgKey(keyid):
-        """Deactivate a Key inside Launchpad Context """
+    def deactivateGPGKey(key_id):
+        """Deactivate a Key inside Launchpad Context.
 
-    def activateGpgKey(keyid):
-        """Reactivate a Key inside Launchpad Context """
+        Returns the modified key or None if the key wasn't found.
+        """
+
+    def activateGPGKey(key_id):
+        """Reactivate a Key inside Launchpad Context.
+
+        Returns the modified key or None if the key wasn't found.
+        """
         
-    def getGpgKeys(ownerid=None, active=True):
+    def getGPGKeys(ownerid=None, active=True):
         """Return GPG keys, optionally for a given owner and or a given
         status.
         """ 

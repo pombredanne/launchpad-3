@@ -7,13 +7,14 @@ import urllib
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol, MultipleJoin
-
-from canonical.launchpad.interfaces import IBugTracker, IBugTrackerSet
+from sqlobject import ForeignKey, StringCol, MultipleJoin, RelatedJoin
 
 from canonical.lp.dbschema import EnumCol, BugTrackerType
 from canonical.database.sqlbase import (SQLBase, flush_database_updates,
     quote)
+
+from canonical.launchpad.interfaces import IBugTracker, IBugTrackerSet
+
 
 
 class BugTracker(SQLBase):
@@ -34,6 +35,9 @@ class BugTracker(SQLBase):
     contactdetails = StringCol(notNull=False)
     watches = MultipleJoin('BugWatch', joinColumn='bugtracker',
         orderBy='remotebug')
+    projects = RelatedJoin('Project', intermediateTable='ProjectBugTracker',
+        joinColumn='bugtracker', otherColumn='project',
+        orderBy='name')
 
     @property
     def watchcount(self):
@@ -97,14 +101,14 @@ class BugTrackerSet:
         if name is None:
             scheme, host = urllib.splittype(baseurl)
             host, path = urllib.splithost(host)
-            name='auto-%s' % host
+            name = 'auto-%s' % host
         if title is None:
-            title=quote('Bug tracker at %s' % baseurl)
+            title = quote('Bug tracker at %s' % baseurl)
         if summary is None:
-            summary=("This bugtracker was automatically created. Please "
-                "edit the details to get it correct!")
+            summary = ("This bugtracker was automatically created. Please "
+                       "edit the details to get it correct!")
         if contactdetails is None:
-            contactdetails='No contactdetails provided.'
+            contactdetails = 'No contact details provided.'
         bugtracker = BugTracker(name=name,
             bugtrackertype=bugtrackertype,
             title=title, summary=summary, baseurl=baseurl,
@@ -112,4 +116,7 @@ class BugTrackerSet:
         flush_database_updates()
         return bugtracker
 
+    @property
+    def bugtracker_count(self):
+        return BugTracker.select().count()
 

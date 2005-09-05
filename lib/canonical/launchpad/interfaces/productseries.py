@@ -15,11 +15,13 @@ from zope.schema import  Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
+from canonical.launchpad.interfaces import ISpecificationTarget
+
 from canonical.launchpad.validators.name import valid_name
 
 _ = MessageIDFactory('launchpad')
 
-class IProductSeries(Interface):
+class IProductSeries(ISpecificationTarget):
     """A series of releases. For example "2.0" or "1.3" or "dev"."""
     # XXX Mark Shuttleworth 14/10/04 would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
@@ -59,16 +61,20 @@ class IProductSeries(Interface):
         "Series, sorted with latest release first.")
     potemplates = Attribute(
         _("Return an iterator over this productrelease's PO templates."))
-    potemplatecount = Attribute(_("The number of POTemplates for this "
-        "Product Series."))
+    currentpotemplates = Attribute(
+        _("Return an iterator over this productrelease's PO templates that"
+          " have the 'iscurrent' flag set'."))
     packagings = Attribute("An iterator over the Packaging entries "
         "for this product series.")
-
+    specifications = Attribute("The specifications targeted to this "
+        "product series.")
     sourcepackages = Attribute(_("List of distribution packages for this "
         "product series"))
 
     def getRelease(version):
-        """Get the release in this series that has the specified version."""
+        """Get the release in this series that has the specified version.
+        Return None is there is no such release.
+        """
 
     def getPackage(distrorelease):
         """Return the SourcePackage for this productseries in the supplied

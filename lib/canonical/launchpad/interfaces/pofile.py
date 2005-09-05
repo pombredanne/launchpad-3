@@ -70,6 +70,9 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         "is used for this pofile. This is inherited from the product, "
         "project and/or distro in which the pofile is found.")
 
+    fuzzy_count = Attribute("The number of 'fuzzy' messages in this "
+        "po file.")
+
     def __len__():
         """Returns the number of current IPOMessageSets in this PO file."""
 

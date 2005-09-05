@@ -7,58 +7,60 @@ SET search_path = public, pg_catalog;
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'person'::pg_catalog.regclass;
 
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (1, 'Mark Shuttleworth', 'Mark', 'Shuttleworth', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'sabdfl', NULL, '''mark'':2B,4C ''sabdfl'':1A ''shuttleworth'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.591618', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (2, 'Robert Collins', 'Robert', 'Collins', 'ID1adsprLaTBox18F6dpSdtSdqCiOdpgUXBo4oG17qhg73jSDTVe3g==', NULL, NULL, 'lifeless', NULL, '''collin'':3B,5C ''robert'':2B,4C ''lifeless'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.598107', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (3, 'Dave Miller', 'Dave', 'Miller', NULL, NULL, NULL, 'justdave', NULL, '''dave'':2B,4C ''miller'':3B,5C ''justdav'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.610048', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (4, 'Colin Watson', 'Colin', 'Watson', NULL, NULL, NULL, 'kamion', NULL, '''colin'':2B,4C ''kamion'':1A ''watson'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.611185', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (5, 'Scott James Remnant', 'Scott James', 'Remnant', NULL, NULL, NULL, 'keybuk', NULL, '''jame'':3B,6C ''scott'':2B,5C ''keybuk'':1A ''remnant'':4B,7C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.608802', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (6, 'Jeff Waugh', 'Jeff', 'Waugh', NULL, NULL, NULL, 'jdub', NULL, '''jdub'':1A ''jeff'':2B,4C ''waugh'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.600523', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (7, 'Andrew Bennetts', 'Andrew', 'Bennetts', NULL, NULL, NULL, 'spiv', NULL, '''spiv'':1A ''andrew'':2B,4C ''bennett'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.551196', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (8, 'James Blackwell', 'James', 'Blackwell', NULL, NULL, NULL, 'jblack', NULL, '''jame'':2B,4C ''jblack'':1A ''blackwel'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.601584', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (9, 'Christian Reis', 'Christian', 'Reis', NULL, NULL, NULL, 'kiko', NULL, '''rei'':3B,5C ''kiko'':1A ''christian'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.594941', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (10, 'Alexander Limi', 'Alexander', 'Limi', NULL, NULL, NULL, 'limi', NULL, '''limi'':1A,3B,5C ''alexand'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.619713', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (11, 'Steve Alexander', 'Steve', 'Alexander', NULL, NULL, NULL, 'stevea', NULL, '''steve'':2B,4C ''stevea'':1A ''alexand'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.599234', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (12, 'Sample Person', 'Sample', 'Person', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name12', NULL, '''sampl'':2B,4C ''name12'':1A ''person'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.612277', 1, 'Australia/Perth');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (13, 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U', NULL, NULL, 'carlos', NULL, '''carlo'':1A,2B,5C ''marín'':4B,7C ''perelló'':3B,6C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.615543', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (14, 'Dafydd Harries', 'Dafydd', 'Harries', 'EvSuSe4k4tkRHSp6p+g91vyQIwL5VJ3iTbRZ', NULL, NULL, 'daf', NULL, '''daf'':1A ''harri'':3B,5C ''dafydd'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.616666', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (16, 'Foo Bar', 'Foo', 'Bar', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name16', NULL, '''bar'':3B,5C ''foo'':2B,4C ''name16'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', 2, 'Africa/Johannesburg');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (17, 'Ubuntu Team', NULL, NULL, NULL, 1, 'This Team is responsible for the Ubuntu Distribution', 'name17', NULL, '''team'':3B ''name17'':1A ''ubuntu'':2B', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.60576', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (18, 'Ubuntu Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for the GNOME releases Issues on whole Ubuntu Distribution', 'name18', NULL, '''team'':4B ''gnome'':3B ''name18'':1A ''ubuntu'':2B', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.607744', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (19, 'Warty Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for GNOME release Issues on Warty Distribution Release', 'name19', NULL, '''team'':4B ''gnome'':3B ''warti'':2B ''name19'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.602661', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (20, 'Warty Security Team', NULL, NULL, NULL, 1, 'This Team is responsible for Security Issues on Warty Distribution Release', 'name20', NULL, '''team'':4B ''secur'':3B ''warti'':2B ''name20'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.614468', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (21, 'Hoary Gnome Team', NULL, NULL, NULL, 1, 'This team is responsible for Security Issues on Hoary Distribution Release', 'name21', NULL, '''team'':4B ''gnome'':3B ''hoari'':2B ''name21'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.603691', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (22, 'Stuart Bishop', 'Stuart', 'Bishop', 'I+lQozEFEr+uBuxQZuKGpL4jkiy6lE1dQsZx', NULL, NULL, 'stub', NULL, '''stub'':1A ''bishop'':3B,5C ''stuart'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.59276', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (23, 'David Allouche', 'David', 'Allouche', NULL, NULL, NULL, 'ddaa', NULL, '''ddaa'':1A ''david'':2B,4C ''allouch'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.620823', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (24, 'Buttress Source Administrators', NULL, NULL, NULL, 2, 'Ultimate control of the Buttress systems', 'buttsource', NULL, '''sourc'':3B ''buttress'':2B ''administr'':4B ''buttsourc'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.604746', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (25, 'Launchpad Administrators', NULL, NULL, NULL, 1, 'Launchpad Administrators', 'admins', NULL, '''admin'':1A ''administr'':3B ''launchpad'':2B', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (26, 'Daniel Silverstone', 'Daniel', 'Silverstone', NULL, NULL, NULL, 'kinnison', NULL, '''daniel'':2B,4C ''kinnison'':1A ''silverston'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.618722', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (27, 'Daniel Henrique Debonzi', 'Daniel', 'Henrique', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 'debonzi', NULL, '''daniel'':2B,5C ''debonzi'':1A,4B ''henriqu'':3B,6C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.557224', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (28, 'Celso Providelo', 'Celso', 'Providelo', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 'cprov', NULL, '''celso'':2B,4C ''cprov'':1A ''providelo'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.59705', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (29, 'Guilherme Salgado', 'Guilherme', 'Salgado', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 'salgado', NULL, '''salgado'':1A,3B,5C ''guilherm'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.596025', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (30, 'Rosetta Administrators', NULL, NULL, NULL, 25, 'Rosetta Administrators', 'rosetta-admins', NULL, '''admin'':3A ''rosetta'':2A,4B ''administr'':5B ''rosetta-admin'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.613368', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (31, 'Ubuntu Translators', NULL, NULL, NULL, 30, 'Ubuntu Translators', 'ubuntu-translators', NULL, '''ubuntu'':2A,4B ''translat'':3A,5B ''ubuntu-transl'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.617651', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (32, 'GuadaMen', NULL, NULL, NULL, 16, 'The guadalinex maintainers team', 'guadamen', NULL, '''guadamen'':1A,2B', 700, 300, 1, NULL, '2005-06-06 08:59:51.606755', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (33, 'Edgar Bursic', 'Edgar', 'Bursic', '3JiiJZWCSnGbu71a+Qw1Dik7QAsrS4soxQTy1qzErmIA4F7zfmca8Q==', NULL, NULL, 'edgar', NULL, '''edgar'':1A,2B,4C ''bursic'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.621892', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (34, 'Jordi Vilalta', 'Jordi', 'Vilalta', 'gsTz0TyTUL7xrkoAH4Yz2WE6/w6WoYG5LjaO8p/xA1FDdSM6qkWiYA==', NULL, NULL, 'jvprat', NULL, '''jordi'':2B,4C ''jvprat'':1A ''vilalta'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.622908', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (35, 'Sigurd Gartmann', 'Sigurd', 'Gartmann', 'FvPq9d4L5onnmcRA9wCzQ5lnPPYIzvW5rJA7GGnnsJuQqz8M8naZkQ==', NULL, NULL, 'sigurd-ubuntu', NULL, '''sigurd'':2A,4B,6C ''ubuntu'':3A ''gartmann'':5B,7C ''sigurd-ubuntu'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.623962', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (36, 'Vlastimil Skacel', 'Vlastimil', 'Skacel', 'lyA9CgUH9lHmTiaiWGP2vzkmytufiHBAnc9c8WCX1g5pYyBd6QgL3A==', NULL, NULL, 'skacel', NULL, '''skacel'':1A,3B,5C ''vlastimil'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.5244', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (37, 'Daniel Aguayo', 'Daniel', 'Aguayo', 'bpLapC1tQHUedQBP447krtcmaRPd3hrncPusTlNUKXh5ymfO5yVhhQ==', NULL, NULL, 'danner', NULL, '''aguayo'':3B,5C ''daniel'':2B,4C ''danner'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.549651', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (38, 'Martin Pitt', 'Martin', 'Pitt', 'iNbxn63pi1VFuZ0byz76vhFtdMXQAj2L+Cn/1UpsbmOhjUZs+Z6Naw==', NULL, NULL, 'martin-pitt', NULL, '''pitt'':3A,5B,7C ''martin'':2A,4B,6C ''martin-pitt'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.555051', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (39, 'Nicolas Velin', 'Nicolas', 'Velin', 'U2QzusrIFlQZKb3hWzcLpfhFcB3WZ0fa0E+OwcV8q/WOtsQCjarzzA==', NULL, NULL, 'nsv', NULL, '''nsv'':1A ''velin'':3B,5C ''nicola'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.556132', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (40, 'Francesco Accattapà', 'Francesco', 'Accattapà', 'mSKDc1EKoi8a5L0zd+oueU33nuSEuFWy+JHIHxOukBVJt9LPW47RVg==', NULL, NULL, 'callipeo', NULL, '''callipeo'':1A ''francesco'':2B,4C ''accattapà'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.558429', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (41, 'Aloriel', 'Aloriel', '', '94y1dy33Evut2/bLsGG8Pzguyuip9wHeRtFWp0cSItzHdD1tK3gmcQ==', NULL, NULL, 'jorge-gonzalez-gonzalez', NULL, '''jorg'':2A ''aloriel'':5B,6C ''gonzalez'':3A,4A ''jorge-gonzalez-gonzalez'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.559519', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (42, 'Denis Barbier', 'Denis', 'Barbier', 'vI/vIVB2qsx1NvuaMy+q4l8rWUNMFINWzCSLOK1D5qi97/VmXvIrEw==', NULL, NULL, 'barbier', NULL, '''deni'':2B,4C ''barbier'':1A,3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.560604', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (43, 'André Luís Lopes', 'André', 'Luís Lopes', 'HG6qWB8PwzfIr3z+Tu+m3lQv7r1dsaWY6rxCxRuNypGomTPTzBh9iA==', NULL, NULL, 'andrelop', NULL, '''lope'':4B,7C ''luís'':3B,6C ''andré'':2B,5C ''andrelop'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.561685', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (44, 'Carlos Valdivia Yagüe', 'Carlos', 'Valdivia Yagüe', 'xrXafuC+VBaIz3m2+0UMjxms+2KhGhj6qnQdoo2V/f4iNFHJgSDzzw==', NULL, NULL, 'valyag', NULL, '''carlo'':2B,5C ''valyag'':1A ''yagüe'':4B,7C ''valdivia'':3B,6C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.562857', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (45, 'Luk Claes', 'Luk', 'Claes', 'w+f2krWWyQIIm76PIUEIsMCNQLhWLjObLcDONJNjjXcRaiKzKXeMAw==', NULL, NULL, 'luk-claes', NULL, '''luk'':2A,4B,6C ''clae'':3A,5B,7C ''luk-cla'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.563952', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (46, 'Miroslav Kure', 'Miroslav', 'Kure', '1u05okOZJIa069F8COZ2vmxRq11c+4rolNUVRp539TI5ihnHwk9+Sw==', NULL, NULL, 'kurem', NULL, '''kure'':3B,5C ''kurem'':1A ''miroslav'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.565033', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (47, 'Morten Brix Pedersen', 'Morten', 'Brix Pedersen', 'n+KIa3PoihBN8ljj9Hjg9H3Im2LWnrn2yprgY4u/MnxOQx3dOh3bDw==', NULL, NULL, 'morten', NULL, '''brix'':3B,6C ''morten'':1A,2B,5C ''pedersen'':4B,7C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.56614', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (48, 'Matti Pöllä', 'Matti', 'Pöllä', 'U4KMnp73AYdriB7QH2NpEYhlH+fBWJKziDPcDAt25OxItZMYh0QV4Q==', NULL, NULL, 'mpo', NULL, '''mpo'':1A ''matti'':2B,4C ''pöllä'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.567224', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (49, 'Kęstutis Biliūnas', 'Kęstutis', 'Biliūnas', 'YbUJ4nzlxjYtaLLFMqUFL3LplUpS3FxcYwiCAS0WaAcnXS8Sst9BgA==', NULL, NULL, 'kebil', NULL, '''kebil'':1A ''biliūnas'':3B,5C ''kęstutis'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.568323', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (50, 'Valentina Commissari', 'Valentina', 'Commissari', 'fgwbt51c6ajsTet6DTbQBqAzQ7Q9S1G7S0APNvMX7YN2qpdbNbEn3Q==', NULL, NULL, 'tsukimi', NULL, '''tsukimi'':1A ''valentina'':2B,4C ''commissari'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.569518', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (51, 'Helge Kreutzmann', 'Helge', 'Kreutzmann', 'sYVFKi2dWAfkFkWekcW296s2dZ0ihYcxAXtwumI1FQJes4PWD8xvqQ==', NULL, NULL, 'kreutzm', NULL, '''helg'':2B,4C ''kreutzm'':1A ''kreutzmann'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.570701', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (52, 'No Privileges Person', 'No', 'Privileges', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'no-priv', NULL, '''priv'':3A ''person'':6B ''no-priv'':1A ''privileg'':5B,7C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', NULL, 'UTC');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone) VALUES (53, 'testing Spanish team', NULL, NULL, NULL, 13, NULL, 'testing-spanish-team', NULL, '''team'':4A,7B ''test'':2A,5B ''spanish'':3A,6B ''testing-spanish-team'':1A', NULL, NULL, 1, NULL, '2005-07-12 14:32:01.84779', NULL, 'UTC');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (1, 'Mark Shuttleworth', 'Mark', 'Shuttleworth', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'sabdfl', NULL, '''mark'':2B,4C ''sabdfl'':1A ''shuttleworth'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.591618', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (2, 'Robert Collins', 'Robert', 'Collins', 'ID1adsprLaTBox18F6dpSdtSdqCiOdpgUXBo4oG17qhg73jSDTVe3g==', NULL, NULL, 'lifeless', NULL, '''collin'':3B,5C ''robert'':2B,4C ''lifeless'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.598107', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (3, 'Dave Miller', 'Dave', 'Miller', NULL, NULL, NULL, 'justdave', NULL, '''dave'':2B,4C ''miller'':3B,5C ''justdav'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.610048', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (4, 'Colin Watson', 'Colin', 'Watson', NULL, NULL, NULL, 'kamion', NULL, '''colin'':2B,4C ''kamion'':1A ''watson'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.611185', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (5, 'Scott James Remnant', 'Scott James', 'Remnant', NULL, NULL, NULL, 'keybuk', NULL, '''jame'':3B,6C ''scott'':2B,5C ''keybuk'':1A ''remnant'':4B,7C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.608802', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (6, 'Jeff Waugh', 'Jeff', 'Waugh', NULL, NULL, NULL, 'jdub', NULL, '''jdub'':1A ''jeff'':2B,4C ''waugh'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.600523', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (7, 'Andrew Bennetts', 'Andrew', 'Bennetts', NULL, NULL, NULL, 'spiv', NULL, '''spiv'':1A ''andrew'':2B,4C ''bennett'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.551196', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (8, 'James Blackwell', 'James', 'Blackwell', NULL, NULL, NULL, 'jblack', NULL, '''jame'':2B,4C ''jblack'':1A ''blackwel'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.601584', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (9, 'Christian Reis', 'Christian', 'Reis', NULL, NULL, NULL, 'kiko', NULL, '''rei'':3B,5C ''kiko'':1A ''christian'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.594941', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (10, 'Alexander Limi', 'Alexander', 'Limi', NULL, NULL, NULL, 'limi', NULL, '''limi'':1A,3B,5C ''alexand'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.619713', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (11, 'Steve Alexander', 'Steve', 'Alexander', NULL, NULL, NULL, 'stevea', NULL, '''steve'':2B,4C ''stevea'':1A ''alexand'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.599234', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (12, 'Sample Person', 'Sample', 'Person', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name12', NULL, '''sampl'':2B,4C ''name12'':1A ''person'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.612277', 1, 'Australia/Perth', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (13, 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U', NULL, NULL, 'carlos', NULL, '''carlo'':1A,2B,5C ''marín'':4B,7C ''perelló'':3B,6C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.615543', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (14, 'Dafydd Harries', 'Dafydd', 'Harries', 'EvSuSe4k4tkRHSp6p+g91vyQIwL5VJ3iTbRZ', NULL, NULL, 'daf', NULL, '''daf'':1A ''harri'':3B,5C ''dafydd'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.616666', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (16, 'Foo Bar', 'Foo', 'Bar', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name16', NULL, '''bar'':3B,5C ''foo'':2B,4C ''name16'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', 2, 'Africa/Johannesburg', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (17, 'Ubuntu Team', NULL, NULL, NULL, 1, 'This Team is responsible for the Ubuntu Distribution', 'name17', NULL, '''team'':3B ''name17'':1A ''ubuntu'':2B', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.60576', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (18, 'Ubuntu Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for the GNOME releases Issues on whole Ubuntu Distribution', 'name18', NULL, '''team'':4B ''gnome'':3B ''name18'':1A ''ubuntu'':2B', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.607744', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (19, 'Warty Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for GNOME release Issues on Warty Distribution Release', 'name19', NULL, '''team'':4B ''gnome'':3B ''warti'':2B ''name19'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.602661', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (20, 'Warty Security Team', NULL, NULL, NULL, 1, 'This Team is responsible for Security Issues on Warty Distribution Release', 'name20', NULL, '''team'':4B ''secur'':3B ''warti'':2B ''name20'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.614468', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (21, 'Hoary Gnome Team', NULL, NULL, NULL, 1, 'This team is responsible for Security Issues on Hoary Distribution Release', 'name21', NULL, '''team'':4B ''gnome'':3B ''hoari'':2B ''name21'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.603691', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (22, 'Stuart Bishop', 'Stuart', 'Bishop', 'I+lQozEFEr+uBuxQZuKGpL4jkiy6lE1dQsZx', NULL, NULL, 'stub', NULL, '''stub'':1A ''bishop'':3B,5C ''stuart'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.59276', NULL, 'UTC', 0, 'Somewhere', 'between heaven and hell', 'Something', 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (23, 'David Allouche', 'David', 'Allouche', NULL, NULL, NULL, 'ddaa', NULL, '''ddaa'':1A ''david'':2B,4C ''allouch'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.620823', NULL, 'UTC', 0, 'Somewhere', 'between heaven and hell', 'Something', 'whatever', 'not mandatory', 35, '999432423', '+55 16 3374-2027');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (24, 'Buttress Source Administrators', NULL, NULL, NULL, 2, 'Ultimate control of the Buttress systems', 'buttsource', NULL, '''sourc'':3B ''buttress'':2B ''administr'':4B ''buttsourc'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.604746', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (25, 'Launchpad Administrators', NULL, NULL, NULL, 1, 'Launchpad Administrators', 'admins', NULL, '''admin'':1A ''administr'':3B ''launchpad'':2B', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (26, 'Daniel Silverstone', 'Daniel', 'Silverstone', NULL, NULL, NULL, 'kinnison', NULL, '''daniel'':2B,4C ''kinnison'':1A ''silverston'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.618722', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (27, 'Daniel Henrique Debonzi', 'Daniel', 'Henrique', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 'debonzi', NULL, '''daniel'':2B,5C ''debonzi'':1A,4B ''henriqu'':3B,6C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.557224', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (28, 'Celso Providelo', 'Celso', 'Providelo', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 'cprov', NULL, '''celso'':2B,4C ''cprov'':1A ''providelo'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.59705', NULL, 'UTC', 0, 'Somewhere', 'between heaven and hell', 'Something', 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (29, 'Guilherme Salgado', 'Guilherme', 'Salgado', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 'salgado', NULL, '''salgado'':1A,3B,5C ''guilherm'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.596025', NULL, 'UTC', 0, 'Somewhere', 'between heaven and hell', 'Something', 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (30, 'Rosetta Administrators', NULL, NULL, NULL, 25, 'Rosetta Administrators', 'rosetta-admins', NULL, '''admin'':3A ''rosetta'':2A,4B ''administr'':5B ''rosetta-admin'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.613368', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (31, 'Ubuntu Translators', NULL, NULL, NULL, 30, 'Ubuntu Translators', 'ubuntu-translators', NULL, '''ubuntu'':2A,4B ''translat'':3A,5B ''ubuntu-transl'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.617651', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (32, 'GuadaMen', NULL, NULL, NULL, 16, 'The guadalinex maintainers team', 'guadamen', NULL, '''guadamen'':1A,2B', 700, 300, 1, NULL, '2005-06-06 08:59:51.606755', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (33, 'Edgar Bursic', 'Edgar', 'Bursic', '3JiiJZWCSnGbu71a+Qw1Dik7QAsrS4soxQTy1qzErmIA4F7zfmca8Q==', NULL, NULL, 'edgar', NULL, '''edgar'':1A,2B,4C ''bursic'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.621892', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (34, 'Jordi Vilalta', 'Jordi', 'Vilalta', 'gsTz0TyTUL7xrkoAH4Yz2WE6/w6WoYG5LjaO8p/xA1FDdSM6qkWiYA==', NULL, NULL, 'jvprat', NULL, '''jordi'':2B,4C ''jvprat'':1A ''vilalta'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.622908', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (35, 'Sigurd Gartmann', 'Sigurd', 'Gartmann', 'FvPq9d4L5onnmcRA9wCzQ5lnPPYIzvW5rJA7GGnnsJuQqz8M8naZkQ==', NULL, NULL, 'sigurd-ubuntu', NULL, '''sigurd'':2A,4B,6C ''ubuntu'':3A ''gartmann'':5B,7C ''sigurd-ubuntu'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.623962', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (36, 'Vlastimil Skacel', 'Vlastimil', 'Skacel', 'lyA9CgUH9lHmTiaiWGP2vzkmytufiHBAnc9c8WCX1g5pYyBd6QgL3A==', NULL, NULL, 'skacel', NULL, '''skacel'':1A,3B,5C ''vlastimil'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.5244', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (37, 'Daniel Aguayo', 'Daniel', 'Aguayo', 'bpLapC1tQHUedQBP447krtcmaRPd3hrncPusTlNUKXh5ymfO5yVhhQ==', NULL, NULL, 'danner', NULL, '''aguayo'':3B,5C ''daniel'':2B,4C ''danner'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.549651', NULL, 'UTC', 10000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (38, 'Martin Pitt', 'Martin', 'Pitt', 'iNbxn63pi1VFuZ0byz76vhFtdMXQAj2L+Cn/1UpsbmOhjUZs+Z6Naw==', NULL, NULL, 'martin-pitt', NULL, '''pitt'':3A,5B,7C ''martin'':2A,4B,6C ''martin-pitt'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.555051', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (39, 'Nicolas Velin', 'Nicolas', 'Velin', 'U2QzusrIFlQZKb3hWzcLpfhFcB3WZ0fa0E+OwcV8q/WOtsQCjarzzA==', NULL, NULL, 'nsv', NULL, '''nsv'':1A ''velin'':3B,5C ''nicola'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.556132', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (40, 'Francesco Accattapà', 'Francesco', 'Accattapà', 'mSKDc1EKoi8a5L0zd+oueU33nuSEuFWy+JHIHxOukBVJt9LPW47RVg==', NULL, NULL, 'callipeo', NULL, '''callipeo'':1A ''francesco'':2B,4C ''accattapà'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.558429', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (41, 'Aloriel', 'Aloriel', '', '94y1dy33Evut2/bLsGG8Pzguyuip9wHeRtFWp0cSItzHdD1tK3gmcQ==', NULL, NULL, 'jorge-gonzalez-gonzalez', NULL, '''jorg'':2A ''aloriel'':5B,6C ''gonzalez'':3A,4A ''jorge-gonzalez-gonzalez'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.559519', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (42, 'Denis Barbier', 'Denis', 'Barbier', 'vI/vIVB2qsx1NvuaMy+q4l8rWUNMFINWzCSLOK1D5qi97/VmXvIrEw==', NULL, NULL, 'barbier', NULL, '''deni'':2B,4C ''barbier'':1A,3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.560604', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (43, 'André Luís Lopes', 'André', 'Luís Lopes', 'HG6qWB8PwzfIr3z+Tu+m3lQv7r1dsaWY6rxCxRuNypGomTPTzBh9iA==', NULL, NULL, 'andrelop', NULL, '''lope'':4B,7C ''luís'':3B,6C ''andré'':2B,5C ''andrelop'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.561685', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (44, 'Carlos Valdivia Yagüe', 'Carlos', 'Valdivia Yagüe', 'xrXafuC+VBaIz3m2+0UMjxms+2KhGhj6qnQdoo2V/f4iNFHJgSDzzw==', NULL, NULL, 'valyag', NULL, '''carlo'':2B,5C ''valyag'':1A ''yagüe'':4B,7C ''valdivia'':3B,6C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.562857', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (45, 'Luk Claes', 'Luk', 'Claes', 'w+f2krWWyQIIm76PIUEIsMCNQLhWLjObLcDONJNjjXcRaiKzKXeMAw==', NULL, NULL, 'luk-claes', NULL, '''luk'':2A,4B,6C ''clae'':3A,5B,7C ''luk-cla'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.563952', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (46, 'Miroslav Kure', 'Miroslav', 'Kure', '1u05okOZJIa069F8COZ2vmxRq11c+4rolNUVRp539TI5ihnHwk9+Sw==', NULL, NULL, 'kurem', NULL, '''kure'':3B,5C ''kurem'':1A ''miroslav'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.565033', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (47, 'Morten Brix Pedersen', 'Morten', 'Brix Pedersen', 'n+KIa3PoihBN8ljj9Hjg9H3Im2LWnrn2yprgY4u/MnxOQx3dOh3bDw==', NULL, NULL, 'morten', NULL, '''brix'':3B,6C ''morten'':1A,2B,5C ''pedersen'':4B,7C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.56614', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (48, 'Matti Pöllä', 'Matti', 'Pöllä', 'U4KMnp73AYdriB7QH2NpEYhlH+fBWJKziDPcDAt25OxItZMYh0QV4Q==', NULL, NULL, 'mpo', NULL, '''mpo'':1A ''matti'':2B,4C ''pöllä'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.567224', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (49, 'Kęstutis Biliūnas', 'Kęstutis', 'Biliūnas', 'YbUJ4nzlxjYtaLLFMqUFL3LplUpS3FxcYwiCAS0WaAcnXS8Sst9BgA==', NULL, NULL, 'kebil', NULL, '''kebil'':1A ''biliūnas'':3B,5C ''kęstutis'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.568323', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (50, 'Valentina Commissari', 'Valentina', 'Commissari', 'fgwbt51c6ajsTet6DTbQBqAzQ7Q9S1G7S0APNvMX7YN2qpdbNbEn3Q==', NULL, NULL, 'tsukimi', NULL, '''tsukimi'':1A ''valentina'':2B,4C ''commissari'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.569518', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (51, 'Helge Kreutzmann', 'Helge', 'Kreutzmann', 'sYVFKi2dWAfkFkWekcW296s2dZ0ihYcxAXtwumI1FQJes4PWD8xvqQ==', NULL, NULL, 'kreutzm', NULL, '''helg'':2B,4C ''kreutzm'':1A ''kreutzmann'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.570701', NULL, 'UTC', 0, 'Somewhere', 'between heaven and hell', 'Something', 'whatever', 'not mandatory', 25, '999432423', '+55 16 3374-2027');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (52, 'No Privileges Person', 'No', 'Privileges', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'no-priv', NULL, '''priv'':3A ''person'':6B ''no-priv'':1A ''privileg'':5B,7C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', NULL, 'UTC', 0, 'Somewhere', 'between heaven and hell', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (53, 'testing Spanish team', NULL, NULL, NULL, 13, NULL, 'testing-spanish-team', NULL, '''team'':4A,7B ''test'':2A,5B ''spanish'':3A,6B ''testing-spanish-team'':1A', NULL, NULL, 1, NULL, '2005-07-12 14:32:01.84779', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (54, 'ShipIt Administrators', NULL, NULL, NULL, 1, 'ShipIt Administrators', 'shipit-admins', NULL, '''admin'':3A ''shipit'':2A,4B ''administr'':5B ''shipit-admin'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (55, 'Marilize Coetzee', 'Marilize', 'Coetzee', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'marilize', NULL, '''maril'':1A,2B,4C ''coetze'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', NULL, 'Africa/Johannesburg', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'person'::pg_catalog.regclass;
@@ -79,12 +81,12 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (11, 'james.blackwel
 INSERT INTO emailaddress (id, email, person, status) VALUES (12, 'christian.reis@ubuntulinux.com', 9, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (13, 'jeff.waugh@ubuntulinux.com', 6, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (14, 'dave.miller@ubuntulinux.com', 3, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (15, 'justdave@bugzilla.org', 3, 3);
+INSERT INTO emailaddress (id, email, person, status) VALUES (15, 'justdave@bugzilla.org', 3, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (16, 'test@canonical.com', 12, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (17, 'testtest@canonical.com', 12, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (18, 'testtesttest@canonical.com', 12, 3);
 INSERT INTO emailaddress (id, email, person, status) VALUES (19, 'testing@canonical.com', 12, 2);
-INSERT INTO emailaddress (id, email, person, status) VALUES (20, 'stuart.bishop@canonical.com', 22, 1);
+INSERT INTO emailaddress (id, email, person, status) VALUES (20, 'stuart.bishop@canonical.com', 22, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (21, 'david.allouche@canonical.com', 23, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (22, 'david@canonical.com', 23, 2);
 INSERT INTO emailaddress (id, email, person, status) VALUES (23, 'daniel.debonzi@canonical.com', 27, 4);
@@ -111,6 +113,10 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (43, 'tsukimi@quaqua
 INSERT INTO emailaddress (id, email, person, status) VALUES (44, 'kreutzm@itp.uni-hannover.de', 51, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (45, 'support@ubuntu.com', 17, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (46, 'no-priv@canonical.com', 52, 4);
+INSERT INTO emailaddress (id, email, person, status) VALUES (47, 'stuart@stuartbishop.net', 22, 2);
+INSERT INTO emailaddress (id, email, person, status) VALUES (48, 'zen@shangri-la.dropbear.id.au', 22, 3);
+INSERT INTO emailaddress (id, email, person, status) VALUES (49, 'stub@fastmail.fm', 22, 1);
+INSERT INTO emailaddress (id, email, person, status) VALUES (50, 'marilize@hbd.com', 55, 4);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'emailaddress'::pg_catalog.regclass;
@@ -277,6 +283,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (42, 50, 53, 2, '2005-07-12 14:34:36.906758', NULL, 13, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (43, 46, 53, 2, '2005-07-12 14:35:44.635842', NULL, 13, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (44, 16, 53, 2, '2005-07-12 14:36:09.587753', NULL, 13, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (45, 55, 54, 2, '2005-07-12 14:36:09.587753', NULL, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'teammembership'::pg_catalog.regclass;
@@ -361,6 +368,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (83, 53, 1);
 INSERT INTO teamparticipation (id, team, person) VALUES (84, 53, 50);
 INSERT INTO teamparticipation (id, team, person) VALUES (85, 53, 46);
 INSERT INTO teamparticipation (id, team, person) VALUES (86, 53, 16);
+INSERT INTO teamparticipation (id, team, person) VALUES (87, 54, 55);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'teamparticipation'::pg_catalog.regclass;
@@ -431,7 +439,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'product'::pg_catalog
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar) VALUES (1, 1, 17, 'ubuntu', 'Ubuntu', 'Ubuntu', 'An easy-to-install version of Linux that has a complete set of desktop applications ready to use immediately after installation.', 'Ubuntu is a desktop Linux that you can give your girlfriend to install. Works out of the box with recent Gnome desktop applications configured to make you productive immediately. Ubuntu is updated every six months, comes with security updates for peace of mind, and is available everywhere absolutely free of charge.', '2004-09-24 20:58:00.655518', 'http://www.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''box'':43 ''set'':16C ''six'':59 ''use'':22C ''come'':61 ''easi'':6C ''free'':74 ''give'':34 ''make'':51 ''mind'':68 ''peac'':66 ''work'':39 ''avail'':71 ''charg'':76 ''everi'':58 ''gnome'':46 ''linux'':11C,30 ''month'':60 ''readi'':20C ''secur'':63 ''updat'':57,64 ''applic'':19C,48 ''immedi'':23C,54 ''instal'':8C,25C,38 ''recent'':45 ''ubuntu'':1A,2A,3B,26,55 ''absolut'':73 ''complet'':15C ''desktop'':18C,29,47 ''product'':53 ''version'':9C ''configur'':49 ''everywher'':72 ''girlfriend'':36 ''easy-to-instal'':5C', false, NULL, 1, NULL, NULL);
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar) VALUES (2, 2, 2, 'unassigned', 'unassigned syncs', 'unassigned syncs', 'syncs still not assigned to a real product', 'unassigned syncs, will not be processed, to be moved to real projects ASAP.', '2004-09-24 20:58:00.674409', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, '''asap'':26 ''move'':22 ''real'':12C,24 ''sync'':3A,5B,6C,15 ''still'':7C ''assign'':9C ''process'':19 ''product'':13C ''project'':25 ''unassign'':1A,2A,4B,14', false, NULL, 1, NULL, NULL);
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar) VALUES (3, 3, 2, 'arch-mirrors', 'Arch mirrors', 'Arch archive mirrors', 'Arch Archive Mirroring project.', 'Arch archive full-archive mirror tasks', '2004-09-24 20:58:00.691047', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''arch'':2A,4A,6B,9C,13 ''full'':16 ''task'':19 ''archiv'':7B,10C,14,17 ''mirror'':3A,5A,8B,11C,18 ''project'':12C ''full-arch'':15 ''arch-mirror'':1A', false, NULL, 1, NULL, NULL);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar) VALUES (4, 4, 12, 'firefox', 'Mozilla Firefox', 'Mozilla Firefox', 'The Mozilla Firefox web browser', 'The Mozilla Firefox web browser', '2004-09-24 20:58:02.185708', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''web'':9C,14 ''browser'':10C,15 ''firefox'':1A,3A,5B,8C,13 ''mozilla'':2A,4B,7C,12', false, NULL, 1, NULL, NULL);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar) VALUES (4, 4, 12, 'firefox', 'Mozilla Firefox', 'Mozilla Firefox', 'The Mozilla Firefox web browser', 'The Mozilla Firefox web browser', '2004-09-24 20:58:02.185708', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''web'':9C,14 ''browser'':10C,15 ''firefox'':1A,3A,5B,8C,13 ''mozilla'':2A,4B,7C,12', false, 1, 100, NULL, NULL);
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar) VALUES (5, 5, 12, 'evolution', 'Evolution', 'The Evolution Groupware Application', 'Evolution is an email client, addressbook and calendar application that is very well integrated with the Gnome desktop. Evolution is the standard mail client in the Ubuntu distribution, and supports all current mail system standards.', 'Recently, Evolution has seen significant work to make it interoperable with the proprietary Microsoft Exchange Server protocols and formats, allowing organisations to replace Outlook on Windows with Evolution and Linux.
 
 The current stable release series of Evolution is 2.0.', '2004-09-24 20:58:02.240163', 'http://www.gnome.org/evolution/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''2.0'':80 ''mail'':29C,39C ''make'':49 ''seen'':45 ''seri'':76 ''well'':19C ''work'':47 ''allow'':61 ''email'':10C ''gnome'':23C ''linux'':71 ''stabl'':74 ''applic'':6B,15C ''client'':11C,30C ''evolut'':1A,2A,4B,7C,25C,43,69,78 ''format'':60 ''integr'':20C ''recent'':42 ''releas'':75 ''replac'':64 ''server'':57 ''system'':40C ''ubuntu'':33C ''window'':67 ''current'':38C,73 ''desktop'':24C ''exchang'':56 ''organis'':62 ''outlook'':65 ''support'':36C ''calendar'':14C ''groupwar'':5B ''protocol'':58 ''signific'':46 ''standard'':28C,41C ''distribut'':34C ''interoper'':51 ''microsoft'':55 ''addressbook'':12C ''proprietari'':54', false, 1, 100, NULL, NULL);
@@ -444,6 +452,8 @@ The Gnome Panel team includes Abel Kascinsky, Frederick Wurst and Andreas Androp
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar) VALUES (10, NULL, 2, 'python-gnome2-dev', 'python gnome2 dev', 'python gnome2 dev', 'Python bindings for the GNOME desktop environment', 'Python bindings for the GNOME desktop environment', '2004-09-24 20:58:00.674409', 'http://www.daa.com.au/~james/software/pygtk/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, '''dev'':4A,7A,10B ''bind'':12C,19 ''gnome'':15C,22 ''gnome2'':3A,6A,9B ''python'':2A,5A,8B,11C,18 ''desktop'':16C,23 ''environ'':17C,24 ''python-gnome2-dev'':1A', false, NULL, 1, NULL, NULL);
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar) VALUES (11, 5, 12, 'netapplet', 'NetApplet', 'Network Applet', 'The Novell Network Applet', 'Displays current network status and allows network switching', '2005-03-10 16:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''allow'':14 ''novel'':6C ''applet'':4B,8C ''status'':12 ''switch'':16 ''current'':10 ''display'':9 ''network'':3B,7C,11,15 ''netapplet'':1A,2A', false, NULL, 1, NULL, NULL);
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar) VALUES (12, NULL, 16, 'a52dec', 'a52dec', 'Liba52 Test Decoder', 'a52dec is a test program for liba52.', 'This tool decodes ATSC A/52 streams, and also includes a demultiplexer for mpeg-1 and mpeg-2 program streams. The liba52 source code is always distributed in the a52dec package, to make sure it easier for people to test it.', '2005-04-14 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''1'':27 ''2'':31 ''a/52'':17 ''also'':20 ''atsc'':16 ''code'':37 ''make'':46 ''mpeg'':26,30 ''sure'':47 ''test'':4B,9C,53 ''tool'':14 ''alway'':39 ''decod'':5B,15 ''peopl'':51 ''sourc'':36 ''a52dec'':1A,2A,6C,43 ''easier'':49 ''includ'':21 ''liba52'':3B,12C,35 ''mpeg-1'':25 ''mpeg-2'':29 ''packag'':44 ''stream'':18,33 ''program'':10C,32 ''distribut'':40 ''demultiplex'':23', false, NULL, 1, NULL, NULL);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar) VALUES (13, 5, 16, 'gnomebaker', 'gnomebaker', 'Gnome Baker', 'Gnome Baker is a CD burning application', 'Gnome Baker burns CDs like there''s no tomorrow', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''cd'':9C ''cds'':15 ''burn'':10C,14 ''like'':16 ''baker'':4B,6C,13 ''gnome'':3B,5C,12 ''applic'':11C ''gnomebak'':1A,2A ''tomorrow'':20', false, NULL, 1, NULL, NULL);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar) VALUES (14, NULL, 12, 'bazaar', 'Bazaar', 'Bazaar', 'Bazaar is a distributed revision control system', 'Bazaar is all about source control and double-dashes.', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''dash'':20 ''doubl'':19 ''revis'':8C ''sourc'':15 ''bazaar'':1A,2A,3B,4C,11 ''system'':10C ''control'':9C,16 ''distribut'':7C ''double-dash'':18', false, NULL, 1, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'product'::pg_catalog.regclass;
@@ -802,6 +812,7 @@ INSERT INTO manifest (id, datecreated, uuid) VALUES (2, '2005-03-09 15:55:00', '
 INSERT INTO manifest (id, datecreated, uuid) VALUES (3, '2005-03-09 16:00:00', '2a18a3f1-eec5-4b72-b23c-fb46c8c12a88');
 INSERT INTO manifest (id, datecreated, uuid) VALUES (4, '2005-03-09 16:05:00', '97b4ece8-b3c5-4e07-b529-6c76b59a5455');
 INSERT INTO manifest (id, datecreated, uuid) VALUES (14, '2005-03-24 00:00:00', 'e0451064-b405-4f52-b387-ebfc1a7ee297');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (15, '2005-08-24 00:00:00', 'e0451064-b405-4f52-b387-ebfc1a7ee298');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'manifest'::pg_catalog.regclass;
@@ -836,7 +847,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'processorfamily'::pg_catalog.regclass;
 
-INSERT INTO processorfamily (id, name, title, description, "owner") VALUES (1, 'x86', 'Intel 386 compatible chips', 'Bring back the 8086!', 1);
+INSERT INTO processorfamily (id, name, title, description) VALUES (1, 'x86', 'Intel 386 compatible chips', 'Bring back the 8086!');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'processorfamily'::pg_catalog.regclass;
@@ -844,7 +855,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'processor'::pg_catalog.regclass;
 
-INSERT INTO processor (id, family, name, title, description, "owner") VALUES (1, 1, '386', 'Intel 386', 'Intel 386 and its many derivatives and clones, the basic 32-bit chip in the x86 family', 1);
+INSERT INTO processor (id, family, name, title, description) VALUES (1, 1, '386', 'Intel 386', 'Intel 386 and its many derivatives and clones, the basic 32-bit chip in the x86 family');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'processor'::pg_catalog.regclass;
@@ -974,6 +985,7 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) V
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (31, '2005-05-18 08:03:28.021862', NULL, 3987, '9668ba9f0a59f9e6e6bc73fc5dc9f116b202bceb');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (32, '2005-05-18 08:03:28.021862', NULL, 4908, '874a6ef9cd1aaef17653c6c12f4b83ef9487c1c3');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (33, '2005-05-18 08:03:28.021862', NULL, 4908, '874a6ef9cd1aaef17653c6c12f4b83ef9487c1c3');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (34, '2005-08-10 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'libraryfilecontent'::pg_catalog.regclass;
@@ -1014,6 +1026,7 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (31, 31, 'de.po', 'application/x-po', NULL);
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (32, 32, 'es.po', 'application/x-po', NULL);
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (33, 33, 'es.po', 'application/x-po', NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (34, 34, 'evolution-2.2-test.pot', 'application/x-po', NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'libraryfilealias'::pg_catalog.regclass;
@@ -1063,7 +1076,8 @@ INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency,
 INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (15, 1, '1.0', '2004-09-27 11:57:13', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 1, 9, 3, 1);
 INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (16, 1, '1.0-1', '2005-03-10 16:30:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 1, 10, 3, 1);
 INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (17, 1, '0.99.6-1', '2005-03-14 18:00:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 1, 10, 1, 1);
-INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (20, 1, '0.1-1', '2005-03-24 20:59:31.439579', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, 14, 1, 14, 3, 1);
+INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (20, 1, '0.1-1', '2005-03-24 20:59:31.439579', 1, NULL, 1, 'This is a placeholder changelog for pmount 0.1-1', NULL, NULL, NULL, NULL, 1, 14, 1, 14, 3, 1);
+INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (21, 1, '0.1-2', '2005-06-24 20:59:31.439579', 1, NULL, 1, 'This is a placeholder changelog for pmount 0.1-2', NULL, NULL, NULL, NULL, 1, 15, 1, 14, 3, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackagerelease'::pg_catalog.regclass;
@@ -1096,13 +1110,13 @@ INSERT INTO binarypackagename (id, name) VALUES (13, 'pmount');
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'binarypackagename'::pg_catalog.regclass;
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'binarypackage'::pg_catalog.regclass;
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'binarypackagerelease'::pg_catalog.regclass;
 
-INSERT INTO binarypackage (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', NULL, NULL, NULL, 'mozilla-firefox', NULL, NULL, NULL, NULL, true, '''web'':3,7 ''browser'':4,8 ''firefox'':2,6 ''mozilla'':1,5');
-INSERT INTO binarypackage (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''pmount'':1,3 ''descript'':4 ''shortdesc'':2');
+INSERT INTO binarypackagerelease (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', NULL, NULL, NULL, 'mozilla-firefox', NULL, NULL, NULL, NULL, true);
+INSERT INTO binarypackagerelease (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false);
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'binarypackage'::pg_catalog.regclass;
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'binarypackagerelease'::pg_catalog.regclass;
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'binarypackagefile'::pg_catalog.regclass;
@@ -1118,19 +1132,6 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'packageselection'::p
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'packageselection'::pg_catalog.regclass;
 
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'osfile'::pg_catalog.regclass;
-
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'osfile'::pg_catalog.regclass;
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'osfileinpackage'::pg_catalog.regclass;
-
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'osfileinpackage'::pg_catalog.regclass;
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'pomsgid'::pg_catalog.regclass;
@@ -1426,6 +1427,8 @@ INSERT INTO pomsgid (id, msgid) VALUES (142, 'Please set your LC_MESSAGE or LC_A
 INSERT INTO pomsgid (id, msgid) VALUES (143, 'xprint seems not to be installed');
 INSERT INTO pomsgid (id, msgid) VALUES (144, 'Mozilla has dropped postscript support. This means that Xprint is required for printing. Please install xprt-xprintorg package.');
 INSERT INTO pomsgid (id, msgid) VALUES (145, 'This is not a bug, Don''t submit bug reports for this. (wishlist to reenable postscript has been submitted already, Bug#256072)');
+INSERT INTO pomsgid (id, msgid) VALUES (146, '%s: option `%s'' is ambiguous
+');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'pomsgid'::pg_catalog.regclass;
@@ -2803,7 +2806,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (24, 'art', 'Artificial (Other)', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (25, 'arw', 'Arawak', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (26, 'as', 'Assamese', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (27, 'ast', 'Asturian; Bable', NULL, NULL, NULL, true);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (27, 'ast', 'Asturian; Bable', NULL, 1, 'n != 1', true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (28, 'ath', 'Athapascan language', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (29, 'aus', 'Australian languages', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (30, 'av', 'Avaric', NULL, NULL, NULL, true);
@@ -2895,10 +2898,10 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (116, 'egy', 'Egyptian (Ancient)', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (117, 'eka', 'Ekajuk', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (118, 'elx', 'Elamite', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (119, 'en', 'English', NULL, 2, 'n != 1', true);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (119, 'en', 'English', NULL, 2, 'n != 1', false);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (120, 'enm', 'English, Middle (1100-1500)', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (121, 'eo', 'Esperanto', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (122, 'et', 'Estonian', NULL, NULL, NULL, true);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (122, 'et', 'Estonian', NULL, 2, 'n != 1', true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (123, 'ee', 'Ewe', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (124, 'ewo', 'Ewondo', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (125, 'fan', 'Fang', NULL, NULL, NULL, true);
@@ -2913,12 +2916,12 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (134, 'fro', 'French, Old (842-ca.1400)', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (135, 'fy', 'Frisian', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (136, 'ff', 'Fulah', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (137, 'fur', 'Friulian', NULL, NULL, NULL, true);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (137, 'fur', 'Friulian', NULL, 2, 'n != 1', true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (138, 'gaa', 'Ga', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (139, 'gay', 'Gayo', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (140, 'gba', 'Gbaya', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (141, 'gem', 'Germanic (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (142, 'ka', 'Georgian', NULL, NULL, NULL, true);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (142, 'ka', 'Georgian', NULL, 1, '0', true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (143, 'de', 'German', NULL, 2, 'n != 1', true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (144, 'gez', 'Geez', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (145, 'gil', 'Gilbertese', NULL, NULL, NULL, true);
@@ -3012,7 +3015,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (233, 'lah', 'Lahnda', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (234, 'lam', 'Lamba', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (235, 'lo', 'Lao', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (236, 'la', 'Latin', NULL, NULL, NULL, true);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (236, 'la', 'Latin', NULL, 2, 'n != 1', true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (237, 'lv', 'Latvian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2', true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (238, 'lez', 'Lezghian', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (239, 'li', 'Limburgian', NULL, NULL, NULL, true);
@@ -3020,7 +3023,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (241, 'lt', 'Lithuanian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2', true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (242, 'lol', 'Mongo', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (243, 'loz', 'Lozi', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (244, 'lb', 'Luxembourgish', NULL, NULL, NULL, true);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (244, 'lb', 'Luxembourgish', NULL, 2, 'n != 1', true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (245, 'lua', 'Luba-Lulua', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (246, 'lu', 'Luba-Katanga', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (247, 'lg', 'Ganda', NULL, NULL, NULL, true);
@@ -3122,7 +3125,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (343, 'roa', 'Romance (Other)', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (344, 'rm', 'Raeto-Romance', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (345, 'rom', 'Romany', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (346, 'ro', 'Romanian', NULL, 2, 'n != 1', true);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (346, 'ro', 'Romanian', NULL, 3, '(n == 1 ? 0: (((n % 100 > 19) || ((n % 100 == 0) && (n != 0))) ? 2: 1))', true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (347, 'rn', 'Rundi', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (348, 'ru', 'Russian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (349, 'sad', 'Sandawe', NULL, NULL, NULL, true);
@@ -3865,15 +3868,16 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'potemplate'::pg_catalog.regclass;
 
-INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackageversion, header, potemplatename, binarypackagename, languagepack, filename, rawfile, productseries) VALUES (1, NULL, 'Template for evolution in hoary', NULL, NULL, '2005-03-18 18:20:12.273149', 'po', true, 22, 30, 13, '2005-04-07 13:12:39.892924', 3, NULL, NULL, NULL, 'Project-Id-Version: PACKAGE VERSION
+INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackageversion, header, potemplatename, binarypackagename, languagepack, filename, rawfile, productseries) VALUES (1, NULL, 'Template for evolution in hoary', NULL, NULL, '2005-03-18 18:20:12.273149', 'po', true, 23, 30, 13, '2005-08-25 15:27:41.548399', 3, NULL, NULL, NULL, 'Project-Id-Version: PACKAGE VERSION
 Report-Msgid-Bugs-To: 
-POT-Creation-Date: 2005-04-07 14:10+0200
+POT-Creation-Date: 2005-08-25 14:56+0200
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
 Last-Translator: FULL NAME <EMAIL@ADDRESS>
 Language-Team: LANGUAGE <LL@li.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=ASCII
+Content-Type: text/plain; charset=CHARSET
 Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;
 ', 1, NULL, false, NULL, 7, 3);
 INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackageversion, header, potemplatename, binarypackagename, languagepack, filename, rawfile, productseries) VALUES (2, NULL, NULL, NULL, NULL, '2005-03-24 19:59:31.439579', 'po', true, 63, 30, 30, '2005-05-06 20:07:24.255804', 3, 14, 3, '0.7.2-0ubuntu1', 'Project-Id-Version: PACKAGE VERSION
 Report-Msgid-Bugs-To: martin.pitt@canonical.com
@@ -3915,6 +3919,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=CHARSET
 Content-Transfer-Encoding: 8bit
 ', 4, NULL, false, 'templates.pot', 9, NULL);
+INSERT INTO potemplate (id, priority, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackageversion, header, potemplatename, binarypackagename, languagepack, filename, rawfile, productseries) VALUES (6, NULL, NULL, NULL, NULL, '2005-08-10 09:31:29.606407', NULL, true, 0, 12, 12, '2005-08-10 09:31:29.606407', 3, NULL, NULL, NULL, NULL, 5, NULL, false, NULL, 34, 3);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'potemplate'::pg_catalog.regclass;
@@ -5189,32 +5194,32 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'pomsgidsighting'::pg_catalog.regclass;
 
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (1, 1, 1, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (2, 2, 2, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (3, 3, 3, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (4, 4, 4, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (5, 5, 5, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (6, 6, 6, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (7, 7, 7, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (8, 8, 8, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (9, 9, 9, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (10, 10, 10, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (11, 11, 11, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (12, 12, 12, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (13, 13, 13, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (14, 14, 14, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (15, 15, 15, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (16, 15, 16, '2005-03-18 18:31:17.54732', '2005-04-07 13:19:17.601068', true, 1);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (17, 16, 17, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (18, 16, 18, '2005-03-18 18:31:17.54732', '2005-04-07 13:19:17.601068', true, 1);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (19, 17, 19, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (20, 17, 20, '2005-03-18 18:31:17.54732', '2005-04-07 13:19:17.601068', true, 1);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (21, 18, 21, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (22, 19, 22, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (23, 20, 23, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (24, 21, 24, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (25, 21, 25, '2005-03-18 18:31:17.54732', '2005-04-07 13:19:17.601068', true, 1);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (26, 22, 26, '2005-04-07 13:16:19.484578', '2005-04-07 13:16:19.484578', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (1, 1, 1, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (2, 2, 2, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (3, 3, 3, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (4, 4, 4, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (5, 5, 5, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (6, 6, 6, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (7, 7, 7, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (8, 8, 8, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (9, 9, 9, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (10, 10, 10, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (11, 11, 11, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (12, 12, 12, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (13, 13, 13, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (14, 14, 14, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (15, 15, 15, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (16, 15, 16, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 1);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (17, 16, 17, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (18, 16, 18, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 1);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (19, 17, 19, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (20, 17, 20, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 1);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (21, 18, 21, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (22, 19, 22, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (23, 20, 23, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (24, 21, 24, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (25, 21, 25, '2005-03-18 18:31:17.54732', '2005-08-25 15:27:55.264235', true, 1);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (26, 22, 26, '2005-04-07 13:16:19.484578', '2005-08-25 15:27:55.264235', true, 0);
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (27, 23, 27, '2005-04-07 13:19:17.601068', '2005-04-07 13:19:17.601068', true, 0);
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (28, 24, 28, '2005-05-06 20:09:20.041475', '2005-05-06 20:09:20.041475', true, 0);
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (29, 25, 29, '2005-05-06 20:09:20.041475', '2005-05-06 20:09:20.041475', true, 0);
@@ -5361,6 +5366,7 @@ INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (170, 162, 143, '2005-05-06 21:12:33.238579', '2005-05-06 21:12:33.238579', true, 0);
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (171, 163, 144, '2005-05-06 21:12:33.238579', '2005-05-06 21:12:33.238579', true, 0);
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (172, 164, 145, '2005-05-06 21:12:33.238579', '2005-05-06 21:12:33.238579', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (173, 165, 146, '2005-08-25 15:27:55.264235', '2005-08-25 15:27:55.264235', true, 0);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'pomsgidsighting'::pg_catalog.regclass;
@@ -5402,9 +5408,28 @@ INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof
 Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
 
 Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo', 16, NULL, 0, '2004-10-05 00:00:00', 0, '2004-10-05 00:00:00', 0, '2004-10-05 00:00:00', 'Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo', '''y'':19 ''xo'':18C,49,78,107 ''bug'':1B ''idu'':20 ''kfd'':10C,27,41,56,70,85,99 ''lkd'':6C,23,37,52,66,81,95 ''lkjd'':7C,24,38,53,67,82,96 ''test'':3B ''titl'':2B ''glkfd'':11C,28,42,57,71,86,100 ''oiugf'':15C,32,46,61,75,90,104 ''gkfdsg'':9C,26,40,55,69,84,98 ''jlkdsj'':5C,22,36,51,65,80,94 ''yxoiuy'':14C,31,45,60,74,89,103 ''hlkjfds'':8C,25,39,54,68,83,97 ''shirtpkdf'':4C,50,79 ''xoshirtpkdf'':35,64,93 ''xoiuyxoiyxoifuy'':17C,34,48,63,77,92,106 ''hyoifxugyoixgfuy'':16C,33,47,62,76,91,105 ''yifdxhfgffxshirtpkdf'':21 ''yxoigfyoigfxuyfxoiug'':13C,30,44,59,73,88,102 ''gifdsytoxdiytxoiufdytoidxf'':12C,29,43,58,72,87,101', false);
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, summary, fti, private) VALUES (4, '2005-01-14 00:00:00', NULL, 'Reflow problems with complex page layouts', NULL, 12, NULL, 0, '2005-01-14 17:20:12.820778', 0, '2005-01-14 17:20:12.820778', 0, '2005-01-14 17:20:12.820778', NULL, '''page'':5B ''layout'':6B ''reflow'':1B ''complex'':4B ''problem'':2B', false);
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, summary, fti, private) VALUES (5, '2005-01-14 00:00:00', NULL, 'Firefox install instructions should be complete', NULL, 12, NULL, 0, '2005-01-14 17:27:03.702622', 0, '2005-01-14 17:27:03.702622', 0, '2005-01-14 17:27:03.702622', NULL, '''instal'':2B ''complet'':6B ''firefox'':1B ''instruct'':3B', false);
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, summary, fti, private) VALUES (6, '2005-01-14 00:00:00', NULL, 'Firefox crashes when Save As dialog for a nonexistent window is closed', NULL, 12, 5, 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', NULL, '''save'':4B ''close'':12B ''crash'':2B ''dialog'':6B ''window'':10B ''firefox'':1B ''nonexist'':9B', false);
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, summary, fti, private) VALUES (4, '2005-01-14 00:00:00', NULL, 'Reflow problems with complex page layouts', 'Malone pages that use more complex layouts with portlets and fancy CSS are sometimes not getting properly reflowed after rendering.', 12, NULL, 0, '2005-01-14 17:20:12.820778', 0, '2005-01-14 17:20:12.820778', 0, '2005-01-14 17:20:12.820778', NULL, '''css'':18 ''get'':22 ''use'':10 ''page'':5B,8 ''fanci'':17 ''malon'':7 ''layout'':6B,13 ''proper'':23 ''reflow'':1B,24 ''render'':26 ''complex'':4B,12 ''portlet'':15 ''problem'':2B ''sometim'':20', false);
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, summary, fti, private) VALUES (5, '2005-01-14 00:00:00', NULL, 'Firefox install instructions should be complete', 'All ways of downloading firefox should provide complete install instructions. At present, they are only visible on the Release Notes page.', 12, NULL, 0, '2005-01-14 17:27:03.702622', 0, '2005-01-14 17:27:03.702622', 0, '2005-01-14 17:27:03.702622', NULL, '''way'':8 ''note'':26 ''page'':27 ''instal'':2B,15 ''provid'':13 ''releas'':25 ''visibl'':22 ''complet'':6B,14 ''firefox'':1B,11 ''present'':18 ''download'':10 ''instruct'':3B,16', false);
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, summary, fti, private) VALUES (6, '2005-01-14 00:00:00', NULL, 'Firefox crashes when Save As dialog for a nonexistent window is closed', 'User-Agent:       
+Build Identifier: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.6) Gecko/20040207 Firefox/0.8
+
+If a Save As dialog for a nonexistent window exists, when the dialog is closed Firefox will crash.  It''s possible to cause this to happen using the "Open With/Save As" dialog.
+
+Reproducible: Always
+Steps to Reproduce:
+1. Visit http://www.mozilla.org/products/firefox/
+2. Click on "Download Now!"  An "Open With/Save" dialog will appear.
+4. Press OK.
+5. Switch back to the "Open With/Save" dialog, and press OK again.  There are now two Save As dialogs.  This is bug 58777.
+6. Close the second dialog with "Cancel"
+7. Close the browser window that started all of this.
+8. Close the first dialog with "Cancel".
+
+Actual Results:  
+Crash!
+
+Expected Results:  
+Not crashed.', 12, 5, 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', NULL, '''1'':67 ''2'':72 ''4'':83 ''5'':86 ''6'':109 ''7'':116 ''8'':126 ''u'':20 ''en'':24 ''ok'':85,96 ''rv'':26 ''us'':25 ''1.6'':27 ''bug'':107 ''two'':101 ''use'':56 ''x11'':19 ''back'':88 ''caus'':52 ''i686'':22 ''open'':58,78,91 ''save'':4B,32,102 ''step'':64 ''user'':14 ''58777'':108 ''agent'':15 ''alway'':63 ''build'':16 ''click'':73 ''close'':12B,44,110,117,127 ''crash'':2B,47,135,139 ''en-us'':23 ''exist'':39 ''first'':129 ''linux'':21 ''press'':84,95 ''start'':122 ''visit'':68 ''actual'':133 ''appear'':82 ''cancel'':115,132 ''dialog'':6B,34,42,61,80,93,104,113,130 ''expect'':136 ''happen'':55 ''result'':134,137 ''second'':112 ''switch'':87 ''window'':10B,38,120 ''browser'':119 ''firefox'':1B,45 ''possibl'':50 ''user-ag'':13 ''download'':75 ''identifi'':17 ''nonexist'':9B,37 ''reproduc'':62,66 ''with/save'':59,79,92 ''firefox/0.8'':29 ''mozilla/5.0'':18 ''gecko/20040207'':28 ''www.mozilla.org'':70 ''/products/firefox/'':71 ''www.mozilla.org/products/firefox/'':69', false);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bug'::pg_catalog.regclass;
@@ -5431,6 +5456,10 @@ INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, ne
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (5, 6, '2005-01-14 00:00:00', 12, 'bug', NULL, NULL, 'added bug');
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (6, 6, '2005-01-14 00:00:00', 12, 'firefox: severity', 'Normal', 'Critical', 'XXX: not yet implemented');
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (7, 6, '2005-07-13 14:43:02.452716', 12, 'bug', NULL, NULL, 'assigned to source package mozilla-firefox');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (8, 1, '2005-08-03 12:04:50.669962', 16, 'bug', NULL, NULL, 'assigned to source package mozilla-firefox');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (9, 1, '2005-08-04 01:15:48.241836', 16, 'bug', NULL, NULL, 'assigned to source package mozilla-firefox');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (10, 3, '2005-08-10 16:30:32.295049', 12, 'bug', NULL, NULL, 'assigned to source package mozilla-firefox');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (11, 3, '2005-08-10 16:30:47.448639', 12, 'bug', NULL, NULL, 'assigned to source package mozilla-firefox');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugactivity'::pg_catalog.regclass;
@@ -5749,6 +5778,7 @@ INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, file
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (162, 143, 0, 5, NULL, '', '', '');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (163, 144, 0, 5, NULL, '', '', '');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (164, 145, 0, 5, NULL, '', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (165, 146, 23, 1, '', 'lib/getopt.c:629 lib/getopt.c:641', '', 'c-format');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'potmsgset'::pg_catalog.regclass;
@@ -5763,7 +5793,40 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'bounty'::pg_catalog.regclass;
 
-INSERT INTO bounty (id, name, title, summary, description, usdvalue, difficulty, duration, reviewer, datecreated, "owner", deadline, claimant, dateclaimed) VALUES (1, 'foomatic-widgets', 'Make foomatic have better widgets.', 'Foomatic needs to have way better widgets. The current ones are SO WinXP. Eeewww. Maybe we can get some of that K-Bling that I saw in Kubuntu?', 'The widgets need to be particularly polished, since foomatic is going to be the default foomaster on the desktop for the planet.', 453.44, 65, '7 days', 16, '2005-03-11 09:17:40.585397', 16, NULL, NULL, NULL);
+INSERT INTO bounty (id, name, title, summary, description, usdvalue, difficulty, reviewer, datecreated, "owner", deadline, claimant, dateclaimed, bountystatus) VALUES (1, 'foomatic-widgets', 'Make foomatic have better widgets.', 'Foomatic needs to have way better widgets. The current ones are SO WinXP. Eeewww. Maybe we can get some of that K-Bling that I saw in Kubuntu?', 'The widgets need to be particularly polished, since foomatic is going to be the default foomaster on the desktop for the planet.', 453.44, 50, 16, '2005-03-11 09:17:40.585397', 16, NULL, NULL, NULL, 1);
+INSERT INTO bounty (id, name, title, summary, description, usdvalue, difficulty, reviewer, datecreated, "owner", deadline, claimant, dateclaimed, bountystatus) VALUES (2, 'test-bounty', 'This is a Test Bounty', 'The test bounty summary would be compact, not more than 70 words. I would expect to see this displayed in bold at the top of the bounty page, and in listings of bounties.', 'This is a challenging bounty. Dolorem ipsum dominum nostrum. Quanto quando magno farto.  kjds hfslhf kdszhfskdj dsfvgdfvg ghjgsdfgsdfj hgsdkjsdg vsvgckjvcxvg xcIn some cases the bounty may have been offered in a variety of currencies, so this USD value iIn some cases the bounty may have been offered in a variety of currencies, so this USD value is an estimate based on recent currency rates.s an estimate based on recent currency rates.In some cases the bounty may have been offered in a variety of currencies, so this USD value is an estimate based on recent currency rates.
+
+In some cases the bounty may have been offered in a variety of currencies, so this USD value is an estimate based on recent currency rates.
+
+In some cases the bounty may have been offered in a variety ofIn some cases the bounty may have been offered in a variety of currencies, so this USD value is an estimate based on recent currency rates. currencies, so this USD value is an estimate based on recent currency rates.', 657.00, 50, 16, '2005-08-19 14:33:13.38112', 16, NULL, NULL, NULL, 1);
+INSERT INTO bounty (id, name, title, summary, description, usdvalue, difficulty, reviewer, datecreated, "owner", deadline, claimant, dateclaimed, bountystatus) VALUES (3, 'mozilla-svg', 'Support SVG in Mozilla', 'SVG is emerging as a well-supported and well-defined standard for classy vector images. Mozilla should support SVG images natively, without plugins as currently required. In addition, it would be great to be able to address SVG images using the DOM, since they are made up of XML just like XHTML.', ' Since you have come this far, you probably already know that SVG stands for Scalable Vector Graphics, and that it is an XML language for sophisticated 2-dimensional graphics. SVG is to graphics what XHTML is to text, MathML is to mathematical equations and CML is to the description of chemical molecules.
+
+SVG is similar in scope to Macromedia''s proprietary Flash technology: among other things it offers anti-aliased rendering, pattern and gradient fills, sophisticated filter-effects, clipping to arbitrary paths, text and animations. What distinguishes SVG from Flash, is that it is a W3 recommendation (i.e. a standard for all intents and purposes) and that it is XML-based as opposed to a closed binary format. It is explicitly designed to work with other W3C standards such as CSS, DOM and SMIL. 
+', 877.00, 50, 16, '2005-08-19 14:37:20.144375', 16, NULL, NULL, NULL, 1);
+INSERT INTO bounty (id, name, title, summary, description, usdvalue, difficulty, reviewer, datecreated, "owner", deadline, claimant, dateclaimed, bountystatus) VALUES (4, 'evo-vcard', 'Comprehensive support for VCARD in Evolution', 'The VCARD standard, as irritating and silly as it is, should be better supported in Evolution. This bounty is for support for the creation, parsing, import and export of VCARDS in Evolution.', 'NOTE: (You MUST have python installed to do this)
+
+1. Copy the script below to an empty ascii file and save it as:
+''evol2tbird-addressbook.py''
+
+2. Put it in an empty folder you create for this process.
+
+3. Make the file executable:
+
+chmod +x evol2tbird-addressbook.py
+
+4. Run the program to export the addressbook file from Evolution:
+
+./evol2tbird-addressbook.py --db [path to evolution''s addressbook.db]
+
+ex.: ./evol2tbird-addressbook.py --db ~/evolution/local/Contacts/addressbook.db > adbook.txt
+
+5. Now open the addressbook in Thunderbird and select ''Tools/Import''
+
+6. Work through the dialogs until you point to the file the script created ... ''adbook.txt''
+
+7. Select that file and click ''OK'' - then select what info you want imported and select ''OK'' again.
+
+8. Your Evolution Addressbook is now imported into Thunderbird.', 300.00, 50, 16, '2005-08-19 14:40:02.046826', 16, NULL, NULL, NULL, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bounty'::pg_catalog.regclass;
@@ -5786,6 +5849,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'cveref'::pg_catalog.regclass;
 
+INSERT INTO cveref (id, bug, cveref, title, datecreated, "owner", cvestate) VALUES (1, 1, '1999-8979', 'Firefox crashes all the time', '2005-08-03 12:05:41.746447', 16, 2);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'cveref'::pg_catalog.regclass;
@@ -5803,6 +5867,10 @@ INSERT INTO karma (id, datecreated, person, "action") VALUES (7, '2005-07-05 05:
 INSERT INTO karma (id, datecreated, person, "action") VALUES (8, '2005-07-05 05:24:07.417756', 12, 8);
 INSERT INTO karma (id, datecreated, person, "action") VALUES (9, '2005-07-05 05:24:07.418209', 12, 9);
 INSERT INTO karma (id, datecreated, person, "action") VALUES (10, '2005-07-13 14:43:02.452716', 12, 9);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (11, '2005-08-03 12:04:50.669962', 16, 9);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (12, '2005-08-04 01:15:48.241836', 16, 9);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (13, '2005-08-10 16:30:32.295049', 12, 9);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (14, '2005-08-10 16:30:47.448639', 12, 9);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'karma'::pg_catalog.regclass;
@@ -5825,9 +5893,12 @@ INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackag
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (5, 2, NULL, 3, NULL, 1, NULL, 20, 40, 20, 12, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.824591', 12, NULL, NULL, 'Upstream said that they won''t bother fixing it.', '''fix'':8C ''won'':5C ''said'':2C ''bother'':7C ''upstream'':1C');
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (6, 3, NULL, 3, NULL, 1, NULL, 10, 20, 30, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.825533', 16, NULL, NULL, NULL, '');
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (13, 4, 4, NULL, NULL, NULL, NULL, 10, 30, 30, NULL, '2005-01-14 17:20:12.820778', '2005-01-14 17:20:12.820778', 12, NULL, NULL, NULL, '');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (14, 5, 4, NULL, NULL, NULL, NULL, 10, 30, 30, 12, '2005-01-14 17:27:03.702622', '2005-01-14 17:27:03.702622', 12, NULL, NULL, NULL, '');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (15, 6, 4, NULL, NULL, NULL, NULL, 10, 30, 50, NULL, '2005-01-14 17:35:39.548665', '2005-01-14 17:35:39.548665', 12, NULL, NULL, 'The status explanation is useful to provide task specific information.', '''use'':5C ''task'':8C ''explan'':3C ''inform'':10C ''provid'':7C ''specif'':9C ''status'':2C');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (16, 6, NULL, NULL, 1, 1, NULL, 10, 30, 30, NULL, '2005-07-13 14:43:02.452716', '2005-07-13 14:43:02.452716', 12, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (14, 5, 4, NULL, NULL, NULL, NULL, 10, 30, 50, 12, '2005-01-14 17:27:03.702622', '2005-01-14 17:27:03.702622', 12, NULL, NULL, 'The status explanation is useful to provide task specific information.', '''use'':5C ''task'':8C ''explan'':3C ''inform'':10C ''provid'':7C ''specif'':9C ''status'':2C');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (15, 6, 4, NULL, NULL, NULL, NULL, 10, 30, 40, NULL, '2005-01-14 17:35:39.548665', '2005-01-14 17:35:39.548665', 12, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (16, 5, NULL, NULL, 1, 1, NULL, 10, 30, 30, NULL, '2005-07-13 14:43:02.452716', '2005-07-13 14:43:02.452716', 12, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (17, 1, NULL, 1, NULL, 1, NULL, 10, 30, 30, NULL, '2005-08-04 01:15:48.241836', '2005-08-04 01:15:48.241836', 16, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (18, 3, NULL, NULL, 6, 1, NULL, 10, 30, 30, NULL, '2005-08-10 16:30:32.295049', '2005-08-10 16:30:32.295049', 12, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (19, 3, NULL, NULL, 7, 1, NULL, 10, 30, 30, NULL, '2005-08-10 16:30:47.448639', '2005-08-10 16:30:47.448639', 12, NULL, NULL, NULL, '');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugtask'::pg_catalog.regclass;
@@ -5842,7 +5913,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'milestone'::pg_catalog.regclass;
 
-INSERT INTO milestone (id, product, name, title) VALUES (1, 4, '1.0', 'one dot zero');
+INSERT INTO milestone (id, product, name, distribution, dateexpected, visible) VALUES (1, 4, '1.0', NULL, NULL, true);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'milestone'::pg_catalog.regclass;
@@ -5871,9 +5942,9 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'bountysubscription'::pg_catalog.regclass;
 
-INSERT INTO bountysubscription (id, bounty, person, subscription) VALUES (1, 1, 9, 1);
-INSERT INTO bountysubscription (id, bounty, person, subscription) VALUES (2, 1, 6, 3);
-INSERT INTO bountysubscription (id, bounty, person, subscription) VALUES (3, 1, 1, 2);
+INSERT INTO bountysubscription (id, bounty, person) VALUES (1, 1, 9);
+INSERT INTO bountysubscription (id, bounty, person) VALUES (2, 1, 6);
+INSERT INTO bountysubscription (id, bounty, person) VALUES (3, 1, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bountysubscription'::pg_catalog.regclass;
@@ -5882,6 +5953,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'productbounty'::pg_catalog.regclass;
 
 INSERT INTO productbounty (id, bounty, product) VALUES (1, 1, 4);
+INSERT INTO productbounty (id, bounty, product) VALUES (2, 4, 5);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'productbounty'::pg_catalog.regclass;
@@ -5930,6 +6002,7 @@ INSERT INTO potemplatename (id, name, title, description, translationdomain) VAL
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (2, 'pmount', 'Main translation domain for pmount', 'This is the description about pmount''s POTemplateName', 'pmount');
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (3, 'netapplet', 'Main translation domain for netapplet', 'This is the description about netapplet''s POTemplateName', 'netapplet');
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (4, 'pkgconf-mozilla', 'pkgconf-mozilla', NULL, 'pkgconf-mozilla');
+INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (5, 'evolution-2.2-test', 'Another template for Evolution', NULL, 'evolution-2.2-test');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'potemplatename'::pg_catalog.regclass;
@@ -5979,25 +6052,25 @@ INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (8
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'messagechunk'::pg_catalog.regclass;
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sourcepackagepublishinghistory'::pg_catalog.regclass;
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'securesourcepackagepublishinghistory'::pg_catalog.regclass;
 
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (1, 14, 1, 2, 1, 1, '2004-09-27 11:57:13', '2004-09-27 11:57:13', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (2, 15, 3, 2, 1, 1, '2004-09-27 11:57:13', '2004-09-27 11:57:13', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (4, 17, 1, 2, 1, 1, '2004-03-14 18:00:00', '2004-03-14 18:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (5, 16, 3, 2, 1, 1, '2004-03-10 16:30:00', '2004-03-10 16:30:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
-INSERT INTO sourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (8, 20, 3, 2, 1, 1, '2005-04-18 17:34:15.308434', '2005-04-18 17:34:15.308434', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (1, 14, 1, 2, 1, 1, '2004-09-27 11:57:13', '2004-09-27 11:57:13', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (2, 15, 3, 2, 1, 1, '2004-09-27 11:57:13', '2004-09-27 11:57:13', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (4, 17, 1, 2, 1, 1, '2004-03-14 18:00:00', '2004-03-14 18:00:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (5, 16, 3, 2, 1, 1, '2004-03-10 16:30:00', '2004-03-10 16:30:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (8, 20, 3, 3, 1, 1, '2005-04-18 17:34:15.308434', '2005-04-18 17:34:15.308434', '2005-08-24 17:01:15.308434', NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (9, 21, 3, 2, 1, 1, '2005-08-24 17:01:15.308434', '2005-08-24 17:01:15.308434', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackagepublishinghistory'::pg_catalog.regclass;
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'packagepublishinghistory'::pg_catalog.regclass;
-
-INSERT INTO packagepublishinghistory (id, binarypackage, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (9, 12, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
-INSERT INTO packagepublishinghistory (id, binarypackage, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (11, 15, 6, 2, 1, 1, 40, '2005-05-05 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'securesourcepackagepublishinghistory'::pg_catalog.regclass;
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'packagepublishinghistory'::pg_catalog.regclass;
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'securebinarypackagepublishinghistory'::pg_catalog.regclass;
+
+INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (9, 12, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (11, 15, 6, 2, 1, 1, 40, '2005-05-05 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'securebinarypackagepublishinghistory'::pg_catalog.regclass;
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'translationgroup'::pg_catalog.regclass;
@@ -7535,6 +7608,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'vote'::pg_catalog.re
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'vote'::pg_catalog.regclass;
 
+
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'launchpadstatistic'::pg_catalog.regclass;
 
 INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (1, 'potemplate_count', 5, '2005-07-22 22:51:42.32511');
@@ -7545,3 +7619,541 @@ INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (5, 'langua
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'launchpadstatistic'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'specification'::pg_catalog.regclass;
+
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (1, 'extension-manager-upgrades', 'Extension Manager Upgrades', 'Simplify the way extensions are installed and registered so that: 1. third party applications can easily register and deregister extensions that live with their code. 2. developers can easily register extensions that they are developing out of a location apart from their build (e.g. their home directory), and  3. developers can easily install extensions for testing.', 16, 13, NULL, NULL, '2005-08-24 16:03:46.479655', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://wiki.mozilla.org/Firefox:1.1_Product_Team', NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (2, 'canvas', 'Support <canvas> Objects', 'With the Firefox 1.1 Developer Preview Release, Firefox includes a new HTML element for programmable graphics. <canvas> is based on the WhatWG canvas specification (http://www.whatwg.org/specs/web-apps/current-work/#graphics), which itself is based on Apple''s <canvas> implemented in Safari. It can be used for rendering graphs, UI elements, and other custom graphics on the client.', 16, NULL, NULL, NULL, '2005-08-24 16:05:03.406307', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://developer.mozilla.org/en/docs/Drawing_Graphics_with_Canvas', NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (3, 'svg-support', 'Support Native SVG Objects', 'Scalable Vector Graphics (SVG) is an XML markup language for describing two-dimensional vector graphics. Mozilla should natively support embedded SVG images in HTML documents, or SVG served directly, much as PNG or JPEG images can be served.', 16, 13, 2, NULL, '2005-08-24 16:10:05.078543', 4, NULL, NULL, NULL, NULL, 10, 70, 'http://developer.mozilla.org/en/docs/SVG', NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (4, 'e4x', 'Support E4X in EcmaScript', 'E4X adds native XML datatypes to the ECMAScript language, extends the semantics of familiar ECMAScript operators for manipulating XML objects and adds a small set of new operators for common XML operations, such as searching and filtering. It also adds support for XML literals, namespaces, qualified names and other mechanisms to facilitate XML processing.', 16, 14, 28, NULL, '2005-08-24 16:11:37.431981', 4, NULL, NULL, NULL, 1, 20, 0, 'http://www.ecma-international.org/publications/standards/Ecma-357.htm', 'This is the status whiteboard. Dig it?');
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'specification'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'specificationbug'::pg_catalog.regclass;
+
+INSERT INTO specificationbug (id, specification, bug) VALUES (1, 3, 1);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'specificationbug'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'specificationsubscription'::pg_catalog.regclass;
+
+INSERT INTO specificationsubscription (id, specification, person) VALUES (1, 3, 16);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'specificationsubscription'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'specificationdependency'::pg_catalog.regclass;
+
+INSERT INTO specificationdependency (id, specification, dependency) VALUES (1, 4, 3);
+INSERT INTO specificationdependency (id, specification, dependency) VALUES (2, 2, 4);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'specificationdependency'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'specificationreview'::pg_catalog.regclass;
+
+INSERT INTO specificationreview (id, specification, reviewer, requestor, queuemsg) VALUES (1, 3, 13, 16, 'Please make sure this reflects your implementation plan.');
+INSERT INTO specificationreview (id, specification, reviewer, requestor, queuemsg) VALUES (2, 4, 16, 1, 'Please confirm this meets your requirements.');
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'specificationreview'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'shippingrun'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'shippingrun'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'shipment'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'shipment'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'shockandawe'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'shockandawe'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'shippingrequest'::pg_catalog.regclass;
+
+INSERT INTO ShippingRequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (1, 52, NULL, 55, FALSE, NULL, '2005-08-01 18:38:24.526648', TRUE, NULL, 'noreason');
+INSERT INTO ShippingRequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (2, 22, NULL, NULL, FALSE, NULL, '2005-09-01 18:38:24.526648', TRUE, NULL, NULL);
+INSERT INTO ShippingRequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (3, 51, NULL, NULL, FALSE, NULL, '2005-07-01 18:38:24.526648', TRUE, NULL, NULL);
+INSERT INTO ShippingRequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (4, 29, NULL, NULL, FALSE, NULL, '2005-06-01 18:38:24.526648', TRUE, NULL, NULL);
+INSERT INTO ShippingRequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (5, 23, NULL, NULL, FALSE, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason');
+INSERT INTO ShippingRequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (6, 28, NULL, NULL, TRUE, 55, '2005-04-01 18:38:24.526648', NULL, NULL, 'noreason');
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'shippingrequest'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'requestedcds'::pg_catalog.regclass;
+
+
+INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (1, 1, 10, 1, 1, 1, 10);
+INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (2, 1, 9, 1, 1, 2, 9);
+INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (3, 1, 2, 1, 1, 3, 3);
+INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (4, 2, 10, 1, 1, 1, 10);
+INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (5, 2, 3, 1, 1, 2, 3);
+INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (6, 2, 2, 1, 1, 3, 2);
+INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (7, 3, 5, 1, 1, 1, 5);
+INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (8, 3, 3, 1, 1, 2, 3);
+INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (9, 3, 2, 1, 1, 3, 2);
+INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (10, 4, 0, 1, 1, 1, 0);
+INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (11, 4, 3, 1, 1, 2, 3);
+INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (12, 4, 0, 1, 1, 3, 0);
+INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (13, 5, 9, 1, 1, 1, NULL);
+INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (14, 5, 3, 1, 1, 2, NULL);
+INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (15, 5, 9, 1, 1, 3, NULL);
+INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (16, 6, 9, 1, 1, 1, NULL);
+INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (17, 6, 9, 1, 1, 2, NULL);
+INSERT INTO RequestedCDs (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (18, 6, 9, 1, 1, 3, NULL);
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'requestedcds'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'standardshipitrequest'::pg_catalog.regclass;
+
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, description, isdefault) VALUES (1, 5, 2, 3, '10 CDs (5 Intel/x86, 3 AMD64, 2 PowerPC)', true);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, description, isdefault) VALUES (2, 5, 0, 0, '5 CDs Intel/x86', false);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, description, isdefault) VALUES (3, 10, 2, 3, '15 CDs (10 Intel/x86, 3 AMD64, 2 PowerPC)', false);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, description, isdefault) VALUES (4, 10, 0, 0, '10 CDs Intel/x86', false);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, description, isdefault) VALUES (5, 0, 3, 0, '3 CDs PowerPC)', false);
+INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, description, isdefault) VALUES (6, 0, 2, 0, '3 CDs AMD64', false);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'standardshipitrequest'::pg_catalog.regclass;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

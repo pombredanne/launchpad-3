@@ -35,14 +35,14 @@
         name="+new"
         schema="canonical.launchpad.interfaces.ICVERef"
         for="canonical.launchpad.interfaces.ICVERefSet"
-        class="canonical.launchpad.browser.addview.SQLObjectAddView"
+        class="canonical.launchpad.browser.BugRelatedObjectAddView"
         label="New CVE Reference"
         fields="cveref cvestate title"
         content_factory="canonical.launchpad.database.CVERefFactory"
         arguments=""
         keyword_arguments="cveref cvestate title"
         permission="launchpad.AnyPerson"
-        template="../templates/launchpad-addform.pt"
+        template="../templates/bug-cveref-add.pt"
         lp:url="malone/bugs/$Bugs.id/cverefs/+new">
         <browser:widget
             field="title"
@@ -53,10 +53,10 @@
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.ICVERef"
-        class="canonical.launchpad.browser.editview.SQLObjectEditView"
+        class="canonical.launchpad.browser.BugRelatedObjectEditView"
         label="Edit CVE Reference"
         permission="launchpad.AnyPerson"
-        template="../templates/default-editform.pt"
+        template="../templates/bug-cveref-edit.pt"
         fields="cveref cvestate title"
         lp:url="malone/bugs/$Bug.id/cvereferences/$Reference.id/+edit">
         <browser:widget

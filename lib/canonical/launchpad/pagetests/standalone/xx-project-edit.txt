@@ -1,7 +1,7 @@
 Test that the project edit page loads.
 
   >>> print http(r"""
-  ... GET /doap/projects/gnome/+edit HTTP/1.1
+  ... GET /projects/gnome/+edit HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -9,17 +9,17 @@ Test that the project edit page loads.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-            <h1>Edit Open Source Project Details:</h1>
+            <h1>Edit project details</h1>
   ...
 
 Test that the project edit page works when we POST changes.
 
   >>> print http(r"""
-  ... POST /doap/projects/gnome/+edit HTTP/1.1
+  ... POST /projects/gnome/+edit HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1917
   ... Content-Type: multipart/form-data; boundary=---------------------------13925234164844313391724926109
-  ... Referer: http://localhost:9000/doap/projects/gnome/+edit
+  ... Referer: http://localhost:9000/projects/gnome/+edit
   ... 
   ... -----------------------------13925234164844313391724926109
   ... Content-Disposition: form-data; name="field.displayname"
@@ -66,5 +66,5 @@ Test that the project edit page works when we POST changes.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-            <h1>Edit Open Source Project Details:</h1>
+            <h1>Edit project details</h1>
   ...

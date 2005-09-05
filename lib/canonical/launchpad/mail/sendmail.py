@@ -23,7 +23,7 @@ from smtplib import SMTP
 
 from zope.app import zapi
 from zope.app.mail.interfaces import IMailDelivery
-from zope.security.proxy import isinstance as pisinstance
+from zope.security.proxy import isinstance as zisinstance
 
 from canonical.config import config
 from canonical.lp import isZopeless
@@ -66,17 +66,17 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
     # can't send.
     # XXX: These checks need to be migrated upstream if this bug
     # still exists in modern Z3 -- StuartBishop 20050319
-    if pisinstance(to_addrs, basestring):
+    if zisinstance(to_addrs, basestring):
         to_addrs = [to_addrs]
-    assert (pisinstance(to_addrs, (list, tuple, sets.Set, set))
+    assert (zisinstance(to_addrs, (list, tuple, sets.Set, set))
             and len(to_addrs) > 0), 'Invalid To: %r' % (to_addrs,)
-    assert pisinstance(from_addr, basestring), \
+    assert zisinstance(from_addr, basestring), \
             'Invalid From: %r' % (from_addr,)
-    assert pisinstance(subject, basestring), \
+    assert zisinstance(subject, basestring), \
             'Invalid Subject: %r' % (from_addr,)
-    assert pisinstance(body, basestring), 'Invalid body: %r' % (from_addr,)
+    assert zisinstance(body, basestring), 'Invalid body: %r' % (from_addr,)
     for addr in to_addrs:
-        assert pisinstance(addr, basestring) and bool(addr), \
+        assert zisinstance(addr, basestring) and bool(addr), \
                 'Invalid recipient: %r in %r' % (addr, to_addrs)
 
     msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')

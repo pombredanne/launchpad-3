@@ -11,7 +11,7 @@
             permission="zope.Public"
             interface="canonical.launchpad.interfaces.IEditPOTemplate"
             set_attributes="potemplatename description header iscurrent
-                            owner productrelease distrorelease
+                            owner productseries distrorelease
                             sourcepackagename sourcepackageversion
                             binarypackagename languagepack path filename"
             />
@@ -36,16 +36,13 @@
         for="canonical.launchpad.interfaces.IPOTemplate"
         class="canonical.launchpad.browser.POTemplateView"
         permission="zope.Public">
-
         <browser:page
             name="+index"
-            template="../templates/potemplate-index.pt"
-            lp:url="Rosetta/products/$Product.name/$POTemplate.name/+index"
-        />
+            template="../templates/potemplate-index.pt" />
         <browser:page
             name="+chart"
-            template="../templates/potemplate-chart.pt"
-        />
+            template="../templates/potemplate-chart.pt" />
+
         <!-- Potemplate Portlets -->
         <browser:page
             name="+portlet-actions"
@@ -57,17 +54,12 @@
         />
         <browser:page
             name="+portlet-relateds"
-            template="../templates/portlet-potemplate-relateds.pt"
+            template="../templates/potemplate-portlet-relateds.pt"
         />
         <browser:page
             name="+portlet-for"
             template="../templates/potemplate-portlet-for.pt"
         />
-        <browser:page
-            name="+portlet-status-legend"
-            template="../templates/portlet-rosetta-status-legend.pt"
-        />
-
     </browser:pages>
 
     <browser:page

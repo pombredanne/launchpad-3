@@ -10,16 +10,16 @@ __all__ = [
     'IBugSet',
     'IBugDelta',
     'IBugAddForm',
-    'IBugTarget'
-    ]
+    'IBugTarget',
+    'BugDistroReleaseTargetDetails']
 
 from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
+from canonical.launchpad.interfaces import non_duplicate_bug
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.validators.bug import non_duplicate_bug
 from canonical.launchpad.fields import Title, Summary
 
 _ = MessageIDFactory('launchpad')
@@ -54,7 +54,7 @@ class IBug(Interface):
         description that should capture the essence of the bug, where it
         has been observed, and what triggers it."""))
     description = Text(
-        title=_('Description'), required=False,
+        title=_('Description'), required=True,
         description=_("""A detailed description of the problem,
         including the steps required to reproduce it."""))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
@@ -62,8 +62,7 @@ class IBug(Interface):
     duplicateof = Int(
         title=_('Duplicate Of'), required=False, constraint=non_duplicate_bug)
     communityscore = Int(
-        title=_('Community Score'), required=True, readonly=True,
-        default=0)
+        title=_('Community Score'), required=True, readonly=True, default=0)
     communitytimestamp = Datetime(
         title=_('Community Timestamp'), required=True, readonly=True)
     hits = Int(
@@ -76,24 +75,27 @@ class IBug(Interface):
     activitytimestamp = Datetime(
         title=_('Activity Timestamp'), required=True, readonly=True)
     private = Bool(
-        title=_("Should this bug be kept confidential?"), required=False,
+        title=_("Keep bug confidential"), required=False,
         description=_(
-        "Check this box if, for example, this bug exposes a security "
-        "vulnerability. If selected, this bug will be visible only to "
-        "its subscribers."),
+        "Select this option if, for instance, this bug exposes a "
+        "security vulnerability. Before you set this, make sure you "
+        "have subscribed anyone who needs to see this bug."),
         default=False)
 
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
     messages = Attribute('SQLObject.RelatedJoin of IMessages')
-    bugtasks = Attribute('SQLObject.Multijoin of IBugTask')
+    bugtasks = Attribute('BugTasks on this bug, sorted upstream, then '
+        'ubuntu, then other distroreleases.')
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
     externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
     cverefs = Attribute('CVE references for this bug')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
-    duplicates = Attribute('MultiJoin of the bugs which are dups of this '
-        'one')
+    duplicates = Attribute(
+        'MultiJoin of the bugs which are dups of this one')
+    attachments = Attribute("List of bug attachments.")
+    specifications = Attribute("List of related specifications.")
 
     def followup_subject():
         """Return a candidate subject for a followup message."""
@@ -137,12 +139,6 @@ class IBug(Interface):
         tracker, owned by the person given as the owner.
         """
 
-    def addTask(owner, product=None, distribution=None, distrorelease=None,
-        sourcepackagename=None, binarypackagename=None):
-        """Create a new BugTask (unless a task on this target already
-        exists, in which case we will just return that) for this bug.
-        """
-
 
 class IBugTarget(Interface):
     """An entity on which a bug can be reported.
@@ -150,16 +146,36 @@ class IBugTarget(Interface):
     Examples include an IDistribution, an IDistroRelease and an
     IProduct.
     """
-    def search(bug=None, searchtext=None, status=None, priority=None,
-               severity=None, milestone=None, assignee=None, owner=None,
-               orderby=None, statusexplanation=None, user=None):
+    def searchTasks(search_params):
         """Search the IBugTasks reported on this entity.
+
+        :search_params: a BugTaskSearchParams object
 
         Return an iterable of matching results.
 
         Note: milestone is currently ignored for all IBugTargets
         except IProduct.
         """
+
+
+class BugDistroReleaseTargetDetails:
+    """The details of a bug targeted to a specific IDistroRelease.
+
+    The following attributes are provided:
+
+    :release: The IDistroRelease.
+    :istargeted: Is there a fix targeted to this release?
+    :sourcepackage: The sourcepackage to which the fix would be targeted.
+    :assignee: An IPerson, or None if no assignee.
+    :status: A BugTaskStatus dbschema item, or None, if release is not targeted.
+    """
+    def __init__(self, release, istargeted=False, sourcepackage=None,
+                 assignee=None, status=None):
+        self.release = release
+        self.istargeted = istargeted
+        self.sourcepackage = sourcepackage
+        self.assignee = assignee
+        self.status = status
 
 
 class IBugDelta(Interface):
@@ -188,6 +204,9 @@ class IBugDelta(Interface):
     cveref = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
         "ICVERef's.")
+    attachment = Attribute(
+        "A dict with two keys, 'old' and 'new', or None. Key values are "
+        "IBugAttachment's.")
     added_bugtasks = Attribute(
         "A list or tuple of IBugTasks, one IBugTask, or None.")
     bugtask_deltas = Attribute(

@@ -37,9 +37,28 @@ class Language(SQLBase):
         """See ILanguage."""
         return '%s (%s)' % (self.englishname, self.code)
 
+    @property
+    def alt_suggestion_language(self):
+        """See ILanguage."""
+        if self.code in ['pt_BR',]:
+            return None
+        elif self.code == 'nn':
+            return Language.byCode('nb')
+        elif self.code == 'nb':
+            return Language.byCode('nn')
+        codes = self.code.split('_')
+        if len(codes) == 2:
+            return Language.byCode(codes[0])
+        return None
 
 class LanguageSet:
     implements(ILanguageSet)
+
+    @property
+    def common_languages(self):
+        return iter(Language.select(
+            'visible IS TRUE',
+            orderBy='englishname'))
 
     def __iter__(self):
         """See ILanguageSet."""

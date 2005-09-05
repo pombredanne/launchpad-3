@@ -41,6 +41,10 @@ class CodeOfConduct:
 
     def __init__(self, version):
         self.version = version
+        # verify if the respective file containing the code of conduct exists
+        if not os.path.exists(self._filename):
+            # raise something sane
+            raise NotFoundError(version)
 
     @property
     def title(self):
@@ -58,24 +62,9 @@ class CodeOfConduct:
     @property
     def content(self):
         """Return the content of the CoC file."""
-        # Recover the path for CoC from a Component
-        path = getUtility(ICodeOfConductConf).path
-
-        # Rebuild filename
-        filename = os.path.join(path, self.version + '.txt')
-
-        try:
-            fp = open(filename)
-        except IOError, e:
-            if e.errno == errno.EEXIST:
-                # File not found means the requested CoC was not found.
-                raise NotFoundError('CoC Release Not Found')
-
-            # All other IOErrors are a problem, though.
-            raise
-        else:
-            data = fp.read()
-            fp.close()
+        fp = open(self._filename)
+        data = fp.read()
+        fp.close()
 
         return data
 
@@ -83,6 +72,13 @@ class CodeOfConduct:
     def current(self):
         """Is this the current release of the Code of Conduct?"""
         return getUtility(ICodeOfConductConf).currentrelease == self.version
+
+    @property
+    def _filename(self):
+        """Rebuild filename according the local version."""
+        # Recover the path for CoC from a Component
+        path = getUtility(ICodeOfConductConf).path
+        return os.path.join(path, self.version + '.txt')
 
     
 class CodeOfConductSet:
@@ -99,8 +95,11 @@ class CodeOfConductSet:
         if version == 'console':
             return SignedCodeOfConductSet()
         # in normal conditions return the CoC Release
-        return CodeOfConduct(version)
-
+        try:
+            return CodeOfConduct(version)
+        except NotFoundError:
+            return None
+        
     def __iter__(self):
         """See ICodeOfConductSet."""
         releases = []
@@ -221,7 +220,13 @@ class SignedCodeOfConductSet:
 
         # use a utility to perform the GPG operations
         gpghandler = getUtility(IGPGHandler)
-        sig = gpghandler.verifySignature(signedcode)
+
+        try:
+            sane_signedcode = signedcode.encode('utf-8')
+        except UnicodeEncodeError:
+            raise TypeError('Signed Code Could not be encoded as UTF-8')
+            
+        sig = gpghandler.verifySignature(sane_signedcode)
 
         if sig is None:
             return 'Signature has invalid format'
@@ -330,14 +335,14 @@ class SignedCodeOfConductSet:
     def acknowledgeSignature(self, user, recipient):
         """See ISignedCodeOfConductSet."""
         active = True
-
+        sign = SignedCodeOfConduct(owner=user.id, recipient=recipient.id,
+                                   active=active)
+        
         subject = 'Launchpad: Code Of Conduct Signature Acknowledge'
         content = 'Paper Submitted acknowledge by %s' % recipient.browsername
 
         sign.sendAdvertisementEmail(subject, content)
 
-        SignedCodeOfConduct(owner=user.id, recipient=recipient.id,
-                            active=active)
 
     def getLastAcceptedDate(self):
         """See ISignegCodeOfConductSet."""

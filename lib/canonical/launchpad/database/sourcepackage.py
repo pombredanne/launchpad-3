@@ -8,18 +8,21 @@ import sets
 from zope.interface import implements
 from zope.component import getUtility
 
+from sqlobject import SQLObjectNotFound
+
 from canonical.database.sqlbase import (quote, sqlvalues,
     flush_database_updates)
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
-    BugTaskStatus, BugTaskSeverity, PackagePublishingStatus, PackagingType)
+    BugTaskStatus, BugTaskSeverity, PackagePublishingStatus, PackagingType,
+    PackagePublishingPocket)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (ISourcePackage,
     ISourcePackageSet, ILaunchpadCelebrities)
 
-from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.maintainership import Maintainership
 from canonical.launchpad.database.vsourcepackagereleasepublishing import (
@@ -74,9 +77,15 @@ class SourcePackage:
         # Set self.currentrelease based on current published sourcepackage
         # with this name in the distrorelease.  If none is published, leave
         # self.currentrelease as None
+
+        # XXX: Daniel Debonzi
+        # Getting only for pocket RELEASE.. to do not get more than one result.
+        # Figure out what should be done to access another pockets
         package = SourcePackageInDistro.selectOneBy(
-                    sourcepackagenameID=sourcepackagename.id,
-                    distroreleaseID = self.distrorelease.id)
+            sourcepackagenameID=sourcepackagename.id,
+            distroreleaseID=self.distrorelease.id,
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.RELEASE)
         if package is None:
             self.currentrelease = None
         else:
@@ -90,9 +99,8 @@ class SourcePackage:
 
     @property
     def displayname(self):
-        dn = ' the ' + self.sourcepackagename.name + ' source package in '
-        dn += self.distrorelease.displayname
-        return dn
+        return "%s %s" % (
+            self.distrorelease.displayname, self.sourcepackagename.name)
 
     @property
     def title(self):
@@ -117,9 +125,32 @@ class SourcePackage:
 
     @property
     def changelog(self):
-        if not self.currentrelease:
-            return None
-        return self.currentrelease.changelog
+        """See ISourcePackage"""
+
+        clauseTables = ('SourcePackageName', 'SourcePackageRelease',
+                        'SourcePackagePublishing','DistroRelease')
+
+        query = ('SourcePackageRelease.sourcepackagename = '
+                 'SourcePackageName.id AND '
+                 'SourcePackageName = %d AND '
+                 'SourcePackagePublishing.distrorelease = '
+                 'DistroRelease.Id AND '
+                 'SourcePackagePublishing.distrorelease = %d AND '
+                 'SourcePackagePublishing.sourcepackagerelease = '
+                 'SourcePackageRelease.id'
+                 % (self.sourcepackagename.id,
+                    self.distrorelease.id)
+                 ) 
+
+        spreleases = SourcePackageRelease.select(query,
+                                                 clauseTables=clauseTables,
+                                                 orderBy='version').reversed()
+        changelog = ''
+
+        for spr in spreleases:
+            changelog += '%s \n\n' % spr.changelog
+        
+        return changelog
 
     @property
     def manifest(self):
@@ -188,12 +219,16 @@ class SourcePackage:
             distroreleaseID=self.distrorelease.id,
             sourcepackagenameID=self.sourcepackagename.id)
         result = list(result)
-        result.sort(key=lambda x: x.potemplatename.name)
-        return result
+        return sorted(result, key=lambda x: x.potemplatename.name)
 
     @property
-    def potemplatecount(self):
-        return len(self.potemplates)
+    def currentpotemplates(self):
+        result = POTemplate.selectBy(
+            distroreleaseID=self.distrorelease.id,
+            sourcepackagenameID=self.sourcepackagename.id,
+            iscurrent=True)
+        result = list(result)
+        return sorted(result, key=lambda x: x.potemplatename.name)
 
     @property
     def product(self):
@@ -287,6 +322,32 @@ class SourcePackage:
         if ps is None:
             return False
         return ps.branch is not None
+
+    @property
+    def published_by_pocket(self):
+        """See ISourcePackage."""
+        result = SourcePackagePublishing.select("""
+            SourcePackagePublishing.distrorelease = %s AND
+            SourcePackagePublishing.sourcepackagerelease =
+                SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename = %s
+            """ % sqlvalues(
+                self.distrorelease.id,
+                self.sourcepackagename.id),
+            clauseTables=['SourcePackageRelease'])
+        # create the dictionary with the set of pockets as keys
+        thedict = {}
+        for pocket in PackagePublishingPocket.items:
+            thedict[pocket] = []
+        # add all the sourcepackagereleases in the right place
+        for spr in result:
+            thedict[spr.pocket].append(spr.sourcepackagerelease)
+        return thedict
+
+    def searchTasks(self, search_params):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        search_params.setSourcePackage(self)
+        return BugTaskSet().search(search_params)
 
     def setPackaging(self, productseries, user):
         target = self.direct_packaging
@@ -390,7 +451,7 @@ class SourcePackageSet(object):
     def __getitem__(self, name):
         try:
             spname = SourcePackageName.byName(name)
-        except IndexError:
+        except SQLObjectNotFound:
             raise KeyError, 'No source package name %s' % name
         return SourcePackage(sourcepackagename=spname,
                              distrorelease=self.distrorelease)

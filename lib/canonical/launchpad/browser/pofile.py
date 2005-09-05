@@ -4,7 +4,12 @@
 
 __metaclass__ = type
 
-__all__ = ['POFileView', 'ExportCompatibilityView', 'POExportView']
+__all__ = [
+    'POFileView',
+    'BaseExportView',
+    'ExportCompatibilityView',
+    'POFileAppMenus',
+    'POExportView']
 
 import gettextpo
 import urllib
@@ -52,6 +57,14 @@ class POFileFacets(StandardLaunchpadFacets):
         text = 'Translations'
         return DefaultLink(target, text)
 
+    # Bugs and calendar don't make sense for pofiles
+    # XXX: how does one disable links unconditionally?
+    #       -- kiko, 2005-08-23
+    def bugs(self):
+        return Link("", "Bugs", linked=False)
+
+    def calendar(self):
+        return Link("", "Calendar", linked=False)
 
 class POFileAppMenus(ApplicationMenu):
     usedfor = IPOFile
@@ -131,13 +144,16 @@ class POFileView:
         self.alerts = []
         potemplate = context.potemplate
         self.is_editor = context.canEditTranslations(self.user)
-        self.second_lang_pofile = None
         self.second_lang_code = self.form.get('alt', None)
-        if self.second_lang_code:
+        if self.second_lang_code is None:
+            second_lang = self.context.language.alt_suggestion_language
+            if second_lang is not None:
+                self.second_lang_code = second_lang.code
+        self.second_lang_pofile = None
+        if self.second_lang_code is not None:
             self.second_lang_pofile = potemplate.queryPOFileByLang(self.second_lang_code)
         self.submitted = False
         self.errorcount = 0
-
 
         # Get pagination information.
         self.offset = 0
@@ -147,6 +163,29 @@ class POFileView:
             # The value is not an integer, stick with 0
             pass
 
+        # Get message display settings.
+        self.show = self.form.get('show')
+
+        if self.show not in ('translated', 'untranslated', 'all', 'fuzzy'):
+            self.show = self.DEFAULT_SHOW
+        self.show_all = False
+        self.show_fuzzy = False
+        self.show_translated = False
+        self.show_untranslated = False
+        if self.show == 'all':
+            self.show_all = True
+            self.shown_count = self.context.messageCount()
+        if self.show == 'translated':
+            self.show_translated = True
+            self.shown_count = self.context.translatedCount()
+        if self.show == 'untranslated':
+            self.show_untranslated = True
+            self.shown_count = self.context.untranslatedCount()
+        if self.show == 'fuzzy':
+            self.show_fuzzy = True
+            self.shown_count = self.context.fuzzy_count
+
+        # figure out how many messages the user wants to display
         self.count = self.DEFAULT_COUNT
         try:
             self.count = int(self.form.get('count', self.DEFAULT_COUNT))
@@ -158,23 +197,23 @@ class POFileView:
         if self.count > self.MAX_COUNT:
             self.count = self.MAX_COUNT
 
-        # Get message display settings.
-        self.show = self.form.get('show')
+        # if offset is greater than the number we would show, we drop back
+        # to an offset of zero
+        if self.offset + self.count > self.shown_count:
+            self.offset = max(self.shown_count - self.count, 0)
 
-        if self.show not in ('translated', 'untranslated', 'all'):
-            self.show = self.DEFAULT_SHOW
 
     def lang_selector(self):
         second_lang_code = self.second_lang_code
-        all_languages = getUtility(ILanguageSet)
+        langset = getUtility(ILanguageSet)
         html = '<select name="alt" title="Make suggestions from...">\n<option value=""'
         if self.second_lang_pofile is None:
             html += ' selected="yes"'
         html += '></option>\n'
-        for lang in all_languages:
+        for lang in langset.common_languages:
             html += '<option value="' + lang.code + '"'
             if second_lang_code == lang.code:
-                html += ' selected=""'
+                html += ' selected="yes"'
             html += '>' + lang.englishname + '</option>\n'
         html += '</select>\n'
         return html
@@ -185,7 +224,7 @@ class POFileView:
         It's used to calculate the self.offset to reference last page of the
         translation form.
         """
-        length = len(self.context.potemplate)
+        length = self.shown_count
         if length % self.count == 0:
             return length - self.count
         else:
@@ -353,7 +392,7 @@ class POFileView:
             elif self.show == 'translated':
                 filtered_potmsgsets = \
                     pofile.getPOTMsgSetTranslated(slice=slice_arg)
-            elif self.show == 'need-review':
+            elif self.show == 'fuzzy':
                 filtered_potmsgsets = \
                     pofile.getPOTMsgSetFuzzy(slice=slice_arg)
             elif self.show == 'untranslated':
@@ -370,13 +409,6 @@ class POFileView:
                     second_lang_pofile=self.second_lang_pofile)
                 for potmsgset in filtered_potmsgsets]
 
-            # commented out in support of the theory that we should be able
-            # to render directly, without resubmission
-            #if 'SUBMIT' in form:
-            #    # We did a submit without errors, we should redirect to next
-            #    # page.
-            #    self.request.response.redirect(self.createURL(offset=self.getNextOffset()))
-
     def makeTabIndex(self):
         """Return the tab index value to navigate the form."""
         self._table_index_value += 1
@@ -388,7 +420,7 @@ class POFileView:
 
     def atEnd(self):
         """Say if we are at the end of the form."""
-        return self.offset + self.count >= len(self.context.potemplate)
+        return self.offset + self.count >= self.shown_count
 
     def onlyOneForm(self):
         """Say if we have all POTMsgSets in one form.
@@ -459,10 +491,9 @@ class POFileView:
 
     def nextURL(self):
         """Return the URL to get next self.count number of message sets."""
-        pot_length = len(self.context.potemplate)
-        if self.offset + self.count >= pot_length:
+        if self.offset + self.count >= self.shown_count:
             raise IndexError('Only have %d messages, requested %d' %
-                                (pot_length, self.offset + self.count))
+                (self.shown_count, self.offset + self.count))
         return self.createURL(offset=(self.offset + self.count))
 
     def getFirstMessageShown(self):
@@ -471,7 +502,7 @@ class POFileView:
 
     def getLastMessageShown(self):
         """Return the last POTMsgSet number shown in the form."""
-        return min(len(self.context.potemplate), self.offset + self.count)
+        return min(self.shown_count, self.offset + self.count)
 
     def getNextOffset(self):
         """Return the offset needed to jump current set of messages."""

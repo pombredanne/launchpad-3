@@ -29,7 +29,8 @@ class TestMailBox:
     def items(self):
         """See IMailBox."""
         id = 0
-        for item in stub.test_emails:
+        # Loop over a copy of test_emails to avoid infinite loops.
+        for item in list(stub.test_emails):
             if item is not None:
                 from_addr, to_addr, raw_mail = item
                 yield id, raw_mail

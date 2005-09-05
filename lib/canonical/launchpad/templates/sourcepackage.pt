@@ -6,113 +6,83 @@
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/distribution/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/distrorelease/@@+portlet-details" />
-    <div tal:replace="structure context/@@+portlet-translations" />
     <div tal:replace="structure context/@@+portlet-hctstatus" />
   </metal:leftportlets>
 
 
   <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-actions" />
+    <div tal:replace="structure context/@@+portlet-upstream-details" />
     <div tal:replace="structure context/@@+portlet-releases" />
+    <div tal:replace="structure context/@@+portlet-translations" />
   </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
   <h1>Source Package Overview</h1>
 
-  <p tal:condition="not:context/currentrelease">This source package is not
-  published in <span tal:replace="context/distrorelease/title" />.</p>
+  <p class="documentDescription">
+    This page shows the specific versions of the
+    <span tal:replace="context/sourcepackagename/name">apache2</span> source
+    package that are published in each pocket of the
+    <span tal:replace="context/distrorelease/displayname">Hoary</span>
+    distribution release.
+  </p>
 
-  <h2 tal:content="context/name">NAME</h2>
+  <p class="portalMessage" tal:condition="not:context/currentrelease">
+    This source package is not
+    published in <span tal:replace="context/distrorelease/title" />.
+  </p>
 
-  <h2>Upstream Details</h2>
+  <tal:block repeat="pocket view/published_by_pocket">
+    <tal:block condition="pocket/packages">
+      <h2 tal:content="pocket/pocketdetails/title">Plain</h2>
 
-  
-    <ul tal:condition="context/productseries">
-      <li tal:condition="context/productseries/product/project"><b>Project: </b>
-        <a tal:define="project context/productseries/product/project"
-           tal:content="project/displayname"
-           tal:attributes="href string:/projects/${project/name}">
-         Project</a></li>
-      <li><b>Product: </b>
-        <a tal:define="product context/productseries/product"
-           tal:content="product/displayname"
-           tal:attributes="href string:/products/${product/name}">
-        Product</a></li>
-      <li><b>Branch: </b>
-        <a tal:define="productseries context/productseries"
-           tal:content="productseries/name"
-           tal:attributes="href string:/products/${productseries/product/name}/+series/${productseries/name}">
-         ProductSeries</a></li>
-    </ul>
-  <i tal:condition="not:context/productseries">
-    No upstream details for this source package. If you know that
-    the upstream product and branch of this source package are
-    registered in the Launchpad then please link them up!
-  </i>
+      <p tal:content="pocket/pocketdetails/description">
+        The description of the pocket.
+      </p>
+
+      <ul>
+        <li tal:repeat="spr pocket/packages">
+          <span tal:replace="spr/sourcepackagename/name">apache2</span>
+          <span tal:replace="spr/version">4.3.5-9</span>
+        </li>
+      </ul>
+    </tal:block>
+  </tal:block>
 
   <tal:block tal:condition="context/currentrelease"
              tal:define="current context/currentrelease">
 
-      <h2>Current Package Details</h2>
-
-      <ul>
-
-        <li><b>Current Version:</b><span tal:replace="current/version" /></li>
-
-        <li><b>Upload Date:</b><span tal:content="current/dateuploaded">
-            UPLOADDATE</span> UTC</li>
-
-        <li><b>Urgency:</b><span tal:content="current/urgency/title">
-               URGENCY</span></li>
-
-        <li><b>Component:</b><span tal:content="current/component/name">
-               Component</span></li>
-
-        <li><b>Download Packages</b>
-            <div tal:define="files current/files_url">
-              <ul tal:condition="files">
-                 <li tal:repeat="file files">
-                   <a tal:content="file/filename"
-                      tal:attributes="href file/fileurl" /> 
-                 </li>
-              </ul>
-              <i tal:condition="not:files">No files available for download.</i>
-            </div>
-        </li>
-      </ul>
-        <h2>Binary Packages<a tal:condition="current/changelog"
-                href="+changelog">(View Changelog)</a>
+        <h2>Binary Packages
                <span tal:condition="not:current/changelog" tal:omit-tag>
-                   No Changelog for this Source Release )
+                   (No Changelog for this Source Release)
                </span></h2>
         
-
-
         <ul tal:define="binaries view/binaries">
            <li tal:condition="not:binaries">
               <i>No binaries generated for this
               SourcePackageRelease</i>
            </li>
-           <li tal:repeat="bin binaries" >
-               <span tal:replace="bin" /> 
-                 <span tal:repeat="archtag python:binaries[bin]">
+           <li tal:repeat="bin_name binaries" >
+               <span tal:replace="bin_name" /> 
+                 <span tal:repeat="archtag python:binaries[bin_name]">
                  (<a tal:content="archtag" tal:attributes="href 
-                          string:../../${archtag}/${bin}" />) 
+                          string:../../${archtag}/${bin_name}" />) 
                  </span>
             </li>
         </ul>
-          <h2>Package Relationship</h2>
+          <h2 tal:condition="python:(view.builddepends() or view.builddependsindep())">
+            Package Relationship
+          </h2>
 
        <table width="100%" valign="top">
        <tr>
-       <td>
+       <td tal:condition="view/builddepends">
        <h4>Build Dependencies</h4>
        <ul>
-         <li tal:condition="not:view/builddepends">
-           No Build Dependencies</li>
          <li tal:repeat="dep view/builddepends">
            <a tal:content="dep/name"
               tal:attributes="href string:../../i386/${dep/name}" />
@@ -122,11 +92,9 @@
        </ul>
        </td>
 
-       <td>
+       <td tal:condition="view/builddependsindep">
        <h4>Platform-independent Build Dependencies</h4>
        <ul>
-       <li tal:condition="not:view/builddependsindep">
-            No Platform-independent Dependencies</li>
          <li tal:repeat="dep view/builddependsindep">
            <a tal:content="dep/name"
               tal:attributes="href string:../../i386/${dep/name}" />

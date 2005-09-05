@@ -4,15 +4,18 @@
 
   <div class="portletBody">
 
-    <div class="portletContent even">
+    <div class="portletContent even"
+         tal:define="contributors context/contributors">
 
-      <tal:block repeat="contributor context/contributors">
-        <img src="/++resource++user.gif" />
-        <a tal:content="contributor/browsername"
-           tal:attributes="href string:/people/${contributor/name}/"
-           >Mark Shuttleworth</a><br />
-      </tal:block>
-
+      <ul>
+        <li tal:repeat="contributor contributors" class="person">
+          <a tal:content="contributor/browsername"
+             tal:attributes="href string:/people/${contributor/name}/"
+             >Mark Shuttleworth</a><br />
+        </li>
+        <li class="alert" tal:condition="not: contributors">
+          <i>No contributors yet</i>.
+        </li>
     </div>
 
   </div>

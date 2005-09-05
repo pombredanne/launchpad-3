@@ -34,3 +34,9 @@ class IBugMessageSet(Interface):
 
     def get(bugmessageid):
         """Retrieve an IBugMessage by its ID."""
+
+    def getByBugAndMessage(bug, message):
+        """Return the corresponding IBugMesssage.
+
+        Return None if no such IBugMesssage exists.
+        """

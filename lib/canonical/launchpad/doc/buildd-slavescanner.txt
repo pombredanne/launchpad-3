@@ -36,26 +36,137 @@ Create an empty BuilderGroup object
 Mock Builders objects
 
   >>> class MockBuilder:
-  ...     def __init__(self, slave):
+  ...     def __init__(self, name, slave):
   ...         self.slave = slave 
   ...         self.builderok = True
   ...         self.url = 'http://fake:0000'
+  ...         self.name = name
+
   >>> class BrokenSlave:
   ...     def status(self):
   ...         raise xmlrpclib.Fault
+
   >>> class OkSlave:
   ...     def status(self):
   ...         return ('BuilderStatus.IDLE',)
 
-  >>> builder1 = MockBuilder(BrokenSlave())
-  >>> builder2 = MockBuilder(OkSlave())
+  >>> class BuildingSlave:
+  ...     def status(self):
+  ...         return ('BuilderStatus.BUILDING', '1-1', 'building something')
 
-  >>> buildergroup.builders = [builder1, builder2]
+  >>> class AbortedSlave:
+  ...     def status(self):
+  ...         return ('BuilderStatus.ABORTED', '1-1')
+  ...     def clean(self):
+  ...         pass
+
+  >>> class WaitingSlave:
+  ...     def __init__(self, state):
+  ...         self.state = state
+  ...     def status(self):
+  ...         return ('BuilderStatus.WAITING', self.state, '1-1')
+  ...     def clean(self):
+  ...         pass
+
+  >>> builder1 = MockBuilder('Broken Slave', BrokenSlave())
+
+  >>> builder2 = MockBuilder('Idle Slave', OkSlave())
+
+  >>> builder3 = MockBuilder('Package Failed', 
+  ...                        WaitingSlave('BuildStatus.PACKAGEFAIL'))
+
+  >>> builder4 = MockBuilder('Missed Dependency build', 
+  ...                        WaitingSlave('BuildStatus.DEPFAIL'))
+
+  >>> builder5 = MockBuilder('Bad CHROOT', 
+  ...                        WaitingSlave('BuildStatus.CHROOTFAIL'))
+
+  >>> builder6 = MockBuilder('I am out of order', 
+  ...                        WaitingSlave('BuildStatus.BUILDERFAIL'))
+
+  >>> builder7 = MockBuilder('I am busy', BuildingSlave())
+
+  >>> builder8 = MockBuilder('I was aborted', AbortedSlave())
+
+  >>> buildergroup.builders = [builder1, builder2, builder3, builder4,
+  ...                          builder5, builder6, builder7, builder8]
 
   >>> assert buildergroup.firstAvailable() is builder2
 
   >>> assert buildergroup.countAvailable() is 1
 
+  Stub classes to emulate Build and BuildQueue
+
+  >>> class MockBuild:
+  ...     def __init__(self):
+  ...         self.id = None
+  ...         self.buildstate = None 
+  ...         self.builder = None
+  
+  >>> class MockBuildQueue:
+  ...     def __init__(self, id, builder, build):
+  ...         self.id = id
+  ...         self.builder = builder
+  ...         self.build = build
+  ...     def destroySelf():
+  ...         pass
+
+  We are not able to test succesfully built packages, but we can test
+  all other states:
+
+  WAITING - PACKAGEFAIL -> Package has failed to build, no notice from 
+  builder is stored, but Build.buildstate is marke as 'Failed to Build':
+
+  >>> bqItem3 = MockBuildQueue(1, builder3, MockBuild())
+  >>> buildergroup.updateBuild(bqItem3, None)
+  >>> assert bqItem3.build.builder is None
+  >>> bqItem3.build.buildstate.title
+  'Failed to build'
+
+  WAITING - DEPWAIT -> some dependency to build the package are missed, again
+  notice from builder, but Build.buildstate has the right state:
+
+  >>> bqItem4 = MockBuildQueue(1, builder4, MockBuild())
+  >>> buildergroup.updateBuild(bqItem4, None)
+  >>> assert bqItem4.build.builder is None
+  >>> bqItem4.build.buildstate.title
+  'Manual dependency wait'
+
+  WAITING - CHROOTFAIL -> the CHROOT for this distrorelease is damage, nor
+  builder, but right state stored in Build entry:
+
+  >>> bqItem5 = MockBuildQueue(1, builder5, MockBuild())
+  >>> buildergroup.updateBuild(bqItem5, None)
+  >>> assert bqItem5.build.builder is None
+  >>> bqItem5.build.buildstate.title
+  'Chroot wait'
+
+  WAITING - BUILDERFAIL -> builder has failed by internal error, job is
+  available for next build round:  
+
+  >>> bqItem6 = MockBuildQueue(1, builder6, MockBuild())
+  >>> buildergroup.updateBuild(bqItem6, None)
+  >>> assert bqItem6.builder is None
+  >>> bqItem6.build.buildstate.title
+  'Needs building'
+
+  BUILDING -> builder still processing the job, simply collect the logtail:
+
+  >>> bqItem7 = MockBuildQueue(1, builder7, MockBuild())
+  >>> buildergroup.updateBuild(bqItem7, None)
+  >>> bqItem7.builder.name
+  'I am busy'
+  >>> bqItem7.logtail
+  'building something'
+
+  ABORTED -> builder was aborted, release builder and reset job for
+  the next build round:
+
+  >>> bqItem8 = MockBuildQueue(1, builder8, MockBuild())
+  >>> bqItem8.builder.name
+  'I was aborted'
+  >>> buildergroup.updateBuild(bqItem8, None)
+  >>> assert bqItem8.builder is None
 
 Now, goes throught BuilddMaster class itself.
 

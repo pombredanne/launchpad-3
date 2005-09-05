@@ -10,9 +10,13 @@ from persistent import IPersistent
 # file, one of person, project, bug, etc.
 #
 from canonical.launchpad.interfaces.launchpad import *
+from canonical.launchpad.interfaces.validation import *
+
+# these need to be at the top, because the others depend on them sometimes
+from canonical.launchpad.interfaces.specificationtarget import *
 
 from canonical.launchpad.interfaces.archuser import *
-from canonical.launchpad.interfaces.binarypackage import *
+from canonical.launchpad.interfaces.binarypackagerelease import *
 from canonical.launchpad.interfaces.binarypackagename import *
 from canonical.launchpad.interfaces.bounty import *
 from canonical.launchpad.interfaces.bountysubscription import *
@@ -31,6 +35,7 @@ from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
 from canonical.launchpad.interfaces.cveref import *
 from canonical.launchpad.interfaces.distribution import *
+from canonical.launchpad.interfaces.distributionbounty import *
 from canonical.launchpad.interfaces.distroarchrelease import *
 from canonical.launchpad.interfaces.distrorelease import *
 from canonical.launchpad.interfaces.distroreleaselanguage import *
@@ -74,9 +79,11 @@ from canonical.launchpad.interfaces.poselection import *
 from canonical.launchpad.interfaces.posubmission import *
 from canonical.launchpad.interfaces.processor import *
 from canonical.launchpad.interfaces.product import *
+from canonical.launchpad.interfaces.productbounty import *
 from canonical.launchpad.interfaces.productrelease import *
 from canonical.launchpad.interfaces.productseries import *
 from canonical.launchpad.interfaces.project import *
+from canonical.launchpad.interfaces.projectbounty import *
 from canonical.launchpad.interfaces.publishedpackage import *
 from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.pyarch import *
@@ -85,10 +92,16 @@ from canonical.launchpad.interfaces.rawfiledata import *
 from canonical.launchpad.interfaces.rosettastats import *
 from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.section import *
+from canonical.launchpad.interfaces.shipit import *
 from canonical.launchpad.interfaces.sourcepackage import *
 from canonical.launchpad.interfaces.sourcepackageindistro import *
 from canonical.launchpad.interfaces.sourcepackagename import *
 from canonical.launchpad.interfaces.sourcepackagerelease import *
+from canonical.launchpad.interfaces.specification import *
+from canonical.launchpad.interfaces.specificationbug import *
+from canonical.launchpad.interfaces.specificationdependency import *
+from canonical.launchpad.interfaces.specificationreview import *
+from canonical.launchpad.interfaces.specificationsubscription import *
 from canonical.launchpad.interfaces.spokenin import *
 from canonical.launchpad.interfaces.ssh import *
 from canonical.launchpad.interfaces.translationgroup import *

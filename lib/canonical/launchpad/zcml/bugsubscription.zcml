@@ -24,14 +24,14 @@
         arguments=""
         keyword_arguments="subscription person"
         permission="launchpad.AnyPerson"
-        template="../templates/launchpad-addform.pt"
-        class="canonical.launchpad.browser.addview.SQLObjectAddView"
+        template="../templates/bug-subscriber-add.pt"
+        class="canonical.launchpad.browser.BugRelatedObjectAddView"
         lp:url="malone/bugs/$Bug.id/people/+new" />
 
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IBugSubscription"
-        class="canonical.launchpad.browser.editview.SQLObjectEditView"
+        class="canonical.launchpad.browser.BugRelatedObjectEditView"
         label="Modify Bug Subscription"
         permission="launchpad.AnyPerson"
         template="../templates/bugsubscription-edit.pt"

@@ -5,6 +5,7 @@ import urllib2
 from xml.dom import minidom
 
 from canonical.lp.dbschema import BugTrackerType
+from canonical.launchpad.scripts import log
 
 class UnknownBugTrackerTypeError(Exception):
     """
@@ -91,7 +92,8 @@ class Bugzilla(ExternalSystem):
     
     def get_bug_status(self, bug_id):
         """
-        Retrieve the bug status from a bug in a remote Bugzilla system
+        Retrieve the bug status from a bug in a remote Bugzilla system.
+        Returns None if it cannot be determined.
 
         >>> watch = Bugzilla("https://bugzilla.mozilla.org")
         >>> watch.get_bug_status(11901)
@@ -120,9 +122,18 @@ class Bugzilla(ExternalSystem):
         document = minidom.parseString(ret)
         result = None
         if len(document.getElementsByTagName("bz:id")) > 0:
-            status_node = document.getElementsByTagName("bz:bug_status")[0]
+            try:
+                status_node = document.getElementsByTagName("bz:bug_status")[0]
+            except IndexError:
+                log.warn('No bz:bug_status found for bug_id %s', bug_id)
+                return None
             result = status_node.childNodes[0].data
-            resolution_node = document.getElementsByTagName("bz:resolution")[0]
+            try:
+                resolution_node = document.getElementsByTagName(
+                        "bz:resolution")[0]
+            except IndexError:
+                log.warn('No bz:resolution found for bug_id %s', bug_id)
+                return None
             if len(resolution_node.childNodes) > 0:
                 result = "%s %s" % (result, resolution_node.childNodes[0].data)
         return result
@@ -167,5 +178,3 @@ def _test():
 if __name__ == "__main__":
     _test()
 
-# DO NOT EDIT BELOW THIS LINE
-# arch-tag: 1c567a56-be63-4bda-a488-07028951bd9e

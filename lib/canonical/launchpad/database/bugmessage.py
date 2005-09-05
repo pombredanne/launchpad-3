@@ -6,15 +6,14 @@ __all__ = ['BugMessage', 'BugMessageSet']
 from email.Utils import make_msgid
 
 from zope.interface import implements
-from zope.component import getUtility
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 from sqlobject import ForeignKey
 
-from canonical.launchpad.interfaces import (
-    IBugMessage, IBugMessageSet, ILaunchBag)
 from canonical.database.sqlbase import SQLBase
+
+from canonical.launchpad.interfaces import IBugMessage, IBugMessageSet
 from canonical.launchpad.database.message import Message, MessageChunk
 
 class BugMessage(SQLBase):
@@ -46,3 +45,9 @@ class BugMessageSet:
     def get(self, bugmessageid):
         """See canonical.launchpad.interfaces.IBugMessageSet."""
         return BugMessage.get(bugmessageid)
+
+    def getByBugAndMessage(self, bug, message):
+        """See canonical.launchpad.interfaces.IBugMessageSet."""
+        # XXX: selectOneBy(bug=bug, message=message) doesn't work.
+        #      -- Bjorn Tillenius, 2005-07-18, Bug #1555
+        return BugMessage.selectOneBy(bugID=bug.id, messageID=message.id)

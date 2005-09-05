@@ -3,42 +3,58 @@ So now Foo Bar is the Afrikaans translator for the PolyGlot translation
 group, and they are the translation group for Ubuntu, which has Closed
 translations. This means that Foo Bar should be able to translate any
 strings in Ubuntu to Afrikaans. In other languages, Foo Bar should be
-restricted only to seeing and contributing translations for strings which
-are not already translated at all.
+warned that he is not a designated translator.
 
 Let's see if Foo Bar can see the translated strings in Southern Sotho. We
-expect that they will not have the widget to allow them to show the
-translated strings:
+expect them to be told they can only make contributions:
 
   >>> print http(r"""
   ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/st/+translate HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-      <!-- Display settings. -->
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-          <!-- The translation form. -->
+  ...You are not an official translator for this file...
   ...
 
-However, in Afrikaans, Foo Bar DOES have the ability to see the widget to
-switch to editing previously-translated strings.
+However, in Afrikaans, Foo Bar DOES have the ability to edit directly.
+
+First, we show that "evolution minicard" is not translated.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+translate HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.7,af;q=0.3
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
+  ...<input type="text"
+      name="set_137_translation_af_0" tabindex="15" />
   ...
-  ...<select name="alt"...
+
+Now, we need to show that it is translated after a post. Let's go ahead and
+POST and see that all goes well:
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+translate HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.7,af;q=0.3
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 486
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... count=10&offset=0&show=all&set_130_msgid=&set_130_translation_af_0=&set_131_msgid=&set_131_translation_af_0=&set_132_msgid=&set_132_translation_af_0=&set_133_msgid=&set_133_translation_af_0=&set_134_msgid=&set_134_translation_af_0=&set_135_msgid=&set_135_translation_af_0=+kaart&set_136_msgid=&set_136_translation_af_0=&set_137_msgid=&set_137_translation_af_0=evolution+minikaart&set_138_msgid=&set_138_translation_af_0=&set_139_msgid=&set_139_translation_af_0=&SUBMIT=Save+%26+Continue""")
+  HTTP/1.1 200 Ok
+  ...
+
+And finally, let's take a look again, and we should have a translation or
+two added:
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+translate HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.7,af;q=0.3
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...<input type="text"
+      name="set_137_translation_af_0"
+      value="evolution minikaart" tabindex="15" />
   ...
 

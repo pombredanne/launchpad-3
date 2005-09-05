@@ -46,3 +46,8 @@ Footnotes
 
 1. Including this file, README.txt.  It doesn't run any tests, but that
    is okay.
+
+2. You can use the following for Foo Bar (an admin user):
+
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+

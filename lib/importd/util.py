@@ -66,8 +66,31 @@ def getTxnManager():
     else:
         return ZopelessTransactionManager._installed
 
-def jobsFromDB(slave_home, archive_mirror_dir, autotest):
+def tryToAbortTransaction():
+    """Try to abort the transaction, ignore psycopg.Error.
 
+    If some of our database-talking code raises, we want to be sure we have
+    aborted any transaction we may have started, otherwise a subsequent begin()
+    would fail. Broadly, the error conditions are of two sorts:
+
+      * something went wrong in our code, we could handle that case more
+        cleanly by aborting the transaction only if we have started one.
+
+      * something went wrong with the database (like a lost connection), in
+        that case, abort will likely fail.
+
+    So, anyway, we need a way to abort() that works even if abort() would fail.
+
+    :note: this function should only be used in exception handlers to provide
+        graceful recovery. It is _not_ a proper way to abort a transaction.
+    """
+    try:
+        getTxnManager().abort()
+    except psycopg.Error:
+        pass
+
+
+def jobsFromDB(slave_home, archive_mirror_dir, autotest):
     if autotest:
         importstatus = [ImportStatus.TESTING,
                         ImportStatus.TESTFAILED,
@@ -75,29 +98,25 @@ def jobsFromDB(slave_home, archive_mirror_dir, autotest):
     else:
         importstatus = [ImportStatus.PROCESSING,
                         ImportStatus.SYNCING]
-
-    # get a new transaction
-    # spiv who is reviewing this suggested this XXX abstraction
-    # violation. RBC 20050608
-    from canonical.database.sqlbase import SQLBase
-    if SQLBase._connection is not None:
+    try:
+        clause = ('importstatus in (%s)' %
+                  ', '.join([str(status.value) for status in importstatus]))
+        getTxnManager().begin()
+        jobseries = ProductSeries.select(clause)
+        jobs = list(jobsFromSeries(jobseries, slave_home, archive_mirror_dir))
         getTxnManager().abort()
-    getTxnManager().begin()
+    except:
+        tryToAbortTransaction()
+        raise
+    return jobs
 
-    jobs = []
-    clause = ('importstatus in (%s)' %
-              ', '.join([str(status.value) for status in importstatus]))
-    jobseries = ProductSeries.select(clause)
+def jobsFromSeries(jobseries, slave_home, archive_mirror_dir):
     for series in jobseries:
         job = CopyJob()
         job.from_series(series)
-        job.series_name = series.name
-        job.product_name = series.product.name
         job.slave_home = slave_home
         job.archive_mirror_dir = archive_mirror_dir
-        jobs.append(job)
-    getTxnManager().abort()
-    return jobs
+        yield job
 
 def jobsBuilders(jobs, slavenames, runner_path=None, autotest=False):
     builders = []
@@ -203,10 +222,7 @@ class ImportDBuild(ConfigurableBuild):
             ImportDBImplementor(self).startBuild()
         except:
             f = Failure()
-            try:
-                getTxnManager().abort()
-            except psycopg.Error:
-                pass
+            tryToAbortTransaction()
             return self.buildException(f, "startBuild")
         return ConfigurableBuild.startBuild(self, remote, progress)
 
@@ -218,10 +234,7 @@ class ImportDBuild(ConfigurableBuild):
                 ImportDBImplementor(self).buildFinished(successful)
             except:
                 f = Failure()
-                try:
-                    getTxnManager().abort()
-                except psycopg.Error:
-                    pass
+                tryToAbortTransaction()
                 # that will cause buildFinished to be called recursively
                 self.buildException(f, "buildFinished")
         ConfigurableBuild.buildFinished(self, event, successful)

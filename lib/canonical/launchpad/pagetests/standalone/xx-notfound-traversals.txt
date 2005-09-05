@@ -1,0 +1,82 @@
+
+A common error of traversal methods is that they raise a KeyError,
+IndexError, LookupError NotFoundError etc. instead of
+zope.interfaces.NotFound. This means they generate a System Error page
+instead of a correct 404 page. So we test them to ensure the correct HTTP
+status is returned.
+
+XXX: This test may be better done using a tweaked LinkChecker or other
+spider -- StuartBishop 20050822
+
+
+>>> def check(valid_url):
+...     valid_rc = http("GET %s HTTP/1.0" % valid_url).getStatus()
+...     if valid_rc not in (200, 302):
+...         return "%s returned status %s instead of success" % (
+...             valid_url, valid_rc)
+...     invalid_url = valid_url + '/wobbly'
+...     invalid_rc = http("GET %s HTTP/1.0" % invalid_url).getStatus()
+...     if invalid_rc != 404:
+...         return "%s returned status %s instead of 404" % (
+...             invalid_url, invalid_rc)
+...     # Some traversal is done by integer
+...     invalid_url = valid_url + '/98723'
+...     invalid_rc = http("GET %s HTTP/1.0" % invalid_url).getStatus()
+...     if invalid_rc != 404:
+...         return "%s returned status %s instead of 404" % (
+...             invalid_url, invalid_rc)
+
+>>> def check404(url):
+...     rc = http("GET %s HTTP/1.0" % url).getStatus()
+...     if rc != 404:
+...         return "%s returned status %s instead of 404" % (url, rc)
+
+
+>>> check("/")
+>>> check("/legal")
+>>> check("/feedback")
+
+>>> check("/bounties")
+>>> check("/bounties/foomatic-widgets")
+
+>>> check("/projects")
+>>> check("/projects/mozilla")
+>>> check("/projects/mozilla/firefox")
+
+>>> check("/products")
+>>> check("/products/firefox")
+>>> check("/products/firefox/+series")
+>>> check("/products/firefox/+series/1.0")
+>>> check("/products/firefox/+bugs")
+>>> check("/products/firefox/+bugs/1") # Deprecated?
+>>> check404("/products/firefox/+milestone")
+>>> check("/products/firefox/+milestone/1.0")
+
+>>> check("/distros")
+>>> check("/distros/ubuntu")
+>>> check("/distros/ubuntu/hoary")
+>>> check("/distros/ubuntu/hoary/+sources")
+>>> check("/distros/ubuntu/hoary/+sources/mozilla-firefox")
+>>> check("/distros/ubuntu/hoary/+sources/mozilla-firefox/+pots")
+
+>>> check("/people")
+>>> check("/people/name12")
+>>> check("/people/name12/+calendar")
+>>> check("/people/+peoplelist")
+>>> check("/people/+teamlist")
+>>> check("/people/+ubuntitelist")
+
+>>> check("/malone")
+>>> check("/malone/assigned")
+>>> check("/malone/bugs")
+>>> check("/malone/bugs/1")
+>>> check("/malone/bugs/1/activity")
+>>> check("/malone/distros")
+>>> check("/malone/distros/ubuntu")
+>>> check("/malone/projects")
+>>> check("/malone/projects/gnome")
+>>> check("/malone/products")
+>>> check("/malone/products/firefox")
+>>> # check("/malone/packages") Broken!!!
+>>> check("/malone/bugtrackers")
+

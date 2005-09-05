@@ -9,22 +9,20 @@ __all__ = [
     'BugAddView',
     'BugAddingView',
     'BugAddForm',
-    ]
+    'BugRelatedObjectAddView',
+    'BugRelatedObjectEditView']
 
-from zope.app.publisher.browser import BrowserView
 from zope.interface import implements
+from zope.component import getUtility
 
 from canonical.lp import dbschema, decorates, Passthrough
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.interfaces import IBugAddForm, IBug
+from canonical.launchpad.interfaces import IBugAddForm, IBug, ILaunchBag
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 class BugView:
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
+    """The view for the main bug page"""
     def getCCs(self):
         return [s for s in self.context.subscriptions
                 if s.subscription==dbschema.BugSubscription.CC]
@@ -44,10 +42,7 @@ class BugSetView:
     Essentially, this exists only to allow forms to post IDs here and be
     redirected to the right place.
     """
-    def __init__(self, context, request):
-        self.request = request
-
-    def __call__(self, *args, **kw):
+    def redirectToBug(self):
         bug_id = self.request.form.get("id")
         if bug_id:
             return self.request.response.redirect(bug_id)
@@ -55,6 +50,7 @@ class BugSetView:
 
 
 class BugEditView(BugView, SQLObjectEditView):
+    """The view for the edit bug page"""
     def __init__(self, context, request):
         BugView.__init__(self, context, request)
         SQLObjectEditView.__init__(self, context, request)
@@ -102,3 +98,28 @@ class BugAddForm:
         self.bugtask = bug.bugtasks[0]
         self.comment = bug.messages[0]
 
+
+class BugRelatedObjectAddView(SQLObjectAddView):
+    """View class for add views of bug-related objects.
+
+    Examples would include the add cve page, the add subscription
+    page, etc.
+    """
+    def __init__(self, context, request):
+        SQLObjectAddView.__init__(self, context, request)
+        self.bug = getUtility(ILaunchBag).bug
+
+
+class BugRelatedObjectEditView(SQLObjectEditView):
+    """View class for edit views of bug-related object.
+
+    Examples would include the edit cve page, edit subscription page,
+    etc.
+    """
+    def __init__(self, context, request):
+        SQLObjectEditView.__init__(self, context, request)
+        self.bug = getUtility(ILaunchBag).bug
+
+    def changed(self):
+        """Redirect to the bug page."""
+        self.request.response.redirect(canonical_url(self.bug))

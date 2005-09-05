@@ -48,6 +48,22 @@
           />
   </browser:editform>
 
+  <browser:editform
+      name="+edit"
+      for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IPerson"
+      class="canonical.launchpad.browser.PersonEditView"
+      label="Edit Person Details"
+      fields="name displayname givenname familyname timezone"
+      permission="launchpad.Edit"
+      template="../templates/person-edit.pt"
+      lp:url="/people/$person.id/+edit">
+      <browser:widget
+          field="timezone"
+          class="zope.app.form.browser.ChoiceInputWidget"
+          size="15" />
+  </browser:editform>
+
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"
       permission="zope.Public"
@@ -81,9 +97,9 @@
           template="../templates/person-translations.pt"
           lp:url="/people/$Person.name/+translations" />
       <browser:page
-          name="+sshkey"
+          name="+sshkeys"
           attribute="showSSHKeys"
-          lp:url="/people/$Person.name/+sshkey" />
+          lp:url="/people/$Person.name/+sshkeys" />
       <browser:page
           name="+bounties"
           template="../templates/person-bounties.pt"
@@ -100,6 +116,10 @@
           name="+portlet-details"
           template="../templates/person-portlet-details.pt"
           lp:url="/people/$Person.name/+portlet-details" />
+      <browser:page
+          name="+portlet-editdetails"
+          template="../templates/person-portlet-editdetails.pt"
+          lp:url="/people/$Person.name/+portlet-editdetails" />
       <!-- this should be on IPerson because we don't always know if it is a
       team or a person -->
       <browser:page
@@ -110,10 +130,26 @@
   <browser:page
       for="canonical.launchpad.interfaces.IPerson"
       name="+rdf"
-      template="../templates/person-foaf.pt"
       lp:url="/person/$Person.name/+rdf"
       permission="zope.Public"
-      class="canonical.launchpad.browser.PersonRdfView" />
+      class="canonical.launchpad.browser.PersonRdfView"
+      attribute="__call__"
+      />
+
+  <!-- Adding SSH keys is the only possibly harmful thing that can be done
+  without the user's password, so we use a special permission here to make
+  sure only the user (and not launchpad admins) will be able to edit her own
+  ssh keys. Another option would be to require the user's password on this
+  page. GuilhermeSalgado 25/08/2005 -->
+  <browser:pages
+      for="canonical.launchpad.interfaces.IPerson"
+      permission="launchpad.Special"
+      class="canonical.launchpad.browser.PersonView">
+      <browser:page
+          name="+editsshkeys"
+          template="../templates/person-editsshkeys.pt"
+          lp:url="/people/$person.id/+editsshkeys" />
+  </browser:pages>
 
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"
@@ -124,43 +160,74 @@
           template="../templates/person-codesofconduct.pt"
           lp:url="/people/$Person.name/+codesofconduct" />
       <browser:page
-          name="+editsshkey"
-          template="../templates/person-sshkey.pt"
-          lp:url="/people/$person.id/+editsshkey" />
+          name="+changepassword"
+          template="../templates/person-changepassword.pt"
+          lp:url="/people/$person.id/+changepassword" />
       <browser:page
-          name="+editgpgkey"
-          template="../templates/person-gpgkey.pt"
-          lp:url="/people/$person.id/+editgpgkey" />
+          name="+editwikinames"
+          template="../templates/person-editwikinames.pt"
+          lp:url="/people/$person.id/+editwikinames" />
+      <browser:page
+          name="+editircnicknames"
+          template="../templates/person-editircnicknames.pt"
+          lp:url="/people/$person.id/+editircnicknames" />
+      <browser:page
+          name="+editjabberids"
+          template="../templates/person-editjabberids.pt"
+          lp:url="/people/$person.id/+editjabberids" />
+      <browser:page
+          name="+editgpgkeys"
+          template="../templates/person-editgpgkeys.pt"
+          lp:url="/people/$person.id/+editgpgkeys" />
   </browser:pages>
 
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"
       permission="launchpad.Edit"
-      class="canonical.launchpad.browser.PersonEditView">
+      class="canonical.launchpad.browser.PersonShipItView">
       <browser:page
-          name="+edit"
-          template="../templates/person-edit.pt"
-          lp:url="/people/$person.id/+edit" />
-        <browser:page
-            name="+emails"
-            template="../templates/person-emails.pt"
-            lp:url="/people/$person.id/+emails" />
+          name="+shipit"
+          template="../templates/person-shipit.pt"
+          lp:url="/people/$person.id/+shipit" />
   </browser:pages>
 
-  <browser:editform
-      name="+changetz"
+  <browser:pages
       for="canonical.launchpad.interfaces.IPerson"
-      schema="canonical.launchpad.interfaces.IPerson"
-      fields="timezone"
       permission="launchpad.Edit"
-      template="../templates/person-timezone.pt"
-      lp:url="/people/$person.id/+changetz">
-    <browser:widget
-        field="timezone"
-        class="zope.app.form.browser.ChoiceInputWidget"
-        size="15" />
-  </browser:editform>
+      class="canonical.launchpad.browser.PersonEditEmailsView">
+      <browser:page
+          name="+editemails"
+          template="../templates/person-editemails.pt"
+          lp:url="/people/$person.id/+editemails" />
+  </browser:pages>
 
+  <browser:pages
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.SpecificationTargetView"
+    permission="zope.Public"
+    >
+    <browser:page
+        name="+specs"
+        template="../templates/specificationtarget-specs.pt" />
+    <browser:page
+        name="+createdspecs"
+        template="../templates/specificationtarget-specs.pt" />
+    <browser:page
+        name="+approverspecs"
+        template="../templates/specificationtarget-specs.pt" />
+    <browser:page
+        name="+assignedspecs"
+        template="../templates/specificationtarget-specs.pt" />
+    <browser:page
+        name="+draftedspecs"
+        template="../templates/specificationtarget-specs.pt" />
+    <browser:page
+        name="+reviewspecs"
+        template="../templates/specificationtarget-specs.pt" />
+    <browser:page
+        name="+subscribedspecs"
+        template="../templates/specificationtarget-specs.pt" />
+  </browser:pages>
 
   <!-- Team Views -->
   <browser:traverse
@@ -198,7 +265,7 @@
       for="canonical.launchpad.interfaces.ITeam"
       class="canonical.launchpad.browser.TeamEditView"
       schema="canonical.launchpad.interfaces.ITeam"
-      fields="name displayname teamdescription defaultmembershipperiod 
+      fields="displayname teamdescription defaultmembershipperiod 
               defaultrenewalperiod subscriptionpolicy"
       permission="launchpad.Edit"
       template="../templates/team-edit.pt"

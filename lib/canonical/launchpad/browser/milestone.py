@@ -5,14 +5,45 @@
 __metaclass__ = type
 
 __all__ = [
-    'ProductMilestoneAddView',
+    'MilestoneFacets',
+    'MilestoneAddView',
+    'MilestoneEditView',
     ]
 
-class ProductMilestoneAddView:
-    def create(self, *args, **kw):
-        """Inject the product ID into the kw args."""
-        kw['product'] = self.context.id
-        return self._factory(*args, **kw)
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces import (
+    IProduct, IDistribution, IMilestone, IMilestoneSet)
+from canonical.launchpad.browser.editview import SQLObjectEditView
+
+from canonical.launchpad.webapp import StandardLaunchpadFacets, DefaultLink
+
+
+class MilestoneFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for an IMilestone."""
+
+    usedfor = IMilestone
+
+    links = ['overview']
+
+    def overview(self):
+        target = ''
+        text = 'Overview'
+        summary = 'General information about %s' % self.context.displayname
+        return DefaultLink(target, text, summary)
+
+
+class MilestoneAddView:
+    def create(self, name, dateexpected=None):
+        """Inject the relevant product or distribution into the kw args."""
+        product = None
+        distribution = None
+        if IProduct.providedBy(self.context):
+            product = self.context.id
+        elif IDistribution.providedBy(self.context):
+            distribution = self.context.id
+        return getUtility(IMilestoneSet).new(name, product=product,
+            distribution=distribution, dateexpected=dateexpected)
 
     def add(self, content):
         """Skipping 'adding' this content to a container, because
@@ -21,3 +52,10 @@ class ProductMilestoneAddView:
 
     def nextURL(self):
         return '.'
+
+
+class MilestoneEditView(SQLObjectEditView):
+
+    def changed(self):
+        self.request.response.redirect('../..')
+

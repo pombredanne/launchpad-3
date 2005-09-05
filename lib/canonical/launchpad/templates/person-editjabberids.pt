@@ -1,0 +1,75 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-editdetails" />
+  </metal:rightportlets>
+
+  <div metal:fill-slot="main">
+
+    <h1>Your Jabber IDs</h1>
+
+    <div tal:define="feedback view/processJabberForm" tal:condition="feedback" 
+         tal:content="structure feedback" class="portalMessage" />
+
+    <form name="edit_jabber" action="" method="POST">
+    <table>
+
+      <div tal:condition="context/jabberids">
+
+        <tr><td colspan="2"><h2>Existing Jabber IDs</h2></td></tr>
+
+        <tr>
+          <td><label>Jabber ID:</label></td>
+        </tr>
+
+        <tr tal:repeat="jabber context/jabberids">
+          <td>
+            <input tal:attributes="name string:jabberid_${jabber/jabberid};
+                                   value jabber/jabberid"
+                   type="text" size="50" style="margin-bottom: 0.5em;"/>
+          </td>
+
+          <td>
+            <label>
+              <input type="checkbox" value="Remove"
+                     tal:attributes="name string:remove_${jabber/jabberid}" />
+              Remove
+            </label>
+          </td>
+        </tr>
+
+      </div>
+
+    <tr>
+      <td colspan="2"><h2>New Jabber ID</h2></td>
+    </tr>
+    
+    <tr>
+      <td><label>Jabber ID:</label></td>
+    </tr>
+
+    <tr>
+      <td>
+        <input name="newjabberid" type="text" size="50" />
+      </td>
+    </tr>
+
+    <tr>
+      <td class="formHelp">Example: yourname@jabber.org</td>
+    </tr>
+  </table>
+
+  <div class="formControls">
+    <input type="submit" value="Save Changes" name="SAVE" />
+  </div>
+
+  </form>
+  </div>
+
+</body>
+</html>

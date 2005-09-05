@@ -448,7 +448,7 @@ def export_potemplate_tarball(filehandle, potemplate):
 
     archive.close()
 
-class DistroRelaseTarballPOFileOutput:
+class DistroReleaseTarballPOFileOutput:
     """Add exported PO files to a tarball using language pack directory
     structure.
     """
@@ -485,7 +485,7 @@ def export_distrorelease_tarball(filehandle, release, date=None):
     # Do the export.
     pofiles = getUtility(IVPOExportSet).get_distrorelease_pofiles(
         release, date)
-    pofile_output = DistroRelaseTarballPOFileOutput(release, archive)
+    pofile_output = DistroReleaseTarballPOFileOutput(release, archive)
 
     for pofile in pofiles:
         pofile_output(

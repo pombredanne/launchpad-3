@@ -1,3 +1,4 @@
+<tal:tag condition="view/update"/>
 <html
     xmlns="http://www.w3.org/1999/xhtml"
     xml:lang="en"
@@ -5,116 +6,49 @@
     metal:use-macro="context/@@main_template/master"
     i18n:domain="launchpad">
 
-<body>
+  <body>
 
-<div metal:fill-slot="main">
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/product/@@+portlet-details" />
+</metal:leftportlets>
 
-    <!-- This tal:dummy block never turns into HTML, but it triggers the
-    edit method on the ProductReleaseView class. This checks to see if a
-    form has been submitted to it, and if so updates the product.  -->
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+  <div tal:replace="structure context/product/@@+portlet-releases" />
+</metal:rightportlets>
 
-    <tal:dummy condition="view/edit" />
+    <div metal:fill-slot="main">
 
-    <h1>Edit Release:
-        <span tal:replace="context/product/displayname">Product</span>
-        <span tal:content="context/version">$ProductRelease.version
-        </span></h1>
+      <div metal:use-macro="context/@@launchpad_editform/editform">
 
-    <div class="documentDescription">
-    Please edit the release details for <span
-    tal:replace="context/product/displayname">Product</span> <span
-    tal:content="context/version">Version</span> below. You cannot change
-    the version, but almost everything else is editable.
+          <h1 tal:condition="view/label"
+              tal:content="view/label"
+              metal:fill-slot="heading"
+              >Form Label will come from ZCML label="xxx"</h1>
+
+          <div metal:fill-slot="extra_info"
+            class="documentDescription">
+            Edit the details of this release of
+            <span tal:replace="context/product/displayname">Apache</span>
+            below. This information will be displayed on the release home
+            page and used in RSS feeds for
+            <span tal:replace="context/product/displayname">Apache</span>.
+          </div>
+
+          <div class="row" metal:fill-slot="extra_bottom">
+            Thanks very much for updating this information! If you need to
+            modify the actual version number (currently
+            <span tal:replace="context/version">2.1.6</span>) then you
+            should ask the Launchpad Admins to help you, see the bottom of
+            the page for contact details.
+          </div>
+
+          <div class="row" metal:fill-slot="extra_buttons">
+          </div>
+      </div>
+    
     </div>
 
-    <fieldset>
-
-        <legend><span
-            tal:replace="context/product/displayname">Product</span> <span
-                tal:content="context/version">Version</span> Details</legend>
-
-        <form action="+edit" method="post">
-
-        <div class="field">
-
-            <label>Release Codename / Title</label>
-
-            <span class="fieldRequired" title="Required">(Required)</span>
-
-                  <div class="formHelp">
-                    Many open source releases have a nickname, or title,
-                    like "Wishing On A Warthog" or "Return To Camp Vader".
-                    Put that here.
-                  </div>
-
-                <input type="text" name="title" size="50"
-                       value="" tal:attributes="value context/title" />
-        </div>
-
-        <div class="field">
-
-            <label>Summary</label>
-
-                  <div class="formHelp">
-                    A single paragraph introduction or overview of this
-                    release. For example: <i>Version 1.7.0 introduces a new
-                    layout engine with support for CSS2 and parts of CSS3,
-                    as well as improving performance significantly.</i>
-                  </div>
-
-                <textarea cols="40" rows="3" name="summary" 
-                          tal:content="context/summary">
-                </textarea>
-        </div>
-        
-        <div class="field">
-
-            <label>Release Notes</label>
-
-                  <div class="formHelp">
-                  Use this space for a more detailed set of release notes
-                  than the summary above. Could also include a URL to the
-                  actual official release notes.
-                  </div>
-
-                <textarea cols="40" rows="7" name="description"
-                          tal:content="context/description">
-                </textarea>
-        </div>
-
-        <div class="field">
-
-            <label>Changelog</label>
-
-                  <div class="formHelp">
-                    Paste the formal changelog in here. This will always be
-                    displayed in plain text with fixed-width font
-                    formatting.
-                  </div>
-
-                <textarea cols="40" rows="20" name="changelog"
-                          tal:content="context/changelog">
-                </textarea>
-        </div>
-
-        <div class="formControls">
-
-            <!--
-            NB the name and value of the submit field below are essential to
-            clue the ProductView.edit() method in that the form has been
-            submitted.
-            -->
-            <input class="context" type="submit"
-                   name="Update"
-                   value="Update Release Details" />
-
-        </div>
-        </form>
-
-
-    </fieldset>
-
-</div>
-
-</body>
+  </body>
 </html>

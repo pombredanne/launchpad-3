@@ -1,0 +1,67 @@
+GPG Signature Verification
+==========================
+
+    >>> from canonical.launchpad.ftests import import_public_test_keys
+    >>> import transaction
+    >>> import_public_test_keys()
+
+    >>> transaction.commit()
+
+    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.interfaces import ILaunchBag
+
+    >>> bag = getUtility(ILaunchBag)
+
+    >>> bag.user is None
+    True
+
+    >>> login('test@canonical.com')
+    >>> bag.user.name
+    u'name12'
+
+    >>> from canonical.launchpad.interfaces import IGPGHandler
+    >>> from zope.component import getUtility
+    >>> gpghandler = getUtility(IGPGHandler)
+
+The text below was "clear signed" by 0xDFD20543 master key:
+
+    >>> content = """-----BEGIN PGP SIGNED MESSAGE-----
+    ... Hash: SHA1
+    ...
+    ... Test Message.
+    ... -----BEGIN PGP SIGNATURE-----
+    ... Version: GnuPG v1.2.5 (GNU/Linux)
+    ...
+    ... iD8DBQFC7ZYY2yWXVgK6XvYRAgcwAJ43g/8X6DguixRucoXN86No67/W2wCgjFDj
+    ... jLeauuXDPTcnzDmDzCaQLXo=
+    ... =ettP
+    ... -----END PGP SIGNATURE-----
+    ... """
+
+    >>> master_sig = gpghandler.verifySignature(content)
+    >>> master_sig.fingerprint	
+    'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+
+The text below was "clear signed" by a 0x02BA5EF6, a subkey of 0xDFD20543
+
+    >>> content = """-----BEGIN PGP SIGNED MESSAGE-----
+    ... Hash: SHA1
+    ...
+    ... Test Message.
+    ... -----BEGIN PGP SIGNATURE-----
+    ... Version: GnuPG v1.2.5 (GNU/Linux)
+    ...
+    ... iD8DBQFC7ZVH2yWXVgK6XvYRAqWEAJsF9I1MK2tRPPcxjXR2QclSPiQEsgCgtwst
+    ... dZ7wZYeW68bk6GuuadabsSY=
+    ... =ioKn
+    ... -----END PGP SIGNATURE-----
+    ... """
+    >>>
+
+    >>> subkey_sig = gpghandler.verifySignature(content)
+    >>> subkey_sig.fingerprint
+    'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+
+
+   >>> master_sig.fingerprint == subkey_sig.fingerprint
+   True

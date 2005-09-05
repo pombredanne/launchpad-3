@@ -12,9 +12,12 @@ __all__ = [
 import sets
 
 from zope.interface import implements
+from zope.exceptions import NotFoundError
 
-from sqlobject import ForeignKey, StringCol, BoolCol
-from sqlobject import MultipleJoin, RelatedJoin
+from sqlobject import (
+        ForeignKey, StringCol, BoolCol, SQLObjectNotFound,
+        MultipleJoin, RelatedJoin
+        )
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
@@ -26,6 +29,7 @@ from canonical.launchpad.interfaces import (
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, ImportStatus)
 from canonical.launchpad.database.product import Product
+from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.cal import Calendar
 
 
@@ -86,6 +90,14 @@ class Project(SQLBase):
     def getProduct(self, name):
         return Product.selectOneBy(projectID=self.id, name=name)
 
+    def ensureRelatedBounty(self, bounty):
+        """See IProject."""
+        for curr_bounty in self.bounties:
+            if bounty.id == curr_bounty.id:
+                return None
+        linker = ProjectBounty(project=self, bounty=bounty)
+        return None
+
 
 class ProjectSet:
     implements(IProjectSet)
@@ -102,15 +114,42 @@ class ProjectSet:
             raise KeyError, name
         return project
 
+    def get(self, projectid):
+        """See canonical.launchpad.interfaces.project.IProjectSet.
+        
+        >>> getUtility(IProjectSet).get(1).name
+        u'ubuntu'
+        >>> getUtility(IProjectSet).get(-1)
+        Traceback (most recent call last):
+        ...
+        NotFoundError: 'Project with ID -1 does not exist'
+        """
+        try:
+            project = Project.get(projectid)
+        except SQLObjectNotFound:
+            raise NotFoundError("Project with ID %s does not exist" %
+                                str(projectid))
+        return project
+
     def new(self, name, displayname, title, homepageurl, summary,
             description, owner):
-        name = name.encode('ascii')
-        displayname = displayname.encode('ascii')
-        title = title.encode('ascii')
-        if homepageurl is not None:
-            homepageurl = homepageurl.encode('ascii')
-        description = description.encode('ascii')
+        r"""See canonical.launchpad.interfaces.project.IProjectSet
 
+        >>> ps = getUtility(IProjectSet)
+        >>> p = ps.new(
+        ...     name=u'footest',
+        ...     displayname=u'T\N{LATIN SMALL LETTER E WITH ACUTE}st',
+        ...     title=u'The T\N{LATIN SMALL LETTER E WITH ACUTE}st Project',
+        ...     homepageurl=None,
+        ...     summary=u'Mandatory Summary',
+        ...     description=u'Blah',
+        ...     owner=1
+        ...     )
+        >>> p.name
+        u'footest'
+        >>> p.displayname
+        u'T\xe9st'
+        """
         if Project.selectBy(name=name).count():
             raise KeyError("There is already a project named %s" % name)
 
@@ -123,6 +162,9 @@ class ProjectSet:
             homepageurl=homepageurl,
             owner=owner,
             datecreated=UTC_NOW)
+
+    def count_all(self):
+        return Project.select().count()
 
     def forReview(self):
         return Project.select("reviewed IS FALSE")
@@ -147,7 +189,7 @@ class ProjectSet:
                      bazaar=None,
                      search_products=True,
                      show_inactive=False):
-        """Search through the DOAP database for projects that match the
+        """Search through the Registry database for projects that match the
         query terms. text is a piece of text in the title / summary /
         description fields of project (and possibly product). soyuz,
         bounties, bazaar, malone etc are hints as to whether the search

@@ -5,7 +5,7 @@
 __metaclass__ = type
 
 __all__ = ['ProjectView', 'ProjectEditView', 'ProjectAddProductView',
-           'ProjectSetView', 'ProjectRdfView']
+           'ProjectSetView', 'ProjectAddView', 'ProjectRdfView']
 
 from urllib import quote as urlquote
 
@@ -14,13 +14,13 @@ from zope.i18nmessageid import MessageIDFactory
 from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
-    IPerson, IProject, IProjectSet, IProductSet, IProjectBugTrackerSet,
-    ICalendarOwner)
+    IPerson, IProject, IProjectSet, IProductSet, ICalendarOwner)
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.bugtracker import newBugTracker
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, DefaultLink)
@@ -90,26 +90,6 @@ class ProjectView(object):
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
         
-    def newBugTracker(self):
-        """This method is triggered by a tal:dummy element in the page
-        template, so it is run even when the page is first displayed. It
-        calls newBugTracker which will check if a form has been submitted,
-        and if so it creates one accordingly and redirects back to its
-        display page."""
-        # The person who is logged in needs to end up owning this bug
-        # tracking instance.
-        owner = IPerson(self.request.principal).id
-        # Now try to process the form
-        bugtracker = newBugTracker(self.form, owner)
-        if not bugtracker: return
-        # Now we need to create the link between that bug tracker and the
-        # project itself, using the ProjectBugTracker table
-        projectbugtracker = getUtility(IProjectBugTrackerSet).new(
-            project=self.context,
-            bugtracker=bugtracker)
-        # Now redirect to view it again
-        self.request.response.redirect(self.request.URL[-1])
-
     def hasProducts(self):
         return len(list(self.context.products())) > 0
 
@@ -194,7 +174,6 @@ class ProjectAddProductView(AddView):
     def __init__(self, context, request):
         self.request = request
         self.context = context
-        self._nextURL = '.'
         AddView.__init__(self, context, request)
 
     def createAndAdd(self, data):
@@ -224,7 +203,8 @@ class ProjectAddProductView(AddView):
         return product
 
     def nextURL(self):
-        return self._nextURL
+        # Always redirect to the project's page
+        return '.'
  
 
 
@@ -262,51 +242,57 @@ class ProjectSetView(object):
         self.matches = self.results.count()
         return self.results
 
-    def newproject(self):
+class ProjectAddView(AddView):
+    
+    _nextURL = '.'
+
+    def createAndAdd(self, data):
         """
         Create the new Project instance if a form with details
         was submitted.
         """
-        # Check that a field called "Register" was set to "Register
-        # Project". This method should continue only if the form was
-        # submitted. We do this because it is ALWAYS called, by the
-        # tal:dummy item in the page template.
-        #
-        if not self.form.get("Register", None)=="Register Project":
-            return
-        if not self.request.method == "POST":
-            return
-        # Enforce lowercase project name
-        self.form['name'] = self.form['name'].lower()
-        # Extract the details from the form
-        name = self.form['name']
-        displayname = self.form['displayname']
-        title = self.form['title']
-        summary = self.form['summary']
-        description = self.form['description']
-        homepageurl = self.form['homepageurl']
-        # get the launchpad person who is creating this product
         owner = IPerson(self.request.principal)
+        self.name = data['name'].lower()
+
         # Now create a new project in the db
         project = getUtility(IProjectSet).new(
-                          name=name,
-                          title=title,
-                          displayname=displayname,
-                          summary=summary,
-                          description=description,
+                          name=self.name,
+                          title=data['title'],
+                          displayname=data['displayname'],
+                          summary=data['summary'],
+                          description=data['description'],
                           owner=owner,
-                          homepageurl=homepageurl)
-        # now redirect to the page to view it
-        self.request.response.redirect(name)
+                          homepageurl=data['homepageurl'])
+        notify(ObjectCreatedEvent(project))
+        self._nextURL = canonical_url(project)
+        return project
 
+    def nextURL(self):
+        return self._nextURL
 
 class ProjectRdfView(object):
     """A view that sets its mime-type to application/rdf+xml"""
+
+    template = ViewPageTemplateFile(
+        '../templates/project-rdf.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        request.response.setHeader('Content-Type', 'application/rdf+xml')
-        request.response.setHeader('Content-Disposition',
-                                   'attachment; filename=' +
-                                   self.context.name + '-project.rdf')
+
+    def __call__(self):
+        """Render RDF output, and return it as a string encoded in UTF-8.
+
+        Render the page template to produce RDF output.
+        The return value is string data encoded in UTF-8.
+
+        As a side-effect, HTTP headers are set for the mime type
+        and filename for download."""
+        self.request.response.setHeader('Content-Type', 'application/rdf+xml')
+        self.request.response.setHeader('Content-Disposition',
+                                        'attachment; filename=%s-project.rdf' %
+                                            self.context.name)
+        unicodedata = self.template()
+        encodeddata = unicodedata.encode('utf-8')
+        return encodeddata
 

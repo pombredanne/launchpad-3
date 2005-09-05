@@ -32,9 +32,11 @@ __all__ = (
 'BinaryPackageFileType',
 'BinaryPackageFormat',
 'BinaryPackagePriority',
-'BountySubscription',
+'BountyDifficulty',
+'BountyStatus',
 'BranchRelationships',
 'BugTaskStatus',
+'BugAttachmentType',
 'BugTrackerType',
 'BugExternalReferenceType',
 'BugInfestationStatus',
@@ -49,10 +51,12 @@ __all__ = (
 'EmailAddressStatus',
 'HashAlgorithm',
 'ImportTestStatus',
+'ImportStatus',
 'KarmaActionCategory',
 'KarmaActionName',
 'LoginTokenType',
 'ManifestEntryType',
+'MirrorFreshness',
 'PackagePublishingPriority',
 'PackagePublishingStatus',
 'PackagePublishingPocket',
@@ -61,13 +65,18 @@ __all__ = (
 'ProjectRelationship',
 'ProjectStatus',
 'RevisionControlSystems',
+'RosettaFileFormat',
 'RosettaImportStatus',
 'RosettaTranslationOrigin',
+'ShipItArchitecture',
+'ShipItDistroRelease',
+'ShipItFlavour',
 'SourcePackageFileType',
 'SourcePackageFormat',
 'SourcePackageRelationships',
 'SourcePackageUrgency',
-'ImportStatus',
+'SpecificationStatus',
+'SpecificationPriority',
 'SSHKeyType',
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
@@ -77,9 +86,9 @@ __all__ = (
 'DistroReleaseQueueStatus',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
-'MirrorFreshness',
-'RosettaFileFormat',
 )
+
+from canonical.database.constants import DEFAULT
 
 from zope.interface.advice import addClassAdvisor
 import sys
@@ -138,6 +147,8 @@ class DBSchemaValidator(validators.Validator):
                 ' not an int')
         # Allow this to work in the presence of security proxies.
         ##if not isinstance(value, Item):
+        if value is DEFAULT:
+            return value
         if value.__class__ != Item:
             raise TypeError('Not a DBSchema Item: %r' % value)
         if value.schema is not self.schema:
@@ -154,6 +165,8 @@ class DBSchemaValidator(validators.Validator):
         """
         if value is None:
             return None
+        if value is DEFAULT:
+            return value
         return self.schema.items[value]
 
 EnumCol = DBSchemaEnumCol
@@ -376,6 +389,13 @@ class BugTrackerType(DBSchema):
         tracker written in Python.
         """)
 
+    TRAC = Item(4, """
+        Trac
+
+        Trac is an enhanced wiki and issue tracking system for
+        software development projects.
+        """)
+
 
 class CVEState(DBSchema):
     """The Status of this item in the CVE Database
@@ -386,19 +406,28 @@ class CVEState(DBSchema):
     be a CAN or a CVE.
     """
 
-    CAN = Item(1, """
-        CAN
+    CANDIDATE = Item(1, """
+        Candidate
 
         The vulnerability is a candidate, it has not yet been confirmed and
-        given a CVE number.
+        given "Entry" status.
         """)
 
-    CVE = Item(2, """
-        CVE
+    ENTRY = Item(2, """
+        Entry
 
         This vulnerability or threat has been assigned a CVE number, and is
         fully documented. It has been through the full CVE verification
         process.
+        """)
+
+    DEPRECATED = Item(3, """
+        Deprecated
+
+        This entry is deprecated, and should no longer be referred to in
+        general correspondence. There is either a newer entry that better
+        defines the problem, or the original candidate was never promoted to
+        "Entry" status.
         """)
 
 class ProjectStatus(DBSchema):
@@ -989,6 +1018,118 @@ class SourcePackageUrgency(DBSchema):
         as possible after appropriate review.
         """)
 
+
+class SpecificationPriority(DBSchema):
+    """The Priority with with a Specification must be implemented.
+
+    This enum is used to prioritise work.
+    """
+
+    WISHLIST = Item(0, """
+        Wishlist
+
+        This specification is on the "nice to have" list, but is unlikely to
+        be implemented as part of a specific release unless somebody
+        develops an irresistable itch to do so, on their own initiative.
+        """)
+
+    LOW = Item(10, """
+        Low
+
+        The specification is low priority. We would like to have it in the
+        code, but it's not on any critical path and is likely to get bumped
+        in favour of higher-priority work.
+        """)
+
+    MEDIUM = Item(50, """
+        Medium
+
+        The specification is of a medium, or normal priority. We will
+        definitely get to this feature but perhaps not in the next month or
+        two.
+        """)
+
+    HIGH = Item(70, """
+        High
+
+        The specification is definitely desired for the next major release,
+        and should be the focal point of developer attention right now.
+        """)
+
+    EMERGENCY = Item(90, """
+        Emergency
+
+        The specification is required immediately, and should be implemented
+        in such a way that it can be moved to production as soon as it is
+        ready, perhaps by publishing a new stable product release rather
+        than waiting for a new major release.
+        """)
+
+
+class SpecificationStatus(DBSchema):
+    """The current status of a Specification
+
+    This enum tells us whether or not a specification is approved, or still
+    being drafted, or implemented, or obsolete in some way. The ordinality
+    of the values is important, it's the order (lowest to highest) in which
+    we probably want them displayed by default.
+    """
+
+    APPROVED = Item(10, """
+        Approved
+
+        This specification has been approved. The project team believe that
+        is ready to be implemented.
+        """)
+
+    PENDING = Item(20, """
+        Pending Approval
+
+        This spec has been put in a reviewers queue. The reviewer will
+        either move it to "approved" or bump it back to "draft", making
+        review comments for consideration at the bottom.
+        """)
+
+    DRAFT = Item(30, """
+        Draft
+
+        The specification is in Draft status. The drafter has made a start
+        on reviewing the document.
+        """)
+
+    BRAINDUMP = Item(40, """
+        Braindump
+
+        The specification is just a thought, or collection of thoughts, with
+        no attention paid to implementation strategy, dependencies or
+        presentation/UI issues.
+        """)
+
+    IMPLEMENTED = Item(50, """
+        Implemented
+
+        The specification has been implemented, and has landed in the
+        codebase to which it was targeted.
+        """)
+
+    SUPERCEDED = Item(60, """
+        Superceded
+
+        This specification is still interesting, but has been superceded by
+        a newer spec, or set of specs, that clarify or describe a newer way
+        to implement the desired feature(s). Please use the newer specs and
+        not this one.
+        """)
+
+    OBSOLETE = Item(70, """
+        Obsolete
+
+        This specification has been obsoleted. Probably, we decided not to
+        implement it for some reason. It should not be displayed, and people
+        should not put any effort into implementing it.
+        """)
+
+
 class ImportStatus(DBSchema):
     """This schema describes the states that a SourceSource record can take
     on."""
@@ -1055,6 +1196,7 @@ class ImportStatus(DBSchema):
         amend the previous ProductSeries.  In theory, a STOPPED
         ProductSeries can be set to Sync again, but this requires serious
         Bazaar fu, and the buttsource team.  """)
+
 
 class SourcePackageFileType(DBSchema):
     """Source Package File Type
@@ -1341,29 +1483,41 @@ class PackagePublishingPocket(DBSchema):
     tools.
     """
 
-    PLAIN = Item(0, """
-        Plain
+    RELEASE = Item(0, """
+        Release
 
-        This pocket indicates a lack of suffix. It is the default pocket and
-        by default will be the only one supported by a distrorelease.
-
-        If a distrorelease is FROZEN CURRENT or STABLE then this pocket is
-        considered an immutable set.
+        This is the "release" pocket, it contains the versions of the
+        packages that were published when the release was made. For releases
+        that are still under development, this is the only pocket into which
+        packages will be published.
         """)
 
-    UPDATES = Item(1, """
-        Updates
-
-        This pocket indicates the '-updates' suffix. This is the common pocket
-        into which uploads might go when a distrorelease is FROZEN or CURRENT.
-        """)
-
-    SECURITY = Item(2, """
+    SECURITY = Item(10, """
         Security
 
-        This pocket indicates the '-security' suffix. It also enforces initial
-        embargos and similar security related behaviour. The Security pocket is
-        commonly not used until a distrorelease is in CURRENT or STABLE.
+        This is the pocket into which we publish only security fixes to the
+        released distribution. It is highly advisable to ensure that your
+        system has the security pocket enabled.
+        """)
+
+    UPDATES = Item(20, """
+        Updates
+
+        This is the pocket into which we publish packages with new
+        functionality after a release has been made. It is usually
+        enabled by default after a fresh install.
+        """)
+
+    PROPOSED = Item(30, """
+        Proposed
+
+        This is the pocket into which we publish packages with new
+        functionality after a release has been made, which we would like to
+        have widely tested but not yet made part of a default installation.
+        People who "live on the edge" will have enabled the "proposed"
+        pocket, and so will start testing these packages. Once they are
+        proven safe for wider deployment they will go into the updates
+        pocket.
         """)
 
 class SourcePackageRelationships(DBSchema):
@@ -1446,6 +1600,95 @@ class BinaryPackageFormat(DBSchema):
 
         This is the format used by Mandrake and other similar distributions.
         It does not include dependency tracking information.  """)
+
+
+class BountyDifficulty(DBSchema):
+    """Bounty Difficulty
+
+    An indicator of the difficulty of a particular bounty."""
+
+    TRIVIAL = Item(10, """
+        Trivial
+
+        This bounty requires only very basic skills to complete the task. No
+        real domain knowledge is required, only simple system
+        administration, writing or configuration skills, and the ability to
+        publish the work.""")
+
+    BASIC = Item(20, """
+        Basic
+
+        This bounty requires some basic programming skills, in a high level
+        language like Python or C# or... BASIC. However, the project is
+        being done "standalone" and so no knowledge of existing code is
+        required.""")
+
+    STRAIGHTFORWARD = Item(30, """
+        Straightforward
+
+        This bounty is easy to implement but does require some broader
+        understanding of the framework or application within which the work
+        must be done.""")
+
+    NORMAL = Item(50, """
+        Normal
+
+        This bounty requires a moderate amount of programming skill, in a
+        high level language like HTML, CSS, JavaScript, Python or C#. It is
+        an extension to an existing application or package so the work will
+        need to follow established project coding standards.""")
+
+    CHALLENGING = Item(60, """
+        Challenging
+
+        This bounty requires knowledge of a low-level programming language
+        such as C or C++.""")
+
+    DIFFICULT = Item(70, """
+        Difficult
+
+        This project requires knowledge of a low-level programming language
+        such as C or C++ and, in addition, requires extensive knowledge of
+        an existing codebase into which the work must fit.""")
+
+    VERYDIFFICULT = Item(90, """
+        Very Difficult
+
+        This project requires exceptional programming skill and knowledge of
+        very low level programming environments, such as assembly language.""")
+
+    EXTREME = Item(100, """
+        Extreme
+
+        In order to complete this work, detailed knowledge of an existing
+        project is required, and in addition the work itself must be done in
+        a low-level language like assembler or C on multiple architectures.""")
+
+
+class BountyStatus(DBSchema):
+    """Bounty Status
+
+    An indicator of the status of a particular bounty. This can be edited by
+    the bounty owner or reviewer."""
+
+    OPEN = Item(1, """
+        Open
+
+        This bounty is open. People are still welcome to contact the creator
+        or reviewer of the bounty, and submit their work for consideration
+        for the bounty.""")
+
+    WITHDRAWN = Item(9, """
+        Withdrawn
+
+        This bounty has been withdrawn.
+        """)
+
+    CLOSED = Item(10, """
+        Closed
+
+        This bounty is closed. No further submissions will be considered.
+        """)
 
 
 class BinaryPackagePriority(DBSchema):
@@ -1643,39 +1886,6 @@ class BugTaskStatus(DBSchema):
         This bug has been rejected, e.g. in cases of operator-error.
         """)
 
-class RemoteBugStatus(DBSchema):
-    """Bug Task Status
-
-    The status of a bug in a remote bug tracker. We map known statuses
-    to one of these values, and use UNKNOWN if we are unable to map
-    the remote status.
-    """
-
-    NEW = Item(1, """
-        New
-
-        This is a new bug and has not yet been accepted by the maintainer
-        of this product or source package.
-        """)
-
-    OPEN = Item(2, """
-        Open
-
-        This bug has been reviewed and accepted by the maintainer, and
-        is still open.
-        """)
-
-    CLOSED = Item(3, """
-        Closed
-
-        This bug has been closed by the maintainer.
-        """)
-
-    UNKNOWN = Item(99, """
-        Unknown
-
-        The remote bug status cannot be determined.
-        """)
 
 class BugTaskPriority(DBSchema):
     """Bug Task Priority
@@ -1798,6 +2008,28 @@ class BugRelationship(DBSchema):
         """)
 
 
+class BugAttachmentType(DBSchema):
+    """Bug Attachment Type.
+
+    An attachment to a bug can be of different types, since for example
+    a patch is more important than a screenshot. This schema describes the
+    different types. 
+    """
+
+    PATCH = Item(1, """
+        Patch
+
+        This is a patch that potentially fixes the bug.
+        """)
+
+    UNSPECIFIED = Item(2, """
+        Unspecified
+
+        This is everything else. It can be a screenshot, a log file, a core
+        dump, etc. Basically anything that adds more information to the bug.
+        """)
+
+
 class UpstreamReleaseVersionStyle(DBSchema):
     """Upstream Release Version Style
 
@@ -1897,35 +2129,6 @@ class ArchArchiveType(DBSchema):
         We can write into this archive, but we can only write
         changesets which have actually come from the upstream
         arch archive of which this is a mirror.
-        """)
-
-
-class BountySubscription(DBSchema):
-    """A Bounty Subscription.
-
-    This is a way to register interest that someone has in a bounty.
-    """
-
-    WATCH = Item(1, """
-        Watch
-
-        The person wishes to watch this bounty through a web interface. Emails
-        are not required.
-        """)
-
-    CC = Item(2, """
-        CC
-
-        The person wishes to watch this bounty through a web interface and in
-        addition wishes to be notified by email whenever there is activity
-        relating to this bounty.
-        """)
-
-    IGNORE = Item(3, """
-        Ignore
-
-        The person has taken an active decision to ignore this bounty. They do
-        not wish to receive any communications about it.
         """)
 
 
@@ -2394,5 +2597,47 @@ class TranslationValidationStatus(DBSchema):
         Unknown Error
 
         This translation has an unknown error.
+        """)
+
+
+class ShipItFlavour(DBSchema):
+    """The Distro Flavour, used only to link with ShippingRequest."""
+
+    UBUNTU = Item(1, """
+        Ubuntu
+
+        The Ubuntu flavour.
+        """)
+
+
+class ShipItArchitecture(DBSchema):
+    """The Distro Architecture, used only to link with ShippingRequest."""
+
+    X86 = Item(1, """
+        Intel/X86
+
+        x86 processors.
+        """)
+
+    AMD64 = Item(2, """
+        AMD64
+
+        AMD64 or EM64T based processors.
+        """)
+
+    PPC = Item(3, """
+        PowerPC
+
+        PowerPC processors.
+        """)
+
+
+class ShipItDistroRelease(DBSchema):
+    """The Distro Release, used only to link with ShippingRequest."""
+
+    BREEZY = Item(1, """
+        Breezy Badger
+
+        The Breezy Badger release.
         """)
 

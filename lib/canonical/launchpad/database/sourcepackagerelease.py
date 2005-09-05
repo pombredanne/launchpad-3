@@ -14,19 +14,18 @@ from sqlobject import StringCol, ForeignKey, MultipleJoin
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.lp.dbschema import \
-    EnumCol, SourcePackageUrgency, SourcePackageFormat
+from canonical.lp.dbschema import (
+    EnumCol, SourcePackageUrgency, SourcePackageFormat)
 
 from canonical.launchpad.interfaces import (ISourcePackageRelease,
     ISourcePackageReleaseSet)
 
-from canonical.launchpad.database.binarypackage import (BinaryPackage,
-    DownloadURL)
-from canonical.launchpad.database.build import Build
-from canonical.launchpad.database.publishing import \
-     SourcePackagePublishing
+from canonical.launchpad.database.binarypackagerelease import (
+     BinaryPackageRelease)
 
-from canonical.librarian.interfaces import ILibrarianClient
+from canonical.launchpad.database.build import Build
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishing)
 
 
 class SourcePackageRelease(SQLBase):
@@ -121,40 +120,22 @@ class SourcePackageRelease(SQLBase):
 
     @property
     def binaries(self):
-        clauseTables = ['SourcePackageRelease', 'BinaryPackage', 'Build']
+        clauseTables = ['SourcePackageRelease', 'BinaryPackageRelease', 'Build']
         query = ('SourcePackageRelease.id = Build.sourcepackagerelease'
-                 ' AND BinaryPackage.build = Build.id '
+                 ' AND BinaryPackageRelease.build = Build.id '
                  ' AND Build.sourcepackagerelease = %i' % self.id)
-        return BinaryPackage.select(query, clauseTables=clauseTables)
-
-    @property
-    def files_url(self):
-        downloader = getUtility(ILibrarianClient)
-
-        urls = []
-
-        for _file in self.files:
-            try:
-                url = downloader.getURLForAlias(_file.libraryfile.id)
-            except URLError:
-                # Librarian not running or file not available.
-                pass
-            else:
-                name = _file.libraryfile.filename
-                urls.append(DownloadURL(name, url))
-
-        return urls
+        return BinaryPackageRelease.select(query, clauseTables=clauseTables)
 
     def architecturesReleased(self, distroRelease):
         # The import is here to avoid a circular import. See top of module.
         from canonical.launchpad.database.soyuz import DistroArchRelease
-        clauseTables = ['PackagePublishing', 'BinaryPackage', 'Build']
+        clauseTables = ['BinaryPackagePublishing', 'BinaryPackageRelease', 'Build']
 
         archReleases = sets.Set(DistroArchRelease.select(
-            'PackagePublishing.distroarchrelease = DistroArchRelease.id '
+            'BinaryPackagePublishing.distroarchrelease = DistroArchRelease.id '
             'AND DistroArchRelease.distrorelease = %d '
-            'AND PackagePublishing.binarypackage = BinaryPackage.id '
-            'AND BinaryPackage.build = Build.id '
+            'AND BinaryPackagePublishing.binarypackagerelease = BinaryPackageRelease.id '
+            'AND BinaryPackageRelease.build = Build.id '
             'AND Build.sourcepackagerelease = %d'
             % (distroRelease.id, self.id),
             clauseTables=clauseTables))

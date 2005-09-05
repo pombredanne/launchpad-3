@@ -27,7 +27,7 @@ from sqlobject.sqlbuilder import AND, IN
 from canonical.launchpad.database import (
     Builder, BuildQueue, Build, Distribution, DistroRelease,
     DistroArchRelease, SourcePackagePublishing, LibraryFileAlias,
-    BinaryPackage, BinaryPackageFile, BinaryPackageName,
+    BinaryPackageRelease, BinaryPackageFile, BinaryPackageName,
     SourcePackageReleaseFile
     )
 
@@ -40,7 +40,7 @@ from canonical.lp.dbschema import BuildStatus as DBBuildStatus
 
 from canonical.librarian.client import LibrarianClient
 
-from canonical.database.constants import nowUTC
+from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.helpers import filenameToContentType
 
@@ -186,7 +186,7 @@ class BuilderGroup:
         self.logger.debug("Initiating build %s on %s"
                           % (buildid, builder.url))
         queueItem.builder = builder
-        queueItem.buildstart = nowUTC
+        queueItem.buildstart = UTC_NOW
         chroot = self.findChrootFor(queueItem, pocket)
         if not chroot:
             self.logger.debug("OOPS! Could not find CHROOT")
@@ -241,7 +241,7 @@ class BuilderGroup:
 
         # XXX cprov 20050628
         # Try to use BinaryPackageSet utility for this job 
-        binpkgid = BinaryPackage(binarypackagename=binnameid,
+        binpkgid = BinaryPackageRelease(binarypackagename=binnameid,
                                  version=version,
                                  build=build,
                                  binpackageformat=BinaryPackageFormat.DEB,
@@ -268,7 +268,7 @@ class BuilderGroup:
                                  copyright=None,
                                  licence=None)
         
-        binfile = BinaryPackageFile(binarypackage=binpkgid,
+        binfile = BinaryPackageFile(binarypackagerelease=binpkgid,
                                     libraryfile=alias,
                                     filetype=BinaryPackageFileType.DEB)
         
@@ -314,7 +314,9 @@ class BuilderGroup:
                               "status() probe." % status))
             queueItem.builder = None
             queueItem.buildstart = None  
-            
+            self.commit()
+            return
+        
         try:
             method(queueItem, slave, librarian, *res[1:])
         except TypeError:
@@ -322,15 +324,15 @@ class BuilderGroup:
 
         self.commit()
 
-    def updateBuild_IDLE(self, queueItem, slave, librarian):
-        """Somehow the builder forgot about the build log this and reset
+    def updateBuild_IDLE(self, queueItem, slave, librarian, info):
+        """Somehow the builder forgot about the build job, log this and reset
         the record.
         """
         release = queueItem.build.sourcepackagerelease
         self.logger.warn("Builder on %s is Dory AICMFP. "
-                         "Builder forgot about build %s of %s (%s) "
+                         "Builder forgot about build %s (%s) "
                          "-- resetting buildqueue record"
-                         % (queueItem.builder.url, buildid,
+                         % (queueItem.builder.url,
                             release.sourcepackagename.name,
                             release.version))            
         
@@ -343,11 +345,21 @@ class BuilderGroup:
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
         queueItem.logtail = logtail
 
+    def updateBuild_ABORTED(self, queueItem, slave, librarian, buildid):
+        """Build was ABORTED, 'clean' the builder for another jobs. """
+        # XXX: dsilvers: 20050302: Confirm the builder has the right build?
+        queueItem.builder = None
+        queueItem.buildstart = None
+        slave.clean()
+
     def updateBuild_WAITING(self, queueItem, slave, librarian, buildstatus,
                             buildid, filemap=None):
-        """Build can be WAITING in two situations:
+        """Perform the actions needed for a slave in a WAITING state
 
-        * Build has failed, no filemap is received
+        Buildslave can be WAITING in five situations:
+
+        * Build has failed, no filemap is received (PACKAGEFAIL, DEPFAIL,
+                                                    CHROOTFAIL, BUILDERFAIL)
         
         * Build has been built successfully (BuildStatus.OK), in this case
           we have a 'filemap', so we can retrive those files and store in
@@ -356,72 +368,89 @@ class BuilderGroup:
           component available).
         """
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
+        assert buildstatus.startswith('BuildStatus.')
+
+        buildstatus = buildstatus[len('BuildStatus.'):]
+        method = getattr(self, 'buildStatus_' + buildstatus, None)
+
+        if method is None:
+            self.logger.critical("Unknow BuildStatus '%s' for builder '%s'"
+                                 % (buildstatus, queueItem.builder.url))
+            return
+
+        method(queueItem, slave, librarian, buildid, filemap)
+
+    def buildStatus_OK(self, queueItem, slave, librarian, buildid,
+                       filemap=None):
+        """Builder has built package entirely, get all the content back"""
         queueItem.build.buildlog = self.getLogFromSlave(slave, buildid,
                                                         librarian)
-        queueItem.build.datebuilt = nowUTC
+        queueItem.build.datebuilt = UTC_NOW
+        queueItem.build.buildduration = UTC_NOW - queueItem.buildstart
+        queueItem.build.builder = queueItem.builder
+        queueItem.build.buildstate = DBBuildStatus.FULLYBUILT
+    
+        for result in filemap:
+            aliasid = self.getFileFromSlave(slave, result, filemap[result],
+                                            librarian)
+            if result.endswith(".deb"):
+                # Process a binary package
+                self.processBinaryPackage(queueItem.build, aliasid, result)
+                release = queueItem.build.sourcepackagerelease
+                self.logger.debug("Gathered build of %s completely"
+                                  % release.sourcepackagename.name)
 
-        if buildstatus == BuildStatus.OK:
-            # Builder has built package entirely, get all the content back
-            queueItem.build.builder = queueItem.builder
-
-            #XXX: dsilvers: 20050302: How do I get an interval for here?
-            #queueItem.build.buildduration = queueItem.buildstart
-            queueItem.build.buildstate = DBBuildStatus.FULLYBUILT
-
-            for result in filemap:
-                aliasid = self.getFileFromSlave(slave, result, filemap[result],
-                                                librarian)
-                if result.endswith(".deb"):
-                    # Process a binary package
-                    self.processBinaryPackage(queueItem.build, aliasid, result)
-                    release = queueItem.build.sourcepackagerelease
-                    self.logger.debug("Gathered build of %s completely"
-                                      % release.sourcepackagename.name)
-            # release the builder and remove BQ entry
-            slave.clean()
-            queueItem.destroySelf()
-
-    def updateBuild_DEPFAIL(self, queueItem, slave, librarian, info):
+        # release the builder
+        slave.clean()
+        queueItem.destroySelf()
+        
+    def buildStatus_PACKAGEFAIL(self, queueItem, slave, librarian, buildid,
+                                filemap=None):
+        """Build has failed when trying the work with the target package,
+        set the job status as FAILEDTOBUILD and remove Buildqueue entry.
+        """
+        queueItem.build.buildstate = DBBuildStatus.FAILEDTOBUILD
+        # release the builder
+        slave.clean()
+        queueItem.destroySelf()
+        
+    def buildStatus_DEPFAIL(self, queueItem, slave, librarian, buildid,
+                            filemap=None):
         """Build has failed by missing dependencies, set the job status as
         MANUALDEPWAIT, requires human interaction to free the builder slave.
         """
         queueItem.build.buildstate = DBBuildStatus.MANUALDEPWAIT
-
-    def updateBuild_PACKAGEFAIL(self, queueItem, slave, librarian, info):
-        """Build has failed when trying the work with the target package,
-        set the job status as FAILEDTOBUILD and also requires human
-        interaction to free the builder slave.
-        """
-        queueItem.build.buildstate = DBBuildStatus.FAILEDTOBUILD
-
-    def updateBuild_CHROOTFAIL(self, queueItem, slave, librarian, info):
+        self.logger.critical("***** %s needs manual intervention due "
+                             "MANUALDEPWAIT *****" % queueItem.builder.name)
+        
+    def buildStatus_CHROOTFAIL(self, queueItem, slave, librarian, buildid,
+                               filemap=None):
         """Build has failed when installing the current CHROOT, mark the
         job as CHROOTFAIL and leave builder slave blocked.
         """
         queueItem.build.buildstate = DBBuildStatus.CHROOTWAIT
-
-    def updateBuild_BUILDERFAIL(self, queueItem, slave, librarian, info):
+        self.logger.critical("***** %s needs manual intervention due "
+                             "CHROOTWAIT *****" % queueItem.builder.name)
+                
+    def buildStatus_BUILDERFAIL(self, queueItem, slave, librarian, buildid,
+                                filemap=None):
         """Build has been failed when trying to build the target package,
         The environment is working well, so mark the job as NEEDSBUILD again
         and 'clean' the builder to do another jobs. 
         """
-        queueItem.build.buildstate = DBBuildStatus.NEEDSBUILD
+        # XXX cprov 20050823
+        # find a way to avoid job being processed for the same slave
+        # next round.
+        self.logger.warning("***** %s has failed *****"
+                            % queueItem.builder.name)
         self.failBuilder(queueItem.builder,
                          ("Builder returned BUILDERFAIL when asked "
                           "for its status"))
-        # And reset the builder information
-        if queueItem.builder.builderok:
-            slave.clean()
+        # simply reset job
+        queueItem.build.buildstate = DBBuildStatus.NEEDSBUILD
         queueItem.builder = None
         queueItem.buildstart = None
-
-    def updateBuild_ABORTED(self, queueItem, slave, librarian, buildid):
-        """Build was ABORTED, 'clean' the builder for another jobs. """
-        # XXX: dsilvers: 20050302: Confirm the builder has the right build?
-        queueItem.builder = None
-        queueItem.buildstart = None
-        slave.clean()
-            
+                    
     def countAvailable(self):
         count = 0
         for builder in self.builders:
@@ -494,7 +523,7 @@ class BuilddMaster:
         """Setting up a workable DistroArchRelease for this session."""
         # ensure we have a pocket
         if not pocket:
-            pocket = PackagePublishingPocket.PLAIN
+            pocket = PackagePublishingPocket.RELEASE
 
         self._logger.info("Adding DistroArchRelease %s/%s/%s/%s"
                           % (archrelease.distrorelease.distribution.name,
@@ -586,7 +615,7 @@ class BuilddMaster:
                           buildlog=None,
                           datebuilt=None,
                           changes=None,
-                          datecreated=nowUTC
+                          datecreated=UTC_NOW
                           )
         self.commit()
 
@@ -617,7 +646,7 @@ class BuilddMaster:
                 
                 BuildQueue(build=build.id,
                            builder=None,
-                           created=nowUTC,
+                           created=UTC_NOW,
                            buildstart=None,
                            lastscore=None,
                            logtail=None)
@@ -744,7 +773,7 @@ class BuilddMaster:
         """Dispach Jobs according specific procesor and pocket """
         # ensure we have a pocket
         if not pocket:
-            pocket = PackagePublishingPocket.PLAIN
+            pocket = PackagePublishingPocket.RELEASE
         
         self.getLogger().debug("dispatchByProcessor(%s, %d queueItem(s), %s)"
                                % (proc.name, len(queueItems), pocket.title))

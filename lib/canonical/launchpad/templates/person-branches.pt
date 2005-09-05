@@ -4,47 +4,30 @@
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad">
 
-  <body>
+<body>
   
-    <metal:leftportlets fill-slot="portlets_one">
-      <div tal:replace="structure context/@@+portlet-details" />
-    </metal:leftportlets>
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
     
-    <metal:rightportlets fill-slot="portlets_two">
-      <div tal:replace="structure context/@@+portlet-actions" />
-    </metal:rightportlets>
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+  <div tal:replace="structure context/@@+portlet-calendar" />
+</metal:rightportlets>
 
-    <div metal:fill-slot="main">
+<div metal:fill-slot="main">
 
-      <h1>Bazaar Branches</h1>
+  <h1>Bazaar Branches</h1>
 
-      <p>
-        (This page is not implemented yet. Please try again later.)
-      </p>
+  <p>
+    (Grey areas indicate parts of the page that are not yet implemented.
+    Please try again later.)
+  </p>
 
-      <ul>
-        <li xtal:repeat="something" class="dummy">
-          <div><a href="branchurl">name/url</a></div>
-          <div xtal:condition="has a summary">
-            The summary of the branch goes here.
-          </div>
-          <div xtal:condition="changes known" class="discreet">
-            <xtal:patchcount content="no. of patches">
-              123
-            </xtal:patchcount> changes,
-            <xtal:patchcount content="no. of patches">
-              1234
-            </xtal:patchcount> lines,
-            <xtal:activity content="changes in past month">
-              12
-            </xtal:activity> changes in past month
-          </div>
-          <div xtal:condition="has a status" class="discreet">
-            Status:
-            <xtal:status content="ellipsized status">ready</xtal:status>
-          </div>
-        </li>
-      </ul>
-    </div> 
-  </body>
+  <tal:block repeat="branch context/branches">
+    <div tal:replace="structure branch/@@+summary-listing" />
+  </tal:block>
+
+</div> 
+</body>
 </html>

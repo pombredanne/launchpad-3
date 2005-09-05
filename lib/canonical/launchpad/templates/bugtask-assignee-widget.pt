@@ -1,0 +1,51 @@
+<tal:assigneewidget define="widget_name string:${view/name}.option">
+  <label style="font-weight: normal"
+         tal:attributes="for view/assign_to_nobody">
+    <input type="radio"
+           tal:attributes="name widget_name;
+                           id view/assign_to_nobody;
+                           value view/assign_to_nobody;
+                           checked python:view.selectedRadioButton() ==
+                                          view.assign_to_nobody">
+    nobody
+  </label>
+  <br />
+
+  <label style="font-weight: normal"
+         tal:attributes="for view/assign_to_me">
+    <input type="radio"
+           tal:attributes="name widget_name;
+                           id view/assign_to_me;
+                           value view/assign_to_me;
+                           checked python:view.selectedRadioButton() ==
+                                          view.assign_to_me">
+    me
+  </label>
+
+  <tal:assigned condition="view/getAssigneeDisplayValue">
+    <tal:assigned_to_another_user condition="view/assignedToAnotherUser">
+      <br />
+      <label style="font-weight: normal"
+             tal:attributes="for view/assigned_to">
+        <input type="radio"
+               tal:attributes="name widget_name;
+                               id view/assigned_to;
+                               value view/assigned_to;
+                               checked python:view.selectedRadioButton() ==
+                                              view.assigned_to">
+        <tal:assignee content="view/getAssigneeDisplayValue" />
+      </label>
+    </tal:assigned_to_another_user>
+  </tal:assigned>
+
+  <br />
+
+  <input type="radio"
+         tal:attributes="name widget_name;
+                         id view/assign_to;
+                         value view/assign_to;
+                         checked python:view.selectedRadioButton() ==
+                                        view.assign_to">
+  <tal:assignee_chooser content="structure view/assignee_chooser_widget" />
+
+</tal:assigneewidget>

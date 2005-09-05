@@ -24,6 +24,7 @@ from canonical.launchpad.browser.karma import *
 from canonical.launchpad.browser.launchpad import *
 from canonical.launchpad.browser.logintoken import *
 from canonical.launchpad.browser.message import *
+from canonical.launchpad.browser.milestone import *
 from canonical.launchpad.browser.packages import *
 from canonical.launchpad.browser.packaging import *
 from canonical.launchpad.browser.person import *
@@ -38,8 +39,14 @@ from canonical.launchpad.browser.productseries import *
 from canonical.launchpad.browser.project import *
 from canonical.launchpad.browser.publishedpackage import *
 from canonical.launchpad.browser.rosetta import *
+from canonical.launchpad.browser.shipit import *
 from canonical.launchpad.browser.sourcepackage import *
 from canonical.launchpad.browser.sourcepackagename import *
+from canonical.launchpad.browser.specification import *
+from canonical.launchpad.browser.specificationbug import *
+from canonical.launchpad.browser.specificationdependency import *
+from canonical.launchpad.browser.specificationreview import *
+from canonical.launchpad.browser.specificationtarget import *
 from canonical.launchpad.browser.team import *
 from canonical.launchpad.browser.translationgroup import *
 from canonical.launchpad.browser.translator import *

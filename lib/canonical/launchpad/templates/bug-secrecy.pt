@@ -1,0 +1,41 @@
+<tal:tag condition="view/update"/>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="malone">
+
+<body>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-subscribers" />
+  </metal:leftportlets>
+
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-actions" />
+  </metal:rightportlets>
+
+  <div metal:fill-slot="main">
+
+    <div metal:use-macro="context/@@launchpad_editform/editform">
+    
+      <div metal:fill-slot="extra_info">
+        <p>
+          Malone supports "secret" bugs. These will only be visible to the
+          bug's subscribers. 
+        </p>
+        <p class="discreet">
+          This feature is used to allow security teams to
+          track security bug resolution without disclosing the existence or
+          nature of the problem until they have a complete solution, in
+          compliance with the policies of security working groups like
+          <a href="http://www.fedora.us/wiki/VendorSec">VendorSec</a>.
+        </p>
+      </div>
+
+    </div>
+    
+  </div>
+
+  </body>
+</html>

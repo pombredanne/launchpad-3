@@ -1,0 +1,101 @@
+
+Creating Specifications
+=======================
+
+And on both Product and Distribution, we should be able to add a
+specification. Let's make sure we can see the relevant page on a Product.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+addspec HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+And now, on a distribution.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+addspec HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Let's go one step further and confirm that we can actually POST to that
+form, to register a new specification. We'll do it on the Ubuntu
+distribution.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+addspec HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 2056
+  ... Content-Type: multipart/form-data; boundary=---------------------------83093195616674742681104656048
+  ... Cookie: launchpad=WGtY6QC9i8F-Myr0BWSOqf4Q8kgaYG0jKi2QwfbN.pXnnEzGpsFIH8
+  ... Referer: http://localhost:9000/distros/ubuntu/+addspec
+  ... 
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... networkmagic
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Network Magic - Automatic Network Detection
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.specurl"
+  ... 
+  ... http://wiki.ubuntu.com/NetworkMagic
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... Users are increasingly using multiple networks. Being able to seamlessly move between networks whilst remembering the correct settings for each network would greatly enhance Ubuntu's usability for mobile professionals.
+  ... Many network dependent services should only be run when the system is positive that it has a network. This would greatly enhance the system's flexibility and responsiveness.
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.priority"
+  ... 
+  ... High
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.status"
+  ... 
+  ... Approved
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.status-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.assignee"
+  ... 
+  ... daf@canonical.com
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.drafter"
+  ... 
+  ... carlos@canonical.com
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.approver"
+  ... 
+  ... tsukimi@quaqua.net
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------83093195616674742681104656048--
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: http://.../distros/ubuntu/+spec/networkmagic
+  ...
+
+
+OK, that created a new specification. Let's make sure we can see it.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+spec/networkmagic HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+

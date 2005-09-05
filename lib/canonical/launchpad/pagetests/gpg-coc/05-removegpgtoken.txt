@@ -1,60 +1,60 @@
 
-
   >>> print http(r"""
-  ... POST /people/name12/+editgpgkey HTTP/1.1
+  ... POST /people/name12/+editgpgkeys HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... action=deactivate_gpg&DEACTIVATE_GPGKEY=1""")
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...
-  ...Deactivated GPG Keys...
+  ...Deactivated Keys...
   ...1024D/DFD20543...
   ...
 
 
   >>> print http(r"""
-  ... POST /people/name12/+editgpgkey HTTP/1.1
+  ... POST /people/name12/+editgpgkeys HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... action=revalidate_gpg&REVALIDATE_GPGKEY=1""")
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...
-  ...GPG Keys Pending Validation...
+  ...Keys Pending Validation...
   ...A419AE861E88BC9E04B9C26FBA2B9389DFD20543...
   ...
 
-  Setup a interaction for current process (black magic needed to used 
-  getUtility and share the current instances inside LP)
+Setup a interaction for current process (black magic needed to used 
+getUtility and share the current instances inside LP)
 
   >>> from canonical.launchpad.helpers import setupInteraction
   >>> setupInteraction(None)
 
-  End up with the pending token.
+End up with the pending token.
 
   >>> from canonical.launchpad.interfaces import ILaunchBag, ILoginTokenSet
   >>> from zope.component import getUtility
   >>> tokenset = getUtility(ILoginTokenSet)
 
-  Listify pending keys result to avoid warnings about slicing an unordered
-  select result.
+Listify pending keys result to avoid warnings about slicing an unordered
+select result.
 
-  >>> pendingkeys = list(tokenset.getPendingGpgKeys())
+  >>> pendingkeys = list(tokenset.getPendingGPGKeys())
   >>> tokenfingerprint = pendingkeys[0].fingerprint.encode('ascii')
 
-  Finish the current Interaction
+Finish the current Interaction
 
   >>> from zope.security.management import endInteraction
   >>> endInteraction()
 
 
   >>> print http(r"""
-  ... POST /people/name12/+editgpgkey HTTP/1.1
+  ... POST /people/name12/+editgpgkeys HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... action=remove_gpgtoken&REMOVE_GPGTOKEN=%s""" % tokenfingerprint)
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...
   ...Token(s) for:...A419AE861E88BC9E04B9C26FBA2B9389DFD20543...deleted...
-  ...Deactivated GPG Keys...
+  ...Deactivated Keys...
   ...1024D/DFD20543...
   ...
+

@@ -6,48 +6,43 @@
     i18n_domain="launchpad">
 
     <content class="canonical.launchpad.database.BugAttachment">
-        <allow interface="canonical.launchpad.interfaces.IBugAttachment" />
-        <require permission="zope.Public" set_schema="canonical.launchpad.interfaces.IBug" />
+        <require
+            permission="launchpad.View"
+            interface="canonical.launchpad.interfaces.IBugAttachment"
+            />
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IBugAttachment"
+            />
     </content>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IBugAttachment"
+        path_expression="string:attachments/${id}"
+        attribute_to_parent="bug"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugAttachment"
-        name="index" />
-
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBugAttachment"
-        function="canonical.launchpad.browser.traverseBugAttachment" />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IBugAttachment"
-        permission="zope.Public"
-        lp:url="malone/bugs/$Bugs.id/attachments/$Attachment.id">
-        <browser:page name="+index"
-            template="../templates/attachment-index.pt" />
-    </browser:pages>
-
-    <browser:addform
-        name="+new"
-        schema="canonical.launchpad.interfaces.IBugAttachment"
-        for="canonical.launchpad.interfaces.IBugAttachmentSet"
-        label="Add a Bug Attachment"
-        fields="name description libraryfile"
-        content_factory="canonical.launchpad.database.BugAttachmentFactory"
-        arguments=""
-        keyword_arguments="name description libraryfile"
-        permission="launchpad.AnyPerson"
-        template="../templates/launchpad-addform.pt"
-        lp:url="malone/bugs/$Bug.id/attachments/+new"
+        name="+edit"
         />
 
     <browser:editform
-        schema="canonical.launchpad.interfaces.IBugAttachment"
+        schema="canonical.launchpad.interfaces.IBugAttachmentEditForm"
+        for="canonical.launchpad.interfaces.IBugAttachment"
+        class="canonical.launchpad.browser.BugRelatedObjectEditView"
         label="Change Bug Attachment Information"
         name="+edit"
         permission="launchpad.AnyPerson"
-        fields="name description"
-        template="../templates/default-editform.pt"
+        fields="title patch contenttype"
+        template="../templates/bug-attachment-edit.pt"
         lp:url="malone/bugs/$Bug.id/attachments/$BugAttachment.id/+edit"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBugAttachment"
+        provides="canonical.launchpad.interfaces.IBugAttachmentEditForm"
+        factory="canonical.launchpad.browser.BugAttachmentEdit"
         />
 
     <!-- BugAttachmentSet -->
@@ -60,10 +55,6 @@
         provides="canonical.launchpad.interfaces.IBugAttachmentSet">
         <allow interface="canonical.launchpad.interfaces.IBugAttachmentSet" />
     </securedutility>
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IBugAttachmentSet"
-        name="+index" />
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IBugAttachmentSet"

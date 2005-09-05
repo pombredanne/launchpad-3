@@ -57,6 +57,11 @@
           canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
      factory="canonical.launchpad.subscribers.bugactivity.record_bugsubscription_edited" />
 
+  <subscriber
+     for="canonical.launchpad.interfaces.IBugAttachment
+          canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+     factory="canonical.launchpad.subscribers.bugactivity.record_bug_attachment_added" />
+
     <!--
  <subscriber
      for="canonical.launchpad.interfaces.IBugExternalRef

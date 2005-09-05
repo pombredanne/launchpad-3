@@ -1,0 +1,80 @@
+Let's edit the content type.
+
+  >>> print http(r"""
+  ... GET /malone/bugs/1/attachments/1/+edit HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+After we've edited it, we get redirected to the bug page.
+
+  >>> print http(r"""
+  ... POST /malone/bugs/1/attachments/1/+edit HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 451
+  ... Content-Type: multipart/form-data; boundary=----------bq7K7HDJcmP4iO20V5sJxR
+  ... 
+  ... ------------bq7K7HDJcmP4iO20V5sJxR
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Some information.
+  ... ------------bq7K7HDJcmP4iO20V5sJxR
+  ... Content-Disposition: form-data; name="field.contenttype"
+  ... 
+  ... text/html
+  ... ------------bq7K7HDJcmP4iO20V5sJxR
+  ... Content-Disposition: form-data; name="field.patch.used"
+  ... 
+  ... 
+  ... ------------bq7K7HDJcmP4iO20V5sJxR
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... ------------bq7K7HDJcmP4iO20V5sJxR--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/malone/bugs/1
+  ...
+  <input ...  name="field.contenttype" ... value="text/html" ...>
+  ...
+
+
+If change the attachment to be a patch, the content type will be
+changed to text/plain.
+
+  >>> print http(r"""
+  ... POST /malone/bugs/1/attachments/1/+edit HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 545
+  ... Content-Type: multipart/form-data; boundary=----------FtZrnGK020WLeDwj8VTBw0
+  ... 
+  ... ------------FtZrnGK020WLeDwj8VTBw0
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Some information.
+  ... ------------FtZrnGK020WLeDwj8VTBw0
+  ... Content-Disposition: form-data; name="field.patch.used"
+  ... 
+  ... 
+  ... ------------FtZrnGK020WLeDwj8VTBw0
+  ... Content-Disposition: form-data; name="field.patch"
+  ... 
+  ... on
+  ... ------------FtZrnGK020WLeDwj8VTBw0
+  ... Content-Disposition: form-data; name="field.contenttype"
+  ... 
+  ... text/html
+  ... ------------FtZrnGK020WLeDwj8VTBw0
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... ------------FtZrnGK020WLeDwj8VTBw0--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/malone/bugs/1
+  ...
+  <input ...  name="field.contenttype" ... value="text/plain" ...>
+  ...

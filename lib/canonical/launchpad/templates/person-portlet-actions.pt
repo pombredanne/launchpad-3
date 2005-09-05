@@ -4,29 +4,26 @@
   
   <div class="portletBody portletContent">
     <ul>
-      <li class="info"><a href=".">Overview</a></li>
       <li class="edit"><a href="+edit">Edit Details</a></li>
-      <li class="mail" tal:condition="not: context/isTeam">
-        <a href="+emails">E-mail Addresses</a>
-      </li>
-      <li class="info"><a href="+packages">Packages</a></li>
-      <li class="info"><a href="+bounties">Bounties</a></li>
-      <li class="info"><a href="+branches">Code</a></li>
-      <li class="info"><a href="+karma">Karma</a></li>
+      <li class="packages"><a href="+packages">Packages</a></li>
       <tal:block condition="not: context/isTeam">
         <!-- these are not for teams -->
-        <li class="translations"><a href="+translations">Translations</a></li>
-        <li class="info"><a href="+assignedbugs">Bugs Assigned</a></li>
-        <li class="info"><a href="+reportedbugs">Bugs Reported</a></li>
-        <li class="edit"><a href="+editsshkey">SSH Keys</a></li>
-        <li class="edit"><a href="+editgpgkey">GPG Keys</a></li>
+        <li class="info"><a href="+karma">Show Karma</a></li>
+        <li class="bugs"><a href="+reportedbugs">Show Bugs Reported</a></li>
+        <li class="spec"><a href="+createdspecs">Show Specs Created</a></li>
+        <li class="spec"><a href="+assignedspecs">Show Specs Assigned</a></li>
+        <li class="spec"><a href="+draftedspecs">Show Specs Drafted</a></li>
+        <li class="spec"><a href="+reviewspecs">Show Specs To Review</a></li>
+        <li class="spec"><a href="+subscribedspecs">Show Subscribed Specs</a></li>
+        <li class="edit"><a href="+editsshkeys">Edit SSH Keys</a></li>
+        <li class="edit"><a href="+editgpgkeys">Edit GPG Keys</a></li>
         <li class="edit"><a href="+codesofconduct">Code of Conduct</a></li>
-        <li class="edit"><a href="+changetz">Change Time Zone</a></li>
       </tal:block>
+      <li class="packages"><a href="+packages">Packages</a></li>
       <tal:block condition="context/isTeam">
         <!-- these are only for teams -->
-        <li class="people"><a href="+members">Members</a></li>
-        <li class="people"><a href="+teamhierarchy">Team Hierarchy</a></li>
+        <li class="people"><a href="+members">Show Members</a></li>
+        <li class="people"><a href="+teamhierarchy">Show Team Hierarchy</a></li>
         <li class="mail" tal:condition="context/required:launchpad.Edit">
             <a href="+editemail">Edit Contact Address</a>
         </li>
@@ -44,6 +41,9 @@
           </li>
         </tal:block>
       </tal:block>
+      <li class="edit" tal:condition="context/required:launchpad.Admin">
+        <a href="+review">Administer</a>
+      </li>
     </ul>
 
   </div>

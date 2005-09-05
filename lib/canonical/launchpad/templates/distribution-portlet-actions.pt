@@ -4,6 +4,12 @@
   <div class="portletBody portletContent">
 
     <ul>
+      <li class="info">
+        <a href="+cve">Show CVE Report</a>
+      </li>
+      <li class="info">
+        <a href="+specplan">Show Project Plan</a>
+      </li>
       <li class="edit">
         <a href="+edit">Edit Details</a>
       </li>
@@ -15,6 +21,18 @@
       </li>
       <li class="edit">
         <a href="+changetranslators">Change Translators</a>
+      </li>
+      <li class="edit">
+        <a href="+addmilestone">Add Milestone</a>
+      </li>
+      <li class="add">
+        <a href="+linkbounty">Link Existing Bounty</a>
+      </li>
+      <li class="add">
+        <a href="+addbounty">Register New Bounty</a>
+      </li>
+      <li class="add">
+        <a href="+addspec">Add Feature Specification</a>
       </li>
       <li class="search">
         <a href="+packages">Search Packages</a>

@@ -27,6 +27,8 @@ o add a web link related to this bug
 o add a reference to a bug on an external bugtracker to track the status of the
   same bug as reported on other bug trackers
 
+o add an attachment to this bug
+
 o mark the bug as a duplicate of another bug
 
 Each of these can happen more than once to a bug over the course of its
@@ -124,7 +126,9 @@ EVENT: source package assignment edited
 
   >>> from canonical.lp.dbschema import BugTaskStatus
   >>> from canonical.launchpad.interfaces import IBugTask
-  >>> edit_fields = IBugTask.names(all=True)
+  >>> edit_fields = [
+  ...     "distribution", "sourcepackagename", "binarypackagename", "milestone", "status",
+  ...     "priority", "severity", "assignee", "bugwatch", "statusexplanation"]
   >>> old_source_package_assignment = capture_state(
   ...     source_package_assignment, *edit_fields)
   >>> directlyProvides(old_source_package_assignment, IDistroBugTask)
@@ -153,7 +157,9 @@ EVENT: bug gets assigned to an upstream product
 
 EVENT: upstream product assignment edited
 
-  >>> edit_fields = IBugTask.names(all=True)
+  >>> edit_fields = [
+  ...     "product", "maintainer_displayname", "milestone", "status",
+  ...     "priority", "severity", "assignee", "bugwatch", "statusexplanation"]
   >>> old_product_assignment = capture_state(product_assignment, *edit_fields)
   >>> directlyProvides(old_product_assignment, IUpstreamBugTask)
   >>> product_assignment.status = BugTaskStatus.REJECTED
@@ -283,6 +289,34 @@ EVENT: edit a bug subscription
   u'CC'
   >>> latest_activity.newvalue
   u'Watch'
+
+EVENT: add an attachment to this bug
+
+First we have to create the file itself, and upload it to the Librarian:
+
+  >>> from StringIO import StringIO
+  >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+  >>> LibrarianTestSetup().setUp()
+  >>> filecontent = 'Some useful information.'
+  >>> filealias = getUtility(ILibraryFileAliasSet).create(
+  ...     name='foo.txt', size=len(filecontent),
+  ...     file=StringIO(filecontent), contentType='text/plain')
+
+  >>> from canonical.launchpad.database import BugSubscription
+  >>> from canonical.launchpad.interfaces import IBugAttachmentSet, IMessageSet
+  >>> message = getUtility(IMessageSet).fromText(
+  ...     subject="title", content="added an attachment")
+  >>> attachment = getUtility(IBugAttachmentSet).create(
+  ...     bug=bug, title="title", message=message, filealias=filealias) 
+  >>> notify(SQLObjectCreatedEvent(attachment))
+  >>> latest_activity = bug.activity[-1]
+  >>> latest_activity.whatchanged
+  u'bug'
+  >>> latest_activity.message
+  u"added attachment 'foo.txt' (title)"
+
+  >>> LibrarianTestSetup().tearDown()
 
 For the future?
 ===============

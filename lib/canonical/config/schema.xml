@@ -21,6 +21,14 @@
             required="yes" />
         <key name="errors_address" datatype="string" required="yes" />
         <key name="bugs_domain" datatype="string" required="yes" />
+        <key name="max_bug_attachment_size" datatype="integer" required="no"
+            default="0"
+            >
+          <description>
+            Maximum size of bug attachments in bytes. A value of 0 means
+            no limit.
+          </description>
+        </key>
         <key name="db_statement_timeout" datatype="integer" required="no" />
     </sectiontype>
 
@@ -85,13 +93,18 @@
                 should contain a pool and dists pair of trees.
             </description>
         </key>
-        <key name="pocket" datatype="string" default="plain">
+        <key name="pocket" datatype="string" default="release">
             <description>
-                The pocket where this import should go.
-                TODO: A description that makes sense to non-Gina developers.
+                The pocket where this import should go. A "pocket" is a
+                sub-archive for a distribution release. The default pocket
+                is called "release", others are "security", "updates" and
+                "proposed". There may be more. Packages can be published in
+                a specific pocket after the release is made, before that
+                they will always be published in the "release" pocket.
             </description>
             <metadefault>
-                TODO: A description about what the default of 'plain' means
+                The "release" pocket is where packages are published
+                before release.
             </metadefault>
             <example>updates</example>
         </key>
@@ -134,7 +147,7 @@
                 The database user wich will be used to make the
                 package imports.
             </description>
-	</key>
+        </key>
         <multisection name="+" type="gina_target"
             attribute="target" required="no" />
     </sectiontype>
@@ -146,8 +159,10 @@
         <key name="root" datatype="string" required="yes" />
         <key name="launch" datatype="boolean" required="no" default="no" />
         <key name="spew" datatype="boolean" required="no" default="no" />
-        <key name="upstream_url" datatype="canonical.config.urlbase"
+        <key name="upstream_host" datatype="ipaddr-or-hostname"
             required="no" />
+        <key name="upstream_port" datatype="port-number" required="no"
+            default="80" />
         <key name="logfile" datatype="string" required="no" default="-" />
     </sectiontype>
 
@@ -219,13 +234,6 @@
         the runtime build configuration file and keyring and an
         addresss, "host:port",  pointing a reliable keyserver.
         </description>
-        <key name="home" datatype="existing-dirpath" required="yes">
-            <description>
-                Current GNUPGHOME directory,  a configuration file will be
-                allocated there according our aims and the current keyring
-                will be stored there.
-            </description>
-        </key>
         <key name="host" datatype="ipaddr-or-hostname" required="yes">
             <description>
                 Host running PKS-like (SKS) keyserver Application.
@@ -250,7 +258,7 @@
             <description>
                 Directory to be created to store the pre-installed key-files
             </description>
-	</key>
+        </key>
     </sectiontype>
 
     <sectiontype name="statistician">
@@ -260,14 +268,14 @@
     <sectiontype name="dyson">
         <key name="dbuser" datatype="string" default="dyson" />
 
-	<!-- Not 'existing-directory' because dyson will create it -->
-	<key name="cache_path" datatype="string" required="yes">
-	    <description>
-	        Location on disk to store the visited URL cache, used to
-		avoid utterly killing remote sites each time and play
-		nice with the world.
-	    </description>
-	</key>
+       <!-- Not 'existing-directory' because dyson will create it -->
+       <key name="cache_path" datatype="string" required="yes">
+            <description>
+              Location on disk to store the visited URL cache, used to
+              avoid utterly killing remote sites each time and play
+              nice with the world.
+            </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="karmacacheupdater">
@@ -276,7 +284,7 @@
                 The database user wich will be used to update the karmacache
                 table.
             </description>
-	</key>
+        </key>
     </sectiontype>
 
     <sectiontype name="trebuchet_server">

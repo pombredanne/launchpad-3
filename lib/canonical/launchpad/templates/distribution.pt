@@ -8,12 +8,15 @@
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-bounties" />
+    <div tal:replace="structure context/@@+portlet-milestones" />
+    <div tal:replace="structure context/@@+portlet-latestspecs" />
 </metal:leftportlets>
 
 
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-actions" />
     <div tal:replace="structure context/@@+portlet-releases" />
+    <div tal:replace="structure context/@@+portlet-latest-bugs" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">

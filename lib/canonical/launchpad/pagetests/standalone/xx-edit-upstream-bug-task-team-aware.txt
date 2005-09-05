@@ -12,21 +12,15 @@ Sample Person may edit the bug task:
 
   >>> print http(r"""
   ... GET /products/firefox/+bugs/4/+edit HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-            <h2>...in Mozilla Firefox...</h2>
-  ...
+  ...in upstream firefox...
 
 Edit the target:
 
   >>> print http(r"""
   ... POST /products/firefox/+bugs/4/+edit HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1442
   ... Content-Type: multipart/form-data; boundary=---------------------------9725916581164147154144110168
@@ -63,10 +57,6 @@ Edit the target:
   ... Content-Disposition: form-data; name="field.severity-empty-marker"
   ...
   ... 1
-  ... -----------------------------9725916581164147154144110168
-  ... Content-Disposition: form-data; name="field.assignee"
-  ...
-  ...
   ... -----------------------------9725916581164147154144110168
   ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
   ...
@@ -123,6 +113,10 @@ Assign the task to the Ubuntu Team, of which Foo Bar is a member:
   ...
   ... 1
   ... -----------------------------9725916581164147154144110168
+  ... Content-Disposition: form-data; name="field.assignee.option"
+  ...
+  ... assign_to
+  ... -----------------------------9725916581164147154144110168
   ... Content-Disposition: form-data; name="field.assignee"
   ...
   ... support@ubuntu.com
@@ -147,9 +141,7 @@ Now Foo Bar may edit the bug, since he's part of the maintainer team:
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-            <h2>...in Mozilla Firefox...</h2>
-  ...
+  ...in upstream firefox...
 
 
   >>> print http(r"""
@@ -191,6 +183,10 @@ Now Foo Bar may edit the bug, since he's part of the maintainer team:
   ... Content-Disposition: form-data; name="field.severity-empty-marker"
   ...
   ... 1
+  ... -----------------------------19501511362039229377247635061
+  ... Content-Disposition: form-data; name="field.assignee.option"
+  ...
+  ... assign_to
   ... -----------------------------19501511362039229377247635061
   ... Content-Disposition: form-data; name="field.assignee"
   ...
@@ -250,9 +246,9 @@ Un-assign the bug task:
   ...
   ... 1
   ... -----------------------------9725916581164147154144110168
-  ... Content-Disposition: form-data; name="field.assignee"
+  ... Content-Disposition: form-data; name="field.assignee.option"
   ...
-  ...
+  ... assign_to_nobody
   ... -----------------------------9725916581164147154144110168
   ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
   ...

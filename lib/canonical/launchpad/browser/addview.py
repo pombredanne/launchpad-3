@@ -17,6 +17,14 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 class SQLObjectAddView(AddView):
     """An AddView for SQLObjects."""
 
+    def add(self, content):
+        """Add a SQLObject instance.
+
+        Since normally a SQLObject gets "added" when it's created,
+        simply return the content.
+        """
+        return content
+
     def createAndAdd(self, data):
         """Add the desired object using the data in the data argument.
 
@@ -45,11 +53,11 @@ class SQLObjectAddView(AddView):
                     kw[str(name)] = data[name]
 
         content = self.create(*args, **kw)
-        adapted = self.schema(content)
 
         errors = []
 
         if self._set_before_add:
+            adapted = self.schema(content)
             for name in self._set_before_add:
                 if name in data:
                     field = self.schema[name]
@@ -65,12 +73,11 @@ class SQLObjectAddView(AddView):
 
         content = self.add(content)
 
-        adapted = self.schema(content)
-
         if self._set_after_add:
             # XXX: Brad Bollenbach, 2005-04-01: What's with publishing
             # an ObjectModifiedEvent on an add? I don't understand this
             # code.
+            adapted = self.schema(content)
             for name in self._set_after_add:
                 if name in data:
                     field = self.schema[name]
