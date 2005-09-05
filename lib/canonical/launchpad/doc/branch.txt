@@ -17,9 +17,3 @@ Calling getPackageName() should yield the full string:
 
     >>> print branch.getPackageName()
     mozilla@arch.ubuntu.com/mozilla--release--0.8
-
-It should work for a branch without a complete namespace too:
-
-    >>> branch = Branch.get(1)
-    >>> print branch.getPackageName()
-    mozilla@arch.ubuntu.com/mozilla
