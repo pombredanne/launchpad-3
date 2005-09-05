@@ -567,11 +567,6 @@ input.searchButton {
 a, #portal-footer a {
   text-decoration: underline;
 }
-/* -- ... except in portlets for now -- */
-a[name], .portlet :link, .portlet :visited,
-.sidebar :link, .sidebar :visited {
-  text-decoration: none;
-}
 
 /* -- Don't stomp on people's preferred fonts (much): -- */
 
@@ -693,7 +688,7 @@ legend {
   background: none;
 }
 li {
-  margin-bottom: 0 !important;
+  margin-bottom: 0;
 }
 
 #portal-personaltools .portalUser {
@@ -704,8 +699,8 @@ li {
   background-color: #f7f9fa;
 }
 
-.portlet li a {
-  text-decoration: none
+.portlet li {
+  margin-bottom: 0.5em;
 }
 
 /* === New design === */
