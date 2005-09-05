@@ -90,6 +90,12 @@ class ContextBrowsername(SubstitutionHelper):
     def __call__(self, context, view):
         return self.text % context.browsername
 
+
+class LaunchbagBugID(SubstitutionHelper):
+    def __call__(self, context, view):
+        return self.text % getUtility(ILaunchBag).bug.id
+
+
 # Functions and strings used as the titles of pages.
 
 attachment_index = ContextTitle('Malone Bug Attachment: %s')
@@ -148,18 +154,27 @@ def bug_add(context, view):
     else:
         return "Report a bug"
 
-def bug_attachment_add(context, view):
-    return 'Bug #%d - Add an Attachment' % getUtility(ILaunchBag).bug.id
+bug_attachment_add = LaunchbagBugID('Bug #%d - Add an Attachment')
+
+def bug_attachment_edit(context, view):
+    return 'Bug #%d - Edit Attachment (%s)' % (
+        context.bug.id, context.title)
 
 bug_attachments = ContextId('Malone Bug Attachments for Bug #%s')
 
-def bug_cveref_add(context, view):
-    return "Bug #%d - Add CVE Reference" % getUtility(ILaunchBag).bug.id
+bug_cveref_add = LaunchbagBugID("Bug #%d - Add CVE Reference")
+
+def bug_cveref_edit(context, view):
+    return "Bug #%d - Edit CVE Reference (%s)" % (
+        context.bug.id, context.cveref)
 
 bug_edit = BugPageTitle()
 
-def bug_extref_add(context, view):
-    return "Bug #%d - Add External Web Link" % getUtility(ILaunchBag).bug.id
+bug_extref_add = LaunchbagBugID("Bug #%d - Add External Web Link")
+
+def bug_extref_edit(context, view):
+    return 'Bug #%d - Edit External Web Link (%s)' % (
+        context.bug.id, context.title)
 
 bug_index = BugPageTitle()
 
@@ -171,13 +186,13 @@ bug_secrecy = ContextId('Set secrecy for bug #%s')
 
 bug_secrecy = ContextId('Bug #%d - Set Bug Secrecy')
 
-def bug_subscriber_add(context, view):
-    return "Bug #%d - Add Subscriber" % getUtility(ILaunchBag).bug.id
+bug_subscriber_add = LaunchbagBugID("Bug #%d - Add Subscriber")
 
-def bug_watch_add(context, view):
-    return 'Bug #%d - Add an External Bug Watch' % getUtility(ILaunchBag).bug.id
+bug_watch_add = LaunchbagBugID('Bug #%d - Add an External Bug Watch')
 
-bugwatch_editform = ContextTitle('Edit the Watch on %s')
+def bugwatch_editform(context, view):
+    return 'Bug #%d - Edit an External Bug Watch (%s in %s)' % (
+        context.bug.id, context.remotebug, context.bugtracker.title)
 
 # bugpackageinfestations_index is a redirect
 
@@ -195,7 +210,9 @@ bugs_for_context = ContextTitle('Bugs in %s')
 
 bugs_index = 'Malone Master Bug List'
 
-bugsubscription_edit = 'Modify Your Bug Subscription'
+def bugsubscription_edit(context, view):
+    return "Bug #%d - Edit Subscription (%s)" % (
+        context.bug.id, context.person.browsername)
 
 bugtask_release_targeting = BugTaskTargetingTitle()
 
@@ -465,15 +482,13 @@ person_index = ContextDisplayName('%s: Launchpad Overview')
 
 person_karma = ContextDisplayName('Karma for %s')
 
-person_key = ContextDisplayName('%s GPG Key')
-
 person_packages = ContextDisplayName('Packages Maintained By %s')
 
 person_reportedbugs = ContextDisplayName('Bugs Reported By %s')
 
 person_review = ContextDisplayName("Review %s' Information")
 
-person_timezone = ContextDisplayName('Time Zone for %s')
+person_shipit = "Your ShipIt Orders"
 
 person_translations = ContextDisplayName('Translations Made By %s')
 
@@ -626,6 +641,10 @@ def productseries(context, view):
     return '%s Release Series: %s' % (
         context.product.displayname, context.displayname)
 
+shipitrequests_index = 'ShipIt Requests'
+
+shipitrequest_edit = 'Edit ShipIt Request'
+
 signedcodeofconduct_index = ContextDisplayName('%s')
 
 signedcodeofconduct_add = ContextTitle('Sign %s')
@@ -646,6 +665,8 @@ sourcepackage_buildlog = 'Source Package Build Log'
 sourcepackage_changelog = 'Source Package Changelog'
 
 sourcepackage_filebug = ContextTitle("Report a Bug in %s")
+
+sourcepackage_hctstatus = ContextTitle('Source Package HCT Status - %s')
 
 def sourcepackage_index(context, view):
     return '%s Source Packages' % context.distrorelease.title
@@ -718,6 +739,12 @@ specifications_index = ContextTitle('%s')
 specificationtarget_specs = ContextTitle('Specifications for %s')
 
 specificationtarget_specplan = ContextTitle('Project Plan for %s')
+
+standardshipitrequests_index = 'Standard ShipIt Requests'
+
+standardshipitrequest_new = 'Create a New Standard ShipIt Request'
+
+standardshipitrequest_edit = 'Edit Standard ShipIt Request'
 
 def team_addmember(context, view):
     return '%s: Add members' % context.team.browsername

@@ -68,6 +68,9 @@ __all__ = (
 'RosettaFileFormat',
 'RosettaImportStatus',
 'RosettaTranslationOrigin',
+'ShipItArchitecture',
+'ShipItDistroRelease',
+'ShipItFlavour',
 'SourcePackageFileType',
 'SourcePackageFormat',
 'SourcePackageRelationships',
@@ -2594,5 +2597,47 @@ class TranslationValidationStatus(DBSchema):
         Unknown Error
 
         This translation has an unknown error.
+        """)
+
+
+class ShipItFlavour(DBSchema):
+    """The Distro Flavour, used only to link with ShippingRequest."""
+
+    UBUNTU = Item(1, """
+        Ubuntu
+
+        The Ubuntu flavour.
+        """)
+
+
+class ShipItArchitecture(DBSchema):
+    """The Distro Architecture, used only to link with ShippingRequest."""
+
+    X86 = Item(1, """
+        Intel/X86
+
+        x86 processors.
+        """)
+
+    AMD64 = Item(2, """
+        AMD64
+
+        AMD64 or EM64T based processors.
+        """)
+
+    PPC = Item(3, """
+        PowerPC
+
+        PowerPC processors.
+        """)
+
+
+class ShipItDistroRelease(DBSchema):
+    """The Distro Release, used only to link with ShippingRequest."""
+
+    BREEZY = Item(1, """
+        Breezy Badger
+
+        The Breezy Badger release.
         """)
 

@@ -20,7 +20,8 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (ISourcePackageRelease,
     ISourcePackageReleaseSet)
 
-from canonical.launchpad.database.binarypackage import BinaryPackage
+from canonical.launchpad.database.binarypackagerelease import (
+     BinaryPackageRelease)
 
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import (
@@ -119,22 +120,22 @@ class SourcePackageRelease(SQLBase):
 
     @property
     def binaries(self):
-        clauseTables = ['SourcePackageRelease', 'BinaryPackage', 'Build']
+        clauseTables = ['SourcePackageRelease', 'BinaryPackageRelease', 'Build']
         query = ('SourcePackageRelease.id = Build.sourcepackagerelease'
-                 ' AND BinaryPackage.build = Build.id '
+                 ' AND BinaryPackageRelease.build = Build.id '
                  ' AND Build.sourcepackagerelease = %i' % self.id)
-        return BinaryPackage.select(query, clauseTables=clauseTables)
+        return BinaryPackageRelease.select(query, clauseTables=clauseTables)
 
     def architecturesReleased(self, distroRelease):
         # The import is here to avoid a circular import. See top of module.
         from canonical.launchpad.database.soyuz import DistroArchRelease
-        clauseTables = ['PackagePublishing', 'BinaryPackage', 'Build']
+        clauseTables = ['BinaryPackagePublishing', 'BinaryPackageRelease', 'Build']
 
         archReleases = sets.Set(DistroArchRelease.select(
-            'PackagePublishing.distroarchrelease = DistroArchRelease.id '
+            'BinaryPackagePublishing.distroarchrelease = DistroArchRelease.id '
             'AND DistroArchRelease.distrorelease = %d '
-            'AND PackagePublishing.binarypackage = BinaryPackage.id '
-            'AND BinaryPackage.build = Build.id '
+            'AND BinaryPackagePublishing.binarypackagerelease = BinaryPackageRelease.id '
+            'AND BinaryPackageRelease.build = Build.id '
             'AND Build.sourcepackagerelease = %d'
             % (distroRelease.id, self.id),
             clauseTables=clauseTables))

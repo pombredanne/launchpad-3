@@ -23,8 +23,9 @@ class BinaryPackageFile(SQLBase):
     implements(IBinaryPackageFile)
     _table = 'BinaryPackageFile'
 
-    binarypackage = ForeignKey(dbName='binarypackage',
-                               foreignKey='BinaryPackage', notNull=True)
+    binarypackagerelease = ForeignKey(dbName='binarypackagerelease',
+                                      foreignKey='BinaryPackageRelease',
+                                      notNull=True)
     libraryfile = ForeignKey(dbName='libraryfile',
                              foreignKey='LibraryFile', notNull=True)
     filetype = EnumCol(dbName='filetype',

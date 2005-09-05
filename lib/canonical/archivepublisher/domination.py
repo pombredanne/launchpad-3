@@ -11,8 +11,8 @@ from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.database.constants import UTC_NOW
 
-from canonical.launchpad.database import \
-     SourcePackagePublishing, PackagePublishing
+from canonical.launchpad.database import (
+     SourcePackagePublishing, BinaryPackagePublishing )
 
 from canonical.database.sqlbase import sqlvalues
 
@@ -181,10 +181,10 @@ class Dominator(object):
         
         sources = SourcePackagePublishing.selectBy(distroreleaseID=dr.id,
                                                    pocket=pocket)
-        binaries = PackagePublishing.select("""
-        packagepublishing.distroarchrelease = distroarchrelease.id AND
+        binaries = BinaryPackagePublishing.select("""
+        binarypackagepublishing.distroarchrelease = distroarchrelease.id AND
         distroarchrelease.distrorelease = %d AND
-        packagepublishing.pocket = %d""" % sqlvalues(dr.id, pocket),
+        binarypackagepublishing.pocket = %d""" % sqlvalues(dr.id, pocket),
                                             clauseTables=['DistroArchRelease'])
 
         self.debug("Performing domination across %s/%s" %

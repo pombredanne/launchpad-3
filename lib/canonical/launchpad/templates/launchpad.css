@@ -740,6 +740,7 @@ legend {
 }
 
 th {
+  font-weight: normal;
   text-align: right;
 }
 thead th {
@@ -832,6 +833,9 @@ ul.app>li.current {
   float: right;
   margin-left: 2%;
   width: 48%;
+}
+.lesser {
+  font-size: smaller;
 }
 
 .sidebar {

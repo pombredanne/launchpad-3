@@ -57,7 +57,7 @@
         </tr> 
 
         <tr tal:define="keysCount view/gpgkeysCount">
-          <th>GPG Keys:</th>
+          <th>GPG&nbsp;Keys:</th>
           <td>
             <tal:block condition="not: keysCount">
               <span tal:condition="python: view.user == context">

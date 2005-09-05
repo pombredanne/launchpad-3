@@ -27,7 +27,7 @@ from sqlobject.sqlbuilder import AND, IN
 from canonical.launchpad.database import (
     Builder, BuildQueue, Build, Distribution, DistroRelease,
     DistroArchRelease, SourcePackagePublishing, LibraryFileAlias,
-    BinaryPackage, BinaryPackageFile, BinaryPackageName,
+    BinaryPackageRelease, BinaryPackageFile, BinaryPackageName,
     SourcePackageReleaseFile
     )
 
@@ -241,7 +241,7 @@ class BuilderGroup:
 
         # XXX cprov 20050628
         # Try to use BinaryPackageSet utility for this job 
-        binpkgid = BinaryPackage(binarypackagename=binnameid,
+        binpkgid = BinaryPackageRelease(binarypackagename=binnameid,
                                  version=version,
                                  build=build,
                                  binpackageformat=BinaryPackageFormat.DEB,
@@ -268,7 +268,7 @@ class BuilderGroup:
                                  copyright=None,
                                  licence=None)
         
-        binfile = BinaryPackageFile(binarypackage=binpkgid,
+        binfile = BinaryPackageFile(binarypackagerelease=binpkgid,
                                     libraryfile=alias,
                                     filetype=BinaryPackageFileType.DEB)
         

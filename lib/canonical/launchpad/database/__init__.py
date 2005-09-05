@@ -42,7 +42,7 @@ from canonical.launchpad.database.sourcepackagename import *
 from canonical.launchpad.database.sourcepackageindistro import *
 from canonical.launchpad.database.sourcepackagerelease import *
 from canonical.launchpad.database.vsourcepackagereleasepublishing import *
-from canonical.launchpad.database.binarypackage import *
+from canonical.launchpad.database.binarypackagerelease import *
 from canonical.launchpad.database.binarypackagename import *
 from canonical.launchpad.database.publishedpackage import *
 from canonical.launchpad.database.distribution import *
@@ -78,6 +78,7 @@ from canonical.launchpad.database.logintoken import *
 from canonical.launchpad.database.codeofconduct import *
 from canonical.launchpad.database.component import *
 from canonical.launchpad.database.section import *
+from canonical.launchpad.database.shipit import *
 from canonical.launchpad.database.vpoexport import *
 from canonical.launchpad.database.karma import *
 from canonical.launchpad.database.poexportrequest import *

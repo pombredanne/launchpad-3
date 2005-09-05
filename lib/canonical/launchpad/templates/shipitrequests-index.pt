@@ -1,0 +1,106 @@
+<tal:do-this-first condition="view/processForm" />
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+<body>
+
+<div metal:fill-slot="body">
+
+  <h1>ShipIt Requests</h1>
+
+  <form name="search" action="." method="POST">
+  <table>
+    <tr>
+      <td align="right">
+        <label>Show:</label>
+      </td>
+      <td>
+        &nbsp;
+        <select name="statusfilter">
+          <option value="unapproved" 
+                  tal:attributes="selected python: view.selectedStatus == 'unapproved'">
+            Unapproved</option>
+          <option value="approved"
+                  tal:attributes="selected python: view.selectedStatus == 'approved'">
+            Approved</option>
+          <option value="all"
+                  tal:attributes="selected python: view.selectedStatus == 'all'">
+            All</option>
+        </select>
+      </td>
+
+      <td>
+        &nbsp;
+        requests for
+        &nbsp;
+        <select name="typefilter">
+          <option value="custom" 
+                  tal:attributes="selected python: view.selectedType == 'custom'">
+            Custom quantities</option>
+          <option value="standard"
+                  tal:attributes="selected python: view.selectedType == 'standard'">
+            All standard quantities</option>
+          <option tal:repeat="request view/standardShipItRequests"
+                  tal:attributes="value request/id;
+                                  selected python: view.selectedType == request.id">
+            <span tal:replace="request/description" /></option>
+        </select>
+      </td>
+      
+      <td>
+        &nbsp;
+        <input type="submit" value="Change" name="CHANGE" />
+      </td>
+    </tr>
+    <tr>
+      <td>&nbsp;</td>
+    </tr>
+  </table>
+  </form>
+
+  <br />
+  <tal:block condition="view/submitted">
+    <p tal:condition="not: view/results">
+      No results were found
+    </p>
+    <tal:block condition="view/results">
+      <div>Found <span tal:replace="view/results/count:len" /> results</div>
+
+      <table width="80%" class="listing sortable" id="results">
+        <thead>
+          <tr>
+            <th>Recipient</th>
+            <th>Date</th>
+            <th>Country</th>
+            <th style="text-align: right">Total CDs</th>
+            <th>status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="request view/results">
+            <td tal:content="request/recipient/displayname" />
+            <td tal:content="request/daterequested/fmt:date" />
+            <td tal:content="request/recipient/country/name" />
+            <td style="text-align: right" tal:content="request/totalCDs" />
+            <td>
+              <tal:block condition="not: request/cancelled">
+                <span tal:condition="request/approved">approved</span>
+                <span tal:condition="not: request/approved">
+                  waiting for approval
+                </span>
+              </tal:block>
+              <span tal:condition="request/cancelled">cancelled</span>
+            </td>
+            <td>[<a tal:attributes="href request/fmt:url">edit</a>]</td>
+          </tr>
+        </tbody>
+      </table>
+
+    </tal:block>
+  </tal:block>
+</div>
+
+</body>
+</html>

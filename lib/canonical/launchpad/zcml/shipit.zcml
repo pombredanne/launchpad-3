@@ -1,0 +1,140 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- ShippingRequest -->
+    <content class="canonical.launchpad.database.ShippingRequest">
+        <allow interface="canonical.launchpad.interfaces.IShippingRequest" />
+        <require 
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IShippingRequest" />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IShippingRequest"
+        name="+edit" />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IShippingRequest"
+        path_expression="string:${id}"
+        parent_utility="canonical.launchpad.interfaces.IShippingRequestSet" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IShippingRequest"
+        class="canonical.launchpad.browser.ShippingRequestAdminView"
+        permission="launchpad.Admin">
+        <browser:page
+            name="+edit"
+            template="../templates/shipitrequest-edit.pt"
+            lp:url="/shipitrequests/$request.id/+edit" />
+    </browser:pages>
+
+    <!-- ShippingRequestSet -->
+    <content class="canonical.launchpad.database.ShippingRequestSet">
+        <allow interface="canonical.launchpad.interfaces.IShippingRequestSet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.ShippingRequestSet"
+        provides="canonical.launchpad.interfaces.IShippingRequestSet">
+        <allow interface="canonical.launchpad.interfaces.IShippingRequestSet" />
+    </securedutility>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IShippingRequestSet"
+        name="+index" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IShippingRequestSet"
+        getter="get" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IShippingRequestSet"
+        class="canonical.launchpad.browser.ShippingRequestsView"
+        permission="launchpad.Admin">
+        <browser:page
+            name="+index"
+            template="../templates/shipitrequests-index.pt"
+            lp:url="shipitrequests/+index" />
+    </browser:pages>
+
+
+    <!-- StandardShipItRequest -->
+    <content class="canonical.launchpad.database.StandardShipItRequest">
+        <allow interface="canonical.launchpad.interfaces.IStandardShipItRequest" />
+        <require 
+            permission="launchpad.Admin"
+            set_schema="canonical.launchpad.interfaces.IStandardShipItRequest" />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IStandardShipItRequest"
+        name="+index" />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IStandardShipItRequest"
+        path_expression="string:${id}"
+        parent_utility="canonical.launchpad.interfaces.IStandardShipItRequestSet" />
+
+    <browser:editform
+        name="+index"
+        for="canonical.launchpad.interfaces.IStandardShipItRequest"
+        class="canonical.launchpad.browser.editview.SQLObjectEditView"
+        schema="canonical.launchpad.interfaces.IStandardShipItRequest"
+        fields="quantityx86 quantityamd64 quantityppc description isdefault"
+        label="Edit StandardShipItRequest Information"
+        permission="launchpad.Admin"
+        template="../templates/standardshipitrequest-edit.pt"
+        lp:url="standardshipitrequests/$request.id/+index">
+    </browser:editform>
+
+    <!-- StandardShipItRequestSet -->
+    <content class="canonical.launchpad.database.StandardShipItRequestSet">
+        <allow interface="canonical.launchpad.interfaces.IStandardShipItRequestSet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.StandardShipItRequestSet"
+        provides="canonical.launchpad.interfaces.IStandardShipItRequestSet">
+        <allow interface="canonical.launchpad.interfaces.IStandardShipItRequestSet" />
+    </securedutility>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
+        name="+index" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
+        getter="get" />
+
+    <browser:page
+        name="+index"
+        for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
+        permission="launchpad.Admin" 
+        template="../templates/standardshipitrequests-index.pt"
+        lp:url="standardshipitrequests/$request.id/+index" />
+
+    <browser:addform
+        name="+new"
+        for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
+        schema="canonical.launchpad.interfaces.IStandardShipItRequest"
+        class="canonical.launchpad.browser.StandardShipItRequestAddView"
+        fields="quantityx86 quantityamd64 quantityppc description isdefault"
+        label="Creat a New Standard ShipIt Request"
+        permission="launchpad.Admin"
+        template="../templates/standardshipitrequest-new.pt"
+        lp:url="standardshipitrequests/$request.id/+new" />
+
+
+    <!-- RequestedCDs -->
+    <content class="canonical.launchpad.database.RequestedCDs">
+        <allow interface="canonical.launchpad.interfaces.IRequestedCDs" />
+        <require 
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IRequestedCDs" />
+    </content>
+
+</configure>

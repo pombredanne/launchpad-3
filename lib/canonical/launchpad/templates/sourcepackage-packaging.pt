@@ -9,7 +9,7 @@
   <div class="portlet">
     <h4>About this page:</h4>
     <div class="portletBody portletContent">
-      
+
       <img src="/++resource++info_icon.gif" />
       This page allows you to modify the link between <span
       tal:replace="context/title">apache in ubuntu hoary</span> and an
@@ -31,10 +31,10 @@
 
   <h1>Package Upstream Link</h1>
 
-  <p class="documentDescription">Use this page to link 
-  <span tal:replace="context/displayname">evolution in ubuntu hoary</span>
+  <p class="documentDescription">Use this page to link
+  <span tal:replace="context/displayname">ubuntu hoary evolution</span>
   to its "upstream".</p>
-  
+
   <p class="portalMessage" tal:condition="not: context/productseries">
     Unable to determine the upstream product series for this package. Please
     add packaging information below!
@@ -44,7 +44,7 @@
      tal:content="view/status_message">
      Status Message Here
   </p>
-  
+
   <p>Once the link has been made, it is possible to share
   translations, patches and bugs much more efficiently between the
   distribution maintainers, and upstream maintainers.</p>
@@ -60,7 +60,7 @@
         class="fieldRequired"
         title="Required">(Required)</span>
 
-            
+
       <div tal:content="structure view/productseries_widget">
         <input type="text" style="width:100%"/>
       </div>
@@ -69,12 +69,12 @@
          tal:condition="view/productseries_widget/hint"
          tal:content="view/productseries_widget/hint">Some Help Text
       </p>
-            
+
       <div class="portalMessage"
            tal:define="error view/productseries_widget/error"
            tal:condition="error"
            tal:content="structure error">An Error Message</div>
-           
+
     </div>
 
     <div class="form actions">
@@ -88,6 +88,6 @@
 
   </form>
 
-</div> 
+</div>
 </body>
 </html>

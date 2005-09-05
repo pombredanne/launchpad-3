@@ -31,6 +31,7 @@ from canonical.config import config
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
+from canonical.launchpad.webapp import canonical_url
 
 from canonical.lp.dbschema import TeamMembershipStatus, LoginTokenType
 
@@ -148,20 +149,24 @@ class TeamAddView(AddView):
         return self._nextURL
 
     def createAndAdd(self, data):
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-
-        email = kw.pop('contactemail', None)
-        kw['teamownerID'] = getUtility(ILaunchBag).user.id
-        team = getUtility(IPersonSet).newTeam(**kw)
+        name = data.get('name')
+        displayname = data.get('displayname')
+        teamdescription = data.get('teamdescription')
+        defaultmembershipperiod = data.get('defaultmembershipperiod')
+        defaultrenewalperiod = data.get('defaultrenewalperiod')
+        subscriptionpolicy = data.get('subscriptionpolicy')
+        teamowner = getUtility(ILaunchBag).user
+        team = getUtility(IPersonSet).newTeam(
+            teamowner, name, displayname, teamdescription,
+            subscriptionpolicy, defaultmembershipperiod, defaultrenewalperiod)
         notify(ObjectCreatedEvent(team))
 
+        email = data.get('contactemail', None)
         if email is not None:
             appurl = self.request.getApplicationURL()
             sendEmailValidationRequest(team, email, appurl)
 
-        self._nextURL = '/people/%s' % team.name
+        self._nextURL = canonical_url(team)
         return team
 
 
@@ -286,31 +291,28 @@ class AddTeamMemberView(AddView):
             return '+add'
 
     def createAndAdd(self, data):
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-
         team = self.context.team
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
 
-        member = kw['newmember']
-        if member.id == team.id:
-            # Do not add this team as a member of itself, please.
+        newmember = data['newmember']
+        # If we get to this point with the member being the team itself,
+        # it means the ValidTeamMemberVocabulary is broken.
+        assert newmember != team, newmember
+
+        if newmember in team.activemembers:
+            self.alreadyMember = newmember
             return
 
         expires = team.defaultexpirationdate
-        if member.hasMembershipEntryFor(team):
-            membership = _getMembership(member.id, team.id)
-            if membership.status in (approved, admin):
-                self.alreadyMember = member
-            else:
-                team.setMembershipStatus(member, approved, expires,
-                                         reviewer=self.user)
-                self.addedMember = member
+        if newmember.hasMembershipEntryFor(team):
+            team.setMembershipStatus(newmember, approved, expires,
+                                     reviewer=self.user)
         else:
-            team.addMember(member, approved, reviewer=self.user)
-            self.addedMember = member
+            team.addMember(newmember, approved, reviewer=self.user)
+
+        self.addedMember = newmember
+
 
 class TeamMembershipEditView:
 

@@ -30,9 +30,12 @@ install:
 	dh_installdirs usr/bin etc usr/share/launchpad-buildd/slavebin \
 	  usr/share/launchpad-buildd/canonical/buildd \
 	  var/run/launchpad-buildd var/log/launchpad-buildd  \
-	  etc/launchpad-buildd
+	  etc/launchpad-buildd usr/share/launchpad-buildd/canonical/launchpad/daemons
 
 	# Do installs here
+	touch $(pytarget)/../launchpad/__init__.py
+	touch $(pytarget)/../launchpad/daemons/__init__.py
+	cp ../launchpad/daemons/tachandler.py $(pytarget)/../launchpad/daemons/
 	install -m644 $(daemons)/buildd-slave.tac $(targetshare)/buildd-slave.tac
 	for pyfile in $(pyfiles); do \
 	 install -m644 $(buildd)/$$pyfile $(pytarget)/$$pyfile; \

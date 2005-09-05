@@ -6,7 +6,7 @@
 
     <!-- Content class configuration -->
     <include file="archuserid.zcml" />
-    <include file="binarypackage.zcml" />
+    <include file="binarypackagerelease.zcml" />
     <include file="binarypackagename.zcml" />
     <include file="bountysubscription.zcml" />
     <include file="bounty.zcml" />
@@ -83,6 +83,7 @@
     <include file="specificationsubscription.zcml" />
     <include file="specificationtarget.zcml" />
     <include file="vsourcepackagereleasepublishing.zcml" />
+    <include file="shipit.zcml" />
     <include file="sshkey.zcml" />
     <include file="teammembership.zcml" />
     <include file="teamparticipation.zcml" />

@@ -66,6 +66,11 @@
     />
 
   <vocabulary
+      name="CountryName"
+      factory="canonical.launchpad.vocabularies.CountryNameVocabulary"
+      />
+
+  <vocabulary
     name="CVEState"
     factory="canonical.launchpad.vocabularies.CVEStateVocabulary"
     />
