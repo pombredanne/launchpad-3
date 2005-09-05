@@ -84,3 +84,16 @@ IBug.subscribe and IBug.unsubscribe:
     >>> subscriptions = [(s.person.id, s.subscription) for s in bug.subscriptions]
     >>> (16, BugSubscription.CC) in subscriptions
     True
+
+    >>> bug.unsubscribe(foobar)
+    >>> 'Foo Bar' in [subscription.person.displayname
+    ...               for subscription in bug.subscriptions]
+    False
+
+If we try to unsubscribe Foo Bar again a ValueError is raised, since
+he's not subscribed to the bug:
+
+    >>> bug.unsubscribe(foobar)
+    Traceback (most recent call last):
+    ...
+    ValueError: Person with name 'name16' is not subscribed to this bug

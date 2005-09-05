@@ -107,7 +107,13 @@ class Bug(SQLBase):
 
     def unsubscribe(self, person):
         """See canonical.launchpad.interfaces.IBug."""
-        pass
+        bug_subscription = BugSubscription.selectOneBy(
+            bugID=self.id, personID=person.id)
+        if not bug_subscription:
+            raise ValueError(
+                "Person with name '%s' is not subscribed to this bug" %
+                person.name)
+        bug_subscription.destroySelf()
 
     def isSubscribed(self, person):
         """See canonical.launchpad.interfaces.IBug."""
@@ -152,8 +158,9 @@ class Bug(SQLBase):
         return emails
 
     def linkMessage(self, message):
+        """See IBug."""
         if message not in self.messages:
-            BugMessage(bug=self, message=message)
+            return BugMessage(bug=self, message=message)
 
     def addWatch(self, bugtracker, remotebug, owner):
         """See IBug."""

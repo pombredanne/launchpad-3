@@ -130,8 +130,12 @@ class IBug(Interface):
         """
 
     def linkMessage(message):
-        """Note that the given message is associated with this bug. That
-        means the message will show up in the list of comments for the bug.
+        """Note that the given message is associated with this bug.
+
+        That means the message will show up in the list of comments for
+        the bug.
+
+        Return the created IBugMessage.
         """
 
     def addWatch(bugtracker, remotebug, owner):
