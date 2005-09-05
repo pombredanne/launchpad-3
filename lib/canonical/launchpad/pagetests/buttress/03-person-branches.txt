@@ -1,0 +1,27 @@
+  Test that we can display the branches listing page for Steve Alexander.
+
+
+  >>> print http(r"""
+  ... GET /people/stevea/+branches HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+  <title>Steve Alexander's code branches in Launchpad</title>
+  ...
+  <h1>Bazaar Branches</h1>
+  ...
+  <img src="/++resource++lock_icon.gif" />
+  <b>Mozilla Thunderbird 0.9.1</b>
+  - <img src="/++resource++user.gif" />
+  <a href="http://localhost:9000/people/stevea">Steve Alexander</a><br />
+  Bazaar import of the Mozilla Thunderbird CVS mainline.
+  <BLANKLINE>
+  <span class="dummy">
+  ...
+  </span>
+  <BLANKLINE>
+  <hr />
+  ...
