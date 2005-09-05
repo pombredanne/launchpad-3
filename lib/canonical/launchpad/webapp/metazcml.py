@@ -9,6 +9,7 @@ from zope.interface import Interface, Attribute, implements
 from zope.interface.interfaces import IInterface
 from zope.component import queryView, queryMultiView, getDefaultViewName
 from zope.component import getUtility
+import zope.component.servicenames
 from zope.component.interfaces import IDefaultViewName
 from zope.schema import TextLine, Id
 from zope.configuration.fields import (
@@ -29,6 +30,8 @@ from zope.app.pagetemplate.engine import Engine
 from zope.app.component.fields import LayerField
 from zope.app.file.image import Image
 import zope.app.publisher.browser.metadirectives
+import zope.app.form.browser.metaconfigure
+import zope.app.form.browser.metadirectives
 from zope.app.publisher.browser.viewmeta import (
     pages as original_pages,
     page as original_page)
@@ -613,91 +616,26 @@ def favicon(_context, for_, file):
     original_page(_context, name, permission, for_, class_=Favicon)
 
 
-class HackableContext:
-    """A zcml directive context that we can pass into a directive, and then
-    alter its state before actually getting it processed.
-    """
-
-    def __init__(self, original_context, action_processor):
-        self.original_context = original_context
-        self.action_processor = action_processor
-        self.info = original_context.info
-
-    def action(self, discriminator, callable, args):
-        action_processor = self.action_processor
-        action_processor.setstate(discriminator, callable, args)
-        action_processor()
-        self.original_context.action(
-            action_processor.discriminator,
-            action_processor.callable,
-            action_processor.args)
-
-
-class ActionProcessor:
-    """An object that is used by a HackableContext and an overridden zcml
-    directive to allow the output actions to be mutated.
-
-    The HackableContext uses setstate(discriminator, callable, args) to
-    set the action state, then __call__ is used to mutate the state.
-    The HackableContext gets the discriminator, callable and args attributes
-    to use for the output action.
-    """
-
-    def setstate(self, discriminator, callable, args):
-        self.discriminator = discriminator
-        self.callable = callable
-        self.args = args
-
-    def __call__(self):
-        # Override this in subclasses
-        pass
-
-
 # The original defaultView directive is defined in the browser publisher code.
 # In it, the `layer` is hard-coded rather than available as an argument.
 # See zope/app/publisher/browser/metaconfigure.py.
 # `layer` here is called `type` there, but is not available as an argument.
-class DefaultViewProcessor(ActionProcessor):
-    """ActionProcessor class to carefully alter the output of the zcml
-    parser to deal with default views.
-    """
-    # XXX: put this back to the cut-and-pasted code if I end up not using
-    #      ActionProcessor for anything else.  The cut-and-pasted code was
-    #      simpler.
-
-    def __init__(self, layer):
-        self.layer = layer
-
-    def __call__(self):
-        if self.discriminator and self.discriminator[0] == 'defaultViewName':
-            # Hack the discriminator.
-            directivename, for_, layer, name = self.discriminator
-            assert layer is IBrowserRequest
-            layer = self.layer
-            self.discriminator = (directivename, for_, layer, name)
-            # Hack the args.
-            argiterator = iter(self.args)
-            adapters_service = argiterator.next()
-            register_string = argiterator.next()
-            assert register_string == 'register'
-            (for_, layer) = argiterator.next()
-            assert layer is IBrowserRequest
-            layer = self.layer
-            idefaultviewname = argiterator.next()
-            assert idefaultviewname is IDefaultViewName
-            emptystring = argiterator.next()
-            assert emptystring == ''
-            name = argiterator.next()
-            info = argiterator.next()
-            extraitems = [item for item in argiterator]
-            assert not extraitems, (
-                "Extra args found in defaultViewName directive.", extraitems)
-            self.args = (adapters_service, register_string,
-                (for_, layer), idefaultviewname, emptystring, name, info)
 
 def defaultView(_context, name, for_=None, layer=IDefaultBrowserLayer):
-    hackable_context = HackableContext(_context, DefaultViewProcessor(layer))
-    original_defaultView(hackable_context, name, for_=for_)
+    type = layer
+    _context.action(
+        discriminator = ('defaultViewName', for_, type, name),
+        callable = handler,
+        args = (zope.component.servicenames.Adapters, 'register',
+                (for_, type), IDefaultViewName, '', name, _context.info)
+        )
+
+    if for_ is not None:
+        _context.action(
+            discriminator = None,
+            callable = provideInterface,
+            args = ('', for_)
+            )
 
 
 class IAssociatedWithAFacet(Interface):
@@ -746,13 +684,80 @@ class IPagesPageSubdirective(
     zope.app.publisher.browser.metadirectives.IPagesPageSubdirective,
     IAssociatedWithAFacet):
     """Extended complex browser:pages directive to have an extra 'facet'
-    attribute."""
+    attribute on the inner <browser:page> element."""
+
+
+class IPagesDirective(
+    zope.app.publisher.browser.metadirectives.IPagesDirective,
+    IAssociatedWithAFacet):
+    """Extend the complex browser:pages directive to have an extra 'facet'
+    attribute on the outer <browser:pages> element."""
 
 
 class pages(original_pages):
 
+    def __init__(self, _context, for_, permission,
+        layer=IBrowserRequest, class_=None,
+        allowed_interface=None, allowed_attributes=None,
+        facet=None):
+        original_pages.__init__(self, _context, for_, permission,
+            layer=layer, class_=class_,
+            allowed_interface=allowed_interface,
+            allowed_attributes=allowed_attributes)
+        self.facet = facet
+
     def page(self, _context, name, attribute='__call__', template=None,
              menu=None, title=None, facet=None):
+        if facet is None and self.facet is not None:
+            facet = self.facet
         page(_context, name=name, attribute=attribute, template=template,
              menu=menu, title=title, facet=facet, **(self.opts))
+
+
+class IEditFormDirective(
+    zope.app.form.browser.metadirectives.IEditFormDirective,
+    IAssociatedWithAFacet):
+    """Edit form browser:editform directive, extended to have an extra
+    'facet' attribute."""
+
+
+class EditFormDirective(
+    zope.app.form.browser.metaconfigure.EditFormDirective):
+
+    # This makes 'facet' a valid attribute for the directive.
+    facet = None
+
+    def __call__(self):
+        # self.bases will be a tuple of base classes for this view.
+        # So, insert a new base-class containing the facet name attribute.
+        if self.facet is not None:
+            cdict = {'__launchpad_facetname__': self.facet}
+            new_class = type('SimpleLaunchpadViewClass', (), cdict)
+            self.bases += (new_class, )
+
+        zope.app.form.browser.metaconfigure.EditFormDirective.__call__(self)
+
+
+class IAddFormDirective(
+    zope.app.form.browser.metadirectives.IAddFormDirective,
+    IAssociatedWithAFacet):
+    """Edit form browser:addform directive, extended to have an extra
+    'facet' attribute."""
+
+
+class AddFormDirective(
+    zope.app.form.browser.metaconfigure.AddFormDirective):
+
+    # This makes 'facet' a valid attribute for the directive.
+    facet = None
+
+    def __call__(self):
+        # self.bases will be a tuple of base classes for this view.
+        # So, insert a new base-class containing the facet name attribute.
+        if self.facet is not None:
+            cdict = {'__launchpad_facetname__': self.facet}
+            new_class = type('SimpleLaunchpadViewClass', (), cdict)
+            self.bases += (new_class, )
+
+        zope.app.form.browser.metaconfigure.AddFormDirective.__call__(self)
 

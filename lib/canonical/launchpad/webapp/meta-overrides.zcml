@@ -22,12 +22,34 @@
 
     <meta:complexDirective
         name="pages"
-        schema="zope.app.publisher.browser.metadirectives.IPagesDirective"
+        schema="canonical.launchpad.webapp.metazcml.IPagesDirective"
         handler="canonical.launchpad.webapp.metazcml.pages"
         >
       <meta:subdirective
           name="page"
           schema="canonical.launchpad.webapp.metazcml.IPagesPageSubdirective"
+          />
+    </meta:complexDirective>
+
+    <meta:complexDirective
+        name="editform"
+        schema="canonical.launchpad.webapp.metazcml.IEditFormDirective"
+        handler="canonical.launchpad.webapp.metazcml.EditFormDirective"
+        >
+      <meta:subdirective
+          name="widget"
+          schema="zope.app.form.browser.metadirectives.IWidgetSubdirective"
+          />
+    </meta:complexDirective>
+
+    <meta:complexDirective
+        name="addform"
+        schema="canonical.launchpad.webapp.metazcml.IAddFormDirective"
+        handler="canonical.launchpad.webapp.metazcml.AddFormDirective"
+        >
+      <meta:subdirective
+          name="widget"
+          schema="zope.app.form.browser.metadirectives.IWidgetSubdirective"
           />
     </meta:complexDirective>
 
