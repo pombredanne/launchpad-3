@@ -629,6 +629,8 @@ rosetta_index = 'Rosetta'
 
 rosetta_preferences = 'Rosetta: Preferences'
 
+product_branches = ContextDisplayName('Branches for %s')
+
 def productseries_edit(context, view):
     return 'Edit %s %s Details' % (context.product.displayname, context.name)
 
