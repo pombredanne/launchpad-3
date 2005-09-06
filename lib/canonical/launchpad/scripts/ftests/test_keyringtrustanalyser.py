@@ -5,7 +5,7 @@ from canonical.functional import FunctionalTestCase
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.ftests import keys_for_tests 
 from canonical.launchpad.interfaces import IGPGHandler
-from canonical.launchpad.scripts.keyring_trust_analyser import *
+from canonical.launchpad.scripts.keyringtrustanalyser import *
 from zope.component import getUtility
 from pyme.constants import validity
 
