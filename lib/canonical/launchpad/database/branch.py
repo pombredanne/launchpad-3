@@ -64,6 +64,12 @@ class Branch(SQLBase):
     # landing -- David Allouche 2005-09-05
     changesets = MultipleJoin('Revision', joinColumn='branch')
 
+    @property
+    def product_name(self):
+        if self.product is None:
+            return '+junk'
+        return self.product.name
+
     def revision_count(self):
         return Revision.selectBy(branchID=self.id).count()
 

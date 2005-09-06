@@ -1,5 +1,5 @@
 <img src="/++resource++lock_icon.gif" />
-<b tal:content="context/title"></b>
+<b><a tal:attributes="href context/fmt:url" tal:content="context/title">Mozilla Thunderbird 0.9.1</a></b>
 - <img src="/++resource++user.gif" />
   <a tal:attributes="href context/owner/fmt:url"
      tal:content="context/owner/displayname"

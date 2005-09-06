@@ -58,6 +58,7 @@ class IBranch(IHasOwner):
     product = Choice(
         title=_('Product'), required=True, vocabulary='Product',
         description=_("The product to which this branch belongs."))
+    product_name = Attribute("The name of the product, or '+junk'.")
     branch_product_name = Attribute(
         "The product name specified within the branch.")
     product_locked = Bool(
