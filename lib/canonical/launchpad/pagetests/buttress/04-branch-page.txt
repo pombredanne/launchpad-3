@@ -14,6 +14,21 @@
   <h1>&#8220;Mozilla Thunderbird 0.9.1&#8221; branch</h1>
   <BLANKLINE>
   <div class="documentDescription">Bazaar import of the Mozilla Thunderbird CVS mainline.</div>
+  <BLANKLINE>
+  <hr />
+  <ol>
+  <BLANKLINE>
+      <li>thunderbird initial revision</li>
+  <BLANKLINE>
+  <BLANKLINE>
+      <li>add a memory leak</li>
+  <BLANKLINE>
+  <BLANKLINE>
+      <li>write mail</li>
+  <BLANKLINE>    
+  </ol>
+  <BLANKLINE>
+  </div>
   ...
 
 
@@ -59,35 +74,4 @@
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
-  ...
-
-
-
-  Test that we get a correct revision list
-
-
-  >>> print http(r"""
-  ... GET /people/sabdfl/+branch/firefox/mozilla@arch.ubuntu.com_mozilla--MAIN--0 HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-  <h1>&#8220;Mozilla Firefox 0.9.1&#8221; branch</h1>
-  <BLANKLINE>
-  <div class="documentDescription">text</div>
-  <BLANKLINE>
-  <hr />
-  <ol>
-  <BLANKLINE>
-      <li>mozilla initial revision</li>
-  <BLANKLINE>
-  <BLANKLINE>    
-      <li>add a memory leak</li>
-  <BLANKLINE>
-  <BLANKLINE>        
-      <li>support broken html</li>
-  <BLANKLINE>
-  </ol>
   ...
