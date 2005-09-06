@@ -50,8 +50,7 @@ class IBranch(IHasOwner):
 
     # People attributes
     owner = Choice(
-        title=_('Owner'), required=True, readonly=True,
-        vocabulary='ValidPersonOrTeam')
+        title=_('Owner'), required=True, vocabulary='ValidPersonOrTeam')
     registrant = Choice(
         title=_('Registrant'), required=False, vocabulary='ValidPersonOrTeam')
 
