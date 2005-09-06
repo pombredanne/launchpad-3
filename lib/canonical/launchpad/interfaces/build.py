@@ -33,6 +33,9 @@ class IBuild(Interface):
     section = Attribute("The BinaryPackage Section")
     sourcepackagerelease = Attribute("SourcePackageRelease reference")
 
+    def destroySelf():
+        """Delete this entry from the database."""
+
 class IBuilder(Interface):
     processor = Attribute("The Builder Processor")
     url = Attribute("The URL to the builder")

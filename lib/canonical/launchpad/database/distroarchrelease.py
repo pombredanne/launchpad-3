@@ -15,6 +15,11 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
 
+__all__ = [
+    'DistroArchRelease',
+    'PocketChroot',
+    ]
+
 
 class DistroArchRelease(SQLBase):
 
@@ -97,8 +102,11 @@ class PocketChroot(SQLBase):
     distroarchrelease = ForeignKey(dbName='distroarchrelease',
                                    foreignKey='DistroArchRelease',
                                    notNull=True)
+
     pocket = dbschema.EnumCol(dbName='pocket',
-                              schema=dbschema.PackagePublishingPocket)
+                              schema=dbschema.PackagePublishingPocket,
+                              default=dbschema.PackagePublishingPocket.RELEASE,
+                              notNull=True)
 
     chroot = ForeignKey(dbName='chroot',
                         foreignKey='LibraryFileAlias')

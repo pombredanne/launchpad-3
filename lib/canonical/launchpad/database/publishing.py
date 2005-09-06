@@ -214,7 +214,9 @@ class SecureSourcePackagePublishingHistory(SQLBase):
                               dbName='supersededby', default=None)
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)
-    pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
+    pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket,
+                     default=PackagePublishingPocket.RELEASE,
+                     notNull=True)
     embargo = BoolCol(dbName='embargo', default=False)
     embargolifted = UtcDateTimeCol(default=None)
 
