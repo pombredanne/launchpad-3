@@ -9,6 +9,9 @@ First, let's bring in a small helper function:
 
    >>> from canonical.launchpad.ftests import test_tales
 
+
+== The count: namespace to get numbers ==
+
 count:len gives you a number which is len(thing).
 
    >>> test_tales('foo/count:len', foo=[])
@@ -19,6 +22,9 @@ count:len gives you a number which is len(thing).
    Traceback (most recent call last):
    ...
    TypeError: len() of unsized object
+
+
+== The fmt: namespace to get strings ==
 
 To display the icon for a milestone, use fmt:icon:
 
@@ -37,13 +43,6 @@ datetimes can be formatted with fmt:date, fmt:time and fmt:datetime.
    '16:22:00'
    >>> test_tales('dt/fmt:datetime', dt=dt)
    '2005-04-01 16:22:00'
-
-Test the 'lp:' namespace for presenting DBSchema classes.
-
-    >>> from canonical.lp.dbschema import BinaryPackageFormat
-    >>> deb = BinaryPackageFormat.DEB.value
-    >>> test_tales('deb/lp:BinaryPackageFormat', deb=deb)
-    'Ubuntu Package'
 
 To truncate a long string, use fmt:shorten:
 
@@ -65,6 +64,7 @@ To "<pre>" format a string, use fmt:nice_pre:
     ... ))
     ['<pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;word-',
      'wrap: break-word;">hello &amp; goodbye</pre>']
+
 
 == Test the 'fmt:' namespace where the context is a dict. ==
 
@@ -121,6 +121,8 @@ Make a mock-up IBrowserRequest, and use this as the interaction.
     'https://mandrill.example.org:23/bonobo/saki'
 
 
+== The some_string/fmt:something helper ==
+
 Test the 'fmt:' namespace where the context is None. In general, these
 will return an empty string.  They are provided for ease of handling
 NULL values from the database, which become None values for attributes
@@ -159,6 +161,22 @@ do with 'None/fmt:foo'.
     >>> test_tales('foo/fmt:icon', foo=None)
     ''
 
+== The lp: namespace for presenting DBSchema items ==
+
+This is deprecated, and should raise a deprecation warning in the future,
+and eventually be removed.  It is no longer needed, now that we have
+an EnumCol for sqlobject.
+
+Test the 'lp:' namespace for presenting DBSchema items.
+
+    >>> from canonical.lp.dbschema import BinaryPackageFormat
+    >>> deb = BinaryPackageFormat.DEB.value
+    >>> test_tales('deb/lp:BinaryPackageFormat', deb=deb)
+    'Ubuntu Package'
+
+
+== The someobject/required:some.Permission helper ==
+
 Test the 'required:' namespace.  We're already logged in as the anonymous user,
 and anonymous users can't edit any person:
 
@@ -179,4 +197,32 @@ Queries about permissions that don't exist will raise an exception:
     ...
     ValueError: ('Undefined permission id', 'mushroom.Badger')
 
+
+== The somevalue/enumvalue:ENUMVALUE helper ==
+
+You can test whether a particular value that you have in your page template
+matches a particular valid value for that DBSchema enum.
+
+This was going to be called 'enum-value', but Zope doesn't allow this.
+To be fixed upstream.
+
+    >>> from canonical.lp.dbschema import BinaryPackageFormat
+    >>> deb = BinaryPackageFormat.DEB
+    >>> udeb = BinaryPackageFormat.UDEB
+    >>> test_tales('deb/enumvalue:DEB', deb=deb)
+    True
+    >>> test_tales('deb/enumvalue:DEB', deb=udeb)
+    False
+
+We don't get a ValueError when we use a value that doesn't appear in the
+DBSchema the item comes from.
+
+    >>> test_tales('deb/enumvalue:CHEESEFISH', deb=udeb)
+    Traceback (most recent call last):
+    ...
+    TraversalError: 'The BinaryPackageFormat dbschema does not have a value CHEESEFISH.'
+
+It is possible for dbschemas to have a 'None' value.  This is a bit awkward,
+because when the value is None, we can't do any checking whether a new value
+is from the correct schema.  In any case, this case is not currently handled.
 

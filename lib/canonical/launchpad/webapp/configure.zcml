@@ -52,11 +52,20 @@
 
     <!-- TALES namespaces. -->
 
+    <!-- TALES lp: namespace (should be deprecated) -->
     <adapter
         for="zope.publisher.interfaces.IApplicationRequest"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.RequestAPI"
         name="lp"
+        />
+
+    <!-- TALES enum-value: namespace -->
+    <adapter
+        for="canonical.lp.dbschema.Item"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.EnumValueAPI"
+        name="enumvalue"
         />
 
     <!-- TALES menu: namespace -->

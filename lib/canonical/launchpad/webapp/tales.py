@@ -124,6 +124,35 @@ class CountAPI:
         return len(self._context)
 
 
+class EnumValueAPI:
+    """Namespace to test whether a DBSchema Item has a particular value.
+
+    The value is given in the next path step.
+
+        tal:condition="somevalue/enumvalue:BISCUITS"
+
+    Registered for canonical.lp.dbschema.Item.
+    """
+    implements(ITraversable)
+
+    def __init__(self, item):
+        self.item = item
+
+    def traverse(self, name, furtherPath):
+        if self.item.name == name:
+            return True
+        else:
+            # Check whether this was an allowed value for this dbschema.
+            schema = self.item.schema
+            try:
+                schema.items[name]
+            except KeyError:
+                raise TraversalError(
+                    'The %s dbschema does not have a value %s.' %
+                    (schema.__name__, name))
+            return False
+
+
 class HTMLFormAPI:
     """HTML form helper API, available as request/htmlform:.
 

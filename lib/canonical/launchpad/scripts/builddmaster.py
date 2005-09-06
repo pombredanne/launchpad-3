@@ -27,7 +27,7 @@ from sqlobject.sqlbuilder import AND, IN
 from canonical.launchpad.database import (
     Builder, BuildQueue, Build, Distribution, DistroRelease,
     DistroArchRelease, SourcePackagePublishing, LibraryFileAlias,
-    BinaryPackage, BinaryPackageFile, BinaryPackageName,
+    BinaryPackageRelease, BinaryPackageFile, BinaryPackageName,
     SourcePackageReleaseFile
     )
 
@@ -35,6 +35,8 @@ from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPocket, 
     BinaryPackageFormat, BinaryPackageFileType
     )
+
+from canonical import encoding
 
 from canonical.lp.dbschema import BuildStatus as DBBuildStatus
 
@@ -241,7 +243,7 @@ class BuilderGroup:
 
         # XXX cprov 20050628
         # Try to use BinaryPackageSet utility for this job 
-        binpkgid = BinaryPackage(binarypackagename=binnameid,
+        binpkgid = BinaryPackageRelease(binarypackagename=binnameid,
                                  version=version,
                                  build=build,
                                  binpackageformat=BinaryPackageFormat.DEB,
@@ -268,7 +270,7 @@ class BuilderGroup:
                                  copyright=None,
                                  licence=None)
         
-        binfile = BinaryPackageFile(binarypackage=binpkgid,
+        binfile = BinaryPackageFile(binarypackagerelease=binpkgid,
                                     libraryfile=alias,
                                     filetype=BinaryPackageFileType.DEB)
         
@@ -343,7 +345,12 @@ class BuilderGroup:
                              logtail):
         """Build still building, Simple collects the logtail"""
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
-        queueItem.logtail = logtail
+        # XXX cprov 20050902:
+        # guess() can fail if it receives an incomplete multibyte sequence,
+        # which could be possible since we are spliting the string in the
+        # slave side. Is it possible to ensure we are spliting it properly,
+        # whatever is the original charset ?
+        queueItem.logtail = encoding.guess(logtail)
 
     def updateBuild_ABORTED(self, queueItem, slave, librarian, buildid):
         """Build was ABORTED, 'clean' the builder for another jobs. """

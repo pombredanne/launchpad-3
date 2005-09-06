@@ -1205,3 +1205,12 @@ def normalize_whitespaces(template, text):
         new_text = text
 
     return new_text
+
+
+def intOrZero(value):
+    """Return int(value) or 0 if the conversion fails."""
+    try:
+        return int(value)
+    except ValueError:
+        return 0
+

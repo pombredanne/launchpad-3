@@ -24,7 +24,7 @@
 
     <div metal:fill-slot="extra_info" class="documentDescription">
       An attachment can provide valuable information about the bug. It
-      can also provide a direct solution to a bug, for example a patch
+      can also provide a direct solution to a bug - for example a patch
       that fixes the bug.
       <br /><br />
     </div>

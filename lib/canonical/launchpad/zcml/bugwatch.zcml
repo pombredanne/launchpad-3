@@ -20,7 +20,7 @@
         name="+new"
         schema="canonical.launchpad.interfaces.IBugWatch"
         for="canonical.launchpad.interfaces.IBugWatchSet"
-        class="canonical.launchpad.browser.bugwatch.BugWatchAddView"
+        class="canonical.launchpad.browser.BugRelatedObjectAddView"
         label="Add Watch"
         fields="bugtracker remotebug"
         content_factory="canonical.launchpad.database.BugWatchFactory"
@@ -33,7 +33,7 @@
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IBugWatch"
-        class="canonical.launchpad.browser.editview.SQLObjectEditView"
+        class="canonical.launchpad.browser.BugRelatedObjectEditView"
         label="Change Bug Watch"
         permission="launchpad.AnyPerson"
         template="../templates/bugwatch-editform.pt"

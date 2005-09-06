@@ -1,0 +1,11 @@
+<configure xmlns="http://namespaces.zope.org/zope" >
+    <!-- Override the standard IWidgetInputErrorView implementation
+    with our more intelligent version -->
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="zope.app.form.interfaces.IWidgetInputError"
+        provides="zope.app.form.browser.interfaces.IWidgetInputErrorView"
+        factory="canonical.launchpad.validators.WidgetInputErrorView"
+        permission="zope.Public"
+        />
+</configure>

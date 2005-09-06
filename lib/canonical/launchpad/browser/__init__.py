@@ -12,13 +12,10 @@ from canonical.launchpad.browser.bounty import *
 from canonical.launchpad.browser.bugattachment import *
 from canonical.launchpad.browser.bugextref import *
 from canonical.launchpad.browser.bug import *
-from canonical.launchpad.browser.bugsubscription import *
 from canonical.launchpad.browser.bugtask import *
 from canonical.launchpad.browser.bugtracker import *
-from canonical.launchpad.browser.bugwatch import *
 from canonical.launchpad.browser.cal import *
 from canonical.launchpad.browser.codeofconduct import *
-from canonical.launchpad.browser.cveref import *
 from canonical.launchpad.browser.distribution import *
 from canonical.launchpad.browser.distroarchrelease import *
 from canonical.launchpad.browser.distrorelease import *
@@ -42,6 +39,7 @@ from canonical.launchpad.browser.productseries import *
 from canonical.launchpad.browser.project import *
 from canonical.launchpad.browser.publishedpackage import *
 from canonical.launchpad.browser.rosetta import *
+from canonical.launchpad.browser.shipit import *
 from canonical.launchpad.browser.sourcepackage import *
 from canonical.launchpad.browser.sourcepackagename import *
 from canonical.launchpad.browser.specification import *

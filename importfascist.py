@@ -119,7 +119,8 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
     module = original_import(name, globals, locals, fromlist)
     # Python's re module imports some odd stuff every time certain regexes
     # are used.  Let's optimize this.
-    if name == 'sre':
+    # Also, 'dedent' is not in textwrap.__all__.
+    if name == 'sre' or name == 'textwrap':
         return module
 
     global naughty_imports

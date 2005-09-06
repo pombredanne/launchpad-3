@@ -37,6 +37,11 @@ ALL_FTI = [
             ('statusexplanation', C),
             ]),
 
+    ('binarypackagerelease', [
+            ('summary', C),
+            ('description', D),
+            ]),
+
     ('message', [
             ('subject', B),
             ]),

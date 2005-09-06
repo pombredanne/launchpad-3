@@ -567,15 +567,11 @@ input.searchButton {
 a, #portal-footer a {
   text-decoration: underline;
 }
-/* -- ... except in portlets for now -- */
-a[name], .portlet :link, .portlet :visited,
-.sidebar :link, .sidebar :visited {
-  text-decoration: none;
-}
 
-/* -- Don't stomp on people's preferred font sizes: -- */
+/* -- Don't stomp on people's preferred fonts (much): -- */
 
 body {
+  font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
   font-size: 100%;
 }
 code {
@@ -692,7 +688,7 @@ legend {
   background: none;
 }
 li {
-  margin-bottom: 0 !important;
+  margin-bottom: 0;
 }
 
 #portal-personaltools .portalUser {
@@ -703,8 +699,8 @@ li {
   background-color: #f7f9fa;
 }
 
-.portlet li a {
-  text-decoration: none
+.portlet li {
+  margin-bottom: 0.5em;
 }
 
 /* === New design === */
@@ -724,7 +720,6 @@ kbd {
 }
 
 label, .field label {
-  font-family: sans-serif;
   white-space: nowrap;
 }
 
@@ -768,7 +763,7 @@ body {
 }
 
 .header, .footer {
-  font-family: "Lucida Grande", "Charcoal", sans-serif;
+  font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
 }
 .header {
   font-size: 0.875em;
@@ -801,7 +796,9 @@ ul.app {
   padding: 0;
   margin: 1em 0 1em;
   border-bottom: 1px solid #8cacbb;
-  font: bold 1em sans-serif;
+  font-weight: bold;
+  font-size: 1em;
+  font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
 }
 ul.app>li
 {
@@ -902,7 +899,7 @@ h1, h2, h3, h4, h5, h6 {
   background: none;
   clear: left;
 	color: #708a96;
-	font-family: "Lucida Grande", sans-serif;
+	font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
 	font-weight: normal;
 	margin-top: 0;
 	text-align: left;
@@ -952,7 +949,6 @@ tr {
 
 .results {
   background-color: #dee7ec;
-  font-family: sans-serif;
   font-size: small;
   padding: 0.25em;
   margin: 1em 0em;

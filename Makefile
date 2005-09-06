@@ -116,7 +116,7 @@ realclean: clean
 
 zcmldocs:
 	PYTHONPATH=`pwd`/src:$(PYTHONPATH) $(PYTHON) \
-	    ./src/zope/configuration/stxdocs.py \
+	    ./sourcecode/zope/configuration/stxdocs.py \
 	    -f ./src/zope/app/meta.zcml -o ./doc/zcml/namespaces.zope.org
 
 potemplates: launchpad.pot

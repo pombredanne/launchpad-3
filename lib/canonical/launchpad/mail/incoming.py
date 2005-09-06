@@ -109,6 +109,12 @@ def handleMail(trans=transaction):
         trans.commit()
         trans.begin()
 
+        # If the Return-Path header is '<>', it probably means that it's
+        # a bounce from a message we sent.
+        if mail['Return-Path'] == '<>':
+            _handle_error("Message had an empty Return-Path.", file_alias)
+            continue
+
         try:
             principal = authenticateEmail(mail)
         except InvalidSignature, error:
