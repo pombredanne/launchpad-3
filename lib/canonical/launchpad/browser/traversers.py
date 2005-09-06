@@ -222,7 +222,13 @@ def traverse_person(person, request, name):
     """Traverse an IPerson."""
     if name == '+calendar':
         return ICalendarOwner(person).calendar
-
+    if name == '+branch':
+        product_name = _skip_one(person, request)
+        branch_name = _skip_one(person, request)
+        if product_name == '+junk':
+            return person.getBranch(None, branch_name)
+        else:
+            return person.getBranch(product_name, branch_name)
     return None
 
 

@@ -245,6 +245,17 @@ class Person(SQLBase):
         ret.reverse()
         return ret
 
+    def getBranch(self, product_name, branch_name):
+        from canonical.launchpad.database import Product, Branch
+        if product_name is None:
+            return Branch.selectOne(
+                'owner=%d AND product is NULL AND name=%s'
+                % (self.id, quote(branch_name)))
+        else:
+            product = Product.selectOneBy(name=product_name)
+            return Branch.selectOneBy(
+                ownerID=self.id, productID=product.id, name=branch_name)
+
     def isTeam(self):
         """See IPerson."""
         return self.teamowner is not None

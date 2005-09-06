@@ -20,7 +20,7 @@ class Branch(SQLBase):
     implements(IBranch)
 
     _table = 'Branch'
-    name = StringCol(unique=True, notNull=True)
+    name = StringCol(notNull=True)
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     url = StringCol(dbName='url')
