@@ -17,7 +17,8 @@ __all__ = [
     'addTrustedKeyring',
     'addOtherKeyring',
     'getValidUids',
-    'findEmailClusters'
+    'findEmailClusters',
+    'mergeClusters',
     ]
 
 def addTrustedKeyring(filename, ownertrust=validity.MARGINAL):
@@ -112,7 +113,9 @@ def _mergeOrAddEmails(personset, emailset, cluster):
         validpeople = set(person for person in people
                           if person.preferredemail is not None)
         if len(validpeople) > 1:
-            # eek. multiple validated accounts!
+            # XXX: jamesh 20050823
+            # what to do when multiple accounts in the cluster have
+            # valid email addresses?
             return None
         elif len(validpeople) == 1:
             person = validpeople.pop()
@@ -129,6 +132,7 @@ def _mergeOrAddEmails(personset, emailset, cluster):
 
         # merge people
         for otherperson in people:
+            print 'Merging %s into %s' % (otherperson.name, person.name)
             personset.merge(otherperson, person)
 
     elif len(people) == 1:
@@ -144,6 +148,8 @@ def _mergeOrAddEmails(personset, emailset, cluster):
     existing.update(person.unvalidatedemails)
     for newemail in cluster.difference(existing):
         emailset.new(newemail, person)
+
+    flush_database_updates()
 
     return person
 

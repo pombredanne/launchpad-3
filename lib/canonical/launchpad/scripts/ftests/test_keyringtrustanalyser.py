@@ -1,10 +1,13 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
 import unittest
+import transaction
 from canonical.functional import FunctionalTestCase
-from canonical.launchpad.ftests import login, ANONYMOUS
-from canonical.launchpad.ftests import keys_for_tests 
-from canonical.launchpad.interfaces import IGPGHandler
+from canonical.launchpad.ftests import login, ANONYMOUS, keys_for_tests
+from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
+from canonical.launchpad.interfaces import (
+    IGPGHandler, IPersonSet, IEmailAddressSet)
+from canonical.lp.dbschema import EmailAddressStatus
 from canonical.launchpad.scripts.keyringtrustanalyser import *
 from zope.component import getUtility
 from pyme.constants import validity
@@ -91,6 +94,159 @@ class TestKeyringTrustAnalyser(FunctionalTestCase):
 
         # foobar has only one signed, non-revoked key
         self.assertTrue(set(['foo.bar@canonical.com']) in clusters)
+
+
+class TestMergeClusters(LaunchpadFunctionalTestCase):
+    """Tests of the mergeClusters() routine."""
+
+    def _getEmails(self, person):
+        emailset = getUtility(IEmailAddressSet)
+        return set(address.email for address in emailset.getByPerson(person))
+
+    def testNullMerge(self):
+        """Test that a merge with an empty sequence of clusters works"""
+        mergeClusters([])
+
+    def testMergeOneAccountNoNewEmails(self):
+        """Test that merging a single email address does not affect an
+        account.
+        """
+        person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        emails = self._getEmails(person)
+        self.assertTrue('test@canonical.com' in emails)
+        self.assertEqual(person.merged, None)
+
+        mergeClusters([set(['test@canonical.com'])])
+        self.assertEqual(person.merged, None)
+        self.assertEqual(self._getEmails(person), emails)
+
+    def testMergeOneAccountAddEmails(self):
+        """Test that merging a cluster containing new email addresses adds
+        those emails.
+        """
+        personset = getUtility(IPersonSet)
+        emailset = getUtility(IEmailAddressSet)
+
+        person = personset.getByEmail('test@canonical.com')
+        self.assertEqual(person.merged, None)
+        # make sure newemail doesn't exist
+        self.assertEqual(personset.getByEmail('newemail@canonical.com'), None)
+
+        mergeClusters([set(['test@canonical.com', 'newemail@canonical.com'])],
+                      transaction)
+        self.assertEqual(person.merged, None)
+        emails = self._getEmails(person)
+
+        # both email addresses associated with account ...
+        self.assertTrue('test@canonical.com' in emails)
+        self.assertTrue('newemail@canonical.com' in emails)
+
+        address = emailset.getByEmail('newemail@canonical.com')
+        self.assertEqual(address.email, 'newemail@canonical.com')
+        self.assertEqual(address.person, person)
+        self.assertEqual(address.status, EmailAddressStatus.NEW)
+
+    def testMergeUnvalidatedAccountWithValidated(self):
+        """Test merging an unvalidated account with a validated account."""
+        personset = getUtility(IPersonSet)
+
+        validated_person = personset.getByEmail('test@canonical.com')
+        unvalidated_person = personset.getByEmail(
+            'andrew.bennetts@ubuntulinux.com')
+
+        allemails = self._getEmails(validated_person)
+        allemails.update(self._getEmails(unvalidated_person))
+
+        self.assertNotEqual(validated_person, unvalidated_person)
+
+        self.assertNotEqual(validated_person.preferredemail, None)
+        self.assertEqual(unvalidated_person.preferredemail, None)
+
+        self.assertEqual(validated_person.merged, None)
+        self.assertEqual(unvalidated_person.merged, None)
+
+        mergeClusters([set(['test@canonical.com',
+                            'andrew.bennetts@ubuntulinux.com'])],
+                      transaction)
+
+        # unvalidated person has been merged into the validated person
+        self.assertEqual(validated_person.merged, None)
+        self.assertEqual(unvalidated_person.merged, validated_person)
+
+        # all email addresses are now associated with the valid person
+        self.assertEqual(self._getEmails(validated_person), allemails)
+        self.assertEqual(self._getEmails(unvalidated_person), set())
+
+    def testMergeTwoValidatedAccounts(self):
+        """Test merging of two validated accounts.  This should do
+        nothing, since both accounts are in use.
+        """
+        personset = getUtility(IPersonSet)
+
+        person1 = personset.getByEmail('test@canonical.com')
+        person2 = personset.getByEmail('foo.bar@canonical.com')
+        self.assertNotEqual(person1, person2)
+
+        self.assertNotEqual(person1.preferredemail, None)
+        self.assertNotEqual(person2.preferredemail, None)
+
+        self.assertEqual(person1.merged, None)
+        self.assertEqual(person2.merged, None)
+
+        mergeClusters([set(['test@canonical.com', 'foo.bar@canonical.com'])],
+                      transaction)
+
+        self.assertEqual(person1.merged, None)
+        self.assertEqual(person2.merged, None)
+
+    def testMergeTwoUnvalidatedAccounts(self):
+        """Test merging of two unvalidated accounts.  This will pick
+        one account and merge the others into it (since none of the
+        accounts have been used, there is no need to favour one over
+        the other).
+        """
+        personset = getUtility(IPersonSet)
+
+        person1 = personset.getByEmail('andrew.bennetts@ubuntulinux.com')
+        person2 = personset.getByEmail('guilherme.salgado@canonical.com')
+
+        allemails = self._getEmails(person1)
+        allemails.update(self._getEmails(person2))
+
+        self.assertEqual(person1.preferredemail, None)
+        self.assertEqual(person2.preferredemail, None)
+
+        self.assertEqual(person1.merged, None)
+        self.assertEqual(person2.merged, None)
+
+        mergeClusters([set(['andrew.bennetts@ubuntulinux.com',
+                            'guilherme.salgado@canonical.com'])],
+                      transaction)
+
+        # since we don't know which account will be merged, swap
+        # person1 and person2 if person1 was merged into person2.
+        if person1.merged is not None:
+            person1, person2 = person2, person1
+
+        # one account is merged into the other
+        self.assertEqual(person1.merged, None)
+        self.assertEqual(person2.merged, person1)
+
+        self.assertEqual(self._getEmails(person1), allemails)
+        self.assertEqual(self._getEmails(person2), set())
+
+    def testMergeUnknownEmail(self):
+        """Merging a cluster of unknown emails creates an account."""
+        personset = getUtility(IPersonSet)
+
+        self.assertEqual(personset.getByEmail('newemail@canonical.com'), None)
+
+        mergeClusters([set(['newemail@canonical.com'])])
+
+        person = personset.getByEmail('newemail@canonical.com')
+        self.assertNotEqual(person, None)
+        self.assertEqual(person.preferredemail, None)
+        self.assertTrue('newemail@canonical.com' in self._getEmails(person))
 
 # this is what we want to end up with.
 # result = []
