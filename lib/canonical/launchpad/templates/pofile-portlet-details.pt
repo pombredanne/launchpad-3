@@ -13,6 +13,7 @@
         </tal:block>
       </li>
     </ul>
+    <tal:block condition="context/owner">
     <b>Creator:</b><br />
     <ul class="people">
       <li><a tal:content="context/owner/browsername"
@@ -20,6 +21,7 @@
         Creator</a>
       </li>
     </ul>
+    </tal:block>
     <tal:block condition="context/potemplate/productseries">
     <tal:block define="product context/potemplate/productseries/product">
       <b>For:</b>
