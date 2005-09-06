@@ -79,4 +79,4 @@ from canonical.launchpad.database.shipit import *
 from canonical.launchpad.database.vpoexport import *
 from canonical.launchpad.database.karma import *
 from canonical.launchpad.database.poexportrequest import *
-
+from canonical.launchpad.database.revision import *

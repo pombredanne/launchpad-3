@@ -2,12 +2,10 @@
 
 __metaclass__ = type
 __all__ = [
-    'Person', 'PersonSet', 'EmailAddress', 'EmailAddressSet',
-    'GPGKey', 'GPGKeySet', 'SSHKey', 'SSHKeySet', 'ArchUserID',
-    'ArchUserIDSet', 'WikiName', 'WikiNameSet', 'JabberID',
-    'JabberIDSet', 'IrcID', 'IrcIDSet', 'TeamMembership',
-    'TeamMembershipSet', 'TeamParticipation'
-    ]
+    'Person', 'PersonSet', 'EmailAddress', 'EmailAddressSet', 'GPGKey',
+    'GPGKeySet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet', 'JabberID',
+    'JabberIDSet', 'IrcID', 'IrcIDSet', 'TeamMembership', 'TeamMembershipSet',
+    'TeamParticipation']
 
 import itertools
 import sets
@@ -31,12 +29,11 @@ from canonical.database import postgresql
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, ITeamMembership, ITeamParticipation,
-    ITeamMembershipSet, IEmailAddress, IWikiName, IIrcID, IArchUserID,
-    IJabberID, IIrcIDSet, IArchUserIDSet, ISSHKeySet, IJabberIDSet,
-    IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IMaintainershipSet,
-    IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
-    ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
-    ILoginTokenSet, KEYSERVER_QUERY_URL)
+    ITeamMembershipSet, IEmailAddress, IWikiName, IIrcID, IJabberID, IIrcIDSet,
+    ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey,
+    IMaintainershipSet, IEmailAddressSet, ISourcePackageReleaseSet,
+    IPasswordEncryptor, ICalendarOwner, UBUNTU_WIKI_URL,
+    ISignedCodeOfConductSet, ILoginTokenSet, KEYSERVER_QUERY_URL)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -1300,22 +1297,6 @@ class SSHKeySet:
             return SSHKey.get(id)
         except SQLObjectNotFound:
             return default
-
-
-class ArchUserID(SQLBase):
-    implements(IArchUserID)
-
-    _table = 'ArchUserID'
-
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
-    archuserid = StringCol(dbName='archuserid', notNull=True)
-
-
-class ArchUserIDSet:
-    implements(IArchUserIDSet)
-
-    def new(self, personID, archuserid):
-        return ArchUserID(personID=personID, archuserid=archuserid)
 
 
 class WikiName(SQLBase):

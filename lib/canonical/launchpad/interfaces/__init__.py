@@ -15,7 +15,6 @@ from canonical.launchpad.interfaces.validation import *
 # these need to be at the top, because the others depend on them sometimes
 from canonical.launchpad.interfaces.specificationtarget import *
 
-from canonical.launchpad.interfaces.archuser import *
 from canonical.launchpad.interfaces.binarypackagerelease import *
 from canonical.launchpad.interfaces.binarypackagename import *
 from canonical.launchpad.interfaces.bounty import *
@@ -89,6 +88,7 @@ from canonical.launchpad.interfaces.publishedpackage import *
 from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.queue import *
 from canonical.launchpad.interfaces.rawfiledata import *
+from canonical.launchpad.interfaces.revision import *
 from canonical.launchpad.interfaces.rosettastats import *
 from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.section import *
