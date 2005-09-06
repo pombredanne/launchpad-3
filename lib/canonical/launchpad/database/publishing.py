@@ -5,7 +5,9 @@ __all__ = ['BinaryPackagePublishing', 'SourcePackagePublishing',
            'SourcePackageFilePublishing', 'BinaryPackageFilePublishing',
            'SourcePackagePublishingView', 'BinaryPackagePublishingView',
            'SecureSourcePackagePublishingHistory',
-           'SecureBinaryPackagePublishingHistory'
+           'SecureBinaryPackagePublishingHistory',
+           'SourcePackagePublishingHistory',
+           'BinaryPackagePublishingHistory'
            ]
 
 from zope.interface import implements
@@ -14,12 +16,13 @@ from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from canonical.database.sqlbase import SQLBase
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.interfaces import \
-    IBinaryPackagePublishing, ISourcePackagePublishing, \
-    ISourcePackagePublishingView, IBinaryPackagePublishingView, \
-    ISourcePackageFilePublishing, IBinaryPackageFilePublishing, \
-    ISecureSourcePackagePublishingHistory, \
-    ISecureBinaryPackagePublishingHistory
+from canonical.launchpad.interfaces import ( IBinaryPackagePublishing,
+    ISourcePackagePublishing, ISourcePackagePublishingView,
+    IBinaryPackagePublishingView, ISourcePackageFilePublishing,
+    IBinaryPackageFilePublishing,
+    ISecureSourcePackagePublishingHistory,
+    ISecureBinaryPackagePublishingHistory,
+    ISourcePackagePublishingHistory, IBinaryPackagePublishingHistory )
 
 from canonical.lp.dbschema import \
     EnumCol, BinaryPackagePriority, PackagePublishingStatus, \
@@ -72,7 +75,7 @@ class SourcePackageFilePublishing(SQLBase):
                           notNull=True)
 
     sourcepackagepublishing = ForeignKey(dbName='sourcepackagepublishing',
-                                         foreignKey='SourcePackagePublishingHistory')
+                                         foreignKey='SecureSourcePackagePublishingHistory')
 
     libraryfilealias = IntCol(dbName='libraryfilealias', unique=False,
                               default=None, notNull=True)
@@ -108,8 +111,8 @@ class BinaryPackageFilePublishing(SQLBase):
     distribution = IntCol(dbName='distribution', unique=False, default=None,
                           notNull=True, immutable=True)
 
-    packagepublishing = ForeignKey(dbName='packagepublishing',
-                                   foreignKey='PackagePublishingHistory',
+    binarypackagepublishing = ForeignKey(dbName='binarypackagepublishing',
+                                   foreignKey='SecureBinaryPackagePublishingHistory',
                                    immutable=True)
 
     libraryfilealias = IntCol(dbName='libraryfilealias', unique=False,
@@ -159,6 +162,9 @@ class SourcePackagePublishingView(SQLBase):
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
                                default=None, notNull=True, immutable=True,
                                schema=PackagePublishingStatus)
+    pocket = EnumCol(dbName='pocket', unique=False, default=None,
+                     notNull=True, immutable=True,
+                     schema=PackagePublishingPocket)
 
 
 
@@ -183,6 +189,9 @@ class BinaryPackagePublishingView(SQLBase):
     publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
                                default=None, notNull=True,
                                schema=PackagePublishingStatus)
+    pocket = EnumCol(dbName='pocket', unique=False, default=None,
+                     notNull=True, immutable=True,
+                     schema=PackagePublishingPocket)
 
 
 class SecureSourcePackagePublishingHistory(SQLBase):
@@ -259,3 +268,47 @@ class SecureBinaryPackagePublishingHistory(SQLBase):
         return super(PackagePublishingHistory,
                      cls).selectBy(*args, **kwargs)
     
+class SourcePackagePublishingHistory(SQLBase):
+    """A source package release publishing record. (excluding embargoed stuff)"""
+
+    implements(ISourcePackagePublishingHistory)
+
+    sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
+                                      dbName='sourcepackagerelease')
+    distrorelease = ForeignKey(foreignKey='DistroRelease',
+                               dbName='distrorelease')
+    component = ForeignKey(foreignKey='Component', dbName='component')
+    section = ForeignKey(foreignKey='Section', dbName='section')
+    status = EnumCol(schema=PackagePublishingStatus)
+    scheduleddeletiondate = UtcDateTimeCol(default=None)
+    datepublished = UtcDateTimeCol(default=None)
+    datecreated = UtcDateTimeCol(default=None)
+    datesuperseded = UtcDateTimeCol(default=None)
+    supersededby = ForeignKey(foreignKey='SourcePackageRelease',
+                              dbName='supersededby', default=None)
+    datemadepending = UtcDateTimeCol(default=None)
+    dateremoved = UtcDateTimeCol(default=None)
+    pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
+
+class BinaryPackagePublishingHistory(SQLBase):
+    """A binary package publishing record. (excluding embargoed packages)"""
+
+    implements(IBinaryPackagePublishingHistory)
+
+    binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
+                                      dbName='binarypackagerelease')
+    distroarchrelease = ForeignKey(foreignKey='DistroArchRelease',
+                                   dbName='distroarchrelease')
+    component = ForeignKey(foreignKey='Component', dbName='component')
+    section = ForeignKey(foreignKey='Section', dbName='section')
+    priority = EnumCol(dbName='priority', schema=BinaryPackagePriority)
+    status = EnumCol(dbName='status', schema=PackagePublishingStatus)
+    scheduleddeletiondate = UtcDateTimeCol(default=None)
+    datepublished = UtcDateTimeCol(default=None)
+    datecreated = UtcDateTimeCol(default=None)
+    datesuperseded = UtcDateTimeCol(default=None)
+    supersededby = ForeignKey(foreignKey='Build',dbName='supersededby',
+                              default=None)
+    datemadepending = UtcDateTimeCol(default=None)
+    dateremoved = UtcDateTimeCol(default=None)
+    pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
