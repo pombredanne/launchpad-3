@@ -261,7 +261,7 @@ class GPGHandler:
         for key in context.op_keylist_all():
             # subkeys is the first in a C object based list
             # use .next to find the next subkey
-            yield PymeKey(key.subkeys.fpr)
+            yield PymeKey.newFromGpgmeKey(key)
 
     def retrieveKey(self, fingerprint):
         """See IGPGHandler."""
@@ -371,11 +371,19 @@ class PymeKey:
 
     def __init__(self, fingerprint):
         """Inititalize a key container."""
-        if not fingerprint:
-            return
-        self._buildKey(fingerprint)
+        self.fingerprint = None
+        if fingerprint:
+            self._buildFromFingerprint(fingerprint)
 
-    def _buildKey(self, fingerprint):
+    @classmethod
+    def newFromGpgmeKey(cls, key):
+        """Initialize a PymeKey from a gpgme_key_t instance."""
+        self = cls(None)
+        self._buildFromGpgmeKey(key)
+        return self
+
+    def _buildFromFingerprint(self, fingerprint):
+        """Build key information from a fingerprint."""
         # create a new particular context
         c = pyme.core.Context()
         # retrive additional key information
@@ -384,10 +392,10 @@ class PymeKey:
         except pyme.errors.GPGMEError:
             key = None
 
-        if not (key and valid_fingerprint(key.subkeys.fpr)):
-            self.fingerprint = None
-            return
+        if key and valid_fingerprint(key.subkeys.fpr):
+            self._buildFromGpgmeKey(key)
 
+    def _buildFromGpgmeKey(self, key):
         self.fingerprint = key.subkeys.fpr
         self.keyid = key.subkeys.fpr[-8:]
         self.algorithm = GPGKeyAlgorithm.items[key.subkeys.pubkey_algo].title
@@ -405,13 +413,6 @@ class PymeKey:
         # the non-revoked valid email addresses associated with this key
         self.emails = [uid.email for uid in self.uids
                        if valid_email(uid.email) and not uid.revoked]
-
-    def _gpg_key(self, fingerprint=None):
-        """Get the underlying gpg key."""
-        if fingerprint is None:
-            fingerprint = self.fingerprint
-        context = pyme.core.Context()
-        return context.get_key(fingerprint.encode('ascii'), 0)
 
     def setOwnerTrust(self, value): 
         """Set the ownertrust on the actual gpg key"""
