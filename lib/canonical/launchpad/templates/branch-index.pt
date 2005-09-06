@@ -20,6 +20,13 @@
     paragraph of text really, giving the product highlights.
   </div>
 
+  <hr />
+  <ol>
+    <tal:block repeat="revision context/revisions">
+      <li tal:content="revision/log_body">The revision commit message.</li>
+    </tal:block>
+  </ol>
+
 </div>
 </body>
 </html>

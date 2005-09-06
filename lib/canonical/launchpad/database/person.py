@@ -250,6 +250,8 @@ class Person(SQLBase):
                 % (self.id, quote(branch_name)))
         else:
             product = Product.selectOneBy(name=product_name)
+            if product is None:
+                return None
             return Branch.selectOneBy(
                 ownerID=self.id, productID=product.id, name=branch_name)
 

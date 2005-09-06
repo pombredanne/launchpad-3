@@ -15,3 +15,79 @@
   <BLANKLINE>
   <div class="documentDescription">Bazaar import of the Mozilla Thunderbird CVS mainline.</div>
   ...
+
+
+  Test that we can display the page for a branch not attached to a product.
+
+
+  >>> print http(r"""
+  ... GET /people/spiv/+branch/+junk/twisted@arch.ubuntu.com_twisted--trunk--0 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+  <title>Bazaar Branch: Python Twisted 0.9.1</title>
+  ...
+  <h1>&#8220;Python Twisted 0.9.1&#8221; branch</h1>
+  <BLANKLINE>
+  <div class="documentDescription">Bazaar import of the Twisted SVN trunk.</div>
+  ...
+
+
+  Test that we get a proper 404 when the product name is wrong.
+
+
+  >>> print http(r"""
+  ... GET /people/stevea/+branch/not-a-product/thunderbird@arch.ubuntu.com_thunderbird--MAIN--0 HTTP/1.1
+  ... """)
+  HTTP/1.1 404 Not Found
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+
+
+  Test that we get a proper 404 when the branch name is wrong.
+
+
+  >>> print http(r"""
+  ... GET /people/stevea/+branch/thunderdbird/not-a-branch HTTP/1.1
+  ... """)
+  HTTP/1.1 404 Not Found
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+
+
+
+  Test that we get a correct revision list
+
+
+  >>> print http(r"""
+  ... GET /people/sabdfl/+branch/firefox/mozilla@arch.ubuntu.com_mozilla--MAIN--0 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+  <h1>&#8220;Mozilla Firefox 0.9.1&#8221; branch</h1>
+  <BLANKLINE>
+  <div class="documentDescription">text</div>
+  <BLANKLINE>
+  <hr />
+  <ol>
+  <BLANKLINE>
+      <li>mozilla initial revision</li>
+  <BLANKLINE>
+  <BLANKLINE>    
+      <li>add a memory leak</li>
+  <BLANKLINE>
+  <BLANKLINE>        
+      <li>support broken html</li>
+  <BLANKLINE>
+  </ol>
+  ...
