@@ -1,0 +1,17 @@
+  Test that we can display the branch page for Thunderbird mainline.
+
+
+  >>> print http(r"""
+  ... GET /people/stevea/+branch/thunderbird/thunderbird@arch.ubuntu.com_thunderbird--MAIN--0 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+  <title>Bazaar Branch: Mozilla Thunderbird 0.9.1</title>
+  ...
+  <h1>&#8220;Mozilla Thunderbird 0.9.1&#8221; branch</h1>
+  <BLANKLINE>
+  <div class="documentDescription">Bazaar import of the Mozilla Thunderbird CVS mainline.</div>
+  ...
