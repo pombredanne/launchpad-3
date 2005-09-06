@@ -8,9 +8,10 @@
   This branch has a summary like this, it's a very simple description of
   what the branch does.
 </span>
+<span tal:replace="context/revision_count">35</span> revisions,
 
 <span class="dummy">
-  35 patches, 1477 lines.
+  1477 lines.
   Status: Ready<br />
   <img src="/++resource++favorite_icon.gif" />
   <img src="/++resource++favorite_icon.gif" />

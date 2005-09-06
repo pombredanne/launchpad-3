@@ -115,3 +115,4 @@ class IBranch(IHasOwner):
 
     # Joins
     revisions = Attribute("The sequence of revisions in that branch.")
+    revision_count = Attribute("The number of revisions in that branch.")

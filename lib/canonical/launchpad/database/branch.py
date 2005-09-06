@@ -10,6 +10,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import IBranch
+from canonical.launchpad.database.revision import Revision
 
 from canonical.lp import dbschema
 
@@ -62,6 +63,9 @@ class Branch(SQLBase):
     # landing, if you are a reviewer, it is your duty to prevent that from
     # landing -- David Allouche 2005-09-05
     changesets = MultipleJoin('Revision', joinColumn='branch')
+
+    def revision_count(self):
+        return Revision.selectBy(branchID=self.id).count()
 
     subjectRelations = MultipleJoin('BranchRelationship', joinColumn='subject')
     objectRelations = MultipleJoin('BranchRelationship', joinColumn='object')

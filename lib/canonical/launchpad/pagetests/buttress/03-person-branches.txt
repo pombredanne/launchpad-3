@@ -18,6 +18,7 @@
   - <img src="/++resource++user.gif" />
   <a href="http://localhost:9000/people/stevea">Steve Alexander</a><br />
   Bazaar import of the Mozilla Thunderbird CVS mainline.
+  3 revisions,
   <BLANKLINE>
   <span class="dummy">
   ...
