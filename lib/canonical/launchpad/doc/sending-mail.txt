@@ -80,8 +80,8 @@ And finally the body of the email:
     u'Inneh\xe5ll'
 
 simple_sendmail creates a Message instance, and sends it via another
-function, sendmail. This function can be used if you want to send more
-complicated emails, like emails with attachments.
+function, sendmail. sendmail() can also be used directly if you want to
+send more complicated emails, like emails with attachments.
 
     >>> from canonical.launchpad.mail import sendmail
 
