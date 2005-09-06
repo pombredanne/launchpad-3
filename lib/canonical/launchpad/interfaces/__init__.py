@@ -87,7 +87,6 @@ from canonical.launchpad.interfaces.project import *
 from canonical.launchpad.interfaces.projectbounty import *
 from canonical.launchpad.interfaces.publishedpackage import *
 from canonical.launchpad.interfaces.publishing import *
-from canonical.launchpad.interfaces.pyarch import *
 from canonical.launchpad.interfaces.queue import *
 from canonical.launchpad.interfaces.rawfiledata import *
 from canonical.launchpad.interfaces.rosettastats import *
