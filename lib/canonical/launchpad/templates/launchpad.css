@@ -390,7 +390,7 @@ ul.alert>li, li.alert {
   list-style-image: url(/++resource++alert_icon.gif);
 }
 ul.architecture>li, li.architecture {
-  list-style-image: url(/++resource++architecture);
+  list-style-image: url(/@@/architecture);
 }
 ul.bounty>li, li.bounty {
   list-style-image: url(/++resource++bounty);
@@ -500,19 +500,15 @@ ul.search>li, li.search {
 /* === Undo bugs in plone.css === */
 
 /* -- Stop accessing resources on plone.org: -- */
-/* XXX mpt 20050407 change http://plone.org/ to /@@/ eventually */
 
 ul {
   list-style-image: none;
-}
-#portal-logo {
-  background-image: url(http://plone.org/logo.jpg);
 }
 #portal-personaltools .portalUser, .link-user {
   background-image: url(/@@/user.gif);
 }
 #portal-personaltools li {
-  background-image: url(http://plone.org/linkOpaque.gif);
+  background-image: url(/@@/linkOpaque.gif);
 }
 .contentActions li {
   background-image: url(/@@/arrowDownAlternative.gif);
@@ -521,7 +517,7 @@ ul {
   background-image: url(/@@/info_icon.gif);
 }
 .standalone, .documentEditable * .standalone {
-  background-image: url(http://plone.org/linkOpaque.gif);
+  background-image: url(/@@/linkOpaque.gif);
 }
 .context, .documentEditable * .context, .destructive,
 .documentEditable * .destructive {
@@ -544,22 +540,22 @@ input.searchButton {
   background-image: url(/@@/lock_icon.gif);
 }
 .link-mailto {
-  background-image: url(http://plone.org/mail_icon.gif);
+  background-image: url(/@@/mail_icon.gif);
 }
 .link-news {
-  background-image: url(http://plone.org/topic_icon.gif);
+  background-image: url(/@@/news);
 }
 .link-ftp {
-  background-image: url(http://plone.org/file_icon.gif);
+  background-image: url(/@@/link_icon.gif);
 }
 .link-irc, .link-comment {
-  background-image: url(http://plone.org/discussionitem_icon.gif);
+  background-image: url(/@@/info.png);
 }
 .link-document {
-  background-image: url(http://plone.org/document_icon.gif);
+  background-image: url(/@@/document_icon.gif);
 }
 .link-callto {
-  background-image: url(http://plone.org/phone_icon.gif);
+  background-image: url(/@@/phone_icon.gif);
 }
 
 /* -- "Links must look like links." -- SteveA */
