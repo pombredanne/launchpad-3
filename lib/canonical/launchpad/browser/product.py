@@ -278,27 +278,6 @@ class ProductSeriesAddView(AddView):
         return '+series/%s' % self.series.name
 
 
-class ProductBranchAddView(AddView):
-    """Generates a form to add new branch to a product"""
-
-    def __init__(self, context, request):
-        AddView.__init__(self, context, request)
-        self.context = context
-        self.request = request
-        self.form = request.form
-        branch = None    
-
-    def createAndAdd(self, data):
-        """Handle a request to create a new branch for this product."""
-        self.branch = self.context.newBranch(
-            data['name'], data['title'], data['url'], data['home_page'],
-            data['lifecycle_status'], data['summary'], data['whiteboard'])
-
-    def nextURL(self):
-        assert self.series
-        return '+branch/%s' % self.series.name
-
-
 class ProductFileBugView(SQLObjectAddView):
 
     __used_for__ = IProduct

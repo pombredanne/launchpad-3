@@ -6,13 +6,14 @@ __metaclass__ = type
 
 __all__ = [
     'IBranch',
+    'IBranchSet',
     ]
 
 from zope.i18nmessageid import MessageIDFactory
 
 from zope.interface import Interface, Attribute
 
-from zope.schema import Bool, Choice, Text, TextLine
+from zope.schema import Bool, Int, Choice, Text, TextLine
 
 from canonical.lp.dbschema import BranchLifecycleStatus
 
@@ -50,10 +51,9 @@ class IBranch(IHasOwner):
         'will override the previous version.'))
 
     # People attributes
-    owner = Choice(
-        title=_('Owner'), required=True, vocabulary='ValidPersonOrTeam')
-    registrant = Choice(
-        title=_('Registrant'), required=False, vocabulary='ValidPersonOrTeam')
+    owner = Int(title=_('Owner'), required=True)
+    author = Choice(
+        title=_('Author'), required=False, vocabulary='ValidPersonOrTeam')
 
     # Product attributes
     product = Choice(
@@ -123,3 +123,12 @@ class IBranch(IHasOwner):
 
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
+
+
+class IBranchSet(Interface):
+    """Interface representing the set of branches."""
+
+    def new(name, owner, product, url, title,
+            lifecycle_status=BranchLifecycleStatus.NEW, summary=None,
+            home_page=None):
+        """Create a new branch."""

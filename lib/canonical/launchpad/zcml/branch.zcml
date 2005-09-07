@@ -96,4 +96,15 @@
       height="5" />
   </browser:editform>
 
+  <!-- BranchSet -->
+  <content class="canonical.launchpad.database.BranchSet">
+    <allow interface="canonical.launchpad.interfaces.IBranchSet" />
+  </content>
+
+  <securedutility
+    class="canonical.launchpad.database.BranchSet"
+    provides="canonical.launchpad.interfaces.IBranchSet" >
+      <allow interface="canonical.launchpad.interfaces.IBranchSet" />
+  </securedutility>
+
 </configure>

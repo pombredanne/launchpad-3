@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Branch', 'BranchRelationship', 'BranchLabel']
+__all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 
 from zope.interface import implements
 
@@ -9,7 +9,7 @@ from sqlobject import ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.interfaces import IBranch
+from canonical.launchpad.interfaces import IBranch, IBranchSet
 from canonical.launchpad.database.revision import Revision
 
 from canonical.lp.dbschema import (
@@ -26,38 +26,39 @@ class Branch(SQLBase):
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     url = StringCol(dbName='url')
-    whiteboard = StringCol()
+    whiteboard = StringCol(default=None)
 
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-    registrant = ForeignKey(dbName='registrant', foreignKey='Person')
+    author = ForeignKey(dbName='author', foreignKey='Person', default=None)
 
     product = ForeignKey(dbName='product', foreignKey='Product', default=None)
-    branch_product_name = StringCol()
+    branch_product_name = StringCol(default=None)
     product_locked = BoolCol(default=False, notNull=True)
 
     home_page = StringCol()
-    branch_home_page = StringCol()
+    branch_home_page = StringCol(default=None)
     home_page_locked = BoolCol(default=False, notNull=True)
 
     starred = IntCol(default=1, notNull=True)
     lifecycle_status = EnumCol(schema=BranchLifecycleStatus, notNull=True,
         default=BranchLifecycleStatus.NEW)
 
-    landing_target = ForeignKey(dbName='landing_target', foreignKey='Branch')
-    current_delta_url = StringCol()
-    current_diff_adds = IntCol()
-    current_diff_deletes = IntCol()
-    current_conflicts_url = StringCol()
+    landing_target = ForeignKey(
+        dbName='landing_target', foreignKey='Branch', default=None)
+    current_delta_url = StringCol(default=None)
+    current_diff_adds = IntCol(default=None)
+    current_diff_deletes = IntCol(default=None)
+    current_conflicts_url = StringCol(default=None)
     current_activity = IntCol(default=0, notNull=True)
-    stats_updated = UtcDateTimeCol()
+    stats_updated = UtcDateTimeCol(default=None)
 
     # mirror_status = EnumCol(schema=MirrorStatus, default=MirrorStatus.XXX,
     #                         notNull=True)
-    last_mirrored = UtcDateTimeCol()
-    last_mirror_attempt = UtcDateTimeCol()
+    last_mirrored = UtcDateTimeCol(default=None)
+    last_mirror_attempt = UtcDateTimeCol(default=None)
     mirror_failures = IntCol(default=0, notNull=True)
 
-    cache_url = StringCol()
+    cache_url = StringCol(default=None)
 
     revisions = MultipleJoin('Revision', joinColumn='branch',
         orderBy='-id')
@@ -88,6 +89,22 @@ class Branch(SQLBase):
 
     def getRelations(self):
         return tuple(self.subjectRelations) + tuple(self.objectRelations)
+
+
+class BranchSet:
+    """The set of all branches."""
+
+    implements(IBranchSet)
+
+    def new(self, name, owner, product, url, title,
+            lifecycle_status=BranchLifecycleStatus.NEW, summary=None,
+            home_page=None):
+        if not home_page:
+            home_page = None
+        return Branch(
+            name=name, owner=owner, product=product, url=url, title=title,
+            lifecycle_status=lifecycle_status, summary=summary,
+            home_page=home_page)
 
 
 class BranchRelationship(SQLBase):
@@ -148,4 +165,3 @@ class BranchLabel(SQLBase):
 
     label = ForeignKey(foreignKey='Label', dbName='label', notNull=True)
     branch = ForeignKey(foreignKey='Branch', dbName='branch', notNull=True)
-

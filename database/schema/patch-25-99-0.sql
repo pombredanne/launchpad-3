@@ -1,7 +1,7 @@
 SET client_min_messages=ERROR;
 
-ALTER TABLE Branch ADD COLUMN registrant integer
-    CONSTRAINT branch_registrant_fk REFERENCES Person;
+ALTER TABLE Branch ADD COLUMN author integer
+    CONSTRAINT branch_author_fk REFERENCES Person;
 
 ALTER TABLE Branch ADD COLUMN name text;
 ALTER TABLE Branch ADD CONSTRAINT valid_name CHECK (valid_branch_name(name));

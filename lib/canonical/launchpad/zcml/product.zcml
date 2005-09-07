@@ -312,16 +312,11 @@
         name="+addbranch"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBranch"
-        fields="name title url home_page lifecycle_status summary whiteboard"
-        class="canonical.launchpad.browser.ProductBranchAddView"
-        keyword_arguments="name title url home_page lifecycle_status summary whiteboard"
+        fields="name owner product title url home_page lifecycle_status summary"
+        class="canonical.launchpad.browser.BranchAddView"
+        keyword_arguments="name owner product title url home_page lifecycle_status summary"
         permission="launchpad.AnyPerson"
-        template="../templates/branch-add.pt"
-        lp:url="/products/$Product.name/+addbranch">
-        <browser:widget
-            field="whiteboard"
-            class="zope.app.form.browser.TextAreaWidget"
-            height="5" />
+        template="../templates/branch-add.pt">
         <browser:widget
             field="url"
             class="zope.app.form.browser.TextWidget"
@@ -334,6 +329,12 @@
             field="summary"
             class="zope.app.form.browser.TextAreaWidget"
             height="5" />
+        <browser:widget
+    	    field="owner"
+	    class="canonical.widgets.HiddenUserWidget" />
+        <browser:widget
+    	    field="product"
+	    class="canonical.widgets.ContextWidget" />
     </browser:addform>
 
     <!-- ProductSet-->
