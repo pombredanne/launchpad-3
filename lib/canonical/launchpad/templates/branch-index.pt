@@ -13,19 +13,29 @@
 
 <div metal:fill-slot="main">
 
-  <h1>&#8220;<span tal:replace="context/title">title</span>&#8221; branch</h1>
-
   <div class="documentDescription" tal:content="context/summary">
     $Branch.summary goes here. This should be quite short, just a single
-    paragraph of text really, giving the product highlights.
+    paragraph of text really, giving the branch highlights.
   </div>
 
   <hr />
-  <ol>
-    <tal:block repeat="revision context/revisions">
-      <li tal:content="revision/log_body">The revision commit message.</li>
-    </tal:block>
-  </ol>
+
+  <h2>Revision History:</h2>
+
+  <table class="listing">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Message</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="revision context/revisions">
+        <td tal:content="revision/revision_date/fmt:date">2005-10-05</td>
+        <td tal:content="revision/log_body">The revision commit message.</td>
+      </tr>
+    </tbody>
+  </table>
 
 </div>
 </body>

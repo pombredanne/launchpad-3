@@ -14,7 +14,8 @@ from zope.interface import Interface, Attribute
 
 from zope.schema import Bool, Choice, Text, TextLine
 
-from canonical.launchpad.fields import Summary, Title, TimeInterval
+from canonical.lp.dbschema import BranchLifecycleStatus
+
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
@@ -31,11 +32,11 @@ class IBranch(IHasOwner):
         "short, unique, and descriptive, because it will be used in URLs. "
         "Examples: mozilla-type-ahead-find, postgres-smart-serial."),
         constraint=valid_name)
-    title = Title(
+    title = Text(
         title=_('Title'), required=True, description=_("Describe the "
         "branch as clearly as possible in up to 70 characters. This "
         "title is displayed in every branch list or report."))
-    summary = Summary(
+    summary = Text(
         title=_('Summary'), required=True, description=_("A "
         "single-paragraph description of the branch. This will also be "
         "displayed in most branch listings."))
@@ -81,8 +82,10 @@ class IBranch(IHasOwner):
     # Stats and status attributes
     starred = Attribute("How many stars this branch has.")
 
-    # TODO: branch_status, needs a BranchStatus EnumCol
-    # -- DavidAllouche 2005-09-05
+    lifecycle_status = Choice(
+        title=_('Status'), vocabulary='BranchLifecycleStatus',
+        default=BranchLifecycleStatus.NEW, description=_("The current "
+        "status of this branch."))
 
     # TODO: landing_target, needs a BranchVocabulaty
     # -- DavidAllouche 2005-09-05

@@ -38,7 +38,7 @@ class ProductFacets(StandardLaunchpadFacets):
     usedfor = IProduct
 
     links = ['overview', 'bugs', 'bounties', 'specs', 'translations',
-             'calendar']
+             'code', 'calendar']
 
     def overview(self):
         target = ''
@@ -68,6 +68,12 @@ class ProductFacets(StandardLaunchpadFacets):
         target = '+translations'
         text = 'Translations'
         summary = 'Translations of %s in Rosetta' % self.context.displayname
+        return Link(target, text, summary)
+
+    def code(self):
+        target = '+branches'
+        text = 'Code'
+        summary = 'Bazaar Branches for %s' % self.context.displayname
         return Link(target, text, summary)
 
     def calendar(self):

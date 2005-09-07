@@ -12,7 +12,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import IBranch
 from canonical.launchpad.database.revision import Revision
 
-from canonical.lp import dbschema
+from canonical.lp.dbschema import (
+    EnumCol, BranchRelationships, BranchLifecycleStatus)
 
 
 class Branch(SQLBase):
@@ -39,8 +40,8 @@ class Branch(SQLBase):
     home_page_locked = BoolCol(default=False, notNull=True)
 
     starred = IntCol(default=1, notNull=True)
-    # branch_status = EnumCol(schema=BranchStatus, notNull=True,
-    #                         default=BranchStatus.XXX)
+    lifecycle_status = EnumCol(schema=BranchLifecycleStatus, notNull=True,
+        default=BranchLifecycleStatus.NEW)
 
     landing_target = ForeignKey(dbName='landing_target', foreignKey='Branch')
     current_delta_url = StringCol()
@@ -58,11 +59,13 @@ class Branch(SQLBase):
 
     cache_url = StringCol()
 
-    revisions = MultipleJoin('Revision', joinColumn='branch', orderBy='id')
+    revisions = MultipleJoin('Revision', joinColumn='branch',
+        orderBy='-id')
     # XXX: changesets is a compatibility attribute, must be removed before
     # landing, if you are a reviewer, it is your duty to prevent that from
     # landing -- David Allouche 2005-09-05
-    changesets = MultipleJoin('Revision', joinColumn='branch')
+    changesets = MultipleJoin('Revision', joinColumn='branch',
+        orderBy='-id')
 
     @property
     def product_name(self):
@@ -109,7 +112,7 @@ class BranchRelationship(SQLBase):
         self.object = value
 
     def _get_labelText(self):
-        return dbschema.BranchRelationships.items[self.label]
+        return BranchRelationships.items[self.label]
 
     def nameSelector(self, sourcepackage=None, selected=None):
         # XXX: Let's get HTML out of the database code.

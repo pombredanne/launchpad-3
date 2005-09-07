@@ -32,8 +32,8 @@ ALTER TABLE Branch ALTER COLUMN starred SET DEFAULT 1;
 
 ALTER TABLE Branch ADD COLUMN whiteboard text;
 
-ALTER TABLE Branch ADD COLUMN branch_status int;
-ALTER TABLE Branch ALTER COLUMN branch_status SET DEFAULT 1;
+ALTER TABLE Branch ADD COLUMN lifecycle_status int;
+ALTER TABLE Branch ALTER COLUMN lifecycle_status SET DEFAULT 1;
 
 ALTER TABLE Branch ADD COLUMN landing_target int
     CONSTRAINT branch_landing_target_fk REFERENCES Branch;
@@ -72,7 +72,7 @@ UPDATE Branch SET
     product_locked = DEFAULT,
     home_page_locked = DEFAULT,
     starred = DEFAULT,
-    branch_status = DEFAULT,
+    lifecycle_status = DEFAULT,
     current_activity = DEFAULT,
     mirror_status = DEFAULT,
     mirror_failures = DEFAULT;
@@ -92,7 +92,7 @@ ALTER TABLE Branch ALTER COLUMN owner SET NOT NULL;
 ALTER TABLE Branch ALTER COLUMN product_locked SET NOT NULL;
 ALTER TABLE Branch ALTER COLUMN home_page_locked SET NOT NULL;
 ALTER TABLE Branch ALTER COLUMN starred SET NOT NULL;
-ALTER TABLE Branch ALTER COLUMN branch_status SET NOT NULL;
+ALTER TABLE Branch ALTER COLUMN lifecycle_status SET NOT NULL;
 ALTER TABLE Branch ALTER COLUMN current_activity SET NOT NULL;
 ALTER TABLE Branch ALTER COLUMN mirror_status SET NOT NULL;
 ALTER TABLE Branch ALTER COLUMN mirror_failures SET NOT NULL;
