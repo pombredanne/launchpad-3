@@ -28,6 +28,8 @@ from canonical.lp.dbschema import \
     EnumCol, BinaryPackagePriority, PackagePublishingStatus, \
     PackagePublishingPocket
 
+from warnings import warn
+
 
 class BinaryPackagePublishing(SQLBase):
     """A binary package publishing record."""
@@ -223,13 +225,18 @@ class SecureSourcePackagePublishingHistory(SQLBase):
     @classmethod
     def selectBy(cls, *args, **kwargs):
         """Prevent selecting embargo packages by default"""
+        if 'embargo' in kwargs:
+            if kwargs['embargo']:
+                warn("SecureSourcePackagePublishingHistory.selectBy called "
+                     "with embargo argument set to True",
+                     stacklevel=2)
         kwargs['embargo'] = False
-        return super(SourcePackagePublishingHistory,
+        return super(SecureSourcePackagePublishingHistory,
                      cls).selectBy(*args, **kwargs)
 
     @classmethod
-    def fullSelectBy(cls, *args, **kwargs):
-        return super(SourcePackagePublishingHistory,
+    def selectByWithEmbargoedEntries(cls, *args, **kwargs):
+        return super(SecureSourcePackagePublishingHistory,
                      cls).selectBy(*args, **kwargs)
 
 
@@ -261,13 +268,18 @@ class SecureBinaryPackagePublishingHistory(SQLBase):
     @classmethod
     def selectBy(cls, *args, **kwargs):
         """Prevent selecting embargo packages by default"""
+        if 'embargo' in kwargs:
+            if kwargs['embargo']:
+                warn("SecureBinaryPackagePublishingHistory.selectBy called "
+                     "with embargo argument set to True",
+                     stacklevel=2)
         kwargs['embargo'] = False
-        return super(PackagePublishingHistory,
+        return super(SecureBinaryPackagePublishingHistory,
                      cls).selectBy(*args, **kwargs)
 
     @classmethod
-    def fullSelectBy(cls, *args, **kwargs):
-        return super(PackagePublishingHistory,
+    def selectByWithEmbargoedEntries(cls, *args, **kwargs):
+        return super(SecureBinaryPackagePublishingHistory,
                      cls).selectBy(*args, **kwargs)
     
 class SourcePackagePublishingHistory(SQLBase):

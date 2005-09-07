@@ -10,10 +10,12 @@ from canonical.lp import initZopeless
 from canonical.archivepublisher import \
      DiskPool, Poolifier, POOL_DEBIAN, Config, Publisher, Dominator
 import sys, os
-from canonical.launchpad.database import \
-     Distribution, DistroRelease, SourcePackagePublishingView, \
-     BinaryPackagePublishingView, SourcePackageFilePublishing, \
-     BinaryPackageFilePublishing
+
+from canonical.launchpad.database import (
+    Distribution, DistroRelease, SourcePackagePublishingView,
+    BinaryPackagePublishingView, SourcePackageFilePublishing,
+    BinaryPackageFilePublishing, SourcePackagePublishing,
+    BinaryPackagePublishing)
 
 from sqlobject import AND
 
@@ -21,6 +23,11 @@ from canonical.lp.dbschema import \
      PackagePublishingStatus, PackagePublishingPocket
 
 from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import sqlvalues, SQLBase
+
+# We do this for more accurate exceptions. It doesn't slow us down very
+# much so it's not worth making it an option.
+SQLBase._lazyUpdate = False
 
 distroname = sys.argv[1]
 
@@ -43,18 +50,18 @@ drs = DistroRelease.selectBy(distributionID=distro.id)
 
 debug("Finding configuration...")
 
-c = Config(distro, drs)
+pubconf = Config(distro, drs)
 
 debug("Making directories as needed...")
 
 dirs = [
-    c.distroroot,
-    c.poolroot,
-    c.distsroot,
-    c.archiveroot,
-    c.cacheroot,
-    c.overrideroot,
-    c.miscroot
+    pubconf.distroroot,
+    pubconf.poolroot,
+    pubconf.distsroot,
+    pubconf.archiveroot,
+    pubconf.cacheroot,
+    pubconf.overrideroot,
+    pubconf.miscroot
     ]
 
 for d in dirs:
@@ -65,13 +72,13 @@ for d in dirs:
 debug("Preparing on-disk pool representation...")
 
 dp = DiskPool(Poolifier(POOL_DEBIAN),
-              c.poolroot, logging.getLogger("DiskPool"))
+              pubconf.poolroot, logging.getLogger("DiskPool"))
 
 dp.scan()
 
 debug("Preparing publisher...")
 
-pub = Publisher(logging.getLogger("Publisher"), c, dp)
+pub = Publisher(logging.getLogger("Publisher"), pubconf, dp)
 
 try:
     # main publishing section
@@ -95,7 +102,7 @@ try:
     debug("Attempting to perform domination...")
     for distrorelease in drs:
         for pocket in PackagePublishingPocket.items:
-            judgejudy.judgeAndDominate(distrorelease,pocket)            
+            judgejudy.judgeAndDominate(distrorelease,pocket, pubconf)
 except:
     logging.getLogger().exception("Bad muju while dominating")
     txn.abort()
@@ -153,17 +160,27 @@ except:
 try:
     # Unpublish death row
     debug("Unpublishing death row...")
-    consrc = SourcePackagePublishing.select(
-        AND(SourcePackagePublishing.q.status == PackagePublishingStatus.PENDINGREMOVAL,
-            SourcePackagePublishing.q.scheduleddeletiondate <= UTC_NOW))
-    conbin = PackagePublishing.select(
-        AND(PackagePublishing.q.status == PackagePublishingStatus.PENDINGREMOVAL,
-            PackagePublishing.q.scheduleddeletiondate <= UTC_NOW))
-    
-    livesrc = SourcePackagePublishing.select(
-        SourcePackagePublishing.q.status != PackagePublishingStatus.PENDINGREMOVAL)
-    livebin = PackagePublishing.select(
-        PackagePublishing.q.status != PackagePublishingStatus.PENDINGREMOVAL)
+
+    consrc = SourcePackageFilePublishing.select("""
+        publishingstatus = %s AND
+        sourcepackagepublishing.id =
+                      sourcepackagefilepublishing.sourcepackagepublishing AND
+        sourcepackagepublishing.scheduleddeletiondate <= %s
+        """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL, UTC_NOW),
+                            clauseTables=['sourcepackagepublishing'])
+
+    conbin = BinaryPackageFilePublishing.select("""
+        publishingstatus = %s AND
+        binarypackagepublishing.id =
+                      binarypackagefilepublishing.binarypackagepublishing AND
+        binarypackagepublishing.scheduleddeletiondate <= %s
+        """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL, UTC_NOW),
+                            clauseTables=['binarypackagepublishing'])
+
+    livesrc = SourcePackageFilePublishing.select(
+        SourcePackageFilePublishing.q.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL)
+    livebin = BinaryPackageFilePublishing.select(
+        BinaryPackageFilePublishing.q.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL)
     
     pub.unpublishDeathRow(consrc, conbin, livesrc, livebin)
 
