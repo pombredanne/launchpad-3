@@ -95,7 +95,7 @@ Next, we need to grab some values to provide for priority, severity and status.
 
 XXX: Brad Bollenbach, 2005-02-24: See the bottom of this file for a chunk of
 test documentation that is missing from here, due to problems with resetting
-the connection after an IntegrityError is raised. ARGH.
+the connection after a ProgrammingError is raised. ARGH.
 
 Retrieving and Searching for Bug Tasks
 --------------------------------------
@@ -600,8 +600,8 @@ Let's just make sure that the tasks on bug_one sort correctly.
     ubuntu hoary
     debian mozilla-firefox
 
-Handling IntegrityError
------------------------
+Handling IntegrityError and ProgrammingError
+--------------------------------------------
 
 XXX: Brad Bollenbach, 2005-02-24: This bit testing the IntegrityError should be
 higher up in the file (under the explanation about creating tasks), but I can't

@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = [
     'IMessagesView',
     'IMessage',
+    'IMessageOnTicket',
     'IMessageSet',
     'IMessageChunk',
     'IAddMessage',
@@ -17,7 +18,7 @@ __all__ = [
 from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.exceptions import NotFoundError
-from zope.schema import Datetime, Int, Text, TextLine
+from zope.schema import Datetime, Int, Text, TextLine, Bool
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 _ = MessageIDFactory('launchpad')
@@ -39,6 +40,7 @@ class IMessage(Interface):
     subject = TextLine(
             title=_('Subject'), required=True, readonly=True,
             )
+    content = Text(title=_("Message"), required=True, readonly=True)
     owner = Int(
             title=_('Person'), required=False, readonly=True,
             )
@@ -65,6 +67,16 @@ class IMessage(Interface):
 
     def __iter__():
         """Iterate over all the message chunks."""
+
+
+class IMessageOnTicket(IMessage):
+    """A specific extension to the basic Message, used for ITickets."""
+
+    resolved = Bool(title=_("Resolved"), required=False,
+        description=_("Check this box to indicate that you think this "
+        "problem is resolved. Note: only the person who made the technical "
+        "support request can actually close the ticket, other people can "
+        "only indicate that they believe it has been answered."))
 
 
 class IMessageSet(Interface):

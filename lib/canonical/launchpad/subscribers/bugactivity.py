@@ -216,15 +216,13 @@ def record_product_infestation_edited(product_infestation_edited,
                 message='XXX: not yet implemented')
 
 def record_bugsubscription_added(bugsubscription_added, object_created_event):
-    sv = vocabulary_registry.get(None, "Subscription")
-    term = sv.getTerm(bugsubscription_added.subscription)
     getUtility(IBugActivitySet).new(
         bug=bugsubscription_added.bug,
         datechanged=UTC_NOW,
         person=object_created_event.user,
         whatchanged='bug',
-        message='added subscriber %s (%s)' % (
-            bugsubscription_added.person.browsername, term.token))
+        message='added subscriber %s' % (
+            bugsubscription_added.person.browsername))
 
 def record_bugsubscription_edited(bugsubscription_edited,
                                   sqlobject_modified_event):

@@ -6,6 +6,8 @@ __all__ = ['BinaryPackageFile', 'SourcePackageReleaseFile', 'DownloadURL']
 from urllib2 import URLError
 
 from zope.interface import implements
+from zope.component import getUtility
+
 from sqlobject import ForeignKey
 from canonical.database.sqlbase import SQLBase
 

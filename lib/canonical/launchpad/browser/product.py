@@ -28,7 +28,7 @@ from canonical.launchpad.webapp import (
 
 __all__ = ['ProductFacets', 'ProductView', 'ProductEditView',
            'ProductFileBugView', 'ProductRdfView', 'ProductSetView',
-           'ProductSetAddView', 'ProductSeriesAddView']
+           'ProductAddView', 'ProductSeriesAddView']
 
 class ProductFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for
@@ -37,8 +37,8 @@ class ProductFacets(StandardLaunchpadFacets):
 
     usedfor = IProduct
 
-    links = ['overview', 'bugs', 'bounties', 'specs', 'translations',
-             'calendar']
+    links = ['overview', 'bugs', 'tickets', 'bounties', 'specs',
+             'translations', 'calendar']
 
     def overview(self):
         target = ''
@@ -50,6 +50,12 @@ class ProductFacets(StandardLaunchpadFacets):
         target = '+bugs'
         text = 'Bugs'
         summary = 'Bugs reported about %s' % self.context.displayname
+        return Link(target, text, summary)
+
+    def tickets(self):
+        target = '+tickets'
+        text = 'Tickets'
+        summary = 'Technical support requests for %s' % self.context.displayname
         return Link(target, text, summary)
 
     def bounties(self):
@@ -247,9 +253,8 @@ class ProductEditView(ProductView, SQLObjectEditView):
         SQLObjectEditView.__init__(self, context, request)
 
     def changed(self):
-        # If the name changed then the URL changed, so redirect:
-        self.request.response.redirect(
-            '../%s/+edit' % urlquote(self.context.name))
+        # If the name changed then the URL changed, so redirect
+        self.request.response.redirect(canonical_url(self.context))
 
 
 class ProductSeriesAddView(AddView):
@@ -382,9 +387,9 @@ class ProductSetView:
         return self.results
 
 
-class ProductSetAddView(AddView):
+class ProductAddView(AddView):
 
-    __used_for__ = IProductSet
+    __used_for__ = IProduct
 
     def __init__(self, context, request):
         self.context = context

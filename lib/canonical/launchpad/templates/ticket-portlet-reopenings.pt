@@ -1,0 +1,18 @@
+<div class="portlet">
+  <h4>This ticket was reopened:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li class="ticket" tal:repeat="reop context/reopenings">
+        <span tal:replace="reop/datecreated/fmt:date">2005-10-05</span> by
+        <img src="/++resource++user">
+        <a tal:attributes="href reop/reopener/fmt:url"
+           tal:content="reop/reopener/browsername">Foo Bar</a>
+      </li>
+      <li class="alert" tal:condition="not: context/reopenings">
+        <i>Never re-opened.</i>
+      </li>
+    </ul>
+
+</div>

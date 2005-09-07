@@ -283,21 +283,6 @@ class ViewWithBugTaskContext:
         else:
             return False
 
-    def getCCs(self):
-        return [
-            s for s in self.context.bug.subscriptions
-                if s.subscription==dbschema.BugSubscription.CC]
-
-    def getWatches(self):
-        return [
-            s for s in self.context.bug.subscriptions
-                if s.subscription==dbschema.BugSubscription.WATCH]
-
-    def getIgnores(self):
-        return [
-            s for s in self.context.bug.subscriptions
-                if s.subscription==dbschema.BugSubscription.IGNORE]
-
 
 class BugTaskViewBase:
     """The base class for IBugTask view classes."""

@@ -9,9 +9,10 @@ files in this directory."""
 from canonical.launchpad.browser.bazaar import *
 from canonical.launchpad.browser.binarypackagename import *
 from canonical.launchpad.browser.bounty import *
+from canonical.launchpad.browser.bug import *
 from canonical.launchpad.browser.bugattachment import *
 from canonical.launchpad.browser.bugextref import *
-from canonical.launchpad.browser.bug import *
+from canonical.launchpad.browser.bugsubscription import *
 from canonical.launchpad.browser.bugtask import *
 from canonical.launchpad.browser.bugtracker import *
 from canonical.launchpad.browser.cal import *
@@ -47,6 +48,9 @@ from canonical.launchpad.browser.specificationbug import *
 from canonical.launchpad.browser.specificationdependency import *
 from canonical.launchpad.browser.specificationreview import *
 from canonical.launchpad.browser.specificationtarget import *
+from canonical.launchpad.browser.ticket import *
+from canonical.launchpad.browser.ticketbug import *
+from canonical.launchpad.browser.tickettarget import *
 from canonical.launchpad.browser.team import *
 from canonical.launchpad.browser.translationgroup import *
 from canonical.launchpad.browser.translator import *

@@ -66,8 +66,8 @@ class PersonFacets(StandardLaunchpadFacets):
 
     usedfor = IPerson
 
-    links = ['overview', 'bugs', 'specs', 'bounties', 'translations',
-             'calendar']
+    links = ['overview', 'bugs', 'tickets', 'specs', 'bounties',
+             'translations', 'calendar']
 
     def overview(self):
         target = ''

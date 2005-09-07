@@ -1,0 +1,17 @@
+<div class="portlet">
+  <h4>Subscribers to Ticket #<span tal:replace="context/id">4</span>:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul class="people">
+      <li tal:repeat="sub context/subscriptions">
+        <a href="#"
+           tal:content="sub/person/browsername"
+           tal:attributes="href sub/person/fmt:url">Dafydd Harries</a>
+      </li>
+      <li class="info" tal:condition="not: context/subscriptions">
+        <i>No subscribers</i>
+      </li>
+    </ul>
+
+</div>

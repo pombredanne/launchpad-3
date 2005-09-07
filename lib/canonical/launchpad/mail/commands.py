@@ -19,8 +19,7 @@ from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
 
-from canonical.lp.dbschema import (
-    BugTaskStatus, BugSubscription, BugTaskSeverity)
+from canonical.lp.dbschema import BugTaskStatus, BugTaskSeverity
 
 
 def normalize_arguments(string_args):
@@ -167,11 +166,10 @@ class SubscribeEmailCommand(EmailCommand):
 
     def execute(self, bug, current_event):
         string_args = self.string_args
+        # preserve compatibility with the original command that let you
+        # specify a subscription type
         if len(string_args) == 2:
             subscription_name = string_args.pop()
-            subscription = BugSubscription.items[subscription_name.upper()]
-        else:
-            subscription = BugSubscription.CC
 
         if len(string_args) == 1:
             person_name_or_email = string_args.pop()
@@ -193,17 +191,15 @@ class SubscribeEmailCommand(EmailCommand):
                 " Got %s: %s" % (len(string_args), ' '.join(string_args)))
 
         if bug.isSubscribed(person):
+            # the person is already subscribe so there is no event
+            event = None
+            # but we still need to find the subscription
             for bugsubscription in bug.subscriptions:
                 if bugsubscription.person == person:
-                    snapshot = Snapshot(
-                        bugsubscription, names=['subscription'])
-                    bugsubscription.subscription = subscription
-                    event = SQLObjectModifiedEvent(
-                        bugsubscription, snapshot, ['subscription'])
                     break
 
         else:
-            bugsubscription = bug.subscribe(person, subscription)
+            bugsubscription = bug.subscribe(person)
             event = SQLObjectCreatedEvent(bugsubscription)
 
         return bugsubscription, event

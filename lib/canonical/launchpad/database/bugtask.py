@@ -22,7 +22,7 @@ from zope.interface import implements, directlyProvides, directlyProvidedBy
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.lp.dbschema import (
-    EnumCol, BugTaskPriority, BugTaskStatus, BugTaskSeverity, BugSubscription)
+    EnumCol, BugTaskPriority, BugTaskStatus, BugTaskSeverity)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -460,12 +460,9 @@ class BugTaskSet:
                           WHERE Bug.id = BugSubscription.bug AND
                                 TeamParticipation.person = %(personid)s AND
                                 BugSubscription.person =
-                                  TeamParticipation.team AND
-                                BugSubscription.subscription IN
-                                    (%(cc)s, %(watch)s))))""" %
-                      sqlvalues(personid=params.user.id,
-                                cc=BugSubscription.CC,
-                                watch=BugSubscription.WATCH))
+                                  TeamParticipation.team))) 
+                                  """ %
+                      sqlvalues(personid=params.user.id))
         else:
             clause = "BugTask.bug = Bug.id AND Bug.private = FALSE"
         extra_clauses.append(clause)
@@ -542,12 +539,9 @@ class BugTaskSet:
                         SELECT Bug.id FROM Bug, BugSubscription WHERE
                            (Bug.id = BugSubscription.bug) AND
                            (BugSubscription.person = TeamParticipation.team) AND
-                           (TeamParticipation.person = %(personid)s) AND
-                           (BugSubscription.subscription IN
-                               (%(cc)s, %(watch)s))))))'''
-                % sqlvalues(personid=user.id,
-                            cc=BugSubscription.CC,
-                            watch=BugSubscription.WATCH))
+                           (TeamParticipation.person = %(personid)s)
+                               ))))'''
+                % sqlvalues(personid=user.id))
         else:
             privatenessFilter += 'BugTask.bug = Bug.id AND Bug.private = FALSE'
 

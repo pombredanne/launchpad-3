@@ -121,7 +121,7 @@ binarypackagerelease_index = 'Binary Package Release Details'
 
 binarypackagerelease_license = 'Binary Package Licence'
 
-bounties = 'Launchpad Bounties'
+bounties_index = 'Launchpad Bounty Tracker'
 
 bounty_add = 'Register a New Bounty in Launchpad'
 
@@ -153,6 +153,8 @@ def bug_add(context, view):
         return context_title(context, view)
     else:
         return "Report a bug"
+
+bug_addsubscriber = LaunchbagBugID("Bug #%d - Add Subscriber")
 
 bug_attachment_add = LaunchbagBugID('Bug #%d - Add an Attachment')
 
@@ -186,7 +188,7 @@ bug_secrecy = ContextId('Set secrecy for bug #%s')
 
 bug_secrecy = ContextId('Bug #%d - Set Bug Secrecy')
 
-bug_subscriber_add = LaunchbagBugID("Bug #%d - Add Subscriber")
+bug_subscription = ContextId('Subscribe or unsubscribe from Bug #%s')
 
 bug_watch_add = LaunchbagBugID('Bug #%d - Add an External Bug Watch')
 
@@ -281,13 +283,15 @@ distribution_members = ContextTitle('%s distribution members')
 
 distribution_memberteam = ContextTitle("Change %s's distribution team")
 
+distribution_translations = ContextDisplayName('Translating %s')
+
 distribution_translators = 'Appoint Distribution Translation Group'
+
+distribution_index = ContextTitle('Launchpad Distribution Summary: %s')
 
 distro_add = 'Adding New Distribution'
 
 distro_edit = 'Create a new Distribution in Launchpad'
-
-distribution = ContextTitle('Launchpad Distribution Summary: %s')
 
 # distro_sources.pt.OBSELETE
 # <title metal:fill-slot="title"><span tal:replace="context/title" />: Source
@@ -417,15 +421,17 @@ malone_index = 'Malone: Collaborative Open Source Bug Management'
 
 malone_to_do = 'Malone ToDo'
 
+# messagechunk_snippet is a fragment
+
+# messages_index is a redirect
+
+message_add = ContextTitle('Add Message to %s')
+
 milestone_add = ContextDisplayName('Add Milestone for %s')
 
 milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
-
-# messagechunk_snippet is a fragment
-
-# messages_index is a redirect
 
 no_app_component_yet = 'Missing App Component'
 
@@ -655,6 +661,8 @@ signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 
+sourcepackage = ContextTitle('%s')
+
 def sourcepackage_bugs(context, view):
     return 'Bugs in %s %s' % (
         context.distrorelease.distribution.name,
@@ -666,12 +674,19 @@ sourcepackage_changelog = 'Source Package Changelog'
 
 sourcepackage_filebug = ContextTitle("Report a Bug in %s")
 
+sourcepackage_gethelp = ContextTitle('Sources of Online Help for %s')
+
 sourcepackage_hctstatus = ContextTitle('Source Package HCT Status - %s')
 
 def sourcepackage_index(context, view):
     return '%s Source Packages' % context.distrorelease.title
 
-sourcepackage = ContextTitle('%s')
+sourcepackage_packaging = ContextTitle('Define the Upstream Series of %s')
+
+sourcepackage_translate = ContextTitle('Help to Translate %s')
+
+sourcepackage_translations = ContextTitle(
+    'Rosetta Translation Templates for %s')
 
 sourcepackagebuild_buildlog = 'Source Package Build Log'
 
@@ -688,9 +703,6 @@ sourcepackagerelease_index = ContextTitle('Source Package %s')
 
 def sourcepackages(context, view):
     return '%s Source Packages' % context.distrorelease.title
-
-sourcepackage_translations = ContextTitle(
-    'Rosetta Translation Templates for %s')
 
 sources_index = 'Bazaar: Upstream Revision Control Imports'
 
@@ -739,6 +751,32 @@ specifications_index = ContextTitle('%s')
 specificationtarget_specs = ContextTitle('Specifications for %s')
 
 specificationtarget_specplan = ContextTitle('Project Plan for %s')
+
+tickets_index = 'Launchpad Support Ticket Tracker'
+
+ticket_add = ContextDisplayName('Make Support Request for %s')
+
+ticket_bug = ContextId('Link Ticket #%s to Bug')
+
+ticket_edit = ContextId('Edit Ticket #%s Details')
+
+def ticket_index(context, view):
+    return '%s Support Ticket #%d: %s' % (context.target.displayname,
+        context.id, context.title)
+
+ticket_history = ContextId('Ticket #%s History')
+
+ticket_makebug = ContextId('File Bug Report Based on Ticket #%s')
+
+ticket_reject = ContextId('Reject Ticket #%s as Invalid')
+
+ticket_removebug = ContextId('Remove Bug Link from Ticket #%s')
+
+ticket_reopen = ContextId('Reopen Ticket #%s')
+
+ticket_subscription = ContextId('Subscription to Ticket #%s')
+
+tickettarget_tickets = ContextTitle('Support Requests for %s')
 
 standardshipitrequests_index = 'Standard ShipIt Requests'
 

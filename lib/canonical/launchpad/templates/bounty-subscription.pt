@@ -34,8 +34,6 @@
 
   <form action="." method="POST">
 
-    <div>
-    </div>
     <div class="actions">
       <input type="submit"
              name="cancel"

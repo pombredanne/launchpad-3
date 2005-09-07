@@ -18,10 +18,17 @@
            tal:attributes="href string:$bug_url/+duplicate">Mark as
            Duplicate</a>
       </li>
+      <li class="add" tal:condition="not: view/subscription">
+        <a href="#" tal:attributes="href string:$bug_url/+subscribe"
+           >Subscribe</a>
+      </li>
+      <li class="add" tal:condition="view/subscription">
+        <a href="#" tal:attributes="href string:$bug_url/+subscribe"
+           >Unsubscribe</a>
+      </li>
       <li class="add">
-        <a href="#"
-           tal:attributes="href string:$bug_url/people/+new"
-           >Add Subscriber</a>
+        <a href="#" tal:attributes="href string:$bug_url/+addsubscriber"
+           >Subscribe Someone Else</a>
       </li>
       <li class="add">
         <a href="#" tal:attributes="href

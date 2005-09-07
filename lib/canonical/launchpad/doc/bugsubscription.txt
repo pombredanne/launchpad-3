@@ -5,18 +5,6 @@ Bugs are problems reported in software. Bugs can be assigned to packages and
 products to be fixed. People can "subscribe" to bugs. This document is about
 people subscribing to bugs.
 
-Subscription Types
-==================
-
-There are three kinds of bug subscription.
-
-Cc: A Person chooses to receive notification emails related to this bug.
-
-Watch: A Person chooses to see this bug in their web reports.
-
-Ignore: A Person (e.g. a package maintainer), chooses to not receive emails
-about this bug, when normally they would have.
-
 Accessing Bug Subscriber Lists
 ==============================
 
@@ -36,7 +24,7 @@ IBug.subscriptions attribute:
     >>> bugset = getUtility(IBugSet)
     >>> bug = bugset.get(1)
     >>> len(bug.subscriptions)
-    4
+    2
 
 This is slightly misleading though, because this only gives us the
 list of explicit subscriptions on the bug, when in fact, there are
@@ -46,10 +34,8 @@ Implicit vs. Explicit Subscriptions
 -----------------------------------
 
 An explicit subscription means that there's a row in the
-BugSubscription for that subscription. An implicit subscription:
-
-  1. Does not have a corresponding row in the BugSubscription table.
-  2. Is always of type CC.
+BugSubscription for that subscription. An implicit subscription does not
+have a corresponding row in the BugSubscription table.
 
 To get the entire list of email addresses that should receive a
 notification email on a bug, call
@@ -65,7 +51,7 @@ IBug.isSubscribed, passing in an IPerson:
     >>> personset = getUtility(IPersonSet)
     >>> bug.isSubscribed(personset.get(16))
     False
-    >>> bug.isSubscribed(personset.get(2))
+    >>> bug.isSubscribed(personset.get(12))
     True
 
 Subscribing and Unsubscribing
@@ -74,26 +60,13 @@ Subscribing and Unsubscribing
 To subscribe people to and unsubscribe people from a bug, use
 IBug.subscribe and IBug.unsubscribe:
 
-    >>> from canonical.lp.dbschema import BugSubscription
     >>> foobar = personset.get(16)
     >>> subscribed_people = [s.person.id for s in bug.subscriptions]
     >>> 16 not in subscribed_people
     True
-    >>> bug.subscribe(foobar, BugSubscription.CC)
+    >>> bug.subscribe(foobar)
     <BugSubscription at ...>
-    >>> subscriptions = [(s.person.id, s.subscription) for s in bug.subscriptions]
-    >>> (16, BugSubscription.CC) in subscriptions
+    >>> subscriptions = [s.person.id for s in bug.subscriptions]
+    >>> 16 in subscriptions
     True
 
-    >>> bug.unsubscribe(foobar)
-    >>> 'Foo Bar' in [subscription.person.displayname
-    ...               for subscription in bug.subscriptions]
-    False
-
-If we try to unsubscribe Foo Bar again a ValueError is raised, since
-he's not subscribed to the bug:
-
-    >>> bug.unsubscribe(foobar)
-    Traceback (most recent call last):
-    ...
-    ValueError: Person with name 'name16' is not subscribed to this bug
