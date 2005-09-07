@@ -15,7 +15,7 @@ from canonical.launchpad.scripts import logger, logger_options, db_options
 
 # Defines parser and locale to use.
 DEFAULT_CONFIG = 'default'
-TSEARCH2_SQL = '/usr/share/postgresql/7.4/contrib/tsearch2.sql'
+TSEARCH2_SQL = '/usr/share/postgresql/contrib/tsearch2.sql'
 PATCH_SQL = os.path.join(
         os.path.dirname(__file__), 'regprocedure_update.sql'
         )
