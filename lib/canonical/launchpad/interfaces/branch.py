@@ -32,7 +32,7 @@ class IBranch(IHasOwner):
         "short, unique, and descriptive, because it will be used in URLs. "
         "Examples: mozilla-type-ahead-find, postgres-smart-serial."),
         constraint=valid_name)
-    title = Text(
+    title = TextLine(
         title=_('Title'), required=True, description=_("Describe the "
         "branch as clearly as possible in up to 70 characters. This "
         "title is displayed in every branch list or report."))

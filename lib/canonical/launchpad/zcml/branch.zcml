@@ -41,4 +41,30 @@
 
     </browser:pages>
 
+  <browser:editform
+    name="+edit"
+    schema="canonical.launchpad.interfaces.IBranch"
+    class="canonical.launchpad.browser.BranchEditView"
+    label="Edit Branch Details"
+    fields="product name title url home_page summary whiteboard"
+    permission="launchpad.Edit"
+    template="../templates/branch-edit.pt">
+    <browser:widget
+      field="whiteboard"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="5" />
+    <browser:widget
+      field="url"
+      class="zope.app.form.browser.TextWidget"
+      displayWidth="65" />
+    <browser:widget
+      field="home_page"
+      class="zope.app.form.browser.TextWidget"
+      displayWidth="65" />
+    <browser:widget
+      field="summary"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="5" />
+  </browser:editform>
+
 </configure>

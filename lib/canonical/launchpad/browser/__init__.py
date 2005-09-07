@@ -9,6 +9,7 @@ files in this directory."""
 from canonical.launchpad.browser.bazaar import *
 from canonical.launchpad.browser.binarypackagename import *
 from canonical.launchpad.browser.bounty import *
+from canonical.launchpad.browser.branch import *
 from canonical.launchpad.browser.bugattachment import *
 from canonical.launchpad.browser.bugextref import *
 from canonical.launchpad.browser.bug import *

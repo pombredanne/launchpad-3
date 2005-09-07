@@ -137,6 +137,8 @@ bounty_subscription = 'Bounty Subscription'
 
 branch_index = ContextTitle('Bazaar Branch: %s')
 
+branch_edit = 'Edit Branch Details'
+
 bug_activity = ContextId('Bug #%s - Activity Log')
 
 def bug_add(context, view):
