@@ -24,7 +24,9 @@ from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
-from canonical.database.sqlbase import SQLBase, quote, cursor, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase, quote, cursor, sqlvalues, flush_database_updates,
+    flush_database_caches)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
@@ -901,6 +903,10 @@ class PersonSet:
         if not IPerson.providedBy(to_person):
             raise TypeError('to_person is not a person.')
 
+        # since we are doing direct SQL manipulation, make sure all
+        # changes have been flushed to the database
+        flush_database_updates()
+
         if len(getUtility(IEmailAddressSet).getByPerson(from_person)) > 0:
             raise ValueError('from_person still has email addresses.')
 
@@ -1093,6 +1099,10 @@ class PersonSet:
         cur.execute('''
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
             ''' % vars())
+
+        # Since we've updated the database behind SQLObject's back,
+        # flush its caches.
+        flush_database_caches()
 
 
 class EmailAddress(SQLBase):

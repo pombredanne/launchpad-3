@@ -78,7 +78,7 @@ def findEmailClusters(minvalid=validity.MARGINAL):
             email_cluster.update(emails[fpr])
         yield email_cluster
 
-def _mergeOrAddEmails(personset, emailset, cluster):
+def _mergeOrAddEmails(personset, emailset, cluster, logger):
     """Helper function for mergeClusters()
 
     The strategy for merging clusters is as follows:
@@ -113,9 +113,11 @@ def _mergeOrAddEmails(personset, emailset, cluster):
         validpeople = set(person for person in people
                           if person.preferredemail is not None)
         if len(validpeople) > 1:
-            # XXX: jamesh 20050823
-            # what to do when multiple accounts in the cluster have
-            # valid email addresses?
+            if logger:
+                logger.warning('Multiple validated user accounts found for cluster %r: %s',
+                               cluster,
+                               ', '.join(['%s (%d)' % (person.name, person.id)
+                                          for person in validpeople]))
             return None
         elif len(validpeople) == 1:
             person = validpeople.pop()
@@ -128,11 +130,13 @@ def _mergeOrAddEmails(personset, emailset, cluster):
         for otherperson in people:
             for email in emailset.getByPerson(otherperson):
                 email.person = person
-        flush_database_updates()
 
         # merge people
         for otherperson in people:
-            print 'Merging %s into %s' % (otherperson.name, person.name)
+            if logger:
+                logger.info('Merging %s (%d) into %s (%d)',
+                            otherperson.name, otherperson.id,
+                            person.name, person.id)
             personset.merge(otherperson, person)
 
     elif len(people) == 1:
@@ -147,13 +151,16 @@ def _mergeOrAddEmails(personset, emailset, cluster):
     existing = set(email.email for email in emailset.getByPerson(person))
     existing.update(person.unvalidatedemails)
     for newemail in cluster.difference(existing):
+        if logger:
+            logger.info('Adding email %s to %s (%d)',
+                        newemail, person.name, person.id)
         emailset.new(newemail, person)
 
     flush_database_updates()
 
     return person
 
-def mergeClusters(clusters, ztm=None):
+def mergeClusters(clusters, ztm=None, logger=None):
     """Merge accounts for clusters of addresses.
 
     The first argument is an iterator returning sets of email addresses.
@@ -164,5 +171,5 @@ def mergeClusters(clusters, ztm=None):
         if not cluster: continue
 
         if ztm: ztm.begin()
-        _mergeOrAddEmails(personset, emailset, cluster)
+        _mergeOrAddEmails(personset, emailset, cluster, logger)
         if ztm: ztm.commit()

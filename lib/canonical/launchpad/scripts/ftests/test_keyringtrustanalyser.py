@@ -1,10 +1,10 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
 import unittest
-import transaction
+
 from canonical.functional import FunctionalTestCase
 from canonical.launchpad.ftests import login, ANONYMOUS, keys_for_tests
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
+from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import (
     IGPGHandler, IPersonSet, IEmailAddressSet)
 from canonical.lp.dbschema import EmailAddressStatus
@@ -17,13 +17,11 @@ foobar_fpr = '340CA3BB270E2716C9EE0B768E7EB7086C64A8C5'
 
 class TestKeyringTrustAnalyser(FunctionalTestCase):
     def setUp(self):
-        """Get a gpghandler and login"""
         FunctionalTestCase.setUp(self)
         login(ANONYMOUS)
         self.gpg_handler = getUtility(IGPGHandler)
 
     def tearDown(self):
-        """Zero out the gpg database"""
         #FIXME RBC: this should be a zope test cleanup thing per SteveA.
         self.gpg_handler.reset_local_state()
         FunctionalTestCase.tearDown(self)
@@ -96,8 +94,16 @@ class TestKeyringTrustAnalyser(FunctionalTestCase):
         self.assertTrue(set(['foo.bar@canonical.com']) in clusters)
 
 
-class TestMergeClusters(LaunchpadFunctionalTestCase):
+class TestMergeClusters(FunctionalTestCase):
     """Tests of the mergeClusters() routine."""
+
+    def setUp(self):
+        LaunchpadZopelessTestSetup().setUp()
+        FunctionalTestCase.setUp(self)
+
+    def tearDown(self):
+        FunctionalTestCase.tearDown(self)
+        LaunchpadZopelessTestSetup().tearDown()
 
     def _getEmails(self, person):
         emailset = getUtility(IEmailAddressSet)
@@ -132,8 +138,7 @@ class TestMergeClusters(LaunchpadFunctionalTestCase):
         # make sure newemail doesn't exist
         self.assertEqual(personset.getByEmail('newemail@canonical.com'), None)
 
-        mergeClusters([set(['test@canonical.com', 'newemail@canonical.com'])],
-                      transaction)
+        mergeClusters([set(['test@canonical.com', 'newemail@canonical.com'])])
         self.assertEqual(person.merged, None)
         emails = self._getEmails(person)
 
@@ -166,8 +171,7 @@ class TestMergeClusters(LaunchpadFunctionalTestCase):
         self.assertEqual(unvalidated_person.merged, None)
 
         mergeClusters([set(['test@canonical.com',
-                            'andrew.bennetts@ubuntulinux.com'])],
-                      transaction)
+                            'andrew.bennetts@ubuntulinux.com'])])
 
         # unvalidated person has been merged into the validated person
         self.assertEqual(validated_person.merged, None)
@@ -193,8 +197,7 @@ class TestMergeClusters(LaunchpadFunctionalTestCase):
         self.assertEqual(person1.merged, None)
         self.assertEqual(person2.merged, None)
 
-        mergeClusters([set(['test@canonical.com', 'foo.bar@canonical.com'])],
-                      transaction)
+        mergeClusters([set(['test@canonical.com', 'foo.bar@canonical.com'])])
 
         self.assertEqual(person1.merged, None)
         self.assertEqual(person2.merged, None)
@@ -220,8 +223,7 @@ class TestMergeClusters(LaunchpadFunctionalTestCase):
         self.assertEqual(person2.merged, None)
 
         mergeClusters([set(['andrew.bennetts@ubuntulinux.com',
-                            'guilherme.salgado@canonical.com'])],
-                      transaction)
+                            'guilherme.salgado@canonical.com'])])
 
         # since we don't know which account will be merged, swap
         # person1 and person2 if person1 was merged into person2.
