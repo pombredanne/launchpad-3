@@ -13,12 +13,6 @@ make_buildd()
 {
  buildd-genconfig --name=default --host=0.0.0.0 --port=8221 > \
   /etc/launchpad-buildd/default
- test -d /home/${USER}/filecache-default || mkdir /home/${USER}/filecache-default
- chown $USER:buildd /home/${USER}/filecache-default
- test -d /home/${USER}/ccache || mkdir /home/${USER}/ccache
- chown $USER:buildd /home/${USER}/ccache
- test -d /home/${USER}/logs || mkdir /home/${USER}/logs
- chown $USER:buildd /home/${USER}/logs
  echo Default buildd created.
 }
 
@@ -47,6 +41,14 @@ case "$1" in
 
 	# Prepare a default buildd...
 	test -e /etc/launchpad-buildd/default || make_buildd
+
+	# Create any missing directories and chown them appropriately
+	test -d /home/${USER}/filecache-default || mkdir /home/${USER}/filecache-default
+	chown $USER:buildd /home/${USER}/filecache-default
+	test -d /home/${USER}/ccache || mkdir /home/${USER}/ccache
+	chown $USER:buildd /home/${USER}/ccache
+	test -d /home/${USER}/logs || mkdir /home/${USER}/logs
+	chown $USER:buildd /home/${USER}/logs
 
 	chown $USER:buildd /var/log/launchpad-buildd /var/run/launchpad-buildd
 
