@@ -12,13 +12,19 @@
 
 <span class="dummy">
   1477 lines.
-  Status: Ready<br />
+</span>
+
+Status: <span tal:replace="context/lifecycle_status/title">Ready</span><br />
+
+<span class="dummy">
   <img src="/++resource++favorite_icon.gif" />
   <img src="/++resource++favorite_icon.gif" />
   <img src="/++resource++favorite_icon.gif" />
   <img src="/++resource++favorite_icon.gif" />
   31 changes in the past month - 3 comments<br />
-  <a href="http://wiki.launchpad.net/">http://wiki.launchpad.net</a>
 </span>
+
+<a tal:attributes="href context/home_page"
+   tal:content="context/home_page">http://wiki.launchpad.net</a>
 
 <hr />
