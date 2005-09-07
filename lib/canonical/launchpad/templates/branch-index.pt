@@ -23,10 +23,15 @@
 
   <table class="listing"  style="line-height: 1.5;">
     <tbody>
-      <tr style="border-top: 1px solid #8cacbb;"><td><b>Branch URL:</b></td>
+      <tr style="border-top: 1px solid #8cacbb;">
+        <td><b>Branch URL:</b></td>
         <td><tt><a tal:attributes="href context/url"
                    tal:content="structure view/url"
           >http://example.com/software/hello.devel</a></tt></td>
+      </tr>
+      <tr>
+        <td><b>Status:</b></td>
+        <td tal:content="context/lifecycle_status/title">Stable</td>
       </tr>
       <tr tal:condition="context/whiteboard">
         <td><b>Whiteboard:</b></td>
