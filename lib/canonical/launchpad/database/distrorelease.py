@@ -302,6 +302,11 @@ class DistroReleaseSet:
         """See IDistroReleaseSet."""
         return DistroRelease.selectBy(name=name)
 
+    def queryByName(self, distribution, name):
+        """See IDistroReleaseSet."""
+        return DistroRelease.selectOneBy(
+            distributionID=distribution.id, name=name)
+
     def findByVersion(self, version):
         """See IDistroReleaseSet."""
         return DistroRelease.selectBy(version=version)
