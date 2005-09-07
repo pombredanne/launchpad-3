@@ -6,9 +6,12 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/owner/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -30,7 +33,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="revision context/revisions">
+      <tr tal:repeat="revision context/latest_revisions">
         <td tal:content="revision/revision_date/fmt:date">2005-10-05</td>
         <td tal:content="revision/log_body">The revision commit message.</td>
       </tr>

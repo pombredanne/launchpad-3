@@ -76,6 +76,10 @@ class Branch(SQLBase):
     def revision_count(self):
         return Revision.selectBy(branchID=self.id).count()
 
+    def latest_revisions(self, quantity=10):
+        return Revision.selectBy(
+            branchID=self.id, orderBy='-id').limit(quantity)
+
     subjectRelations = MultipleJoin('BranchRelationship', joinColumn='subject')
     objectRelations = MultipleJoin('BranchRelationship', joinColumn='object')
 

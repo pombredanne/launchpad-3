@@ -2,7 +2,7 @@
 <b><a tal:attributes="href context/fmt:url" tal:content="context/title">Mozilla Thunderbird 0.9.1</a></b>
 - <img src="/++resource++user.gif" />
   <a tal:attributes="href context/owner/fmt:url"
-     tal:content="context/owner/displayname"
+     tal:content="context/owner/browsername"
   >Foo Bar</a><br />
 <span tal:replace="context/summary">
   This branch has a summary like this, it's a very simple description of

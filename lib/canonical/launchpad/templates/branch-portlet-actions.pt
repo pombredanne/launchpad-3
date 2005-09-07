@@ -1,0 +1,10 @@
+<div class="portlet">
+  <h4>Branch Actions:</h4>
+  <div class="portletBody portletContent">
+    <ul>
+      <li class="edit">
+        <a href="+edit">Edit Branch Details</a>
+      </li>
+    </ul>
+  </div>
+</div>

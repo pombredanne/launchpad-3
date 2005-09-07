@@ -1,0 +1,35 @@
+<div class="portlet">
+  <h4 tal:content="context/title">branch title</h4>
+  <tal:comment replace="nothing">XXX: This is ugly when the branch title is an
+       Arch name, and needs to be changed to allow at least some word wrapping
+       -- David Allouche 2005-09-07</tal:comment>
+  <div class="portletBody portletContent">
+
+        <tal:block condition="context/home_page">
+          <b>External links:</b><br />
+          <img src="/++resource++link_icon.gif" alt="" />
+          <a tal:attributes="href context/home_page"
+             class="link">Home page</a><br />
+        </tal:block>
+
+        <b>Registrant:</b><br />
+        <img src="/++resource++user.gif">
+        <a tal:attributes="href context/owner/fmt:url"
+           tal:content="context/owner/browsername"
+           class="link">ownername
+        </a>
+        <br />
+
+        <tal:has_product condition="context/product">
+          <b>Product:</b><br />
+          <a tal:attributes="href context/product/fmt:url"
+             tal:content="context/product/displayname">Mozilla Firefox</a>
+          <br />
+	</tal:has_product>
+
+        <b>Lifecycle Status:</b><br />
+        <span tal:replace="context/lifecycle_status/title">Experimental</span>
+        <br />
+
+  </div>
+</div>

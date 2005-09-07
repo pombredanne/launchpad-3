@@ -31,8 +31,14 @@
             lp:url="bazaar/branches/$Branch.id/" />
         <browser:page
             name="+summary-listing"
-            template="../templates/branch-summary-listing.pt"
-            />
+            template="../templates/branch-summary-listing.pt" />
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/branch-portlet-actions.pt" />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/branch-portlet-details.pt" />
+
     </browser:pages>
 
 </configure>
