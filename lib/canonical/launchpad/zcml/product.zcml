@@ -312,11 +312,11 @@
         name="+addbranch"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBranch"
-        fields="name owner product title url home_page lifecycle_status summary"
+        fields="name owner author product title url home_page lifecycle_status summary"
         class="canonical.launchpad.browser.BranchAddView"
-        keyword_arguments="name owner product title url home_page lifecycle_status summary"
+        keyword_arguments="name owner author product title url home_page lifecycle_status summary"
         permission="launchpad.AnyPerson"
-        template="../templates/branch-add.pt">
+        template="../templates/product-branch-add.pt">
         <browser:widget
             field="url"
             class="zope.app.form.browser.TextWidget"

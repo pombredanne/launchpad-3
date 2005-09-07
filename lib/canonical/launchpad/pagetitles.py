@@ -135,8 +135,6 @@ bounty_index = ContextTitle('Launchpad Bounty: %s')
 
 bounty_subscription = 'Bounty Subscription'
 
-branch_add = 'Register A New Bazaar Branch'
-
 branch_edit = 'Edit Branch Details'
 
 branch_index = ContextTitle('Bazaar Branch: %s')
@@ -460,6 +458,8 @@ person_assignedbugs = ContextDisplayName('Bugs Assigned To %s')
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
+person_branch_add = ContextDisplayName('Register a new branch for %s')
+
 person_branches = ContextDisplayName("%s's code branches in Launchpad")
 
 person_changepassword = 'Change your password'
@@ -632,6 +632,8 @@ rosetta_about = 'About Rosetta'
 rosetta_index = 'Rosetta'
 
 rosetta_preferences = 'Rosetta: Preferences'
+
+product_branch_add = ContextDisplayName('Register a new branch for %s')
 
 product_branches = ContextDisplayName('Branches for %s')
 

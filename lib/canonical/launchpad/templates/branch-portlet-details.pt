@@ -5,27 +5,32 @@
        -- David Allouche 2005-09-07</tal:comment>
   <div class="portletBody portletContent">
 
-        <tal:block condition="context/home_page">
+        <tal:has_homepage condition="context/home_page">
           <b>External links:</b><br />
           <img src="/++resource++link_icon.gif" alt="" />
           <a tal:attributes="href context/home_page"
              class="link">Home page</a><br />
-        </tal:block>
+        </tal:has_homepage>
+
+        <tal:has_author condition="context/author">
+          <b>Author:</b><br />
+          <img src="/++resource++user.gif">
+          <a tal:attributes="href context/author/fmt:url"
+             tal:content="context/author/browsername"
+             class="link">Author Nome</a><br />
+        </tal:has_author>
 
         <b>Registrant:</b><br />
         <img src="/++resource++user.gif">
         <a tal:attributes="href context/owner/fmt:url"
            tal:content="context/owner/browsername"
-           class="link">ownername
-        </a>
-        <br />
+           class="link">Owner Name</a><br />
 
         <tal:has_product condition="context/product">
           <b>Product:</b><br />
           <a tal:attributes="href context/product/fmt:url"
-             tal:content="context/product/displayname">Mozilla Firefox</a>
-          <br />
-	</tal:has_product>
+             tal:content="context/product/displayname">Mozilla Firefox</a><br />
+        </tal:has_product>
 
         <b>Lifecycle Status:</b><br />
         <span tal:replace="context/lifecycle_status/title">Experimental</span>

@@ -97,13 +97,13 @@ class BranchSet:
     implements(IBranchSet)
 
     def new(self, name, owner, product, url, title,
-            lifecycle_status=BranchLifecycleStatus.NEW, summary=None,
-            home_page=None):
+            lifecycle_status=BranchLifecycleStatus.NEW, author=None,
+            summary=None, home_page=None):
         if not home_page:
             home_page = None
         return Branch(
-            name=name, owner=owner, product=product, url=url, title=title,
-            lifecycle_status=lifecycle_status, summary=summary,
+            name=name, owner=owner, author=author, product=product, url=url,
+            title=title, lifecycle_status=lifecycle_status, summary=summary,
             home_page=home_page)
 
 

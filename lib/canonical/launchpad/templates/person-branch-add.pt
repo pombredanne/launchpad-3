@@ -20,9 +20,9 @@
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
     <div metal:fill-slot="extra_info" class="documentDescription">
-      Register a new Bazaar branch associated to the
-      <span tal:replace="context/displayname">Product Name</span>
-      product using the form below.
+      Register a new Bazaar branch whose author is
+      <span tal:replace="context/browsername">Person</span>
+      using the form below.
     </div>
 
   </div>

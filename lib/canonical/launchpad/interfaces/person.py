@@ -166,7 +166,10 @@ class IPerson(Interface):
     ircnicknames = Attribute("List of IRC nicknames of this Person.")
     jabberids = Attribute("List of Jabber IDs of this Person.")
     packages = Attribute("A Selection of SourcePackageReleases")
-    branches = Attribute("The branches for a person.")
+    authored_branches = Attribute("The branches whose author is this person.")
+    registered_branches = Attribute(
+        "The branches whose owner is this person and which either have no
+        author or an author different from this person.")
     maintainerships = Attribute("This person's Maintainerships")
     activities = Attribute("Karma")
     memberships = Attribute("List of TeamMembership objects for Teams this "

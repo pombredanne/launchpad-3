@@ -43,12 +43,14 @@ class BranchAddView(SQLObjectAddView):
 
     _nextURL = None    
 
-    def create(self, name, owner, product, url, title, lifecycle_status,
-               summary, home_page):
+    def create(self, name, owner, author, product, url, title,
+               lifecycle_status, summary, home_page):
         """Handle a request to create a new branch for this product."""        
         branch_set = getUtility(IBranchSet)
-        branch = branch_set.new(name, owner, product, url, title,
-                                lifecycle_status, summary, home_page)
+        branch = branch_set.new(
+            name=name, owner=owner, author=author, product=product, url=url,
+            title=title, lifecycle_status=lifecycle_status, summary=summary,
+            home_page=home_page)
         self._nextURL = canonical_url(branch)
 
     def nextURL(self):

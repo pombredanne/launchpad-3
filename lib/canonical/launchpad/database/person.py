@@ -96,7 +96,7 @@ class Person(SQLBase):
                             intermediateTable='PersonLanguage')
 
     # relevant joins
-    branches = MultipleJoin('Branch', joinColumn='owner')
+    authored_branches = MultipleJoin('Branch', joinColumn='author')
     members = MultipleJoin('TeamMembership', joinColumn='team',
         orderBy='status')
     ownedBounties = MultipleJoin('Bounty', joinColumn='owner',
@@ -241,6 +241,12 @@ class Person(SQLBase):
         ret = sorted(ret, key=lambda a: a.datecreated)
         ret.reverse()
         return ret
+
+    @property
+    def registered_branches(self):
+        from canonical.launchpad.database import Branch
+        return Branch.select('owner=%d AND (author!=%d OR author is NULL)'
+                             % (self.id, self.id), orderBy='-id')
 
     def getBranch(self, product_name, branch_name):
         from canonical.launchpad.database import Product, Branch

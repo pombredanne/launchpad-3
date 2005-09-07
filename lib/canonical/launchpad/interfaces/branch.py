@@ -57,7 +57,7 @@ class IBranch(IHasOwner):
 
     # Product attributes
     product = Choice(
-        title=_('Product'), required=True, vocabulary='Product',
+        title=_('Product'), required=False, vocabulary='Product',
         description=_("The product to which this branch belongs."))
     product_name = Attribute("The name of the product, or '+junk'.")
     branch_product_name = Attribute(
@@ -129,6 +129,6 @@ class IBranchSet(Interface):
     """Interface representing the set of branches."""
 
     def new(name, owner, product, url, title,
-            lifecycle_status=BranchLifecycleStatus.NEW, summary=None,
-            home_page=None):
+            lifecycle_status=BranchLifecycleStatus.NEW, author=None,
+            summary=None, home_page=None):
         """Create a new branch."""

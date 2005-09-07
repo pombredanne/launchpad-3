@@ -1,9 +1,15 @@
+<p>
 <img src="/++resource++lock_icon.gif" />
 <b><a tal:attributes="href context/fmt:url" tal:content="context/title">Mozilla Thunderbird 0.9.1</a></b>
 - <img src="/++resource++user.gif" />
-  <a tal:attributes="href context/owner/fmt:url"
+  <a tal:condition="python:not context.author"
+     tal:attributes="href context/owner/fmt:url"
      tal:content="context/owner/browsername"
-  >Foo Bar</a><br />
+  >Owner</a>
+  <a tal:condition="context/author"
+     tal:attributes="href context/author/fmt:url"
+     tal:content="context/author/browsername"
+  >Author</a><br />
 <span tal:replace="context/summary">
   This branch has a summary like this, it's a very simple description of
   what the branch does.
@@ -26,5 +32,4 @@ Status: <span tal:replace="context/lifecycle_status/title">Ready</span><br />
 
 <a tal:attributes="href context/home_page"
    tal:content="context/home_page">http://wiki.launchpad.net</a>
-
-<hr />
+</p>

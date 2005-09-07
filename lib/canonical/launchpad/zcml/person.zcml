@@ -325,6 +325,35 @@
       lp:url="/people/$team.id/+newpoll">
   </browser:addform>
 
+  <browser:addform
+      name="+addbranch"
+      for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IBranch"
+      fields="product name owner author title url home_page lifecycle_status summary"
+      class="canonical.launchpad.browser.BranchAddView"
+      keyword_arguments="product name owner author title url home_page lifecycle_status summary"
+      permission="launchpad.AnyPerson"
+      template="../templates/person-branch-add.pt">
+      <browser:widget
+	  field="url"
+	  class="zope.app.form.browser.TextWidget"
+	  displayWidth="65" />
+      <browser:widget
+	  field="home_page"
+	  class="zope.app.form.browser.TextWidget"
+	  displayWidth="65" />
+      <browser:widget
+	  field="summary"
+	  class="zope.app.form.browser.TextAreaWidget"
+	  height="5" />
+      <browser:widget
+	  field="owner"
+	  class="canonical.widgets.HiddenUserWidget" />
+      <browser:widget
+	  field="author"
+	  class="canonical.widgets.ContextWidget" />
+    </browser:addform>
+
   <!-- PersonSet -->
   <content class="canonical.launchpad.database.PersonSet">
       <allow interface="canonical.launchpad.interfaces.IPersonSet" />
