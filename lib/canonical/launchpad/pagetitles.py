@@ -135,9 +135,11 @@ bounty_index = ContextTitle('Launchpad Bounty: %s')
 
 bounty_subscription = 'Bounty Subscription'
 
-branch_index = ContextTitle('Bazaar Branch: %s')
+branch_add = 'Register A New Bazaar Branch'
 
 branch_edit = 'Edit Branch Details'
+
+branch_index = ContextTitle('Bazaar Branch: %s')
 
 bug_activity = ContextId('Bug #%s - Activity Log')
 

@@ -21,9 +21,7 @@
     <div metal:use-macro="context/@@launchpad_editform/editform">
 
     <div metal:fill-slot="extra_info" class="documentDescription">
-      Edit the branch details using the form below. Be careful of changes to
-      the branch name because that will change the url of the branch in
-      Launchpad and the Supermirror.
+      Edit the branch details using the form below.
     </div>
 
   </div>

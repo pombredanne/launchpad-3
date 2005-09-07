@@ -308,6 +308,34 @@
            extra="tabindex=3" />
     </browser:addform>
 
+    <browser:addform
+        name="+addbranch"
+        for="canonical.launchpad.interfaces.IProduct"
+        schema="canonical.launchpad.interfaces.IBranch"
+        fields="name title url home_page lifecycle_status summary whiteboard"
+        class="canonical.launchpad.browser.ProductBranchAddView"
+        keyword_arguments="name title url home_page lifecycle_status summary whiteboard"
+        permission="launchpad.AnyPerson"
+        template="../templates/branch-add.pt"
+        lp:url="/products/$Product.name/+addbranch">
+        <browser:widget
+            field="whiteboard"
+            class="zope.app.form.browser.TextAreaWidget"
+            height="5" />
+        <browser:widget
+            field="url"
+            class="zope.app.form.browser.TextWidget"
+            displayWidth="65" />
+        <browser:widget
+            field="home_page"
+            class="zope.app.form.browser.TextWidget"
+            displayWidth="65" />
+        <browser:widget
+            field="summary"
+            class="zope.app.form.browser.TextAreaWidget"
+            height="5" />
+    </browser:addform>
+
     <!-- ProductSet-->
     <content class="canonical.launchpad.database.ProductSet">
         <allow interface="canonical.launchpad.interfaces.IProductSet" />

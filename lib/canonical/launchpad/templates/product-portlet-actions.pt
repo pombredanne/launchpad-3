@@ -30,6 +30,9 @@
                   <a href="+addseries">Add Release Series</a>
                 </li>
                 <li class="add">
+                  <a href="+addbranch">Add Bazaar Branch</a>
+                </li>
+                <li class="add">
                   <a href="+linkbounty">Link Existing Bounty</a>
                 </li>
                 <li class="add">
