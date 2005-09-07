@@ -13,10 +13,10 @@ def readClusters(fp):
     lines), and yield them as sets."""
     cluster = set()
     for line in fp:
-        line.strip()
+        line = line.strip()
         if line:
             cluster.add(line)
-        else:
+        elif cluster:
             yield cluster
             cluster = set()
     if cluster:
