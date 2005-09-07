@@ -11,22 +11,34 @@
   ...
   <title>Bazaar Branch: Mozilla Thunderbird 0.9.1</title>
   ...
-  <h1>&#8220;Mozilla Thunderbird 0.9.1&#8221; branch</h1>
-  <BLANKLINE>
   <div class="documentDescription">Bazaar import of the Mozilla Thunderbird CVS mainline.</div>
   <BLANKLINE>
   <hr />
-  <ol>
   <BLANKLINE>
-      <li>thunderbird initial revision</li>
+  <h2>Revision History:</h2>
   <BLANKLINE>
-  <BLANKLINE>
-      <li>add a memory leak</li>
-  <BLANKLINE>
-  <BLANKLINE>
-      <li>write mail</li>
-  <BLANKLINE>    
-  </ol>
+  <table class="listing">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Message</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td></td>
+        <td>write mail</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>add a memory leak</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>thunderbird initial revision</td>
+      </tr>
+    </tbody>
+  </table>
   <BLANKLINE>
   </div>
   ...
@@ -45,8 +57,6 @@
   ...
   <title>Bazaar Branch: Python Twisted 0.9.1</title>
   ...
-  <h1>&#8220;Python Twisted 0.9.1&#8221; branch</h1>
-  <BLANKLINE>
   <div class="documentDescription">Bazaar import of the Twisted SVN trunk.</div>
   ...
 
