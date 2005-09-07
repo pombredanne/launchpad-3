@@ -246,7 +246,6 @@ class BugTask(SQLBase):
         if self.product is not None:
             # This is an upstream task.
             mark_task(self, IUpstreamBugTask)
-            checker = getAdapter(self, IAuthorization, 'launchpad.Edit')
         elif self.distrorelease is not None:
             # This is a distro release task.
             mark_task(self, IDistroReleaseBugTask)
@@ -519,7 +518,7 @@ class BugTaskSet:
             milestone=milestone)
 
     def maintainedBugTasks(self, person, minseverity=None, minpriority=None,
-                         showclosed=False, orderBy=None, user=None):
+                           showclosed=False, orderBy=None, user=None):
         if showclosed:
             showclosed = ""
         else:

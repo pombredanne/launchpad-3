@@ -22,11 +22,10 @@ from zope.component import getUtility, queryView
 from zope.exceptions import NotFoundError
 
 from canonical.launchpad.interfaces import (
-    IBugSet, IBugTaskSet, IBugTasksReport, IDistributionSet, IProjectSet,
-    IProductSet, ISourcePackageSet, IBugTrackerSet, ILaunchBag,
-    ITeamMembershipSubset, ICalendarOwner, ILanguageSet, IBugAttachmentSet,
-    IPublishedPackageSet, IPollSet, IPollOptionSet, BugTaskSearchParams,
-    IDistroReleaseLanguageSet)
+    IBugSet, IBugTaskSet, IDistributionSet, IProjectSet, IProductSet,
+    IBugTrackerSet, ILaunchBag, ITeamMembershipSubset, ICalendarOwner,
+    ILanguageSet, IBugAttachmentSet, IPublishedPackageSet, IPollSet,
+    IPollOptionSet, BugTaskSearchParams, IDistroReleaseLanguageSet)
 from canonical.launchpad.database import (
     BugExternalRefSet, BugSubscriptionSet,
     BugWatchSet, BugTasksReport, CVERefSet, BugProductInfestationSet,
@@ -45,8 +44,6 @@ def traverse_malone_application(malone_application, request, name):
     """Traverse the Malone application object."""
     if name == "bugs":
         return getUtility(IBugSet)
-    elif name == "assigned":
-        return getUtility(IBugTasksReport)
     elif name == "distros":
         return getUtility(IDistributionSet)
     elif name == "projects":

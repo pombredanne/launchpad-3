@@ -10,7 +10,10 @@ __all__ = [
     'BugAddingView',
     'BugAddForm',
     'BugRelatedObjectAddView',
-    'BugRelatedObjectEditView']
+    'BugRelatedObjectEditView',
+    'DeprecatedAssignedBugsView']
+
+import urllib
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -123,3 +126,22 @@ class BugRelatedObjectEditView(SQLObjectEditView):
     def changed(self):
         """Redirect to the bug page."""
         self.request.response.redirect(canonical_url(self.bug))
+
+
+class DeprecatedAssignedBugsView:
+    """Deprecate the /malone/assigned namespace.
+
+    It's important to ensure that this namespace continues to work, to
+    prevent linkrot, but since FOAF seems to be a more natural place
+    to put the assigned bugs report, we'll redirect to the appropriate
+    FOAF URL.
+    """
+    def __init__(self, context, request):
+        """Redirect the user to their assigned bugs report."""
+        self.context = context
+        self.request = request
+
+    def redirect_to_assignedbugs(self):
+        self.request.response.redirect(
+            canonical_url(getUtility(ILaunchBag).user) +
+            "/+assignedbugs")
