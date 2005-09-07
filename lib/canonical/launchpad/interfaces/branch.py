@@ -30,7 +30,7 @@ class IBranch(IHasOwner):
     name = TextLine(
         title=_('Name'), required=True, description=_("Keep this name very "
         "short, unique, and descriptive, because it will be used in URLs. "
-        "Examples: mozilla-type-ahead-find, postgres-smart-serial."),
+        "Examples: main, devel, release-1.0, gnome-vfs."),
         constraint=valid_name)
     title = TextLine(
         title=_('Title'), required=True, description=_("Describe the "
