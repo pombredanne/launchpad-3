@@ -27,11 +27,14 @@ from canonical.launchpad.components.poparser import POHeader
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.pomsgset import POMsgSetView
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ApplicationMenu, DefaultLink, Link, canonical_url)
+    StandardLaunchpadFacets, ApplicationMenu, Link, canonical_url)
 
 
 class POFileFacets(StandardLaunchpadFacets):
+
     usedfor = IPOFile
+
+    defaultlink = 'translations'
 
     def _parent_url(self):
         """Return the URL of the thing the PO template of this PO file is
@@ -55,16 +58,14 @@ class POFileFacets(StandardLaunchpadFacets):
     def translations(self):
         target = ''
         text = 'Translations'
-        return DefaultLink(target, text)
+        return Link(target, text)
 
-    # Bugs and calendar don't make sense for pofiles
-    # XXX: how does one disable links unconditionally?
-    #       -- kiko, 2005-08-23
     def bugs(self):
-        return Link("", "Bugs", linked=False)
+        return Link("", "Bugs", enabled=False)
 
     def calendar(self):
-        return Link("", "Calendar", linked=False)
+        return Link("", "Calendar", enabled=False)
+
 
 class POFileAppMenus(ApplicationMenu):
     usedfor = IPOFile
@@ -74,7 +75,7 @@ class POFileAppMenus(ApplicationMenu):
     def overview(self):
         target = ''
         text = 'Overview'
-        return DefaultLink(target, text)
+        return Link(target, text)
 
     def translate(self):
         target = '+translate'

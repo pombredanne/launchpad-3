@@ -24,7 +24,7 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, DefaultLink, canonical_url)
+    StandardLaunchpadFacets, Link, canonical_url)
 
 __all__ = ['ProductFacets', 'ProductView', 'ProductEditView',
            'ProductFileBugView', 'ProductRdfView', 'ProductSetView',
@@ -44,7 +44,7 @@ class ProductFacets(StandardLaunchpadFacets):
         target = ''
         text = 'Overview'
         summary = 'General information about %s' % self.context.displayname
-        return DefaultLink(target, text, summary)
+        return Link(target, text, summary)
 
     def bugs(self):
         target = '+bugs'
@@ -80,8 +80,8 @@ class ProductFacets(StandardLaunchpadFacets):
         target = '+calendar'
         text = 'Calendar'
         # only link to the calendar if it has been created
-        linked = ICalendarOwner(self.context).calendar is not None
-        return Link(target, text, linked=linked)
+        enabled = ICalendarOwner(self.context).calendar is not None
+        return Link(target, text, enabled=enabled)
 
 
 def _sort_distros(a, b):

@@ -45,7 +45,7 @@
     </h2>    
       <ul
         class="facets app"
-        tal:define="facetmenu context/menu:facet"
+        tal:define="facetmenu CONTEXTS/menu:facet"
       >
         <tal:block condition="facetmenu">
           <tal:block repeat="link facetmenu">
@@ -110,7 +110,7 @@
             rowspan="2"
           >
             <div
-              tal:define="appmenu context/menu:application"
+              tal:define="appmenu CONTEXTS/menu:application"
               tal:condition="appmenu"
               class="portlet portletBody portletContent"
             >
