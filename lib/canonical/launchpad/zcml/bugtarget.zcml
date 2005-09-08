@@ -14,8 +14,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.IBugTarget"
         class="canonical.launchpad.browser.BugTargetView"
-        name="+portlet-latest-bugs"
+        name="+portlet-latestbugs"
         permission="zope.Public"
-        template="../templates/bugtarget-portlet-latestbugs.pt"
-        lp:url="/.../+portlet-latest-bugs" />
+        template="../templates/bugtarget-portlet-latestbugs.pt" />
 </configure>

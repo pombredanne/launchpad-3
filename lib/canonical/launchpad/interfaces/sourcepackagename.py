@@ -57,6 +57,12 @@ class ISourcePackageNameSet(Interface):
     def findByName(name):
         """Find sourcepackagenames by its name or part of it"""
 
+    def queryByName(name):
+        """Get a sourcepackagename by its name atttribute.
+
+        Returns the matching ISourcePackageName or None.
+        """
+
     def new(name):
         """Create a new source package name."""
 

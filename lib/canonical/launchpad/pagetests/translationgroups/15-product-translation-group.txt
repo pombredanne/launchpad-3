@@ -35,8 +35,7 @@ and permissions.
   <BLANKLINE>
   ...Select A New Translation Group...
 
-Now let's post to the form. We should see the same form back with a message
-about the update.
+Now let's post to the form. We should be redirected to the product page.
 
   >>> print http(r"""
   ... POST /products/netapplet/+changetranslators HTTP/1.1
@@ -66,13 +65,9 @@ about the update.
   ... Change
   ... -----------------------------6923855761766169312285474874--
   ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...Select A New Translation Group...
-  <BLANKLINE>
-            <p class="portalMessage">Updated on ...</p>
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/netapplet
   ...
 
 Now these changes should show up in the product page.

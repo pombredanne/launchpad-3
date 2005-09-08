@@ -157,7 +157,7 @@ Mock Builders objects
   >>> bqItem7.builder.name
   'I am busy'
   >>> bqItem7.logtail
-  'building something'
+  u'building something'
 
   ABORTED -> builder was aborted, release builder and reset job for
   the next build round:

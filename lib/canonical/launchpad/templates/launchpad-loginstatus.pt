@@ -8,10 +8,11 @@
 </div>
 <form
   tal:condition="view/logged_in"
-  action="/+logout"
+  action="+logout"
   class="login"
   method="POST"
 >
+  <input type="hidden" name="loggingout" value="1" />
   Logged in as
     <a
       tal:attributes="href string:/people/${request/lp:person/name}"

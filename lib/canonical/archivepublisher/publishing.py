@@ -81,8 +81,6 @@ class Publisher(object):
                sourcepackagename : SourcePackageName.name
                    componentname : Component.name
         """
-        # SPPHXXX dsilvers 2005-04-15 This needs updating for SPPH
-        # as the publisher is written.
 
         for pubrec in records:
             source = pubrec.sourcepackagename.encode('utf-8')
@@ -97,11 +95,11 @@ class Publisher(object):
                         PackagePublishingStatus.PUBLISHED
                     pubrec.sourcepackagepublishing.datepublished = nowUTC
             else:
-                if pubrec.packagepublishing.status == \
+                if pubrec.binarypackagepublishing.status == \
                    PackagePublishingStatus.PENDING:
-                    pubrec.packagepublishing.status = \
+                    pubrec.binarypackagepublishing.status = \
                         PackagePublishingStatus.PUBLISHED
-                    pubrec.packagepublishing.datepublished = nowUTC
+                    pubrec.binarypackagepublishing.datepublished = nowUTC
 
     def publishOverrides(self, sourceoverrides, binaryoverrides, \
                          defaultcomponent = "main"):
@@ -275,6 +273,7 @@ tree "dists/%(DISTRORELEASE)s"
   Architectures "%(ARCHITECTURES)s";
   BinOverride "override.%(DISTRORELEASE)s.$(SECTION)";
   SrcOverride "override.%(DISTRORELEASE)s.$(SECTION).src";
+  Contents " ";
 }
 
                 """
@@ -289,7 +288,8 @@ tree "dists/%(DISTRORELEASE)s"
                                  comp, "source"]))):
                         comps.append(comp)
                 if len(comps) == 0:
-                    self.debug("Did not find any components to create config for")
+                    self.debug("Did not find any components to create config "
+                               "for %s%s" % (dr, pocketsuffix[pocket]))
                     continue
                 # Second up, pare archs down as appropriate
                 archs = []
@@ -301,7 +301,8 @@ tree "dists/%(DISTRORELEASE)s"
                                  "binary-"+arch]))):
                         archs.append(arch)
                 if len(archs) == 0:
-                    self.debug("Didn't find any archs to include in config")
+                    self.debug("Didn't find any archs to include in config "
+                               "for %s%s" % (dr, pocketsuffix[pocket]))
                     continue
                 # Replace those tokens
                 cnf.write(s % {

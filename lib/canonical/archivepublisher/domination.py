@@ -12,7 +12,9 @@ from canonical.lp.dbschema import PackagePublishingStatus
 from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.database import (
-     SourcePackagePublishing, BinaryPackagePublishing )
+     SourcePackagePublishing, BinaryPackagePublishing,
+     SecureSourcePackagePublishingHistory,
+     SecureBinaryPackagePublishingHistory)
 
 from canonical.database.sqlbase import sqlvalues
 
@@ -24,10 +26,16 @@ PENDINGREMOVAL = PackagePublishingStatus.PENDINGREMOVAL
 # For stayofexecution processing in judgeSuperseded
 from datetime import timedelta
 
-def _compare_packages_by_version(p1, p2):
+def _compare_source_packages_by_version(p1, p2):
     """Compare packages p1 and p2 by their version; using Debian rules"""
-    v1 = DebianVersion(p1.version)
-    v2 = DebianVersion(p2.version)
+    v1 = DebianVersion(p1.sourcepackagerelease.version)
+    v2 = DebianVersion(p2.sourcepackagerelease.version)
+    return cmp(v1, v2)
+    
+def _compare_binary_packages_by_version(p1, p2):
+    """Compare packages p1 and p2 by their version; using Debian rules"""
+    v1 = DebianVersion(p1.binarypackagerelease.version)
+    v2 = DebianVersion(p2.binarypackagerelease.version)
     return cmp(v1, v2)
     
 
@@ -61,9 +69,6 @@ class Dominator(object):
             # to SUPERSEDED unless they're already there or pending
             # removal
 
-            # SPPHXXX dsilvers 2005-04-15 This needs updating for SPPH
-            # as the publisher is written.
-
             for pubrec in sourceinput[source][1:]:
                 if pubrec.status == PUBLISHED or pubrec.status == PENDING:
                     self.debug("%s/%s has been judged as superseded by %s/%s" %
@@ -87,23 +92,27 @@ class Dominator(object):
             # Completely sure how to correct for this.
             # For now; treat domination of binaries the same as for source
             # I.E. dominate by name only and highest version wins.
-            
+
             # binary is a list of versions ordered most-recent-first
             # basically skip the first entry because that is
             # never dominated by us, then just set subsequent entries
             # to SUPERSEDED unless they're already there or pending
             # removal
+            dominantrelease = binaryinput[binary][0].binarypackagerelease
             for pubrec in binaryinput[binary][1:]:
                 if pubrec.status == PUBLISHED or pubrec.status == PENDING:
-                    self.debug("%s/%s has been judged as superseded by the %s build of %s/%s" %
-                               (pubrec.binarypackage.binarypackagename.name,
-                                pubrec.binarypackage.version,
-                                binaryinput[source][0].binarypackage.build.distroarchrelease.architecturetag,
-                                binaryinput[source][0].binarypackage.binarypackagename.name,
-                                binaryinput[source][0].binarypackage.version))
+                    thisrelease = pubrec.binarypackagerelease
+                    self.debug("The %s build of %s/%s has been judged as superseded by the %s build of %s/%s. Arch-specific == %s" % (
+                        thisrelease.build.distroarchrelease.architecturetag,
+                        thisrelease.binarypackagename.name,
+                        thisrelease.version,
+                        dominantrelease.build.distroarchrelease.architecturetag,
+                        dominantrelease.binarypackagename.name,
+                        dominantrelease.version,
+                        thisrelease.architecturespecific))
                     pubrec.status = SUPERSEDED;
                     pubrec.datesuperseded = UTC_NOW;
-                    pubrec.supersededby = binaryinput[binary][0].binarypackage.build
+                    pubrec.supersededby = binaryinput[binary][0].binarypackagerelease.build
 
 
     def _sortPackages(self, pkglist, isSource = True):
@@ -122,30 +131,41 @@ class Dominator(object):
 
         for inpkg in pkglist:
             if isSource:
-                l = outpkgs.setdefault(inpkg.sourcepackagename.encode('utf-8'),
-                                       [])
+                L = outpkgs.setdefault(
+                    inpkg.sourcepackagerelease.sourcepackagename.name.encode(
+                    'utf-8'), [])
             else:
-                l = outpkgs.setdefault(inpkg.packagename.encode('utf-8'), [])
+                L = outpkgs.setdefault(
+                    inpkg.binarypackagerelease.binarypackagename.name.encode(
+                    'utf-8'), [])
 
-            l.append(inpkg)
+            L.append(inpkg)
 
-        for k in outpkgs:
-            if len(outpkgs[k]) > 1:
-                outpkgs[k].sort(_compare_packages_by_version)
-                outpkgs[k].reverse()
+        for pkgname in outpkgs:
+            if len(outpkgs[pkgname]) > 1:
+                if isSource:
+                    outpkgs[pkgname].sort(_compare_source_packages_by_version)
+                else:
+                    outpkgs[pkgname].sort(_compare_binary_packages_by_version)
+                    
+                outpkgs[pkgname].reverse()
 
         return outpkgs
 
-    def _dominate(self, sourcepackages, binarypackages):
-        """Perform dominations across the source and binarypackages
-        listed in the input. Dominated packages get their status set
-        to SUPERSEDED if appropriate"""
-        self._dominateSource( self._sortPackages(sourcepackages) )
-        self._dominateBinary( self._sortPackages(binarypackages, False) )
+    def _judgeSuperseded(self, sourcepackages, binarypackages, conf):
+        """Determine whether the superseded packages supplied should be moved
+        to death row or not.
 
-    def _judgeSuperseded(self, sourcepackages, binarypackages):
-        """Judge whether or the supplied packages (superseded ones anyway)
-        should be moved to death row or not"""
+        Currently this is done by assuming that any superseded package should
+        be removed. In the future this should attempt to supersede binaries
+        in build-sized chunks only.
+
+        When a package is considered for death row its status in the publishing
+        table is set to PENDINGREMOVAL and the datemadepending is set to now.
+
+        The package is then given a scheduled deletion date of now plus the
+        defined stay of execution time provided in the configuration parameter.
+        """
 
         # XXX dsilvers 2004-11-12 This needs work. Unfortunately I'm not
         # completely sure how to correct for this.
@@ -157,41 +177,55 @@ class Dominator(object):
 
         for p in sourcepackages:
             if p.status == SUPERSEDED:
-                self.debug("%s/%s has been judged eligible for removal" %
-                           p.sourcepackagerelease.sourcepackagename.name,
-                           p.sourcepackagerelease.version)
+                self.debug("%s/%s (source) has been judged eligible for removal" %
+                           (p.sourcepackagerelease.sourcepackagename.name,
+                            p.sourcepackagerelease.version))
                            
                 p.status = PENDINGREMOVAL
                 p.scheduleddeletiondate = UTC_NOW + \
-                                          timedelta(days=cnf.stayofexecution)
+                                          timedelta(days=conf.stayofexecution)
                 p.datemadepending = UTC_NOW
         for p in binarypackages:
             if p.status == SUPERSEDED:
-                self.debug("%s/%s has been judged eligible for removal" %
-                           p.binarypackage.binarypackagename.name,
-                           p.binarypackage.version)
+                self.debug("%s/%s (%s) has been judged eligible for removal" %
+                           (p.binarypackagerelease.binarypackagename.name,
+                            p.binarypackagerelease.version,
+                            p.distroarchrelease.architecturetag))
                 p.status = PENDINGREMOVAL
                 p.scheduleddeletiondate = UTC_NOW + \
-                                          timedelta(days=cnf.stayofexecution)
+                                          timedelta(days=conf.stayofexecution)
                 p.datemadepending = UTC_NOW
 
-    def judgeAndDominate(self, dr, pocket):
+    def judgeAndDominate(self, dr, pocket, config):
         """Perform the domination and superseding calculations across the
         distrorelease and pocket specified."""
         
-        sources = SourcePackagePublishing.selectBy(distroreleaseID=dr.id,
-                                                   pocket=pocket)
-        binaries = BinaryPackagePublishing.select("""
-        binarypackagepublishing.distroarchrelease = distroarchrelease.id AND
-        distroarchrelease.distrorelease = %d AND
-        binarypackagepublishing.pocket = %d""" % sqlvalues(dr.id, pocket),
-                                            clauseTables=['DistroArchRelease'])
 
-        self.debug("Performing domination across %s/%s" %
+        self.debug("Performing domination across %s/%s (Source)" %
                    (dr.name, pocket.title))
+
+        # We can use SecureSourcePackagePublishingHistory here because
+        # the standard .selectBy automatically says that embargo
+        # should be false.
+
+        sources = SecureSourcePackagePublishingHistory.selectBy(
+            distroreleaseID=dr.id, pocket=pocket,
+            status=PackagePublishingStatus.SUPERSEDED)
+
+        self._dominateSource(self._sortPackages(sources))
+
+        for distroarchrelease in dr.architectures:
+            self.debug("Performing domination across %s/%s (%s)" % (
+                dr.name, pocket.title, distroarchrelease.architecturetag))
+            
+            binaries = SecureBinaryPackagePublishingHistory.selectBy(
+                distroarchreleaseID=distroarchrelease.id,
+                pocket=pocket,
+                status=PackagePublishingStatus.SUPERSEDED)
+            
+            self._dominateBinary(self._sortPackages(binaries, False))
         
-        self._dominate(sources, binaries)
-        self._judgeSuperseded(self, sources, binaries)
+        self._judgeSuperseded(sources, binaries, config)
 
         self.debug("Domination for %s/%s finished" %
                    (dr.name, pocket.title))

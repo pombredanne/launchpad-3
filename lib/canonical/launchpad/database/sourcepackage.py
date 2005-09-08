@@ -36,6 +36,7 @@ from canonical.launchpad.database.sourcepackagerelease import (
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.ticket import Ticket
 from canonical.launchpad.validators.name import valid_name
 from sourcerer.deb.version import Version
 
@@ -165,7 +166,7 @@ class SourcePackage:
 
     @property
     def maintainer(self):
-        querystr = "distribution = %s AND sourcepackagename = %s"
+        querystr = "distribution=%s AND sourcepackagename=%s"
         querystr %= sqlvalues(self.distribution, self.sourcepackagename)
         return Maintainership.select(querystr)
 
@@ -209,8 +210,8 @@ class SourcePackage:
 
     @property
     def bugtasks(self):
-        querystr = "distribution = %i AND sourcepackagename = %i"
-        querystr %= sqlvalues(self.distribution, self.sourcepackagename)
+        querystr = "distribution=%s AND sourcepackagename=%s" % sqlvalues(
+            self.distribution.id, self.sourcepackagename.id)
         return BugTask.select(querystr)
 
     @property
@@ -423,6 +424,34 @@ class SourcePackage:
         if ret.count() == 0:
             return None
         return shortlist(ret)
+
+    # ticket related interfaces
+    @property
+    def tickets(self):
+        """See ITicketTarget."""
+        ret = Ticket.selectBy(distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id)
+        return ret.orderBy('-datecreated')
+
+    def newTicket(self, owner, title, description):
+        """See ITicketTarget."""
+        return Ticket(title=title, description=description, owner=owner,
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename)
+
+    def getTicket(self, ticket_num):
+        """See ITicketTarget."""
+        # first see if there is a ticket with that number
+        try:
+            ticket = Ticket.get(ticket_num)
+        except SQLObjectNotFound:
+            return None
+        # now verify that that ticket is actually for this target
+        if ticket.distribution != self.distribution:
+            return None
+        if ticket.sourcepackagename != self.sourcepackagename:
+            return None
+        return ticket
 
 
 class SourcePackageSet(object):

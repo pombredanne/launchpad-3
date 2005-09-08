@@ -24,6 +24,11 @@
       <li class="translations">
         <a tal:attributes="href string:${context/fmt:url}/+translations">View 
             Translations</a></li>
+      <li class="add">
+        <a tal:attributes="
+            href string:${context/distribution/fmt:url}/+addticket"
+            >Request Support</a>
+      </li>
       <li class="info">
         <a tal:attributes="href string:${context/fmt:url}/+packaging">View 
             Upstream Links</a></li>

@@ -452,6 +452,12 @@ ul.person>li, li.person, ul.people>li, li.people {
 ul.spec>li, li.spec {
     list-style-image: url(/++resource++spec);
 }
+ul.ticket>li, li.ticket {
+    list-style-image: url(/++resource++ticket);
+}
+ul.up>li, li.up {
+    list-style-image: url(/++resource++up);
+}
 ul.webref>li, li.webref {
     list-style-image: url(/++resource++link_icon.gif);
 }
@@ -692,7 +698,7 @@ li {
 }
 
 .portlet {
-  background-color: #f7f9fa;
+  background-color: #f4f5f8;
 }
 
 .portlet li {

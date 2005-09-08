@@ -3,10 +3,12 @@ __all__ = [
     'validate_url',
     'valid_webref',
     'non_duplicate_bug',
+    'valid_bug_number',
     ]
 
 import urllib
 from zope.component import getUtility
+from zope.exceptions import NotFoundError
 from sqlobject import SQLObjectNotFound
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 
@@ -71,4 +73,13 @@ def non_duplicate_bug(value):
         return True
     else:
         return False
+
+def valid_bug_number(value):
+    from canonical.launchpad.interfaces.bug import IBugSet
+    bugset = getUtility(IBugSet)
+    try:
+        bug = bugset.get(value)
+    except NotFoundError:
+        return False
+    return True
 

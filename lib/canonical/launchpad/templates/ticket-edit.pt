@@ -9,13 +9,11 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure view/bug/@@+portlet-details" />
-  <div tal:replace="structure view/bug/@@+portlet-subscribers" />
-  <div tal:replace="structure view/bug/@@+portlet-maintainers" />
+  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure view/bug/@@+portlet-actions" />
+  <div tal:replace="structure context/@@+portlet-actions" />
 </metal:rightportlets>
 
   <div metal:fill-slot="main">
@@ -23,15 +21,11 @@
     <div metal:use-macro="context/@@launchpad_editform/editform">
 
     <div metal:fill-slot="extra_info" class="documentDescription">
-      Add a subscriber to this bug. A person subscribed to a bug
-      receives email notifications when the bug is modified (e.g. when
-      a new comment is added or the bug gets marked fixed somewhere.)
-      When a bug is marked private, only the bug subscribers will be
-      able to see it.
+      Edit the support request details using the form below.
     </div>
 
   </div>
-
+    
 </div>
 </body>
 </html>

@@ -1,37 +1,38 @@
 Malone's Email Interface
 ========================
 
-You may interface with Malone via email. All mail sent have to be GPG
-signed, so that the user can be authenticated.
+Malone has an email interface, with which you may submit new bugs, add
+comments, and editing bugs. The email interface has a number of
+different command. Commands can be interleaved within a comment, so in
+order to distinguish them from the comment, the commands have to be
+indented with at least one space or tab character. The available
+commands are described later on.
 
-For a description of all the commands, please see
-https://wiki.launchpad.canonical.com/MaloneCommandInterface.
+Submit a new bug
+----------------
 
-Not all commands are yet implemented. Currently the following commands
-are available:
-   
-   bug $bugid-- Indicate which bug you want to edit.
-   private yes|no -- Make the bug private/public
-   subscribe [$name|$email] [CC/Watch/Ignore] -- Subscribe to the bug.
-   affects $path [assignee $name|$email] [status $status]
+In order to submit a new bug you send a GPG signed  email to
+new@malone-domain. Note that you have to have registered your key in
+Launchpad as well. The subject of the email will be used as the title of
+the bug, and the body will be used as the description. In the body of
+the email you have tell on what you file a bug, either a product or
+a distribution. You do so by issuing an 'affects' command. The simplest
+case is either:
 
-All the commands have to be indented to differ them from the comment,
-and each command has to be on a single line, except for the 'affects'
-command, which can be split on several lines.
+    affects /products/$product_name
 
-XXX: Add tests for non-ascii mails.
-     -- Bjorn Tillenius, 2005-05-20
+to file a bug on a product, or:
 
-Submit a new bug on a product
------------------------------
+    affects /distros/$distribution_name
 
-You can send an email to submit@bugs.launchpad.ubuntu.com in order to
-submit a new bug. The email has to contain one or more commands
-describing the bug. The only mandatory command is 'affects', which
-specifies in which distribution or product the bug occurs in.
+to file a bug on a distribution. And if you want to file a bug on a
+specific source package in a distribution:
 
-For example, to submit a bug on Firefox, an email like this would be
-sent:
+    affects /distros/$distribution_name/$sourcepackage_name
+
+But if you want you can use any of the available commands as well.
+
+Let's take an example where we file a bug on Firefox:
 
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.launchpad.ubuntu.com
@@ -77,12 +78,13 @@ bug got submitted correctly:
     >>> import transaction
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.mail import stub
+    >>> bugset = getUtility(IBugSet)
     >>> def get_latest_added_bug():
     ...     transaction.commit() # Need to commit for the email to be sent.
     ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
     ...     msg = email.message_from_string(raw_message)
     ...     bug_nr = int(msg['Subject'].split()[1][:-1])
-    ...     return getUtility(IBugSet).get(bug_nr)
+    ...     return bugset.get(bug_nr)
     >>> bug = get_latest_added_bug() 
 
     >>> print bug.title
@@ -117,36 +119,8 @@ The owner of the bug was set to the submitter:
     >>> print bug.owner.displayname
     Sample Person
 
-You can also make some modifications to the added bug by give some
-additional commands when submitting the bug. To assign someone to the
-upstream task and to make the bug private, you would send the following
-email:
-
-    >>> submit_mail = """From: Sample Person <test@canonical.com>
-    ... To: new@bugs.canonical.com
-    ... Date: Fri Jun 17 10:20:23 BST 2005
-    ... Subject: A bug in Firefox, Foo Bar will fix it
-    ...
-    ...  private yes
-    ...
-    ... There's a bug in Firefox, which Foo Bar will take care of.
-    ...
-    ...  affects /products/firefox assignee name16 
-    ...  """
-    >>> process_email(submit_mail)
-    >>> bug = get_latest_added_bug()
-    >>> print bug.title
-    A bug in Firefox, Foo Bar will fix it
-    >>> bug.private
-    True
-    >>> upstream_task = bug.bugtasks[0]
-    >>> print upstream_task.assignee.name
-    name16
-
-
-In order to submit a bug on a distribution, we do exactly the same as
-above, specifying a path to a distribution instead of a product. Here
-we also specify a source package directly:
+If we would file a bug on Debian instead, we would submit a mail like
+this:
 
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
@@ -173,106 +147,247 @@ Add a comment
 -------------
 
 After a bug has been submitted a notification is sent out. The reply-to
-address is set to the bug address, $bugid@bugs.launchpad.ubuntu.com. We
-can send emails to this address in order to add new comments to the
-bug. If the In-Reply-To or References header is set to the
-notification's message id, the new comment will properly be threaded as
-a reply to the notification.
+address is set to the bug address, $bugid@malone-domain. We can send
+emails to this address in order to add new comments to the bug. Note
+that we can interleave commands in the comment as well. If the comment
+includes commands, the email has to be GPG signed.
 
-    >>> from canonical.launchpad.interfaces import IBugSet, IMessageSet
-    >>> bugset = getUtility(IBugSet)
-    >>> bug = bugset.get(1)
-    >>> bug_message = bug.messages[0]
     >>> comment_mail = """From: test@canonical.com
-    ... To: 1@malone
-    ... In-Reply-To: %s
+    ... To: 1@malone-domain
     ... Date: Fri Jun 17 10:20:23 BST 2005
     ... Message-Id: <yada-yada-test1>
     ... Subject: New comment to bug 1
     ...
-    ... This is a reply to an existing comment.
-    ... """ % str(bug_message.rfc822msgid)
+    ... Adding a comment via the email system. Let's change the title as
+    ... well:
+    ...     title "Better title"
+    ...
+    ... /Sample Person
+    ... """
 
     >>> process_email(comment_mail)
     >>> transaction.commit()
+
+    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> bug_one = bugset.get(1)
     >>> added_message = getUtility(IMessageSet).get('<yada-yada-test1>')[0]
-    >>> added_message in bug.messages
+    >>> added_message in bug_one.messages
     True
-    >>> added_message.parent == bug_message
-    True
+    >>> print bug_one.title
+    Better title
 
-A notification gets sent out just like when adding a comment via the
-web UI.
 
-    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
-    >>> notification = email.message_from_string(raw_message)
-    >>> print notification.get_payload()
-    Public bug report changed:
-    ...
-    Comment:
-    This is a reply to an existing comment.
+Edit bugs
+---------
 
-XXX: Write explanation and fix this test when BugNotificationsThreading
-     has been completed. -- Bjorn Tilllenius, 2005-05-31
-    
-
-    >>> notification_reply = """From: test@canonical.com
-    ... To: 1@malone
-    ... In-Reply-To: %s
-    ... Message-Id: <test2>
-    ... Date: Fri Jun 17 10:20:23 BST 2005
-    ... Subject: Reply to previous comment
-    ...
-    ... > This is a reply to an existing comment.
-    ... This is a reply to the comment above.
-    ... """ % notification['Message-Id']
-
-    >>> process_email(notification_reply)
-    >>> transaction.commit()
-    >>> added_message_reply = getUtility(IMessageSet).get('<test2>')[0]
-
-    XXX: The following test should pass. I'll fix it after
-         BugAddNotifications.
-         --- Bjorn Tillenius, 2005-05-24
-    XXX added_message_reply.parent == added_message
-    True
-
-As when submitting bugs, we can also include commands in the comment.
-Note that we can edit more than one bug in the same email, by using the
-'bug' command to switch bug context:
-
-    >>> comment_edit = """From: test@canonical.com
-    ... To: 4@malone
-    ... Date: Fri Jun 17 10:20:23 BST 2005
-    ... Subject: Don't tell anyone about his bug.
-    ...
-    ...   private yes
-    ...   subscribe name16 watch
-    ...   subscribe name12 watch
-    ...   affects /products/firefox
-    ...   status accepted
-    ...  """
-
-    >>> process_email(comment_edit)
-    >>> transaction.commit()
+Sometimes you may want to simply edit a bug, without adding a comment.
+For that you can send mails to edit@malone-domain.
 
     >>> bug_four = bugset.get(4)
+    >>> bug_five = bugset.get(5)
+    >>> bug_four_comments = len(bug_four.messages)
+    >>> bug_five_comments = len(bug_five.messages)
+    >>> edit_mail = """From: test@canonical.com
+    ... To: edit@malone-domain
+    ... Date: Fri Jun 17 10:10:23 BST 2005
+    ... Subject: Not important
+    ...
+    ...     bug 4
+    ...     title "Changed title"
+    ...
+    ... It won't break if we write some stuff here.
+    ...
+    ...     bug 5
+    ...     title "Nicer title"
+    ... """
+
+    >>> process_email(edit_mail)
+    >>> transaction.commit()
+
+No comments were added to the bugs:
+
+    >>> len(bug_four.messages) == bug_four_comments
+    True
+    >>> len(bug_five.messages) == bug_five_comments
+    True
+
+And the titles were changed:
+
+    >>> print bug_four.title
+    Changed title
+    >>> print bug_five.title
+    Nicer title
+
+
+Commands
+--------
+
+Now let's take a closer look at all the commands that are available for
+us to play with. First we define a function to easily submit commands
+to edit bug 4:
+
+    >>> def submit_commands(*commands):
+    ...     edit_mail = ("From: test@canonical.com\n"
+    ...                  "To: edit@malone-domain\n"
+    ...                  "Date: Fri Jun 17 10:10:23 BST 2005\n"
+    ...                  "Subject: Not important\n"
+    ...                  "\n"
+    ...                  " bug 4\n"
+    ...                  " ")
+    ...     edit_mail += '\n '.join(commands)
+    ...     process_email(edit_mail)
+    ...     transaction.commit()
+
+
+bug $bugid
+^^^^^^^^^^
+Switches what bug you want to edit. Example:
+
+    bug 42
+
+title "$title"
+^^^^^^^^^^^^^^
+Changes the title of the bug. The title has to be enclosed in
+quotes. Example:
+
+    >>> submit_commands('title "New title"')
+    >>> print bug_four.title
+    New title
+
+Just a quick check that the whitespace will be preserved in the title:
+
+    >>> submit_commands('title "New             title"')
+    >>> print bug_four.title #doctest: -NORMALIZE_WHITESPACE
+    New             title
+
+private yes|no
+^^^^^^^^^^^^^^
+Changes the secrecy of the bug. Example:
+
+    >>> submit_commands('private yes')
     >>> bug_four.private
     True
 
-    >>> subscriptions = [(subscription.person.name,
-    ...                   subscription.subscription.name)
+    >>> submit_commands('private no')
+    >>> bug_four.private
+    False
+
+subscribe [$name|$email] [cc|watch|ignore]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Subscribes yourself or someone else to the bug. All arguments are
+optional. If you don't specify a name, the sender of the email will
+be subscribed. Examples:
+
+    >>> subscriptions = [subscription.person.name
     ...                  for subscription in bug_four.subscriptions]
     >>> subscriptions.sort()
     >>> subscriptions
-    [(u'name12', 'WATCH'), (u'name16', 'WATCH')]
+    [u'name12']
+
+
+    >>> submit_commands('subscribe')
+    >>> 'Sample Person' in [subscription.person.displayname
+    ...                     for subscription in bug_four.subscriptions]
+    True
+    >>> submit_commands('subscribe foo.bar@canonical.com')
+    >>> 'Foo Bar' in [subscription.person.displayname
+    ...               for subscription in bug_four.subscriptions]
+    True
+    >>> submit_commands('subscribe sabdfl')
+    >>> 'Mark Shuttleworth' in [subscription.person.displayname
+    ...                         for subscription in bug_four.subscriptions]
+    True
+
+unsubscribe [$name|$email]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Unsubscribes yourself or someone else from the bug. 
+If you don't specify a name or email, the sender of the email will be
+unsubscribed. Examples:
+
+    >>> submit_commands('unsubscribe sabdfl')
+    >>> 'Mark Shuttleworth' in [subscription.person.displayname
+    ...                         for subscription in bug_four.subscriptions]
+    False
+    >>> submit_commands('unsubscribe foo.bar@canonical.com')
+    >>> 'Foo Bar' in [subscription.person.displayname
+    ...               for subscription in bug_four.subscriptions]
+    False
+    >>> submit_commands('unsubscribe')
+    >>> 'Sample Person' in [subscription.person.displayname
+    ...                     for subscription in bug_four.subscriptions]
+    False
+
+affects $path [assignee $name|$email]
+              [status $status]
+              [severity $severity]
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Change the state of a bug in a specific context. $path can be of
+the following form:
+
+    /products/$productname
+    /distros/$distroname
+    /distros/$distroname/$sourcepackagename
+
+If there is no task with the specified $path target, a new task is
+created:
 
     >>> len(bug_four.bugtasks)
     1
-    >>> bug_task = bug_four.bugtasks[0]
-    >>> print bug_task.status.name
+    >>> 'debian' in [bugtask.target.name for bugtask in bug_four.bugtasks]
+    False
+    >>> submit_commands('affects /distros/debian')
+    >>> len(bug_four.bugtasks)
+    2
+    >>> 'debian' in [bugtask.target.name for bugtask in bug_four.bugtasks]
+    True
+
+Submitting the same thing again doesn't do anything, since the task
+already exists:
+
+    >>> submit_commands('affects /distros/debian')
+    >>> len(bug_four.bugtasks)
+    2
+
+We can change the assignee, status, and severity using the sub
+commands. It's possible to have these sub commands on separate lines:
+
+    >>> submit_commands('affects /distros/debian severity critical',
+    ...                 'status accepted', 'assignee test@canonical.com')
+
+    >>> len(bug_four.bugtasks)
+    2
+    >>> debian_task = bug_four.bugtasks[-1]
+    >>> print debian_task.severity.name
+    CRITICAL
+    >>> print debian_task.status.name
     ACCEPTED
-    
+    >>> print debian_task.assignee.displayname
+    Sample Person
+
+To set which source package the bug affects, we use:
+
+    >>> submit_commands('affects /distros/debian/mozilla-firefox')
+    >>> len(bug_four.bugtasks)
+    2
+    >>> debian_task = bug_four.bugtasks[-1]
+    >>> print debian_task.sourcepackagename.name
+    mozilla-firefox
+
+Let's take on the upstream task as well:
+
+    >>> submit_commands('affects /products/firefox severity critical',
+    ...                 'status accepted', 'assignee test@canonical.com')
+
+    >>> len(bug_four.bugtasks)
+    2
+    >>> upstream_task = bug_four.bugtasks[0]
+    >>> print upstream_task.severity.name
+    CRITICAL
+    >>> print upstream_task.status.name
+    ACCEPTED
+    >>> print upstream_task.assignee.displayname
+    Sample Person
+
 
 Error Handling
 --------------
@@ -309,7 +424,7 @@ No bug was created, instead an error mail was sent to the submitter:
     ...
 
 Now we try to submit a bug on a distribution that doesn't exist:
-   
+
     >>> submit_mail_distro_not_found = """From: test@canonical.com
     ... To: new@malone
     ... Date: Fri Jun 17 10:20:23 BST 2005
@@ -324,7 +439,7 @@ Again no bug was filed, and an error mail was sent:
     >>> transaction.commit()
     >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
     >>> error_mail = email.message_from_string(raw_message)
-   
+
     >>> print error_mail.get_payload() #doctest: -NORMALIZE_WHITESPACE
     An error...
     ...
@@ -332,7 +447,10 @@ Again no bug was filed, and an error mail was sent:
     ...
     'foo' couldn't be found in command 'affects /distros/foo'
     ...
-   
+
     >>> LibrarianTestSetup().tearDown()
 
+
+XXX: Add tests for non-ascii mails.
+     -- Bjorn Tillenius, 2005-05-20
 

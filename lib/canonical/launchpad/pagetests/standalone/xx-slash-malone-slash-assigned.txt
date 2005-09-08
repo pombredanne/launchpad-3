@@ -5,43 +5,19 @@ To access /malone/assigned we have to be logged in.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/malone/assigned/+index/+login
+  Location: http://localhost:9000/malone/assigned/+login
   <BLANKLINE>
 
 
-When we're logged in as Sample Person we can see our own bugs.
+When we're logged in as Foo Bar we can see our own bugs. Note that
+/malone/assigned has been deprecated, in favour of the equivalent
+report (at least by intent, if not by design) in FOAF.
 
   >>> print http(r"""
-  ... GET /malone/assigned/+index HTTP/1.1
+  ... GET /malone/assigned HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
-  HTTP/1.1 200 Ok
-  ...Bugs assigned to Foo Bar...
-
-We can also see bugs assigned to other people.
-
-  >>> print http(r"""
-  ... POST /malone/assigned/ HTTP/1.1
-  ... Content-Length: 41
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... 
-  ... name=name12&minseverity=10&minpriority=10""")
-  HTTP/1.1 200 Ok
-  ...Bugs assigned to Sample Person...
-
-
-If we specify a name that doesn't exist in Launchpad, we get a page
-telling us that.
-
-  >>> print http(r"""
-  ... POST /malone/assigned/ HTTP/1.1
-  ... Content-Length: 41
-  ... Content-Type: application/x-www-form-urlencoded
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... 
-  ... name=name42&minseverity=10&minpriority=10""")
-  HTTP/1.1 200 Ok
+  HTTP/1.1 303 See Other
   ...
-          The user "name42" is not registered in Launchpad.
+  Location: http://localhost:9000/people/name16/+assignedbugs
   ...

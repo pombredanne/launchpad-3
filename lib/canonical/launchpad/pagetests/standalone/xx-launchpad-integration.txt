@@ -1,0 +1,16 @@
+
+We need to ensure that the Launchpad Integration pages are available.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+gethelp HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+translate HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+

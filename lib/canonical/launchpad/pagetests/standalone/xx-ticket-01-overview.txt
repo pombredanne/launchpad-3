@@ -1,0 +1,90 @@
+
+The Launchpad Ticket Tracker
+============================
+
+Launchpad has a "tech support request tracker" built in to it. So you can
+have your community provide technical support using Launchpad for any
+upstream application, or any distribution.
+
+First, lets look at a product page. We should see the "Tickets" link, and we
+should see an action item allowing us to "Request Support". We will look at
+Firefox, and based on the sampledata we expect there to be three support
+tickets.
+
+  >>> print http(r"""
+  ... GET /products/firefox HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  .../products/firefox/+tickets">Tickets...
+  ...+addticket">Request Support...
+  ...Latest Mozilla Firefox...Support Requests:...
+  ...+ticket/4">Firefox loses focus and gets stuck...
+  ...Problem showing the SVG demo on W3C site...
+  ...Firefox cannot render Bank Site...
+
+
+On a distribution we also expect to see the Tickets link, and the ability to
+request support.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  .../distros/ubuntu/+tickets">Tickets...
+  ...+addticket">Request Support...
+  ...Latest...Support Requests:...
+
+
+On a distrorelease we will see a "Request Support" link, but note that it
+points at its distro, not itself. Support tickets are linked to distro, and
+optionally source package too.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  .../distros/ubuntu/+addticket">Request Support...
+
+On a source package we should see the Tickets link, and a Request Support
+link.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  .../distros/ubuntu/hoary/+sources/evolution/+tickets">Tickets...
+  ...+addticket">Request Support...
+  ...Latest...Support Requests:...
+
+Let's make sure we can actually see the +tickets page on a Product.
+
+  >>> print http(r"""
+  ... GET /products/gnomebaker/+tickets HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+And on a Distribution.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+tickets HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+And on a Source Package.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+tickets HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Now, let's look at a ticket.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+

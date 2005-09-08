@@ -45,6 +45,8 @@ class SpecificationTargetView:
         else:
             # for a person, we need to figure out which set of specs to be
             # showing.
+
+            # XXX sabdfl 07/09/05 we need to discuss this in UBZ
             url = self.request.getURL()
             if '+createdspecs' in url:
                 specs = self.context.created_specs

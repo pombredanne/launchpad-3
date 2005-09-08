@@ -82,6 +82,10 @@
     <include file="specificationreview.zcml" />
     <include file="specificationsubscription.zcml" />
     <include file="specificationtarget.zcml" />
+    <include file="ticket.zcml" />
+    <include file="ticketreopening.zcml" />
+    <include file="ticketsubscription.zcml" />
+    <include file="tickettarget.zcml" />
     <include file="vsourcepackagereleasepublishing.zcml" />
     <include file="shipit.zcml" />
     <include file="sshkey.zcml" />

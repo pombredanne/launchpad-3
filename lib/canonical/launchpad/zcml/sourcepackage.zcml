@@ -23,11 +23,16 @@
         for="canonical.launchpad.interfaces.ISourcePackage"
         function="canonical.launchpad.browser.traverseSourcePackage" />
 
-     <browser:url
-         for="canonical.launchpad.interfaces.ISourcePackage"
-         path_expression="string:+sources/${name}"
-         attribute_to_parent="distrorelease"
-         />
+    <browser:url
+        for="canonical.launchpad.interfaces.ISourcePackage"
+        path_expression="string:+sources/${name}"
+        attribute_to_parent="distrorelease"
+        />
+
+   <browser:menus
+        module="canonical.launchpad.browser.sourcepackage"
+        classes="SourcePackageFacets"
+        />
 
     <browser:pages
       for="canonical.launchpad.interfaces.ISourcePackage"

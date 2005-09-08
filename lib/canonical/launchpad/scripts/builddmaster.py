@@ -28,13 +28,15 @@ from canonical.launchpad.database import (
     Builder, BuildQueue, Build, Distribution, DistroRelease,
     DistroArchRelease, SourcePackagePublishing, LibraryFileAlias,
     BinaryPackageRelease, BinaryPackageFile, BinaryPackageName,
-    SourcePackageReleaseFile
+    SourcePackageReleaseFile, Processor
     )
 
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPocket, 
     BinaryPackageFormat, BinaryPackageFileType
     )
+
+from canonical import encoding
 
 from canonical.lp.dbschema import BuildStatus as DBBuildStatus
 
@@ -141,7 +143,7 @@ class BuilderGroup:
             raise BuildDaemonError("Attempted to give a file to a known-bad"
                                    " builder")
 
-        url = librarian.getURLForAlias(libraryfilealias.id)
+        url = librarian.getURLForAlias(libraryfilealias.id, is_buildd=True)
         
         self.logger.debug("Asking builder on %s if it has file %s (%s, %s)"
                           % (builder.url, libraryfilealias.filename,
@@ -343,7 +345,12 @@ class BuilderGroup:
                              logtail):
         """Build still building, Simple collects the logtail"""
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
-        queueItem.logtail = logtail
+        # XXX cprov 20050902:
+        # guess() can fail if it receives an incomplete multibyte sequence,
+        # which could be possible since we are spliting the string in the
+        # slave side. Is it possible to ensure we are spliting it properly,
+        # whatever is the original charset ?
+        queueItem.logtail = encoding.guess(logtail)
 
     def updateBuild_ABORTED(self, queueItem, slave, librarian, buildid):
         """Build was ABORTED, 'clean' the builder for another jobs. """
@@ -576,47 +583,107 @@ class BuilddMaster:
                                                 pending, published))
         
         self._logger.info("Scanning publishing records for %s/%s...",
-                          distrorelease.distribution.name,
-                          distrorelease.name)
+                          distrorelease.distribution.title,
+                          distrorelease.title)
 
         releases = set(pubrec.sourcepackagerelease for pubrec in spp)
 
         self._logger.info("Found %d Sources to build.", len(releases))
-
+        
         # 2. Determine the set of distroarchreleases we care about in this
         # cycle
-        archs = set([arch for arch in distrorelease.architectures
-                     if arch in self._archreleases])
+        archs = set(arch for arch in distrorelease.architectures
+                    if arch in self._archreleases)
+
+        # XXX cprov 20050831
+        # Avoid entering in the huge loop if we don't find at least
+        # one supported  architecture. Entering in it with no supported
+        # architecture results in a corruption of the persistent DBNotes
+        # instance for self._archreleases, it ends up empty.
+        if len(archs) == 0:
+            self._logger.info("No Supported Architectures found, skipping "
+                              "distrorelease %s", distrorelease.title)
+            return
         
         # 3. For each of the sourcepackagereleases, find its builds...
         for release in releases:
+            header = ("Build Record for %s-%s for '%s' " %
+                      (release.name, release.version,
+                       release.architecturehintlist))
+
+            # Abort packages with empty architecturehintlist, they are simply
+            # wrong.
+            # XXX cprov 20050931
+            # This check should be done earlier in the upload component/hct
+            if release.architecturehintlist is None:
+                self._logger.debug(header + "ABORT EMPTY ARCHHINTLIST")
+                continue
+
+            # Verify if the sourcepackagerelease build in ALL arch
+            # in this case only one build entry is needed.
+            if release.architecturehintlist == "all":
+
+                # it's already there, skip to next package
+                if Build.selectBy(sourcepackagereleaseID=release.id).count():
+                    self._logger.debug(header + "SKIPPING ALL")
+                    continue
+
+                
+                # packages with an architecture hint of "all" ar
+                # architecture independent.  Therefore we only need
+                # to build on one architecture.
+                proposed_arch = list(archs)[0]
+
+                # XXX cprov 20050831
+                # Pick up the processor from the publishing history
+                # or simply do it in i386 box
+                Build(processor=1,
+                      distroarchrelease=proposed_arch.id,
+                      buildstate=DBBuildStatus.NEEDSBUILD,
+                      sourcepackagerelease=release.id)
+                self._logger.debug(header + "CREATING ALL")
+                continue
+
+            # the sourcepackage release builds in a specific list of
+            # architetures or in ANY.
+            # it should be cross-combined with the current supported
+            # architetures in this distrorelease.
             for arch in archs:
-                builds = Build.selectBy(sourcepackagereleaseID=release.id,
-                                        distroarchreleaseID=arch.id)
-                if builds.count() == 0:
-                    self._logger.debug("Creating build record for %s (%s) "
-                                       "on %s"
-                                       % (release.sourcepackagename.name,
-                                          release.version,
-                                          arch.architecturetag))
+
+                # if the sourcepackagerelease doesn't build in ANY
+                # architecture and the current architecture is not
+                # mentioned in the list, continues 
+                supported = release.architecturehintlist.split()
+                if ('any' not in supported and arch.architecturetag not in
+                    supported):
+                    self._logger.debug(header + "NOT SUPPORTED %s" %
+                                       arch.architecturetag)
+                    continue
+                
+                # verify is isn't already present for this distroarchrelease
+                if Build.selectBy(sourcepackagereleaseID=release.id,
+                                  distroarchreleaseID=arch.id).count() == 0:
+                    # XXX cprov 20050831
+                    # I could possibily be better designed, let's think about
+                    # it in the future. Pick the first processor we found for
+                    # this distroarchrelease.processorfamily. The data model
+                    # should change to have a default processor for a
+                    # processorfamily 
+                    processor = Processor.selectBy(
+                        familyID=arch.processorfamily.id,
+                        orderBy='id')[0]
                     
-                    # XXX: dsilvers: 21/2/05: processor?! NULL?
-                    # Also, what's with having to pass all these None values ?
-                    # cprov 20050701
-                    # As soon as I can land the refactoring for using
-                    # getUtility() this issue and other can be solved. 
-                    Build(processor=1,
+                    Build(processor=processor.id,
                           distroarchrelease=arch.id,
                           buildstate=DBBuildStatus.NEEDSBUILD,
                           sourcepackagerelease=release.id,
-                          buildduration=None,
-                          gpgsigningkey=None,
-                          builder=None,
-                          buildlog=None,
-                          datebuilt=None,
-                          changes=None,
-                          datecreated=UTC_NOW
                           )
+
+                    self._logger.debug(header + "CREATING %s" %
+                                       arch.architecturetag)
+                else:
+                    self._logger.debug(header + "SKIPPING %s" %
+                                       arch.architecturetag)
         self.commit()
 
     def addMissingBuildQueueEntries(self):

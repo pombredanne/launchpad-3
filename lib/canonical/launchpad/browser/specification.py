@@ -27,7 +27,6 @@ class SpecificationView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.subscription = None
         self.review = None
         self.notices = []
 
@@ -51,12 +50,7 @@ class SpecificationView:
             self.context.unqueue(self.user)
             self.notices.append('Thank you for your review.')
 
-        # establish if this user has a subscription
         if self.user is not None:
-            for subscription in self.context.subscriptions:
-                if subscription.person.id == self.user.id:
-                    self.subscription = subscription
-                    break
             # establish if this user has a review queued on this spec
             for review in self.context.reviews:
                 if review.reviewer.id == self.user.id:
@@ -67,6 +61,16 @@ class SpecificationView:
                         msg = msg + ': ' + review.queuemsg
                     self.notices.append(msg)
                     break
+
+    @property
+    def subscription(self):
+        """establish if this user has a subscription"""
+        if self.user is None:
+            return None
+        for subscription in self.context.subscriptions:
+            if subscription.person.id == self.user.id:
+                return subscription
+        return None
 
 
 class SpecificationAddView(SQLObjectAddView):

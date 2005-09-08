@@ -97,14 +97,13 @@ def sendmail(message):
 
     From:, To: and Subject: headers should already be set.
     Message-Id:, Date:, and Reply-To: headers will be set if they are 
-    not already. Errors-To: headers will always be set. The more we look
-    valid, the less we look like spam.
-    
+    not already. Errors-To: and Return-Path: headers will always be set.
+    The more we look valid, the less we look like spam.
+
     Uses zope.app.mail.interfaces.IMailer, so you can subscribe to
     IMailSentEvent or IMailErrorEvent to record status.
 
     Returns the Message-Id
- 
     """
     assert isinstance(message, Message), 'Not an email.Message.Message'
     assert 'to' in message and bool(message['to']), 'No To: header'
@@ -132,6 +131,12 @@ def sendmail(message):
     # Add an Errors-To: header for bounce handling
     del message['Errors-To']
     message['Errors-To'] = config.bounce_address
+
+    # Add a Return-Path: header for bounce handling as well. Normally
+    # this is added by the SMTP mailer using the From: header. But we
+    # want it to be bounce_address instead.
+    if 'return-path' not in message:
+        message['Return-Path'] = config.bounce_address
 
     # Add an X-Generated-By header for easy whitelisting
     del message['X-Generated-By']
