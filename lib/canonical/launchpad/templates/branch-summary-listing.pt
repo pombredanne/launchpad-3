@@ -17,7 +17,7 @@
 <span tal:replace="context/revision_count">35</span> revisions,
 
 <span class="dummy">
-  1477 lines.
+1477 lines.
 </span>
 
 Status: <span tal:replace="context/lifecycle_status/title">Ready</span><br />

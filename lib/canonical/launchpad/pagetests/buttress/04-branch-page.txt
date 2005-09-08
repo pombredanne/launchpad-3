@@ -13,7 +13,19 @@
   ...
   <div class="documentDescription">Bazaar import of the Mozilla Thunderbird CVS mainline.</div>
   <BLANKLINE>
-  <hr />
+  <table class="listing" style="line-height: 1.5;">
+    <tbody>
+      <tr style="border-top: 1px solid #8cacbb;">
+        <td><b>Branch URL:</b></td>
+        <td><tt><a href="http://bazaar.ubuntu.com/thunderbird@arch.ubuntu.com/thunderbird--MAIN--0">http:/&#x200B;/&#x200B;bazaar.ubuntu.com/&#x200B;thunderbird@arch.ubuntu.com/&#x200B;thunderbird--MAIN--0</a></tt></td>
+      </tr>
+      <tr>
+        <td><b>Status:</b></td>
+        <td>New</td>
+      </tr>
+  <BLANKLINE>
+    </tbody>
+  </table>
   <BLANKLINE>
   <h2>Revision History:</h2>
   <BLANKLINE>

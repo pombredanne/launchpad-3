@@ -13,10 +13,14 @@
   ...
   <h1>Bazaar Branches</h1>
   ...
+  <h2>Branches Registered</h2>
+  <BLANKLINE>
+  <p>
   <img src="/++resource++lock_icon.gif" />
   <b><a href="http://localhost:9000/people/stevea/+branch/thunderbird/thunderbird@arch.ubuntu.com_thunderbird--MAIN--0">Mozilla Thunderbird 0.9.1</a></b>
   - <img src="/++resource++user.gif" />
-  <a href="http://localhost:9000/people/stevea">Steve Alexander</a><br />
+  <a href="http://localhost:9000/people/stevea">Steve Alexander</a>
+  <br />
   Bazaar import of the Mozilla Thunderbird CVS mainline.
   3 revisions,
   <BLANKLINE>
@@ -24,5 +28,12 @@
   ...
   </span>
   <BLANKLINE>
-  <hr />
+  Status: New<br />
+  <BLANKLINE>
+  <span class="dummy">
+  ...
+  </span>
+  <BLANKLINE>
+  <a></a>
+  </p>
   ...

@@ -168,8 +168,8 @@ class IPerson(Interface):
     packages = Attribute("A Selection of SourcePackageReleases")
     authored_branches = Attribute("The branches whose author is this person.")
     registered_branches = Attribute(
-        "The branches whose owner is this person and which either have no
-        author or an author different from this person.")
+        "The branches whose owner is this person and which either have no"
+        "author or an author different from this person.")
     maintainerships = Attribute("This person's Maintainerships")
     activities = Attribute("Karma")
     memberships = Attribute("List of TeamMembership objects for Teams this "
