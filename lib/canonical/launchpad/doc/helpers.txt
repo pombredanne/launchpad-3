@@ -196,4 +196,48 @@ We have to specify either 'names' or 'providing':
     Traceback (most recent call last):
     ...
     SnapshotCreationError: ...
-     
+
+
+normalize_whitespaces
+---------------------
+
+    >>> from canonical.launchpad.helpers import normalize_whitespaces
+
+This function copies the leading and trailing whitespaces from the first
+argument into the second one.
+
+    >>> template = 'normal string'
+    >>> text = 'another normal string'
+
+    In this case, it should not change.
+
+    >>> normalize_whitespaces(template, text)
+    'another normal string'
+
+    Let's try with a 'text' that has some leading and trailing whitespaces,
+    they will disappear as the 'template' does not have them.
+
+    >>> text = ' a string with \n whitespaces \n'
+    >>> normalize_whitespaces(template, text)
+    'a string with \n whitespaces'
+
+    Now, the 'template' will have a leading whitespace. That means that 'text'
+    should have it too.
+
+    >>> template = '\nnormal string with leading newline'
+    >>> normalize_whitespaces(template, text)
+    '\na string with \n whitespaces'
+
+    If 'text' has only whitespaces and nothing else, we should get the empty
+    string.
+
+    >>> text = '\n'
+    >>> normalize_whitespaces(template, text)
+    ''
+
+    And if either, 'template' or 'text' are None, we get 'text' unchanged.
+
+    >>> normalize_whitespaces(None, text)
+    '\n'
+    >>> normalize_whitespaces(template, None) is None
+    True

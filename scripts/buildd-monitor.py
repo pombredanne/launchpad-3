@@ -20,7 +20,8 @@ class BuilddSlaveMonitorApp:
     """Simple application class to expose some special methods and
     wrap to the RPC server.
     """
-    def __init__(self, write):
+    def __init__(self, tm, write):
+        self.tm = tm
         self.write = write
 
     def requestReceived(self, line):
@@ -72,16 +73,36 @@ class BuilddSlaveMonitorApp:
     def cmd_builders(self, data=None):
         """Read access through initZopeless."""
         builders = Builder.select(orderBy='id')
-        blist = 'List of Builders\n'
+        blist = 'List of Builders\nID - STATUS - NAME - URL\n'
         for builder in builders:
             name = builder.name.encode('ascii')
             url = builder.url.encode('ascii')
-            blist += '%s - %s - %s\n' % (builder.id, name, url)
+            blist += '%s - %s - %s - %s\n' % (builder.id, builder.builderok,
+                                              name, url)
         return blist
+
+    def cmd_reset(self, data=None):
+        try:
+            builder = Builder.get(int(data[0]))
+        except ValueError, IndexError:
+            msg =  'Argument must be the builder ID'
+        except SQLObjectNotFound:
+            msg = 'Builder not found: %d' % int(data[0])
+        else:
+            builder.builderok = True
+            self.tm.commit()
+            msg = '%s was reset sucessfully' % builder.name
+        return msg
+
+    def cmd_clear(self, data=None):
+        """Simply returns the VT100 reset string."""
+        return '\033c'
         
     def cmd_help(self, data=None):
         return ('Command Help\n'
+                'clear - clear screen'
                 'builders - list available builders\n'
+                'reset <BUILDERID> - reset builder\n'
                 'quit - exit the program\n'
                 'Usage: <CMD> <BUILDERID> <ARGS>\n')
             
@@ -101,25 +122,31 @@ class BuilddSlaveMonitorProtocol(basic.LineReceiver):
     """Terminal Style Protocol"""
     # set local line delimiter
     from os import linesep as delimiter
+    # store the trasaction manager locally
+    tm = None
 
     def connectionMade(self):
         """Setup the backend application and send welcome message."""
-        self.app = BuilddSlaveMonitorApp(self.transport.write)
+        self.app = BuilddSlaveMonitorApp(self.tm, self.transport.write)
         self.transport.write('Welcome Buildd Slave Monitor\n>>> ')
 
     def lineReceived(self, line):
         """Use the Backend App to process each request."""
         self.app.requestReceived(line)
 
-def main():
+def main(tm):
     """Setup the interactive interface with the respective protocol,
     and start the reactor.
     """
-    stdio.StandardIO(BuilddSlaveMonitorProtocol())
+    # ensure we store the transaction manager instance before
+    # initialise the reactor.
+    proto = BuilddSlaveMonitorProtocol()
+    proto.tm = tm
+    stdio.StandardIO(proto)
     reactor.run()
     
 if __name__ == '__main__':
     # for main, the only think to setup is the initZopeless
     # environment and the application wrapper. 
-    initZopeless()
-    main()
+    tm = initZopeless()
+    main(tm)

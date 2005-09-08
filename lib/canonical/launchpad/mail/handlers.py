@@ -40,7 +40,7 @@ def get_edited_fields(modified_event, another_event):
     """Combines two events' edited_fields."""
     edited_fields = modified_event.edited_fields
     if ISQLObjectModifiedEvent.providedBy(another_event):
-        edited_fields.append(another_event.edited_fields)
+        edited_fields += another_event.edited_fields
     return edited_fields
 
 
@@ -82,9 +82,10 @@ class MaloneHandler:
         # First extract all commands from the email.   
         command_names = emailcommands.names()
         for line in content.splitlines():  
-            # All commands have to be intented.
+            # All commands have to be indented.
             if line.startswith(' ') or line.startswith('\t'):
-                words = line.split()
+                command_string = line.strip()
+                words = command_string.split(' ')
                 if words and words[0] in command_names:
                     command = emailcommands.get(
                         name=words[0], string_args=words[1:])
@@ -93,20 +94,26 @@ class MaloneHandler:
                     else:
                         commands.append(command)
         return commands
-        
+
 
     def process(self, signed_msg, to_addr, filealias=None):
         commands = self.getCommands(signed_msg)
 
         user, host = to_addr.split('@')
-        
+
+        add_comment_to_bug = False
         if user.lower() == 'new':
             # A submit request.   
             commands.insert(0, emailcommands.get('bug', ['new']))
         elif user.isdigit():
-            # A comment to a bug.
+            # A comment to a bug. We set add_comment_to_bug to True so
+            # that the comment gets added to the bug later. We don't add
+            # the comment now, since we want to let the 'bug' command
+            # handle the possible errors that can occur while getting
+            # the bug.
+            add_comment_to_bug = True
             commands.insert(0, emailcommands.get('bug', [user]))
-        else:
+        elif user.lower() != 'edit':
             # Indicate that we didn't handle the mail.
             return False
 
@@ -115,7 +122,7 @@ class MaloneHandler:
         bug = None
         bug_event = None
         try:
-            while len(commands) > 0:    
+            while len(commands) > 0:
                 command = commands.pop(0)
                 try:
                     if IBugEmailCommand.providedBy(command):   
@@ -124,14 +131,10 @@ class MaloneHandler:
                             bug_event = None
 
                         bug, bug_event = command.execute(message)
-                        if not ISQLObjectCreatedEvent.providedBy(bug_event):
-                            # If it's a comment to an existing bug, we
-                            # need to generate a created event for the
-                            # comment.
-                            bugmessageset = getUtility(IBugMessageSet)
-                            bugmessage = bugmessageset.getByBugAndMessage(
-                                bug, message)
+                        if add_comment_to_bug:
+                            bugmessage = bug.linkMessage(message)
                             notify(SQLObjectCreatedEvent(bugmessage))
+                            add_comment_to_bug = False
                         bug_snapshot = Snapshot(bug, providing=IBug)
                     else:
                         ob, ob_event = command.execute(bug, bug_event)
@@ -161,5 +164,5 @@ class MaloneHandler:
                 signed_msg['From'],
                 'Submit Request Failure',
                 error.message)
-                
+
         return True

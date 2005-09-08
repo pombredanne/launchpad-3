@@ -204,6 +204,18 @@
             </description>
         </key>
 
+        <!-- This is present because the buildd master uses download_url for
+             itself and passes buildd_download_url to the slaves. -->
+        <key name="buildd_download_url" datatype="canonical.config.urlbase"
+            required="yes">
+            <description>
+                The base URL used to generate URLs to the Library contents
+                when passing URLs to the build daemons. This is likely to be
+                a different host and port to the download url provided to
+                external clients and is also likely to be proxied via Apache.
+            </description>
+        </key>
+
         <section name="*" type="librarian_server" attribute="server"
             required="no" />
     </sectiontype>

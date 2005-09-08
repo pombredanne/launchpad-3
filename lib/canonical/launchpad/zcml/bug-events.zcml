@@ -92,6 +92,11 @@
 <subscriber
    for="canonical.launchpad.interfaces.IBugExternalRef
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+   factory="canonical.launchpad.subscribers.karma.extref_added" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.IBugExternalRef
+        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_external_ref_added" />
 
 <subscriber
@@ -106,8 +111,18 @@
 
 <subscriber
    for="canonical.launchpad.interfaces.ICVERef
+        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+   factory="canonical.launchpad.subscribers.karma.cve_added" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.ICVERef
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_cveref_edited" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.IBugWatch
+        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+   factory="canonical.launchpad.subscribers.karma.bugwatch_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugWatch

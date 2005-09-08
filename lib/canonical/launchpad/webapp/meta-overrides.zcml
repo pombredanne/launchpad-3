@@ -1,0 +1,58 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:meta="http://namespaces.zope.org/meta">
+
+<meta:directives namespace="http://namespaces.zope.org/browser">
+
+<!-- This overridden directive can be removed when Zope3 has a
+     browser:defaultView directive that allows you to specify the
+     layer for that default.
+  -->
+    <meta:directive
+        name="defaultView"
+        schema="canonical.launchpad.webapp.metazcml.IDefaultViewDirective"
+        handler="canonical.launchpad.webapp.metazcml.defaultView"
+        />
+
+    <meta:directive
+        name="page"
+        schema="canonical.launchpad.webapp.metazcml.IPageDirective"
+        handler="canonical.launchpad.webapp.metazcml.page"
+        />
+
+    <meta:complexDirective
+        name="pages"
+        schema="canonical.launchpad.webapp.metazcml.IPagesDirective"
+        handler="canonical.launchpad.webapp.metazcml.pages"
+        >
+      <meta:subdirective
+          name="page"
+          schema="canonical.launchpad.webapp.metazcml.IPagesPageSubdirective"
+          />
+    </meta:complexDirective>
+
+    <meta:complexDirective
+        name="editform"
+        schema="canonical.launchpad.webapp.metazcml.IEditFormDirective"
+        handler="canonical.launchpad.webapp.metazcml.EditFormDirective"
+        >
+      <meta:subdirective
+          name="widget"
+          schema="zope.app.form.browser.metadirectives.IWidgetSubdirective"
+          />
+    </meta:complexDirective>
+
+    <meta:complexDirective
+        name="addform"
+        schema="canonical.launchpad.webapp.metazcml.IAddFormDirective"
+        handler="canonical.launchpad.webapp.metazcml.AddFormDirective"
+        >
+      <meta:subdirective
+          name="widget"
+          schema="zope.app.form.browser.metadirectives.IWidgetSubdirective"
+          />
+    </meta:complexDirective>
+
+</meta:directives>
+
+</configure>

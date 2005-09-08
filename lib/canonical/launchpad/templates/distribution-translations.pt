@@ -1,0 +1,34 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Translations</h1>
+
+  <p class="documentDescription">
+    If <span tal:replace="context/displayname">Ubuntu</span> is using
+    Launchpad for translations then you will be able to choose a
+    release and start translating below:
+  </p>
+
+  <tal:block repeat="distrorelease context/releases">
+    <h2><span tal:replace="distrorelease/version">5.04</span>:
+        <span tal:replace="distrorelease/title">Hoary Hedgehog</span></h2>
+    <div tal:replace="structure distrorelease/@@+langchart" />
+  </tal:block>
+
+</div>
+</body>
+</html>

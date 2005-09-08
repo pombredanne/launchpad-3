@@ -213,6 +213,14 @@ class IPerson(Interface):
         "has been asked to review, sorted newest first.")
     subscribed_specs = Attribute("Specifications to which this person "
         "has subscribed, sorted newest first.")
+    tickets = Attribute("Any support requests related to this person. "
+        "They might be created, or assigned, or answered by, or "
+        "subscribed to by this person.")
+    assigned_tickets = Attribute("Tickets assigned to this person.")
+    created_tickets = Attribute("Tickets created by this person.")
+    answered_tickets = Attribute("Tickets answered by this person.")
+    subscribed_tickets = Attribute("Tickets to which this person "
+        "subscribes.")
     teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
                        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,

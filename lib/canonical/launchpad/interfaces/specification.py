@@ -144,6 +144,9 @@ class ISpecificationSet(Interface):
 
     title = Attribute('Title')
 
+    latest_specs = Attribute("The latest 10 specifications registered in "
+        "the Launchpad.")
+
     def __iter__():
         """Iterate over all specifications."""
 

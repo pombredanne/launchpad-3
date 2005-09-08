@@ -1181,6 +1181,8 @@ def normalize_whitespaces(template, text):
 
     If any of the arguments is None, 'text' is returned without
     changes.
+    If 'text' has only whitespaces but 'template' has other characters, the
+    empty string ('') is returned.
     'template' and 'text' are strings.
     """
     if template is None or text is None:
@@ -1189,6 +1191,9 @@ def normalize_whitespaces(template, text):
     stripped_template = template.strip()
     stripped_text = text.strip()
     new_text = None
+
+    if len(stripped_template) > 0 and len(stripped_text) == 0:
+        return ''
 
     if len(stripped_template) != len(template):
         # There are whitespaces that we should copy to the 'text'
@@ -1205,7 +1210,6 @@ def normalize_whitespaces(template, text):
         new_text = text
 
     return new_text
-
 
 def intOrZero(value):
     """Return int(value) or 0 if the conversion fails."""

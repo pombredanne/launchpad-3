@@ -74,6 +74,9 @@
             name="+translations"
             template="../templates/distrorelease-translations.pt" />
         <browser:page
+            name="+langchart"
+            template="../templates/distrorelease-langchart.pt" />
+        <browser:page
             name="+packaging"
             template="../templates/distrorelease-packaging.pt" />
         <browser:page

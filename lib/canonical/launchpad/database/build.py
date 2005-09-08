@@ -9,15 +9,15 @@ import xmlrpclib
 from zope.interface import implements
 
 # SQLObject/SQLBase
-from sqlobject import StringCol, ForeignKey, DateTimeCol, BoolCol, IntCol
+from sqlobject import (
+    StringCol, ForeignKey, BoolCol, IntCol, IntervalCol)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import (
-    IBuild, IBuilder, IBuildSet, IBuildQueue
-    )
+    IBuild, IBuilder, IBuildSet, IBuildQueue)
 
 from canonical.lp.dbschema import EnumCol, BuildStatus
 
@@ -28,21 +28,35 @@ class Build(SQLBase):
 
     datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
                                  default=UTC_NOW)
+
     processor = ForeignKey(dbName='processor', foreignKey='Processor', 
                            notNull=True)
+
     distroarchrelease = ForeignKey(dbName='distroarchrelease', 
                                    foreignKey='DistroArchRelease', 
                                    notNull=True)
+
     buildstate = EnumCol(dbName='buildstate', notNull=True, schema=BuildStatus)
-    datebuilt = UtcDateTimeCol(dbName='datebuilt')
-    buildduration = DateTimeCol(dbName='buildduration')
-    buildlog = ForeignKey(dbName='buildlog', foreignKey='LibraryFileAlias')
-    builder = ForeignKey(dbName='builder', foreignKey='Builder')
-    gpgsigningkey = ForeignKey(dbName='gpgsigningkey', foreignKey='GPGKey')
-    changes = StringCol(dbName='changes')
+
     sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
                                       foreignKey='SourcePackageRelease', 
                                       notNull=True)
+
+    datebuilt = UtcDateTimeCol(dbName='datebuilt', notNull=False, default=None)
+
+    buildduration = IntervalCol(dbName='buildduration', notNull=False,
+                                default=None)
+
+    buildlog = ForeignKey(dbName='buildlog', foreignKey='LibraryFileAlias',
+                          notNull=False, default=None)
+
+    builder = ForeignKey(dbName='builder', foreignKey='Builder',
+                         notNull=False, default=None)
+
+    gpgsigningkey = ForeignKey(dbName='gpgsigningkey', foreignKey='GPGKey',
+                               notNull=False, default=None)
+
+    changes = StringCol(dbName='changes', notNull=False, default=None)
 
 
 class BuildSet:

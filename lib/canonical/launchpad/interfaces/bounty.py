@@ -18,12 +18,12 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad.fields import Summary, Title, TimeInterval
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces import IHasOwner, IMessageTarget
 from canonical.lp.dbschema import BountyDifficulty, BountyStatus
 
 _ = MessageIDFactory('launchpad')
 
-class IBounty(IHasOwner):
+class IBounty(IHasOwner, IMessageTarget):
     """The core bounty description."""
 
     id = Int(
@@ -81,6 +81,7 @@ class IBounty(IHasOwner):
             title=_('Owner'), required=True, readonly=True
             )
     owner = Attribute("The owner's IPerson")
+
     # joins
     subscriptions = Attribute('The set of subscriptions to this bounty.')
     projects = Attribute('The projects which this bounty is related to.')

@@ -1,0 +1,52 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Ticket Re-Opening History</h1>
+
+  <p class="documentDescription">
+    This page shows the times when this ticket was re-opened, by whom, and
+    who the previous person was who had answered or rejected the ticket.
+  </p>
+
+  <table class="listing">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Reopened By</th>
+        <th>Prior State</th>
+        <th>Was Answered By</th>
+        <th>On</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="reop context/reopenings">
+        <td tal:content="reop/datecreated/fmt:date">2005-10-16</td>
+        <td tal:content="reop/reopener/browsername">Foo Bar</td>
+        <td tal:content="reop/priorstate/title">Closed</td>
+        <td><span tal:condition="reop/answerer"
+                  tal:replace="reop/answerer/browsername">Sample
+                  Person</span></td>
+        <td><span tal:condition="reop/dateanswered"
+                  tal:replace="reop/dateanswered/fmt:date">2005-10-16</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+</body>
+</html>

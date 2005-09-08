@@ -12,16 +12,19 @@
                   <a href="+packages">Show Packages</a>
                 </li>
                 <li class="info">
-                  <a href="+specplan">Show Project Plan</a>
+                  <a href="+specplan">Show Roadmap</a>
                 </li>
                 <li class="edit">
                   <a href="+edit">Edit Product Details</a>
                 </li>
                 <li class="edit">
-                    <a href="+reassign">Change Maintainer</a>
+                    <a href="+reassign">Change Registrant</a>
                 </li>
                 <li class="edit">
                   <a href="+changetranslators">Change Translators</a>
+                </li>
+                <li class="edit">
+                  <a href="+launchpad">Define Launchpad Usage</a>
                 </li>
                 <li class="add">
                   <a href="+filebug">Report a Bug</a>
@@ -43,6 +46,9 @@
                 </li>
                 <li class="add">
                   <a href="+addspec">Add Feature Specification</a>
+                </li>
+                <li class="add">
+                  <a href="+addticket">Request Support</a>
                 </li>
                 <li class="download">
                   <a href="+rdf">Download RDF Metadata</a>

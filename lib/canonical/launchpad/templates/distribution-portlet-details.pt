@@ -6,7 +6,7 @@
   <div class="portletBody">
     <div class="portletContent even">
 
-      <b>Admin:</b><br />
+      <b>Registrant:</b><br />
       <img src="/++resource++user.gif">
       <a tal:attributes="href context/owner/fmt:url"
          tal:content="context/owner/browsername">owner name</a> <br />

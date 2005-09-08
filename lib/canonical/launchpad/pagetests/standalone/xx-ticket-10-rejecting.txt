@@ -1,0 +1,78 @@
+
+Rejecting and Reopening
+=======================
+
+There should be a link to allow the rejection of an open ticket.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2/ HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Reject...
+
+There is a page to allow us to reject a ticket.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2/+reject HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+When we POST that back to the ticket page we should see a status of
+rejected, and a message saying that it has been rejected. And the Actions
+portlet should allow us to Reopen the ticket.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+ticket/2/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 20
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... reject=Reject+Ticket""")
+  HTTP/1.1 200 Ok
+  ...You have rejected this ticket...
+  ...+reopen">Reopen Ticket</a>...
+  ...Rejected...
+
+The reopening page should be visible.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2/+reopen HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+POSTIng that form should make the status Open, and give a portal message to
+say that the ticket was reopened. In addition, we should see the reopenings
+portlet, listing a single instance of reopening by Foo Bar. And finally, we
+should see the "Show History" action item.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+ticket/2/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 20
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... reopen=Reopen+Ticket""")
+  HTTP/1.1 200 Ok
+  ...You have reopened this ticket...
+  ...+reject">Reject Ticket</a>...
+  ...Open...
+  ...This ticket was reopened:...
+
+The +history page should be visible for this ticket.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2/+history HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+          <td>...</td>
+          <td>Foo Bar</td>
+          <td>Rejected</td>
+          <td>Foo Bar</td>
+          <td>...
+  ...
+

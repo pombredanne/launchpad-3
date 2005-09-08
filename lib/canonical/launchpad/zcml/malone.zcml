@@ -61,11 +61,8 @@
             name="+todo"
             template="../templates/malone-to-do.pt"
             lp:url="malone/+todo" />
-    </browser:pages>
 
-    <browser:pages
-        for="canonical.launchpad.interfaces.IMaloneApplication"
-        permission="zope.Public" >
+        <!-- Application portlets. -->
         <browser:page
             name="+portlet-about"
             template="../templates/malone-portlet-about.pt"
@@ -79,4 +76,14 @@
             template="../templates/malone-portlet-bugtrackers.pt"
             lp:url="malone/+portlet-stats" />
     </browser:pages>
+
+    <!-- Preserve the /malone/assigned link to prevent linkrot. This will now
+         redirect into the FOAF +assignedbugs. -->
+    <browser:page
+        for="canonical.launchpad.interfaces.IMaloneApplication"
+        name="assigned"
+        class="canonical.launchpad.browser.DeprecatedAssignedBugsView"
+        attribute="redirect_to_assignedbugs"
+        permission="launchpad.AnyPerson"
+        lp:url="malone/assigned" />
 </configure>

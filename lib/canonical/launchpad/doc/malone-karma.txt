@@ -1,0 +1,206 @@
+This file lists all the karma events that Malone produces. First let's
+import some stuff and define a function to help us make the
+documentation cleaner:
+
+    >>> from canonical.launchpad.interfaces import (IPersonSet, IKarmaSet,
+    ...     IKarmaActionSet, IDistributionSet, IBugSet, IMessageSet)
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+
+    >>> from canonical.lp.dbschema import KarmaActionName
+    >>> karmaset = getUtility(IKarmaSet)
+
+First let's define a variable, so that we can make sure that every
+karma action got tested.
+
+    >>> added_karma_actions = set()
+
+Then we define a function that makes it easier to test. It makes sure
+that foo_bar got the given karma action, and that he got the given
+number of points as well. Also it adds the karma action to
+added_karma_actions, so that we can make sure that every karma action
+was covered in this document.
+
+    >>> from zope.event import notify
+    >>> def make_sure_karma_is_added(karma_action_name, event, points):
+    ...     karma_action = getUtility(IKarmaActionSet).getByName(
+    ...         KarmaActionName.items[karma_action_name])
+    ...     previous_karma = karmaset.getSumByPerson(foo_bar)
+    ...     previous_karma_actions = len(
+    ...         karmaset.selectByPersonAndAction(foo_bar, karma_action))
+    ...     notify(event)
+    ...     current_karma = karmaset.getSumByPerson(foo_bar)
+    ...     current_karma_actions = len(
+    ...         karmaset.selectByPersonAndAction(foo_bar, karma_action))
+    ...     got_karma = current_karma_actions == previous_karma_actions + 1
+    ...     if got_karma:
+    ...         added_karma_actions.add(karma_action)
+    ...     return got_karma and current_karma == previous_karma + points
+
+
+Foo Bar is the one that will get all the karma:
+
+    >>> login('foo.bar@canonical.com')
+
+
+Karma Actions
+-------------
+
+Create a bug:
+
+    >>> from canonical.launchpad.event import (SQLObjectCreatedEvent,
+    ...     SQLObjectModifiedEvent)
+    >>> bug = getUtility(IBugSet).createBug(
+    ...     distribution=getUtility(IDistributionSet).getByName('debian'),
+    ...     comment=u"Give me some karma!", title=u"New Bug", owner=foo_bar)
+    >>> bug_added = SQLObjectCreatedEvent(bug)
+    >>> make_sure_karma_is_added('BUGCREATED', bug_added, 10)
+    True
+
+Change the title of a bug:
+
+    >>> from canonical.launchpad.helpers import Snapshot
+    >>> from canonical.launchpad.interfaces import IBug
+    >>> old_bug = Snapshot(bug, providing=IBug)
+    >>> bug.title = "Better Title"
+    >>> event = SQLObjectModifiedEvent(bug, old_bug, ['title'])
+    >>> make_sure_karma_is_added('BUGTITLECHANGED', event, 1)
+    True
+
+Change the summary of a bug:
+
+    >>> old_bug = Snapshot(bug, providing=IBug)
+    >>> bug.summary = "Summary of bug"
+    >>> event = SQLObjectModifiedEvent(bug, old_bug, ['summary'])
+    >>> make_sure_karma_is_added('BUGSUMMARYCHANGED', event, 2)
+    True
+
+Change the description of a bug:
+
+    >>> old_bug = Snapshot(bug, providing=IBug)
+    >>> bug.description = "Description of bug"
+    >>> event = SQLObjectModifiedEvent(bug, old_bug, ['description'])
+    >>> make_sure_karma_is_added('BUGDESCRIPTIONCHANGED', event, 3)
+    True
+
+Add a web link to a bug:
+
+    >>> from canonical.launchpad.interfaces import IBugExternalRefSet
+    >>> link = getUtility(IBugExternalRefSet).createBugExternalRef(
+    ...     bug, "http://www.com/", "Some link", foo_bar)
+    >>> event = SQLObjectCreatedEvent(link)
+    >>> make_sure_karma_is_added('BUGEXTREFADDED', event, 10)
+    True
+
+Add a CVE reference to a bug:
+
+    >>> from canonical.launchpad.interfaces import ICVERefSet
+    >>> from canonical.lp.dbschema import CVEState
+    >>> cve = getUtility(ICVERefSet).createCVERef(
+    ...     bug, "1945-6789", CVEState.CANDIDATE, "bla", foo_bar)
+    >>> event = SQLObjectCreatedEvent(cve)
+    >>> make_sure_karma_is_added('BUGCVEREFADDED', event, 15)
+    True
+
+Add watch for external bug to the bug:
+
+    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> from canonical.launchpad.database import BugWatch
+    >>> debbugs = getUtility(IBugTrackerSet)['debbugs']
+    >>> bugwatch = BugWatch(
+    ...     bug=bug,bugtracker=debbugs, remotebug=42, owner=foo_bar)
+    >>> event = SQLObjectCreatedEvent(bugwatch)
+    >>> make_sure_karma_is_added('BUGWATCHADDED', event, 10)
+    True
+
+Mark a bug task as fixed:
+
+    >>> from canonical.launchpad.interfaces import IDistroBugTask
+    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> bugtask = bug.bugtasks[0]
+    >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
+    >>> bugtask.status = BugTaskStatus.FIXED
+    >>> event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['status'])
+    >>> make_sure_karma_is_added('BUGFIXED', event, 10)
+    True
+
+Reject a bug task:
+
+    >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
+    >>> bugtask.status = BugTaskStatus.REJECTED
+    >>> event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['status'])
+    >>> make_sure_karma_is_added('BUGREJECTED', event, 3)
+    True
+
+Accept a bug task:
+
+    >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
+    >>> bugtask.status = BugTaskStatus.ACCEPTED
+    >>> event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['status'])
+    >>> make_sure_karma_is_added('BUGACCEPTED', event, 5)
+    True
+
+Change a bug task's severity:
+
+    >>> from canonical.lp.dbschema import BugTaskSeverity
+    >>> for severity in BugTaskSeverity.items:
+    ...     old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
+    ...     bugtask.severity = severity
+    ...     event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['severity'])
+    ...     print severity.name, make_sure_karma_is_added(
+    ...         'BUGTASKSEVERITYCHANGED', event, 1)
+    WISHLIST True
+    MINOR True
+    NORMAL True
+    MAJOR True
+    CRITICAL True
+
+Change a bug task's priority:
+
+    >>> from canonical.lp.dbschema import BugTaskPriority
+    >>> for priority in BugTaskPriority.items:
+    ...     old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
+    ...     bugtask.priority = priority
+    ...     event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['priority'])
+    ...     print priority.name, make_sure_karma_is_added(
+    ...         'BUGTASKPRIORITYCHANGED', event, 1)
+    WONTFIX True
+    LOW True
+    MEDIUM True
+    HIGH True
+
+Create a new bug task:
+
+    >>> from canonical.launchpad.interfaces import IBugTaskSet, IProductSet
+    >>> evolution = getUtility(IProductSet)['evolution']
+    >>> evolution_task = getUtility(IBugTaskSet).createTask(
+    ...     bug, product=evolution, owner=foo_bar)
+    >>> event = SQLObjectCreatedEvent(evolution_task)
+    >>> make_sure_karma_is_added('BUGTASKCREATED', event, 10)
+    True
+
+Mark a bug as a duplicate:
+
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> old_bug = Snapshot(bug, providing=IBug)
+    >>> bug.duplicateof = bug_one
+    >>> event = SQLObjectModifiedEvent(bug, old_bug, ['duplicateof'])
+    >>> make_sure_karma_is_added('BUGMARKEDASDUPLICATE', event, 5)
+    True
+
+Adding a comment generates a karma event, bug gives no points:
+
+    >>> from canonical.launchpad.interfaces import IBugMessageSet
+    >>> comment = getUtility(IBugMessageSet).createMessage(
+    ...     subject="foo", bug=bug, owner=foo_bar, content="bar")
+    >>> event = SQLObjectCreatedEvent(comment)
+    >>> make_sure_karma_is_added('BUGCOMMENTADDED', event, 0)
+    True
+
+Now, let's ensure that we've covered every of Malone's karma actions:
+
+    >>> from canonical.lp.dbschema import KarmaActionCategory
+    >>> bugs_karma_actions = getUtility(IKarmaActionSet).selectByCategory(
+    ...     KarmaActionCategory.BUGS)
+    >>> added_karma_actions == set(bugs_karma_actions)
+    True
+

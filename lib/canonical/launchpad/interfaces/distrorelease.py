@@ -166,6 +166,15 @@ class IDistroReleaseSet(Interface):
         Returns a list of matching distributions, which may be empty.
         """
 
+    def queryByName(distribution, name):
+        """Query a DistroRelease by name.
+
+        :distribution: An IDistribution.
+        :name: A string.
+
+        Returns the matching DistroRelease, or None if not found.
+        """
+
     def findByVersion(version):
         """Find a DistroRelease by version.
 
