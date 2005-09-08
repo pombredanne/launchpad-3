@@ -67,7 +67,7 @@ class PersonFacets(StandardLaunchpadFacets):
     usedfor = IPerson
 
     links = ['overview', 'bugs', 'tickets', 'specs', 'bounties',
-             'translations', 'calendar']
+             'translations', 'code', 'calendar']
 
     def overview(self):
         target = ''
@@ -104,6 +104,12 @@ class PersonFacets(StandardLaunchpadFacets):
         target = '+translations'
         text = 'Translations'
         return Link(target, text)
+
+    def code(self):
+        target = '+branches'
+        text = 'Code'
+        summary = 'Bazaar Branches for %s' % self.context.browsername
+        return Link(target, text, summary)
 
     def calendar(self):
         target = '+calendar'
