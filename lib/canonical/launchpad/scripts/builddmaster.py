@@ -143,7 +143,7 @@ class BuilderGroup:
             raise BuildDaemonError("Attempted to give a file to a known-bad"
                                    " builder")
 
-        url = librarian.getURLForAlias(libraryfilealias.id)
+        url = librarian.getURLForAlias(libraryfilealias.id, is_buildd=True)
         
         self.logger.debug("Asking builder on %s if it has file %s (%s, %s)"
                           % (builder.url, libraryfilealias.filename,
