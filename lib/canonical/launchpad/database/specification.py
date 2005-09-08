@@ -77,7 +77,7 @@ class Specification(SQLBase):
         orderBy='id')
     bugs = RelatedJoin('Bug',
         joinColumn='specification', otherColumn='bug',
-        intermediateTable='SpecificationBug', orderBy='datecreated')
+        intermediateTable='SpecificationBug', orderBy='id')
     dependencies = RelatedJoin('Specification', joinColumn='specification',
         otherColumn='dependency', orderBy='title',
         intermediateTable='SpecificationDependency')
@@ -103,9 +103,7 @@ class Specification(SQLBase):
             if sub.person.id == person.id:
                 return sub
         # since no previous subscription existed, create a new one
-        return SpecificationSubscription(
-            specification=self,
-            person=person)
+        return SpecificationSubscription(specification=self, person=person)
 
     def unsubscribe(self, person):
         """See ISpecification."""
@@ -204,6 +202,11 @@ class SpecificationSet:
         """See ISpecificationSet."""
         for row in Specification.select():
             yield row
+
+    @property
+    def latest_specs(self):
+        """See ISpecificationSet."""
+        return Specification.select(orderBy='-datecreated')[:10]
 
     def new(self, name, title, specurl, summary, priority, status,
         owner, approver=None, product=None, distribution=None, assignee=None,

@@ -20,6 +20,7 @@ from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.ticket import Ticket
 from canonical.lp.dbschema import (EnumCol, BugTaskStatus,
     DistributionReleaseStatus, TranslationPermission)
 from canonical.launchpad.interfaces import (IDistribution, IDistributionSet,
@@ -54,6 +55,8 @@ class Distribution(SQLBase):
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
     milestones = MultipleJoin('Milestone', joinColumn='distribution')
     specifications = MultipleJoin('Specification', joinColumn='distribution',
+        orderBy=['-datecreated', 'id'])
+    tickets = MultipleJoin('Ticket', joinColumn='distribution',
         orderBy=['-datecreated', 'id'])
 
 
@@ -175,6 +178,23 @@ class Distribution(SQLBase):
     def getSpecification(self, name):
         """See ISpecificationTarget."""
         return Specification.selectOneBy(distributionID=self.id, name=name)
+
+    def newTicket(self, owner, title, description):
+        """See ITicketTarget."""
+        return Ticket(title=title, description=description, owner=owner,
+            distribution=self)
+
+    def getTicket(self, ticket_num):
+        """See ITicketTarget."""
+        # first see if there is a ticket with that number
+        try:
+            ticket = Ticket.get(ticket_num)
+        except SQLObjectNotFound:
+            return None
+        # now verify that that ticket is actually for this target
+        if ticket.target != self:
+            return None
+        return ticket
 
     def ensureRelatedBounty(self, bounty):
         """See IDistribution."""

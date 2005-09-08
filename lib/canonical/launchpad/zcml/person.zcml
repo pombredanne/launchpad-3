@@ -184,11 +184,21 @@
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"
       permission="launchpad.Edit"
+      class="canonical.launchpad.browser.PersonShipItView">
+      <browser:page
+          name="+shipit"
+          template="../templates/person-shipit.pt"
+          lp:url="/people/$person.id/+shipit" />
+  </browser:pages>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.IPerson"
+      permission="launchpad.Edit"
       class="canonical.launchpad.browser.PersonEditEmailsView">
-        <browser:page
-            name="+editemails"
-            template="../templates/person-editemails.pt"
-            lp:url="/people/$person.id/+editemails" />
+      <browser:page
+          name="+editemails"
+          template="../templates/person-editemails.pt"
+          lp:url="/people/$person.id/+editemails" />
   </browser:pages>
 
   <browser:pages
@@ -196,6 +206,9 @@
     class="canonical.launchpad.browser.SpecificationTargetView"
     permission="zope.Public"
     >
+    <!-- there is trickery here, in the view class, which detects the view
+    name and then gives the template a different set of specs to work
+    with.-->
     <browser:page
         name="+specs"
         template="../templates/specificationtarget-specs.pt" />
@@ -217,6 +230,31 @@
     <browser:page
         name="+subscribedspecs"
         template="../templates/specificationtarget-specs.pt" />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.TicketTargetView"
+    permission="zope.Public"
+    >
+    <!-- there is trickery here, in the view class, which detects the view
+    name and then gives the template a different set of tickets to work
+    with.-->
+    <browser:page
+        name="+tickets"
+        template="../templates/tickettarget-tickets.pt" />
+    <browser:page
+        name="+createdtickets"
+        template="../templates/tickettarget-tickets.pt" />
+    <browser:page
+        name="+assignedtickets"
+        template="../templates/tickettarget-tickets.pt" />
+    <browser:page
+        name="+answeredtickets"
+        template="../templates/tickettarget-tickets.pt" />
+    <browser:page
+        name="+subscribedtickets"
+        template="../templates/tickettarget-tickets.pt" />
   </browser:pages>
 
   <!-- Team Views -->

@@ -261,34 +261,16 @@ EVENT: this bug report is marked as a duplicate of another bug report
 
 EVENT: add a subscriber to this bug
 
-  >>> from canonical.lp.dbschema import BugSubscription as SubscriptionType
   >>> from canonical.launchpad.database import BugSubscription
   >>> from canonical.launchpad.interfaces import IPersonSet
   >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-  >>> bug_subscription = BugSubscription(
-  ...     bug=bug, person=foo_bar, subscription=SubscriptionType.CC)
+  >>> bug_subscription = BugSubscription(bug=bug, person=foo_bar)
   >>> notify(SQLObjectCreatedEvent(bug_subscription))
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
   u'bug'
   >>> latest_activity.message
-  u'added subscriber Foo Bar (CC)'
-
-EVENT: edit a bug subscription
-
-  >>> edit_fields = ['bug', 'person', 'subscription']
-  >>> old_bug_subscription = capture_state(bug_subscription, *edit_fields)
-  >>> bug_subscription.subscription = SubscriptionType.WATCH
-  >>> bug_subscription_edited = SQLObjectModifiedEvent(
-  ...     bug_subscription, old_bug_subscription, edit_fields)
-  >>> notify(bug_subscription_edited)
-  >>> latest_activity = bug.activity[-1]
-  >>> latest_activity.whatchanged
-  u'subscriber Foo Bar'
-  >>> latest_activity.oldvalue
-  u'CC'
-  >>> latest_activity.newvalue
-  u'Watch'
+  u'added subscriber Foo Bar'
 
 EVENT: add an attachment to this bug
 

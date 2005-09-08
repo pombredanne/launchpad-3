@@ -154,10 +154,10 @@ An IProductRelease.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IBug, IBugSet, IBugTaskSet, IUpstreamBugTask, IDistroBugTask,
-    ...     IDistroReleaseBugTask, IBugWatchSet, IBugSubscriptionSet,
+    ...     IDistroReleaseBugTask, IBugWatchSet, 
     ...     ICVERefSet, IBugExternalRefSet)
     >>> from canonical.launchpad.database import (
-    ...     BugWatchSet, BugSubscriptionSet, CVERefSet, BugExternalRefSet)
+    ...     BugWatchSet, CVERefSet, BugExternalRefSet)
 
 The IBugSet.
 
@@ -204,15 +204,6 @@ An IBugWatchSet.
     xxx bug_one_watches = BugWatchSet(bug=1)
     xxx canonical_url(bug_one_watches)
     u'http://localhost:8086/malone/bugs/1/watches'
-
-An IBugSubscriptionSet.
-
-    This doesn't work, because BugSubscriptionSet.bug is an int, not an IBug
-    object.
-
-    xxx bug_one_subscriptions = BugSubscriptionSet(bug=1)
-    xxx canonical_url(bug_one_subscriptions)
-    u'http://localhost:8086/malone/bugs/1/people'
 
 An ICVERefSet.
 

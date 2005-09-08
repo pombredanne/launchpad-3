@@ -222,50 +222,37 @@ class BugTaskReleaseTargetingView:
         if not isinstance(targets, (list, tuple)):
             targets = [targets]
 
-        bug = self.context.bug
+        bugtask = self.context
+        bug = bugtask.bug
+
+        # Grab the distribution, for use in looking up distro releases
+        # by name later on.
+        if IDistroBugTask.providedBy(bugtask):
+            distribution = bugtask.distribution
+        else:
+            distribution = bugtask.distrorelease.distribution
+
         for target in targets:
             # A target value looks like 'warty.mozilla-firefox'. If
             # there was no specific sourcepackage targeted, it would
             # look like 'warty.'
             releasename, spname = target.split(".")
-            releases = getUtility(IDistroReleaseSet).findByName(releasename)
-            spnames = getUtility(ISourcePackageNameSet).findByName(spname)
+            release = getUtility(IDistroReleaseSet).queryByName(
+                distribution, releasename)
+            spname = getUtility(ISourcePackageNameSet).queryByName(spname)
 
-            # XXX: Brad Bollenbach, 2005-08-09: Hacks to deal with
-            # a dodgy IDistroReleaseSet and ISourcePackageNameSet
-            # API. These sets need methods that are documented to
-            # return exactly one matching result, or None.
-            releasecount = releases.count()
-            if releasecount == 0:
+            if not release:
                 raise ValueError(
                     "Failed to locate matching IDistroRelease: %s" %
                     releasename)
-            elif releasecount > 1:
-                raise ValueError(
-                    "Ambiguous release name '%s' returned more than one "
-                    "match" % releasename)
-            else:
-                release = releases[0]
-
-            spnamecount = spnames.count()
-            if spnamecount == 0:
-                spname = None
-            elif spnamecount > 1:
-                raise ValueError(
-                    "Ambiguous sourcepackage name '%s' returned more than "
-                    "one match" % spname)
-            else:
-                spname = spnames[0]
 
             user = getUtility(ILaunchBag).user
-            task = getUtility(IBugTaskSet).createTask(
+            getUtility(IBugTaskSet).createTask(
                     bug=bug, owner=user, distrorelease=release,
                     sourcepackagename=spname)
-            assert task
 
         # Redirect the user back to the task edit form.
-        self.request.response.redirect(
-            canonical_url(self.context) + "/+edit")
+        self.request.response.redirect(canonical_url(bugtask) + "/+edit")
 
 
 class ViewWithBugTaskContext:
@@ -295,21 +282,6 @@ class ViewWithBugTaskContext:
             return True
         else:
             return False
-
-    def getCCs(self):
-        return [
-            s for s in self.context.bug.subscriptions
-                if s.subscription==dbschema.BugSubscription.CC]
-
-    def getWatches(self):
-        return [
-            s for s in self.context.bug.subscriptions
-                if s.subscription==dbschema.BugSubscription.WATCH]
-
-    def getIgnores(self):
-        return [
-            s for s in self.context.bug.subscriptions
-                if s.subscription==dbschema.BugSubscription.IGNORE]
 
 
 class BugTaskViewBase:

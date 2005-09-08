@@ -22,13 +22,12 @@ from zope.component import getUtility, queryView
 from zope.exceptions import NotFoundError
 
 from canonical.launchpad.interfaces import (
-    IBugSet, IBugTaskSet, IBugTasksReport, IDistributionSet, IProjectSet,
-    IProductSet, ISourcePackageSet, IBugTrackerSet, ILaunchBag,
-    ITeamMembershipSubset, ICalendarOwner, ILanguageSet, IBugAttachmentSet,
-    IPublishedPackageSet, IPollSet, IPollOptionSet, BugTaskSearchParams,
-    IDistroReleaseLanguageSet)
+    IBugSet, IBugTaskSet, IDistributionSet, IProjectSet, IProductSet,
+    IBugTrackerSet, ILaunchBag, ITeamMembershipSubset, ICalendarOwner,
+    ILanguageSet, IBugAttachmentSet, IPublishedPackageSet, IPollSet,
+    IPollOptionSet, BugTaskSearchParams, IDistroReleaseLanguageSet)
 from canonical.launchpad.database import (
-    BugExternalRefSet, BugSubscriptionSet,
+    BugExternalRefSet, 
     BugWatchSet, BugTasksReport, CVERefSet, BugProductInfestationSet,
     BugPackageInfestationSet, ProductSeriesSet, SourcePackageSet)
 
@@ -45,8 +44,6 @@ def traverse_malone_application(malone_application, request, name):
     """Traverse the Malone application object."""
     if name == "bugs":
         return getUtility(IBugSet)
-    elif name == "assigned":
-        return getUtility(IBugTasksReport)
     elif name == "distros":
         return getUtility(IDistributionSet)
     elif name == "projects":
@@ -89,6 +86,14 @@ def traverse_product(product, request, name):
     elif name == '+milestone':
         milestone_name = _skip_one(product, request)
         return product.getMilestone(milestone_name)
+    elif name == '+ticket':
+        ticket_num = _skip_one(product, request)
+        # tickets should be int's
+        try:
+            ticket_num = int(ticket_num)
+        except ValueError:
+            return None
+        return product.getTicket(ticket_num)
     elif name == '+bugs':
         travstack = request.getTraversalStack()
         if len(travstack) == 0:
@@ -130,6 +135,14 @@ def traverse_distribution(distribution, request, name):
     elif name == '+spec':
         spec_name = _skip_one(distribution, request)
         return distribution.getSpecification(spec_name)
+    elif name == '+ticket':
+        ticket_num = _skip_one(distribution, request)
+        # tickets should be int's
+        try:
+            ticket_num = int(ticket_num)
+        except ValueError:
+            return None
+        return distribution.getTicket(ticket_num)
     elif name == '+bugs':
         # XXX, Brad Bollenbach, 2005-07-20: This
         # request.setTraversalStack stuff is nasty. I've discussed
@@ -260,8 +273,6 @@ def traverse_bug(bug, request, name):
         return BugExternalRefSet(bug=bug.id)
     elif name == 'cverefs':
         return CVERefSet(bug=bug.id)
-    elif name == 'people':
-        return BugSubscriptionSet(bug=bug.id)
     elif name == 'watches':
         return BugWatchSet(bug=bug.id)
     elif name == 'tasks':

@@ -30,34 +30,54 @@ with all of these context objects.-->
   header to sort by that header.
   </p>
 
-  <table width="100%" class="listing sortable" id="bountylist">
-    <thead>
-      <tr>
-        <th>Date Created</th>
-        <th>Title</th>
-        <th>USD Value<sup>*</sup></th>
-        <th>Difficulty</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr tal:repeat="bounty context/bounties">
-        <td tal:content="bounty/datecreated/fmt:date">date</td>
-        <td><a tal:content="bounty/title/fmt:shorten/45"
-               tal:attributes="href bounty/fmt:url">title</a></td>
-        <td tal:content="bounty/usdvalue">usdvalue</td>
-        <td tal:content="bounty/difficulty/title">difficulty</td>
-      </tr>
-    </tbody>
-  </table>
+  <tal:block condition="context/bounties">
 
-  <p><sup>*</sup> A bounty may include contributions in several currencies,
-  this is an estimate of the bounty value in US Dollars based on recent
-  exchange rates.</p>
+    <table width="100%" class="listing sortable" id="bountylist">
+      <thead>
+        <tr>
+          <th>Date Created</th>
+          <th>Title</th>
+          <th>USD Value<sup>*</sup></th>
+          <th>Difficulty</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="bounty context/bounties">
+          <td tal:content="bounty/datecreated/fmt:date">date</td>
+          <td><a tal:content="bounty/title/fmt:shorten/45"
+                 tal:attributes="href bounty/fmt:url">title</a></td>
+          <td tal:content="bounty/usdvalue">usdvalue</td>
+          <td tal:content="bounty/difficulty/title">difficulty</td>
+        </tr>
+      </tbody>
+    </table>
 
-  <p>Click on a bounty for further information. You can subscribe to
-  a bounty to receive email updates of changes in status of the bounty, or
-  to have the bounty show up on your personalised Launchpad overview
-  page.</p>
+    <p><sup>*</sup> A bounty may include contributions in several currencies,
+    this is an estimate of the bounty value in US Dollars based on recent
+    exchange rates.</p>
+
+    <p>Click on a bounty for further information. You can subscribe to
+    a bounty to receive email updates of changes in status of the bounty, or
+    to have the bounty show up on your personalised Launchpad overview
+    page.</p>
+
+  </tal:block>
+
+  <tal:block condition="not: context/bounties">
+
+    <p class="portalMessage">
+      No bounties currently registered for
+      <span tal:replace="context/displayname">Mozilla</span>.
+    </p>
+
+    <p>
+      If you know of any bounties that are available for
+      <span tal:replace="context/displayname">Mozilla</span> then you can
+      <a href="+addbounty">register them in the Launchpad</a> to make it
+      easier for people to find them.
+    </p>
+
+  </tal:block>
 
 </div>
 

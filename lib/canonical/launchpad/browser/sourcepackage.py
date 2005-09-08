@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'traverseSourcePackage',
+    'SourcePackageFacets',
     'SourcePackageReleasePublishingView',
     'SourcePackageInDistroSetView',
     'SourcePackageView',
@@ -25,11 +26,13 @@ from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IPOTemplateSet, IPackaging, ILaunchBag, ICountry, IBugTaskSet)
+    IPOTemplateSet, IPackaging, ILaunchBag, ICountry, IBugTaskSet,
+    ISourcePackage)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.soyuz.generalapp import builddepsSet
 from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import (
+    canonical_url, StandardLaunchpadFacets)
 
 from apt_pkg import ParseSrcDepends
 
@@ -61,6 +64,12 @@ def traverseSourcePackage(sourcepackage, request, name):
                    distrorelease=sourcepackage.distrorelease,
                    sourcepackagename=sourcepackage.sourcepackagename)
     return None
+
+
+class SourcePackageFacets(StandardLaunchpadFacets):
+
+    usedfor = ISourcePackage
+    links = ['overview', 'bugs', 'tickets', 'translations']
 
 
 class SourcePackageFilebugView(SQLObjectAddView):

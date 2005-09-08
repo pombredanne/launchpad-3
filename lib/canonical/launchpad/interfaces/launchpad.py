@@ -7,6 +7,8 @@ __metaclass__ = type
 
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
+from persistent import IPersistent
+
 _ = MessageIDFactory('launchpad')
 
 __all__ = ['ILaunchpadRoot', 'ILaunchpadApplication', 'IMaloneApplication',
@@ -22,7 +24,8 @@ __all__ = ['ILaunchpadRoot', 'ILaunchpadApplication', 'IMaloneApplication',
            'IFacetMenu', 'IExtraFacetMenu',
            'IApplicationMenu', 'IExtraApplicationMenu',
            'ICanonicalUrlData', 'NoCanonicalUrl',
-           'IDBSchema', 'IDBSchemaItem'
+           'IDBSchema', 'IDBSchemaItem', 'IAuthApplication',
+           'IPasswordChangeApp', 'IPasswordResets'
            ]
 
 
@@ -34,6 +37,7 @@ class ILaunchpadCelebrities(Interface):
     debian = Attribute("The debian Distribution.")
     rosetta_expert = Attribute("The Rosetta Experts team.")
     debbugs = Attribute("The Debian Bug Tracker")
+    shipit_admin = Attribute("The ShipIt Administrators.")
 
 
 class ICrowd(Interface):
@@ -145,6 +149,45 @@ class IFOAFApplication(ILaunchpadApplication):
 
 class IBazaarApplication(ILaunchpadApplication):
     """Bazaar Application"""
+
+
+class IAuthApplication(Interface):
+    """Interface for AuthApplication."""
+
+    def __getitem__(name):
+        """The __getitem__ method used to traverse the app."""
+
+    def sendPasswordChangeEmail(longurlsegment, toaddress):
+        """Send an Password change special link for a user."""
+
+    def getPersonFromDatabase(emailaddr):
+        """Returns the Person in the database who has the given email address.
+
+        If there is no Person for that email address, returns None.
+        """
+
+    def newLongURL(person):
+        """Creates a new long url for the given person.
+
+        Returns the long url segment.
+        """
+
+class IPasswordResets(IPersistent):
+    """Interface for PasswordResets"""
+
+    lifetime = Attribute("Maximum time between request and reset password")
+    
+    def newURL(person):
+        """Create a new URL and store person and creation time"""
+        
+        
+    def getPerson(long_url):
+        """Get the person object using the long_url if not expired"""
+
+
+class IPasswordChangeApp(Interface):
+    """Interface for PasswdChangeApp."""
+    code = Attribute("The transaction code")
 
 
 class IPasswordEncryptor(Interface):

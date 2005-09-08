@@ -30,20 +30,6 @@
   ...
 
 
-  Here he tries to make the admins team owner of itself, but this is not
-  allowed.
-
-  >>> print http(r"""
-  ... POST /people/admins/+reassign HTTP/1.1
-  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
-  ... 
-  ... field.owner=admins&existing=existing&CHANGE_OWNER=Change+Owner""")
-  HTTP/1.1 200 Ok
-  ...
-  ...The person/team named 'admins' is not a valid owner...
-  ...
-
-
   Now he reassigns the team to name16.
 
   >>> print http(r"""

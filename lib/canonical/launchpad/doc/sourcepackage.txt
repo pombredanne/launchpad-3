@@ -31,6 +31,19 @@ To retrieve a specific source package name, use ISourcePackageNameSet.get:
     >>> print firefox.name
     mozilla-firefox
 
+To retrieve a specific source package name by its name, use
+ISourcePackageNameSet.queryByName:
+
+    >>> firefox = sourcepackagenameset.queryByName("mozilla-firefox")
+    >>> print firefox.name
+    mozilla-firefox
+
+If the package doesn't exist, queryByName returns None:
+
+    >>> foobar = sourcepackagenameset.queryByName("foobar")
+    >>> print foobar
+    None
+
 Packaging
 ---------
 

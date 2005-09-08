@@ -26,32 +26,7 @@
     language.
   </p>
 
-  <table class="sortable listing" width="100%" id="languagestats">
-    <thead>
-      <tr>
-        <th>Language</th>
-        <th>Status</th>
-        <th>Contributors</th>
-        <th>Todo</th>
-      </tr>
-    </thead>
-
-    <tbody>
-      <tr tal:repeat="drlang view/distroreleaselanguages">
-        <td>
-          <a tal:attributes="href string:${drlang/fmt:url}"
-             tal:content="drlang/language/englishname">
-             Language Name
-          </a>
-        </td>
-        <td>
-          <div tal:replace="structure drlang/@@+barchart" />
-        </td>
-        <td tal:content="drlang/contributor_count">16</td>
-        <td tal:content="drlang/untranslatedCount">42344</td>
-      </tr>
-    </tbody>
-  </table>
+  <div tal:replace="structure context/@@+langchart" />
 
   <p>
     Select languages that you specifically want to be shown

@@ -16,6 +16,7 @@ __all__ = [
     'ITeamParticipation',
     'IRequestPeopleMerge',
     'IObjectReassignment',
+    'IShipItCountry',
     'ITeamReassignment',
     'ITeamCreation',
     'NameAlreadyTaken'
@@ -94,6 +95,41 @@ class IPerson(Interface):
     karma = Int(
             title=_('Karma'), readonly=False,
             description=_('The cached karma for this person.')
+            )
+    addressline1 = TextLine(
+            title=_('Address'), required=True, readonly=False,
+            description=_('Your address (Line 1)')
+            )
+    addressline2 = TextLine(
+            title=_('Address'), required=False, readonly=False,
+            description=_('Your address (Line 2)')
+            )
+    city = TextLine(
+            title=_('City'), required=True, readonly=False,
+            description=_('The City/Town/Village/etc to where the CDs should '
+                          'be shipped.')
+            )
+    province = TextLine(
+            title=_('Province'), required=True, readonly=False,
+            description=_('The State/Province/etc to where the CDs should '
+                          'be shipped.')
+            )
+    country = Choice(
+            title=_('Country'), required=True, readonly=False,
+            vocabulary='CountryName',
+            description=_('The Country to where the CDs should be shipped.')
+            )
+    postcode = TextLine(
+            title=_('Postcode'), required=True, readonly=False,
+            description=_('The Postcode to where the CDs should be shipped.')
+            )
+    phone = TextLine(
+            title=_('Phone'), required=True, readonly=False,
+            description=_('[(+CountryCode) number] e.g. (+55) 16 33619445')
+            )
+    organization = TextLine(
+            title=_('Organization'), required=False, readonly=False,
+            description=_('The Organization requesting the CDs')
             )
     languages = Attribute(_('List of languages known by this person'))
 
@@ -174,6 +210,14 @@ class IPerson(Interface):
         "has been asked to review, sorted newest first.")
     subscribed_specs = Attribute("Specifications to which this person "
         "has subscribed, sorted newest first.")
+    tickets = Attribute("Any support requests related to this person. "
+        "They might be created, or assigned, or answered by, or "
+        "subscribed to by this person.")
+    assigned_tickets = Attribute("Tickets assigned to this person.")
+    created_tickets = Attribute("Tickets created by this person.")
+    answered_tickets = Attribute("Tickets answered by this person.")
+    subscribed_tickets = Attribute("Tickets to which this person "
+        "subscribes.")
     teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
                        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
@@ -265,7 +309,13 @@ class IPerson(Interface):
         a member of himself (i.e. person1.inTeam(person1)).
         """
 
-    def validateAndEnsurePreferredEmail(self, email):
+    def currentShipItRequest():
+        """Return this person's unshipped ShipIt request, if there's one.
+        
+        Return None otherwise.
+        """
+
+    def validateAndEnsurePreferredEmail(email):
         """Ensure this person has a preferred email.
 
         If this person doesn't have a preferred email, <email> will be set as
@@ -756,4 +806,11 @@ class ITeamCreation(ITeam):
             "team creation, a new message will be sent to this address with "
             "instructions on how to finish its registration."),
         constraint=valid_email)
+
+
+class IShipItCountry(Interface):
+    """This schema is only to get the Country widget."""
+
+    country = Choice(title=_('Country'), required=True, 
+                     vocabulary='CountryName')
 

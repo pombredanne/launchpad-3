@@ -1,0 +1,77 @@
+Bug Links
+=========
+
+The ticket page should show a link to allow you to link this ticket to an
+existing bug.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2/ HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Link Existing Bug...
+
+The ticket should have a +linkbug page.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+POSTing that form back to the ticket page should show the linked bug, and a
+new link to allow for unlinking.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+ticket/2/+linkbug HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 292
+  ... Content-Type: multipart/form-data; boundary=---------------------------668222957126169870270969712
+  ... 
+  ... -----------------------------668222957126169870270969712
+  ... Content-Disposition: form-data; name="field.bug"
+  ... 
+  ... 1
+  ... -----------------------------668222957126169870270969712
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------668222957126169870270969712--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/firefox/+ticket/2
+  ...
+
+The ticket should now have an +unlinkbug page.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2/ HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...+unlinkbug">Remove Bug Link</a>...
+
+Submitting the same bug should now show that the ticket has no related bugs.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+ticket/2/+unlinkbug HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 292
+  ... Content-Type: multipart/form-data; boundary=---------------------------720721231710234722567951922
+  ... 
+  ... -----------------------------720721231710234722567951922
+  ... Content-Disposition: form-data; name="field.bug"
+  ... 
+  ... 1
+  ... -----------------------------720721231710234722567951922
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------720721231710234722567951922--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/firefox/+ticket/2
+  ...
+
+

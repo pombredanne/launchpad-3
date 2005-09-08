@@ -6,7 +6,7 @@ __all__ = ['SpecificationBug']
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol
+from sqlobject import ForeignKey
 
 from canonical.launchpad.interfaces import ISpecificationBug
 

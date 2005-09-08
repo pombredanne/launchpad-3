@@ -5,6 +5,7 @@ __all__ = ['Bounty', 'BountySet']
 
 
 import datetime
+from email.Utils import make_msgid
 
 from zope.interface import implements
 from zope.app.form.browser.interfaces import IAddFormCustomization
@@ -18,6 +19,8 @@ from canonical.launchpad.interfaces import IBounty, IBountySet
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.database.message import Message, MessageChunk
+from canonical.launchpad.database.bountymessage import BountyMessage
 from canonical.launchpad.database.bountysubscription import BountySubscription
 
 from canonical.lp.dbschema import EnumCol, BountyDifficulty, BountyStatus
@@ -46,19 +49,17 @@ class Bounty(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
     # useful joins
-    subscriptions = MultipleJoin('BountySubscription', joinColumn='bounty')
-
+    subscriptions = MultipleJoin('BountySubscription', joinColumn='bounty',
+        orderBy='id')
     products = RelatedJoin('Product', joinColumn='bounty',
-                    intermediateTable='ProductBounty',
-                    otherColumn='product')
-
+        intermediateTable='ProductBounty', otherColumn='product',
+        orderBy='name')
     projects = RelatedJoin('Project', joinColumn='bounty',
-                    intermediateTable='ProjectBounty',
-                    otherColumn='project')
-
+        intermediateTable='ProjectBounty', otherColumn='project',
+        orderBy='name')
     distributions = RelatedJoin('Distribution', joinColumn='bounty',
-                    intermediateTable='DistroBounty',
-                    otherColumn='distribution')
+        intermediateTable='DistroBounty', otherColumn='distribution',
+        orderBy='name')
 
     # subscriptions
     def subscribe(self, person):
@@ -75,8 +76,39 @@ class Bounty(SQLBase):
         # see if a relevant subscription exists, and if so, delete it
         for sub in self.subscriptions:
             if sub.person.id == person.id:
-                BountySubscription.delete(sub.id)
+                sub.destroySelf()
                 return
+
+    # message related
+    messages = RelatedJoin('Message', joinColumn='bounty',
+        otherColumn='message',
+        intermediateTable='BountyMessage', orderBy='datecreated')
+
+    def newMessage(self, owner, subject, content):
+        """See IMessageTarget."""
+        msg = Message(owner=owner, rfc822msgid=make_msgid('bounty'),
+            subject=subject)
+        chunk = MessageChunk(messageID=msg.id, content=content, sequence=1)
+        bountymsg = BountyMessage(bounty=self, messageID=msg.id)
+        return bountymsg
+
+    def linkMessage(self, message):
+        """See IMessageTarget."""
+        for msg in self.messages:
+            if msg == message:
+                return None
+        BountyMessage(bounty=self, message=message)
+        return None
+
+    @property
+    def followup_subject(self):
+        """See IMessageTarget."""
+        if not self.messages:
+            return 'Re: '+ self.title
+        subject = self.messages[-1].title
+        if subject[:4].lower() == 're: ':
+            return subject
+        return 'Re: ' + subject
 
 
 class BountySet:

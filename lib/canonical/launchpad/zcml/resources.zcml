@@ -17,12 +17,15 @@
 
     <!-- General Images -->
     <resource name="add.gif" file="../images/add.gif" />
+    <resource name="alert" file="../images/alert_icon.gif" />
     <resource name="alert_icon.gif" file="../images/alert_icon.gif" />
+    <resource name="architecture" file="../images/architecture.png" />
     <resource name="arrowBlank.gif" file="../images/arrowBlank.gif" />
     <resource name="arrowBottom.gif" file="../images/arrowBottom.gif" />
     <resource name="arrowDownAlternative.gif" file="../images/arrowDownAlternative.gif" />
     <resource name="arrowDown.gif" file="../images/arrowDown.gif" />
     <resource name="arrowRight.gif" file="../images/arrowRight.gif" />
+    <resource name="up" file="../images/arrowUp.gif" />
     <resource name="blue-bar.png" file="../images/blue-bar.png" />
     <resource name="bounty" file="../images/bounty.jpg" />
     <resource name="bug" file="../images/bug.png" />
@@ -61,6 +64,7 @@
     <resource name="search_icon.gif" file="../images/search_icon.gif" />
     <resource name="sendto.gif" file="../images/sendto.gif" />
     <resource name="spec" file="../images/topic_icon.gif" />
+    <resource name="ticket" file="../images/phone_icon.gif" />
     <resource name="target" file="../images/target.png" />
     <resource name="topic_icon.gif" file="../images/topic_icon.gif" />
     <resource name="translations" file="../images/rosetta-icon.png" />
@@ -68,4 +72,5 @@
     <resource name="treeExpanded.gif" file="../images/treeExpanded.gif" />
     <resource name="ubuntu.gif" file="../images/ubuntu.gif" />
     <resource name="user.gif" file="../images/user.gif" />
+    <resource name="user" file="../images/user.gif" />
 </configure>

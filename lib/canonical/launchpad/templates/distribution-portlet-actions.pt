@@ -8,7 +8,7 @@
         <a href="+cve">Show CVE Report</a>
       </li>
       <li class="info">
-        <a href="+specplan">Show Project Plan</a>
+        <a href="+specplan">Show Roadmap</a>
       </li>
       <li class="edit">
         <a href="+edit">Edit Details</a>
@@ -33,6 +33,9 @@
       </li>
       <li class="add">
         <a href="+addspec">Add Feature Specification</a>
+      </li>
+      <li class="add">
+        <a href="+addticket">Request Support</a>
       </li>
       <li class="search">
         <a href="+packages">Search Packages</a>

@@ -6,6 +6,8 @@ __all__ = ['BinaryPackageFile', 'SourcePackageReleaseFile', 'DownloadURL']
 from urllib2 import URLError
 
 from zope.interface import implements
+from zope.component import getUtility
+
 from sqlobject import ForeignKey
 from canonical.database.sqlbase import SQLBase
 
@@ -23,8 +25,9 @@ class BinaryPackageFile(SQLBase):
     implements(IBinaryPackageFile)
     _table = 'BinaryPackageFile'
 
-    binarypackage = ForeignKey(dbName='binarypackage',
-                               foreignKey='BinaryPackage', notNull=True)
+    binarypackagerelease = ForeignKey(dbName='binarypackagerelease',
+                                      foreignKey='BinaryPackageRelease',
+                                      notNull=True)
     libraryfile = ForeignKey(dbName='libraryfile',
                              foreignKey='LibraryFile', notNull=True)
     filetype = EnumCol(dbName='filetype',

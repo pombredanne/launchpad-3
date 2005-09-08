@@ -11,9 +11,14 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.lp import dbschema
 
 from canonical.launchpad.interfaces import (
-    IDistroArchRelease, IBinaryPackageSet, IPocketChroot
+    IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot
     )
-from canonical.launchpad.database.publishing import PackagePublishing
+from canonical.launchpad.database.publishing import BinaryPackagePublishing
+
+__all__ = [
+    'DistroArchRelease',
+    'PocketChroot',
+    ]
 
 
 class DistroArchRelease(SQLBase):
@@ -35,7 +40,7 @@ class DistroArchRelease(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
     packages = RelatedJoin('BinaryPackage', joinColumn='distroarchrelease',
-                            intermediateTable='PackagePublishing',
+                            intermediateTable='BinaryPackagePublishing',
                             otherColumn='binarypackage')
 
     # for launchpad pages
@@ -49,12 +54,12 @@ class DistroArchRelease(SQLBase):
 
     def binarycount(self):
         # XXX: Needs system doc test. SteveAlexander 2005-04-24.
-        query = ('PackagePublishing.distroarchrelease = %s AND '
-                 'PackagePublishing.status = %s'
+        query = ('BinaryPackagePublishing.distroarchrelease = %s AND '
+                 'BinaryPackagePublishing.status = %s'
                  % sqlvalues(
                     self.id, dbschema.PackagePublishingStatus.PUBLISHED
                  ))
-        return PackagePublishing.select(query).count()
+        return BinaryPackagePublishing.select(query).count()
         #return len(self.packages)
     binarycount = property(binarycount)
 
@@ -74,12 +79,12 @@ class DistroArchRelease(SQLBase):
         
     def findPackagesByName(self, pattern, fti=False):
         """Search BinaryPackages matching pattern and archtag"""
-        binset = getUtility(IBinaryPackageSet)
+        binset = getUtility(IBinaryPackageReleaseSet)
         return binset.findByNameInDistroRelease(
             self.distrorelease.id, pattern, self.architecturetag, fti)
 
     def __getitem__(self, name):
-        binset = getUtility(IBinaryPackageSet)
+        binset = getUtility(IBinaryPackageReleaseSet)
         packages = binset.getByNameInDistroRelease(
             self.distrorelease.id, name=name, archtag=self.architecturetag,
             orderBy='id')
@@ -97,8 +102,11 @@ class PocketChroot(SQLBase):
     distroarchrelease = ForeignKey(dbName='distroarchrelease',
                                    foreignKey='DistroArchRelease',
                                    notNull=True)
+
     pocket = dbschema.EnumCol(dbName='pocket',
-                              schema=dbschema.PackagePublishingPocket)
+                              schema=dbschema.PackagePublishingPocket,
+                              default=dbschema.PackagePublishingPocket.RELEASE,
+                              notNull=True)
 
     chroot = ForeignKey(dbName='chroot',
                         foreignKey='LibraryFileAlias')

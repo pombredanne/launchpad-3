@@ -1,17 +1,27 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005 Canonical Ltd.  All rights reserved.
 
-"""IBugSubscription-related browser view classes."""
+"""Views for BugSubscription."""
 
 __metaclass__ = type
 
-__all__ = ['BugSubscriptionAddView']
-
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
+from canonical.launchpad.interfaces import IBugSubscription
+
+from canonical.launchpad.webapp import canonical_url
+
+
+__all__ = [
+    'BugSubscriptionAddView',
+    ]
+
 class BugSubscriptionAddView(SQLObjectAddView):
-    def __init__(self, context, request):
-        SQLObjectAddView.__init__(self, context, request)
-        self.bug = getUtility(ILaunchBag).bug
+
+    def create(self, person):
+        return self.context.subscribe(person)
+
+    def nextURL(self):
+        return canonical_url(self.context)
+

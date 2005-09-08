@@ -72,6 +72,10 @@ class SourcePackageNameSet:
         query = ('name ILIKE %s' % quote('%%' +name+ '%%'))
         return SourcePackageName.select(query)
 
+    def queryByName(self, name):
+        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
+        return SourcePackageName.selectOneBy(name=name)
+
     def new(self, name):
         return SourcePackageName(name=name)
 

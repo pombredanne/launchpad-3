@@ -18,3 +18,4 @@ class BugMessageAddView(SQLObjectAddView):
         return bugmessageset.createMessage(
             subject=kw.get('subject'), content=kw.get('content'),
             bug=launchbag.bug, owner=launchbag.user)
+

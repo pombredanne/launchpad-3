@@ -26,6 +26,11 @@
     />
 
   <vocabulary
+    name="Bug"
+    factory="canonical.launchpad.vocabularies.BugVocabulary"
+    />
+
+  <vocabulary
     name="BugAttachmentType"
     factory="canonical.launchpad.vocabularies.BugAttachmentTypeVocabulary"
     />
@@ -64,6 +69,11 @@
     name="BugWatch"
     factory="canonical.launchpad.vocabularies.BugWatchVocabulary"
     />
+
+  <vocabulary
+      name="CountryName"
+      factory="canonical.launchpad.vocabularies.CountryNameVocabulary"
+      />
 
   <vocabulary
     name="CVEState"
@@ -196,13 +206,18 @@
     />
 
   <vocabulary
-    name="Subscription"
-    factory="canonical.launchpad.vocabularies.SubscriptionVocabulary"
-    />
-  
-  <vocabulary
     name="TeamSubscriptionPolicy"
     factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
+    />
+
+  <vocabulary
+    name="TicketPriority"
+    factory="canonical.launchpad.vocabularies.TicketPriorityVocabulary"
+    />
+
+  <vocabulary
+    name="TicketStatus"
+    factory="canonical.launchpad.vocabularies.TicketStatusVocabulary"
     />
 
   <vocabulary

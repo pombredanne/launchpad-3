@@ -15,8 +15,10 @@ __all__ = [
     'BinaryPackageNameVocabulary',
     'BinaryPackageVocabulary',
     'BountyVocabulary',
+    'BugVocabulary',
     'BugTrackerVocabulary',
     'BugWatchVocabulary',
+    'CountryNameVocabulary',
     'DistributionVocabulary',
     'DistroReleaseVocabulary',
     'FilteredDistroReleaseVocabulary',
@@ -52,10 +54,10 @@ from canonical.lp.dbschema import EmailAddressStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.database import (
     Distribution, DistroRelease, Person, SourcePackageRelease,
-    SourcePackageName, BinaryPackage, BugWatch, BinaryPackageName, Language,
+    SourcePackageName, BinaryPackageRelease, BugWatch, BinaryPackageName, Language,
     Milestone, Product, Project, ProductRelease, ProductSeries,
-    TranslationGroup, BugTracker, POTemplateName, Schema, Bounty,
-    Specification)
+    TranslationGroup, BugTracker, POTemplateName, Schema, Bounty, Country,
+    Specification, Bug)
 from canonical.launchpad.interfaces import (
     ILaunchBag, ITeam, ITeamMembershipSubset, IPersonSet, IEmailAddressSet)
 
@@ -149,7 +151,7 @@ class SQLObjectVocabularyBase:
 
 class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
     """A SQLObjectVocabulary base for database tables that have a unique
-    name column.
+    *and* ASCII name column.
 
     Provides all methods required by IHugeVocabulary, although it
     doesn't actually specify this interface since it may not actually
@@ -180,11 +182,26 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
                 yield self._toTerm(o)
 
 
+class CountryNameVocabulary(SQLObjectVocabularyBase):
+    """A vocabulary for country names."""
+
+    _table = Country
+    _orderBy = 'name'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.id, obj.name)
+
+
 class BinaryPackageNameVocabulary(NamedSQLObjectVocabulary):
     implements(IHugeVocabulary)
 
     _table = BinaryPackageName
     _orderBy = 'name'
+
+
+class BugVocabulary(SQLObjectVocabularyBase):
+    _table = Bug
+    _orderBy = 'id'
 
 
 class ProductVocabulary(SQLObjectVocabularyBase):
@@ -293,7 +310,7 @@ class BinaryPackageVocabulary(SQLObjectVocabularyBase):
     # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
     # no test data for me to check yet. This'll be fixed by the end
     # of the week (2004/10/08) as we get Malone into usable shape.
-    _table = BinaryPackage
+    _table = BinaryPackageRelease
     _orderBy = 'id'
 
     def _toTerm(self, obj):

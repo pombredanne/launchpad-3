@@ -15,7 +15,14 @@ from canonical.launchpad.scripts import logger, logger_options, db_options
 
 # Defines parser and locale to use.
 DEFAULT_CONFIG = 'default'
-TSEARCH2_SQL = '/usr/share/postgresql/contrib/tsearch2.sql'
+TSEARCH2_SQL = '/usr/share/postgresql'
+if os.path.isdir('/usr/share/postgresql/7.4'):
+    TSEARCH2_SQL = TSEARCH2_SQL + '/7.4'
+TSEARCH2_SQL = TSEARCH2_SQL + '/contrib/tsearch2.sql'
+if not os.path.exists(TSEARCH2_SQL):
+    # Can't log because logger not yet setup
+    raise RuntimeError('Unable to find tsearch2.sql')
+# This will no longer be required with PostgreSQL 8.0+
 PATCH_SQL = os.path.join(
         os.path.dirname(__file__), 'regprocedure_update.sql'
         )
@@ -35,6 +42,11 @@ ALL_FTI = [
 
     ('bugtask', [
             ('statusexplanation', C),
+            ]),
+
+    ('binarypackagerelease', [
+            ('summary', C),
+            ('description', D),
             ]),
 
     ('message', [
@@ -67,6 +79,12 @@ ALL_FTI = [
             ('summary', C),
             ('description', D),
             ]),
+
+    ('ticket', [
+            ('title', A),
+            ('description', B),
+            ('whiteboard', B),
+            ])
     ]
 
 

@@ -22,6 +22,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, BugTaskSeverity, BugTaskStatus,
     RosettaImportStatus)
+from canonical.launchpad.database.bug import BugFactory
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
@@ -30,6 +31,7 @@ from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.ticket import Ticket
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner)
@@ -67,6 +69,10 @@ class Product(SQLBase):
     translationpermission = EnumCol(dbName='translationpermission',
         notNull=True, schema=TranslationPermission,
         default=TranslationPermission.OPEN)
+    official_malone = BoolCol(dbName='official_malone', notNull=True,
+        default=False)
+    official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
+        default=False)
     active = BoolCol(dbName='active', notNull=True, default=True)
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
     autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
@@ -78,6 +84,8 @@ class Product(SQLBase):
                           default=None, forceDBName=True)
 
     specifications = MultipleJoin('Specification', joinColumn='product',
+        orderBy=['-datecreated', 'id'])
+    tickets = MultipleJoin('Ticket', joinColumn='product',
         orderBy=['-datecreated', 'id'])
 
     def searchTasks(self, search_params):
@@ -150,6 +158,28 @@ class Product(SQLBase):
             product = %s AND
             name = %s
             """ % sqlvalues(self.id, name))
+
+    def newBug(self, owner, title, description):
+        """See IBugTarget."""
+        return BugFactory(product=self, comment=description, title=title,
+            owner=owner)
+
+    def newTicket(self, owner, title, description):
+        """See ITicketTarget."""
+        return Ticket(title=title, description=description, owner=owner,
+            product=self)
+
+    def getTicket(self, ticket_num):
+        """See ITicketTarget."""
+        # first see if there is a ticket with that number
+        try:
+            ticket = Ticket.get(ticket_num)
+        except SQLObjectNotFound:
+            return None
+        # now verify that that ticket is actually for this target
+        if ticket.target != self:
+            return None
+        return ticket
 
     @property
     def translatable_packages(self):

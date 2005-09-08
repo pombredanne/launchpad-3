@@ -45,6 +45,7 @@ from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.karma import KarmaCache, KarmaAction, Karma
+from canonical.launchpad.database.shipit import ShippingRequest
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
@@ -67,6 +68,15 @@ class Person(SQLBase):
     familyname = StringCol(dbName='familyname', default=None)
     displayname = StringCol(dbName='displayname', notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
+
+    city = StringCol(default=None)
+    phone = StringCol(default=None)
+    country = ForeignKey(dbName='country', foreignKey='Country', default=None)
+    province = StringCol(default=None)
+    postcode = StringCol(default=None)
+    addressline1 = StringCol(default=None)
+    addressline2 = StringCol(default=None)
+    organization = StringCol(default=None)
 
     teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
                            default=None)
@@ -125,6 +135,17 @@ class Person(SQLBase):
         intermediateTable='SpecificationSubscription',
         orderBy=['-datecreated'])
 
+    # ticket related joins
+    answered_tickets = MultipleJoin('Ticket', joinColumn='answerer',
+        orderBy='-datecreated')
+    assigned_tickets = MultipleJoin('Ticket', joinColumn='assignee',
+        orderBy='-datecreated')
+    created_tickets = MultipleJoin('Ticket', joinColumn='owner',
+        orderBy='-datecreated')
+    subscribed_tickets = RelatedJoin('Ticket', joinColumn='person',
+        otherColumn='ticket', intermediateTable='TicketSubscription',
+        orderBy='-datecreated')
+    
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
 
@@ -233,6 +254,15 @@ class Person(SQLBase):
         ret = ret.union(self.drafted_specs)
         ret = ret.union(self.review_specs)
         ret = ret.union(self.subscribed_specs)
+        ret = sorted(ret, reverse=True, key=lambda a: a.datecreated)
+        return ret
+
+    @property
+    def tickets(self):
+        ret = set(self.created_tickets)
+        ret = ret.union(self.answered_tickets)
+        ret = ret.union(self.assigned_tickets)
+        ret = ret.union(self.subscribed_tickets)
         ret = sorted(ret, key=lambda a: a.datecreated)
         ret.reverse()
         return ret
@@ -240,6 +270,13 @@ class Person(SQLBase):
     def isTeam(self):
         """See IPerson."""
         return self.teamowner is not None
+
+    def currentShipItRequest(self):
+        """See IPerson."""
+        query = AND(ShippingRequest.q.recipientID==self.id,
+                    ShippingRequest.q.shipmentID==None,
+                    ShippingRequest.q.cancelled==False)
+        return ShippingRequest.selectOne(query)
 
     def assignKarma(self, action_name):
         """See IPerson."""
@@ -993,10 +1030,28 @@ class PersonSet:
                 WHERE person = %(to_id)d
                 )
             ''' % vars())
+        # and delete those left over
         cur.execute('''
             DELETE FROM BountySubscription WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('bountysubscription', 'person'))
+
+        # Update only the TicketSubscriptions that will not conflict
+        cur.execute('''
+            UPDATE TicketSubscription
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND ticket NOT IN
+                (
+                SELECT ticket
+                FROM TicketSubscription 
+                WHERE person = %(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over
+        cur.execute('''
+            DELETE FROM TicketSubscription WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('ticketsubscription', 'person'))
 
         # Update the SpecificationReview entries that will not conflict
         # and trash the rest

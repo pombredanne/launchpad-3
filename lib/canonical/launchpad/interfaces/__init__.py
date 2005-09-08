@@ -2,23 +2,26 @@
 
 __metaclass__ = type
 
-from zope.interface import Interface, Attribute
-from persistent import IPersistent
+# README:
+# Please DO NOT put interfaces in this file. Put them in the correct
+# file, one file for each interface type: person, project, bug, etc.
 
-#
-# Please DO NOT put interfaces here. put them in the correct
-# file, one of person, project, bug, etc.
-#
+from zope.interface import Interface, Attribute
+
 from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.validation import *
 
 # these need to be at the top, because the others depend on them sometimes
 from canonical.launchpad.interfaces.specificationtarget import *
+from canonical.launchpad.interfaces.tickettarget import *
+from canonical.launchpad.interfaces.messagetarget import *
 
+# these should be alphabetically sorted
 from canonical.launchpad.interfaces.archuser import *
-from canonical.launchpad.interfaces.binarypackage import *
+from canonical.launchpad.interfaces.binarypackagerelease import *
 from canonical.launchpad.interfaces.binarypackagename import *
 from canonical.launchpad.interfaces.bounty import *
+from canonical.launchpad.interfaces.bountymessage import *
 from canonical.launchpad.interfaces.bountysubscription import *
 from canonical.launchpad.interfaces.bugactivity import *
 from canonical.launchpad.interfaces.bugattachment import *
@@ -92,6 +95,7 @@ from canonical.launchpad.interfaces.rawfiledata import *
 from canonical.launchpad.interfaces.rosettastats import *
 from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.section import *
+from canonical.launchpad.interfaces.shipit import *
 from canonical.launchpad.interfaces.sourcepackage import *
 from canonical.launchpad.interfaces.sourcepackageindistro import *
 from canonical.launchpad.interfaces.sourcepackagename import *
@@ -103,6 +107,11 @@ from canonical.launchpad.interfaces.specificationreview import *
 from canonical.launchpad.interfaces.specificationsubscription import *
 from canonical.launchpad.interfaces.spokenin import *
 from canonical.launchpad.interfaces.ssh import *
+from canonical.launchpad.interfaces.ticket import *
+from canonical.launchpad.interfaces.ticketbug import *
+from canonical.launchpad.interfaces.ticketmessage import *
+from canonical.launchpad.interfaces.ticketreopening import *
+from canonical.launchpad.interfaces.ticketsubscription import *
 from canonical.launchpad.interfaces.translationgroup import *
 from canonical.launchpad.interfaces.translator import *
 from canonical.launchpad.interfaces.vpoexport import *
@@ -114,40 +123,4 @@ from canonical.launchpad.interfaces.cal import *
 
 # XXX sabdfl 29/03/05 given the comments at the top of the file, should
 # these not be elsewhere?
-
-class IAuthApplication(Interface):
-    """ Interface for AuthApplication """
-    def __getitem__(name):
-        """ The __getitem__ method used to traversing """
-
-    def sendPasswordChangeEmail(longurlsegment, toaddress):
-        """Send an Password change special link for a user."""
-
-    def getPersonFromDatabase(emailaddr):
-        """Returns the Person in the database who has the given email address.
-
-        If there is no Person for that email address, returns None.
-        """
-
-    def newLongURL(person):
-        """Creates a new long url for the given person.
-
-        Returns the long url segment.
-        """
-
-class IPasswordResets(IPersistent):
-    """Interface for PasswordResets"""
-
-    lifetime = Attribute("Maximum time between request and reset password")
-    
-    def newURL(person):
-        """Create a new URL and store person and creation time"""
-        
-        
-    def getPerson(long_url):
-        """Get the person object using the long_url if not expired"""
-
-class IPasswordChangeApp(Interface):
-    """Interface for PasswdChangeApp."""
-    code = Attribute("The transaction code")
 

@@ -23,13 +23,20 @@
           </li>
         </form>
         <script>
-        <!-- 
+        <!--
             document.forms['goto'].id.focus();
         //-->
         </script>
         <li>
-            <a href="assigned">Assigned Bug Reports</a> - list
-            bugs assigned to you (or others)
+          <tal:loggedin condition="request/lp:person">
+            <a tal:attributes="href string:${request/lp:person/fmt:url}/+assignedbugs">
+              Assigned Bug Reports
+            </a>
+          </tal:loggedin>
+          <tal:anonymous condition="not:request/lp:person">
+            <a href="assigned">Assigned Bug Reports</a>
+          </tal:anonymous>
+          - view the bugs assigned to you
         </li>
     </ul>
     <h2 style="margin-top: 0.1em">Bugs in Distribution Packages</h2>
@@ -40,7 +47,7 @@
        a similar program.  </div>
 
         <li>
-            <a href="bugs/+package">File a Bug on a Package</a>        
+            <a href="bugs/+package">File a Bug on a Package</a>
         </li>
         <li>
             <!-- XXX kiko 2005-07-05 ubuntu is hardcoded -->

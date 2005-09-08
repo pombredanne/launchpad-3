@@ -110,10 +110,7 @@ watch can be edited.
   ... Change
   ... ------------0xKhTmLbOuNdArY--
   ... """)
-  HTTP/1.1 200 Ok
+  HTTP/1.1 303 See Other
   ...
-  <BLANKLINE>
+  Location: http://localhost:9000/malone/bugs/2
   ...
-            <h3>Change Bug Watch</h3>
-  ...
-

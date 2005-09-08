@@ -1,0 +1,20 @@
+<img src="/++resource++ticket" />
+<span tal:replace="context/datecreated/fmt:date">2005-10-05</span>
+<a tal:attributes="href context/fmt:url"
+   tal:content="context/title">Ticket Title Here</a>
+  for <img src="/++resource++user.gif" />&nbsp;<a
+      tal:attributes="href context/owner/fmt:url"
+      tal:content="context/owner/browsername">Foo Bar</a>
+<tal:block condition="context/assignee">
+  (<img src="/++resource++user.gif" />&nbsp;<a
+      tal:attributes="href context/assignee/fmt:url"
+      tal:content="context/assignee/browsername">Foo Bar</a>)
+</tal:block>
+<tal:block condition="context/answerer">
+  (<img src="/++resource++user.gif" />&nbsp;<a
+      tal:attributes="href context/answerer/fmt:url"
+      tal:content="context/answerer/browsername">Foo Bar</a>)
+</tal:block>
+<span tal:replace="context/status/title">Approved</span>
+(<span tal:replace="context/priority/title">High</span>)
+<hr />

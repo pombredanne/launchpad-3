@@ -42,3 +42,8 @@ class LaunchpadCelebrities:
         """See ILaunchpadCelebrities."""
         return getUtility(IBugTrackerSet)['debbugs']
 
+    @property
+    def shipit_admin(self):
+        """See ILaunchpadCelebrities."""
+        return getUtility(IPersonSet).getByName('shipit-admins')
+

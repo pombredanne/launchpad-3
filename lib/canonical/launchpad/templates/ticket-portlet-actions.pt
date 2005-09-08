@@ -1,0 +1,45 @@
+<div class="portlet">
+
+  <h4>Actions:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <tal:is_open condition="not: context/is_resolved">
+        <li class="edit">
+          <a href="+edit">Edit Ticket</a></li>
+        <li class="edit" tal:condition="context/distribution">
+          <a href="+sourcepackage">Edit Source Package</a></li>
+        <li class="edit">
+          <a href="+priority">Edit Priority &amp; Assignee</a></li>
+      </tal:is_open>
+      <li class="edit" tal:condition="context/can_be_rejected">
+        <a href="+reject">Reject Ticket</a></li>
+      <li class="edit" tal:condition="context/can_be_reopened">
+        <a href="+reopen">Reopen Ticket</a></li>
+      <li class="info" tal:condition="context/reopenings">
+        <a href="+history">Show History</a></li>
+      <tal:is_open condition="not: context/is_resolved">
+        <li class="add" tal:condition="not: view/subscription">
+          <a href="+subscribe">Subscribe</a></li>
+        <li class="edit" tal:condition="view/subscription">
+          <a href="+subscribe">Unsubscribe</a></li>
+        <li class="add"><a href="+linkbug">Link Existing Bug</a></li>
+        <li class="edit" tal:condition="context/bugs">
+          <a href="+unlinkbug">Remove Bug Link</a></li>
+        <li class="add" tal:condition="not: context/bugs">
+          <a href="+makebug"
+             title="Create a bug report from this support request"
+             >Convert To Bug</a></li>
+      </tal:is_open>
+      <li class="ticket"><a tal:attributes="
+        href string:${context/target/fmt:url}/+tickets">See others</a>
+      </li>
+      <li class="edit" tal:condition="context/required:launchpad.Admin">
+        <a href="+admin">Administer</a>
+      </li>
+    </ul>
+
+  </div>
+
+</div>

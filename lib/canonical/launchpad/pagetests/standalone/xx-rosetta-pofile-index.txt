@@ -9,11 +9,19 @@ Test to check the POFile index page list all contributors as it should.
   ...
           <a href="/people/carlos">Carlos Perelló Marín</a>
   ...
-      <li><a href=".../people/ubuntu-translators">Ubuntu Translators</a>
+      <a href=".../people/ubuntu-translators">Ubuntu Translators</a>
   ...
               <b>Messages:</b>
               22
               <br />
               <b>Todo:</b>
               14
+  ...
+
+And it should work also even when we don't have that POFile created in our database.
+
+  >>> print http(r"""
+  ... GET /products/netapplet/+series/releases/+pots/netapplet/af HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
   ...

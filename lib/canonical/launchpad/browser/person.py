@@ -10,6 +10,7 @@ __all__ = [
     'FOAFSearchView',
     'PersonEditView',
     'PersonRdfView',
+    'PersonShipItView',
     'PersonView',
     'TeamJoinView',
     'TeamLeaveView',
@@ -25,8 +26,6 @@ import cgi
 import sets
 from datetime import datetime
 
-from canonical.database.sqlbase import flush_database_updates
-
 from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
@@ -35,9 +34,11 @@ from zope.app.form.interfaces import (
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
+from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.searchbuilder import any
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    KarmaActionCategory, TeamSubscriptionPolicy)
+    KarmaActionCategory, TeamSubscriptionPolicy, BugTaskStatus)
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
@@ -47,11 +48,12 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, IKarmaActionSet,
     IKarmaSet, UBUNTU_WIKI_URL, ITeamMembershipSet, IObjectReassignment,
     ITeamReassignment, IPollSubset, IPerson, ICalendarOwner,
-    BugTaskSearchParams)
+    BugTaskSearchParams, IStandardShipItRequestSet, IShipItCountry,
+    IShippingRequestSet)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.helpers import (
-        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
+        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint, intOrZero)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.event.team import JoinTeamRequestEvent
@@ -64,8 +66,8 @@ class PersonFacets(StandardLaunchpadFacets):
 
     usedfor = IPerson
 
-    links = ['overview', 'bugs', 'specs', 'bounties', 'translations',
-             'calendar']
+    links = ['overview', 'bugs', 'tickets', 'specs', 'bounties',
+             'translations', 'calendar']
 
     def overview(self):
         target = ''
@@ -219,10 +221,10 @@ class PersonRdfView:
 
         As a side-effect, HTTP headers are set for the mime type
         and filename for download."""
-        self.request.response.setHeader('content-type', 
+        self.request.response.setHeader('content-type',
                                         'application/rdf+xml')
         self.request.response.setHeader('Content-Disposition',
-                                        'attachment; filename=%s.rdf' % 
+                                        'attachment; filename=%s.rdf' %
                                             self.context.name)
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
@@ -252,7 +254,7 @@ class PersonView:
         return bool(len(self.openpolls) or len(self.notyetopenedpolls))
 
     def no_bounties(self):
-        return not (self.context.ownedBounties or 
+        return not (self.context.ownedBounties or
             self.context.reviewerBounties or
             self.context.subscribedBounties or
             self.context.claimedBounties)
@@ -337,7 +339,7 @@ class PersonView:
         return KarmaActionCategory.items
 
     def actions(self, actionCategory):
-        """Return a list of actions of the given category performed by 
+        """Return a list of actions of the given category performed by
         this person."""
         kas = getUtility(IKarmaActionSet)
         return kas.selectByCategoryAndPerson(actionCategory, self.context)
@@ -347,41 +349,35 @@ class PersonView:
         karmaset = getUtility(IKarmaSet)
         return len(karmaset.selectByPersonAndAction(self.context, action))
 
-    def setUpAssignedBugTasksToShow(self):
-        """Setup the bugtasks we will always show."""
-        self.recentBugTasks = self.mostRecentMaintainedBugTasks()
-        self.assignedTasks = self.assignedBugTasks()
-        # XXX: Because of the following 2 lines, a warning is going to be 
-        # raised saying that we're getting a slice of an unordered set, and
-        # this means we probably have a bug hiding somewhere, because both
-        # sets are ordered here.
-        self.assignedBugsToShow = bool(
-            self.recentBugTasks or self.assignedTasks)
-
     def reportedBugTasks(self):
         """Return up to 30 bug tasks reported recently by this person."""
         search_params = BugTaskSearchParams(owner=self.context, user=self.user,
                                             orderby="-datecreated")
         return getUtility(IBugTaskSet).search(search_params)[:30]
 
-    def assignedBugTasks(self):
-        """Return up to 10 bug tasks recently assigned to this person."""
-        search_params = BugTaskSearchParams(assignee=self.context,
-                                            user=self.user,
-                                            orderby="-dateassigned")
-        return getUtility(IBugTaskSet).search(search_params)[:10]
+    def bugTasksAssignedToPerson(self):
+        """Return all the open IBugTasks assigned to this person."""
+        search_params = BugTaskSearchParams(
+            assignee=self.context, user=self.user,
+            status=any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
+            orderby="-dateassigned")
 
-    def mostRecentMaintainedBugTasks(self):
-        """Return up to 10 bug tasks (ordered by date assigned) reported on
-        any package/product maintained by this person."""
-        bts = getUtility(IBugTaskSet)
+        return getUtility(IBugTaskSet).search(search_params)
+
+    def bugTasksOnMaintainedSoftware(self):
+        """Return all the open IBugTasks on software this person maintains.
+
+        This list does *not* include tasks that are assigned directly
+        to this person. For that, see PersonView.bugTasksAssignedToPerson.
+        """
         orderBy = ('-dateassigned', '-priority', '-severity')
-        results = bts.maintainedBugTasks(
+        results = getUtility(IBugTaskSet).maintainedBugTasks(
             self.context, orderBy=orderBy, user=self.user)
-        return results[:10]
+
+        return results
 
     def bugTasksWithSharedInterest(self):
-        """Return up to 10 bug tasks (ordered by date assigned) which this
+        """Return bug tasks (ordered by date assigned) which this
         person and the logged in user share some interest.
 
         We assume they share some interest if they're both members of the
@@ -389,15 +385,15 @@ class PersonView:
         assigned to the other.
         """
         assert self.user is not None, (
-                'This method should not be called without a logged in user')
+            'This method should not be called without a logged in user')
         if self.context.id == self.user.id:
             return []
 
-        bts = getUtility(IBugTaskSet)
         orderBy = ('-dateassigned', '-priority', '-severity')
-        results = bts.bugTasksWithSharedInterest(
+        results = getUtility(IBugTaskSet).bugTasksWithSharedInterest(
             self.context, self.user, user=self.user, orderBy=orderBy)
-        return results[:10]
+
+        return results
 
     def obfuscatedEmail(self):
         if self.context.preferredemail is not None:
@@ -415,7 +411,7 @@ class PersonView:
         self.request.response.setHeader('Content-Type', 'text/plain')
         return "\n".join(["%s %s %s" % (key.keykind, key.keytext, key.comment)
                           for key in self.context.sshkeys])
-    
+
     def sshkeysCount(self):
         return len(self.context.sshkeys)
 
@@ -478,7 +474,7 @@ class PersonView:
                 return "Neither Nickname nor Network can be empty."
 
         return ""
-            
+
     def processJabberForm(self):
         """Process the Jabber ID form."""
         if self.request.method != "POST":
@@ -498,7 +494,7 @@ class PersonView:
         jabberid = form.get('newjabberid')
         if jabberid:
             jabberset = getUtility(IJabberIDSet)
-            existingjabber = jabberset.getByJabberID(jabberid) 
+            existingjabber = jabberset.getByJabberID(jabberid)
             if existingjabber is None:
                 jabberset.new(self.context, jabberid)
             elif existingjabber.person != self.context:
@@ -534,7 +530,7 @@ class PersonView:
             return "Your Ubuntu WikiName cannot be empty."
         elif existingwiki is not None and existingwiki.person != context:
             return ('The Ubuntu WikiName %s is already registered by '
-                    '<a href="%s">%s</a>.' 
+                    '<a href="%s">%s</a>.'
                     % (ubuntuwikiname, canonical_url(existingwiki.person),
                        cgi.escape(existingwiki.person.browsername)))
         context.ubuntuwiki.wikiname = ubuntuwikiname
@@ -570,7 +566,7 @@ class PersonView:
                 existingwiki = wikinameset.getByWikiAndName(wiki, wikiname)
                 if existingwiki and existingwiki.person != context:
                     return ('The WikiName %s%s is already registered by '
-                            '<a href="%s">%s</a>.' 
+                            '<a href="%s">%s</a>.'
                             % (wiki, wikiname,
                                canonical_url(existingwiki.person),
                                cgi.escape(existingwiki.person.browsername)))
@@ -586,7 +582,7 @@ class PersonView:
                 return "Neither Wiki nor WikiName can be empty."
 
         return ""
-            
+
     # restricted set of methods to be proxied by form_action()
     permitted_actions = ['claim_gpg', 'deactivate_gpg', 'remove_gpgtoken',
                          'revalidate_gpg', 'add_ssh', 'remove_ssh']
@@ -595,15 +591,15 @@ class PersonView:
         if self.request.method != "POST":
             # Nothing to do
             return ''
-        
+
         action = self.request.form.get('action')
 
         # primary check on restrict set of 'form-like' methods.
         if action and (action not in self.permitted_actions):
             return 'Forbidden Form Method: %s' % action
-        
-        # do not mask anything 
-        return getattr(self, action)()       
+
+        # do not mask anything
+        return getattr(self, action)()
 
     # XXX cprov 20050401
     # As "Claim GPG key" takes a lot of time, we should process it
@@ -619,14 +615,14 @@ class PersonView:
         fingerprint = sanitisedfpr
 
         gpgkeyset = getUtility(IGPGKeySet)
-                
+
         if gpgkeyset.getByFingerprint(fingerprint):
             return 'GPG key <code>%s</code> already imported' % fingerprint
 
         # import the key to the local keyring
         gpghandler = getUtility(IGPGHandler)
         result, key = gpghandler.retrieveKey(fingerprint)
-        
+
         if not result:
             # use the content ok 'key' for debug proposes
             return (
@@ -647,10 +643,10 @@ class PersonView:
 
     def deactivate_gpg(self):
         key_ids = self.request.form.get('DEACTIVATE_GPGKEY')
-        
+
         if key_ids is not None:
             comment = 'Key(s):<code>'
-            
+
             # verify if we have multiple entries to deactive
             if not isinstance(key_ids, list):
                 key_ids = [key_ids]
@@ -663,14 +659,14 @@ class PersonView:
                 comment += ' %s' % gpgkey.displayname
 
             comment += '</code> deactivated'
-            flush_database_updates()            
+            flush_database_updates()
             return comment
 
         return 'No Key(s) selected for deactivation.'
 
     def remove_gpgtoken(self):
         tokenfprs = self.request.form.get('REMOVE_GPGTOKEN')
-        
+
         if tokenfprs is not None:
             comment = 'Token(s) for:<code>'
             logintokenset = getUtility(ILoginTokenSet)
@@ -684,7 +680,7 @@ class PersonView:
                 logintokenset.deleteByFingerprintAndRequester(tokenfpr,
                                                               self.user)
                 comment += ' %s' % tokenfpr
-                
+
             comment += '</code> key fingerprint(s) deleted.'
             return comment
 
@@ -699,20 +695,20 @@ class PersonView:
             # verify if we have multiple entries to deactive
             if not isinstance(key_ids, list):
                 key_ids = [key_ids]
-                
+
             gpghandler = getUtility(IGPGHandler)
             keyset = getUtility(IGPGKeySet)
-            
+
             for key_id in key_ids:
                 # retrieve key info from LP
                 gpgkey = keyset.get(key_id)
                 result, key = gpghandler.retrieveKey(gpgkey.fingerprint)
                 if not result:
-                    notfound.append(gpgkey.fingerprint) 
+                    notfound.append(gpgkey.fingerprint)
                     continue
                 self._validateGPG(key)
                 found.append(key.displayname)
-                
+
             comment = ''
             if len(found):
                 comment += ('Key(s):<code>%s</code> revalidation email sent '
@@ -734,14 +730,14 @@ class PersonView:
             kind, keytext, comment = sshkey.split(' ', 2)
         except ValueError:
             return 'Invalid public key'
-        
+
         if kind == 'ssh-rsa':
             keytype = SSHKeyType.RSA
         elif kind == 'ssh-dss':
             keytype = SSHKeyType.DSA
         else:
             return 'Invalid public key'
-        
+
         getUtility(ISSHKeySet).new(self.user.id, keytype, keytext, comment)
         return 'SSH public key added.'
 
@@ -780,7 +776,7 @@ class PersonView:
     def processPasswordChangeForm(self):
         if self.request.method != 'POST':
             return
-        
+
         form = self.request.form
         currentpassword = form.get('currentpassword')
         encryptor = getUtility(IPasswordEncryptor)
@@ -904,7 +900,7 @@ class PersonEditEmailsView:
 
     def _deleteUnvalidatedEmail(self):
         """Delete the selected email address, which is not validated.
-        
+
         This email address can be either on the EmailAddress table marked with
         status new, or in the LoginToken table.
         """
@@ -913,7 +909,7 @@ class PersonEditEmailsView:
             self.message = (
                 "You must select the email address you want to remove.")
             return
-        
+
         emailset = getUtility(IEmailAddressSet)
         logintokenset = getUtility(ILoginTokenSet)
         if email in [e.email for e in self.context.guessedemails]:
@@ -979,7 +975,7 @@ class PersonEditEmailsView:
             return
         elif email is not None:
             # self.message is rendered using 'structure' on the page template,
-            # so it's better escape browsername because people can put 
+            # so it's better to escape browsername because people can put
             # whatever they want in their name/displayname. On the other hand,
             # we don't need to escape email addresses because they are always
             # validated (which means they can't have html tags) before being
@@ -1073,7 +1069,7 @@ class RequestPeopleMergeView(AddView):
         email = emails[0]
         login = getUtility(ILaunchBag).login
         logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(user, login, email.email, 
+        token = logintokenset.new(user, login, email.email,
                                   LoginTokenType.ACCOUNTMERGE)
         dupename = dupeaccount.name
         sendMergeRequestEmail(token, dupename, self.request.getApplicationURL())
@@ -1118,7 +1114,7 @@ class RequestPeopleMergeMultipleEmailsView:
 
         ids = self.request.form.get("selected")
         if ids is not None:
-            # We can have multiple email adressess selected, and in this case 
+            # We can have multiple email adressess selected, and in this case
             # ids will be a list. Otherwise ids will be str or int and we need
             # to make a list with that value to use in the for loop.
             if not isinstance(ids, list):
@@ -1128,7 +1124,7 @@ class RequestPeopleMergeMultipleEmailsView:
             for id in ids:
                 email = emailset.get(id)
                 assert email in self.dupeemails
-                token = logintokenset.new(user, login, email.email, 
+                token = logintokenset.new(user, login, email.email,
                                           LoginTokenType.ACCOUNTMERGE)
                 dupename = self.dupe.name
                 url = self.request.getApplicationURL()
@@ -1158,7 +1154,7 @@ class ObjectReassignmentView:
     By default we assume that the owner attribute is IHasOwner.owner and the
     vocabulary for the owner widget is ValidPersonOrTeam (which is the one
     used in IObjectReassignment). If any object has special needs, it'll be
-    necessary to subclass ObjectReassignmentView and redefine the schema 
+    necessary to subclass ObjectReassignmentView and redefine the schema
     and/or ownerOrMaintainerAttr attributes.
 
     Subclasses can also specify a callback to be called after the reassignment
@@ -1203,7 +1199,7 @@ class ObjectReassignmentView:
 
     def _getNewOwner(self):
         """Return the new owner for self.context, as specified by the user.
-        
+
         If anything goes wrong, return None and assign an error message to
         self.errormessage to inform the user about what happened.
         """
@@ -1282,4 +1278,312 @@ class TeamReassignmentView(ObjectReassignmentView):
 
         if oldOwner not in team.inactivemembers:
             team.setMembershipStatus(oldOwner, TeamMembershipStatus.ADMIN)
+
+
+class PersonShipItView:
+    """The view for people to create/edit ShipIt requests."""
+
+    # XXX: These 2 email addresses must go into launchpad.conf
+    # -- GuilhermeSalgado 2005-09-01
+    shipit_admins = 'info@shipit.ubuntu.com'
+    from_addr = "ShipIt <noreply@ubuntu.com>"
+    mail_template = """
+The user %(recipientname)s (%(recipientemail)s) placed a new request in ShipIt.
+This request can be seen at:
+%(requesturl)s
+
+
+Th request details are as follows:
+
+  X86: %(quantityx86)d
+ADM64: %(quantityamd64)d
+  PPC: %(quantityppc)d
+Reason: %(reason)s
+"""
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        setUpWidgets(self, IShipItCountry, IInputWidget)
+        self.errorMessages = []
+        self.currentRequest = None
+        self.isCustomRequest = False
+
+    def standardShipItRequests(self):
+        """Return a list with all standard ShipIt Requests."""
+        return getUtility(IStandardShipItRequestSet).getAll()
+
+    def processForm(self):
+        """Process the ShipIt form, if it was submitted."""
+        self._loadRequestForDisplay()
+        if self.request.method != "POST":
+            return
+
+        form = self.request.form
+        if 'newrequest' in form or 'changerequest' in form:
+            self._readAndValidateRequestDetails()
+            self._readAndValidateContactDetails()
+            if not self.errorMessages:
+                self._saveContactDetails()
+                if 'newrequest' in form:
+                    self._createNewRequest()
+                elif 'changerequest' in form:
+                    assert self.currentRequest
+                    self._saveRequestDetails()
+        elif 'cancelrequest' in form:
+            assert self.currentRequest
+            self.currentRequest.cancel(getUtility(ILaunchBag).user)
+            self.currentRequest = None
+
+        flush_database_updates()
+
+    def _loadRequestForDisplay(self):
+        self.currentRequest = self.context.currentShipItRequest()
+        if self.currentRequest is None:
+            return
+
+        shipitrequest = self.currentRequest
+        standardrequestset = getUtility(IStandardShipItRequestSet)
+        standardrequest = standardrequestset.getByNumbersOfCDs(
+            shipitrequest.quantityx86, shipitrequest.quantityamd64,
+            shipitrequest.quantityppc)
+        if standardrequest is not None:
+            self.selectedRequest = standardrequest.id
+            self.reason = None
+        else:
+            self.quantityx86 = shipitrequest.quantityx86
+            self.quantityamd64 = shipitrequest.quantityamd64
+            self.quantityppc = shipitrequest.quantityppc
+            self.isCustomRequest = True
+            self.reason = shipitrequest.reason
+
+    def _notifyShipItAdmins(self, shipitrequest):
+        """Notify the shipit admins by email that there's a new request."""
+        subject = ('[ShipIt] New Custom Request for %d CDs'
+                   % shipitrequest.totalCDs)
+        recipient = shipitrequest.recipient
+        headers = {'Reply-To': recipient.preferredemail.email}
+        replacements = {'recipientname': recipient.displayname,
+                        'recipientemail': recipient.preferredemail.email,
+                        'requesturl': canonical_url(shipitrequest),
+                        'quantityx86': shipitrequest.quantityx86,
+                        'quantityamd64': shipitrequest.quantityamd64,
+                        'quantityppc': shipitrequest.quantityppc,
+                        'reason': shipitrequest.reason}
+        message = self.mail_template % replacements
+        simple_sendmail(self.from_addr, self.shipit_admins, subject, message,
+                        headers)
+
+    def _createNewRequest(self):
+        """Create and return a new ShippingRequest.
+
+        If this is a custom request, then send an email to the shipit admins
+        with the details of the request.
+        The attributes used to create this ShippingRequest are the ones stored
+        in this object by the _readAndValidateRequestDetails() method.
+        """
+        shipitrequest = getUtility(IShippingRequestSet).new(
+            self.context, self.quantityx86, self.quantityamd64,
+            self.quantityppc, self.reason)
+
+        self.currentRequest = shipitrequest
+        if self.isCustomRequest:
+            self._notifyShipItAdmins(shipitrequest)
+        else:
+            shipitrequest.approve()
+
+        return shipitrequest
+
+    def _saveContactDetails(self):
+        """Save the contact details for this user.
+
+        This method assumes the contact details are stored as attributes of
+        this object. This is obtained by calling
+        self._readAndValidateContactDetails().
+        """
+        contact_fields = ['addressline1', 'addressline2', 'postcode', 'city',
+                          'province', 'organization', 'phone']
+
+        for field in contact_fields:
+            setattr(self.context, field, getattr(self, field))
+        self.context.country = self.country
+
+    def _saveRequestDetails(self):
+        """Save the request details in the current request.
+
+        This method assumes the request details are stored as attributes of
+        this object. This is obtained by calling
+        self._readAndValidateRequestDetails().
+        """
+        shipitrequest = self.currentRequest
+        wasStandard = shipitrequest.isStandardRequest()
+        shipitrequest.quantityx86 = self.quantityx86
+        shipitrequest.quantityppc = self.quantityppc
+        shipitrequest.quantityamd64 = self.quantityamd64
+        shipitrequest.reason = self.reason
+        if shipitrequest.isStandardRequest() and not wasStandard:
+            # Changing an existing custom order to a standard one has the same
+            # effect of creating a new standard one. In other words, it's
+            # marked approved.
+            shipitrequest.approve()
+        elif not shipitrequest.isStandardRequest() and wasStandard:
+            # Changing an existing standard order into a custom one will mark
+            # it as pending approval, and sent an email notification to the
+            # shipit admins.
+            shipitrequest.clearApproval()
+            self._notifyShipItAdmins(shipitrequest)
+
+    def _readAndValidateRequestDetails(self):
+        """Read the request details from the form, do any necessary validation
+        and save them in the view."""
+        form = self.request.form
+        requesttype = form.get('requesttype')
+        if requesttype == 'standard':
+            self.isCustomRequest = False
+            self.selectedRequest = int(form.get('standardrequest'))
+            shipitrequest = getUtility(IStandardShipItRequestSet).get(
+                self.selectedRequest)
+            if shipitrequest is None:
+                msg = ('The standard request numbers have changed since you '
+                       'submitted your request; please review the new numbers '
+                       'and make a new selection.')
+                self.errorMessages.append(msg)
+                return
+            self.quantityx86 = shipitrequest.quantityx86
+            self.quantityamd64 = shipitrequest.quantityamd64
+            self.quantityppc = shipitrequest.quantityppc
+            self.reason = None
+        elif requesttype == 'custom':
+            self.isCustomRequest = True
+            self.quantityx86 = intOrZero(form.get('quantityx86'))
+            self.quantityamd64 = intOrZero(form.get('quantityamd64'))
+            self.quantityppc = intOrZero(form.get('quantityppc'))
+
+            if (self.quantityx86 < 0 or self.quantityamd64 < 0 or
+                self.quantityppc < 0):
+                self.errorMessages.append(
+                    "You requested a negative number of CDs, which doesn't "
+                    "make sense. Please correct the number below.")
+
+            if (self.quantityx86 + self.quantityamd64 + self.quantityppc) == 0:
+                self.errorMessages.append(
+                    "You have requested a total of zero CDs. An order must "
+                    "have at least one CD requested; please correct below.")
+
+            self.reason = form.get('reason')
+            if not self.reason:
+                msg = ("You've chosen to make a custom request. Please "
+                       "provide a reason to justify it.")
+                self.errorMessages.append(msg)
+
+    def _readAndValidateContactDetails(self):
+        """Read the contact details from the form, do any necesary validation
+        and save them in the view."""
+        # Mandatory fields as defined in the old shipit.
+        #   - addressline1
+        #   - city
+        #   - zip (only if in ['US', 'GB', 'FR', 'IT', 'DE', 'NO', 'SE', 'ES'])
+        validators = {'addressline1': self._validateaddressline1,
+                      'addressline2': self._validateaddressline2,
+                      'city': self._validatecity,
+                      'postcode': self._validatepostcode,
+                      'province': None,
+                      'organization': self._validateorganization,
+                      'phone': self._validatephone}
+        form = self.request.form
+        msg = None
+        self.country = self.country_widget.getInputValue()
+        for field, validator in validators.items():
+            value = form.get(field)
+            setattr(self, field, value)
+            try:
+                value.encode('ascii')
+            except UnicodeEncodeError, e:
+                first_non_ascii_char = value[e.start:e.end]
+                e_with_accute = u'\N{LATIN SMALL LETTER E WITH ACUTE}'
+                msg = ("Sorry, but non-ASCII characters (such as '%s', in the "
+                       "%s field) aren't understood by our shipping company. "
+                       "Please change these to ASCII equivalents. (For "
+                       "instance, '%s' should be changed to 'e')"
+                       % (first_non_ascii_char, field, e_with_accute))
+
+            if validator is not None:
+                validator(value)
+
+        # Add the error message only once, even if there's errors in more
+        # than one field.
+        if msg:
+            self.errorMessages.append(msg)
+
+    #
+    # Following are validator methods to make sure we follow the constraints
+    # of the shipping companies.
+    #
+
+    def _validatepostcode(self, value):
+        """Make sure postcode follows the mailing constraints.
+
+        Add an error message to self.errorMessages if it doesn't.
+        """
+        code = self.country.iso3166code2
+        if (not value and
+            code in ('US', 'GB', 'FR', 'IT', 'DE', 'NO', 'SE', 'ES')):
+            self.errorMessages.append(
+                'You must enter your postcode in the form.')
+        elif len(value) > 12:
+            self.errorMessages.append(
+                "Your postcode can't have more than 12 characters.")
+
+    def _validatecity(self, value):
+        """Make sure city follows the mailing constraints.
+
+        Add an error message to self.errorMessages if it doesn't.
+        """
+        if not value:
+            self.errorMessages.append(
+                'You must enter your city in the form.')
+        elif len(value) > 30:
+            self.errorMessages.append(
+                "Your city name can't have more than 30 characters.")
+
+    def _validateaddressline1(self, value):
+        """Make sure addressline1 follows the mailing constraints.
+
+        Add an error message to self.errorMessages if it doesn't.
+        """
+        if not value:
+            self.errorMessages.append(
+                'You must enter an address.')
+        elif len(value) > 30:
+            self.errorMessages.append(
+                "Address (first line) can't have more than 30 characters. "
+                "You should use the second line if your address is too long.")
+
+    def _validateaddressline2(self, value):
+        """Make sure addressline2 follows the mailing constraints.
+
+        Add an error message to self.errorMessages if it doesn't.
+        """
+        if value and len(value) > 30:
+            self.errorMessages.append(
+                "Address (second line) can't have more than 30 characters. "
+                "You should use the first line if your address is too long.")
+
+    def _validatephone(self, value):
+        """Make sure phone follows the mailing constraints.
+
+        Add an error message to self.errorMessages if it doesn't.
+        """
+        if value and len(value) > 16:
+            self.errorMessages.append(
+                "Your phone mumber must be less than 16 characters. Leave it "
+                "blank if it will not fit.")
+
+    def _validateorganization(self, value):
+        """Make sure organization follows the mailing constraints.
+
+        Add an error message to self.errorMessages if it doesn't.
+        """
+        if value and len(value) > 30:
+            self.errorMessages.append(
+                "Your organization can't have more than 30 characters.")
 

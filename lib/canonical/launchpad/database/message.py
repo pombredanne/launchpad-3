@@ -48,13 +48,14 @@ class Message(SQLBase):
     subject = StringCol(notNull=False, default=None)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
     parent = ForeignKey(foreignKey='Message', dbName='parent',
-                        notNull=False, default=None)
+        notNull=False, default=None)
     distribution = ForeignKey(foreignKey='Distribution',
-                              dbName='distribution',
-                              notNull=False, default=None)
+        dbName='distribution', notNull=False, default=None)
     rfc822msgid = StringCol(unique=True, notNull=True)
     bugs = RelatedJoin('Bug', joinColumn='message', otherColumn='bug',
-                       intermediateTable='BugMessage')
+        intermediateTable='BugMessage')
+    tickets = RelatedJoin('Ticket', joinColumn='message',
+        otherColumn='ticket', intermediateTable='TicketMessage')
     chunks = MultipleJoin('MessageChunk', joinColumn='message')
     raw = ForeignKey(foreignKey='LibraryFileAlias', dbName='raw', default=None)
     bugattachments = MultipleJoin('BugAttachment', joinColumn='message')

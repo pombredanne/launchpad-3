@@ -16,11 +16,12 @@ from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
-    IHasOwner, IBugTarget, ISpecificationTarget)
+    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget)
 
 _ = MessageIDFactory('launchpad')
 
-class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget):
+class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
+    ITicketTarget):
 
     """An operating system distribution."""
 

@@ -35,6 +35,20 @@ Or IDistroReleaseSet.findByName:
     ...     print distrorelease.name
     warty
 
+To get one specific release by name, use queryByName:
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+
+    >>> warty = distroreleaseset.queryByName(ubuntu, "warty")
+    >>> warty.name
+    u'warty'
+
+If the release by that name doesn't exist, None will be returned:
+
+    >>> foobar = distroreleaseset.queryByName(ubuntu, "foobar")
+    >>> print foobar
+    None
+
 Or IDistroReleaseSet.findByVersion:
 
     >>> for distrorelease in distroreleaseset.findByVersion("5.04"):
@@ -43,7 +57,6 @@ Or IDistroReleaseSet.findByVersion:
 
 To search the set of IDistroReleases, use IDistroReleaseSet.search:
 
-    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> ubuntu_releases = distroreleaseset.search(
     ...     distribution=ubuntu, isreleased=True, orderBy="-datereleased")
     >>> [release.name for release in ubuntu_releases]

@@ -12,11 +12,11 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
-from canonical.launchpad.interfaces import IBugTarget
+from canonical.launchpad.interfaces import IBugTarget, ITicketTarget
 
 _ = MessageIDFactory('launchpad')
 
-class ISourcePackage(IBugTarget):
+class ISourcePackage(IBugTarget, ITicketTarget):
     """A SourcePackage. See the MagicSourcePackage specification. This
     interface preserves as much as possible of the old SourcePackage
     interface from the SourcePackage table, with the new table-less
