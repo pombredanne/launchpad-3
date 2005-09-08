@@ -286,7 +286,7 @@ class BinaryPackageHandler:
             if binpkg:
                 return binpkg
 
-        clauseTables=("BinaryPackage","Build",)
+        clauseTables=("BinaryPackageRelease","Build",)
         query = ("BinaryPackageRelease.binarypackagename=%s AND "
                  "BinaryPackageRelease.version=%s AND "
                  "Build.Processor=%s AND "
