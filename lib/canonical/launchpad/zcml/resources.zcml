@@ -55,6 +55,7 @@
     <resource name="linkTransparent.gif" file="../images/linkTransparent.gif" />
     <resource name="lock_icon.gif" file="../images/lock_icon.gif" />
     <resource name="mail_icon.gif" file="../images/mail_icon.gif" />
+    <resource name="news" file="../images/newsitem_icon.gif" />
     <resource name="phone_icon.gif" file="../images/phone_icon.gif" />
     <resource name="print.gif" file="../images/print.gif" />
     <resource name="product_icon.gif" file="../images/product_icon.gif" />
