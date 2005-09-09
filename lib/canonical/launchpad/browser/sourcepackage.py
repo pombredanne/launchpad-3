@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'traverseSourcePackage',
+    'traverseSourcePackageSet',
     'SourcePackageFacets',
     'SourcePackageReleasePublishingView',
     'SourcePackageInDistroSetView',
@@ -17,7 +18,7 @@ import cgi
 import re
 import sets
 
-from zope.component import getUtility
+from zope.component import getUtility, queryView
 from zope.app.form.interfaces import IInputWidget
 from zope.app import zapi
 
@@ -64,6 +65,23 @@ def traverseSourcePackage(sourcepackage, request, name):
                    distrorelease=sourcepackage.distrorelease,
                    sourcepackagename=sourcepackage.sourcepackagename)
     return None
+
+def traverseSourcePackageSet(sourcepackageset, request, name):
+    try:
+        return sourcepackageset[name]
+    except KeyError:
+        traversalstack = request.getTraversalStack()
+        if traversalstack:
+            nextstep = traversalstack[-1]
+            # If the page is one of those from ubuntu-launchpad integration,
+            # eat the rest of traversal, but make it traverse +comingsoon.
+            # This gives users of launchpad integration meus a nicer experience
+            # than getting 404 errors.
+            if nextstep == '+gethelp' or nextstep == '+translate':
+                request._traversed_names.append('+comingsoon')
+                request.setTraversalStack([])
+                return queryView(sourcepackageset, "+comingsoon", request)
+        return None
 
 
 class SourcePackageFacets(StandardLaunchpadFacets):

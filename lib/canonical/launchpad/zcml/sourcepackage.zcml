@@ -181,7 +181,8 @@
 
     <browser:traverse
         for="canonical.launchpad.interfaces.ISourcePackageSet"
-        getter="__getitem__" />
+        function="canonical.launchpad.browser.traverseSourcePackageSet"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ISourcePackageSet"
@@ -204,6 +205,10 @@
             name="+malone-index"
             template="../templates/packages-bugs.pt"
             lp:url="/distros/$Distro.name/$DistroRelease.name/+sources/+malone-index" />
+        <browser:page
+            name="+comingsoon"
+            template="../templates/sourcepackages-comingsoon.pt"
+            />
     </browser:pages>
 
 </configure>
