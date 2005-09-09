@@ -3,23 +3,99 @@ POTMsgSet tests
 
 POTMsgSet represents messages to translate that a POTemplate file has.
 
-POTMsgSet.poMsgSet
-------------------
-
 We need to get a POTMsgSet object to performe this test.
 
     >>> from zope.component import getUtility
+    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.interfaces import IPOTemplateSet
     >>> potemplate_set = getUtility(IPOTemplateSet)
     >>> potemplate = potemplate_set['pmount']
-    >>> potmsgsets = potemplate.getPOTMsgSets()
+
+
+POTMsgSet.poMsgSet
+------------------
 
 A request for a POMsgSet with a variant field value should not break.
 
+    >>> potmsgsets = potemplate.getPOTMsgSets()
     >>> for potmsgset in potmsgsets:
     ...     potmsgset.poMsgSet('en', 'boldquot')
     ...     break
     Traceback (most recent call last):
     ...
     NotFoundError: ('en', 'boldquot')
+
+
+POTMsgSet.normalize_whitespaces
+-------------------------------
+
+This function copies the leading and trailing whitespaces from
+POTMsgSet's msgid into the 'text' argument.
+
+As this test is too specific, we are going to change a msgid as we need for
+every test.
+
+    >>> potmsgset = potemplate.createMessageSetFromText(u'normal string')
+    >>> text = u'another normal string'
+
+    In this case, it should not change.
+
+    >>> potmsgset.normalize_whitespaces(text)
+    u'another normal string'
+
+    Let's try with a 'text' that has some leading and trailing whitespaces,
+    they will disappear as the msgid does not have them.
+
+    >>> text = u' a string with \n whitespaces \n'
+    >>> potmsgset.normalize_whitespaces(text)
+    u'a string with \n whitespaces'
+
+    Now, the msgid will have a leading whitespace. That means that 'text'
+    should have it too.
+
+    >>> potmsgset = potemplate.createMessageSetFromText(
+    ...     u'\nnormal string with leading newline')
+    >>> potmsgset.normalize_whitespaces(text)
+    u'\na string with \n whitespaces'
+
+    If 'text' has only whitespaces and nothing else, we should get the empty
+    string.
+
+    >>> text = u'\n'
+    >>> potmsgset.normalize_whitespaces(text)
+    ''
+
+    And if 'text' is None, we get 'text' unchanged.
+
+    >>> potmsgset.normalize_whitespaces(None) is None
+    True
+
+POTMsgSet.convert_dot_to_space
+------------------------------
+
+This method changes the u'\u2022' char by the normal white space.
+
+As this test is too specific, we are going to change a msgid as we need for
+every test.
+
+    >>> potmsgset = potemplate.createMessageSetFromText(u'normal string without the point')
+    >>> text = u'another normal string'
+
+    In this case, it should not change.
+
+    >>> potmsgset.convert_dot_to_space(text)
+    u'another normal string'
+
+    Let's try with a 'text' that has the char.
+
+    >>> text = u'a string with the char \u2022'
+    >>> potmsgset.convert_dot_to_space(text)
+    u'a string with the char  '
+
+    Now, msgid will have also that char, so 'text' should not change.
+
+    >>> potmsgset = potemplate.createMessageSetFromText(
+    ...    u'normal string with the char \u2022')
+    >>> potmsgset.convert_dot_to_space(text)
+    u'a string with the char \u2022'
 
