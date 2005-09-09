@@ -21,6 +21,8 @@ import xmlrpclib
 import os
 import socket
 from cStringIO import StringIO
+import datetime
+import pytz
 
 from sqlobject.sqlbuilder import AND, IN
 
@@ -403,7 +405,10 @@ class BuilderGroup:
         queueItem.build.buildlog = self.getLogFromSlave(slave, buildid,
                                                         librarian)
         queueItem.build.datebuilt = UTC_NOW
-        queueItem.build.buildduration = UTC_NOW - queueItem.buildstart
+        # we need dynamic datetime.now() instance to be able to perform
+        # the time operations for duration.
+        RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))
+        queueItem.build.buildduration = RIGHT_NOW - queueItem.buildstart
         queueItem.build.builder = queueItem.builder
         queueItem.build.buildstate = DBBuildStatus.FULLYBUILT
     
