@@ -674,7 +674,7 @@ sourcepackage_changelog = 'Source Package Changelog'
 
 sourcepackage_filebug = ContextTitle("Report a Bug in %s")
 
-sourcepackage_gethelp = ContextTitle('Sources of Online Help for %s')
+sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 
 sourcepackage_hctstatus = ContextTitle('Source Package HCT Status - %s')
 
@@ -683,7 +683,7 @@ def sourcepackage_index(context, view):
 
 sourcepackage_packaging = ContextTitle('Define the Upstream Series of %s')
 
-sourcepackage_translate = ContextTitle('Help to Translate %s')
+sourcepackage_translate = ContextTitle('Help translate %s')
 
 sourcepackage_translations = ContextTitle(
     'Rosetta Translation Templates for %s')

@@ -15,11 +15,9 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Get Help Online!</h1>
+  <h1>Help and support options</h1>
 
-  <p class="documentDescription">
-    This page summarises the sources of help that are registered for
-    <span tal:replace="context/title">blah</span>.
+  <p>
   </p>
 
   <p class="portalMessage" tal:condition="not: context/productseries">
@@ -29,10 +27,10 @@
     sources of help.
   </p>
 
-  <h2>File a Support Request</h2>
+  <h2>Make a support request</h2>
 
   <p>
-    You can <a href="+addticket">file a support request</a> in Launchpad,
+    You can <a href="+addticket">make a support request</a> in Launchpad,
     and some community members might be able to help you free of charge.
   </p>
 
