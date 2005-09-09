@@ -173,7 +173,7 @@ class DebianBuildManager(BuildManager):
                 # anything else is a buildfail
                 if not self.alreadyfailed:
                     self._slave.buildFail()
-                    self.alreadyfailed = True
+            self.alreadyfailed = True
             self._state = DebianBuildState.UMOUNT
             self.doUnmounting()
         else:

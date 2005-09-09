@@ -352,8 +352,18 @@ class BuilderGroup:
         # whatever is the original charset ?
         queueItem.logtail = encoding.guess(logtail)
 
+    def updateBuild_ABORTING(self, queueItem, slave, librarian, buildid):
+        """Build was ABORTED.
+        
+        Master-side should wait until the slave finish the process correctly.
+        """
+        queueItem.logtail = "Waiting slave process to be terminated"
+
     def updateBuild_ABORTED(self, queueItem, slave, librarian, buildid):
-        """Build was ABORTED, 'clean' the builder for another jobs. """
+        """ABORTING process has succesfully terminated.
+
+        Clean the builder for another jobs.
+        """
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
         queueItem.builder = None
         queueItem.buildstart = None
