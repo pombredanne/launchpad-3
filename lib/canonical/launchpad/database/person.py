@@ -96,7 +96,12 @@ class Person(SQLBase):
                             intermediateTable='PersonLanguage')
 
     # relevant joins
-    authored_branches = MultipleJoin('Branch', joinColumn='author')
+    authored_branches = MultipleJoin(
+        'Branch', joinColumn='author',orderBy='-id')
+    subscribed_branches = RelatedJoin(
+        'Branch', joinColumn='person', otherColumn='branch',
+        intermediateTable='BranchSubscription', orderBy='-id')
+
     members = MultipleJoin('TeamMembership', joinColumn='team',
         orderBy='status')
     ownedBounties = MultipleJoin('Bounty', joinColumn='owner',
@@ -259,6 +264,15 @@ class Person(SQLBase):
         ret = ret.union(self.assigned_tickets)
         ret = ret.union(self.subscribed_tickets)
         ret = sorted(ret, key=lambda a: a.datecreated)
+        ret.reverse()
+        return ret
+
+    @property
+    def branches(self):
+        ret = set(self.authored_branches)
+        ret = ret.union(self.registered_branches)
+        ret = ret.union(self.subscribed_branches)
+        ret = sorted(ret, key=lambda a: -a.id)
         ret.reverse()
         return ret
 

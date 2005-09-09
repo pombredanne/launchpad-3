@@ -141,6 +141,8 @@ branch_index = ContextTitle('Bazaar Branch: %s')
 
 branch_subscription = ContextTitle('Subscription to Branch %s')
 
+branchtarget_branches = ContextTitle('Branches for %s')
+
 bug_activity = ContextId('Bug #%s - Activity Log')
 
 def bug_add(context, view):
@@ -468,8 +470,6 @@ person_bounties = ContextDisplayName('Bounties for %s')
 
 person_branch_add = ContextDisplayName('Register a new branch for %s')
 
-person_branches = ContextDisplayName("%s's code branches in Launchpad")
-
 person_changepassword = 'Change your password'
 
 person_codesofconduct = ContextDisplayName('%s Signed Codes of Conduct')
@@ -642,8 +642,6 @@ rosetta_index = 'Rosetta'
 rosetta_preferences = 'Rosetta: Preferences'
 
 product_branch_add = ContextDisplayName('Register a new branch for %s')
-
-product_branches = ContextDisplayName('Branches for %s')
 
 def productseries_edit(context, view):
     return 'Edit %s %s Details' % (context.product.displayname, context.name)

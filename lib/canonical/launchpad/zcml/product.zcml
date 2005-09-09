@@ -52,10 +52,6 @@
             template="../templates/product-translations.pt"
             lp:url="/products/evolution/+translations" />
         <browser:page
-            name="+branches"
-            template="../templates/product-branches.pt"
-            />
-        <browser:page
             name="+packages"
             template="../templates/product-packages.pt"
             />
@@ -105,6 +101,16 @@
             template="../templates/product-portlet-translatables.pt"
             lp:url="/products/evolution/+portlet-translatables" />
     </browser:pages>
+
+    <browser:pages
+	for="canonical.launchpad.interfaces.IProduct"
+	class="canonical.launchpad.browser.BranchTargetView"
+	permission="zope.Public">
+	<browser:page
+	    name="+branches"
+	    template="../templates/branchtarget-branches.pt" />
+    </browser:pages>
+
 
     <browser:page
         for="canonical.launchpad.interfaces.IProduct"

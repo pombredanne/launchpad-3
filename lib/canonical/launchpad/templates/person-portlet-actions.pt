@@ -25,6 +25,9 @@
         <li class="edit"><a href="+editsshkeys">Edit SSH Keys</a></li>
         <li class="edit"><a href="+editgpgkeys">Edit GPG Keys</a></li>
         <li class="edit"><a href="+codesofconduct">Code of Conduct</a></li>
+        <li class="branch"><a href="+authoredbranches">Show Authored Branch</a></li>
+        <li class="branch"><a href="+registeredbranches">Show Registered Branch</a></li>
+        <li class="branch"><a href="+subscribedbranches">Show Subscribed Branch</a></li>
         <li class="add"><a href="+addbranch">Add Bazaar Branch</a></li>
       </tal:block>
       <li class="packages"><a href="+packages">Packages</a></li>
