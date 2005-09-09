@@ -30,7 +30,7 @@ class IPublishedPackage(Interface):
     packagepublishingstatus = Attribute("The status of this published package")
     component = Attribute("The component in which the package has been published")
     section = Attribute("The section in which it is published.")
-    binarypackage = Attribute("The id of the binary package in question")
+    binarypackagerelease = Attribute("The id of the binary package in question")
     binarypackagename = Attribute("The binary package name")
     binarypackagesummary = Attribute("The binary package summary")
     binarypackagedescription = Attribute("The binary package description")

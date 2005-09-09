@@ -26,6 +26,9 @@
         <li class="translations">
           <a href="+translate">Help Translate</a>
         </li>
+        <li class="add">
+          <a href="+addticket">Request Support</a>
+        </li>
         <li class="edit">
           <a href="+packaging">Edit Upstream Link</a>
         </li>

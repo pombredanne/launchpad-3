@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database.sourcepackageindistro import (
     SourcePackageInDistro)
 from canonical.launchpad.database.publishing import (
-    PackagePublishing, SourcePackagePublishing)
+    BinaryPackagePublishing, SourcePackagePublishing)
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.language import Language
@@ -36,7 +36,7 @@ from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName, SourcePackageNameSet)
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.binarypackage import BinaryPackage
+from canonical.launchpad.database.binarypackagerelease import BinaryPackageRelease
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.helpers import shortlist
 
@@ -71,6 +71,8 @@ class DistroRelease(SQLBase):
     architectures = MultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease',
         orderBy='architecturetag')
+    specifications = MultipleJoin('Specification',
+        joinColumn='distrorelease', orderBy='-datecreated')
     datelastlangpack = UtcDateTimeCol(dbName='datelastlangpack', notNull=False,
                                    default=None)
     messagecount = IntCol(notNull=True, default=0)
@@ -133,12 +135,12 @@ class DistroRelease(SQLBase):
     def binarycount(self):
         """See IDistroRelease."""
         clauseTables = ['DistroArchRelease']
-        query = ('PackagePublishing.status = %s '
-                 'AND PackagePublishing.distroarchrelease = '
+        query = ('BinaryPackagePublishing.status = %s '
+                 'AND BinaryPackagePublishing.distroarchrelease = '
                  'DistroArchRelease.id '
                  'AND DistroArchRelease.distrorelease = %s'
                  % sqlvalues(PackagePublishingStatus.PUBLISHED, self.id))
-        return PackagePublishing.select(
+        return BinaryPackagePublishing.select(
             query, clauseTables=clauseTables).count()
 
     @property
@@ -167,6 +169,10 @@ class DistroRelease(SQLBase):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setDistributionRelease(self)
         return BugTaskSet().search(search_params)
+
+    def getSpecification(self, name):
+        """See ISpecificationTarget."""
+        return self.distribution.getSpecification(name)
 
     def getBugSourcePackages(self):
         """See IDistroRelease."""
@@ -275,7 +281,8 @@ class DistroRelease(SQLBase):
         # XXX kiko: this method is untested and possibly unused
         pubpkgset = getUtility(IPublishedPackageSet)
         result = pubpkgset.query(distrorelease=self, component=component)
-        return [BinaryPackage.get(p.binarypackage) for p in result]
+        return [BinaryPackageRelease.get(pubrecord.binarypackagerelease)
+                for pubrecord in result]
 
 
 class DistroReleaseSet:
@@ -294,6 +301,11 @@ class DistroReleaseSet:
     def findByName(self, name):
         """See IDistroReleaseSet."""
         return DistroRelease.selectBy(name=name)
+
+    def queryByName(self, distribution, name):
+        """See IDistroReleaseSet."""
+        return DistroRelease.selectOneBy(
+            distributionID=distribution.id, name=name)
 
     def findByVersion(self, version):
         """See IDistroReleaseSet."""

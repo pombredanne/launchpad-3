@@ -1,0 +1,51 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+  <div tal:replace="structure context/@@+portlet-reviewqueue" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Conduct Review</h1>
+
+  <p class="documentDescription">
+    Use this page to indicate that you have conducted a review of this
+    specification.
+  </p>
+
+  <p>
+    Choose "Review Complete" to remove this review request from your queue,
+    or "Cancel" to return to the specification page.
+  </p>
+
+  <form action="." method="POST">
+
+    <div>
+    </div>
+    <div class="actions">
+      <input type="submit"
+             name="cancel"
+             value="Cancel" />
+      <input tal:condition="view/review"
+             type="submit"
+             name="review"
+             value="Review Complete" />
+    </div>
+  </form>
+
+</div>
+
+</body>
+</html>

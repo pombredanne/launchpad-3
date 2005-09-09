@@ -43,6 +43,8 @@ class IMilestone(IHasProduct):
     title = Attribute("A milestone context title for pages.")
     bugtasks = Attribute("A list of the bug tasks targeted to this "
         "milestone.")
+    specifications = Attribute("A list of the specifications targeted to "
+        "this milestone.")
 
 
 class IMilestoneSet(Interface):

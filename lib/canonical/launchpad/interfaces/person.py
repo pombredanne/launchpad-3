@@ -16,8 +16,10 @@ __all__ = [
     'ITeamParticipation',
     'IRequestPeopleMerge',
     'IObjectReassignment',
+    'IShipItCountry',
     'ITeamReassignment',
     'ITeamCreation',
+    'NameAlreadyTaken'
     ]
 
 from zope.schema import (
@@ -28,6 +30,7 @@ from zope.component import getUtility
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.email import valid_email
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, EmailAddressStatus)
@@ -37,7 +40,8 @@ _ = MessageIDFactory('launchpad')
 
 class NameAlreadyTaken(ValidationError):
     __doc__ = _("""This name is already in use""")
-
+    # XXX mpt 20050826: This should be moved out of person to be more generic.
+    # (It's currently used by projects too.)
 
 class PersonNameField(TextLine):
 
@@ -91,6 +95,41 @@ class IPerson(Interface):
     karma = Int(
             title=_('Karma'), readonly=False,
             description=_('The cached karma for this person.')
+            )
+    addressline1 = TextLine(
+            title=_('Address'), required=True, readonly=False,
+            description=_('Your address (Line 1)')
+            )
+    addressline2 = TextLine(
+            title=_('Address'), required=False, readonly=False,
+            description=_('Your address (Line 2)')
+            )
+    city = TextLine(
+            title=_('City'), required=True, readonly=False,
+            description=_('The City/Town/Village/etc to where the CDs should '
+                          'be shipped.')
+            )
+    province = TextLine(
+            title=_('Province'), required=True, readonly=False,
+            description=_('The State/Province/etc to where the CDs should '
+                          'be shipped.')
+            )
+    country = Choice(
+            title=_('Country'), required=True, readonly=False,
+            vocabulary='CountryName',
+            description=_('The Country to where the CDs should be shipped.')
+            )
+    postcode = TextLine(
+            title=_('Postcode'), required=True, readonly=False,
+            description=_('The Postcode to where the CDs should be shipped.')
+            )
+    phone = TextLine(
+            title=_('Phone'), required=True, readonly=False,
+            description=_('[(+CountryCode) number] e.g. (+55) 16 33619445')
+            )
+    organization = TextLine(
+            title=_('Organization'), required=False, readonly=False,
+            description=_('The Organization requesting the CDs')
             )
     languages = Attribute(_('List of languages known by this person'))
 
@@ -156,7 +195,29 @@ class IPerson(Interface):
     members = Attribute("The list of TeamMemberships for people who are "
         "members or proposed members of this team, sorted by membership "
         "state.")
-
+    specifications = Attribute("Any specifications related to this "
+        "person, either because the are a subscriber, or an assignee, or "
+        "a drafter, or the creator. Sorted newest-first.")
+    approver_specs = Attribute("Specifications that this person is "
+        "supposed to approve in due course, newest first.")
+    assigned_specs = Attribute("Specifications that are assigned to "
+        "this person, sorted newest first.")
+    drafted_specs = Attribute("Specifications that are being drafted by "
+        "this person, sorted newest first.")
+    created_specs = Attribute("Specifications that were created by "
+        "this person, sorted newest first.")
+    review_specs = Attribute("Specifications which this person "
+        "has been asked to review, sorted newest first.")
+    subscribed_specs = Attribute("Specifications to which this person "
+        "has subscribed, sorted newest first.")
+    tickets = Attribute("Any support requests related to this person. "
+        "They might be created, or assigned, or answered by, or "
+        "subscribed to by this person.")
+    assigned_tickets = Attribute("Tickets assigned to this person.")
+    created_tickets = Attribute("Tickets created by this person.")
+    answered_tickets = Attribute("Tickets answered by this person.")
+    subscribed_tickets = Attribute("Tickets to which this person "
+        "subscribes.")
     teamowner = Choice(title=_('Team Owner'), required=False, readonly=False,
                        vocabulary='ValidTeamOwner')
     teamownerID = Int(title=_("The Team Owner's ID or None"), required=False,
@@ -248,7 +309,13 @@ class IPerson(Interface):
         a member of himself (i.e. person1.inTeam(person1)).
         """
 
-    def validateAndEnsurePreferredEmail(self, email):
+    def currentShipItRequest():
+        """Return this person's unshipped ShipIt request, if there's one.
+        
+        Return None otherwise.
+        """
+
+    def validateAndEnsurePreferredEmail(email):
         """Ensure this person has a preferred email.
 
         If this person doesn't have a preferred email, <email> will be set as
@@ -419,14 +486,10 @@ class IPersonSet(Interface):
         on the displayname or other arguments.
         """
 
-    def newTeam(**kwargs):
-        """Create a new Team with given keyword arguments.
-
-        These keyword arguments will be passed to Person, which is an
-        SQLBase class and will do all the checks needed before inserting
-        anything in the database. Please refer to the Person implementation
-        to see what keyword arguments are allowed.
-        """
+    def newTeam(teamowner, name, displayname, teamdescription=None,
+                subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
+                defaultmembershipperiod=None, defaultrenewalperiod=None):
+        """Create and return a new Team with given arguments."""
 
     def get(personid, default=None):
         """Return the person with the given id.
@@ -741,5 +804,13 @@ class ITeamCreation(ITeam):
             "team. If no contact address is chosen, notifications directed to "
             "this team will be sent to all team members. After finishing the "
             "team creation, a new message will be sent to this address with "
-            "instructions on how to finish its registration."))
+            "instructions on how to finish its registration."),
+        constraint=valid_email)
+
+
+class IShipItCountry(Interface):
+    """This schema is only to get the Country widget."""
+
+    country = Choice(title=_('Country'), required=True, 
+                     vocabulary='CountryName')
 

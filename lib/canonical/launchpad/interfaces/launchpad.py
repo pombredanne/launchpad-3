@@ -7,6 +7,8 @@ __metaclass__ = type
 
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
+from persistent import IPersistent
+
 _ = MessageIDFactory('launchpad')
 
 __all__ = ['ILaunchpadRoot', 'ILaunchpadApplication', 'IMaloneApplication',
@@ -18,11 +20,12 @@ __all__ = ['ILaunchpadRoot', 'ILaunchpadApplication', 'IMaloneApplication',
            'IHasProductAndAssignee', 'IOpenLaunchBag',
            'IAging', 'IHasDateCreated',
            'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
-           'ILink', 'IDefaultLink', 'IMenu', 'IMenuBase',
-           'IFacetMenu', 'IExtraFacetMenu',
-           'IApplicationMenu', 'IExtraApplicationMenu',
+           'ILinkData', 'ILink', 'IFacetLink',
+           'IMenu', 'IMenuBase', 'IFacetMenu',
+           'IApplicationMenu',
            'ICanonicalUrlData', 'NoCanonicalUrl',
-           'IDBSchema', 'IDBSchemaItem'
+           'IDBSchema', 'IDBSchemaItem', 'IAuthApplication',
+           'IPasswordChangeApp', 'IPasswordResets'
            ]
 
 
@@ -34,6 +37,7 @@ class ILaunchpadCelebrities(Interface):
     debian = Attribute("The debian Distribution.")
     rosetta_expert = Attribute("The Rosetta Experts team.")
     debbugs = Attribute("The Debian Bug Tracker")
+    shipit_admin = Attribute("The ShipIt Administrators.")
 
 
 class ICrowd(Interface):
@@ -145,6 +149,45 @@ class IFOAFApplication(ILaunchpadApplication):
 
 class IBazaarApplication(ILaunchpadApplication):
     """Bazaar Application"""
+
+
+class IAuthApplication(Interface):
+    """Interface for AuthApplication."""
+
+    def __getitem__(name):
+        """The __getitem__ method used to traverse the app."""
+
+    def sendPasswordChangeEmail(longurlsegment, toaddress):
+        """Send an Password change special link for a user."""
+
+    def getPersonFromDatabase(emailaddr):
+        """Returns the Person in the database who has the given email address.
+
+        If there is no Person for that email address, returns None.
+        """
+
+    def newLongURL(person):
+        """Creates a new long url for the given person.
+
+        Returns the long url segment.
+        """
+
+class IPasswordResets(IPersistent):
+    """Interface for PasswordResets"""
+
+    lifetime = Attribute("Maximum time between request and reset password")
+    
+    def newURL(person):
+        """Create a new URL and store person and creation time"""
+        
+        
+    def getPerson(long_url):
+        """Get the person object using the long_url if not expired"""
+
+
+class IPasswordChangeApp(Interface):
+    """Interface for PasswdChangeApp."""
+    code = Attribute("The transaction code")
 
 
 class IPasswordEncryptor(Interface):
@@ -270,26 +313,54 @@ class IOpenLaunchBag(ILaunchBag):
         '''Set the login to the given value.'''
 
 
-class ILink(Interface):
+class ILinkData(Interface):
+    """An object with immutable attributes that represents the data a
+    programmer provides about a link in a menu.
+    """
 
-    name = Attribute(
-        'the name of this link, as declared in python for example')
+    target = Attribute("The place this link should link to.  This may be "
+        "a path relative to the context of the menu this link appears in, "
+        "or an absolute path, or an absolute URL.")
 
-    target = Attribute('the relative path to the target of this link')
+    text = Attribute(
+        "The text of this link, as appears underlined on a page.")
 
-    url = Attribute('canonical url this link points to')
+    summary = Attribute(
+        "The summary text of this link, as appears as a tooltip on the link.")
 
-    text = Attribute('the text of the link')
+    icon = Attribute("The name of the icon to use.")
 
-    summary = Attribute('summary of the link, for example for a tooltip')
-
-    selected = Attribute('whether this link is selected or not')
-
-    linked = Attribute('whether this link should be available to traverse')
+    enabled = Attribute("Boolean to say whether this link is enabled.")
 
 
-class IDefaultLink(ILink):
-    """Link that is selected when other links are not."""
+class ILink(ILinkData):
+    """An object that represents a link in a menu.
+
+    The attributes name, url and linked may be set by the menus infrastructure.
+    """
+
+    name = Attribute("The name of this link in Python data structures.")
+
+    url = Attribute(
+        "The full url this link points to.  Set by the menus infrastructure. "
+        "None before it is set.")
+
+    linked = Attribute(
+        "A boolean value saying whether this link should appear as a clickable"
+        " link in the UI.  The general rule is that a link to the current"
+        " page should not be shown linked.  Defaults to True.")
+
+
+class IFacetLink(ILink):
+    """A link in a facet menu.
+
+    It has a 'selected' attribute that is set by the menus infrastructure,
+    and indicates whether the link is the selected facet.
+    """
+
+    selected = Attribute(
+        "A boolean value saying whether this link is the selected facet menu "
+        "item.  Defaults to False.")
 
 
 class IMenu(Interface):
@@ -309,17 +380,23 @@ class IMenuBase(IMenu):
 class IFacetMenu(IMenuBase):
     """Main facet menu for an object."""
 
+    def iterlinks(selectedfacetname=None):
+        """Iterate over the links in this menu.
 
-class IExtraFacetMenu(IMenuBase):
-    """Extra facet menu for an object."""
+        If selectedfacetname is None, this method is equivalent to __iter__.
+
+        If selectedfacetname is provided, the link with that name will be
+        marked as 'selected'.
+        """
+
+    defaultlink = Attribute(
+        "The name of the default link in this menu.  That is, the one that "
+        "will be selected if no others are selected.  It is None if there "
+        "is no default link.")
 
 
 class IApplicationMenu(IMenuBase):
     """Application menu for an object."""
-
-
-class IExtraApplicationMenu(IMenuBase):
-    """Extra application menu for an object."""
 
 
 class ICanonicalUrlData(Interface):

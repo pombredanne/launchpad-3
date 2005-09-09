@@ -18,8 +18,9 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
+from canonical.launchpad.interfaces import (
+    non_duplicate_bug, IMessageTarget)
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.validators.bug import non_duplicate_bug
 from canonical.launchpad.fields import Title, Summary
 
 _ = MessageIDFactory('launchpad')
@@ -32,7 +33,7 @@ class BugCreationConstraintsError(Exception):
     """
 
 
-class IBug(Interface):
+class IBug(Interface, IMessageTarget):
     """The core bug entry."""
 
     id = Int(
@@ -54,7 +55,7 @@ class IBug(Interface):
         description that should capture the essence of the bug, where it
         has been observed, and what triggers it."""))
     description = Text(
-        title=_('Description'), required=False,
+        title=_('Description'), required=True,
         description=_("""A detailed description of the problem,
         including the steps required to reproduce it."""))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
@@ -83,7 +84,6 @@ class IBug(Interface):
         default=False)
 
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
-    messages = Attribute('SQLObject.RelatedJoin of IMessages')
     bugtasks = Attribute('BugTasks on this bug, sorted upstream, then '
         'ubuntu, then other distroreleases.')
     productinfestations = Attribute('List of product release infestations.')
@@ -95,23 +95,18 @@ class IBug(Interface):
     duplicates = Attribute(
         'MultiJoin of the bugs which are dups of this one')
     attachments = Attribute("List of bug attachments.")
+    tickets = Attribute("List of support tickets related to this bug.")
+    specifications = Attribute("List of related specifications.")
 
     def followup_subject():
         """Return a candidate subject for a followup message."""
 
-    def subscribe(person, subscription):
-        """Subscribe person to the bug, with the provided subscription type.
-
-        subscription is a dbschema item, e.g. BugSubscription.CC. Raises a
-        ValueError if the person is already subscribed. Returns an
-        IBugSubscription.
-        """
+    # subscription-related methods
+    def subscribe(person):
+        """Subscribe person to the bug. Returns an IBugSubscription."""
 
     def unsubscribe(person):
-        """Remove this person's subscription to this bug.
-
-        Raises a ValueError if the person wasn't subscribed.
-        """
+        """Remove this person's subscription to this bug."""
 
     def isSubscribed(person):
         """Is person subscribed to this bug?
@@ -126,11 +121,6 @@ class IBug(Interface):
         If this bug is a duplicate of another bug, the CC'd list of
         the dup target will be appended to the list of recipient
         addresses.
-        """
-
-    def linkMessage(message):
-        """Note that the given message is associated with this bug. That
-        means the message will show up in the list of comments for the bug.
         """
 
     def addWatch(bugtracker, remotebug, owner):
@@ -155,6 +145,12 @@ class IBugTarget(Interface):
         Note: milestone is currently ignored for all IBugTargets
         except IProduct.
         """
+
+    def newBug(owner, title, description):
+        """Create a new bug on this target, with the given title,
+        description and owner.
+        """
+
 
 
 class BugDistroReleaseTargetDetails:
@@ -231,9 +227,6 @@ class IBugAddForm(IBug):
             title=_("Linux Distribution"), required=False,
             description=_("""Ubuntu, Debian, Gentoo, etc."""),
             vocabulary="Distribution")
-    binarypackage = Choice(
-            title=_("Binary Package"), required=False,
-            vocabulary="BinaryPackage")
     owner = Int(title=_("Owner"), required=True)
     comment = Text(title=_('Description'), required=True,
             description=_("""A detailed description of the problem you are

@@ -54,10 +54,9 @@ are simple little functions.
   >>> from canonical.launchpad.event.sqlobjectevent import (
   ...     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
   >>> from canonical.launchpad.database import (
-  ...     BugFactory, BugActivity, BugPackageInfestation,
-  ...     BugProductInfestation, BugTask)
+  ...     BugActivity, BugPackageInfestation, BugProductInfestation, BugTask)
   >>> from canonical.launchpad.interfaces import (
-  ...     IUpstreamBugTask, IDistroBugTask, IProductSet)
+  ...     IUpstreamBugTask, IDistroBugTask, IProductSet, IBugSet)
   >>> from zope.publisher.browser import TestRequest
 
   >>> def capture_state(obj, *fields):
@@ -75,7 +74,7 @@ logged:
 
 EVENT: user files a bug
 
-  >>> bug = BugFactory(
+  >>> bug = getUtility(IBugSet).createBug(
   ...     product=getUtility(IProductSet)['firefox'],
   ...     title="a test bug", summary="this is only a test bug",
   ...     comment="this is only a test bug\nplease ignore",
@@ -126,7 +125,9 @@ EVENT: source package assignment edited
 
   >>> from canonical.lp.dbschema import BugTaskStatus
   >>> from canonical.launchpad.interfaces import IBugTask
-  >>> edit_fields = IBugTask.names(all=True)
+  >>> edit_fields = [
+  ...     "distribution", "sourcepackagename", "binarypackagename", "milestone", "status",
+  ...     "priority", "severity", "assignee", "bugwatch", "statusexplanation"]
   >>> old_source_package_assignment = capture_state(
   ...     source_package_assignment, *edit_fields)
   >>> directlyProvides(old_source_package_assignment, IDistroBugTask)
@@ -155,7 +156,9 @@ EVENT: bug gets assigned to an upstream product
 
 EVENT: upstream product assignment edited
 
-  >>> edit_fields = IBugTask.names(all=True)
+  >>> edit_fields = [
+  ...     "product", "maintainer_displayname", "milestone", "status",
+  ...     "priority", "severity", "assignee", "bugwatch", "statusexplanation"]
   >>> old_product_assignment = capture_state(product_assignment, *edit_fields)
   >>> directlyProvides(old_product_assignment, IUpstreamBugTask)
   >>> product_assignment.status = BugTaskStatus.REJECTED
@@ -257,34 +260,16 @@ EVENT: this bug report is marked as a duplicate of another bug report
 
 EVENT: add a subscriber to this bug
 
-  >>> from canonical.lp.dbschema import BugSubscription as SubscriptionType
   >>> from canonical.launchpad.database import BugSubscription
   >>> from canonical.launchpad.interfaces import IPersonSet
   >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
-  >>> bug_subscription = BugSubscription(
-  ...     bug=bug, person=foo_bar, subscription=SubscriptionType.CC)
+  >>> bug_subscription = BugSubscription(bug=bug, person=foo_bar)
   >>> notify(SQLObjectCreatedEvent(bug_subscription))
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
   u'bug'
   >>> latest_activity.message
-  u'added subscriber Foo Bar (CC)'
-
-EVENT: edit a bug subscription
-
-  >>> edit_fields = ['bug', 'person', 'subscription']
-  >>> old_bug_subscription = capture_state(bug_subscription, *edit_fields)
-  >>> bug_subscription.subscription = SubscriptionType.WATCH
-  >>> bug_subscription_edited = SQLObjectModifiedEvent(
-  ...     bug_subscription, old_bug_subscription, edit_fields)
-  >>> notify(bug_subscription_edited)
-  >>> latest_activity = bug.activity[-1]
-  >>> latest_activity.whatchanged
-  u'subscriber Foo Bar'
-  >>> latest_activity.oldvalue
-  u'CC'
-  >>> latest_activity.newvalue
-  u'Watch'
+  u'added subscriber Foo Bar'
 
 EVENT: add an attachment to this bug
 

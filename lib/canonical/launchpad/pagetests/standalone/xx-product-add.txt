@@ -5,12 +5,7 @@ Test that the page to add a new product loads.
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-          <h1>Register an Open Source (Upstream) Product</h1>
-  ...
+  ...Register an upstream open source product...
 
 Test that the page to add a new product works.
 
@@ -39,7 +34,7 @@ Test that the page to add a new product works.
   ... -----------------------------43746069110828506211603039137
   ... Content-Disposition: form-data; name="field.description"
   ... 
-  ... If you were describing a Test Produt this would be a little short but sweet.
+  ... If you were describing a Test Product this would be a little short but sweet.
   ... -----------------------------43746069110828506211603039137
   ... Content-Disposition: form-data; name="field.homepageurl"
   ... 
@@ -79,9 +74,7 @@ Test that the page to add a new product works.
   Content-Type: text/html;charset=utf-8
   Location: testing
   <BLANKLINE>
-  ...
-          <h1>Register an Open Source (Upstream) Product</h1>
-  ...
+  ...Register an upstream open source product...
 
 
   >>> print http(r"""
@@ -89,9 +82,5 @@ Test that the page to add a new product works.
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-      <h2>This is a Test Product</h2>
-  ...
+  ...This is a Test Product...
+

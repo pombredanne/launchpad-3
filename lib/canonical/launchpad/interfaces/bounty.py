@@ -18,12 +18,12 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad.fields import Summary, Title, TimeInterval
 from canonical.launchpad.validators.name import valid_name
-from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces import IHasOwner, IMessageTarget
 from canonical.lp.dbschema import BountyDifficulty, BountyStatus
 
 _ = MessageIDFactory('launchpad')
 
-class IBounty(IHasOwner):
+class IBounty(IHasOwner, IMessageTarget):
     """The core bounty description."""
 
     id = Int(
@@ -81,6 +81,7 @@ class IBounty(IHasOwner):
             title=_('Owner'), required=True, readonly=True
             )
     owner = Attribute("The owner's IPerson")
+
     # joins
     subscriptions = Attribute('The set of subscriptions to this bounty.')
     projects = Attribute('The projects which this bounty is related to.')
@@ -88,10 +89,8 @@ class IBounty(IHasOwner):
     distributions = Attribute('The distributions to which this bounty is related.')
 
     # subscription-related methods
-    def subscribe(person, subscription):
-        """Subscribe this person to the bounty, using the given level of
-        subscription. Returns the BountySubscription that this would have
-        created or updated."""
+    def subscribe(person):
+        """Subscribe this person to the bounty."""
 
     def unsubscribe(person):
         """Remove this person's subscription to this bounty."""
@@ -102,6 +101,8 @@ class IBountySet(IAddFormCustomization):
     """A container for bounties."""
 
     title = Attribute('Title')
+
+    top_bounties = Attribute('The top 5 bounties in the system')
 
     def __getitem__(key):
         """Get a bounty."""

@@ -4,18 +4,20 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-  <body>
-    <div metal:fill-slot="body">
-      <div
-        class="sidebar"
-        tal:content="structure context/@@+portlet-actions"
-      />
-      <h1>
-        Edit &#8220;<span tal:replace="context/browsername">
-        Foo</span>&#8221; team
-      </h1>
+<body>
 
-    <div metal:define-macro="editform">
+  <metal:leftportlets fill-slot="portlets_one">
+  </metal:leftportlets>
+
+  <metal:rightportlets fill-slot="portlets_two">
+      <div tal:replace="structure context/@@+portlet-actions" />
+  </metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Edit Details</h1>
+
+  <div metal:define-macro="editform">
 
       <form action="." tal:attributes="action request/URL" method="post"
             enctype="multipart/form-data">

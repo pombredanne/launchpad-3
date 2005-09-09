@@ -25,10 +25,28 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser import BugTaskSearchListingView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
-from canonical.launchpad.webapp import StandardLaunchpadFacets, canonical_url
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, canonical_url, Link)
 
 class DistributionFacets(StandardLaunchpadFacets):
+
     usedfor = IDistribution
+
+    links = ['overview', 'bugs', 'tickets', 'specs', 'translations',
+             'calendar']
+
+    def specs(self):
+        target = '+specs'
+        text = 'Specs'
+        summary = 'Feature specifications for %s' % self.context.displayname
+        return Link(target, text, summary)
+
+    def tickets(self):
+        target = '+tickets'
+        text = 'Tickets'
+        summary = 'Technical support requests for %s' % self.context.displayname
+        return Link(target, text, summary)
+
 
 
 class DistributionView:

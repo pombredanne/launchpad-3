@@ -162,11 +162,11 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IProduct"
+        class="canonical.launchpad.browser.ProductEditView"
         label="Edit Upstream Product Details:"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
                 downloadurl programminglang"
-        class="canonical.launchpad.browser.ProductEditView"
         permission="launchpad.Edit"
         template="../templates/product-edit.pt"
         lp:url="/products/$Product.name/+edit">
@@ -192,11 +192,9 @@
         name="+review"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IProduct"
-        label="Review Upstream Product Details:"
-        fields="name displayname title summary description homepageurl
-                screenshotsurl wikiurl programminglang downloadurl
-                sourceforgeproject freshmeatproject project owner active
-                autoupdate reviewed "
+        class="canonical.launchpad.browser.ProductEditView"
+        label="Administer Upstream Product Details:"
+        fields="name project owner active autoupdate reviewed "
         permission="launchpad.Admin"
         template="../templates/launchpad-editform.pt"
         lp:url="/products/$Product.name/+review">
@@ -206,11 +204,23 @@
         name="+changetranslators"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IProduct"
+        class="canonical.launchpad.browser.ProductEditView"
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
         label="Select A New Translation Group"
         template="../templates/launchpad-editform.pt"
         lp:url="/products/$Product.name/+changetranslators" />
+
+    <browser:editform
+        name="+launchpad"
+        for="canonical.launchpad.interfaces.IProduct"
+        schema="canonical.launchpad.interfaces.IProduct"
+        class="canonical.launchpad.browser.ProductEditView"
+        fields="official_rosetta official_malone"
+        permission="launchpad.Edit"
+        label="Describe Launchpad Usage"
+        template="../templates/product-edit.pt"
+        />
 
     <browser:addform
         name="+filebug"
@@ -224,7 +234,9 @@
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="/products/$Product.name/+filebug">
-        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget
+            field="owner"
+            class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
@@ -364,16 +376,18 @@
         name="+new"
         for="canonical.launchpad.interfaces.IProductSet"
         schema="canonical.launchpad.interfaces.IProduct"
-        label="Register an Open Source (Upstream) Product"
+        label="Register an upstream open source product"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
                 downloadurl programminglang"
         content_factory="canonical.launchpad.database.Product"
-        class="canonical.launchpad.browser.ProductSetAddView"
+        class="canonical.launchpad.browser.ProductAddView"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="products/+new">
-        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        >
+        <browser:widget
+           field="owner"
+           class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="name"
            class="zope.app.form.browser.TextWidget"

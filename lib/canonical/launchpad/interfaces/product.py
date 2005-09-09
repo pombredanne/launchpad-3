@@ -14,15 +14,16 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces import IHasOwner, IBugTarget
+from canonical.launchpad.interfaces import (
+    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget)
 from canonical.launchpad.validators.name import name_validator
 
 _ = MessageIDFactory('launchpad')
 
-class IProduct(IHasOwner, IBugTarget):
+class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
     """A Hatchery Product.
 
-    TheHatchery describes the open source world as Projects and
+    The Launchpad Registry describes the open source world as Projects and
     Products. Each Project may be responsible for several Products.
     For example, the Mozilla Project has Firefox, Thunderbird and The
     Mozilla App Suite as Products, among others.
@@ -147,6 +148,18 @@ class IProduct(IHasOwner, IBugTarget):
     reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
         this product has been reviewed."""))
 
+    official_malone = Bool(title=_('Uses Malone Officially'),
+        required=True, description=_('Check this box to indicate that '
+        'this application officially uses Malone for bug tracking '
+        'upstream. This will remove the caution from the product page.'
+        ))
+
+    official_rosetta = Bool(title=_('Uses Rosetta Officially'),
+        required=True, description=_('Check this box to indicate that '
+        'this application officially uses Rosetta for upstream '
+        'translation. This will remove the caution from the '
+        'pages for this product in Launchpad.'))
+
     sourcepackages = Attribute(_("List of distribution packages for this \
         product"))
 
@@ -208,7 +221,7 @@ class IProduct(IHasOwner, IBugTarget):
 
     def getMilestone(name):
         """Return a milestone with the given name for this product, or
-        raise NotFoundError.
+        None.
         """
 
     def newSeries(name, displayname, summary):

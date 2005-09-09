@@ -4,21 +4,25 @@
 __metaclass__ = type
 __all__ = ['LoginStatus']
 
+import cgi
+import urllib
+
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     ILaunchBag, ILaunchpadRoot, IRosettaApplication)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ApplicationMenu, DefaultLink, Link)
+    StandardLaunchpadFacets, ApplicationMenu, Link)
 
 
 class LaunchpadRootFacets(StandardLaunchpadFacets):
     usedfor = ILaunchpadRoot
-    links = ['overview', 'bugs', 'translations', 'calendar']
+    links = ['overview', 'bugs', 'tickets', 'specs', 'bounties',
+             'translations', 'calendar']
 
     def overview(self):
         target = ''
         text = 'Overview'
-        return DefaultLink(target, text)
+        return Link(target, text)
 
     def translations(self):
         target = 'rosetta'
@@ -29,6 +33,24 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         target = 'malone'
         text = 'Bugs'
         return Link(target, text)
+
+    def tickets(self):
+        target = 'tickets'
+        text = 'Tickets'
+        summary = 'Launchpad technical support tracker.'
+        return Link(target, text, summary)
+
+    def specs(self):
+        target = 'specs'
+        text = 'Specs'
+        summary = 'Launchpad feature specification tracker.'
+        return Link(target, text, summary)
+
+    def bounties(self):
+        target = 'bounties'
+        text = 'Bounties'
+        summary = 'The Launchpad Universal Bounty Tracker'
+        return Link(target, text, summary)
 
     def calendar(self):
         target = 'calendar'
@@ -44,7 +66,7 @@ class RosettaAppMenus(ApplicationMenu):
     def overview(self):
         target = ''
         text = 'Translations'
-        return DefaultLink(target, text)
+        return Link(target, text)
 
     def upload(self):
         target = '+upload'
@@ -86,8 +108,18 @@ class LoginStatus:
     @property
     def login_url(self):
         query_string = self.request.get('QUERY_STRING', '')
+
+        # If we have a query string, remove some things we don't want, and
+        # keep it around.
         if query_string:
-            query_string = '?' + query_string
+            query_dict = cgi.parse_qs(query_string, keep_blank_values=True)
+            query_dict.pop('loggingout', None)
+            query_string = urllib.urlencode(
+                sorted(query_dict.items()), doseq=True)
+            # If we still have a query_string after things we don't want
+            # have been removed, add it onto the url.
+            if query_string:
+                query_string = '?' + query_string
 
         # The approach we're taking is to combine the application url with
         # the path_info, taking out path steps that are to do with virtual

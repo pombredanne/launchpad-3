@@ -7,6 +7,7 @@
   <include package="canonical.launchpad.webapp" />
   <include package="canonical.launchpad.vocabularies" />
   <include file="links.zcml" />
+  <include package="canonical.launchpad.validators" />
   <include package="canonical.launchpad.zcml" />
   <authorizations module="canonical.launchpad.security" />
 
@@ -31,6 +32,30 @@
   <browser:url
     for="canonical.launchpad.interfaces.IPersonSet"
     path_expression="string:people"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    />
+
+  <browser:suburl
+    for="canonical.publication.RootObject"
+    name="shipitrequests"
+    utility="canonical.launchpad.interfaces.IShippingRequestSet"
+    permission="launchpad.Admin"
+    />
+  <browser:url
+    for="canonical.launchpad.interfaces.IShippingRequestSet"
+    path_expression="string:shipitrequests"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    />
+
+  <browser:suburl
+    for="canonical.publication.RootObject"
+    name="standardshipitrequests"
+    utility="canonical.launchpad.interfaces.IStandardShipItRequestSet"
+    permission="launchpad.Admin"
+    />
+  <browser:url
+    for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
+    path_expression="string:standardshipitrequests"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 

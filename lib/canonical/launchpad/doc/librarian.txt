@@ -29,7 +29,7 @@ We can get its URL too
 
 >>> import re
 >>> re.search(
-...     '^http://localhost:58000/\d+/\d+/text.txt$', alias.url
+...     r'^http://localhost:58000/\d+/\d+/text.txt$', alias.url
 ...     ) is not None
 True
 
@@ -82,8 +82,37 @@ files in the Librarian.
 >>> f.read()
 'This is some data'
 >>> url = client.getURLForAlias(aid)
->>> re.search('^http://localhost:58000/\d+/\d+/text.txt$', url) is not None
+>>> re.search(r'^http://localhost:58000/\d+/\d+/text.txt$', url) is not None
 True
+
+Buildd mechanism
+----------------
+
+>>> from canonical.config import config
+>>> temp_url = config.librarian.buildd_download_url
+>>> config.librarian.buildd_download_url = "http://NOT.VALID.COM/"
+
+The build daemon machines operate in a restricted network. Because of
+this they require a different download URL to that which gets
+presented to the outside world. We thus need to check that when we
+pass is_buildd=True to the URL retrieval part of the librarian, we get
+back that which is configured as a buildd download url. We do this as
+a separate configuration option because the buildd master sometimes
+downloads files itself and that would require the standard
+download_url.
+
+>>> url = client.getURLForAlias(aid, is_buildd=True)
+>>> re.search(r'^http://NOT\.VALID\.COM/\d+/\d+/text.txt$', url) is not None
+True
+
+We also confirm that when not asking for a buildd URL, the configured
+buildd_download_url does not interfere with the normal URL generation.
+
+>>> url = client.getURLForAlias(aid)
+>>> re.search(r'^http://NOT\.VALID\.COM/\d+/\d+/text.txt$', url) is not None
+False
+
+>>> config.librarian.buildd_download_url = temp_url
 
 Odds and Sods
 -------------
@@ -111,7 +140,7 @@ Filenames with spaces in them work.
 >>> f.read()
 'This is some data'
 >>> url = client.getURLForAlias(aid)
->>> re.search('^http://localhost:58000/\d+/\d+/hot%20dog$', url) is not None
+>>> re.search(r'^http://localhost:58000/\d+/\d+/hot%20dog$', url) is not None
 True
 
 Unicode file names work.  Note that the filename in the resulting URL is encoded
@@ -124,6 +153,6 @@ as UTF-8.
 >>> f.read()
 'This is some data'
 >>> url = client.getURLForAlias(aid)
->>> re.search('^http://localhost:58000/\d+/\d+/Yow%E2%80%BD$', url) is not None
+>>> re.search(r'^http://localhost:58000/\d+/\d+/Yow%E2%80%BD$', url) is not None
 True
 

@@ -32,6 +32,11 @@ class RunCapture(protocol.ProcessProtocol):
         self.slave.log(data)
 
     def processEnded(self, statusobject):
+        # check if there is a pending request for kill the process,
+        # in afirmative case simply cancel this request since it
+        # already died.
+        if self.killCall and self.killCall.active():
+            self.killCall.cancel()
         self.notify(statusobject.value.exitCode)
 
 class BuildManager(object):
@@ -97,10 +102,24 @@ class BuildManager(object):
         """Abort the build by killing the subprocess."""
         if not self.alreadyfailed:
             self.alreadyfailed = True
-        # We could try SIGTERM before SIGKILL, but since the directory
-        # where the build was precessed will be purged entirely there
-        # is no need, be effective ! 
-        self._subprocess.transport.signalProcess('KILL')
+        # Either SIGKILL and SIGTERM presents the same behavior,
+        # the process is just killed some time after the signal was sent
+        # 10 s ~ 40 s, and returns None as exit_code, instead of the normal
+        # interger. See further info on DebianBuildermanager.iterate in
+        # debian.py
+        # XXX cprov 20050902:
+        # we may want to follow the canonical.tachandler kill process style,
+        # which sends SIGTERM to the process wait a given timeout and if was
+        # not killed sends a SIGKILL. IMO it only would be worth if we found
+        # different behaviour than the previous described.
+        self._subprocess.transport.signalProcess('TERM')
+        # alternativelly to simply send SIGTERM, we can pend a request to
+        # send SIGKILL to the process if nothing happened in 10 seconds
+        # see base class process
+        self.killCall = reactor.callLater(
+            10,
+            self._subprocess.transport.signalProcess,
+            'KILL')        
 
 class BuilderStatus:
     """Status values for the builder."""
@@ -204,8 +223,10 @@ class BuildDSlave(object):
 
     def clean(self):
         """Clean up pending files and reset the internal build state."""
-        if self.builderstatus != BuilderStatus.WAITING:
-            raise ValueError("Slave is not WAITING when asked to clean")
+        if self.builderstatus not in [BuilderStatus.WAITING,
+                                      BuilderStatus.ABORTED]:
+            raise ValueError('Slave is not WAITING|ABORTED when asked'
+                             'to clean')
         for f in self.waitingfiles:
             os.remove(self.cachePath(self.waitingfiles[f]))
         self.builderstatus = BuilderStatus.IDLE
@@ -360,7 +381,7 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
 
         Returns the build id only.
         """
-        return self.buildid
+        return (self.buildid,)
 
     def xmlrpc_fetchlogtail(self, amount=None):
         """Return the requested amount of log information."""

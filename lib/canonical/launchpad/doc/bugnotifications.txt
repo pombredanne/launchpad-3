@@ -34,7 +34,6 @@ what those notifications look like.
     >>> from canonical.launchpad.event.sqlobjectevent import (
     ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent,
     ...     SQLObjectCreatedEvent)
-    >>> from canonical.launchpad.database.bug import BugFactory
     >>> from canonical.launchpad.interfaces import (
     ...     IProductSet, IPersonSet, IDistributionSet, IDistroReleaseSet,
     ...     ISourcePackageNameSet, IBugSet)
@@ -42,7 +41,7 @@ what those notifications look like.
     >>> bug_submitter = getUtility(IPersonSet).get(12)
     >>> firefox = getUtility(IProductSet).get(4)
 
-    >>> firefox_crashes = BugFactory(
+    >>> firefox_crashes = getUtility(IBugSet).createBug(
     ...     product=firefox, title="firefox crashes all the time",
     ...     comment="this is a comment", owner=bug_submitter)
     >>> notify(SQLObjectCreatedEvent(firefox_crashes))
@@ -654,26 +653,24 @@ thing as the previous example, but this time let's "mock out" the
 bug's notificationRecipientAddresses method to pretend there are no
 recipient addresses:
 
-    >>> from canonical.launchpad.interfaces import IBug, IBugTask
+    >>> from canonical.launchpad.interfaces import IBugTask
+    >>> from canonical.launchpad.database import Bug
+    >>> from canonical.launchpad import mailnotification
 
-    >>> class MockBugNoRecipientAddresses(object):
-    ...     implements(IBug)
-    ...     def __init__(self, bug):
-    ...         self.bug = bug
-    ...     def __getattr__(self, name):
-    ...         return getattr(self.bug, name)
+    >>> class MockBugNoRecipientAddresses(Bug):
+    ...     _table = 'Bug'
     ...     def notificationRecipientAddresses(self):
     ...         return []
     >>> class MockBugTask(object):
     ...     implements(IBugTask)
     ...     def __init__(self, bugtask):
     ...         self.bugtask = bugtask
+    ...         self.bug = MockBugNoRecipientAddresses.get(1)
     ...     def __getattr__(self, name):
     ...         return getattr(self.bugtask, name)
-    ...     def bug(self):
-    ...         return MockBugNoRecipientAddresses(self.bugtask.bug)
-    ...     bug = property(bug)
 
+    >>> old_global_emails = mailnotification.GLOBAL_NOTIFICATION_EMAIL_ADDRS
+    >>> mailnotification.GLOBAL_NOTIFICATION_EMAIL_ADDRS = []
     >>> task_with_no_subscribers = MockBugTask(evolution_crashes_too)
     >>> notify(SQLObjectCreatedEvent(task_with_no_subscribers))
 
@@ -681,3 +678,4 @@ recipient addresses:
 
     >>> len(stub.test_emails)
     0
+    >>> mailnotification.GLOBAL_NOTIFICATION_EMAIL_ADDRS = old_global_emails

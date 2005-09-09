@@ -22,6 +22,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, BugTaskSeverity, BugTaskStatus,
     RosettaImportStatus)
+from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
@@ -29,6 +30,8 @@ from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.ticket import Ticket
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner)
@@ -66,6 +69,10 @@ class Product(SQLBase):
     translationpermission = EnumCol(dbName='translationpermission',
         notNull=True, schema=TranslationPermission,
         default=TranslationPermission.OPEN)
+    official_malone = BoolCol(dbName='official_malone', notNull=True,
+        default=False)
+    official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
+        default=False)
     active = BoolCol(dbName='active', notNull=True, default=True)
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
     autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
@@ -75,6 +82,11 @@ class Product(SQLBase):
 
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
+
+    specifications = MultipleJoin('Specification', joinColumn='product',
+        orderBy=['-datecreated', 'id'])
+    tickets = MultipleJoin('Ticket', joinColumn='product',
+        orderBy=['-datecreated', 'id'])
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
@@ -88,9 +100,12 @@ class Product(SQLBase):
                 revision=0)
         return self.calendar
 
-    bugtasks = MultipleJoin('BugTask', joinColumn='product')
-    branches = MultipleJoin('Branch', joinColumn='product')
-    serieslist = MultipleJoin('ProductSeries', joinColumn='product')
+    bugtasks = MultipleJoin('BugTask', joinColumn='product',
+        orderBy='id')
+    branches = MultipleJoin('Branch', joinColumn='product',
+        orderBy='id')
+    serieslist = MultipleJoin('ProductSeries', joinColumn='product',
+        orderBy='name')
 
     @property
     def name_with_project(self):
@@ -139,13 +154,32 @@ class Product(SQLBase):
 
     def getMilestone(self, name):
         """See IProduct."""
-        milestone = Milestone.selectOne("""
+        return Milestone.selectOne("""
             product = %s AND
             name = %s
             """ % sqlvalues(self.id, name))
-        if milestone is None:
-            raise NotFoundError(name)
-        return milestone
+
+    def newBug(self, owner, title, description):
+        """See IBugTarget."""
+        return BugSet().createBug(
+            product=self, comment=description, title=title, owner=owner)
+
+    def newTicket(self, owner, title, description):
+        """See ITicketTarget."""
+        return Ticket(title=title, description=description, owner=owner,
+            product=self)
+
+    def getTicket(self, ticket_num):
+        """See ITicketTarget."""
+        # first see if there is a ticket with that number
+        try:
+            ticket = Ticket.get(ticket_num)
+        except SQLObjectNotFound:
+            return None
+        # now verify that that ticket is actually for this target
+        if ticket.target != self:
+            return None
+        return ticket
 
     @property
     def translatable_packages(self):
@@ -219,28 +253,25 @@ class Product(SQLBase):
         # a better way.
         return max(perms)
 
+    def getSpecification(self, name):
+        """See IProduct."""
+        return Specification.selectOneBy(productID=self.id, name=name)
+
     def getSeries(self, name):
         """See IProduct."""
-        series = ProductSeries.selectOneBy(productID=self.id, name=name)
-        if series is None:
-            raise NotFoundError(name)
-        return series
+        return ProductSeries.selectOneBy(productID=self.id, name=name)
 
     def newSeries(self, name, displayname, summary):
         return ProductSeries(product=self, name=name, displayname=displayname,
                              summary=summary)
 
-
     def getRelease(self, version):
-        #return ProductRelease.selectBy(productID=self.id, version=version)[0]
-        release = ProductRelease.selectOne(
-            AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
-                ProductSeries.q.productID == self.id,
-                ProductRelease.q.version == version),
+        return ProductRelease.selectOne("""
+            ProductRelease.productseries = ProductSeries.id AND
+            ProductSeries.product = %s AND
+            ProductRelease.version = %s
+            """ % sqlvalues(self.id, version),
             clauseTables=['ProductSeries'])
-        if release is None:
-            raise NotFoundError(version)
-        return release
 
     def packagedInDistros(self):
         distros = Distribution.select(

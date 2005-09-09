@@ -52,6 +52,7 @@
       name="+edit"
       for="canonical.launchpad.interfaces.IPerson"
       schema="canonical.launchpad.interfaces.IPerson"
+      class="canonical.launchpad.browser.PersonEditView"
       label="Edit Person Details"
       fields="name displayname givenname familyname timezone"
       permission="launchpad.Edit"
@@ -183,13 +184,78 @@
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"
       permission="launchpad.Edit"
-      class="canonical.launchpad.browser.PersonEditEmailsView">
-        <browser:page
-            name="+editemails"
-            template="../templates/person-editemails.pt"
-            lp:url="/people/$person.id/+editemails" />
+      class="canonical.launchpad.browser.PersonShipItView">
+      <browser:page
+          name="+shipit"
+          template="../templates/person-shipit.pt"
+          lp:url="/people/$person.id/+shipit" />
   </browser:pages>
 
+  <browser:pages
+      for="canonical.launchpad.interfaces.IPerson"
+      permission="launchpad.Edit"
+      class="canonical.launchpad.browser.PersonEditEmailsView">
+      <browser:page
+          name="+editemails"
+          template="../templates/person-editemails.pt"
+          lp:url="/people/$person.id/+editemails" />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.SpecificationTargetView"
+    permission="zope.Public"
+    >
+    <!-- there is trickery here, in the view class, which detects the view
+    name and then gives the template a different set of specs to work
+    with.-->
+    <browser:page
+        name="+specs"
+        template="../templates/specificationtarget-specs.pt" />
+    <browser:page
+        name="+createdspecs"
+        template="../templates/specificationtarget-specs.pt" />
+    <browser:page
+        name="+approverspecs"
+        template="../templates/specificationtarget-specs.pt" />
+    <browser:page
+        name="+assignedspecs"
+        template="../templates/specificationtarget-specs.pt" />
+    <browser:page
+        name="+draftedspecs"
+        template="../templates/specificationtarget-specs.pt" />
+    <browser:page
+        name="+reviewspecs"
+        template="../templates/specificationtarget-specs.pt" />
+    <browser:page
+        name="+subscribedspecs"
+        template="../templates/specificationtarget-specs.pt" />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.TicketTargetView"
+    permission="zope.Public"
+    >
+    <!-- there is trickery here, in the view class, which detects the view
+    name and then gives the template a different set of tickets to work
+    with.-->
+    <browser:page
+        name="+tickets"
+        template="../templates/tickettarget-tickets.pt" />
+    <browser:page
+        name="+createdtickets"
+        template="../templates/tickettarget-tickets.pt" />
+    <browser:page
+        name="+assignedtickets"
+        template="../templates/tickettarget-tickets.pt" />
+    <browser:page
+        name="+answeredtickets"
+        template="../templates/tickettarget-tickets.pt" />
+    <browser:page
+        name="+subscribedtickets"
+        template="../templates/tickettarget-tickets.pt" />
+  </browser:pages>
 
   <!-- Team Views -->
   <browser:traverse
@@ -227,7 +293,7 @@
       for="canonical.launchpad.interfaces.ITeam"
       class="canonical.launchpad.browser.TeamEditView"
       schema="canonical.launchpad.interfaces.ITeam"
-      fields="name displayname teamdescription defaultmembershipperiod 
+      fields="displayname teamdescription defaultmembershipperiod 
               defaultrenewalperiod subscriptionpolicy"
       permission="launchpad.Edit"
       template="../templates/team-edit.pt"

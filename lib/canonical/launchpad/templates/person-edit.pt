@@ -11,6 +11,10 @@
 
   <div metal:fill-slot="main">
 
+    <p class="portalMessage" tal:condition="request/updated|nothing">
+      Updated on <span tal:replace="request/updated" />
+    </p>
+
     <div metal:use-macro="context/@@launchpad_editform/editform" />
 
   </div>

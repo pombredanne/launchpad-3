@@ -10,6 +10,19 @@ parameters.
 
   >>> from canonical.launchpad.scripts.builddmaster import BuilddMaster
 
+import the bunch of required database classes:
+
+  >>> from canonical.launchpad.database import (
+  ...      SourcePackageRelease, SourcePackageName, DistroRelease,
+  ...      SourcePackagePublishing, SecureSourcePackagePublishingHistory,
+  ...      PocketChroot, DistroArchRelease, Build, BuildQueue)
+
+  >>> from canonical.lp.dbschema import (
+  ...      PackagePublishingPocket, PackagePublishingStatus)
+
+  >>> from canonical.database.constants import UTC_NOW
+
+
 The Master side of Buildd requires access to Launchpad Database, the
 user designed for this kind of access is 'fiera', as in all test the
 transaction should be retrieved.
@@ -25,31 +38,89 @@ Now we have satisfied all needs for BuildMaster, let's instantiate it.
 
   >>> bm = BuilddMaster(logging.getLogger(), transaction)
 
+Emulates a PocketChroot entry to validate the distroarchrelese 
+Ubuntu/Warty/i386/RELEASE:
+
+  >>> dr = DistroRelease.selectOneBy(name='warty')
+  >>> dar = DistroArchRelease.selectOneBy(distroreleaseID=dr.id,
+  ...                                     architecturetag='i386')
+
+Pick up any existent librarian file as chroot.
+
+  >>> pocket = PocketChroot(distroarchreleaseID=dar.id, 
+  ...                       chroot=1) 
+
 Produce a set of available DistroArchRelease, for which the 
 build jobs will be created. 
 
-  >>> from canonical.launchpad.database import DistroArchRelease
   >>> distroreleases = set()
   >>> for dar in DistroArchRelease.select():
   ...     distroreleases.add(dar.distrorelease)
   ...     bm.addDistroArchRelease(dar)
   ...
-  >>>
 
-Certify we don't have missing builds (packages w/o build entry) for
-those distroreleases.
+Only Ubuntu/Warty/i386 has an available CHROOT, it's the only one supported. 
+
+  >>> [arch.architecturetag for arch in bm._archreleases]
+  [u'i386']
+
+Adding a new dummy sourcepackagerelease and publish it in Ubuntu/Warty/i386:
+
+  >>> name = SourcePackageName(name="test-buildd")
+
+Note that the magic number "1" is used to pick up an arbitrary required
+entity from the existent sampledata, we don't care about
+them. (creator=1 is sabdfl, manifest=1 is the first dummy manifest
+added by the current sample data and so on)
+   
+  >>> srcpkgrel = SourcePackageRelease(creator=1, version='666', 
+  ...                                  section=1, maintainer=1, component=1, 
+  ...                                  uploaddistrorelease=1,
+  ...                                  sourcepackagename=name.id,
+  ...                                  architecturehintlist="all",
+  ...                                  builddependsindep=None,
+  ...                                  builddepends=None, dsc=None,
+  ...                                  changelog=None, manifest=1,
+  ...                                  dscsigningkey=None)
+
+  >>> published = PackagePublishingStatus.PUBLISHED
+  >>> release_pocket = PackagePublishingPocket.RELEASE
+  >>> p = SecureSourcePackagePublishingHistory(
+  ...                                    sourcepackagerelease=srcpkgrel.id,
+  ...                                    distroreleaseID=dr.id, 
+  ...                                    status=published,
+  ...                                    pocket=release_pocket,
+  ...                                    component=srcpkgrel.component, 
+  ...                                    section=srcpkgrel.section,
+  ...                                    datecreated=UTC_NOW)
+
+Verify how many Build entries we have from sampledata:
+
+  >>> Build.select().count()
+  2
+
+Create missing builds (packages w/o build entry) for those distroreleases.
+As we just insert a new sourcepackagerelease in run-time we expect to
+have a new build for it:
 
   >>> for dr in distroreleases:
   ...      bm.createMissingBuilds(dr)
-  ...
-  
+
+Check if we create a new Build entry for just added sourcepackagerelease:
+
+  >>> Build.select().count()
+  3
+
+  >>> b = Build.selectOneBy(sourcepackagereleaseID=srcpkgrel.id)
+  >>> b.sourcepackagerelease.name
+  u'test-buildd'
+
 Now we have Build table properly set and probably with some entries
 marked as NEEDSBUILD we can create BuildQueue entries for it 
 
   >>> bm.addMissingBuildQueueEntries()  
-  >>> from canonical.launchpad.database import BuildQueue
   >>> BuildQueue.select().count()
-  0
+  1
 
 Since the BuildQueue table was filled above we can reorganise the
 job by the most interesting parameters, See buildd-scoring.txt

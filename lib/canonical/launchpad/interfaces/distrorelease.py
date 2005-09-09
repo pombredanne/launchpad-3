@@ -14,12 +14,13 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces import IHasOwner, IBugTarget
+from canonical.launchpad.interfaces import (
+    IHasOwner, IBugTarget, ISpecificationTarget)
 from canonical.launchpad.validators.version import sane_version
 
 from canonical.launchpad import _
 
-class IDistroRelease(IHasOwner, IBugTarget):
+class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
     """A specific release of an operating system distribution."""
     id = Attribute("The distrorelease's unique number.")
     name = TextLine(
@@ -90,7 +91,10 @@ class IDistroRelease(IHasOwner, IBugTarget):
     # related joins
     packagings = Attribute("All of the Packaging entries for this "
         "distrorelease.")
+    specifications = Attribute("The specifications targeted to this "
+        "product series.")
 
+    # other properties
     previous_releases = Attribute("Previous distroreleases from the same "
         "distribution.")
 
@@ -160,6 +164,15 @@ class IDistroReleaseSet(Interface):
         """Find a DistroRelease by name.
 
         Returns a list of matching distributions, which may be empty.
+        """
+
+    def queryByName(distribution, name):
+        """Query a DistroRelease by name.
+
+        :distribution: An IDistribution.
+        :name: A string.
+
+        Returns the matching DistroRelease, or None if not found.
         """
 
     def findByVersion(version):

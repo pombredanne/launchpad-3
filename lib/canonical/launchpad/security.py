@@ -15,7 +15,9 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseBugTask, ITranslator, IProduct, IProductSeries,
     IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
     ILaunchpadCelebrities, IDistroRelease, IBugTracker, IBugAttachment,
-    IPoll, IPollSubset, IPollOption, IPollOptionSubset, IProductRelease)
+    IPoll, IPollSubset, IPollOption, IPollOptionSubset, IProductRelease,
+    IShippingRequest, IShippingRequestSet, IRequestedCDs,
+    IStandardShipItRequestSet, IStandardShipItRequest)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -53,6 +55,7 @@ class EditByOwnersOrAdmins(AuthorizationBase):
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
+
 class AdminSeriesSourceByButtSource(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = IProductSeriesSourceAdmin
@@ -60,6 +63,48 @@ class AdminSeriesSourceByButtSource(AuthorizationBase):
     def checkAuthenticated(self, user):
         buttsource = getUtility(ILaunchpadCelebrities).buttsource
         return user.inTeam(buttsource)
+
+
+class EditRequestedCDsByRecipientOrShipItAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IRequestedCDs
+
+    def checkAuthenticated(self, user):
+        shipitadmins = getUtility(ILaunchpadCelebrities).shipit_admin
+        return user == self.obj.request.recipient or user.inTeam(shipitadmins)
+
+
+class EditShippingRequestByRecipientOrShipItAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IShippingRequest
+
+    def checkAuthenticated(self, user):
+        shipitadmins = getUtility(ILaunchpadCelebrities).shipit_admin
+        return user == self.obj.recipient or user.inTeam(shipitadmins)
+
+
+class AdminShippingRequestByShipItAdmins(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = IShippingRequest
+
+    def checkAuthenticated(self, user):
+        shipitadmins = getUtility(ILaunchpadCelebrities).shipit_admin
+        return user.inTeam(shipitadmins)
+
+
+class AdminStandardShipItOrderSetByShipItAdmins(
+        AdminShippingRequestByShipItAdmins):
+    usedfor = IStandardShipItRequestSet
+
+
+class AdminStandardShipItOrderByShipItAdmins(
+        AdminShippingRequestByShipItAdmins):
+    usedfor = IStandardShipItRequest
+
+
+class AdminShippingRequestSetByShipItAdmins(AdminShippingRequestByShipItAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = IShippingRequestSet
 
 
 class EditSeriesSourceByButtSource(AuthorizationBase):

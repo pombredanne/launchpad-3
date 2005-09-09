@@ -1,76 +1,17 @@
-<div class="portlet" tal:condition="context/subscriptions">
-    <h4>Bug Subscriptions:</h4>
+<div class="portlet">
+  <h4>Subscribers to Bug #<span tal:replace="context/id">4</span>:</h4>
 
-    <div class="portletBody"
-         tal:define="bug_url context/fmt:url">
+  <div class="portletBody portletContent">
 
-        <div class="portletContent even"
-             tal:define="subscriptions context/subscriptions;
-                         bugtasks context/bugtasks;
-                         ccs view/getCCs;
-                         watches view/getWatches;
-                         ignores view/getIgnores">
-            <tal:cc condition="ccs">
-              <b>Cc:</b><br />
-              <ul class="people">
-                  <li tal:repeat="sub ccs">
-                    <a href="#"
-                       style="text-decoration: underline"
-                       tal:attributes="href sub/person/fmt:url"
-                       tal:content="sub/person/browsername" />
-                    <small>
-                    (<a href="#"
-                       style="text-decoration: underline"
-                       tal:attributes="href
-                       string:$bug_url/people/${sub/id}/+edit">edit</a>)
-                    </small>
-                  </li>
-              </ul>
-            </tal:cc>
+    <ul class="people">
+      <li tal:repeat="sub context/subscriptions">
+        <a href="#"
+           tal:content="sub/person/browsername"
+           tal:attributes="href sub/person/fmt:url">Dafydd Harries</a>
+      </li>
+      <li class="info" tal:condition="not: context/subscriptions">
+        <i>No subscribers</i>
+      </li>
+    </ul>
 
-            <tal:watch condition="watches">
-              <br />
-              <b>Watch:</b>
-              <ul class="people">
-                  <li tal:repeat="sub watches" >
-                    <a href="#"
-                       style="text-decoration: underline"
-                       tal:attributes="href sub/person/fmt:url"
-                       tal:content="sub/person/browsername" />
-                    <small>
-                    (<a href="#"
-                       style="text-decoration: underline"
-                       tal:attributes="href
-                       string:$bug_url/people/${sub/id}/+edit">edit</a>)
-                    </small>
-                  </li>
-              </ul>
-            </tal:watch>
-
-            <tal:ignore condition="ignores">
-              <br />
-              <b tal:condition="ignores">Ignore:</b>
-              <ul class="people">
-                  <li tal:repeat="sub ignores">
-                    <a href="#"
-                       style="text-decoration: underline"
-                       tal:attributes="href sub/person/fmt:url"
-                       tal:content="sub/person/browsername" />
-                    <small>
-                    (<a href="#"
-                       style="text-decoration: underline"
-                       tal:attributes="href
-                       string:$bug_url/people/${sub/id}/+edit">edit</a>)
-                    </small>
-                  </li>
-              </ul>
-            </tal:ignore>
-
-            <ul style="text-align: right">
-              <li class="add"><a
-                tal:attributes="href string:$bug_url/people/+new">
-                Add</a></li>
-            </ul>
-        </div>
-    </div>
 </div>

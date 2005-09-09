@@ -11,7 +11,7 @@
                class="link">Home page</a><br />
         </div>
 
-        <b>Lead Maintainer:</b><br />
+        <b>Registrant:</b><br />
         <img src="/++resource++user.gif">
         <a tal:attributes="href string:/people/${context/owner/name}"
            tal:content="context/owner/browsername"
@@ -33,6 +33,16 @@
         <b>Translation Perms:</b><br />
         <span tal:replace="context/translationpermission/title">Open</span>
         <br />
+
+        <tal:does_not_use_rosetta condition="not: context/official_rosetta">
+          <img src="/++resource++alert" />
+          <i>Rosetta Not Official</i><br />
+        </tal:does_not_use_rosetta>
+
+        <tal:does_not_use_malone condition="not: context/official_malone">
+          <img src="/++resource++alert" />
+          <i>Malone Not Official</i><br />
+        </tal:does_not_use_malone>
 
         <b>Product Status:</b><br />
         <span tal:condition="context/reviewed"

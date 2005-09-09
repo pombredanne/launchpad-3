@@ -51,17 +51,18 @@ def authenticateEmail(mail):
     person = IPerson(principal)
     gpghandler = getUtility(IGPGHandler)
     sig = gpghandler.verifySignature(signed_content, signature)
-    if sig.fingerprint is not None:
-        # Log in the user if the key used to sign belongs to him.
-        for gpgkey in person.gpgkeys:
-            if gpgkey.fingerprint == sig.fingerprint:
-                setupInteraction(principal, email_addr)
-                return principal
-        # The key doesn't belong to the user.
-        raise InvalidSignature(
-            "The key used to sign the email doesn't belong to the user.")
-    else:
+    if sig is None:
+        # verifySignature failed to verify the signature.
         raise InvalidSignature("Signature couldn't be verified.")
+
+    # Log in the user if the key used to sign belongs to him.
+    for gpgkey in person.gpgkeys:
+        if gpgkey.fingerprint == sig.fingerprint:
+            setupInteraction(principal, email_addr)
+            return principal
+    # The key doesn't belong to the user.
+    raise InvalidSignature(
+        "The key used to sign the email doesn't belong to the user.")
 
     # The GPG signature couldn't be verified  
     setupInteraction(authutil.unauthenticatedPrincipal())
@@ -107,6 +108,12 @@ def handleMail(trans=transaction):
         # Librarian.
         trans.commit()
         trans.begin()
+
+        # If the Return-Path header is '<>', it probably means that it's
+        # a bounce from a message we sent.
+        if mail['Return-Path'] == '<>':
+            _handle_error("Message had an empty Return-Path.", file_alias)
+            continue
 
         try:
             principal = authenticateEmail(mail)

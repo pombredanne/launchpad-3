@@ -390,7 +390,7 @@ ul.alert>li, li.alert {
   list-style-image: url(/++resource++alert_icon.gif);
 }
 ul.architecture>li, li.architecture {
-  list-style-image: url(/++resource++architecture);
+  list-style-image: url(/@@/architecture);
 }
 ul.bounty>li, li.bounty {
   list-style-image: url(/++resource++bounty);
@@ -413,6 +413,9 @@ ul.bug.remote>li, li.bug.remote {
 ul.bugs>li, li.bugs {
   list-style-image: url(/++resource++bugs);
 }
+ul.cveref>li, li.cveref {
+    list-style-image: url(/++resource++cve.ico);
+}
 ul.document>li, li.document {
   list-style-image: url(/++resource++document_icon.gif);
 }
@@ -434,20 +437,29 @@ ul.locked>li, li.locked {
 ul.mail>li, li.mail {
   list-style-image: url(/++resource++mail_icon.gif);
 }
+ul.menu>li, li.menu {
+  list-style-image: url(/++resource++favorite_icon.gif);
+}
 ul.milestone>li, li.milestone {
   list-style-image: url(/++resource++target);
+}
+ul.packages>li, li.packages, ul.products>li, li.products {
+  list-style-image: url(/++resource++product_icon.gif);
 }
 ul.person>li, li.person, ul.people>li, li.people {
   list-style-image: url(/++resource++user.gif);
 }
+ul.spec>li, li.spec {
+    list-style-image: url(/++resource++spec);
+}
+ul.ticket>li, li.ticket {
+    list-style-image: url(/++resource++ticket);
+}
+ul.up>li, li.up {
+    list-style-image: url(/++resource++up);
+}
 ul.webref>li, li.webref {
     list-style-image: url(/++resource++link_icon.gif);
-}
-ul.cveref>li, li.cveref {
-    list-style-image: url(/++resource++cve.ico);
-}
-ul.packages>li, li.packages, ul.products>li, li.products {
-  list-style-image: url(/++resource++product_icon.gif);
 }
 ul.translations>li, li.translations {
   list-style-image: url(/++resource++translations);
@@ -494,19 +506,15 @@ ul.search>li, li.search {
 /* === Undo bugs in plone.css === */
 
 /* -- Stop accessing resources on plone.org: -- */
-/* XXX mpt 20050407 change http://plone.org/ to /@@/ eventually */
 
 ul {
   list-style-image: none;
-}
-#portal-logo {
-  background-image: url(http://plone.org/logo.jpg);
 }
 #portal-personaltools .portalUser, .link-user {
   background-image: url(/@@/user.gif);
 }
 #portal-personaltools li {
-  background-image: url(http://plone.org/linkOpaque.gif);
+  background-image: url(/@@/linkOpaque.gif);
 }
 .contentActions li {
   background-image: url(/@@/arrowDownAlternative.gif);
@@ -515,7 +523,7 @@ ul {
   background-image: url(/@@/info_icon.gif);
 }
 .standalone, .documentEditable * .standalone {
-  background-image: url(http://plone.org/linkOpaque.gif);
+  background-image: url(/@@/linkOpaque.gif);
 }
 .context, .documentEditable * .context, .destructive,
 .documentEditable * .destructive {
@@ -538,22 +546,22 @@ input.searchButton {
   background-image: url(/@@/lock_icon.gif);
 }
 .link-mailto {
-  background-image: url(http://plone.org/mail_icon.gif);
+  background-image: url(/@@/mail_icon.gif);
 }
 .link-news {
-  background-image: url(http://plone.org/topic_icon.gif);
+  background-image: url(/@@/news);
 }
 .link-ftp {
-  background-image: url(http://plone.org/file_icon.gif);
+  background-image: url(/@@/link_icon.gif);
 }
 .link-irc, .link-comment {
-  background-image: url(http://plone.org/discussionitem_icon.gif);
+  background-image: url(/@@/info.png);
 }
 .link-document {
-  background-image: url(http://plone.org/document_icon.gif);
+  background-image: url(/@@/document_icon.gif);
 }
 .link-callto {
-  background-image: url(http://plone.org/phone_icon.gif);
+  background-image: url(/@@/phone_icon.gif);
 }
 
 /* -- "Links must look like links." -- SteveA */
@@ -561,15 +569,11 @@ input.searchButton {
 a, #portal-footer a {
   text-decoration: underline;
 }
-/* -- ... except in portlets for now -- */
-a[name], .portlet :link, .portlet :visited,
-.sidebar :link, .sidebar :visited {
-  text-decoration: none;
-}
 
-/* -- Don't stomp on people's preferred font sizes: -- */
+/* -- Don't stomp on people's preferred fonts (much): -- */
 
 body {
+  font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
   font-size: 100%;
 }
 code {
@@ -628,6 +632,26 @@ table.listing>thead>tr>td {
   border: none;
 }
 
+/* Alternating "even" and "odd" colors are bong */
+
+.portlet {
+  background-color: #f7f9fa;
+}
+
+/* Abbreviations should only be marked if they actually have explanations */
+
+abbr, acronym, .explain {
+  border-bottom: none;
+  color: inherit;
+  cursor: inherit;
+}
+abbr[title], acronym[title], .explain[title] {
+  border-bottom: 1px dotted Black;
+  color: Black;
+  background-color: transparent;
+  cursor: help;
+}
+
 /* Not all of a <dt> should be bold: -- */
 
 dt {
@@ -666,15 +690,19 @@ legend {
   background: none;
 }
 li {
-  margin-bottom: 0 !important;
+  margin-bottom: 0;
 }
 
 #portal-personaltools .portalUser {
   background: transparent url(/++resource++user.gif)
 }
 
-.portlet li a {
-  text-decoration: none
+.portlet {
+  background-color: #f4f5f8;
+}
+
+.portlet li {
+  margin-bottom: 0.5em;
 }
 
 /* === New design === */
@@ -694,7 +722,6 @@ kbd {
 }
 
 label, .field label {
-  font-family: sans-serif;
   white-space: nowrap;
 }
 
@@ -710,6 +737,7 @@ legend {
 }
 
 th {
+  font-weight: normal;
   text-align: right;
 }
 thead th {
@@ -724,24 +752,23 @@ thead {
 body {
   background-color: #fcfcfc;
   color: black;
-  padding: 0.25em 0.75em 0.5em 0.75em;
+  padding: 0.5em 0.75em;
 }
 :visited {
   background: none;
   color: #8888bb;
 }
 :link, .hierarchy :visited, .footer :visited,
-.sidebar :visited, .portlet :visited {
+.app :visited, .sidebar :visited, .portlet :visited {
   background: none;
 	color: #000088;
 }
 
 .header, .footer {
-  font-family: "Lucida Grande", "Charcoal", sans-serif;
+  font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
 }
 .header {
   font-size: 0.875em;
-  margin-bottom: 0.5em;
 }
 .footer {
   font-size: smaller;
@@ -754,43 +781,28 @@ body {
 .login input[type="submit"] {
   padding: 0;
 }
-.hierarchy, .facets, .footer {
+.header td, .footer {
   padding: 0.25em;
 }
-.hierarchy, .footer, ul.app>li {
+.header, .footer, ul.app>li {
   background-color: #dee7ec;
   color: inherit;
 }
-.facets {
-  background-color: #8cacbb;
-  color: white;
-  font-weight: bold;
-  margin: 0;
-  min-height: 1.5em;
+h2.lpcontext {
+  font-size: 1.5em;
 }
-.facets li {
-  background: url(/++resource++bullet.gif) no-repeat;
-  background-position: 0.25em 50%;
-  display : inline;
-  list-style: none;
-  padding: 0 0.75em 0 1.25em;
-}
-.facets :link, .facets :visited, .facets .disabled {
-  background: none;
-  color: #dee7ec;
-}
-.facets .current a {
-  background: none;
-  color: white;
+ul.facets {
+  text-align: right;
 }
 ul.app {
-  clear: both;
   padding: 0;
   margin: 1em 0 1em;
   border-bottom: 1px solid #8cacbb;
-  font: bold 1em sans-serif;
+  font-weight: bold;
+  font-size: 1em;
+  font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
 }
-ul.app li
+ul.app>li
 {
   border: 1px solid #8cacbb;
   border-bottom: none;
@@ -820,6 +832,9 @@ ul.app>li.current {
   float: right;
   margin-left: 2%;
   width: 48%;
+}
+.lesser {
+  font-size: smaller;
 }
 
 .sidebar {
@@ -886,7 +901,7 @@ h1, h2, h3, h4, h5, h6 {
   background: none;
   clear: left;
 	color: #708a96;
-	font-family: "Lucida Grande", sans-serif;
+	font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
 	font-weight: normal;
 	margin-top: 0;
 	text-align: left;
@@ -936,7 +951,6 @@ tr {
 
 .results {
   background-color: #dee7ec;
-  font-family: sans-serif;
   font-size: small;
   padding: 0.25em;
   margin: 1em 0em;

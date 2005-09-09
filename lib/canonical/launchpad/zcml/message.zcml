@@ -20,24 +20,23 @@
 
     <!-- Message -->
     <browser:page
-        name="+index"
-        for="canonical.launchpad.interfaces.IMessagesView"
-        template="../templates/messages-index.pt"
-        permission="zope.Public"
-        lp:url="malone/projects/$Bug.id/messages/index" />
+      name="+index"
+      for="canonical.launchpad.interfaces.IMessagesView"
+      template="../templates/messages-index.pt"
+      permission="zope.Public"
+      />
 
     <browser:addform
-        name="+new"
-        for="canonical.launchpad.interfaces.IMessagesView"
-        schema="canonical.launchpad.interfaces.message.IAddMessage"
-        class="canonical.launchpad.browser.bugmessage.BugMessageAddView"
-        label="Add a Comment"
-        fields="subject content"
-        keyword_arguments="subject content"
-        permission="launchpad.AnyPerson"
-        template="../templates/launchpad-addform.pt"
-        lp:url="malone/bugs/$Bug.id/messages/+new"
-        />
+      name="+new"
+      for="canonical.launchpad.interfaces.IMessagesView"
+      schema="canonical.launchpad.interfaces.message.IAddMessage"
+      class="canonical.launchpad.browser.bugmessage.BugMessageAddView"
+      label="Add a Comment"
+      fields="subject content"
+      keyword_arguments="subject content"
+      permission="launchpad.AnyPerson"
+      template="../templates/launchpad-addform.pt"
+      />
 
     <!-- Page to render a HTML snippet for a single MessageChunk -->
     <browser:page

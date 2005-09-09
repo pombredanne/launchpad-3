@@ -84,6 +84,21 @@
         template="../templates/bounty-edit.pt"
         />
 
+  <browser:addform
+    name="+addmessage"
+    for="canonical.launchpad.interfaces.IBounty"
+    schema="canonical.launchpad.interfaces.IMessage"
+    class="canonical.launchpad.browser.MessageAddView"
+    label="Add Message or Comment"
+    fields="subject content owner"
+    keyword_arguments="subject content owner"
+    permission="launchpad.AnyPerson"
+    template="../templates/message-add.pt">
+    <browser:widget
+      field="owner"
+      class="canonical.widgets.HiddenUserWidget" />
+  </browser:addform>
+
 
     <!-- BountySet -->
     <content class="canonical.launchpad.database.BountySet">
@@ -131,7 +146,7 @@
       for="canonical.launchpad.interfaces.IBountySet"
       permission="zope.Public">
       <browser:page
-        template="../templates/bounties.pt"
+        template="../templates/bounties-index.pt"
         name="+index"
         lp:url="/bounties/+index" />
       <browser:page
@@ -141,8 +156,8 @@
         template="../templates/bounties-portlet-actions.pt"
         name="+portlet-actions" />
       <browser:page
-        template="../templates/bounties-portlet-rules.pt"
-        name="+portlet-rules" />
+        template="../templates/bounties-portlet-details.pt"
+        name="+portlet-details" />
     </browser:pages>
 
 </configure>

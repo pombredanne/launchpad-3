@@ -4,6 +4,14 @@
 """
 __metaclass__ = type
 
+__all__ = [
+    'executezcmlforscripts',
+    'logger_options',
+    'logger',
+    'log',
+    'db_options',
+    ]
+
 import os
 import threading
 import atexit
@@ -347,5 +355,6 @@ def db_options(parser):
     # as a PostgreSQL user named the same as the current Unix user').
     # If the -U option was not given on the command line, our callback is
     # never called so we need to set this different default here.
+    # Same for dbhost
     lp.dbuser = None
-
+    lp.dbhost = None

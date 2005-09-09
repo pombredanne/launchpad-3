@@ -4,9 +4,7 @@
 __metaclass__ = type
 __all__ = [
    'BugAttachmentAddView',
-   'BugAttachmentEditView',
-   'BugAttachmentEdit'
-   ]
+   'BugAttachmentEdit']
 
 from cStringIO import StringIO
 
@@ -103,11 +101,3 @@ class BugAttachmentEdit:
     patch = property(
         lambda self: self.attachment.type == BugAttachmentType.PATCH,
         _set_patch)
-
-
-class BugAttachmentEditView(SQLObjectEditView):
-    """Edit view for bug attachments."""
-
-    def changed(self):
-        """Return the user to the bug page."""
-        self.request.response.redirect(canonical_url(self.context.bug))

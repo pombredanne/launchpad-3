@@ -15,7 +15,9 @@
     <include package="canonical.launchpad" file="permissions.zcml" />
     <include package="canonical.launchpad.webapp" file="meta.zcml" />
     <include package="canonical.librarian" />
-    <includeOverrides file="defaultview-meta.zcml" />
+    <includeOverrides
+        package="canonical.launchpad.webapp"
+        file="meta-overrides.zcml" />
 
     <browser:skin
         name="launchpad"
@@ -85,6 +87,16 @@
         <browser:page
           name="+portlet-malone"
           template="launchpad/templates/root-portlet-malone.pt" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.publication.RootObject"
+        class="canonical.launchpad.browser.BountySetView"
+        permission="zope.Public"
+        >
+        <browser:page
+          name="+portlet-bounties"
+          template="launchpad/templates/root-portlet-bounties.pt" />
     </browser:pages>
 
     <browser:pages

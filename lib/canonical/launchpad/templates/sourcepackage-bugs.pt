@@ -3,9 +3,17 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:content="structure context/@@+portlet-details" />
+  <div tal:content="structure context/distrorelease/@@+portlet-details" />
+</metal:leftportlets>
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:content="structure context/@@+portlet-bugtasklist-actions" />
+</metal:rightportlets>
+
 <body>
 
-<div metal:fill-slot="body"
+<div metal:fill-slot="main"
      tal:define="listing_columns view/listing_columns">
 
   <h1>Bugs in
@@ -14,61 +22,40 @@
     </span>
   </h1>
 
-  <table width="100%">
+  <table id="sourcepackagebugs">
     <tr>
-      <td style="padding-right: 1em;">
-        <h2 style="margin-top: 0; padding-top: 0;"
-            tal:content="string:To be fixed in ${context/distrorelease/displayname}">
+      <td colspan="3">
+        <h2 tal:content="string:To be fixed in ${context/distrorelease/displayname}">
           To be fixed in hoary
         </h2>
-        <table class="sortable listing data" id="releasebugs">
-          <thead>
-            <tr metal:use-macro="context/@@+bugtask-macros-tableview/header" />
-          </thead>
-          <tbody>
-            <tr tal:repeat="task view/unresolved_release_bugs">
-              <metal:taskrow use-macro="context/@@+bugtask-macros-tableview/item" />
-            </tr>
-          </tbody>
-        </table>
-
-        <tal:block define="other_release_bugs view/other_releases_unresolved_bugs">
-          <tal:otherrelease repeat="release_displayname other_release_bugs">
+      <td>
+    </tr>
+    <tr condition="view/showListView" tal:repeat="task view/unresolved_release_bugs">
+      <metal:taskrow use-macro="task/@@+bugtask-macros-listview/item" />
+    </tr>
+    <tal:other-release-bugs-section define="other_release_bugs view/other_releases_unresolved_bugs">
+      <tal:other-release-bugs repeat="release_displayname other_release_bugs">
+        <tr>
+          <td colspan="3">
             <h2 tal:content="string:To be fixed in ${release_displayname}">
               To be fixed in hoary
             </h2>
-            <table class="sortable listing data"
-                   tal:attributes="id string:${release_displayname}bugs">
-              <thead>
-                <tr metal:use-macro="context/@@+bugtask-macros-tableview/header" />
-              </thead>
-              <tbody>
-                <tr tal:repeat="task other_release_bugs/?release_displayname">
-                  <metal:taskrow use-macro="context/@@+bugtask-macros-tableview/item" />
-                </tr>
-              </tbody>
-            </table>
-          </tal:otherrelease>
-        </tal:block>
-
+          </td>
+        </tr>
+        <tr tal:repeat="task other_release_bugs/?release_displayname">
+          <metal:taskrow use-macro="task/@@+bugtask-macros-listview/item" />
+        </tr>
+      </tal:other-release-bugs>
+    </tal:other-release-bugs-section>
+    <tr>
+      <td colspan="3">
         <h2>Untargeted bugs</h2>
-        <table class="sortable listing data" id="generalbugs">
-          <thead>
-            <tr metal:use-macro="context/@@+bugtask-macros-tableview/header" />
-          </thead>
-          <tbody>
-            <tr tal:repeat="task view/general_unresolved_bugs">
-              <metal:taskrow use-macro="context/@@+bugtask-macros-tableview/item" />
-            </tr>
-          </tbody>
-        </table>
-        </td>
-        <td>
-          <div tal:replace="structure context/@@+portlet-bugtasklist-actions" />
-        </td>
-      </tr>
-    </table>
-  </div>
+      </td>
+    </tr>
+    <tr tal:repeat="task view/general_unresolved_bugs">
+      <metal:taskrow use-macro="task/@@+bugtask-macros-listview/item" />
+    </tr>
+</div>
 
 </body>
 </html>

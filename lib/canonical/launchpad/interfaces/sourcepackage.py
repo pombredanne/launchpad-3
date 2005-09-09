@@ -12,11 +12,11 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
-from canonical.launchpad.interfaces import IBugTarget
+from canonical.launchpad.interfaces import IBugTarget, ITicketTarget
 
 _ = MessageIDFactory('launchpad')
 
-class ISourcePackage(IBugTarget):
+class ISourcePackage(IBugTarget, ITicketTarget):
     """A SourcePackage. See the MagicSourcePackage specification. This
     interface preserves as much as possible of the old SourcePackage
     interface from the SourcePackage table, with the new table-less
@@ -38,8 +38,9 @@ class ISourcePackage(IBugTarget):
                 "distribution or distrorelease. Calling this when there is "
                 "no current sourcepackagerelease will raise an exception.")
 
-    changelog = Attribute("The changelog of the currentrelease for this "
-                "source package published in this distrorelease.")
+    changelog = Attribute("Returns the concatenated full changelog for each "
+                          "published sourcepackagerelease versions ordered "
+                          "by crescent version.")
 
     manifest = Attribute("The Manifest of the current SourcePackageRelease "
                     "published in this distribution / distrorelease.")

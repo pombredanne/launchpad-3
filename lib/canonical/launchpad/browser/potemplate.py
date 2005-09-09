@@ -29,11 +29,14 @@ from canonical.launchpad.browser.pofile import (
     POFileView, BaseExportView, POFileAppMenus)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, DefaultLink, Link, canonical_url)
+    StandardLaunchpadFacets, Link, canonical_url)
 
 
 class POTemplateFacets(StandardLaunchpadFacets):
+
     usedfor = IPOTemplate
+
+    defaultlink = 'translations'
 
     def _parent_url(self):
         """Return the URL of the thing this PO template is attached to."""
@@ -53,16 +56,13 @@ class POTemplateFacets(StandardLaunchpadFacets):
     def translations(self):
         target = ''
         text = 'Translations'
-        return DefaultLink(target, text)
+        return Link(target, text)
 
-    # Bugs and calendar don't make sense for potemplates
-    # XXX: how does one disable links unconditionally?
-    #       -- kiko, 2005-08-23
     def bugs(self):
-        return Link("", "Bugs", linked=False)
+        return Link("", "Bugs", enabled=False)
 
     def calendar(self):
-        return Link("", "Calendar", linked=False)
+        return Link("", "Calendar", enabled=False)
 
 
 class POTemplateAppMenus(POFileAppMenus):

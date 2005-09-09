@@ -16,62 +16,62 @@
     <resource name="launchpad.png" file="../images/launchpad.png" />
 
     <!-- General Images -->
-    <resource name="bounty" file="../images/bounty.jpg" />
-    <resource name="arrowBottom.gif" file="../images/arrowBottom.gif" />
-    <resource name="arrowDown.gif" file="../images/arrowDown.gif" />
-    <resource name="arrowDownAlternative.gif"
-              file="../images/arrowDownAlternative.gif" />
-    <resource name="arrowRight.gif" file="../images/arrowRight.gif" />
+    <resource name="add.gif" file="../images/add.gif" />
+    <resource name="alert" file="../images/alert_icon.gif" />
+    <resource name="alert_icon.gif" file="../images/alert_icon.gif" />
+    <resource name="architecture" file="../images/architecture.png" />
     <resource name="arrowBlank.gif" file="../images/arrowBlank.gif" />
-    <resource name="green-bar.png" file="../images/green-bar.png" />
+    <resource name="arrowBottom.gif" file="../images/arrowBottom.gif" />
+    <resource name="arrowDownAlternative.gif" file="../images/arrowDownAlternative.gif" />
+    <resource name="arrowDown.gif" file="../images/arrowDown.gif" />
+    <resource name="arrowRight.gif" file="../images/arrowRight.gif" />
+    <resource name="up" file="../images/arrowUp.gif" />
     <resource name="blue-bar.png" file="../images/blue-bar.png" />
-    <resource name="red-bar.png" file="../images/red-bar.png" />
-    <resource name="purple-bar.png" file="../images/purple-bar.png" />
-    <resource name="bullet.gif" file="../images/bullet.gif" />
+    <resource name="bounty" file="../images/bounty.jpg" />
     <resource name="bug" file="../images/bug.png" />
     <resource name="bug-high" file="../images/bug-high.png" />
-    <resource name="bug-medium" file="../images/bug-medium.png" />
     <resource name="bug-low" file="../images/bug-low.png" />
+    <resource name="bug-medium" file="../images/bug-medium.png" />
     <resource name="bug-remote" file="../images/bug-remote.png" />
     <resource name="bugs" file="../images/bugs.png" />
-    <resource name="required.gif" file="../images/required.gif" />
-    <resource name="favorite_icon.gif" file="../images/favorite_icon.gif" />
-
-    <resource name="info.gif" file="../images/info.gif" />
-    <resource name="info.png" file="../images/info.png" />
-    <resource name="info_icon.gif" file="../images/info_icon.gif" />
-    <resource name="alert_icon.gif" file="../images/alert_icon.gif" />
-    <resource name="download.png" file="../images/download.png" />
+    <resource name="bullet.gif" file="../images/bullet.gif" />
     <resource name="close_icon.png" file="../images/close_icon.png" />
-
-    <resource name="treeExpanded.gif" file="../images/treeExpanded.gif" />
-    <resource name="treeCollapsed.gif" file="../images/treeCollapsed.gif" />
-
-    <resource name="print.gif" file="../images/print.gif" />
-    <resource name="sendto.gif" file="../images/sendto.gif" />
-
-    <resource name="languages.gif" file="../images/languages.gif" />
-    <resource name="add.gif" file="../images/add.gif" />
-    <resource name="discussionitem_icon.gif" file="../images/discussionitem_icon.gif" />
-    <resource name="edit.gif" file="../images/edit.gif" />
-    <resource name="user.gif" file="../images/user.gif" />
-    <resource name="lock_icon.gif" file="../images/lock_icon.gif" />
-    <resource name="link_icon.gif" file="../images/link_icon.gif" />
     <resource name="cve.ico" file="../images/cve.ico" />
-    <resource name="linkTransparent.gif" file="../images/linkTransparent.gif" />
-    <resource name="search_icon.gif" file="../images/search_icon.gif" />
-    <resource name="product_icon.gif" file="../images/product_icon.gif" />
-    <resource name="phone_icon.gif" file="../images/phone_icon.gif" />
+    <resource name="defaultFavicon.gif" file="../images/defaultFavicon.gif" />
+    <resource name="discussionitem_icon.gif" file="../images/discussionitem_icon.gif" />
+    <resource name="document_icon.gif" file="../images/document_icon.gif" />
+    <resource name="download.png" file="../images/download.png" />
+    <resource name="edit.gif" file="../images/edit.gif" />
+    <resource name="favicon.png" file="../images/defaultFavicon.gif" />
+    <resource name="favorite_icon.gif" file="../images/favorite_icon.gif" />
     <resource name="file_icon.gif" file="../images/file_icon.gif" />
-    <resource name="mail_icon.gif" file="../images/mail_icon.gif" />
+    <resource name="green-bar.png" file="../images/green-bar.png" />
+    <resource name="info.gif" file="../images/info.gif" />
+    <resource name="info_icon.gif" file="../images/info_icon.gif" />
+    <resource name="info.png" file="../images/info.png" />
+    <resource name="languages.gif" file="../images/languages.gif" />
+    <resource name="link_icon.gif" file="../images/link_icon.gif" />
     <resource name="linkOpaque.gif" file="../images/linkOpaque.gif" />
+    <resource name="linkTransparent.gif" file="../images/linkTransparent.gif" />
+    <resource name="lock_icon.gif" file="../images/lock_icon.gif" />
+    <resource name="mail_icon.gif" file="../images/mail_icon.gif" />
+    <resource name="news" file="../images/newsitem_icon.gif" />
+    <resource name="phone_icon.gif" file="../images/phone_icon.gif" />
+    <resource name="print.gif" file="../images/print.gif" />
+    <resource name="product_icon.gif" file="../images/product_icon.gif" />
+    <resource name="purple-bar.png" file="../images/purple-bar.png" />
+    <resource name="red-bar.png" file="../images/red-bar.png" />
+    <resource name="required.gif" file="../images/required.gif" />
+    <resource name="search_icon.gif" file="../images/search_icon.gif" />
+    <resource name="sendto.gif" file="../images/sendto.gif" />
+    <resource name="spec" file="../images/topic_icon.gif" />
+    <resource name="ticket" file="../images/phone_icon.gif" />
     <resource name="target" file="../images/target.png" />
     <resource name="topic_icon.gif" file="../images/topic_icon.gif" />
     <resource name="translations" file="../images/rosetta-icon.png" />
-    <resource name="document_icon.gif" file="../images/document_icon.gif" />
+    <resource name="treeCollapsed.gif" file="../images/treeCollapsed.gif" />
+    <resource name="treeExpanded.gif" file="../images/treeExpanded.gif" />
     <resource name="ubuntu.gif" file="../images/ubuntu.gif" />
-
-    <resource name="defaultFavicon.gif" file="../images/defaultFavicon.gif" />
-    <resource name="favicon.png" file="../images/defaultFavicon.gif" />
-
+    <resource name="user.gif" file="../images/user.gif" />
+    <resource name="user" file="../images/user.gif" />
 </configure>

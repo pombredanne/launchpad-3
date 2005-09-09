@@ -28,7 +28,9 @@ from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 
 class DistroReleaseFacets(StandardLaunchpadFacets):
+
     usedfor = IDistroRelease
+    links = ['overview', 'bugs', 'specs', 'translations']
 
 
 class DistroReleaseView:
@@ -49,11 +51,8 @@ class DistroReleaseView:
         drlangs = []
         drlangset = getUtility(IDistroReleaseLanguageSet)
         for language in self.languages:
-            drlang = self.context.getDistroReleaseLanguage(language)
-            if drlang is not None:
-                drlangs.append(drlang)
-            else:
-                drlangs.append(drlangset.getDummy(self.context, language))
+            drlang = self.context.getDistroReleaseLanguageOrDummy(language)
+            drlangs.append(drlang)
         return drlangs
 
     def requestCountry(self):

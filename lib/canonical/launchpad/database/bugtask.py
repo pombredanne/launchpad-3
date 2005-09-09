@@ -4,6 +4,9 @@ __metaclass__ = type
 __all__ = ['BugTask', 'BugTaskSet', 'BugTaskFactory', 'BugTasksReport',
            'bugtask_sort_key']
 
+import cgi
+import urllib
+import datetime
 from sets import Set
 
 from sqlobject import ForeignKey, StringCol
@@ -11,16 +14,18 @@ from sqlobject import SQLObjectNotFound
 
 from sqlos.interfaces import ISQLObject
 
+import pytz
+
 from zope.exceptions import NotFoundError
 from zope.component import getUtility, getAdapter
 from zope.interface import implements, directlyProvides, directlyProvidedBy
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.lp.dbschema import (
-    EnumCol, BugTaskPriority, BugTaskStatus, BugTaskSeverity, BugSubscription)
+    EnumCol, BugTaskPriority, BugTaskStatus, BugTaskSeverity)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.database.constants import nowUTC
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.maintainership import Maintainership
 from canonical.launchpad.searchbuilder import any, NULL
@@ -117,13 +122,22 @@ class BugTask(SQLBase):
         notNull=False, default=None)
     bugwatch = ForeignKey(dbName='bugwatch', foreignKey='BugWatch',
         notNull=False, default=None)
-    dateassigned = UtcDateTimeCol(notNull=False, default=nowUTC)
-    datecreated  = UtcDateTimeCol(notNull=False, default=nowUTC)
+    dateassigned = UtcDateTimeCol(notNull=False, default=UTC_NOW)
+    datecreated  = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     owner = ForeignKey(
         foreignKey='Person', dbName='owner', notNull=False, default=None)
 
     @property
+    def age(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        UTC = pytz.timezone('UTC')
+        now = datetime.datetime.now(UTC)
+
+        return now - self.datecreated
+
+    @property
     def maintainer(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
         if self.product:
             return self.product.owner
         if self.distribution and self.sourcepackagename:
@@ -136,6 +150,7 @@ class BugTask(SQLBase):
 
     @property
     def maintainer_displayname(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
         if self.maintainer:
             return self.maintainer.displayname
         else:
@@ -216,6 +231,14 @@ class BugTask(SQLBase):
             self.bug.id, self.targetname, self.bug.title)
         return title
 
+    @property
+    def related_tasks(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        other_tasks = [
+            task for task in self.bug.bugtasks if task != self]
+
+        return other_tasks
+
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
         SQLBase._init(self, *args, **kw)
@@ -223,7 +246,6 @@ class BugTask(SQLBase):
         if self.product is not None:
             # This is an upstream task.
             mark_task(self, IUpstreamBugTask)
-            checker = getAdapter(self, IAuthorization, 'launchpad.Edit')
         elif self.distrorelease is not None:
             # This is a distro release task.
             mark_task(self, IDistroReleaseBugTask)
@@ -231,7 +253,55 @@ class BugTask(SQLBase):
             # This is a distro task.
             mark_task(self, IDistroBugTask)
 
+    @property
+    def statusdisplayhtml(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        assignee = self.assignee
+        status = self.status
+
+        if assignee:
+            assignee_name = urllib.quote_plus(assignee.name)
+            assignee_browsername = cgi.escape(assignee.browsername)
+
+            if status in (BugTaskStatus.ACCEPTED, BugTaskStatus.REJECTED,
+                          BugTaskStatus.FIXED):
+                return (
+                    '%s by <img src="/++resource++user.gif" /> '
+                    '<a href="/malone/assigned?name=%s">%s</a>' % (
+                        status.title.lower(), assignee_name,
+                        assignee_browsername))
+
+            return (
+                'assigned to <img src="/++resource++user.gif" /> '
+                '<a href="/malone/assigned?name=%s">%s</a>' % (
+                    assignee_name, assignee_browsername))
+        else:
+            if status in (BugTaskStatus.REJECTED, BugTaskStatus.FIXED):
+                return status.title.lower()
+
+            return 'not assigned'
+
+    @property
+    def statuselsewhere(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        related_tasks = self.related_tasks
+        if related_tasks:
+            fixes_found = len(
+                [task for task in related_tasks
+                 if task.status == BugTaskStatus.FIXED])
+            if fixes_found:
+                return "Fixed in %d of %d places" % (
+                    fixes_found, len(self.bug.bugtasks))
+            else:
+                if len(related_tasks) == 1:
+                    return "Filed in 1 other place"
+                else:
+                    return "Filed in %d other places" % len(related_tasks)
+        else:
+            return "Not filed elsewhere"
+
     def setStatusFromDebbugs(self, status):
+        """See canonical.launchpad.interfaces.IBugTask."""
         try:
             self.status = debbugsstatusmap[status]
         except KeyError:
@@ -239,11 +309,13 @@ class BugTask(SQLBase):
         return self.status
 
     def setSeverityFromDebbugs(self, severity):
+        """See canonical.launchpad.interfaces.IBugTask."""
         try:
             self.severity = debbugsseveritymap[severity]
         except KeyError:
             raise ValueError('Unknown debbugs severity "%s"' % severity)
         return self.severity
+
 
 class BugTaskSet:
 
@@ -388,12 +460,9 @@ class BugTaskSet:
                           WHERE Bug.id = BugSubscription.bug AND
                                 TeamParticipation.person = %(personid)s AND
                                 BugSubscription.person =
-                                  TeamParticipation.team AND
-                                BugSubscription.subscription IN
-                                    (%(cc)s, %(watch)s))))""" %
-                      sqlvalues(personid=params.user.id,
-                                cc=BugSubscription.CC,
-                                watch=BugSubscription.WATCH))
+                                  TeamParticipation.team))) 
+                                  """ %
+                      sqlvalues(personid=params.user.id))
         else:
             clause = "BugTask.bug = Bug.id AND Bug.private = FALSE"
         extra_clauses.append(clause)
@@ -446,7 +515,7 @@ class BugTaskSet:
             milestone=milestone)
 
     def maintainedBugTasks(self, person, minseverity=None, minpriority=None,
-                         showclosed=False, orderBy=None, user=None):
+                           showclosed=False, orderBy=None, user=None):
         if showclosed:
             showclosed = ""
         else:
@@ -470,12 +539,9 @@ class BugTaskSet:
                         SELECT Bug.id FROM Bug, BugSubscription WHERE
                            (Bug.id = BugSubscription.bug) AND
                            (BugSubscription.person = TeamParticipation.team) AND
-                           (TeamParticipation.person = %(personid)s) AND
-                           (BugSubscription.subscription IN
-                               (%(cc)s, %(watch)s))))))'''
-                % sqlvalues(personid=user.id,
-                            cc=BugSubscription.CC,
-                            watch=BugSubscription.WATCH))
+                           (TeamParticipation.person = %(personid)s)
+                               ))))'''
+                % sqlvalues(personid=user.id))
         else:
             privatenessFilter += 'BugTask.bug = Bug.id AND Bug.private = FALSE'
 

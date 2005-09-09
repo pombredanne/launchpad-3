@@ -8,35 +8,44 @@
                 <li class="info">
                   <a href="+distributions">Show Distributions</a>
                 </li>
-                <li class="packages">
+                <li class="info">
                   <a href="+packages">Show Packages</a>
                 </li>
                 <li class="info">
-                  <a href="+branches">Show Branches</a>
+                  <a href="+specplan">Show Roadmap</a>
                 </li>
                 <li class="edit">
-                  <a href="+edit">Edit Details</a>
+                  <a href="+edit">Edit Product Details</a>
                 </li>
                 <li class="edit">
-                    <a href="+reassign">Change Maintainer</a>
+                    <a href="+reassign">Change Registrant</a>
+                </li>
+                <li class="edit">
+                  <a href="+changetranslators">Change Translators</a>
+                </li>
+                <li class="edit">
+                  <a href="+launchpad">Define Launchpad Usage</a>
                 </li>
                 <li class="add">
                   <a href="+filebug">Report a Bug</a>
                 </li>
                 <li class="add">
-                  <a href="+addseries">Add Branch</a>
-                </li>
-                <li class="edit">
-                  <a href="+changetranslators">Change Translators</a>
+                  <a href="+addseries">Add Release Series</a>
                 </li>
                 <li class="add">
                   <a href="+linkbounty">Link Existing Bounty</a>
                 </li>
                 <li class="add">
-                  <a href="+addbounty">Register New Bounty</a>
+                  <a href="+addbounty">Add New Bounty</a>
                 </li>
                 <li class="add">
                   <a href="+addmilestone">Add Milestone</a>
+                </li>
+                <li class="add">
+                  <a href="+addspec">Add Feature Specification</a>
+                </li>
+                <li class="add">
+                  <a href="+addticket">Request Support</a>
                 </li>
                 <li class="download">
                   <a href="+rdf">Download RDF Metadata</a>
@@ -47,7 +56,7 @@
                 </li>
                 <li class="edit"
                     tal:condition="context/required:launchpad.Admin">
-                  <a href="+review">Review</a>
+                  <a href="+review">Administer</a>
                 </li>
             </ul>
         </div>

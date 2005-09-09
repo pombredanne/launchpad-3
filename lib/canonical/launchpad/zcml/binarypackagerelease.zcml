@@ -1,0 +1,58 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- BinaryPackageRelease -->
+    <content class="canonical.launchpad.database.BinaryPackageRelease">
+        <allow interface="canonical.launchpad.interfaces.IBinaryPackageRelease" />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBinaryPackageRelease"
+        name="+index" />
+
+    <browser:traverse
+        for="canonical.launchpad.database.BinaryPackageRelease" 
+        getter="__getitem__" />
+
+    <browser:pages
+        for="canonical.launchpad.database.BinaryPackageRelease" 
+        class="canonical.launchpad.browser.BinaryPackageView"
+        permission="zope.Public">
+
+        <browser:page
+            name="+index"
+            template="../templates/binarypackage-index.pt"
+            lp:url="distros/$Distro/$Distrorelease/$Archtag/$Bin/+index"/>
+
+        <browser:page
+            name="+portlet-latestversions"
+            template="../templates/binarypackage-portlet-latestversions.pt"
+            lp:url="distros/$Distro/$Distrorelease/$Archtag/$Bin/+portlet-latestversions"/>
+
+        <browser:page
+            name="+portlet-details"
+            template="../templates/binarypackage-portlet-details.pt"
+            lp:url="distros/$Distro/$Distrorelease/$Archtag/$Bin/+portlet-details"/>
+   </browser:pages>
+
+
+
+    <!-- BinaryPackageReleaseSet -->
+    <content class="canonical.launchpad.database.BinaryPackageReleaseSet">
+        <allow interface="canonical.launchpad.interfaces.IBinaryPackageReleaseSet" />
+        <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    </content>
+
+
+    <securedutility
+        class="canonical.launchpad.database.BinaryPackageReleaseSet"
+        provides="canonical.launchpad.interfaces.IBinaryPackageReleaseSet">
+        <allow interface="canonical.launchpad.interfaces.IBinaryPackageReleaseSet" />
+    </securedutility>
+
+
+</configure>

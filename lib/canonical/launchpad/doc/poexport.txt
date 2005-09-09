@@ -58,7 +58,7 @@ Then get the PO file from the exporter.
   #: a11y/addressbook/ea-minicard-view.c:102
   #, fuzzy
   msgid "have "
-  msgstr "tiene"
+  msgstr "tiene "
   <BLANKLINE>
   #: a11y/addressbook/ea-minicard-view.c:102
   msgid "has "

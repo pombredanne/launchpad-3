@@ -31,6 +31,19 @@ To retrieve a specific source package name, use ISourcePackageNameSet.get:
     >>> print firefox.name
     mozilla-firefox
 
+To retrieve a specific source package name by its name, use
+ISourcePackageNameSet.queryByName:
+
+    >>> firefox = sourcepackagenameset.queryByName("mozilla-firefox")
+    >>> print firefox.name
+    mozilla-firefox
+
+If the package doesn't exist, queryByName returns None:
+
+    >>> foobar = sourcepackagenameset.queryByName("foobar")
+    >>> print foobar
+    None
+
 Packaging
 ---------
 
@@ -44,6 +57,7 @@ First, let's get some useful objects from the db.
     >>> a52dec = SourcePackageName.byName('a52dec')
     >>> netapplet = SourcePackageName.byName('netapplet')
     >>> firefox = SourcePackageName.byName('mozilla-firefox')
+    >>> pmount = SourcePackageName.byName('pmount')
 
     >>> from canonical.launchpad.database import DistroRelease
     >>> warty = DistroRelease.get(1)
@@ -92,4 +106,8 @@ Now verify we still get a product for that source package
     u'a52dec'
 
 
+Test the Changelog concatenation process:
 
+    >>> sp = SourcePackage(sourcepackagename=pmount, distrorelease=hoary)
+    >>> sp.changelog
+    u'This is a placeholder changelog for pmount 0.1-2 \n\nThis is a placeholder changelog for pmount 0.1-1 \n\n'

@@ -9,6 +9,7 @@
     <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-subscribers" />
     <div tal:replace="structure context/@@+portlet-maintainers" />
+    <div tal:replace="structure context/@@+portlet-tickets" />
     <div tal:replace="structure context/@@+portlet-productinfestation" />
     <div tal:replace="structure context/@@+portlet-packageinfestation" />
     <div tal:replace="structure context/@@+portlet-duplicates" />
@@ -16,6 +17,8 @@
 
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-actions" />
+    <div tal:condition="context/specifications"
+         tal:replace="structure context/@@+portlet-specs" />
     <div tal:replace="structure context/@@+portlet-attachments" />
     <div tal:replace="structure context/@@+portlet-cve" />
     <div tal:replace="structure context/@@+portlet-reference" />
@@ -36,6 +39,11 @@
      tal:condition="context/summary"
      tal:content="context/summary">
      $bug.summary
+  </p>
+
+  <p tal:repeat="notice view/notices" tal:content="notice"
+     class="portalMessage">
+    notice goes here
   </p>
 
   <div tal:replace="structure context/@@+headline-tasks" />

@@ -34,7 +34,7 @@
         name="+new"
         schema="canonical.launchpad.interfaces.IBugExternalRef"
         for="canonical.launchpad.interfaces.IBugExternalRefSet"
-        class="canonical.launchpad.browser.bugextref.BugExternalRefAddView"
+        class="canonical.launchpad.browser.BugRelatedObjectAddView"
         label="Add External Reference"
         fields="url title"
         content_factory="canonical.launchpad.database.BugExternalRefFactory"
@@ -52,10 +52,10 @@
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IBugExternalRef"
-        class="canonical.launchpad.browser.editview.SQLObjectEditView"
+        class="canonical.launchpad.browser.BugRelatedObjectEditView"
         label="Modify Web Reference"
         permission="launchpad.AnyPerson"
-        template="../templates/default-editform.pt"
+        template="../templates/bug-extref-edit.pt"
         fields="url title"
         lp:url="malone/bugs/$Bug.id/references/$Reference.id/+edit" />
 

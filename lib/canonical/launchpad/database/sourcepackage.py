@@ -36,6 +36,7 @@ from canonical.launchpad.database.sourcepackagerelease import (
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.ticket import Ticket
 from canonical.launchpad.validators.name import valid_name
 from sourcerer.deb.version import Version
 
@@ -77,9 +78,15 @@ class SourcePackage:
         # Set self.currentrelease based on current published sourcepackage
         # with this name in the distrorelease.  If none is published, leave
         # self.currentrelease as None
+
+        # XXX: Daniel Debonzi
+        # Getting only for pocket RELEASE.. to do not get more than one result.
+        # Figure out what should be done to access another pockets
         package = SourcePackageInDistro.selectOneBy(
-                    sourcepackagenameID=sourcepackagename.id,
-                    distroreleaseID = self.distrorelease.id)
+            sourcepackagenameID=sourcepackagename.id,
+            distroreleaseID=self.distrorelease.id,
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.RELEASE)
         if package is None:
             self.currentrelease = None
         else:
@@ -93,9 +100,8 @@ class SourcePackage:
 
     @property
     def displayname(self):
-        dn = ' the ' + self.sourcepackagename.name + ' source package in '
-        dn += self.distrorelease.displayname
-        return dn
+        return "%s %s" % (
+            self.distrorelease.displayname, self.sourcepackagename.name)
 
     @property
     def title(self):
@@ -120,9 +126,32 @@ class SourcePackage:
 
     @property
     def changelog(self):
-        if not self.currentrelease:
-            return None
-        return self.currentrelease.changelog
+        """See ISourcePackage"""
+
+        clauseTables = ('SourcePackageName', 'SourcePackageRelease',
+                        'SourcePackagePublishing','DistroRelease')
+
+        query = ('SourcePackageRelease.sourcepackagename = '
+                 'SourcePackageName.id AND '
+                 'SourcePackageName = %d AND '
+                 'SourcePackagePublishing.distrorelease = '
+                 'DistroRelease.Id AND '
+                 'SourcePackagePublishing.distrorelease = %d AND '
+                 'SourcePackagePublishing.sourcepackagerelease = '
+                 'SourcePackageRelease.id'
+                 % (self.sourcepackagename.id,
+                    self.distrorelease.id)
+                 ) 
+
+        spreleases = SourcePackageRelease.select(query,
+                                                 clauseTables=clauseTables,
+                                                 orderBy='version').reversed()
+        changelog = ''
+
+        for spr in spreleases:
+            changelog += '%s \n\n' % spr.changelog
+        
+        return changelog
 
     @property
     def manifest(self):
@@ -137,7 +166,7 @@ class SourcePackage:
 
     @property
     def maintainer(self):
-        querystr = "distribution = %s AND sourcepackagename = %s"
+        querystr = "distribution=%s AND sourcepackagename=%s"
         querystr %= sqlvalues(self.distribution, self.sourcepackagename)
         return Maintainership.select(querystr)
 
@@ -181,8 +210,8 @@ class SourcePackage:
 
     @property
     def bugtasks(self):
-        querystr = "distribution = %i AND sourcepackagename = %i"
-        querystr %= sqlvalues(self.distribution, self.sourcepackagename)
+        querystr = "distribution=%s AND sourcepackagename=%s" % sqlvalues(
+            self.distribution.id, self.sourcepackagename.id)
         return BugTask.select(querystr)
 
     @property
@@ -395,6 +424,34 @@ class SourcePackage:
         if ret.count() == 0:
             return None
         return shortlist(ret)
+
+    # ticket related interfaces
+    @property
+    def tickets(self):
+        """See ITicketTarget."""
+        ret = Ticket.selectBy(distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id)
+        return ret.orderBy('-datecreated')
+
+    def newTicket(self, owner, title, description):
+        """See ITicketTarget."""
+        return Ticket(title=title, description=description, owner=owner,
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename)
+
+    def getTicket(self, ticket_num):
+        """See ITicketTarget."""
+        # first see if there is a ticket with that number
+        try:
+            ticket = Ticket.get(ticket_num)
+        except SQLObjectNotFound:
+            return None
+        # now verify that that ticket is actually for this target
+        if ticket.distribution != self.distribution:
+            return None
+        if ticket.sourcepackagename != self.sourcepackagename:
+            return None
+        return ticket
 
 
 class SourcePackageSet(object):

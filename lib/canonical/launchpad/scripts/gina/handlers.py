@@ -22,9 +22,10 @@ from canonical.launchpad.scripts.gina.library import getLibraryAlias
 from canonical.lp import initZopeless
 from canonical.launchpad.database import (Distribution, DistroRelease,
     DistroArchRelease,Processor, SourcePackageName, SourcePackageRelease,
-    Build, BinaryPackage, BinaryPackageName, PackagePublishingHistory,
+    Build, BinaryPackageRelease, BinaryPackageName,
+    SecureBinaryPackagePublishingHistory,
     Component, Section, SourcePackageReleaseFile,
-    SourcePackagePublishingHistory, BinaryPackageFile)
+    SecureSourcePackagePublishingHistory, BinaryPackageFile)
 
 from canonical.launchpad.interfaces import IPersonSet, IBinaryPackageNameSet
 from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
@@ -279,25 +280,25 @@ class BinaryPackageHandler:
     def _getBinary(self, binaryname, version, architecture, distroarchinfo):
         """Returns a binarypackage if it exists."""
         if architecture == "all":
-            binpkg = BinaryPackage.selectOneBy(
+            binpkg = BinaryPackageRelease.selectOneBy(
                 binarypackagenameID=binaryname.id, version=version)
 
             if binpkg:
                 return binpkg
 
-        clauseTables=("BinaryPackage","Build",)
-        query = ("BinaryPackage.binarypackagename=%s AND "
-                 "BinaryPackage.version=%s AND "
+        clauseTables=("BinaryPackageRelease","Build",)
+        query = ("BinaryPackageRelease.binarypackagename=%s AND "
+                 "BinaryPackageRelease.version=%s AND "
                  "Build.Processor=%s AND "
                  "Build.distroarchrelease=%s AND "
-                 "Build.id = BinaryPackage.build"
+                 "Build.id = BinaryPackageRelease.build"
                  % (binaryname.id,
                     quote(version),
                     distroarchinfo['processor'].id,
                     distroarchinfo['distroarchrelease'].id)
                  )
 
-        return BinaryPackage.selectOne(query, clauseTables=clauseTables)
+        return BinaryPackageRelease.selectOne(query, clauseTables=clauseTables)
             
         
     def createBinaryPackage(self, bin, srcpkg, distroarchinfo):
@@ -351,7 +352,7 @@ class BinaryPackageHandler:
             return None
 
         # Create the binarypackage entry on lp db.
-        binpkg = BinaryPackage(
+        binpkg = BinaryPackageRelease(
             binarypackagename = bin_name.id,
             component = componentID,
             version = bin.version,
@@ -395,7 +396,7 @@ class BinaryPackageHandler:
 
     def createBinaryPackageFile(self, binpkg, fname, alias):
         """Create the binarypackagefile entry on lp db."""
-        BinaryPackageFile(binarypackage=binpkg.id,
+        BinaryPackageFile(binarypackagerelease=binpkg.id,
                           libraryfile=alias,
                           filetype=getFileType(fname))
 
@@ -464,8 +465,8 @@ class BinaryPackagePublisher:
         
 
         # Create the Publishing entry with status PENDING.
-        PackagePublishingHistory(
-            binarypackage = binarypackage.id,
+        SecureBinaryPackagePublishingHistory(
+            binarypackagerelease = binarypackage.id,
             component = binarypackage.component,
             section = binarypackage.section,
             priority = binarypackage.priority,
@@ -487,8 +488,8 @@ class BinaryPackagePublisher:
 
     def _checkPublishing(self, binarypackage, distroarchrelease):
         """Query for the publishing entry"""
-        return PackagePublishingHistory.selectOneBy(
-            binarypackageID=binarypackage.id,
+        return SecureBinaryPackagePublishingHistory.selectOneBy(
+            binarypackagereleaseID=binarypackage.id,
             distroarchreleaseID=distroarchrelease.id)
 
 
@@ -654,7 +655,7 @@ class SourcePublisher:
             return
         
         # Create the Publishing entry with status PENDING.
-        SourcePackagePublishingHistory(
+        SecureSourcePackagePublishingHistory(
             distrorelease=self.distrorelease.id,
             sourcepackagerelease=sourcepackagerelease.id,
             status=PackagePublishingStatus.PENDING,
@@ -672,7 +673,7 @@ class SourcePublisher:
 
     def _checkPublishing(self, sourcepackagerelease, distrorelease):
         """Query for the publishing entry"""
-        return SourcePackagePublishingHistory.selectOneBy(
+        return SecureSourcePackagePublishingHistory.selectOneBy(
             sourcepackagereleaseID=sourcepackagerelease.id,
             distroreleaseID=distrorelease.id)
 

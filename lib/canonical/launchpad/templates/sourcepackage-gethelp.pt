@@ -15,10 +15,25 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Get Help!</h1>
+  <h1>Get Help Online!</h1>
 
-  <p class="portalMessage">
-    This is a placeholder page for LaunchpadIntegration
+  <p class="documentDescription">
+    This page summarises the sources of help that are registered for
+    <span tal:replace="context/title">blah</span>.
+  </p>
+
+  <p class="portalMessage" tal:condition="not: context/productseries">
+    There is no upstream link for this source package. Please tell us
+    <a href="+packaging">which product and series</a> this is a package of,
+    and then we will be able to steer you and other users to the relevant
+    sources of help.
+  </p>
+
+  <h2>File a Support Request</h2>
+
+  <p>
+    You can <a href="+addticket">file a support request</a> in Launchpad,
+    and some community members might be able to help you free of charge.
   </p>
 
 </div>

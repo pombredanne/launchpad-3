@@ -1,0 +1,19 @@
+<div class="portlet">
+  <h4>Review Requests:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul class="people">
+      <li tal:repeat="review context/reviews">
+        <a href="#"
+           tal:content="review/reviewer/browsername"
+           tal:attributes="href review/reviewer/fmt:url">Dafydd Harries</a><tal:block condition="review/queuemsg">:
+            <span tal:replace="review/queuemsg"> brief message.</span>
+          </tal:block>
+      </li>
+      <li class="info" tal:condition="not: context/reviews">
+        <i>No reviews queued.</i>
+      </li>
+    </ul>
+
+</div>

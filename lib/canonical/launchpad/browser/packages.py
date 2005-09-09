@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'SourcePackageView',
     'DistroSourcesView',
     'DistrosReleaseBinariesSearchView',
     'SourcePackageBugsView',
@@ -34,27 +33,6 @@ from apt_pkg import ParseDepends
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages
 BATCH_SIZE = 40
-
-class SourcePackageView:
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def affectedBinaryPackages(self):
-        '''Return a list of [BinaryPackage, {severity -> count}]'''
-        m = {}
-        sevdef = {}
-        for i in BugTaskSeverity.items:
-            sevdef[i.name] = 0
-        for bugtask in self.context.bugtasks:
-            binarypackage = bugtask.binarypackage
-            if binarypackage:
-                severity = BugTaskSeverity.items[i].name
-                stats = m.setdefault(binarypackage, sevdef.copy())
-                m[binarypackage][severity] += 1
-        rv = m.items()
-        rv.sort(lambda a,b: cmp(a.id, b.id))
-        return rv
 
 
 class DistroSourcesView:
@@ -99,6 +77,14 @@ class SourcePackageBugsView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
+
+    def showTableView(self):
+        """Should the search results be displayed as a table?"""
+        return False
+
+    def showListView(self):
+        """Should the search results be displayed as a list?"""
+        return True
 
     @property
     def unresolved_release_bugs(self):

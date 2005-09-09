@@ -6,7 +6,8 @@ __all__ = [
     'BountyView',
     'BountyLinkView',
     'BountyEditView',
-    'BountyAddView'
+    'BountyAddView',
+    'BountySetView'
     ]
 
 from zope.component import getUtility
@@ -29,17 +30,14 @@ class BountyView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.subscription = None
         self.notices = []
 
         # figure out who the user is for this transaction
         self.user = getUtility(ILaunchBag).user
 
         # establish if a subscription form was posted
-        # XXX sabdfl 18/08/05 this should only work on POST, not GET, as we
-        # have a requirement that GET is immutable for load balancing
         newsub = request.form.get('subscribe', None)
-        if newsub is not None and self.user:
+        if newsub is not None and self.user and request.method == 'POST':
             if newsub == 'Subscribe':
                 self.context.subscribe(self.user)
             elif newsub == 'Unsubscribe':
@@ -47,12 +45,15 @@ class BountyView:
             self.notices.append("Your subscription to this bounty has been "
                 "updated.")
 
-        # establish if this user has a subscription to the bounty
-        if self.user is not None:
-            for subscription in self.context.subscriptions:
-                if subscription.person.id == self.user.id:
-                    self.subscription = subscription
-                    break
+    @property
+    def subscription(self):
+        """establish if this user has a subscription"""
+        if self.user is None:
+            return None
+        for subscription in self.context.subscriptions:
+            if subscription.person.id == self.user.id:
+                return subscription
+        return None
 
 
 class BountyEditView(EditView):
@@ -116,4 +117,15 @@ class BountyAddView(AddView):
 
     def nextURL(self):
         return self._nextURL
+
+
+class BountySetView:
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.bounties = getUtility(IBountySet)
+
+    def top_bounties(self):
+        return self.bounties.top_bounties
 

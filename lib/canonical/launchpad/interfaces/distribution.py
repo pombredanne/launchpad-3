@@ -15,12 +15,16 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces import IHasOwner, IBugTarget
+from canonical.launchpad.interfaces import (
+    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget)
 
 _ = MessageIDFactory('launchpad')
 
-class IDistribution(IHasOwner, IBugTarget):
+class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
+    ITicketTarget):
+
     """An operating system distribution."""
+
     id = Attribute("The distro's unique number.")
     name = TextLine(
         title=_("Name"),
@@ -126,7 +130,7 @@ class IDistribution(IHasOwner, IBugTarget):
 
     def getMilestone(name):
         """Return a milestone with the given name for this distribution, or
-        raise NotFoundError.
+        None.
         """
 
     def ensureRelatedBounty(bounty):

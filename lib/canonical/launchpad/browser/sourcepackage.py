@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'traverseSourcePackage',
+    'SourcePackageFacets',
     'SourcePackageReleasePublishingView',
     'SourcePackageInDistroSetView',
     'SourcePackageView',
@@ -25,11 +26,13 @@ from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IPOTemplateSet, IPackaging, ILaunchBag, ICountry, IBugTaskSet)
+    IPOTemplateSet, IPackaging, ILaunchBag, ICountry, IBugTaskSet,
+    ISourcePackage, IBugSet)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.soyuz.generalapp import builddepsSet
 from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import (
+    canonical_url, StandardLaunchpadFacets)
 
 from apt_pkg import ParseSrcDepends
 
@@ -63,10 +66,17 @@ def traverseSourcePackage(sourcepackage, request, name):
     return None
 
 
+class SourcePackageFacets(StandardLaunchpadFacets):
+
+    usedfor = ISourcePackage
+    links = ['overview', 'bugs', 'tickets', 'translations']
+
+
 class SourcePackageFilebugView(SQLObjectAddView):
     """View for filing a bug on a source package."""
-    def create(self, *args, **kw):
-        """Create an IDistroBugTask."""
+
+    def create(self, **kw):
+        """Create a new bug on the source package."""
         # Because distribution and sourcepackagename are things
         # inferred from the context rather than data entered on the
         # filebug form, we have to manually add these values to the
@@ -79,7 +89,7 @@ class SourcePackageFilebugView(SQLObjectAddView):
 
         # Store the added bug so that it can be accessed easily in any
         # other method on this class (e.g. nextURL)
-        self.addedBug = SQLObjectAddView.create(self, *args, **kw)
+        self.addedBug = getUtility(IBugSet).createBug(**kw)
 
         return self.addedBug
 
@@ -130,7 +140,7 @@ class SourcePackageReleasePublishingView:
         return self.context.sourcepackage.currentrelease.version
 
     def binaries(self):
-        """Format binary packeges into binarypackagename and archtags"""
+        """Format binary packages into binarypackagename and archtags"""
 
         all_arch = [] # all archtag in this distrorelease
         for arch in self.context.distrorelease.architectures:

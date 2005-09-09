@@ -5,6 +5,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+    <!-- Bug -->
     <content class="canonical.launchpad.database.Bug">
         <require
             permission="launchpad.View"
@@ -21,6 +22,7 @@
     <browser:traverse
         for="canonical.launchpad.interfaces.IBug"
         function="canonical.launchpad.browser.traversers.traverse_bug" />
+
     <browser:url
         for="canonical.launchpad.interfaces.IBug"
         path_expression="string:${id}"
@@ -33,63 +35,64 @@
         class="canonical.launchpad.browser.BugView">
         <browser:page
             name="+index"
-            template="../templates/bug-index.pt"
-            lp:url="malone/bugs/$Bug.id/index" />
+            template="../templates/bug-index.pt" />
         <browser:page
             name="activity"
-            template="../templates/bug-activity.pt"
-            lp:url="malone/bugs/$Bug.id/activity" />
+            template="../templates/bug-activity.pt" />
         <browser:page
             name="+portlet-watch"
-            template="../templates/bug-portlet-watch.pt"
-            lp:url="malone/bugs/$Bug.id/+portlet-watch" />
+            template="../templates/bug-portlet-watch.pt" />
         <browser:page
             name="+portlet-details"
-            template="../templates/bug-portlet-details.pt"
-            lp:url="malone/bugs/$Bug.id/+portlet-details" />
+            template="../templates/bug-portlet-details.pt" />
         <browser:page
             name="+portlet-subscribers"
-            template="../templates/bug-portlet-subscribers.pt"
-            lp:url="malone/bugs/$Bug.id/+portlet-subscribers" />
+            template="../templates/bug-portlet-subscribers.pt" />
+        <browser:page
+            name="+portlet-specs"
+            template="../templates/bug-portlet-specs.pt" />
+        <browser:page
+            name="+portlet-tickets"
+            template="../templates/bug-portlet-tickets.pt" />
         <browser:page
             name="+portlet-productinfestation"
-            template="../templates/bug-portlet-productinfestation.pt"
-            lp:url="malone/bugs/$Bug.id/+portlet-productinfestation" />
+            template="../templates/bug-portlet-productinfestation.pt" />
         <browser:page
             name="+portlet-packageinfestation"
-            template="../templates/bug-portlet-packageinfestation.pt"
-            lp:url="malone/bugs/$Bug.id/+portlet-packageinfestation" />
+            template="../templates/bug-portlet-packageinfestation.pt" />
         <browser:page
             name="+portlet-reference"
-            template="../templates/bug-portlet-reference.pt"
-            lp:url="malone/bugs/$Bug.id/+portlet-reference" />
+            template="../templates/bug-portlet-reference.pt" />
         <browser:page
             name="+portlet-duplicates"
-            template="../templates/bug-portlet-duplicates.pt"
-            lp:url="malone/bugs/$Bug.id/+portlet-duplicates" />
+            template="../templates/bug-portlet-duplicates.pt" />
         <browser:page
             name="+portlet-cve"
-            template="../templates/bug-portlet-cve.pt"
-            lp:url="malone/bugs/$Bug.id/+portlet-cve" />
+            template="../templates/bug-portlet-cve.pt" />
         <browser:page
             name="+portlet-maintainers"
-            template="../templates/bug-portlet-maintainers.pt"
-            lp:url="malone/bugs/$Bug.id/+portlet-maintainers" />
+            template="../templates/bug-portlet-maintainers.pt" />
         <browser:page
             name="+headline-tasks"
-            template="../templates/bug-headline-tasks.pt"
-            lp:url="malone/bugs/$Bug.id/+headline-tasks" />
+            template="../templates/bug-headline-tasks.pt" />
         <browser:page
             name="+portlet-actions"
-            template="../templates/bug-portlet-actions.pt"
-            lp:url="malone/bugs/$Bug.id/+portlet-actions" />
+            template="../templates/bug-portlet-actions.pt" />
         <browser:page
             name="+portlet-attachments"
-            template="../templates/bug-portlet-attachments.pt"
-            lp:url="malone/bugs/$Bug.id/+portlet-attachments" />
+            template="../templates/bug-portlet-attachments.pt" />
     </browser:pages>
 
-    <!-- Bug -->
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBug"
+        class="canonical.launchpad.browser.BugView"
+        permission="launchpad.AnyPerson">
+        <browser:page
+            name="+subscribe"
+            template="../templates/bug-subscription.pt"
+            />
+    </browser:pages>
+
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IBug"
@@ -98,7 +101,7 @@
         permission="launchpad.Edit"
         template="../templates/bug-edit.pt"
         fields="title description summary name"
-        lp:url="malone/bugs/$Bug.id/+edit">
+        >
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
@@ -142,6 +145,34 @@
         template="../templates/bug-attachment-add.pt"
         lp:url="malone/bugs/$Bug.id/+addattachment"
         />
+
+  <browser:addform
+    name="+addsubscriber"
+    for="canonical.launchpad.interfaces.IBug"
+    schema="canonical.launchpad.interfaces.IBugSubscription"
+    class="canonical.launchpad.browser.BugSubscriptionAddView"
+    label="Subscribe Someone to Bug"
+    fields="person"
+    keyword_arguments="person"
+    permission="launchpad.AnyPerson"
+    template="../templates/bug-addsubscriber.pt"
+    />
+
+  <browser:addform
+    name="+addmessage"
+    for="canonical.launchpad.interfaces.IBug"
+    schema="canonical.launchpad.interfaces.IMessage"
+    class="canonical.launchpad.browser.MessageAddView"
+    label="Add Message or Comment"
+    fields="subject content owner"
+    keyword_arguments="subject content owner"
+    permission="launchpad.AnyPerson"
+    template="../templates/message-add.pt">
+    <browser:widget
+      field="owner"
+      class="canonical.widgets.HiddenUserWidget" />
+  </browser:addform>
+
 
     <browser:view
         for="canonical.launchpad.interfaces.IBug"
@@ -191,13 +222,14 @@
         class="canonical.launchpad.browser.bug.BugAddView"
         label="File a Bug on a Product"
         fields="product title comment owner"
-        content_factory="canonical.launchpad.database.BugFactory"
         arguments=""
         keyword_arguments="product title comment owner"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="malone/bugs/+product">
-        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget
+          field="owner"
+          class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
@@ -215,13 +247,12 @@
         class="canonical.launchpad.browser.bug.BugAddView"
         label="File a Bug on a Package"
         fields="distribution sourcepackagename title comment private owner"
-        content_factory="canonical.launchpad.database.BugFactory"
         arguments=""
         keyword_arguments="distribution sourcepackagename title comment private owner"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="malone/bugs/+product">
-        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
@@ -231,12 +262,6 @@
            class="zope.app.form.browser.TextAreaWidget"
            height="10" />
     </browser:addform>
-
-    <adapter
-        for="canonical.launchpad.interfaces.IBug"
-        factory="canonical.launchpad.browser.bug.BugAddForm"
-        provides="canonical.launchpad.interfaces.IBugAddForm"
-        />
 
     <!-- BugDelta -->
     <content class="canonical.launchpad.components.bug.BugDelta">

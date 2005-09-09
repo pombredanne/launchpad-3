@@ -213,7 +213,6 @@ Let's log back in as Foo Bar to continue our examples:
 
 When a public bug is filed:
 
->>> from canonical.launchpad.database.bug import BugFactory
 >>> from canonical.launchpad.interfaces import IProductSet
 >>> from canonical.launchpad.interfaces import IPersonSet
 >>> from canonical.launchpad.interfaces import IBugSet
@@ -223,9 +222,9 @@ When a public bug is filed:
 
 >>> firefox = productset.get(4)
 >>> foobar = personset.get(16)
->>> added_bug = BugFactory(
-...     product = firefox, title = "test firefox bug",
-...     comment = "blah blah blah", owner = foobar)
+>>> added_bug = getUtility(IBugSet).createBug(
+...     product=firefox, title="test firefox bug",
+...     comment="blah blah blah", owner=foobar)
 >>> notify(SQLObjectCreatedEvent(added_bug))
 >>> public_bug = bugset.get(added_bug.id)
 
@@ -251,10 +250,9 @@ u'a new description'
 
 When a private bug is filed:
 
->>> added_bug = BugFactory(
-...     product = firefox, title = "test firefox bug",
-...     comment = "blah blah blah", owner = foobar,
-...     private = True)
+>>> added_bug = getUtility(IBugSet).createBug(
+...     product=firefox, title="test firefox bug",
+...     comment="blah blah blah", owner=foobar, private=True)
 >>> notify(SQLObjectCreatedEvent(added_bug))
 >>> private_bug = bugset.get(added_bug.id)
 
@@ -276,10 +274,10 @@ sourcepackage. E.g.
 >>> spnset = getUtility(ISourcePackageNameSet)
 >>> ubuntu = distributionset.get(1)
 >>> evolution = spnset.get(9)
->>> added_bug = BugFactory(
-...     distribution = ubuntu.id, sourcepackagename = evolution,
-...     title = "test firefox bug", comment = "blah blah blah",
-...     owner = foobar, private = True)
+>>> added_bug = getUtility(IBugSet).createBug(
+...     distribution=ubuntu, sourcepackagename=evolution,
+...     title="test firefox bug", comment="blah blah blah",
+...     owner=foobar, private=True)
 >>> notify(SQLObjectCreatedEvent(added_bug))
 >>> private_bug = bugset.get(added_bug.id)
 >>> print [subscription.person.id for subscription in private_bug.subscriptions]

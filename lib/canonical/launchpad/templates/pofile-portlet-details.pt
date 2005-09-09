@@ -13,42 +13,42 @@
         </tal:block>
       </li>
     </ul>
-    <b>Creator:</b><br />
-    <ul class="people">
-      <li><a tal:content="context/owner/browsername"
-             tal:attributes="href string:/people/${context/owner/name}/">
-        Creator</a>
-      </li>
-    </ul>
-    <tal:block condition="context/potemplate/productseries">
+    <tal:has_owner condition="context/owner">
+      <b>Creator:</b><br />
+      <img src="/++resource++user.gif" />
+      <a tal:content="context/owner/browsername"
+         tal:attributes="href context/owner/fmt:url">Creator</a>
+      <br />
+    </tal:has_owner>
+    <tal:has_series condition="context/potemplate/productseries">
     <tal:block define="product context/potemplate/productseries/product">
       <b>For:</b>
       <a tal:content="context/potemplate/productseries/displayname"
          tal:attributes="href context/potemplate/productseries/fmt:url">
          Mozilla Main
       </a><br />
-      <tal:block condition="product/translationgroup">
+      <tal:has_prod_translationgrp condition="product/translationgroup">
         <b>Translation Group:</b><br />
         <a tal:content="product/translationgroup/title"
            tal:attributes="href
              string:/rosetta/groups/${product/translationgroup/name}/"
              >Ubuntu Translation Group</a><br />
-      </tal:block>
-      <tal:block condition="product/project"
-                 define="project product/project">
+      </tal:has_prod_translationgrp>
+      <tal:has_project condition="product/project"
+                       define="project product/project">
         <b>Project:</b>
           <a tal:content="project/displayname"
              tal:attributes="href string:/projects/${project/name}/" /><br />
-        <tal:block condition="project/translationgroup">
+        <tal:has_proj_translationgrp condition="project/translationgroup">
           <b>Project Translation Group:</b><br />
           <a tal:content="project/translationgroup/title"
              tal:attributes="href
                  string:/rosetta/groups/${project/translationgroup/name}/"
                >Ubuntu Translation Group</a><br />
-        </tal:block>
-      </tal:block>
+        </tal:has_proj_translationgrp>
+      </tal:has_project>
     </tal:block>
-    </tal:block>
+    </tal:has_series>
     <tal:block condition="context/potemplate/distrorelease">
     <tal:block define="distro context/potemplate/distrorelease/distribution">
     <b>Distribution:</b>

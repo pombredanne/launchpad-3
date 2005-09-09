@@ -96,7 +96,7 @@ start: inplace stop
 
 # Kill launchpad last - other services will probably shutdown with it,
 # so killing them after is a race condition.
-stop:
+stop: build
 	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
 	    utilities/killservice.py librarian trebuchet launchpad
 
@@ -116,7 +116,7 @@ realclean: clean
 
 zcmldocs:
 	PYTHONPATH=`pwd`/src:$(PYTHONPATH) $(PYTHON) \
-	    ./src/zope/configuration/stxdocs.py \
+	    ./sourcecode/zope/configuration/stxdocs.py \
 	    -f ./src/zope/app/meta.zcml -o ./doc/zcml/namespaces.zope.org
 
 potemplates: launchpad.pot

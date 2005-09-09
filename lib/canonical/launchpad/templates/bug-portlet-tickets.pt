@@ -1,0 +1,20 @@
+<div class="portlet">
+
+  <h4>Related Tickets:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li class="ticket" tal:repeat="ticket context/tickets">
+        <span tal:replace="ticket/target/displayname">Ubuntu</span>:
+        <a tal:attributes="href ticket/fmt:url"
+           tal:content="ticket/title">spec title here</a>
+      </li>
+      <li class="info" tal:condition="not: context/tickets">
+        <i>No related support tickets.</i>
+      </li>
+    </ul>
+	
+  </div>
+
+</div>

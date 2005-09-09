@@ -7,6 +7,10 @@
       <li class="edit">
         <a tal:attributes="href string:${context/fmt:url}/+edit">Edit 
             Details</a></li>
+      <li class="info">
+        <a tal:attributes="href string:${context/fmt:url}/+specs">
+          Show Specifications</a>
+      </li>
       <li class="edit" tal:condition="context/required:launchpad.Edit">
         <a tal:attributes="href string:${context/fmt:url}/+reassign">Change 
             Admin</a>
@@ -20,6 +24,11 @@
       <li class="translations">
         <a tal:attributes="href string:${context/fmt:url}/+translations">View 
             Translations</a></li>
+      <li class="add">
+        <a tal:attributes="
+            href string:${context/distribution/fmt:url}/+addticket"
+            >Request Support</a>
+      </li>
       <li class="info">
         <a tal:attributes="href string:${context/fmt:url}/+packaging">View 
             Upstream Links</a></li>

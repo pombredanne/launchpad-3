@@ -23,11 +23,16 @@
         for="canonical.launchpad.interfaces.ISourcePackage"
         function="canonical.launchpad.browser.traverseSourcePackage" />
 
-     <browser:url
-         for="canonical.launchpad.interfaces.ISourcePackage"
-         path_expression="string:+sources/${name}"
-         attribute_to_parent="distrorelease"
-         />
+    <browser:url
+        for="canonical.launchpad.interfaces.ISourcePackage"
+        path_expression="string:+sources/${name}"
+        attribute_to_parent="distrorelease"
+        />
+
+   <browser:menus
+        module="canonical.launchpad.browser.sourcepackage"
+        classes="SourcePackageFacets"
+        />
 
     <browser:pages
       for="canonical.launchpad.interfaces.ISourcePackage"
@@ -81,6 +86,10 @@
 
         <!-- SourcePackage Portlets -->
         <browser:page
+            name="+portlet-details"
+            template="../templates/sourcepackage-portlet-details.pt"
+            lp:url="/distros/ubuntu/hoary/+sources/evolution/+portlet-details" />
+        <browser:page
             name="+portlet-actions"
             template="../templates/sourcepackage-portlet-actions.pt" />
         <browser:page
@@ -88,7 +97,13 @@
             template="../templates/sourcepackage-portlet-bugtasklist-actions.pt" />
         <browser:page
             name="+portlet-translations"
-            template="../templates/sourcepackage-portlet-translations.pt" />
+            template="../templates/sourcepackage-portlet-translations.pt"
+        />
+        <browser:page
+            name="+portlet-upstream-details"
+            template="../templates/sourcepackage-portlet-upstreamdetails.pt"
+        />
+
     </browser:pages>
 
     <browser:pages
@@ -127,7 +142,6 @@
         schema="canonical.launchpad.interfaces.IBugAddForm"
         label="Report Bug in a Distribution Source Package"
         class="canonical.launchpad.browser.sourcepackage.SourcePackageFilebugView"
-        content_factory="canonical.launchpad.database.bug.BugFactory"
         permission="launchpad.AnyPerson"
         fields="title comment private owner"
         keyword_arguments="title comment private owner"
@@ -135,7 +149,7 @@
         lp:url="/distros/ubuntu/hoary/+sources/apache2/+filebug">
         <browser:widget
            field="owner"
-           class="canonical.widgets.OwnerWidget" />
+           class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
