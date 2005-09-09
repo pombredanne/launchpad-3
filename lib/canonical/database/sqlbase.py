@@ -528,11 +528,11 @@ def flush_database_caches():
                 obj.sync()
             except SQLObjectNotFound:
                 obj.expire()
-        # iterate over all the still-live expired objects
+        # update all non-expired sqlobjects in the expiredCache dict.
         for value in cache.expiredCache.values():
             if not value: continue
             obj = value()
-            if not obj: continue
+            if not obj or obj._expired: continue
             try:
                 obj.sync()
             except SQLObjectNotFound:
