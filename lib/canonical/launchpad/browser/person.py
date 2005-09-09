@@ -58,7 +58,7 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, DefaultLink, canonical_url)
+    StandardLaunchpadFacets, Link, canonical_url)
 
 
 class PersonFacets(StandardLaunchpadFacets):
@@ -66,13 +66,13 @@ class PersonFacets(StandardLaunchpadFacets):
 
     usedfor = IPerson
 
-    links = ['overview', 'bugs', 'tickets', 'specs', 'bounties',
+    links = ['overview', 'bugs', 'tickets', 'specifications', 'bounties',
              'translations', 'calendar']
 
     def overview(self):
         target = ''
         text = 'Overview'
-        return DefaultLink(target, text)
+        return Link(target, text)
 
     def bugs(self):
         # XXX: Soon the +assignedbugs and +reportedbugs pages of IPerson will
@@ -109,8 +109,8 @@ class PersonFacets(StandardLaunchpadFacets):
         target = '+calendar'
         text = 'Calendar'
         # only link to the calendar if it has been created
-        linked = ICalendarOwner(self.context).calendar is not None
-        return Link(target, text, linked=linked)
+        enabled = ICalendarOwner(self.context).calendar is not None
+        return Link(target, text, enabled=enabled)
 
 
 ##XXX: (batch_size+global) cprov 20041003

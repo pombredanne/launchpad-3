@@ -2,10 +2,7 @@
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
-__all__ = [
-    'Bug',
-    'BugFactory',
-    'BugSet']
+__all__ = ['Bug', 'BugSet']
 
 from sets import Set
 from email.Utils import make_msgid
@@ -184,77 +181,6 @@ class Bug(SQLBase):
             remotebug=remotebug, owner=owner)
 
 
-# XXX kiko 2005-07-15 should this go to BugSet.new?
-def BugFactory(addview=None, distribution=None, sourcepackagename=None,
-        binarypackagename=None, product=None, comment=None,
-        description=None, msg=None, summary=None,
-        datecreated=None, title=None, private=False, owner=None):
-    """Create a bug and return it.
-
-    Things to note when using this factory:
-
-      * addview is not used for anything in this factory
-
-      * if no description is passed, the comment will be used as the
-        description
-
-      * if summary is not passed then the summary will be the
-        first sentence of the description
-
-      * the submitter will be subscribed to the bug
-
-      * if either product or distribution is specified, an appropiate
-        bug task will be created
-
-    """
-    # make sure that the factory has been passed enough information
-    if comment is description is msg is None:
-        raise ValueError('BugFactory requires a comment, msg, or description')
-
-    # make sure we did not get TOO MUCH information
-    assert (comment is None or msg is None), "Too much information"
-
-    # create the bug comment if one was given
-    if comment:
-        rfc822msgid = make_msgid('malonedeb')
-        msg = Message(subject=title, distribution=distribution,
-            rfc822msgid=rfc822msgid, owner=owner)
-        chunk = MessageChunk(messageID=msg.id, sequence=1,
-            content=comment, blobID=None)
-
-    # extract the details needed to create the bug and optional msg
-    if not description:
-        description = msg.contents
-
-    if not datecreated:
-        datecreated = UTC_NOW
-
-    bug = Bug(
-        title=title, summary=summary,
-        description=description, private=private,
-        owner=owner.id, datecreated=datecreated)
-
-    sub = BugSubscription(person=owner.id, bug=bug.id)
-
-    # link the bug to the message
-    bugmsg = BugMessage(bug=bug, message=msg)
-
-    # create the task on a product if one was passed
-    if product:
-        BugTask(bug=bug, product=product, owner=owner)
-
-    # create the task on a source package name if one was passed
-    if distribution:
-        task = BugTask(
-                bug=bug,
-                distribution=distribution,
-                sourcepackagename=sourcepackagename,
-                binarypackagename=binarypackagename,
-                owner=owner)
-
-    return bug
-
-
 class BugSet(BugSetBase):
     implements(IBugSet)
 
@@ -296,11 +222,68 @@ class BugSet(BugSetBase):
         binarypackagename=None, product=None, comment=None,
         description=None, msg=None, summary=None, datecreated=None,
         title=None, private=False, owner=None):
-        return BugFactory(distribution=distribution,
-            sourcepackagename=sourcepackagename,
-            binarypackagename=binarypackagename, product=product,
-            comment=comment, description=description, msg=msg,
-            summary=summary, datecreated=datecreated, title=title,
-            private=private, owner=owner)
+        """Create a bug and return it.
+
+        Things to note when using this factory:
+
+          * if no description is passed, the comment will be used as the
+            description
+
+          * if summary is not passed then the summary will be the
+            first sentence of the description
+
+          * the submitter will be subscribed to the bug
+
+          * if either product or distribution is specified, an appropiate
+            bug task will be created
+
+        """
+        # make sure that the factory has been passed enough information
+        if comment is description is msg is None:
+            raise ValueError(
+                'createBug requires a comment, msg, or description')
+
+        # make sure we did not get TOO MUCH information
+        assert (comment is None or msg is None), "Too much information"
+
+        # create the bug comment if one was given
+        if comment:
+            rfc822msgid = make_msgid('malonedeb')
+            msg = Message(subject=title, distribution=distribution,
+                rfc822msgid=rfc822msgid, owner=owner)
+            chunk = MessageChunk(messageID=msg.id, sequence=1,
+                content=comment, blobID=None)
+
+        # extract the details needed to create the bug and optional msg
+        if not description:
+            description = msg.contents
+
+        if not datecreated:
+            datecreated = UTC_NOW
+
+        bug = Bug(
+            title=title, summary=summary,
+            description=description, private=private,
+            owner=owner.id, datecreated=datecreated)
+
+        sub = BugSubscription(person=owner.id, bug=bug.id)
+
+        # link the bug to the message
+        bugmsg = BugMessage(bug=bug, message=msg)
+
+        # create the task on a product if one was passed
+        if product:
+            BugTask(bug=bug, product=product, owner=owner)
+
+        # create the task on a source package name if one was passed
+        if distribution:
+            task = BugTask(
+                    bug=bug,
+                    distribution=distribution,
+                    sourcepackagename=sourcepackagename,
+                    binarypackagename=binarypackagename,
+                    owner=owner)
+
+        return bug
 
 

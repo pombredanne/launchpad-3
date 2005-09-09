@@ -32,7 +32,7 @@ class DistributionFacets(StandardLaunchpadFacets):
 
     usedfor = IDistribution
 
-    links = ['overview', 'bugs', 'tickets', 'specs', 'translations',
+    links = ['overview', 'bugs', 'tickets', 'specifications', 'translations',
              'calendar']
 
     def specs(self):

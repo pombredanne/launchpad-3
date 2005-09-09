@@ -135,8 +135,7 @@ class POMsgSet(SQLBase):
 
         # Fix the trailing and leading whitespaces
         for index, value in new_translations.items():
-            new_translations[index] = helpers.normalize_whitespaces(
-                msgids_text[0], value)
+            new_translations[index] = self.potmsgset.apply_sanity_fixes(value)
 
         # Validate the translation we got from the translation form
         # to know if gettext is unhappy with the input.

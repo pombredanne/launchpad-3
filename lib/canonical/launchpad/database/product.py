@@ -22,7 +22,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, BugTaskSeverity, BugTaskStatus,
     RosettaImportStatus)
-from canonical.launchpad.database.bug import BugFactory
+from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
@@ -161,8 +161,8 @@ class Product(SQLBase):
 
     def newBug(self, owner, title, description):
         """See IBugTarget."""
-        return BugFactory(product=self, comment=description, title=title,
-            owner=owner)
+        return BugSet().createBug(
+            product=self, comment=description, title=title, owner=owner)
 
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""

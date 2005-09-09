@@ -704,6 +704,8 @@ sourcepackagerelease_index = ContextTitle('Source Package %s')
 def sourcepackages(context, view):
     return '%s Source Packages' % context.distrorelease.title
 
+sourcepackages_comingsoon = 'Coming soon'
+
 sources_index = 'Bazaar: Upstream Revision Control Imports'
 
 sourcesource_index = 'Upstream Source Import'

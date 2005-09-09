@@ -1,0 +1,75 @@
+The "coming soon" page is a view on the ISourcePackageSet (which really
+should be a Subset, and really should disappear entirely...) which
+is rendered when there is a request for a '+gethelp' or '+translate'
+page of a sourcepackage, where that particular sourcepackage doesn't exist
+in that distrorelease.
+
+The reason for this is that some packages have changed names between
+hoary and breezy, and there are some new packages.  Gina has't been run
+on production, so the full plethora of breezy packages aren't in there.
+
+The distro team are concerned that people will click on "gethelp" on
+the preview release, of breezy, and get an unpleasant 404 page rather
+than some kind of more welcoming page.
+
+The pagetest for these pages is using hoary because breezy doesn't have
+any sourcepackages in the sample data.
+
+First, get the translation page for a package that does exist.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/pmount/+translate HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...pmount in ubuntu hoary...
+  ...
+  ...<h1>Translate This Package</h1>...
+  ...
+
+Get the gethelp page for a package that exists.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/pmount/+gethelp HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...pmount in ubuntu hoary...
+  ...
+  ...<h1>Get Help Online!</h1>...
+  ...
+
+Get the translation page for a package that does not exist.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/doesnotexist/+translate HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...The Hoary Hedgehog Release Source Packages...
+  ...
+  ...Coming soon...
+  ...
+
+Get the gethelp page for a package that does not exist.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/doesnotexist/+gethelp HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...The Hoary Hedgehog Release Source Packages...
+  ...
+  ...Coming soon...
+  ...
+
+Get some other page for package that does not exist.  This shows that 404
+errors still work, and that the 'coming soon' page is used only for
++gethelp and +translate pages.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/doesnotexist/+nosuchpagehere HTTP/1.1
+  ... """)
+  HTTP/1.1 404 Not Found
+  ...
+

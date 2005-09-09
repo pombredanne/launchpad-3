@@ -42,6 +42,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductRelease"
+        facet="overview"
         permission="zope.Public">
         <browser:page
             name="+index"
@@ -66,6 +67,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.IProductRelease"
         class="canonical.launchpad.browser.ProductReleaseRdfView"
+        facet="overview"
         permission="zope.Public"
         name="+rdf"
         lp:url="/projects/$Product.name/$ProductRelease.name/+rdf"
@@ -77,6 +79,7 @@
       for="canonical.launchpad.interfaces.IProductRelease"
       schema="canonical.launchpad.interfaces.IProductRelease"
       class="canonical.launchpad.browser.productrelease.ProductReleaseEditView"
+      facet="overview"
       label="Edit Product Release Details:"
       fields="title summary description changelog"
       permission="launchpad.Edit"
@@ -93,6 +96,7 @@
         name="+review"
         for="canonical.launchpad.interfaces.IProductRelease"
         schema="canonical.launchpad.interfaces.IProductRelease"
+        facet="overview"
         label="Review Product Release Details:"
         fields="version productseries"
         permission="launchpad.Admin"

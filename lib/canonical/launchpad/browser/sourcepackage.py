@@ -4,6 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'traverseSourcePackage',
+    'traverseSourcePackageSet',
     'SourcePackageFacets',
     'SourcePackageReleasePublishingView',
     'SourcePackageInDistroSetView',
@@ -17,7 +18,7 @@ import cgi
 import re
 import sets
 
-from zope.component import getUtility
+from zope.component import getUtility, queryView
 from zope.app.form.interfaces import IInputWidget
 from zope.app import zapi
 
@@ -27,7 +28,7 @@ from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ILaunchBag, ICountry, IBugTaskSet,
-    ISourcePackage)
+    ISourcePackage, IBugSet)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.soyuz.generalapp import builddepsSet
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -65,6 +66,23 @@ def traverseSourcePackage(sourcepackage, request, name):
                    sourcepackagename=sourcepackage.sourcepackagename)
     return None
 
+def traverseSourcePackageSet(sourcepackageset, request, name):
+    try:
+        return sourcepackageset[name]
+    except KeyError:
+        traversalstack = request.getTraversalStack()
+        if traversalstack:
+            nextstep = traversalstack[-1]
+            # If the page is one of those from ubuntu-launchpad integration,
+            # eat the rest of traversal, but make it traverse +comingsoon.
+            # This gives users of launchpad integration meus a nicer experience
+            # than getting 404 errors.
+            if nextstep == '+gethelp' or nextstep == '+translate':
+                request._traversed_names.append('+comingsoon')
+                request.setTraversalStack([])
+                return queryView(sourcepackageset, "+comingsoon", request)
+        return None
+
 
 class SourcePackageFacets(StandardLaunchpadFacets):
 
@@ -74,8 +92,9 @@ class SourcePackageFacets(StandardLaunchpadFacets):
 
 class SourcePackageFilebugView(SQLObjectAddView):
     """View for filing a bug on a source package."""
-    def create(self, *args, **kw):
-        """Create an IDistroBugTask."""
+
+    def create(self, **kw):
+        """Create a new bug on the source package."""
         # Because distribution and sourcepackagename are things
         # inferred from the context rather than data entered on the
         # filebug form, we have to manually add these values to the
@@ -88,7 +107,7 @@ class SourcePackageFilebugView(SQLObjectAddView):
 
         # Store the added bug so that it can be accessed easily in any
         # other method on this class (e.g. nextURL)
-        self.addedBug = SQLObjectAddView.create(self, *args, **kw)
+        self.addedBug = getUtility(IBugSet).createBug(**kw)
 
         return self.addedBug
 

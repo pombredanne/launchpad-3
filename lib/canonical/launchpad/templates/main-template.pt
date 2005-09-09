@@ -45,39 +45,45 @@
     </h2>    
       <ul
         class="facets app"
-        tal:define="facetmenu context/menu:facet"
+        tal:define="facetmenu CONTEXTS/menu:facet"
       >
-        <tal:block condition="facetmenu">
-          <tal:block repeat="link facetmenu">
-            <li
-              tal:condition="link/selected"
-              class="current"
-            >
-              <strong tal:condition="link/linked">
+       <tal:condition tal:condition="python: '+login' not in request.getURL()">
+        <tal:facetmenu condition="facetmenu">
+          <tal:facet repeat="link facetmenu">
+            <tal:available condition="link/enabled">
+              <li tal:condition="link/selected" class="current">
+                <strong tal:condition="link/linked">
+                  <a
+                    tal:attributes="href link/url"
+                    tal:content="link/text"
+                  >abc</a>
+                  </strong>
+                <strong
+                  tal:condition="not: link/linked"
+                  tal:content="link/text"
+                >def</strong>
+              </li>
+              <li tal:condition="not: link/selected">
                 <a
+                  tal:condition="link/linked"
                   tal:attributes="href link/url"
                   tal:content="link/text"
-                >abc</a>
-              </strong>
-              <strong
-                tal:condition="not: link/linked"
-                tal:content="link/text"
-              >def</strong>
-            </li>
-            <li tal:condition="not: link/selected">
-              <a
-                tal:condition="link/linked"
-                tal:attributes="href link/url"
-                tal:content="link/text"
-              >ghi</a>
-              <span
-                class="disabled"
-                tal:condition="not: link/linked"
-                tal:content="link/text"
-              >jkl</span>
-            </li>
-          </tal:block>
-        </tal:block>
+                >ghi</a>
+                <span
+                  class="disabled"
+                  tal:condition="not: link/linked"
+                  tal:content="link/text"
+                >jkl</span>
+              </li>
+            </tal:available>
+            <li
+              tal:condition="not: link/enabled"
+              tal:content="link/text"
+              class="unavailable"
+            />
+          </tal:facet>
+        </tal:facetmenu>
+        </tal:condition>
       </ul>
 
     <!-- Menus -->
@@ -110,7 +116,7 @@
             rowspan="2"
           >
             <div
-              tal:define="appmenu context/menu:application"
+              tal:define="appmenu CONTEXTS/menu:application"
               tal:condition="appmenu"
               class="portlet portletBody portletContent"
             >

@@ -30,7 +30,7 @@ from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 class DistroReleaseFacets(StandardLaunchpadFacets):
 
     usedfor = IDistroRelease
-    links = ['overview', 'bugs', 'specs', 'translations']
+    links = ['overview', 'bugs', 'specifications', 'translations']
 
 
 class DistroReleaseView:

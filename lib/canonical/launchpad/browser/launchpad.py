@@ -11,18 +11,18 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     ILaunchBag, ILaunchpadRoot, IRosettaApplication)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ApplicationMenu, DefaultLink, Link)
+    StandardLaunchpadFacets, ApplicationMenu, Link)
 
 
 class LaunchpadRootFacets(StandardLaunchpadFacets):
     usedfor = ILaunchpadRoot
-    links = ['overview', 'bugs', 'tickets', 'specs', 'bounties',
+    links = ['overview', 'bugs', 'tickets', 'specifications', 'bounties',
              'translations', 'calendar']
 
     def overview(self):
         target = ''
         text = 'Overview'
-        return DefaultLink(target, text)
+        return Link(target, text)
 
     def translations(self):
         target = 'rosetta'
@@ -66,7 +66,7 @@ class RosettaAppMenus(ApplicationMenu):
     def overview(self):
         target = ''
         text = 'Translations'
-        return DefaultLink(target, text)
+        return Link(target, text)
 
     def upload(self):
         target = '+upload'

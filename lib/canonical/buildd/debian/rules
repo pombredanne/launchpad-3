@@ -49,6 +49,7 @@ install:
 	install -m755 buildd-config.py $(target)/usr/bin/buildd-genconfig
 	install -m755 chapt-get $(target)/usr/bin
 	install -m644 sbuildrc $(targetshare)/sbuildrc
+	install -m644 sbuild.conf $(target)/etc/sbuild.conf
 	# Okay, that's installed all the slave-related files
 
 

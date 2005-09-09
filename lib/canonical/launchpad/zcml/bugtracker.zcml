@@ -5,6 +5,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+  <facet facet="bugs">
+
     <!-- BugTracker -->
     <content class="canonical.launchpad.database.BugTracker">
         <allow interface="canonical.launchpad.interfaces.IBugTracker" />
@@ -127,5 +129,7 @@
         template="../templates/bugtrackers-add.pt"
         lp:url="malone/bugtrackers/+newbugtracker"
     />
+
+  </facet>
 
 </configure>

@@ -5,11 +5,7 @@
 
     <!-- links -->
     <content class="canonical.launchpad.webapp.menu.Link">
-      <allow interface="canonical.launchpad.interfaces.ILink" />
-    </content>
-
-    <content class="canonical.launchpad.webapp.menu.DefaultLink">
-      <allow interface="canonical.launchpad.interfaces.IDefaultLink" />
+      <allow interface="canonical.launchpad.interfaces.IFacetLink" />
     </content>
 
     <!-- urls -->

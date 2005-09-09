@@ -39,6 +39,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
         class="canonical.launchpad.browser.BugTaskSearchListingView"
+        facet="bugs"
         permission="zope.Public">
         <browser:page
             name="+bugs-only"
@@ -60,18 +61,22 @@
         permission="zope.Public" >
         <browser:page
             name="+index"
+            facet="overview"
             template="../templates/distribution-index.pt"
             lp:url="/distros/$Distribution.name/" />
         <browser:page
             name="+bounties"
+            facet="bounties"
             template="../templates/related-bounties.pt"
             lp:url="/distros/$Distribution.name/+bounties" />
         <browser:page
             name="+members"
+            facet="overview"
             template="../templates/distribution-members.pt"
             lp:url="/distros/$Distribution.name/+members" />
         <browser:page
             name="+cve"
+            facet="bugs"
             template="../templates/distribution-cvereport.pt"
             lp:url="/distros/$Distribution.name/+cve" />
         <browser:page
@@ -84,26 +89,32 @@
         permission="zope.Public" >
         <browser:page
             name="+portlet-actions"
+            facet="overview"
             template="../templates/distribution-portlet-actions.pt"
             lp:url="/distros/$Distribution.name/+portlet-actions" />
         <browser:page
             name="+portlet-details"
+            facet="overview"
             template="../templates/distribution-portlet-details.pt"
             lp:url="/distros/$Distribution.name/+portlet-details" />
         <browser:page
             name="+portlet-releases"
+            facet="overview"
             template="../templates/distribution-portlet-releases.pt"
             lp:url="/distros/$Distribution.name/+portlet-releases" />
         <browser:page
             name="+portlet-milestones"
+            facet="overview"
             template="../templates/object-portlet-milestones.pt"
             lp:url="/distros/$Distribution.name/+portlet-milestones" />
         <browser:page
             name="+portlet-bounties"
+            facet="bounties"
             template="../templates/object-portlet-bounties.pt"
             lp:url="/distros/$Distribution.name/+portlet-bounties" />
         <browser:page
             name="+portlet-aboutcve"
+            facet="bugs"
             template="../templates/distribution-portlet-aboutcve.pt"
             lp:url="/distros/$Distribution.name/+portlet-aboutcve" />
     </browser:pages>
@@ -111,6 +122,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
         permission="launchpad.Edit"
+        facet="overview"
         class="canonical.launchpad.browser.ObjectReassignmentView">
           <browser:page
               name="+reassign"
@@ -127,6 +139,7 @@
         parentrelease components sections"
         content_factory="canonical.launchpad.database.DistroRelease"
         class="canonical.launchpad.browser.DistroReleaseAddView"
+        facet="overview"
         permission="launchpad.Admin"
         template="../templates/launchpad-addform.pt"
         lp:url="/distros/Distro.name/+add">
@@ -140,6 +153,7 @@
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IMilestone"
         class="canonical.launchpad.browser.milestone.MilestoneAddView"
+        facet="overview"
         label="Add a Milestone"
         fields="name dateexpected"
         keyword_arguments="name dateexpected"
@@ -155,6 +169,7 @@
         label="Report Bug in a Linux Distribution"
         fields="sourcepackagename title comment private owner"
         class="canonical.launchpad.browser.DistributionFileBugView"
+        facet="bugs"
         keyword_arguments="sourcepackagename title comment private owner"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
@@ -177,6 +192,7 @@
         permission="launchpad.Edit"
         name="+edit"
         schema="canonical.launchpad.interfaces.IDistribution"
+        facet="overview"
         fields="displayname title summary description"
         template="../templates/launchpad-editform.pt"
         lp:url="/distros/$Distribution.name/+edit" />
@@ -185,6 +201,7 @@
         name="+selectmemberteam"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IDistribution"
+        facet="overview"
         fields="members"
         label="Select A New Distribution Members Team"
         permission="launchpad.Edit"
@@ -195,6 +212,7 @@
         name="+changetranslators"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IDistribution"
+        facet="translations"
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
         label="Select A New Translation Group"
@@ -206,6 +224,7 @@
       for="canonical.launchpad.interfaces.IDistribution"
       schema="canonical.launchpad.interfaces.IDistributionBounty"
       class="canonical.launchpad.browser.bounty.BountyLinkView"
+      facet="bounties"
       label="Link Existing Bounty"
       fields="distribution bounty"
       keyword_arguments="distribution bounty"
@@ -224,6 +243,7 @@
       label="Register A New Bounty"
       fields="name title summary usdvalue difficulty description"
       class="canonical.launchpad.browser.BountyAddView"
+      facet="bounties"
       permission="launchpad.AnyPerson"
       template="../templates/bounty-add.pt"
       />
@@ -260,6 +280,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IDistributionSet"
         permission="zope.Public"
+        facet="overview"
         class="canonical.launchpad.browser.DistributionSetView">
         <browser:page
             name="+index"
@@ -274,6 +295,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IDistributionSet"
         permission="zope.Public"
+        facet="overview"
         class="canonical.launchpad.browser.DistributionSetView">
     </browser:pages>
 
@@ -281,6 +303,7 @@
         for="canonical.launchpad.interfaces.IDistributionSet"
         permission="zope.Public"
             class="canonical.launchpad.browser.DistributionSetSearchView"
+            facet="overview"
             template="../templates/distribution-search.pt"
             lp:url="Soyuz/distros/+search"
             name="+search"
@@ -295,6 +318,7 @@
                 members"
         content_factory="canonical.launchpad.database.Distribution"
         class="canonical.launchpad.browser.DistributionSetAddView"
+        facet="overview"
         permission="launchpad.Admin"
         template="../templates/launchpad-addform.pt"
         lp:url="/distros/+add">
