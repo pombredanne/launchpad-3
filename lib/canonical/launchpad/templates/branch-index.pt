@@ -16,6 +16,11 @@
 
 <div metal:fill-slot="main">
 
+  <p tal:repeat="notice view/notices" tal:content="notice"
+     class="portalMessage">
+    notice goes here
+  </p>
+
   <div class="documentDescription" tal:content="context/summary">
     $Branch.summary goes here. This should be quite short, just a single
     paragraph of text really, giving the branch highlights.
