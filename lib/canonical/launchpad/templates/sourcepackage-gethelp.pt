@@ -48,14 +48,12 @@
   </p>
   </tal:needupstream>
 
-  <tal:ticket condition="nothing">
   <h2>Make a support request</h2>
 
   <p>
     You can <a href="+addticket">make a support request</a> in Launchpad,
     and some community members might be able to help you free of charge.
   </p>
-  </tal:ticket>
 
 </div>
 </body>
