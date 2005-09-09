@@ -13,8 +13,8 @@ fi
 LAUNCHPAD_BASE=$1
 
 for dir in sourcecode lib; do
-    for f in $LAUNCHPAD_BASE/$dir/*; do 
+    for f in $LAUNCHPAD_BASE/$dir/*; do
         target=$dir/`basename $f`
-        test ! -e $target && ln -sv $f $target; 
+        test ! -e $target && ln -sv $f $target;
     done
 done

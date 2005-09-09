@@ -1099,6 +1099,8 @@ class RequestPeopleMergeMultipleEmailsView:
             # We just got redirected to this page and we don't have the dupe
             # hidden field in request.form.
             dupe = self.request.get('dupe')
+            # XXX  handle the case where get returns None, here
+
         self.dupe = getUtility(IPersonSet).get(int(dupe))
         emailaddrset = getUtility(IEmailAddressSet)
         self.dupeemails = emailaddrset.getByPerson(self.dupe)

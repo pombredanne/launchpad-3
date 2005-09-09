@@ -277,6 +277,8 @@
         parent_utility="canonical.launchpad.interfaces.IDistributionSet"
         />
 
+    <!-- XXX: WTF is distros-index hooked onto +bugs for
+              kiko, 2005-09-09 -->
     <browser:pages
         for="canonical.launchpad.interfaces.IDistributionSet"
         permission="zope.Public"

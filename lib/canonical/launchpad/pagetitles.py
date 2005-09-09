@@ -129,6 +129,8 @@ bounty_edit = ContextTitle('Edit Bounty: %s')
 
 bounty_add = 'Register a bounty in Launchpad'
 
+bounty_link = ContextTitle('Link a bounty to %s')
+
 bounty_edit = ContextTitle('Edit bounty "%s"')
 
 bounty_index = ContextTitle('Launchpad Bounty: %s')
@@ -286,6 +288,8 @@ distribution_memberteam = ContextTitle("Change %s's distribution team")
 distribution_translations = ContextDisplayName('Translating %s')
 
 distribution_translators = 'Appoint Distribution Translation Group'
+
+distribution_search = 'Locate Distributions in Launchpad'
 
 distribution_index = ContextTitle('Launchpad Distribution Summary: %s')
 
@@ -498,6 +502,8 @@ person_shipit = "Your ShipIt Orders"
 
 person_translations = ContextDisplayName('Translations Made By %s')
 
+person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
+
 # plone.css is a css file
 
 pofile_edit = 'Rosetta: Edit PO file details'
@@ -539,6 +545,8 @@ potemplate_index = ContextTitle('%s in Rosetta')
 
 potemplate_upload = ContextTitle('%s upload in Rosetta')
 
+potemplate_export = ContextTitle('Export %s\'s translations')
+
 potemplatename_add = 'Add a new template name to Rosetta'
 
 potemplatename_edit = ContextTitle('%s edit in Rosetta')
@@ -550,6 +558,8 @@ potemplatenames_index = 'Template names in Launchpad'
 product_add = 'Register a product with Launchpad'
 
 product_bugs = ContextDisplayName('%s upstream bug reports')
+
+product_branches = ContextDisplayName('%s\'s code branches in Launchpad')
 
 product_distros = ContextDisplayName('%s packages: Comparison of distributions')
 
@@ -670,6 +680,8 @@ def sourcepackage_bugs(context, view):
 
 sourcepackage_buildlog = 'Source Package Build Log'
 
+sourcepackage_translate = ContextTitle('Help translate %s')
+
 sourcepackage_changelog = 'Source Package Changelog'
 
 sourcepackage_filebug = ContextTitle("Report a Bug in %s")
@@ -682,8 +694,6 @@ def sourcepackage_index(context, view):
     return '%s Source Packages' % context.distrorelease.title
 
 sourcepackage_packaging = ContextTitle('Define the Upstream Series of %s')
-
-sourcepackage_translate = ContextTitle('Help to Translate %s')
 
 sourcepackage_translations = ContextTitle(
     'Rosetta Translation Templates for %s')
