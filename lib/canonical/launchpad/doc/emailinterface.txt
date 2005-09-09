@@ -278,6 +278,13 @@ Subscribes yourself or someone else to the bug. All arguments are
 optional. If you don't specify a name, the sender of the email will
 be subscribed. Examples:
 
+    >>> subscriptions = [subscription.person.name
+    ...                  for subscription in bug_four.subscriptions]
+    >>> subscriptions.sort()
+    >>> subscriptions
+    [u'name12']
+
+
     >>> submit_commands('subscribe')
     >>> 'Sample Person' in [subscription.person.displayname
     ...                     for subscription in bug_four.subscriptions]

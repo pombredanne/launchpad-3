@@ -10,30 +10,52 @@ __all__ = [
     'BugAddingView',
     'BugAddForm',
     'BugRelatedObjectAddView',
-    'BugRelatedObjectEditView']
+    'BugRelatedObjectEditView',
+    'DeprecatedAssignedBugsView']
+
+import urllib
 
 from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.lp import dbschema, decorates, Passthrough
+from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import IBugAddForm, IBug, ILaunchBag
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
+
 class BugView:
     """The view for the main bug page"""
-    def getCCs(self):
-        return [s for s in self.context.subscriptions
-                if s.subscription==dbschema.BugSubscription.CC]
 
-    def getWatches(self):
-        return [s for s in self.context.subscriptions
-                if s.subscription==dbschema.BugSubscription.WATCH]
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.notices = []
 
-    def getIgnores(self):
-        return [s for s in self.context.subscriptions
-                if s.subscription==dbschema.BugSubscription.IGNORE]
+        # figure out who the user is for this transaction
+        self.user = getUtility(ILaunchBag).user
+
+        # establish if a subscription form was posted
+        newsub = request.form.get('subscribe', None)
+        if newsub is not None and self.user and request.method == 'POST':
+            if newsub == 'Subscribe':
+                self.context.subscribe(self.user)
+                self.notices.append("You have subscribed to this bug.")
+            elif newsub == 'Unsubscribe':
+                self.context.unsubscribe(self.user)
+                self.notices.append("You have unsubscribed from this bug.")
+
+    @property
+    def subscription(self):
+        """establish if this user has a subscription"""
+        if self.user is None:
+            return None
+        for subscription in self.context.subscriptions:
+            if subscription.person.id == self.user.id:
+                return subscription
+        return None
 
 
 class BugSetView:
@@ -54,6 +76,9 @@ class BugEditView(BugView, SQLObjectEditView):
     def __init__(self, context, request):
         BugView.__init__(self, context, request)
         SQLObjectEditView.__init__(self, context, request)
+
+    def changed(self):
+        self.request.response.redirect(canonical_url(self.context))
 
 
 class BugAddView(SQLObjectAddView):
@@ -123,3 +148,22 @@ class BugRelatedObjectEditView(SQLObjectEditView):
     def changed(self):
         """Redirect to the bug page."""
         self.request.response.redirect(canonical_url(self.bug))
+
+
+class DeprecatedAssignedBugsView:
+    """Deprecate the /malone/assigned namespace.
+
+    It's important to ensure that this namespace continues to work, to
+    prevent linkrot, but since FOAF seems to be a more natural place
+    to put the assigned bugs report, we'll redirect to the appropriate
+    FOAF URL.
+    """
+    def __init__(self, context, request):
+        """Redirect the user to their assigned bugs report."""
+        self.context = context
+        self.request = request
+
+    def redirect_to_assignedbugs(self):
+        self.request.response.redirect(
+            canonical_url(getUtility(ILaunchBag).user) +
+            "/+assignedbugs")

@@ -24,7 +24,7 @@ class Language(SQLBase):
     englishname = StringCol(dbName='englishname')
     pluralforms = IntCol(dbName='pluralforms')
     pluralexpression = StringCol(dbName='pluralexpression')
-    visible = BoolCol(dbName='visible')
+    visible = BoolCol(dbName='visible', notNull=True)
 
     translators = RelatedJoin('Person', joinColumn='language',
         otherColumn='person', intermediateTable='PersonLanguage')

@@ -42,6 +42,7 @@ class SourcePackageRelease(SQLBase):
     dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
     manifest = ForeignKey(foreignKey='Manifest', dbName='manifest')
     urgency = EnumCol(dbName='urgency', schema=SourcePackageUrgency,
+                      default=SourcePackageUrgency.LOW,
                       notNull=True)
     dateuploaded = UtcDateTimeCol(dbName='dateuploaded', notNull=True,
                                   default=UTC_NOW)

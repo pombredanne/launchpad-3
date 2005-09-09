@@ -85,6 +85,10 @@ class Bug(SQLBase):
     specifications = RelatedJoin('Specification', joinColumn='bug',
         otherColumn='specification', intermediateTable='SpecificationBug',
         orderBy='-datecreated')
+    tickets = RelatedJoin('Ticket', joinColumn='bug',
+        otherColumn='ticket', intermediateTable='TicketBug',
+        orderBy='-datecreated')
+
 
     @property
     def bugtasks(self):
@@ -95,37 +99,32 @@ class Bug(SQLBase):
     def followup_subject(self):
         return 'Re: '+ self.title
 
-    def subscribe(self, person, subscription):
+    def subscribe(self, person):
         """See canonical.launchpad.interfaces.IBug."""
-        if self.isSubscribed(person):
-            raise ValueError(
-                _("Person with ID %d is already subscribed to this bug") %
-                person.id)
+        # first look for an existing subscription
+        for sub in self.subscriptions:
+            if sub.person.id == person.id:
+                return sub
 
-        return BugSubscription(
-            bug = self.id, person = person.id, subscription = subscription)
+        return BugSubscription(bug=self, person=person)
 
     def unsubscribe(self, person):
         """See canonical.launchpad.interfaces.IBug."""
-        bug_subscription = BugSubscription.selectOneBy(
-            bugID=self.id, personID=person.id)
-        if not bug_subscription:
-            raise ValueError(
-                "Person with name '%s' is not subscribed to this bug" %
-                person.name)
-        bug_subscription.destroySelf()
+        for sub in self.subscriptions:
+            if sub.person.id == person.id:
+                BugSubscription.delete(sub.id)
+                return
 
     def isSubscribed(self, person):
         """See canonical.launchpad.interfaces.IBug."""
-        bs = BugSubscription.selectBy(bugID = self.id, personID = person.id)
+        bs = BugSubscription.selectBy(bugID=self.id, personID=person.id)
         return bool(bs.count())
 
     def notificationRecipientAddresses(self):
         """See canonical.launchpad.interfaces.IBug."""
         emails = Set()
         for subscription in self.subscriptions:
-            if subscription.subscription == dbschema.BugSubscription.CC:
-                emails.update(contactEmailAddresses(subscription.person))
+            emails.update(contactEmailAddresses(subscription.person))
 
         if not self.private:
             # Collect implicit subscriptions. This only happens on
@@ -156,6 +155,16 @@ class Bug(SQLBase):
         emails = list(emails)
         emails.sort()
         return emails
+
+    # messages
+    def newMessage(self, owner=None, subject=None, content=None,
+        parent=None):
+        """Create a new Message and link it to this ticket."""
+        msg = Message(parent=parent, owner=owner,
+            rfc822msgid=make_msgid('malone'), subject=subject)
+        chunk = MessageChunk(messageID=msg.id, content=content, sequence=1)
+        bugmsg = BugMessage(bug=self, message=msg)
+        return msg
 
     def linkMessage(self, message):
         """See IBug."""
@@ -199,12 +208,11 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
 
     """
     # make sure that the factory has been passed enough information
-    if not (comment or description or msg is not None):
-        raise ValueError(
-            'BugFactory requires a comment, msg, or description')
+    if comment is description is msg is None:
+        raise ValueError('BugFactory requires a comment, msg, or description')
 
     # make sure we did not get TOO MUCH information
-    assert not (comment and msg is not None), "Too much information"
+    assert (comment is None or msg is None), "Too much information"
 
     # create the bug comment if one was given
     if comment:
@@ -226,8 +234,7 @@ def BugFactory(addview=None, distribution=None, sourcepackagename=None,
         description=description, private=private,
         owner=owner.id, datecreated=datecreated)
 
-    sub = BugSubscription(
-        person=owner.id, bug=bug.id, subscription=dbschema.BugSubscription.CC)
+    sub = BugSubscription(person=owner.id, bug=bug.id)
 
     # link the bug to the message
     bugmsg = BugMessage(bug=bug, message=msg)

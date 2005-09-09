@@ -47,7 +47,20 @@ Footnotes
 1. Including this file, README.txt.  It doesn't run any tests, but that
    is okay.
 
-2. You can use the following for Foo Bar (an admin user):
+2. You can use the following authorization lines:
 
+  for Foo Bar (an admin user):
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+
+  for Sample Person (a normal user):
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+
+  for Mark Shuttleworth:
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+
+  for Carlos:
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+
+  for Salgado:
+  ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
 

@@ -63,6 +63,7 @@ from canonical.launchpad.database.build import *
 from canonical.launchpad.database.publishing import *
 from canonical.launchpad.database.files import *
 from canonical.launchpad.database.bounty import *
+from canonical.launchpad.database.bountymessage import *
 from canonical.launchpad.database.bountysubscription import *
 from canonical.launchpad.database.message import *
 from canonical.launchpad.database.queue import *
@@ -81,5 +82,10 @@ from canonical.launchpad.database.section import *
 from canonical.launchpad.database.shipit import *
 from canonical.launchpad.database.vpoexport import *
 from canonical.launchpad.database.karma import *
+from canonical.launchpad.database.ticket import *
+from canonical.launchpad.database.ticketbug import *
+from canonical.launchpad.database.ticketmessage import *
+from canonical.launchpad.database.ticketreopening import *
+from canonical.launchpad.database.ticketsubscription import *
 from canonical.launchpad.database.poexportrequest import *
 

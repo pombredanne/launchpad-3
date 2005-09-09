@@ -1,3 +1,10 @@
+launchpad-buildd (3) unstable; urgency=low
+
+  * Modified postinst to make sure ccache and log dirs are created
+    even if the user already exists.
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Wed,  7 Sep 2005 15:50:36 +0100
+
 launchpad-buildd (2) unstable; urgency=low
 
   * Fixes to postinst to make sure ccache and log dirs are created if missing.

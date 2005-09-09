@@ -49,7 +49,7 @@ from canonical.launchpad.interfaces import (
      ICalendarEventSet, ICalendarSubscriptionSubset, ICalendarRange,
      ILaunchBag)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, DefaultLink, Link, canonical_url)
+    ApplicationMenu, Link, canonical_url)
 
 from schoolbell.interfaces import ICalendar
 from schoolbell.utils import (

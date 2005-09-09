@@ -246,11 +246,11 @@
   <browser:suburl
     for="canonical.publication.RootObject"
     utility="canonical.launchpad.interfaces.ISpecificationSet"
-    name="features" />
+    name="specs" />
 
   <browser:url
     for="canonical.launchpad.interfaces.ISpecificationSet"
-    path_expression="string:features"
+    path_expression="string:specs"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
   />
 

@@ -1,0 +1,49 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-subscribers" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Reopen Ticket</h1>
+
+  <p class="documentDescription">
+    Use this form to re-open the support request.
+  </p>
+
+  <p>
+    If you believe that this ticket is not resolved, and needs to be opened
+    again for further discussion, choose "Reopen Ticket" below. Press
+    "Cancel" to return to the ticket page.
+  </p>
+
+  <form action="." method="POST">
+
+    <div class="actions">
+      <input type="submit"
+             name="cancel"
+             value="Cancel" />
+      <input tal:condition="context/can_be_reopened"
+             type="submit"
+             name="reopen"
+             value="Reopen Ticket" />
+    </div>
+  </form>
+
+</div>
+
+</body>
+</html>

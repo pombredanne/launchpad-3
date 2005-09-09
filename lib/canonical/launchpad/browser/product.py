@@ -24,11 +24,11 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, DefaultLink, canonical_url)
+    StandardLaunchpadFacets, Link, canonical_url)
 
 __all__ = ['ProductFacets', 'ProductView', 'ProductEditView',
            'ProductFileBugView', 'ProductRdfView', 'ProductSetView',
-           'ProductSetAddView', 'ProductSeriesAddView']
+           'ProductAddView', 'ProductSeriesAddView']
 
 class ProductFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for
@@ -37,19 +37,25 @@ class ProductFacets(StandardLaunchpadFacets):
 
     usedfor = IProduct
 
-    links = ['overview', 'bugs', 'bounties', 'specs', 'translations',
-             'calendar']
+    links = ['overview', 'bugs', 'tickets', 'bounties', 'specs',
+             'translations', 'calendar']
 
     def overview(self):
         target = ''
         text = 'Overview'
         summary = 'General information about %s' % self.context.displayname
-        return DefaultLink(target, text, summary)
+        return Link(target, text, summary)
 
     def bugs(self):
         target = '+bugs'
         text = 'Bugs'
         summary = 'Bugs reported about %s' % self.context.displayname
+        return Link(target, text, summary)
+
+    def tickets(self):
+        target = '+tickets'
+        text = 'Tickets'
+        summary = 'Technical support requests for %s' % self.context.displayname
         return Link(target, text, summary)
 
     def bounties(self):
@@ -74,8 +80,8 @@ class ProductFacets(StandardLaunchpadFacets):
         target = '+calendar'
         text = 'Calendar'
         # only link to the calendar if it has been created
-        linked = ICalendarOwner(self.context).calendar is not None
-        return Link(target, text, linked=linked)
+        enabled = ICalendarOwner(self.context).calendar is not None
+        return Link(target, text, enabled=enabled)
 
 
 def _sort_distros(a, b):
@@ -247,9 +253,8 @@ class ProductEditView(ProductView, SQLObjectEditView):
         SQLObjectEditView.__init__(self, context, request)
 
     def changed(self):
-        # If the name changed then the URL changed, so redirect:
-        self.request.response.redirect(
-            '../%s/+edit' % urlquote(self.context.name))
+        # If the name changed then the URL changed, so redirect
+        self.request.response.redirect(canonical_url(self.context))
 
 
 class ProductSeriesAddView(AddView):
@@ -382,9 +387,9 @@ class ProductSetView:
         return self.results
 
 
-class ProductSetAddView(AddView):
+class ProductAddView(AddView):
 
-    __used_for__ = IProductSet
+    __used_for__ = IProduct
 
     def __init__(self, context, request):
         self.context = context

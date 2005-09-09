@@ -1,0 +1,101 @@
+
+Ticket Comments
+===============
+
+We will examine Ticket #3, on Ubuntu. When not logged in, we should not be
+able to make a comment.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+ticket/3 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...To post a comment you must...
+
+When logged in, we should see the ability to add a comment. The default
+subject should be based on the title, since there are no existing comments.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+ticket/3 HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Add comment to this ticket...
+  ...<input name="field.subject" type="text" size="50"...value="Re: Firefox is slow and consumes too much RAM" />...
+
+If we POST that form, we should be redirected back to the ticket page.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+ticket/3/+addmessage HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 89
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... field.subject=Use+a+new+computer&field.content=You+silly+fart.&UPDATE_SUBMIT=Post+Comment""")
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../distros/ubuntu/+ticket/3
+  ...
+
+And we should see the comment.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+ticket/3 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Use a new computer...
+  ...You silly fart...
+
+Now we will examine Ticket #2 on Firefox. It should currently be Open. We
+should have the ability to make a comment. And we should be able to say that
+the ticket is "answered".
+
+If we POST that form, checking the "answers" box, we should set the status
+to "Answered" and we should get a date answered too.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+ticket/2/+addmessage HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 112
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... field.subject=Use+a+new+computer&field.content=You+silly+fart.&field.resolved=answers&UPDATE_SUBMIT=Post+Comment""")
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/firefox/+ticket/2
+  ...
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Answered...
+  ...Answered By:...
+  ...Foo Bar...
+  ...Answered:...
+
+
+Finally, we will respond with a message from the person who created this
+ticket, also saying it is answered. That should set the status to Closed.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+ticket/2/+addmessage HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 112
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... field.subject=Use+a+new+computer&field.content=You+silly+fart.&field.resolved=answers&UPDATE_SUBMIT=Post+Comment""")
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/firefox/+ticket/2
+  ...
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Closed...
+  ...Answered By:...
+  ...Foo Bar...
+  ...Answered:...
+
+

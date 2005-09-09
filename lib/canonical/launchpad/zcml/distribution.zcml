@@ -60,7 +60,7 @@
         permission="zope.Public" >
         <browser:page
             name="+index"
-            template="../templates/distribution.pt"
+            template="../templates/distribution-index.pt"
             lp:url="/distros/$Distribution.name/" />
         <browser:page
             name="+bounties"
@@ -74,6 +74,9 @@
             name="+cve"
             template="../templates/distribution-cvereport.pt"
             lp:url="/distros/$Distribution.name/+cve" />
+        <browser:page
+            name="+translations"
+            template="../templates/distribution-translations.pt" />
     </browser:pages>
     
     <browser:pages

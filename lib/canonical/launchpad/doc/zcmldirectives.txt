@@ -71,7 +71,6 @@ First, a unit test of the overridden directive.
 
 Name some variables to mirror the names used as arguments.
 
-    >>> _context = context
     >>> name = "NAME"
     >>> for_ = "FOR_"
     >>> layer =  "LAYER"
@@ -124,7 +123,6 @@ First, a unit test of the overridden directive.
 
 Name some variables to mirror the names used as arguments.
 
-    >>> _context = context
     >>> name = "NAME"
     >>> permission = "PERMISSION"
     >>> for_ = "FOR_"
@@ -215,7 +213,6 @@ First, a unit test of the overridden directive.
 
 Name some variables to mirror the names used as arguments.
 
-    >>> _context = context
     >>> for_ = "FOR_"
     >>> permission = "PERMISSION"
 
@@ -334,7 +331,6 @@ First, a unit test of the overridden directive.
 
 Name some variables to mirror the names used as arguments.
 
-    >>> _context = context
     >>> for_ = "FOR_"
     >>> name = "NAME"
     >>> facet = "FACET"
@@ -412,7 +408,6 @@ First, a unit test of the overridden directive.
 
 Name some variables to mirror the names used as arguments.
 
-    >>> _context = context
     >>> for_ = "FOR_"
     >>> name = "NAME"
     >>> facet = "FACET"
@@ -480,6 +475,77 @@ Next, a functional/integration test of the overridden directive.
     SimpleViewClass from add.pt
     >>> print whatever_view.__launchpad_facetname__
     yet_another_mister_lizard
+
+== Overriding zope:configure to add a facet attribute ==
+
+We override the grouping directive zope:configure to add a 'facet' attribute
+that can be inherited by all of the directives it contains.
+
+    >>> from canonical.launchpad.webapp.metazcml import GroupingFacet
+    >>> context = Context()
+
+Name some variables to mirror the names used as arguments.
+
+    >>> facet = 'whole-file-facet'
+
+    >>> gc = GroupingFacet(context, facet=facet)
+    >>> gc.facet
+    'whole-file-facet'
+
+Next, a functional/integration test of the overridden directive.
+
+    >>> print queryView(fooobject, '+impliedfacet', request)
+    None
+
+    >>> from zope.configuration import xmlconfig
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns="http://namespaces.zope.org/zope"
+    ...            xmlns:browser="http://namespaces.zope.org/browser"
+    ...     package="canonical.launchpad">
+    ...   <include file="webapp/meta.zcml" />
+    ...   <include file="webapp/meta-overrides.zcml" />
+    ...   <facet facet="whole-facet">
+    ...     <browser:page
+    ...       for="canonical.launchpad.ftests.IFoo"
+    ...       name="+impliedfacet"
+    ...       permission="zope.Public"
+    ...       class="canonical.launchpad.ftests.FooView"
+    ...       attribute="__call__"
+    ...       layer="canonical.launchpad.ftests.IFooLayer"
+    ...       />
+    ...     <browser:addform
+    ...       for="canonical.launchpad.ftests.IFoo"
+    ...       name="+impliedfacet-add"
+    ...       layer="canonical.launchpad.ftests.IFooLayer"
+    ...       schema="zope.interface.Interface"
+    ...       permission="zope.Public"/>
+    ...     <browser:editform
+    ...       for="canonical.launchpad.ftests.IFoo"
+    ...       name="+impliedfacet-edit"
+    ...       layer="canonical.launchpad.ftests.IFooLayer"
+    ...       schema="zope.interface.Interface"
+    ...       permission="zope.Public"/>
+    ...   </facet>
+    ... </configure>
+    ... """)
+
+    >>> impliedfacet_view = queryView(fooobject, '+impliedfacet', request)
+    >>> print impliedfacet_view.__class__.__name__
+    FooView
+    >>> print impliedfacet_view.__launchpad_facetname__
+    whole-facet
+
+    >>> impliedfacet_add = queryView(fooobject, '+impliedfacet-add', request)
+    >>> print impliedfacet_add.__class__.__name__
+    SimpleViewClass from add.pt
+    >>> print impliedfacet_add.__launchpad_facetname__
+    whole-facet
+
+    >>> impliedfacet_edit = queryView(fooobject, '+impliedfacet-edit', request)
+    >>> print impliedfacet_edit.__class__.__name__
+    SimpleViewClass from edit.pt
+    >>> print impliedfacet_edit.__launchpad_facetname__
+    whole-facet
 
 
 == Cleaning up the interfaces and objects to test with ==

@@ -1,0 +1,48 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Reject Support Request</h1>
+
+  <p class="documentDescription">
+    If you believe that this request is a hoax, or a test, or sample data,
+    and should not be listed in reports and forms, then use this form to
+    reject it.
+  </p>
+
+  <p>
+    We do not list rejected tickets in most reports. It is better to reject
+    fake or bogus support requests than to mark them closed, because it
+    gives a cleaner set of statistics.
+  </p>
+
+  <form action="." method="POST">
+
+    <div class="actions">
+      <input type="submit"
+             name="cancel"
+             value="Cancel" />
+      <input tal:condition="context/can_be_rejected"
+             type="submit"
+             name="reject"
+             value="Reject Ticket" />
+    </div>
+
+  </form>
+
+</div>
+</body>
+</html>

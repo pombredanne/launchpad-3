@@ -14,6 +14,14 @@
         <li class="spec"><a href="+draftedspecs">Show Specs Drafted</a></li>
         <li class="spec"><a href="+reviewspecs">Show Specs To Review</a></li>
         <li class="spec"><a href="+subscribedspecs">Show Subscribed Specs</a></li>
+        <li class="ticket">
+          <a href="+createdtickets">Show Tickets Created</a></li>
+        <li class="ticket">
+          <a href="+assignedtickets">Show Tickets Assigned</a></li>
+        <li class="ticket">
+          <a href="+answeredtickets">Show Tickets Answered</a></li>
+        <li class="ticket">
+          <a href="+subscribedtickets">Show Tickets Subscribed</a></li>
         <li class="edit"><a href="+editsshkeys">Edit SSH Keys</a></li>
         <li class="edit"><a href="+editgpgkeys">Edit GPG Keys</a></li>
         <li class="edit"><a href="+codesofconduct">Code of Conduct</a></li>

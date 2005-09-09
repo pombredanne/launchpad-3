@@ -290,7 +290,7 @@ class FileDownloadClient:
         return '/%d/%d/%s' % (contentID, aliasID, 
                               quote(filename.encode('utf-8')))
 
-    def getURLForAlias(self, aliasID):
+    def getURLForAlias(self, aliasID, is_buildd=False):
         """Returns the url for talking to the librarian about the given
         alias.
 
@@ -299,6 +299,8 @@ class FileDownloadClient:
         :returns: String URL
         """
         base = config.librarian.download_url
+        if is_buildd:
+            base = config.librarian.buildd_download_url
         path = self._getPathForAlias(aliasID)
         return urljoin(base, path)
 

@@ -15,6 +15,7 @@ __all__ = [
     'BinaryPackageNameVocabulary',
     'BinaryPackageVocabulary',
     'BountyVocabulary',
+    'BugVocabulary',
     'BugTrackerVocabulary',
     'BugWatchVocabulary',
     'CountryNameVocabulary',
@@ -56,7 +57,7 @@ from canonical.launchpad.database import (
     SourcePackageName, BinaryPackageRelease, BugWatch, BinaryPackageName, Language,
     Milestone, Product, Project, ProductRelease, ProductSeries,
     TranslationGroup, BugTracker, POTemplateName, Schema, Bounty, Country,
-    Specification)
+    Specification, Bug)
 from canonical.launchpad.interfaces import (
     ILaunchBag, ITeam, ITeamMembershipSubset, IPersonSet, IEmailAddressSet)
 
@@ -196,6 +197,11 @@ class BinaryPackageNameVocabulary(NamedSQLObjectVocabulary):
 
     _table = BinaryPackageName
     _orderBy = 'name'
+
+
+class BugVocabulary(SQLObjectVocabularyBase):
+    _table = Bug
+    _orderBy = 'id'
 
 
 class ProductVocabulary(SQLObjectVocabularyBase):

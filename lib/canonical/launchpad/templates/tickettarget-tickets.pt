@@ -1,0 +1,60 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Support Tickets</h1>
+
+  <p class="documentDescription">
+    This page shows the support tickets that are related
+    to <span tal:replace="context/displayname">Ubuntu 5.04</span>.
+    Please help to resolve end-user issues!
+  </p>
+
+  <p tal:replace="nothing">
+    <!-- ABOUT THIS PAGE
+    This page uses a view class that organises the tasks into a set of
+    categories (by status). it determines the sequence of the categories,
+    and the sequence of the tickets in each category.
+
+       view/categories => the list of ticket statuses to be displayed
+       category/status => the category TicketStatus
+       category/tickets => the list of tickets
+       ticket => an ITicket
+    -->
+  </p>
+
+  <p tal:condition="not:context/tickets">
+    <i>There are no tickets currently registered for
+    <span tal:replace="context/displayname">Ubuntu 5.04</span> at
+    present.</i>
+  </p>
+
+  <tal:block repeat="category view/categories">
+
+    <h2 tal:content="category/status/title">Approved</h2>
+
+    <div tal:repeat="ticket category/tickets"
+         tal:replace="structure ticket/@@+listing-detailed" />
+
+  </tal:block>
+
+  <p>
+    Each ticket describes a request for technical support.
+  </p>
+
+</div>
+</body>
+</html>
