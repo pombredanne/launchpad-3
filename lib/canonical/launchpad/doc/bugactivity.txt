@@ -54,10 +54,9 @@ are simple little functions.
   >>> from canonical.launchpad.event.sqlobjectevent import (
   ...     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
   >>> from canonical.launchpad.database import (
-  ...     BugFactory, BugActivity, BugPackageInfestation,
-  ...     BugProductInfestation, BugTask)
+  ...     BugActivity, BugPackageInfestation, BugProductInfestation, BugTask)
   >>> from canonical.launchpad.interfaces import (
-  ...     IUpstreamBugTask, IDistroBugTask, IProductSet)
+  ...     IUpstreamBugTask, IDistroBugTask, IProductSet, IBugSet)
   >>> from zope.publisher.browser import TestRequest
 
   >>> def capture_state(obj, *fields):
@@ -75,7 +74,7 @@ logged:
 
 EVENT: user files a bug
 
-  >>> bug = BugFactory(
+  >>> bug = getUtility(IBugSet).createBug(
   ...     product=getUtility(IProductSet)['firefox'],
   ...     title="a test bug", summary="this is only a test bug",
   ...     comment="this is only a test bug\nplease ignore",

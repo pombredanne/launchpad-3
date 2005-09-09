@@ -142,7 +142,6 @@
         schema="canonical.launchpad.interfaces.IBugAddForm"
         label="Report Bug in a Distribution Source Package"
         class="canonical.launchpad.browser.sourcepackage.SourcePackageFilebugView"
-        content_factory="canonical.launchpad.database.bug.BugFactory"
         permission="launchpad.AnyPerson"
         fields="title comment private owner"
         keyword_arguments="title comment private owner"
