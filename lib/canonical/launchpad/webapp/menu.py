@@ -79,6 +79,9 @@ class MenuBase:
         # IMenuBase.
         self.context = context
         self.request = request
+        # XXX: SteveA 2005-09-09, quick hack, awaiting more comprehensive
+        # refactor.
+        self.published_context = None
 
     def _get_link(self, name):
         method = getattr(self, name)
@@ -99,7 +102,18 @@ class MenuBase:
                                 self.request.get('QUERY_STRING'))
             # If the default view name is being used, we will want the url
             # without the default view name.
-            defaultviewname = getDefaultViewName(self.context, self.request)
+            # XXX: the problem here is that we're getting the default view
+            #      name of the facet menu's context, not of the actual
+            #      published object's context!
+            #      plan: make the tales stuff responsible for passing
+            #            in a string that is the requesturl.
+            #     SteveAlexander, 2005-09-09
+            if self.published_context is None:
+                published_context = self.context
+            else:
+                published_context = self.published_context
+            defaultviewname = getDefaultViewName(
+                published_context, self.request)
             if requesturlobj.pathnoslash.endswith(defaultviewname):
                 requesturlobj = Url(self.request.getURL(1),
                                     self.request.get('QUERY_STRING'))

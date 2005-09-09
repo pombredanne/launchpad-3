@@ -5,6 +5,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+  <facet facet="bugs">
+
     <browser:page
         for="canonical.launchpad.interfaces.IBugTarget"
         name="+bugtask-search-listing"
@@ -17,4 +19,7 @@
         name="+portlet-latestbugs"
         permission="zope.Public"
         template="../templates/bugtarget-portlet-latestbugs.pt" />
+        
+  </facet>
+
 </configure>

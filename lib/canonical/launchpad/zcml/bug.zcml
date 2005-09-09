@@ -5,6 +5,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+  <facet facet="bugs">
+
     <!-- Bug -->
     <content class="canonical.launchpad.database.Bug">
         <require
@@ -220,7 +222,7 @@
         for="canonical.launchpad.interfaces.IBugSet"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         class="canonical.launchpad.browser.bug.BugAddView"
-        label="File a Bug on a Product"
+        label="Report a bug about a product"
         fields="product title comment owner"
         arguments=""
         keyword_arguments="product title comment owner"
@@ -245,7 +247,7 @@
         for="canonical.launchpad.interfaces.IBugSet"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         class="canonical.launchpad.browser.bug.BugAddView"
-        label="File a Bug on a Package"
+        label="Report a bug about a package"
         fields="distribution sourcepackagename title comment private owner"
         arguments=""
         keyword_arguments="distribution sourcepackagename title comment private owner"
@@ -267,5 +269,7 @@
     <content class="canonical.launchpad.components.bug.BugDelta">
         <allow interface="canonical.launchpad.interfaces.IBugDelta" />
     </content>
+
+  </facet>
 
 </configure>

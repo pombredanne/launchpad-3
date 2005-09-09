@@ -45,6 +45,7 @@
   <!-- pages for the foaf application -->
   <browser:pages 
       for="canonical.launchpad.interfaces.IFOAFApplication"
+      facet="overview"
       permission="zope.Public"
       lp:url="foaf">
       <browser:page 

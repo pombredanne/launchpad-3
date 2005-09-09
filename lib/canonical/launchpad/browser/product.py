@@ -37,7 +37,7 @@ class ProductFacets(StandardLaunchpadFacets):
 
     usedfor = IProduct
 
-    links = ['overview', 'bugs', 'tickets', 'bounties', 'specs',
+    links = ['overview', 'bugs', 'tickets', 'bounties', 'specifications',
              'translations', 'calendar']
 
     def overview(self):

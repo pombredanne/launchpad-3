@@ -71,6 +71,8 @@ class MenuAPI:
             return []
         else:
             menu.request = get_current_browser_request()
+            # XXX: SteveAlexander, 2005-09-09, hack, to be refactored monday!
+            menu.published_context = self._context
             return list(menu.iterlinks(self._selectedfacetname))
 
     def application(self):
@@ -83,6 +85,8 @@ class MenuAPI:
             return []
         else:
             menu.request = get_current_browser_request()
+            # XXX: SteveAlexander, 2005-09-09, hack, to be refactored monday!
+            menu.published_context = self._context
             return list(menu)
 
 

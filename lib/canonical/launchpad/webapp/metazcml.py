@@ -771,3 +771,28 @@ class IGroupingFacet(IAssociatedWithAFacet):
 class GroupingFacet(zope.configuration.config.GroupingContextDecorator):
     """Grouping facet directive."""
 
+
+class ISchemaDisplayDirective(
+    zope.app.form.browser.metadirectives.ISchemaDisplayDirective,
+    IAssociatedWithAFacet):
+    """Schema display directive with added 'facet' attribute."""
+
+
+class SchemaDisplayDirective(
+    zope.app.form.browser.metaconfigure.SchemaDisplayDirective):
+
+    # This makes 'facet' a valid attribute for the directive.
+    facet = None
+
+    def __call__(self):
+        # self.bases will be a tuple of base classes for this view.
+        # So, insert a new base-class containing the facet name attribute.
+        facet = self.facet or getattr(self._context, 'facet', None)
+        if facet is not None:
+            cdict = {'__launchpad_facetname__': facet}
+            new_class = type('SimpleLaunchpadViewClass', (), cdict)
+            self.bases += (new_class, )
+
+        zope.app.form.browser.metaconfigure.SchemaDisplayDirective.__call__(
+            self)
+

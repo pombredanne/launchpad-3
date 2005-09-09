@@ -24,6 +24,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IShippingRequest"
+        facet="overview"
         class="canonical.launchpad.browser.ShippingRequestAdminView"
         permission="launchpad.Admin">
         <browser:page
@@ -53,6 +54,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IShippingRequestSet"
+        facet="overview"
         class="canonical.launchpad.browser.ShippingRequestsView"
         permission="launchpad.Admin">
         <browser:page
@@ -82,6 +84,7 @@
     <browser:editform
         name="+index"
         for="canonical.launchpad.interfaces.IStandardShipItRequest"
+        facet="overview"
         class="canonical.launchpad.browser.editview.SQLObjectEditView"
         schema="canonical.launchpad.interfaces.IStandardShipItRequest"
         fields="quantityx86 quantityamd64 quantityppc description isdefault"
@@ -113,6 +116,7 @@
     <browser:page
         name="+index"
         for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
+        facet="overview"
         permission="launchpad.Admin" 
         template="../templates/standardshipitrequests-index.pt"
         lp:url="standardshipitrequests/$request.id/+index" />
@@ -120,6 +124,7 @@
     <browser:addform
         name="+new"
         for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
+        facet="overview"
         schema="canonical.launchpad.interfaces.IStandardShipItRequest"
         class="canonical.launchpad.browser.StandardShipItRequestAddView"
         fields="quantityx86 quantityamd64 quantityppc description isdefault"
