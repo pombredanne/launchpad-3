@@ -139,6 +139,8 @@ branch_edit = 'Edit Branch Details'
 
 branch_index = ContextTitle('Bazaar Branch: %s')
 
+branch_subscription = ContextTitle('Subscription to Branch %s')
+
 bug_activity = ContextId('Bug #%s - Activity Log')
 
 def bug_add(context, view):

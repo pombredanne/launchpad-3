@@ -5,12 +5,14 @@ __all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin
+from sqlobject import (
+    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin)
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import IBranch, IBranchSet
 from canonical.launchpad.database.revision import Revision
+from canonical.launchpad.database.branchsubscription import BranchSubscription
 
 from canonical.lp.dbschema import (
     EnumCol, BranchRelationships, BranchLifecycleStatus)
@@ -68,6 +70,15 @@ class Branch(SQLBase):
     changesets = MultipleJoin('Revision', joinColumn='branch',
         orderBy='-id')
 
+    subjectRelations = MultipleJoin('BranchRelationship', joinColumn='subject')
+    objectRelations = MultipleJoin('BranchRelationship', joinColumn='object')
+
+    subscriptions = MultipleJoin(
+        'BranchSubscription', joinColumn='branch', orderBy='id')
+    subscribers = RelatedJoin(
+        'Person', joinColumn='branch', otherColumn='person',
+        intermediateTable='BranchSubscription', orderBy='name')
+
     @property
     def product_name(self):
         if self.product is None:
@@ -81,14 +92,26 @@ class Branch(SQLBase):
         return Revision.selectBy(
             branchID=self.id, orderBy='-id').limit(quantity)
 
-    subjectRelations = MultipleJoin('BranchRelationship', joinColumn='subject')
-    objectRelations = MultipleJoin('BranchRelationship', joinColumn='object')
-
     def createRelationship(self, branch, relationship):
         BranchRelationship(subject=self, object=branch, label=relationship)
 
     def getRelations(self):
         return tuple(self.subjectRelations) + tuple(self.objectRelations)
+
+    # subscriptions
+    def subscribe(self, person):
+        """See IBranch."""
+        for sub in self.subscriptions:
+            if sub.person.id == person.id:
+                return sub
+        return BranchSubscription(branch=self, person=person)
+
+    def unsubscribe(self, person):
+        """See IBranch."""
+        for sub in self.subscriptions:
+            if sub.person.id == person.id:
+                BranchSubscription.delete(sub.id)
+                break
 
 
 class BranchSet:

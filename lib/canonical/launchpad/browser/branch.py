@@ -6,7 +6,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IBranch, IBranchSet
+from canonical.launchpad.interfaces import IBranch, IBranchSet, ILaunchBag
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
@@ -26,10 +26,32 @@ class BranchView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.notices = []
+        # figure out who the user is for this transaction
+        self.user = getUtility(ILaunchBag).user
+        # establish if a subscription form was posted
+        newsub = request.form.get('subscribe', None)
+        if newsub is not None and self.user and request.method == 'POST':
+            if newsub == 'Subscribe':
+                self.context.subscribe(self.user)
+                self.notices.append("You have subscribed to this branch.")
+            elif newsub == 'Unsubscribe':
+                self.context.unsubscribe(self.user)
+                self.notices.append("You have unsubscribed from this branch.")
 
     def url(self):
         components = self.context.url.split('/')
         return '/&#x200B;'.join(components)
+
+    @property
+    def subscription(self):
+        """BranchSubscription for the current user and this branch, or None."""
+        if self.user is None:
+            return None
+        for subscription in self.context.subscriptions:
+            if subscription.person.id == self.user.id:
+                return subscription
+        return None
 
 
 class BranchEditView(SQLObjectEditView):
@@ -56,5 +78,3 @@ class BranchAddView(SQLObjectAddView):
     def nextURL(self):
         assert self._nextURL
         return self._nextURL
-
-

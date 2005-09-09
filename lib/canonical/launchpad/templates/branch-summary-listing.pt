@@ -2,7 +2,7 @@
 <img src="/++resource++lock_icon.gif" />
 <b><a tal:attributes="href context/fmt:url" tal:content="context/title">Mozilla Thunderbird 0.9.1</a></b>
 - <img src="/++resource++user.gif" />
-  <a tal:condition="python:not context.author"
+  <a tal:condition="not: context/author"
      tal:attributes="href context/owner/fmt:url"
      tal:content="context/owner/browsername"
   >Owner</a>

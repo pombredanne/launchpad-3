@@ -120,9 +120,20 @@ class IBranch(IHasOwner):
     # Joins
     revisions = Attribute("The sequence of revisions in that branch.")
     revision_count = Attribute("The number of revisions in that branch.")
+    subscriptions = Attribute("BranchSubscriptions associated to this branch.")
+    subscribers = Attribute("Persons subscribed to this branch.")
 
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
+
+    # subscription-related methods
+    def subscribe(person):
+        """Subscribe this person to the branch.
+
+        :return: new or existing BranchSubscription."""
+
+    def unsubscribe(person):
+        """Remove the person's subscription to this branch."""
 
 
 class IBranchSet(Interface):

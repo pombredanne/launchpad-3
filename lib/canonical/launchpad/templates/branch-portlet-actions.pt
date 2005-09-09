@@ -6,6 +6,10 @@
         <a href="+edit">Edit Branch Details</a></li>
       <li class="edit">
         <a href="+lifecycle">Set Branch Status</a></li>
+      <li class="add" tal:condition="not: view/subscription">
+        <a href="+subscribe">Subscribe</a></li>
+      <li class="edit" tal:condition="view/subscription">
+        <a href="+subscribe">Unsubscribe</a></li>
       <li class="edit" tal:condition="context/required:launchpad.Admin">
         <a href="+admin">Administer</a></li>
     </ul>

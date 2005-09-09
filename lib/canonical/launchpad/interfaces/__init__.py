@@ -22,6 +22,7 @@ from canonical.launchpad.interfaces.bounty import *
 from canonical.launchpad.interfaces.bountymessage import *
 from canonical.launchpad.interfaces.bountysubscription import *
 from canonical.launchpad.interfaces.branch import *
+from canonical.launchpad.interfaces.branchsubscription import *
 from canonical.launchpad.interfaces.bugactivity import *
 from canonical.launchpad.interfaces.bugattachment import *
 from canonical.launchpad.interfaces.bugextref import *

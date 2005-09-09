@@ -175,8 +175,7 @@ CREATE TABLE BranchSubscription (
     person int NOT NULL
         CONSTRAINT branchsubscription_person_fk REFERENCES Person,
     branch int NOT NULL
-        CONSTRAINT branchsubscription_branch_fk REFERENCES Branch,
-    subscription int NOT NULL -- dbschema
+        CONSTRAINT branchsubscription_branch_fk REFERENCES Branch
     );
 
 

@@ -39,8 +39,19 @@
         <browser:page
             name="+portlet-details"
             template="../templates/branch-portlet-details.pt" />
-
+        <browser:page
+            name="+portlet-subscribers"
+            template="../templates/branch-portlet-subscribers.pt" />
     </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IBranch"
+    class="canonical.launchpad.browser.BranchView"
+    permission="launchpad.AnyPerson">
+    <browser:page
+      name="+subscribe"
+      template="../templates/branch-subscription.pt" />
+  </browser:pages>
 
   <browser:editform
     name="+edit"
