@@ -100,8 +100,6 @@ class Person(SQLBase):
 
     # relevant joins
     branches = MultipleJoin('Branch', joinColumn='owner')
-    members = MultipleJoin('TeamMembership', joinColumn='team',
-        orderBy='status')
     ownedBounties = MultipleJoin('Bounty', joinColumn='owner',
         orderBy='id')
     reviewerBounties = MultipleJoin('Bounty', joinColumn='reviewer',
@@ -536,20 +534,26 @@ class Person(SQLBase):
         return self.expiredmembers.union(self.deactivatedmembers)
 
     @property
-    def memberships(self):
+    def myactivememberships(self):
         """See IPerson."""
-        return TeamMembership.selectBy(personID=self.id)
+        return TeamMembership.select("""
+            TeamMembership.person = %s AND status in (%s, %s) AND 
+            Person.id = TeamMembership.team
+            """ % sqlvalues(self.id, TeamMembershipStatus.APPROVED,
+                            TeamMembershipStatus.ADMIN),
+            clauseTables=['Person'],
+            orderBy=['Person.displayname'])
 
     @property
     def activememberships(self):
         """See IPerson."""
         return TeamMembership.select('''
-            team = %s AND
-            status in (%s, %s)
+            TeamMembership.team = %s AND status in (%s, %s) AND
+            Person.id = TeamMembership.person
             ''' % sqlvalues(self.id, TeamMembershipStatus.APPROVED,
                 TeamMembershipStatus.ADMIN),
-            orderBy=['datejoined'],
-            distinct=True)
+            clauseTables=['Person'],
+            orderBy=['Person.displayname'])
 
     @property
     def defaultexpirationdate(self):
