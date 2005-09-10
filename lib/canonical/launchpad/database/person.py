@@ -1151,6 +1151,17 @@ class PersonSet:
         cur.execute('''
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
             ''' % vars())
+        
+        # Append a -merged suffix to the account's name.
+        name = "%s-merged" % from_person.name
+        cur.execute("SELECT id FROM Person WHERE name = '%s'" % name)
+        i = 1
+        while cur.fetchone():
+            name = "%s%d" % (name, i)
+            cur.execute("SELECT id FROM Person WHERE name = '%s'" % name)
+            i += 1
+        cur.execute("UPDATE Person SET name = '%s' WHERE id = %d"
+                    % (name, from_person.id))
 
 
 class EmailAddress(SQLBase):
@@ -1279,9 +1290,9 @@ class GPGKeySet:
     def getGPGKeys(self, ownerid=None, active=True):
         """See IGPGKeySet"""
         if active is False:
-            query =('active=false AND fingerprint NOT IN '
-                    '(SELECT fingerprint from LoginToken WHERE fingerprint '
-                    'IS NOT NULL AND requester = %s)' % sqlvalues(ownerid))
+            query = ('active=false AND fingerprint NOT IN '
+                     '(SELECT fingerprint from LoginToken WHERE fingerprint '
+                     'IS NOT NULL AND requester = %s)' % sqlvalues(ownerid))
         else:
             query = 'active=true'
 
