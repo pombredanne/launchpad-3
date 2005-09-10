@@ -38,6 +38,7 @@
     <resource name="close_icon.png" file="../images/close_icon.png" />
     <resource name="cve.ico" file="../images/cve.ico" />
     <resource name="defaultFavicon.gif" file="../images/defaultFavicon.gif" />
+    <resource name="ubuntuFavicon.ico" file="../images/ubuntuFavicon.ico" />
     <resource name="discussionitem_icon.gif" file="../images/discussionitem_icon.gif" />
     <resource name="document_icon.gif" file="../images/document_icon.gif" />
     <resource name="download.png" file="../images/download.png" />

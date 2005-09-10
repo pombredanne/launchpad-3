@@ -498,8 +498,6 @@ person_reportedbugs = ContextDisplayName('Bugs Reported By %s')
 
 person_review = ContextDisplayName("Review %s' Information")
 
-person_shipit = "Your ShipIt Orders"
-
 person_translations = ContextDisplayName('Translations Made By %s')
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
@@ -657,9 +655,17 @@ def productseries(context, view):
     return '%s Release Series: %s' % (
         context.product.displayname, context.displayname)
 
+shipit_index = 'ShipIt'
+
+shipit_myrequest = "Your ShipIt Order"
+
 shipitrequests_index = 'ShipIt Requests'
 
 shipitrequest_edit = 'Edit ShipIt Request'
+
+shipit_notfound = 'Page Not Found'
+
+shipit_default_error = 'System Error'
 
 signedcodeofconduct_index = ContextDisplayName('%s')
 
@@ -790,11 +796,11 @@ ticket_subscription = ContextId('Subscription to Ticket #%s')
 
 tickettarget_tickets = ContextTitle('Support Requests for %s')
 
-standardshipitrequests_index = 'Standard ShipIt Requests'
+standardshipitrequests_index = 'Standard ShipIt Options'
 
-standardshipitrequest_new = 'Create a New Standard ShipIt Request'
+standardshipitrequest_new = 'Create a New Standard Option'
 
-standardshipitrequest_edit = 'Edit Standard ShipIt Request'
+standardshipitrequest_edit = 'Edit Standard Option'
 
 def team_addmember(context, view):
     return '%s: Add members' % context.team.browsername

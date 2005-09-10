@@ -42,3 +42,6 @@ class DebugLayer(IDefaultBrowserLayer):
 
 class FOAFLayer(IDefaultBrowserLayer):
     """The `FOAF` layer."""
+
+class ShipItLayer(LaunchpadLayer):
+    """The `ShipIt` layer."""

@@ -60,7 +60,7 @@ class ShippingRequest(SQLBase):
                              default=None)
 
     # None here means that it's pending approval.
-    approved = IntCol(default=None)
+    approved = BoolCol(notNull=False, default=None)
     whoapproved = ForeignKey(dbName='whoapproved', foreignKey='Person',
                              default=None)
 
@@ -69,11 +69,23 @@ class ShippingRequest(SQLBase):
                              default=None)
 
     reason = StringCol(default=None)
+    highpriority = BoolCol(notNull=True, default=False)
 
     @property
     def totalCDs(self):
         """See IShippingRequest"""
         return self.quantityx86 + self.quantityamd64 + self.quantityppc
+
+    @property
+    def totalapprovedCDs(self):
+        """See IShippingRequest"""
+        # All approved quantities are None if the request is not approved.
+        # This is to make them consistent with self.approved, which is None if
+        # an order is not yet approved.
+        if not self.isApproved():
+            return 0
+        return (self.quantityx86approved + self.quantityamd64approved +
+                self.quantityppcapproved)
 
     def _getRequestedCDsByArch(self, arch):
         query = AND(RequestedCDs.q.requestID==self.id,
@@ -93,99 +105,68 @@ class ShippingRequest(SQLBase):
     quantityamd64 = RequestedCDsDescriptor(ShipItArchitecture.AMD64, 'quantity')
     quantityppc = RequestedCDsDescriptor(ShipItArchitecture.PPC, 'quantity')
 
-    # XXX: All the quantity* properties need to be refactored to share more
-    # code. -- GuilhermeSalgado, 2005-09-02
-#     def _get_quantityx86(self):
-#         return self._getRequestedCDsByArch(ShipItArchitecture.X86).quantity
-# 
-#     def _set_quantityx86(self, value):
-#         request = self._getRequestedCDsByArch(ShipItArchitecture.X86)
-#         request.quantity = value
-#     quantityx86 = property(_get_quantityx86, _set_quantityx86)
-# 
-#     def _get_quantityx86approved(self):
-#         request = self._getRequestedCDsByArch(ShipItArchitecture.X86)
-#         return request.quantityapproved
-# 
-#     def _set_quantityx86approved(self, value):
-#         request = self._getRequestedCDsByArch(ShipItArchitecture.X86)
-#         request.quantityapproved = value
-#     quantityx86approved = property(_get_quantityx86approved,
-#                                    _set_quantityx86approved)
-# 
-#     def _get_quantityamd64(self):
-#         return self._getRequestedCDsByArch(ShipItArchitecture.AMD64).quantity
-# 
-#     def _set_quantityamd64(self, value):
-#         request = self._getRequestedCDsByArch(ShipItArchitecture.AMD64)
-#         request.quantity = value
-#     quantityamd64 = property(_get_quantityamd64, _set_quantityamd64)
-# 
-#     def _get_quantityamd64approved(self):
-#         request = self._getRequestedCDsByArch(ShipItArchitecture.AMD64)
-#         return request.quantityapproved
-# 
-#     def _set_quantityamd64approved(self, value):
-#         request = self._getRequestedCDsByArch(ShipItArchitecture.AMD64)
-#         request.quantityapproved = value
-#     quantityamd64approved = property(_get_quantityamd64approved,
-#                                      _set_quantityamd64approved)
-# 
-#     def _get_quantityppc(self):
-#         return self._getRequestedCDsByArch(ShipItArchitecture.PPC).quantity
-# 
-#     def _set_quantityppc(self, value):
-#         request = self._getRequestedCDsByArch(ShipItArchitecture.PPC)
-#         request.quantity = value
-#     quantityppc = property(_get_quantityppc, _set_quantityppc)
-# 
-#     def _get_quantityppcapproved(self):
-#         request = self._getRequestedCDsByArch(ShipItArchitecture.PPC)
-#         return request.quantityapproved
-# 
-#     def _set_quantityppcapproved(self, value):
-#         request = self._getRequestedCDsByArch(ShipItArchitecture.PPC)
-#         request.quantityapproved = value
-#     quantityppcapproved = property(_get_quantityppcapproved,
-#                                    _set_quantityppcapproved)
-
     def isStandardRequest(self):
         """See IShippingRequest"""
         return (getUtility(IStandardShipItRequestSet).getByNumbersOfCDs(
                     self.quantityx86, self.quantityamd64, self.quantityppc)
                 is not None)
 
+    def isAwaitingApproval(self):
+        """See IShippingRequest"""
+        return self.approved is None
+
+    def isApproved(self):
+        """See IShippingRequest"""
+        return self.approved
+
+    def isDenied(self):
+        """See IShippingRequest"""
+        return self.approved == False
+
+    def deny(self):
+        """See IShippingRequest"""
+        assert not self.isDenied()
+        if self.isApproved():
+            self.clearApproval()
+        self.approved = False
+
     def clearApproval(self):
         """See IShippingRequest"""
-        assert self.approved
+        assert self.isApproved()
         self.approved = None
         self.whoapproved = None
-
-    def approve(self, whoapproved=None):
-        """See IShippingRequest"""
-        assert not self.cancelled
-        self.approved = True
-        self.whoapproved = whoapproved
-        self.quantityx86approved = self.quantityx86
-        self.quantityamd64approved = self.quantityamd64
-        self.quantityppcapproved = self.quantityppc
-
-    def cancel(self, whocancelled):
-        """See IShippingRequest"""
-        assert not self.cancelled
-        self.approved = None
-        self.whoapproved = None
-        self.cancelled = True
-        self.whocancelled = whocancelled
         self.quantityx86approved = None
         self.quantityamd64approved = None
         self.quantityppcapproved = None
 
-    def reactivate(self):
+    def approve(self, quantityx86approved, quantityamd64approved,
+                quantityppcapproved, whoapproved=None):
         """See IShippingRequest"""
-        assert self.cancelled
-        self.cancelled = False
-        self.whocancelled = None
+        assert not self.cancelled
+        assert not self.isApproved()
+        self.approved = True
+        self.whoapproved = whoapproved
+        self.setApprovedTotals(
+            quantityx86approved, quantityamd64approved, quantityppcapproved)
+
+    def setApprovedTotals(self, quantityx86approved, quantityamd64approved,
+                          quantityppcapproved):
+        """See IShippingRequest"""
+        assert self.isApproved()
+        assert quantityx86approved >= 0
+        assert quantityamd64approved >= 0
+        assert quantityppcapproved >= 0
+        self.quantityx86approved = quantityx86approved
+        self.quantityamd64approved = quantityamd64approved
+        self.quantityppcapproved = quantityppcapproved
+
+    def cancel(self, whocancelled):
+        """See IShippingRequest"""
+        assert not self.cancelled
+        if self.isApproved():
+            self.clearApproval()
+        self.cancelled = True
+        self.whocancelled = whocancelled
 
 
 class ShippingRequestSet:
@@ -197,7 +178,7 @@ class ShippingRequestSet:
         """See IShippingRequestSet"""
         try:
             return ShippingRequest.get(id)
-        except SQLObjectNotFound:
+        except (SQLObjectNotFound, ValueError):
             return default
 
     def new(self, recipient, quantityx86, quantityamd64, quantityppc,
@@ -221,6 +202,23 @@ class ShippingRequestSet:
 
         return request
 
+    def _getStatusFilter(self, status):
+        """Return the SQL to filter by the given status."""
+        if status == ShippingRequestStatus.APPROVED:
+            query = " AND ShippingRequest.approved IS TRUE"
+        elif status == ShippingRequestStatus.PENDING:
+            query = " AND ShippingRequest.approved IS NULL"
+        elif status == ShippingRequestStatus.DENIED:
+            query = " AND ShippingRequest.approved IS FALSE"
+        else:
+            # Okay, if you don't want any filtering I won't filter
+            query = ""
+        return query
+
+
+    # XXX: Must come back here and refactor these two search methods. It's
+    # probably possible to share more things between them. -- GuilhermeSalgado
+    # 2005-09-09
     def searchCustomRequests(self, status=ShippingRequestStatus.ALL,
                              omit_cancelled=True):
         """See IShippingRequestSet"""
@@ -241,14 +239,7 @@ class ShippingRequestSet:
                   StandardShipItRequest)
         """ % sqlvalues(arch.X86, arch.AMD64, arch.PPC)
 
-        if status == ShippingRequestStatus.APPROVED:
-            query += " AND ShippingRequest.approved IS TRUE"
-        elif status == ShippingRequestStatus.UNAPPROVED:
-            query += " AND ShippingRequest.approved IS NULL"
-        else:
-            # Okay, if you don't want any filtering I won't filter
-            pass
-
+        query = "%s %s" % (query, self._getStatusFilter(status))
         if omit_cancelled:
             query += " AND ShippingRequest.cancelled = FALSE"
 
@@ -291,11 +282,7 @@ class ShippingRequestSet:
             """ % (standard_type.quantityx86, standard_type.quantityamd64,
                    standard_type.quantityppc)
 
-        if status == ShippingRequestStatus.APPROVED:
-            query += " AND ShippingRequest.approved IS NOT NULL"
-        elif status == ShippingRequestStatus.UNAPPROVED:
-            query += " AND ShippingRequest.approved IS NULL"
-
+        query = "%s %s" % (query, self._getStatusFilter(status))
         if omit_cancelled:
             query += " AND ShippingRequest.cancelled = FALSE"
 
@@ -306,8 +293,6 @@ class ShippingRequestSet:
             # fail, so we need to do this little hack
             return ShippingRequest.select('1 = 2')
         return ShippingRequest.select('id in (%s)' % ids)
-
-
 
 
 class RequestedCDs(SQLBase):
@@ -365,7 +350,7 @@ class StandardShipItRequestSet:
         """See IStandardShipItRequestSet"""
         try:
             return StandardShipItRequest.get(id)
-        except SQLObjectNotFound:
+        except (SQLObjectNotFound, ValueError):
             return default
 
     def getByNumbersOfCDs(self, quantityx86, quantityamd64, quantityppc):

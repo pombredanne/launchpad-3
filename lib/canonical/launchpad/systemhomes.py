@@ -7,7 +7,7 @@ __metaclass__ = type
 from zope.interface import implements
 from canonical.launchpad.interfaces import (
     IRegistryApplication, IFOAFApplication, IMaloneApplication,
-    IBazaarApplication)
+    IBazaarApplication, IShipItApplication)
 from canonical.launchpad.database import (Bug, BugWatch, BugExternalRef,
     BugTask, BugTracker)
 
@@ -17,6 +17,10 @@ class RegistryApplication:
 
 class FOAFApplication:
     implements(IFOAFApplication)
+
+
+class ShipItApplication:
+    implements(IShipItApplication)
 
 
 class MaloneApplication:

@@ -23,7 +23,7 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
     SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND
+from sqlobject.sqlbuilder import AND, OR
 from canonical.database.sqlbase import SQLBase, quote, cursor, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -271,8 +271,11 @@ class Person(SQLBase):
 
     def currentShipItRequest(self):
         """See IPerson."""
+        notdenied = OR(ShippingRequest.q.approved==True,
+                       ShippingRequest.q.approved==None)
         query = AND(ShippingRequest.q.recipientID==self.id,
                     ShippingRequest.q.shipmentID==None,
+                    notdenied,
                     ShippingRequest.q.cancelled==False)
         return ShippingRequest.selectOne(query)
 

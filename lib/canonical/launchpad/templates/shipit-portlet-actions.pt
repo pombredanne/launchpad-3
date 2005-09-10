@@ -1,0 +1,11 @@
+<div class="portlet">
+
+  <h4>Actions:</h4>
+  
+  <div class="portletBody portletContent">
+    <ul><base href="">
+      <li class="info"><a href="/requests">See Current Requests</a></li>
+      <li class="edit"><a href="/standardoptions">Edit Standard Options</a></li>
+    </ul>
+  </div>
+</div>
