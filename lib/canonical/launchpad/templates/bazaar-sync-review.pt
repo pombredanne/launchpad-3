@@ -34,7 +34,7 @@
               tal:define="products project/products"
               tal:condition="products"
             >
-              <li tal:repeat="product project/products">
+              <li tal:repeat="product products">
                 <div>
                   <a
                     tal:attributes="href string:/products/${product/name}/+review"

@@ -18,3 +18,4 @@ for dir in sourcecode lib; do
         test ! -e $target && ln -sv $f $target;
     done
 done
+

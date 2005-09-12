@@ -115,7 +115,6 @@
         lp:url="/shipit/requests/+portlet-actions">
     </browser:page>
 
-
     <!-- ShippingRequestSet -->
     <content class="canonical.launchpad.database.ShippingRequestSet">
         <allow interface="canonical.launchpad.interfaces.IShippingRequestSet" />

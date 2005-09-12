@@ -67,8 +67,17 @@ spider -- StuartBishop 20050822
 >>> check("/products/firefox")
 >>> check_redirect("/products/firefox/+series")
 >>> check("/products/firefox/+series/1.0")
+>>> check("/products/firefox/+series/1.0/+addpackage", auth=True)
+>>> check("/products/firefox/+series/1.0/+ubuntupkg", auth=True)
+>>> check("/products/firefox/+series/1.0/+source", auth=True)
+>>> check("/products/firefox/+series/1.0/+edit", auth=True)
+>>> check("/products/firefox/+series/1.0/+specs")
+>>> check("/products/firefox/+series/1.0/+addrelease", auth=True)
 >>> check("/products/firefox/+bugs")
->>> check("/products/firefox/+bugs/1") # Deprecated?
+>>> check("/products/firefox/+bugs/1")
+>>> check("/distros/ubuntu/+bugs/1")
+>>> check("/distros/ubuntu/+bugs/1/+edit", auth=True)
+>>> check("/distros/ubuntu/+bugs/1/+target", auth=True)
 
 >>> check_not_found("/products/firefox/+milestone")
 >>> check("/products/firefox/+milestone/1.0")
@@ -139,6 +148,7 @@ Test /people traversals.
 >>> check("/people/+ubuntitelist")
 >>> check("/people/+requestmerge", auth=True)
 >>> check("/people/+mergerequest-sent", auth=True)
+>>> check("/people/+requestmerge-multiple", auth=True)
 >>> check("/people/+portlet-about")
 >>> check("/people/+portlet-actions")
  
@@ -184,6 +194,7 @@ And this is for a person:
 # >>> check("/people/name16/+rdf")
 # >>> check("/people/name18/+rdf")
 # >>> check("/products/firefox/+rdf")
+# >>> check("/products/firefox/series/1.0/+rdf")
 # >>> check("/codeofconduct/1.0/+download")
 
 # XXX: See bug 2150
@@ -192,6 +203,4 @@ And this is for a person:
 # >>> check("/distros/ubuntu/hoary/i386/+edit")
 # XXX: See bug 2152
 # >>> check("/distros/ubuntu/+translations")
-# XXX: See bug 2154
-# >>> check("/people/+requestmerge-multiple")
 
