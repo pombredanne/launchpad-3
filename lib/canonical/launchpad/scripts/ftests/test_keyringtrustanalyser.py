@@ -23,7 +23,7 @@ class TestKeyringTrustAnalyser(FunctionalTestCase):
 
     def tearDown(self):
         #FIXME RBC: this should be a zope test cleanup thing per SteveA.
-        self.gpg_handler.reset_local_state()
+        self.gpg_handler.resetLocalState()
         FunctionalTestCase.tearDown(self)
 
     def _addTrustedKeys(self):
@@ -43,7 +43,7 @@ class TestKeyringTrustAnalyser(FunctionalTestCase):
         self._addTrustedKeys()
 
         # get key from keyring
-        keys = [key for key in self.gpg_handler.local_keys()
+        keys = [key for key in self.gpg_handler.localKeys()
                if key.fingerprint == test_fpr]
         self.assertEqual(len(keys), 1)
         key = keys[0]
@@ -54,7 +54,7 @@ class TestKeyringTrustAnalyser(FunctionalTestCase):
         """Test addOtherKeyring"""
         self._addUntrustedKeys()
         fingerprints = set(key.fingerprint
-                           for key in self.gpg_handler.local_keys())
+                           for key in self.gpg_handler.localKeys())
         self.assertTrue(test_fpr in fingerprints)
         self.assertTrue(foobar_fpr in fingerprints)
 

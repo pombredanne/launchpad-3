@@ -77,11 +77,11 @@ class IGPGHandler(Interface):
         Existing key objects will not reflect the new trust value.
         """
 
-    def local_keys():
+    def localKeys():
         """Return an iterator of all keys locally known about by the handler.
         """
 
-    def reset_local_state():
+    def resetLocalState():
         """Reset the local state (i.e. GPG keyrings, trust database etc."""
         #FIXME RBC: this should be a zope test cleanup thing per SteveA.
 

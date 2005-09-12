@@ -41,7 +41,7 @@ def getValidUids(minvalid=validity.MARGINAL):
     """
     gpg = getUtility(IGPGHandler)
     gpg.checkTrustDb()
-    for key in gpg.local_keys():
+    for key in gpg.localKeys():
         for uid in key.uids:
             if (not uid.revoked and valid_email(uid.email) and
                 uid.validity >= minvalid):

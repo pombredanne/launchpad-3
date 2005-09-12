@@ -21,13 +21,13 @@ class TestImportKeyRing(FunctionalTestCase):
     def tearDown(self):
         """Zero out the gpg database"""
         #FIXME RBC: this should be a zope test cleanup thing per SteveA.
-        self.gpg_handler.reset_local_state()
+        self.gpg_handler.resetLocalState()
         FunctionalTestCase.tearDown(self)
 
     # This sequence might fit better as a doctest. Hmm.
     def testEmptyGetKeys(self):
         """The initial local key list should be empty."""
-        self.assertEqual([], list(self.gpg_handler.local_keys()))
+        self.assertEqual([], list(self.gpg_handler.localKeys()))
 
     def testPopulatedGetKeys(self):
         """Import our test keys and check they get imported."""
@@ -35,9 +35,9 @@ class TestImportKeyRing(FunctionalTestCase):
         for email in keys_for_tests.iter_test_key_emails():
             pubkey = keys_for_tests.test_pubkey_from_email(email)
             self.gpg_handler.importKey(pubkey)
-        self.assertNotEqual([], list(self.gpg_handler.local_keys()))
+        self.assertNotEqual([], list(self.gpg_handler.localKeys()))
         fingerprints = set(key.fingerprint
-                           for key in self.gpg_handler.local_keys())
+                           for key in self.gpg_handler.localKeys())
         self.assertTrue("340CA3BB270E2716C9EE0B768E7EB7086C64A8C5"
                         in fingerprints)
         self.assertTrue("A419AE861E88BC9E04B9C26FBA2B9389DFD20543"
@@ -63,7 +63,7 @@ class TestImportKeyRing(FunctionalTestCase):
 
         # check that importedkeys are in key ring
         keyring = set(key.fingerprint
-                      for key in self.gpg_handler.local_keys())
+                      for key in self.gpg_handler.localKeys())
         self.assertNotEqual(len(keyring), 0)
         self.assertTrue(importedkeys.issubset(keyring))
 
@@ -74,12 +74,12 @@ class TestImportKeyRing(FunctionalTestCase):
             pubkey = keys_for_tests.test_pubkey_from_email(email)
             self.gpg_handler.importKey(pubkey)
 
-        iterator = self.gpg_handler.local_keys()
+        iterator = self.gpg_handler.localKeys()
         key = iterator.next()
         self.assertEqual(key.owner_trust, validity.UNKNOWN)
         key.setOwnerTrust(validity.FULL)
         self.assertEqual(key.owner_trust, validity.FULL)
-        other_iterator = self.gpg_handler.local_keys()
+        other_iterator = self.gpg_handler.localKeys()
         other_key_instance = other_iterator.next()
         self.assertEqual(key.owner_trust, other_key_instance.owner_trust)
 

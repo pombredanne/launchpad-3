@@ -77,7 +77,7 @@ class GPGHandler:
                 
         atexit.register(removeHome, self.home)
 
-    def reset_local_state(self):
+    def resetLocalState(self):
         """See IGPGHandler."""
         # remove the public keyring, private keyring and the trust DB
         for filename in ['pubring.gpg', 'secring.gpg', 'trustdb.gpg']:
@@ -253,7 +253,7 @@ class GPGHandler:
 
         return plain.read()
 
-    def local_keys(self):
+    def localKeys(self):
         """Get an iterator of the keys this gpg handler
         already knows about.
         """
