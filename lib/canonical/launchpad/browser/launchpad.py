@@ -16,8 +16,6 @@ from canonical.launchpad.webapp import (
 
 class LaunchpadRootFacets(StandardLaunchpadFacets):
     usedfor = ILaunchpadRoot
-    links = ['overview', 'bugs', 'tickets', 'specifications', 'bounties',
-             'translations', 'calendar']
 
     def overview(self):
         target = ''
@@ -40,7 +38,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         summary = 'Launchpad technical support tracker.'
         return Link(target, text, summary)
 
-    def specs(self):
+    def specifications(self):
         target = 'specs'
         text = 'Specs'
         summary = 'Launchpad feature specification tracker.'

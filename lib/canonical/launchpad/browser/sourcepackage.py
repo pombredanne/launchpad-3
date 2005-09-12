@@ -87,7 +87,13 @@ def traverseSourcePackageSet(sourcepackageset, request, name):
 class SourcePackageFacets(StandardLaunchpadFacets):
 
     usedfor = ISourcePackage
-    links = ['overview', 'bugs', 'tickets', 'translations']
+
+    enable_only = ['overview', 'bugs', 'tickets', 'translations']
+
+    def tickets(self):
+        link = StandardLaunchpadFacets.tickets(self)
+        link.enabled = True
+        return link
 
 
 class SourcePackageFilebugView(SQLObjectAddView):

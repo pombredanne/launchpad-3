@@ -4,8 +4,34 @@
     i18n_domain="canonical.launchpad">
 
     <!-- links -->
-    <content class="canonical.launchpad.webapp.menu.Link">
-      <allow interface="canonical.launchpad.interfaces.IFacetLink" />
+    <content class="canonical.launchpad.webapp.menu.LinkData">
+      <allow interface="canonical.launchpad.interfaces.ILinkData" />
+    </content>
+
+    <adapter
+      for="canonical.launchpad.interfaces.ILinkData"
+      provides="canonical.launchpad.interfaces.ILink"
+      factory="canonical.launchpad.webapp.menu.MenuLink"
+      />
+
+    <content class="canonical.launchpad.webapp.menu.MenuLink">
+      <require
+        permission="zope.Public"
+        interface="canonical.launchpad.interfaces.ILink"
+        />
+    </content>
+
+    <adapter
+      for="canonical.launchpad.interfaces.ILinkData"
+      provides="canonical.launchpad.interfaces.IFacetLink"
+      factory="canonical.launchpad.webapp.menu.FacetLink"
+      />
+
+    <content class="canonical.launchpad.webapp.menu.FacetLink">
+      <require
+        permission="zope.Public"
+        interface="canonical.launchpad.interfaces.IFacetLink"
+        />
     </content>
 
     <!-- urls -->

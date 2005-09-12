@@ -122,23 +122,7 @@
             >
               <ul class="menu">
                 <tal:block repeat="link appmenu">
-                  <li
-                    tal:condition="link/selected"
-                    class="current"
-                  >
-                    <tal:block condition="link/linked">
-                      <strong>
-                        <a 
-                          tal:attributes="href link/url"
-                          tal:content="link/text"
-                        >link text</a>
-                      </strong>
-                    </tal:block>
-                    <tal:block condition="not: link/linked">
-                      <strong tal:content="link/text">link text</strong>
-                    </tal:block>
-                  </li>
-                  <li tal:condition="not: link/selected">
+                  <li>
                     <a
                       tal:attributes="href link/url"
                       tal:content="link/text"

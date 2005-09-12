@@ -2,13 +2,14 @@
 """Menus and facets."""
 
 __metaclass__ = type
-__all__ = ['nearest_menu', 'FacetMenu', 'ApplicationMenu', 'Link']
+__all__ = ['nearest_menu', 'FacetMenu', 'ApplicationMenu', 'Link', 'LinkData',
+           'FacetLink', 'MenuLink', 'Url']
 
 import urlparse
 from zope.interface import implements
-from zope.component import getDefaultViewName
+from canonical.lp import decorates
 from canonical.launchpad.interfaces import (
-    IMenuBase, IFacetMenu, IApplicationMenu, IFacetLink, ILink
+    IMenuBase, IFacetMenu, IApplicationMenu, IFacetLink, ILink, ILinkData
     )
 from canonical.launchpad.webapp.publisher import (
     canonical_url, canonical_url_iterator
@@ -31,19 +32,13 @@ def nearest_menu(obj, menuinterface):
     return None
 
 
-class Link:
+class LinkData:
     """General links that aren't default links.
 
-    This is used for all links, not just facet links.  The class implements
-    IFacetLink because it can be used for facet links.
+    Instances of this class just provide link data.  The class is also known
+    as 'Link' to make it nice to use when defining menus.
     """
-    implements(IFacetLink)
-
-    # These attributes are set by the menus infrastructure.
-    name = None
-    url = None
-    linked = True
-    selected = False
+    implements(ILinkData)
 
     def __init__(self, target, text, summary=None, icon=None, enabled=True):
         """Create a new link to 'target' with 'text' as the link text.
@@ -65,6 +60,49 @@ class Link:
         self.icon = icon
         self.enabled = enabled
 
+Link = LinkData
+
+
+class MenuLink:
+    """Adapter from ILinkData to ILink."""
+    implements(ILink)
+    decorates(ILinkData, context='_linkdata')
+
+    # These attributes are set by the menus infrastructure.
+    name = None
+    url = None
+    linked = True
+
+    # This attribute is used to override self.enabled when it is
+    # set, without writing to the object being adapted.
+    _enabled_override = None
+
+    def __init__(self, linkdata):
+        # Take a copy of the linkdata attributes.
+        self._linkdata = linkdata
+
+    def set_enabled(self, value):
+        self._enabled_override = value
+
+    def get_enabled(self):
+        if self._enabled_override is None:
+            return self._linkdata.enabled
+        return self._enabled_override
+
+    enabled = property(get_enabled, set_enabled)
+
+
+class FacetLink(MenuLink):
+    """Adapter from ILinkData to IFacetLink."""
+    implements(IFacetLink)
+
+    # This attribute is set by the menus infrastructure.
+    selected = False
+
+
+# Marker object that means 'all links are to be enabled'.
+ALL_LINKS = object()
+
 
 class MenuBase:
     """Base class for facets and menus."""
@@ -72,55 +110,46 @@ class MenuBase:
     implements(IMenuBase)
 
     links = None
+    enable_only = ALL_LINKS
     _baseclassname = 'MenuBase'
 
-    def __init__(self, context, request=None):
-        # The attributes self.context and self.request are defined in
-        # IMenuBase.
+    def __init__(self, context):
+        # The attribute self.context is defined in IMenuBase.
         self.context = context
-        self.request = request
-        # XXX: SteveA 2005-09-09, quick hack, awaiting more comprehensive
-        # refactor.
-        self.published_context = None
 
     def _get_link(self, name):
         method = getattr(self, name)
-        link = method()
+        linkdata = method()
         # The link need only provide ILinkData.  We need an ILink so that
         # we can set attributes on it like 'name' and 'url' and 'linked'.
-        return ILink(link)
+        return ILink(linkdata)
 
-    def __iter__(self):
+    def iterlinks(self, requesturl=None):
         """See IMenu."""
         assert self.links is not None, (
             'Subclasses of %s must provide self.links' % self._baseclassname)
-        contexturlobj = Url(canonical_url(self.context, self.request))
-        if self.request is None:
-            requesturlobj = None
+        contexturlobj = Url(canonical_url(self.context))
+
+        if self.enable_only is ALL_LINKS:
+            enable_only = set(self.links)
         else:
-            requesturlobj = Url(self.request.getURL(),
-                                self.request.get('QUERY_STRING'))
-            # If the default view name is being used, we will want the url
-            # without the default view name.
-            # XXX: the problem here is that we're getting the default view
-            #      name of the facet menu's context, not of the actual
-            #      published object's context!
-            #      plan: make the tales stuff responsible for passing
-            #            in a string that is the requesturl.
-            #     SteveAlexander, 2005-09-09
-            if self.published_context is None:
-                published_context = self.context
-            else:
-                published_context = self.published_context
-            defaultviewname = getDefaultViewName(
-                published_context, self.request)
-            if requesturlobj.pathnoslash.endswith(defaultviewname):
-                requesturlobj = Url(self.request.getURL(1),
-                                    self.request.get('QUERY_STRING'))
+            enable_only = set(self.enable_only)
+
+        if enable_only - set(self.links):
+            # There are links named in enable_only that do not exist in
+            # self.links.
+            raise AssertionError(
+                "Links in 'enable_only' not found in 'links': %s" %
+                (', '.join([name for name in enable_only - set(self.links)])))
 
         for linkname in self.links:
             link = self._get_link(linkname)
             link.name = linkname
+
+            # Set the .enabled attribute of the link to False if it is not
+            # in enable_only.
+            if linkname not in enable_only:
+                link.enabled = False
 
             # Set the .url attribute of the link, using the menu's context.
             targeturlobj = Url(link.target)
@@ -133,9 +162,9 @@ class MenuBase:
                     contexturlobj.host, contexturlobj.pathslash, link.target)
 
             # Make the link unlinked if it is a link to the current page.
-            if requesturlobj is not None:
+            if requesturl is not None:
                 linkurlobj = Url(link.url)
-                if requesturlobj == linkurlobj:
+                if requesturl == linkurlobj:
                     link.linked = False
             yield link
 
@@ -153,18 +182,15 @@ class FacetMenu(MenuBase):
     def _get_link(self, name):
         return IFacetLink(MenuBase._get_link(self, name))
 
-    def iterlinks(self, selectedfacetname=None):
+    def iterlinks(self, requesturl=None, selectedfacetname=None):
         """See IFacetMenu."""
         if selectedfacetname is None:
             selectedfacetname = self.defaultlink
-        for link in MenuBase.__iter__(self):
+        for link in MenuBase.iterlinks(self, requesturl=requesturl):
             if (selectedfacetname is not None and
                 selectedfacetname == link.name):
                 link.selected = True
             yield link
-
-    def __iter__(self):
-        return self.iterlinks()
 
 
 class ApplicationMenu(MenuBase):

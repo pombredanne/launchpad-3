@@ -181,7 +181,7 @@ FacetMenu is meant to be used as a base-class for writing your own IFacetMenu
 classes.  Here's what happens when you use it on its own.
 
     >>> bad_idea_menu = FacetMenu(object())
-    >>> for link in bad_idea_menu:
+    >>> for link in bad_idea_menu.iterlinks():
     ...     pass
     Traceback (most recent call last):
     ...
@@ -221,7 +221,7 @@ show that its methods can access `self.context`.
 We can go through each attribute of each of the links, checking that they
 are as we expect.
 
-    >>> for link in facetmenu:
+    >>> for link in facetmenu.iterlinks():
     ...     print '--- link %s ---' % link.name
     ...     for attrname in sorted(IFacetLink.names(all=True)):
     ...         print '%s: %s' % (attrname, getattr(link, attrname))
@@ -247,12 +247,97 @@ are as we expect.
     url: http://localhost:8086/sesamestreet/+bar
 
 
+== Enabled links and disabled links ==
+
+Often, we want to make a facet menu that uses the standard facet menu links,
+but with only some of them enabled.
+
+To do this, we make a new menu class that extends an existing one.  We need
+to provide a set of link names that are to be enabled.  All other links will
+be disabled.
+
+    >>> class OnlySomeEnabledFacets(Facets):
+    ...
+    ...     enable_only = ['foo']
+
+Now, we can make an instance of this class.
+
+    >>> onlysomeenabledfacetmenu = OnlySomeEnabledFacets(street)
+
+We look at the links, to make sure they are as we expect.
+
+    >>> for link in onlysomeenabledfacetmenu.iterlinks():
+    ...     print '--- link %s ---' % link.name
+    ...     print 'enabled:', link.enabled
+    --- link foo ---
+    enabled: True
+    --- link bar ---
+    enabled: False
+
+If 'enable_only' contains a link name that does not appear in 'links', we
+should get a warning.
+
+    >>> class UnknownEnableOnlyFacets(Facets):
+    ...
+    ...     enable_only = ['bar', 'quux']
+
+Now, we can make an instance of this class.
+
+    >>> unknownenableonlyfacets = UnknownEnableOnlyFacets(street)
+
+    >>> for link in unknownenableonlyfacets.iterlinks():
+    ...     print '--- link %s ---' % link.name
+    ...     print 'enabled:', link.enabled
+    Traceback (most recent call last):
+    ...
+    AssertionError: Links in 'enable_only' not found in 'links': quux
+
+
+== The MenuLink and FacetLink adapter classes ==
+
+The menus system needs to be able to adapt ILinkData objects to objects
+that provide ILink or IFacetLink.  The menus system needs to be able to
+set the 'enabled', 'name', 'url', 'linked, and for IFacetLink, 'selected'
+attributes, but without altering the underlying ILinkData object.
+
+    >>> somelink = Link('target', 'text', 'summary', icon='icon')
+    >>> ILinkData.providedBy(somelink)
+    True
+    >>> ILink.providedBy(somelink)
+    False
+    >>> adaptedtolink = ILink(somelink)
+    >>> ILink.providedBy(adaptedtolink)
+    True
+
+It is important we don't get a facetlink here, so that we can do views on links
+if we want to, and have distinct views on facet and other links.
+
+    >>> IFacetLink.providedBy(adaptedtolink)
+    False
+
+    >>> adaptedtolink.target
+    'target'
+    >>> adaptedtolink.text
+    'text'
+    >>> adaptedtolink.summary
+    'summary'
+    >>> adaptedtolink.icon
+    'icon'
+    >>> adaptedtolink.enabled
+    True
+    >>> adaptedtolink.enabled = False
+    >>> adaptedtolink.enabled
+    False
+    >>> somelink.enabled
+    True
+
+
 == How do we tell which link from a facetmenu is the selected one? ==
 
 A link will be selected if its name is passed to the facet menu's
 iterlinks method, or otherwise, if its name is the defaultlink.
 
-    >>> for link in facetmenu.iterlinks('bar'):
+    >>> for link in facetmenu.iterlinks(selectedfacetname='bar'):
     ...     print '--- link %s ---' % link.name
     ...     print 'selected:', link.selected
     --- link foo ---
@@ -263,7 +348,7 @@ iterlinks method, or otherwise, if its name is the defaultlink.
 When a link name is passed in, but no link of that name is in the menu, it
 is not an error.  No link is selected.
 
-    >>> for link in facetmenu.iterlinks('nosuchname'):
+    >>> for link in facetmenu.iterlinks(selectedfacetname='nosuchname'):
     ...     print '--- link %s ---' % link.name
     ...     print 'selected:', link.selected
     --- link foo ---
@@ -274,7 +359,7 @@ is not an error.  No link is selected.
 No selected link is given, but the default is 'foo', so 'foo' will be selected.
 
     >>> facetmenu.defaultlink = 'foo'
-    >>> for link in facetmenu:
+    >>> for link in facetmenu.iterlinks():
     ...     print '--- link %s ---' % link.name
     ...     print 'selected:', link.selected
     --- link foo ---
@@ -285,7 +370,7 @@ No selected link is given, but the default is 'foo', so 'foo' will be selected.
 Now, 'foo' is still the default, but 'bar' has been selected.  So only 'bar'
 will be selected.
 
-    >>> for link in facetmenu.iterlinks('bar'):
+    >>> for link in facetmenu.iterlinks(selectedfacetname='bar'):
     ...     print '--- link %s ---' % link.name
     ...     print 'selected:', link.selected
     --- link foo ---
@@ -296,7 +381,7 @@ will be selected.
 We still have 'foo' as the default.  This time, 'nosuchlink' has been selected.
 As there is no such link, nothing will be selected.
 
-    >>> for link in facetmenu.iterlinks('nosuchlink'):
+    >>> for link in facetmenu.iterlinks(selectedfacetname='nosuchlink'):
     ...     print '--- link %s ---' % link.name
     ...     print 'selected:', link.selected
     --- link foo ---
@@ -343,12 +428,14 @@ To test this, we need a dummy request object that provides `getURL()`.
     ...         else:
     ...             return self.query
 
+    >>> from canonical.launchpad.webapp.menu import Url
+
 The following request is for a url that is different from all of the facet
 menu links for 'sesamestreet'.  So, all links will be linked.
 
-    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+xxx')
-    >>> facets = Facets(street, request)
-    >>> for link in facets:
+    >>> request = Url('http://localhost:8086/sesamestreet/+xxx')
+    >>> facets = Facets(street)
+    >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
     http://localhost:8086/sesamestreet/+foo True
     http://localhost:8086/sesamestreet/+bar True
@@ -356,19 +443,20 @@ menu links for 'sesamestreet'.  So, all links will be linked.
 This next request is for +foo, but with a query string.  So, both links will
 still be linked.
 
+XXX
     >>> request = DummyRequest(
     ...     'http://localhost:8086/sesamestreet/+foo', query="123")
-    >>> facets = Facets(street, request)
-    >>> for link in facets:
+    >>> facets = Facets(street)
+    >>> for link in facets.iterlinks():
     ...     print link.url, link.linked
     http://localhost:8086/sesamestreet/+foo True
     http://localhost:8086/sesamestreet/+bar True
 
 Next, we'll use the link +bar.  The +bar link will not be linked.
 
-    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+bar')
-    >>> facets = Facets(street, request)
-    >>> for link in facets:
+    >>> request = Url('http://localhost:8086/sesamestreet/+bar')
+    >>> facets = Facets(street)
+    >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
     http://localhost:8086/sesamestreet/+foo True
     http://localhost:8086/sesamestreet/+bar False
@@ -376,9 +464,9 @@ Next, we'll use the link +bar.  The +bar link will not be linked.
 Now, we use +bar with a trailing slash.  The +bar link will still be not
 linked.
 
-    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+bar/')
-    >>> facets = Facets(street, request)
-    >>> for link in facets:
+    >>> request = Url('http://localhost:8086/sesamestreet/+bar/')
+    >>> facets = Facets(street)
+    >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
     http://localhost:8086/sesamestreet/+foo True
     http://localhost:8086/sesamestreet/+bar False
@@ -404,37 +492,41 @@ This will be the common case for default links.
     ...             'More explanation about Baz of %s' % self.context.name)
     ...         return Link(target, text, summary)
 
-    >>> request = DummyRequest(
-    ...     'http://mandrill.example.com:9999/sesamestreet/+bar')
-    >>> facets = BlankTargetTestFacets(street, request)
-    >>> for link in facets:
+    >>> request = Url('http://localhost:8086/sesamestreet/+bar')
+    >>> facets = BlankTargetTestFacets(street)
+    >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
-    http://mandrill.example.com:9999/sesamestreet/ True
-    http://mandrill.example.com:9999/sesamestreet/+bar False
-    http://mandrill.example.com:9999/sesamestreet/+baz True
+    http://localhost:8086/sesamestreet/ True
+    http://localhost:8086/sesamestreet/+bar False
+    http://localhost:8086/sesamestreet/+baz True
 
+
+XXX The following stuff needs testing properly, using the TALES code, which
+    does the actual defaultViewName lookup and URL calculations.
+    SteveAlexander, 2005-09-12
 
 Sometimes, we need to take into account the default view name for an object.
 Let's say that the default view name for an IStreet is '+foo'.  This is
 the common case where the overview link is the default view name.
 
-    >>> class IStreet(Interface):
-    ...     """A street."""
-    >>> directlyProvides(street, IStreet)
-    >>> from zope.app.tests import ztapi
-    >>> ztapi.setDefaultViewName(IStreet, '+foo')
-    >>> from zope.component import getDefaultViewName
-    >>> getDefaultViewName(street, request)
+    >> class IStreet(Interface):
+    ..     """A street."""
+    >> directlyProvides(street, IStreet)
+    >> from zope.app.tests import ztapi
+    >> ztapi.setDefaultViewName(IStreet, '+foo')
+    >> from zope.component import getDefaultViewName
+    >> getDefaultViewName(street, request)
     '+foo'
 
 So, in this example, the first link should not be 'linked' because it is
-equivalent to the default view name for a street.
+equivalent to the default view name for a street.  The TALES infrastructure
+actually calculates a shortened URL for this case.
+XXX: need to test this with the TALES stuff.
+     SteveAlexander, 2005-09-12
 
-    >>> request = DummyRequest(
-    ...     'http://localhost:8086/sesamestreet/+foo',
-    ...     url1='http://localhost:8086/sesamestreet')
-    >>> facets = BlankTargetTestFacets(street, request)
-    >>> for link in facets:
+    >>> request = Url('http://localhost:8086/sesamestreet/')
+    >>> facets = BlankTargetTestFacets(street)
+    >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
     http://localhost:8086/sesamestreet/ False
     http://localhost:8086/sesamestreet/+bar True
@@ -493,11 +585,10 @@ earlier in this doctest.
     >>> canonical_url(street)
     'http://localhost:8086/sesamestreet'
 
-    >>> request = DummyRequest(
-    ...     'http://localhost:8086/sesamestreet/+foo',
-    ...     url1='http://localhost:8086/sesamestreet')
-    >>> facets = AbsoluteUrlTargetTestFacets(street, request)
-    >>> for link in facets:
+    >>> request = Url('http://localhost:8086/sesamestreet')
+
+    >>> facets = AbsoluteUrlTargetTestFacets(street)
+    >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
     http://localhost:8086/sesamestreet/ False
     ftp://barlink.example.com/barbarbar True
@@ -520,7 +611,7 @@ ApplicationMenu is meant to be used as a base-class for writing your own
 IApplicationMenu classes.  Here's what happens when you use it on its own.
 
     >>> bad_idea_menu = ApplicationMenu(object())
-    >>> for link in bad_idea_menu:
+    >>> for link in bad_idea_menu.iterlinks():
     ...     pass
     Traceback (most recent call last):
     ...
@@ -552,16 +643,15 @@ really be using some link text that shows that its methods can access
 We can go through each attribute of each of the links, checking that they
 are as we expect.
 
-    >>> for link in housefooappmenu:
+    >>> for link in housefooappmenu.iterlinks():
     ...     print '--- link %s ---' % link.name
-    ...     for attrname in sorted(IFacetLink.names(all=True)):
+    ...     for attrname in sorted(ILink.names(all=True)):
     ...         print '%s: %s' % (attrname, getattr(link, attrname))
     --- link first ---
     enabled: True
     icon: None
     linked: True
     name: first
-    selected: False
     summary: None
     target: +first
     text: First menu
@@ -681,8 +771,8 @@ adapter.
     >>> directlyProvides(street, IThingHavingFacets)
     >>> house.adapt_to = None
     >>> directlyProvides(house, IThingHavingApplicationMenus)
-    >>> menu = test_tales('CONTEXTS/menu:facet', context=house, view=view)
-    >>> for link in menu:
+    >>> links = test_tales('CONTEXTS/menu:facet', context=house, view=view)
+    >>> for link in links:
     ...     print link.url, link.selected
     http://localhost:8086/sesamestreet/+foo False
     http://localhost:8086/sesamestreet/+bar True
@@ -700,10 +790,11 @@ Now, if we change the view's __launchpad_facetname__ so that the 'foo' facet
 is selected, we get a couple of menus.
 
     >>> view.__launchpad_facetname__ = 'foo'
-    >>> menu = test_tales('CONTEXTS/menu:application', context=house, view=view)
-    >>> for link in menu:
-    ...     print link.url, link.selected
-    http://localhost:8086/sesamestreet/number73/+first False
+    >>> links = test_tales(
+    ...     'CONTEXTS/menu:application', context=house, view=view)
+    >>> for link in links:
+    ...     print link.url
+    http://localhost:8086/sesamestreet/number73/+first
 
 When there is no menu for a thing, we get an empty iterator.
 
