@@ -25,6 +25,9 @@
         <li class="edit"><a href="+editsshkeys">Edit SSH Keys</a></li>
         <li class="edit"><a href="+editgpgkeys">Edit GPG Keys</a></li>
         <li class="edit"><a href="+codesofconduct">Code of Conduct</a></li>
+        <li class="edit" tal:condition="context/required:launchpad.Admin">
+          <a href="+review">Administer</a>
+        </li>
       </tal:block>
       <li class="packages"><a href="+packages">Packages</a></li>
       <tal:block condition="context/isTeam">
@@ -48,9 +51,6 @@
           </li>
         </tal:block>
       </tal:block>
-      <li class="edit" tal:condition="context/required:launchpad.Admin">
-        <a href="+review">Administer</a>
-      </li>
     </ul>
 
   </div>
