@@ -23,7 +23,7 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
     SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND
+from sqlobject.sqlbuilder import AND, OR
 from canonical.database.sqlbase import SQLBase, quote, cursor, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -100,8 +100,6 @@ class Person(SQLBase):
 
     # relevant joins
     branches = MultipleJoin('Branch', joinColumn='owner')
-    members = MultipleJoin('TeamMembership', joinColumn='team',
-        orderBy='status')
     ownedBounties = MultipleJoin('Bounty', joinColumn='owner',
         orderBy='id')
     reviewerBounties = MultipleJoin('Bounty', joinColumn='reviewer',
@@ -271,8 +269,11 @@ class Person(SQLBase):
 
     def currentShipItRequest(self):
         """See IPerson."""
+        notdenied = OR(ShippingRequest.q.approved==True,
+                       ShippingRequest.q.approved==None)
         query = AND(ShippingRequest.q.recipientID==self.id,
                     ShippingRequest.q.shipmentID==None,
+                    notdenied,
                     ShippingRequest.q.cancelled==False)
         return ShippingRequest.selectOne(query)
 
@@ -533,20 +534,26 @@ class Person(SQLBase):
         return self.expiredmembers.union(self.deactivatedmembers)
 
     @property
-    def memberships(self):
+    def myactivememberships(self):
         """See IPerson."""
-        return TeamMembership.selectBy(personID=self.id)
+        return TeamMembership.select("""
+            TeamMembership.person = %s AND status in (%s, %s) AND 
+            Person.id = TeamMembership.team
+            """ % sqlvalues(self.id, TeamMembershipStatus.APPROVED,
+                            TeamMembershipStatus.ADMIN),
+            clauseTables=['Person'],
+            orderBy=['Person.displayname'])
 
     @property
     def activememberships(self):
         """See IPerson."""
         return TeamMembership.select('''
-            team = %s AND
-            status in (%s, %s)
+            TeamMembership.team = %s AND status in (%s, %s) AND
+            Person.id = TeamMembership.person
             ''' % sqlvalues(self.id, TeamMembershipStatus.APPROVED,
                 TeamMembershipStatus.ADMIN),
-            orderBy=['datejoined'],
-            distinct=True)
+            clauseTables=['Person'],
+            orderBy=['Person.displayname'])
 
     @property
     def defaultexpirationdate(self):
@@ -1148,6 +1155,17 @@ class PersonSet:
         cur.execute('''
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
             ''' % vars())
+        
+        # Append a -merged suffix to the account's name.
+        name = "%s-merged" % from_person.name
+        cur.execute("SELECT id FROM Person WHERE name = '%s'" % name)
+        i = 1
+        while cur.fetchone():
+            name = "%s%d" % (name, i)
+            cur.execute("SELECT id FROM Person WHERE name = '%s'" % name)
+            i += 1
+        cur.execute("UPDATE Person SET name = '%s' WHERE id = %d"
+                    % (name, from_person.id))
 
 
 class EmailAddress(SQLBase):
@@ -1276,9 +1294,9 @@ class GPGKeySet:
     def getGPGKeys(self, ownerid=None, active=True):
         """See IGPGKeySet"""
         if active is False:
-            query =('active=false AND fingerprint NOT IN '
-                    '(SELECT fingerprint from LoginToken WHERE fingerprint '
-                    'IS NOT NULL AND requester = %s)' % sqlvalues(ownerid))
+            query = ('active=false AND fingerprint NOT IN '
+                     '(SELECT fingerprint from LoginToken WHERE fingerprint '
+                     'IS NOT NULL AND requester = %s)' % sqlvalues(ownerid))
         else:
             query = 'active=true'
 

@@ -146,6 +146,15 @@ Must login as 'sabdfl' cause he's the owner of the Ubuntu Team.
 
 >>> from canonical.launchpad.database import Person
 >>> cur = Person._connection._connection.cursor()
+
+A merged account gets a _merged suffix on its name.
+>>> empty.id
+57L
+>>> cur.execute("SELECT id FROM Person WHERE name='empty-merged'")
+>>> cur.fetchone()[0]
+57
+
+
 >>> cur.execute("select p1.name from person as p1, person as p2 where "
 ...             "p1.id = p2.teamowner and p2.name = 'name17'")
 >>> cur.fetchone()[0]
@@ -154,7 +163,7 @@ u'sabdfl'
 The account that has been merged is flagged. We can use this to eliminate
 merged accounts from lists etc.
 
->>> cur.execute("SELECT merged FROM Person WHERE name='empty'")
+>>> cur.execute("SELECT merged FROM Person WHERE name='empty-merged'")
 >>> cur.fetchone()[0]
 12
 

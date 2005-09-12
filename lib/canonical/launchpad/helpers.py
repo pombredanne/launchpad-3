@@ -1182,3 +1182,13 @@ def intOrZero(value):
     except ValueError:
         return 0
 
+def positiveIntOrZero(value):
+    """Return 0 if int(value) fails or if int(value) is less than 0.
+
+    Return int(value) otherwise.
+    """
+    value = intOrZero(value)
+    if value < 0:
+        return 0
+    return value
+

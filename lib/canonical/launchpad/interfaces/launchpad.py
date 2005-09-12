@@ -25,7 +25,7 @@ __all__ = ['ILaunchpadRoot', 'ILaunchpadApplication', 'IMaloneApplication',
            'IApplicationMenu',
            'ICanonicalUrlData', 'NoCanonicalUrl',
            'IDBSchema', 'IDBSchemaItem', 'IAuthApplication',
-           'IPasswordChangeApp', 'IPasswordResets'
+           'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication'
            ]
 
 
@@ -145,6 +145,10 @@ class IRegistryApplication(ILaunchpadApplication):
 
 class IFOAFApplication(ILaunchpadApplication):
     """FOAF application root."""
+
+
+class IShipItApplication(ILaunchpadApplication):
+    """ShipIt application root."""
 
 
 class IBazaarApplication(ILaunchpadApplication):

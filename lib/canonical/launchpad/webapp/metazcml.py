@@ -39,7 +39,7 @@ from zope.app.publisher.browser.viewmeta import (
 from zope.app.publisher.browser.metaconfigure import (
     defaultView as original_defaultView)
 
-from canonical.launchpad.layers import setAdditionalLayer
+from canonical.launchpad.layers import setAdditionalLayer, setFirstLayer
 from canonical.launchpad.interfaces import (
     IAuthorization, IOpenLaunchBag, ICanonicalUrlData,
     IFacetMenu, IApplicationMenu)
@@ -359,7 +359,10 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
                 if adaptwith is not None:
                     val = adaptwith(val)
                 if newlayer is not None:
-                    setAdditionalLayer(self.request, newlayer)
+                    # Steve told me to comment this and add the setFirstLayer
+                    # line to get shipit to work.
+                    #setAdditionalLayer(self.request, newlayer)
+                    setFirstLayer(self.request, newlayer)
                 #getUtility(IOpenLaunchBag).add(val)
                 return val
 
@@ -372,7 +375,10 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
                 if adaptwith is not None:
                     val = adaptwith(val)
                 if newlayer is not None:
-                    setAdditionalLayer(self.request, newlayer)
+                    # Steve told me to comment this and add the setFirstLayer
+                    # line to get shipit to work.
+                    #setAdditionalLayer(self.request, newlayer)
+                    setFirstLayer(self.request, newlayer)
                 #getUtility(IOpenLaunchBag).add(val)
                 return val
 

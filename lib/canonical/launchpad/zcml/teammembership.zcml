@@ -69,6 +69,11 @@
             set_schema="canonical.launchpad.interfaces.ITeamMembership" />
     </content>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.ITeamMembership"
+        path_expression="string:+members/${person/name}"
+        attribute_to_parent="team" />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITeamMembership"
         name="+index" />
