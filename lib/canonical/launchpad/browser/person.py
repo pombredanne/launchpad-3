@@ -1091,19 +1091,21 @@ class RequestPeopleMergeMultipleEmailsView:
         self.context = context
         self.request = request
         self.formProcessed = False
+        self.dupe = None
 
+    def processForm(self):
         dupe = self.request.form.get('dupe')
         if dupe is None:
             # We just got redirected to this page and we don't have the dupe
             # hidden field in request.form.
             dupe = self.request.get('dupe')
-            # XXX  handle the case where get returns None, here
+            if dupe is None:
+                return
 
         self.dupe = getUtility(IPersonSet).get(int(dupe))
         emailaddrset = getUtility(IEmailAddressSet)
         self.dupeemails = emailaddrset.getByPerson(self.dupe)
 
-    def processForm(self):
         if self.request.method != "POST":
             return
 
