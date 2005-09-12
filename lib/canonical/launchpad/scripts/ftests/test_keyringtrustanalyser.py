@@ -1,6 +1,7 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
 import unittest
+import logging
 
 from canonical.functional import FunctionalTestCase
 from canonical.launchpad.ftests import login, ANONYMOUS, keys_for_tests
@@ -14,6 +15,33 @@ from pyme.constants import validity
 
 test_fpr = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
 foobar_fpr = '340CA3BB270E2716C9EE0B768E7EB7086C64A8C5'
+
+class FakeLogger:
+    """Helper class to test logging"""
+    def __init__(self):
+        self.messages = []
+
+    def log(self, level, msg, *args, **kwargs):
+        self.messages.append((level, msg % args))
+
+    def getMessages(self, level):
+        return [msg for (lvl, msg) in self.messages if lvl == level]
+
+    def debug(self, msg, *args, **kwargs):
+        self.log(logging.DEBUG, msg, *args, **kwargs)
+
+    def info(self, msg, *args, **kwargs):
+        self.log(logging.INFO, msg, *args, **kwargs)
+
+    def warning(self, msg, *args, **kwargs):
+        self.log(logging.WARNING, msg, *args, **kwargs)
+
+    def error(self, msg, *args, **kwargs):
+        self.log(logging.ERROR, msg, *args, **kwargs)
+
+    def critical(self, msg, *args, **kwargs):
+        self.log(logging.CRITICAL, msg, *args, **kwargs)
+
 
 class TestKeyringTrustAnalyser(FunctionalTestCase):
     def setUp(self):
@@ -197,10 +225,17 @@ class TestMergeClusters(FunctionalTestCase):
         self.assertEqual(person1.merged, None)
         self.assertEqual(person2.merged, None)
 
-        mergeClusters([set(['test@canonical.com', 'foo.bar@canonical.com'])])
+        logger = FakeLogger()
+        mergeClusters([set(['test@canonical.com', 'foo.bar@canonical.com'])],
+                      logger=logger)
 
         self.assertEqual(person1.merged, None)
         self.assertEqual(person2.merged, None)
+
+        warnings = logger.getMessages(logging.WARNING)
+        self.assertNotEqual(warnings, [])
+        self.assertTrue(warnings[0].startswith('Multiple validated '
+                                               'user accounts'))
 
     def testMergeTwoUnvalidatedAccounts(self):
         """Test merging of two unvalidated accounts.  This will pick
@@ -249,22 +284,6 @@ class TestMergeClusters(FunctionalTestCase):
         self.assertNotEqual(person, None)
         self.assertEqual(person.preferredemail, None)
         self.assertTrue('newemail@canonical.com' in self._getEmails(person))
-
-# this is what we want to end up with.
-# result = []
-# handler=getUtility (IGPGHandler)
-# ubuntu = handler.import_key_ring (path_to_ubuntu_keyring)
-# debian = handler.import_key_ring (path_to_debian_keyring)
-# for key in ubuntu:
-#   key.set_ownertrust (GPGME_VALIDITY_MARGINAL)
-# for key in debian:
-#   key.set_ownertrust (GPGME_VALIDITY_MARGINAL)
-# scc = handler.import_key_ring (path_to_scc)
-# for key in scc:
-#   uid = key.uids
-#   while uid is not None:
-#     if validity > GPGME_VALIDITY_MARGINAL:
-#       result.append ((key, uid->email))
 
 
 def test_suite():
