@@ -22,14 +22,20 @@
         <key name="errors_address" datatype="string" required="yes" />
         <key name="bugs_domain" datatype="string" required="yes" />
         <key name="max_bug_attachment_size" datatype="integer" required="no"
-            default="0"
-            >
-          <description>
-            Maximum size of bug attachments in bytes. A value of 0 means
-            no limit.
-          </description>
+            default="0">
+            <description>
+                Maximum size of bug attachments in bytes. A value of 0 means
+                no limit.
+            </description>
         </key>
-        <key name="db_statement_timeout" datatype="integer" required="no" />
+        <key name="db_statement_timeout" datatype="integer" required="no">
+            <description>
+                SQL statement timeout in milliseconds. If a statement
+                takes longer than this to execute, then it will be aborted.
+                A value of 0 turns off the timeout. If this value is not set,
+                PostgreSQL's default setting is used.
+            </descrption>
+        </key>
     </sectiontype>
 
     <sectiontype name="gina_target">
