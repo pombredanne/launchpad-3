@@ -9,7 +9,7 @@ import canonical
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 
 class LibrarianTestSetup(TacTestSetup):
-    r"""Setup a librarian for use by functional tests
+    r"""Set up a librarian for use by functional tests.
     
     >>> from urllib import urlopen
     >>> from canonical.config import config
@@ -18,19 +18,30 @@ class LibrarianTestSetup(TacTestSetup):
 
     >>> LibrarianTestSetup().setUp()
 
-    Make sure the server is running
+    Set a socket timeout, so that this test cannot hang indefinitely.
+    
+    >>> import socket
+    >>> print socket.getdefaulttimeout()
+    None
+    >>> socket.setdefaulttimeout(1)
+    
+    Make sure the server is running.
 
     >>> urlopen('http://%s:%d/' % (host, port)).readline()
     'Copyright 2004-2005 Canonical Ltd.\n'
 
     >>> LibrarianTestSetup().tearDown()
     
-    And again for luck
+    And again for luck.
 
     >>> LibrarianTestSetup().setUp()
     >>> urlopen('http://%s:%d/' % (host, port)).readline()
     'Copyright 2004-2005 Canonical Ltd.\n'
+
+    Tidy up.
+    
     >>> LibrarianTestSetup().tearDown()
+    >>> socket.setdefaulttimeout(None)
 
     """
     def setUpRoot(self):
