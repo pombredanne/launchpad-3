@@ -623,7 +623,13 @@ table.listing th {
 }
 table.listing>tr>td, table.listing>tbody>tr>td {
   border: 1px #8cacbb;
-  border-style: dotted none;
+  border-style: dotted none none none;
+}
+table.listing>tr.note>td, table.listing>tbody>tr.note>td {
+  border-style: none;
+}
+table.listing>tr.note, table.listing>tbody>tr.note {
+  font-size: smaller;
 }
 table.listing>thead, table.listing>thead>tr>th {
   border: 1px solid #8cacbb;
@@ -935,6 +941,15 @@ table.data>tr>th, table.data>tr>td,
 table.data>thead>tr>th, table.data>thead>tr>td,
 table.data>tbody>tr>th, table.data>tbody>tr>td, table.data>tfoot>tr>th,table.data>tfoot>tr>td {
   padding: 0.25em 0.125em 0.25em;
+}
+th.icon, td.icon {
+  width: 1px;
+}
+th.icon.left, td.icon.left {
+  padding-right: 0;
+}
+th.icon.right, td.icon.right {
+  padding-left: 0;
 }
 td p:first-child, td ol:first-child, td blockquote:first-child {
 	margin-top: 0;
