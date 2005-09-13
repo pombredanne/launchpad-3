@@ -12,7 +12,8 @@ twisted we use with our version of Python.
 
     >>> import os, sys
     >>> import canonical.lp
-    >>> from canonical.database.ftests import getDBHost
+    >>> from canonical.database.ftests import (
+    ...     getDBHost, wait_until_proxy_is_ready, wait_until_proxy_is_stopped)
     >>> dbhost = getDBHost()
     >>> ver = sys.version[:3]
     >>> cmd = ('mktap%s portforward --port 5555 --dest_port 5432 '
@@ -24,16 +25,6 @@ twisted we use with our version of Python.
 
 Wait for the proxy to start.
 
-    >>> import time
-    >>> def wait_until_proxy_is_ready():
-    ...     start = time.time()
-    ...     while time.time() - start < 5:  # loop for a maximum of 5 seconds
-    ...         try:
-    ...             if 'Starting factory' in open('twistd.log').read():
-    ...                 return
-    ...         except IOError:
-    ...             pass
-    ...     raise RuntimeError('Proxy not ready')
     >>> wait_until_proxy_is_ready()
 
 Init Zopeless via the proxy, with implicit begin disabled.
@@ -82,28 +73,26 @@ Break the connection by stopping the proxy.
 
 Wait for the proxy to stop.
 
-    >>> import os.path
-    >>> def wait_until_proxy_is_stopped():
-    ...     start = time.time()
-    ...     while time.time() - start < 5:  # loop for a maximum of 5 seconds
-    ...         if not os.path.exists('twistd.pid'):
-    ...             return
-    ...     raise RuntimeError('Proxy would not stop')
     >>> wait_until_proxy_is_stopped()
 
 Executing a query now blocks until the database connection can be reestablished.
 
     >>> import threading
+    >>> before_txn = threading.Event()
+    >>> after_select = threading.Event()
     >>> thread_result = []
     >>> def foo():
+    ...     before_txn.set()
     ...     ztm.begin()
     ...     name = Person.get(1).name
     ...     print "thread after execute"
     ...     thread_result.append(name)
+    ...     after_select.set()
     ...     print "thread end"
     >>> thread = threading.Thread(target=foo)
     >>> thread.start()
-    >>> time.sleep(1)
+    >>> before_txn.wait()
+    >>> after_select.wait(1)
     >>> thread_result
     []
     >>> thread.isAlive()
@@ -119,7 +108,7 @@ And restart it.
 
 Now, our blocked thread should've finished successfully.
 
-    >>> time.sleep(1)
+    >>> after_select.wait()
     thread after execute
     thread end
     >>> thread_result
