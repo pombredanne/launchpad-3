@@ -90,14 +90,19 @@ Executing a query now blocks until the database connection can be reestablished.
 
     >>> import threading
     >>> thread_result = []
+    >>> before_select = threading.Event()
+    >>> after_select = threading.Event()
     >>> def foo():
+    ...     before_select.set()
     ...     cur.execute('SELECT 1;')
     ...     print "thread after execute"
     ...     thread_result.append(cur.fetchone()[0])
+    ...     after_select.set()
     ...     print "thread end"
     >>> thread = threading.Thread(target=foo)
     >>> thread.start()
-    >>> time.sleep(1)
+    >>> before_select.wait()
+    >>> after_select.wait(1)
     >>> thread_result
     []
     >>> thread.isAlive()
@@ -113,7 +118,7 @@ And restart it.
 
 Now, our blocked thread should've finished successfully.
 
-    >>> time.sleep(1)
+    >>> after_select.wait()
     thread after execute
     thread end
     >>> thread_result
