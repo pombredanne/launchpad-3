@@ -7,6 +7,7 @@ privileges to do what we're going to demonstrate.
 
 >>> from zope.component import getUtility
 >>> from zope.interface.verify import verifyObject
+>>> from canonical.database.sqlbase import sqlvalues, flush_database_updates
 >>> from canonical.launchpad.interfaces import (
 ...     IPersonSet, IPerson, IEmailAddressSet)
 >>> from canonical.launchpad.ftests import login
@@ -69,9 +70,6 @@ set([u'david.allouche@canonical.com', u'robertc@robertcollins.net', u'foo.bar@ca
 
 We don't support changing a Person into a Team or a Team into a Person.
 
->>> lifeless.teamowner = ddaa
->>> ITeam.providedBy(lifeless)
-False
 >>> buttsource.teamowner = None
 >>> ITeam.providedBy(buttsource)
 True
@@ -128,6 +126,8 @@ TypeError: ...
 Nor can we merge an account that still has email addresses attached to it
 
 >>> nonempty, email = personset.createPersonAndEmail('empty@somehost.com')
+>>> rosetta_admins = personset.getByName('rosetta-admins')
+>>> rosetta_admins.addMember(nonempty)
 >>> personset.merge(nonempty, sample)
 Traceback (most recent call last):
 ...
@@ -141,13 +141,29 @@ Now we remove the only email address nonempty had.
 Must login as 'sabdfl' cause he's the owner of the Ubuntu Team.
 >>> login('mark@hbd.com')
 >>> ubuntu_team = personset.getByName('name17')
+>>> ubuntu_translators = personset.getByName('ubuntu-translators')
+>>> ubuntu_translators.addMember(empty)
 >>> ubuntu_team.teamowner = empty
+>>> flush_database_updates()
+
+'Sample Person' is a deactivated member of the 'Ubuntu Translators' team,
+while empty is an active member. After the merge, 'Sample Person' will be an
+active member of that team.
+>>> sample in ubuntu_translators.inactivemembers
+True
+>>> empty in ubuntu_translators.activemembers
+True
 >>> personset.merge(empty, sample)
+
+>>> sample in ubuntu_translators.activemembers
+True
+>>> sample.inTeam(ubuntu_translators)
+True
 
 >>> from canonical.launchpad.database import Person
 >>> cur = Person._connection._connection.cursor()
 
-A merged account gets a _merged suffix on its name.
+A merged account gets a -merged suffix on its name.
 >>> empty.id
 57L
 >>> cur.execute("SELECT id FROM Person WHERE name='empty-merged'")
@@ -155,10 +171,19 @@ A merged account gets a _merged suffix on its name.
 57
 
 
+>>> cur.execute("select person, team, status from teammembership where "
+...             "person = %s and team = %s"
+...             % sqlvalues(sample.id, rosetta_admins.id))
+>>> cur.fetchone()
+[12, 30, 2]
+
+>>> sample.inTeam(rosetta_admins)
+True
+
 >>> cur.execute("select p1.name from person as p1, person as p2 where "
 ...             "p1.id = p2.teamowner and p2.name = 'name17'")
 >>> cur.fetchone()[0]
-u'sabdfl'
+u'name12'
 
 The account that has been merged is flagged. We can use this to eliminate
 merged accounts from lists etc.
