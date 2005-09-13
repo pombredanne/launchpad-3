@@ -5,6 +5,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+<facet facet="bugs">
+
     <!-- BugExternalRef -->
     <content class="canonical.launchpad.database.BugExternalRef">
         <allow interface="canonical.launchpad.interfaces.IBugExternalRef" />
@@ -87,5 +89,5 @@
             template="../templates/references-index.pt"
             lp:url="malone/bugs/$Bug.id/references" />
     </browser:pages>
-
+</facet>
 </configure>

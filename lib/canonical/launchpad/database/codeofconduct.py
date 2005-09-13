@@ -147,7 +147,7 @@ class SignedCodeOfConduct(SQLBase):
     signingkey = ForeignKey(foreignKey="GPGKey", dbName="signingkey",
                             notNull=False, default=None)
 
-    datecreated = UtcDateTimeCol(dbName='datecreated', notNull=False,
+    datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
                                  default=UTC_NOW)
 
     recipient = ForeignKey(foreignKey="Person", dbName="recipient",
@@ -156,7 +156,7 @@ class SignedCodeOfConduct(SQLBase):
     admincomment = StringCol(dbName='admincomment', notNull=False,
                              default=None)
 
-    active = BoolCol(dbName='active', notNull=False, default=False)
+    active = BoolCol(dbName='active', notNull=True, default=False)
 
     @property
     def displayname(self):

@@ -47,11 +47,11 @@ class BinaryPackageRelease(SQLBase):
     conflicts = StringCol(dbName='conflicts')
     replaces = StringCol(dbName='replaces')
     provides = StringCol(dbName='provides')
-    essential = BoolCol(dbName='essential')
+    essential = BoolCol(dbName='essential', default=False)
     installedsize = IntCol(dbName='installedsize')
     copyright = StringCol(dbName='copyright')
     licence = StringCol(dbName='licence')
-    architecturespecific = BoolCol(dbName='architecturespecific')
+    architecturespecific = BoolCol(dbName='architecturespecific', notNull=True)
 
     files = MultipleJoin('BinaryPackageFile',
                          joinColumn='binarypackagerelease')

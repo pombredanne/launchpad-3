@@ -53,6 +53,11 @@
           />
     </meta:complexDirective>
 
+    <meta:complexDirective
+        name="schemadisplay"
+        schema="canonical.launchpad.webapp.metazcml.ISchemaDisplayDirective"
+        handler="canonical.launchpad.webapp.metazcml.SchemaDisplayDirective"
+        />
 </meta:directives>
 
 </configure>

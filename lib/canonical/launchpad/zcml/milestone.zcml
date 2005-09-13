@@ -34,6 +34,7 @@
 
     <browser:pages
       for="canonical.launchpad.interfaces.IMilestone"
+      facet="overview"
       permission="zope.Public">
       <browser:page
         name="+index"
@@ -50,6 +51,7 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IMilestone"
         class="canonical.launchpad.browser.milestone.MilestoneEditView"
+        facet="overview"
         schema="canonical.launchpad.interfaces.IMilestone"
         fields="name dateexpected visible"
         label="Edit Milestone"

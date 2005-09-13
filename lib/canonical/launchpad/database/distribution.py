@@ -48,7 +48,7 @@ class Distribution(SQLBase):
         default=TranslationPermission.OPEN)
     lucilleconfig = StringCol(notNull=False, default=None)
     releases = MultipleJoin('DistroRelease', joinColumn='distribution',
-                            orderBy=['version', 'datecreated', '-id'])
+                            orderBy=['version', '-id'])
     bounties = RelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistroBounty')

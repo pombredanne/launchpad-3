@@ -4,6 +4,12 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
+<metal:rightportlets fill-slot="portlets_two">
+  <br />
+  <br />
+  <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
 <body>
 
   <div metal:fill-slot="main">
@@ -16,19 +22,22 @@
 
     <tal:block condition="context/cancelled">
       <p class="portalMessage">This request was cancelled by 
-        <span tal:replace="context/whocancelled/displayname" />. You can
-        revert this by reactivating this request.</p>
+        <span tal:replace="context/whocancelled/displayname" />.
+      </p>
     </tal:block>
 
     <tal:block condition="not: context/cancelled">
-      <tal:block condition="context/approved">
+      <tal:block condition="context/isApproved">
         <p class="portalMessage">This request is currently approved. The
         approved quantities are shown below.</p>
       </tal:block>
-      <tal:block condition="not: context/approved">
-      <p style="margin-bottom: 1em" class="portalMessage">This request is
-      still waiting for approval.  It's possible to approve it and change the
-      approved quantities later, if necessary.</p>
+      <tal:block condition="context/isAwaitingApproval">
+        <p style="margin-bottom: 1em" class="portalMessage">This request is
+        still waiting for approval.  It's possible to approve it and change the
+        approved quantities later, if necessary.</p>
+      </tal:block>
+      <tal:block condition="context/isDenied">
+        <p class="portalMessage">This request is currently denied.</p>
       </tal:block>
     </tal:block>
 
@@ -39,18 +48,86 @@
         <li>PPC: <span tal:replace="context/quantityppc" /></li>
     </ul>
 
-    <div class="form controls" tal:condition="not: context/cancelled">
-      <form name="cancelrequest" action="" method="POST">
-        <input type="submit" value="Cancel Request" name="CANCEL" />
+    <div class="form controls" tal:condition="not: context/isDenied">
+      <form name="denyrequest" action="" method="POST">
+        <input type="submit" value="Deny Request" name="DENY" />
       </form>
     </div>
 
-    <h2>Contact Details</h2>
+    <h2>Approved Quantities</h2>
+
+    <p>These are the quantities that will actually be shipped.</p>
+
+    <form method="POST" action="" name="approverequest">
+
+    <table cols="2">
+      <tr>
+        <td align="right"><strong>X86 CDs:</strong></td>
+        <td>
+          <input type="text" name="quantityx86" align="right" size="5"
+                 tal:condition="context/isApproved"
+                 tal:attributes="value context/quantityx86approved" />
+          <input type="text" name="quantityx86" align="right" size="5"
+                 tal:condition="not: context/isApproved"
+                 tal:attributes="value context/quantityx86" />
+        </td>
+      </tr>
+      <tr>
+        <td align="right"><strong>AMD64 CDs:</strong></td>
+        <td>
+          <input type="text" name="quantityamd64" align="right" size="5"
+                 tal:condition="context/isApproved"
+                 tal:attributes="value context/quantityamd64approved" />
+          <input type="text" name="quantityamd64" align="right" size="5"
+                 tal:condition="not: context/isApproved"
+                 tal:attributes="value context/quantityamd64" />
+        </td>
+      </tr>
+      <tr>
+        <td align="right"><strong>PPC CDs:</strong></td>
+        <td>
+          <input type="text" name="quantityppc" align="right" size="5"
+                 tal:condition="context/isApproved"
+                 tal:attributes="value context/quantityppcapproved" />
+          <input type="text" name="quantityppc" align="right" size="5"
+                 tal:condition="not: context/isApproved"
+                 tal:attributes="value context/quantityppc" />
+        </td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>
+          <label>
+            <input type="checkbox" name="highpriority"
+                   tal:attributes="checked context/highpriority" />
+            High priority?
+          </label>
+        </td>
+      </tr>
+    </table>
+
+    <br />
+    <div class="form controls">
+      <tal:block condition="not: context/cancelled">
+        <tal:block condition="not: context/isApproved">
+          <input type="submit" value="Approve Request" name="APPROVE" />
+        </tal:block>
+        <tal:block condition="context/isApproved">
+          <input type="submit" value="Change Approved Totals" name="CHANGE" />
+        </tal:block>
+      </tal:block>
+    </div>
+    </form>
+
+    <h2>Shipping Details</h2>
     <table>
       <tr>
         <td align="right"><strong>Recipient:</strong></td>
         <td>
-          <a tal:attributes="href context/recipient/fmt:url">
+          <tal:XXX condition="nothing">
+          Okay, so we hardcoded the URL. Blame canonical_url and bug 2119!
+          </tal:XXX>
+          <a tal:attributes="href string:https://launchpad.net/people/${context/recipient/name}">
             <span tal:replace="context/recipient/displayname" /></a>
             (<span tal:replace="context/recipient/preferredemail/email" />)
         </td>
@@ -97,52 +174,6 @@
       </tr>
     </table>
 
-    <form method="POST" action="" name="approverequest">
-
-    <tal:block condition="context/approved">
-      <h2>Approved Quantities</h2>
-
-      <p>These are the CDs that are going to be shipped, independently of how
-      many CDs the user requested.</p>
-
-      <table cols="2">
-        <tr>
-          <td align="right"><strong>X86 CDs:</strong></td>
-          <td><input type="text" name="quantityx86" align="right" size="5"
-                     tal:attributes="value context/quantityx86approved" />
-          </td>
-        </tr>
-        <tr>
-          <td align="right"><strong>AMD64 CDs:</strong></td>
-          <td><input type="text" name="quantityamd64" align="right" size="5"
-                     tal:attributes="value context/quantityamd64approved" />
-          </td>
-        </tr>
-        <tr>
-          <td align="right"><strong>PPC CDs:</strong></td>
-          <td><input type="text" name="quantityppc" align="right" size="5"
-                     tal:attributes="value context/quantityppcapproved" />
-          </td>
-        </tr>
-      </table>
-    </tal:block>
-
-    <br />
-    <div class="form controls">
-      <tal:block condition="not: context/cancelled">
-        <tal:block condition="not: context/approved">
-          <input type="submit" value="Approve Request" name="APPROVE" />
-        </tal:block>
-        <tal:block condition="context/approved">
-          <input type="submit" value="Change Approved Totals" name="CHANGE" />
-        </tal:block>
-      </tal:block>
-
-      <input tal:condition="context/cancelled" type="submit"
-             value="Reactivate Request" name="REACTIVATE" />
-    </div>
-
-    </form>
   </div>
 
 </body>

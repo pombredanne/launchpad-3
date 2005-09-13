@@ -14,12 +14,10 @@ from canonical.launchpad.database import (POTranslation, POSubmission,
     POSelection, POFile)
 from canonical.launchpad.scripts import db_options
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad import helpers
 
 def fix_submission(submission, translation):
     """Fix the submission (if needed)."""
-    new_text = helpers.normalize_whitespaces(
-        submission.pomsgset.potmsgset.primemsgid_.msgid,
+    new_text = submission.pomsgset.potmsgset.apply_sanity_fixes(
         translation.translation)
 
     if new_text == translation.translation:
@@ -48,7 +46,7 @@ def main():
     outf = open('/tmp/rosids.out','w')
     while True:
         row = c.fetchone()
-    if row is None:
+        if row is None:
             break
         print >> outf, row[0]
         total_potranslations += 1
@@ -100,7 +98,7 @@ def main():
             results = POSubmission.select('''
                 POSubmission.pomsgset = POMsgSet.id AND
                 POMsgSet.pofile = %d AND
-		POSubmission.id <> %d''' % (pofile.id, submission.id),
+                POSubmission.id <> %d''' % (pofile.id, submission.id),
                 orderBy='-datecreated',
                 clauseTables=['POMsgSet'])
             if len(results) > 2:

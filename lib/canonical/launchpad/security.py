@@ -132,14 +132,26 @@ class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
         return user.inTeam(self.obj.target.owner)
 
 
+class AdminTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = ITeam
+
+    def checkAuthenticated(self, user):
+        """Only the team owner and Launchpad admins have launchpad.Admin on a
+        team.
+        """
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(self.obj.teamowner) or user.inTeam(admins)
+
+
 class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = ITeam
 
     def checkAuthenticated(self, user):
-        """A user who is a team's owner has launchpad.Edit on that team.
+        """The team owner and all team admins have launchpad.Edit on that team.
 
-        The admin team also has launchpad.Edit on all teams.
+        The Launchpad admins also have launchpad.Edit on all teams.
         """
         admins = getUtility(ILaunchpadCelebrities).admin
         if user.inTeam(self.obj.teamowner) or user.inTeam(admins):

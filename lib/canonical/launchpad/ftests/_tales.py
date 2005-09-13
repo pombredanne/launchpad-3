@@ -9,6 +9,7 @@ from zope.app.pagetemplate.engine import Engine
 class Context:
     def __init__(self, **kw):
         self.vars = kw
+        self.contexts = kw
 
 def test_tales(expression, **kw):
     compiled_tales = Engine.compile(expression)

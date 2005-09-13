@@ -25,11 +25,14 @@
         <li class="edit"><a href="+editsshkeys">Edit SSH Keys</a></li>
         <li class="edit"><a href="+editgpgkeys">Edit GPG Keys</a></li>
         <li class="edit"><a href="+codesofconduct">Code of Conduct</a></li>
+        <li class="edit" tal:condition="context/required:launchpad.Admin">
+          <a href="+review">Administer</a>
+        </li>
       </tal:block>
       <li class="packages"><a href="+packages">Packages</a></li>
       <tal:block condition="context/isTeam">
         <!-- these are only for teams -->
-        <li class="people"><a href="+members">Show Members</a></li>
+        <li class="people"><a href="+members">Edit Members</a></li>
         <li class="people"><a href="+teamhierarchy">Show Team Hierarchy</a></li>
         <li class="mail" tal:condition="context/required:launchpad.Edit">
             <a href="+editemail">Edit Contact Address</a>
@@ -48,9 +51,6 @@
           </li>
         </tal:block>
       </tal:block>
-      <li class="edit" tal:condition="context/required:launchpad.Admin">
-        <a href="+review">Administer</a>
-      </li>
     </ul>
 
   </div>

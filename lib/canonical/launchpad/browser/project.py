@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, DefaultLink)
+    StandardLaunchpadFacets, Link)
 
 _ = MessageIDFactory('launchpad')
 
@@ -36,24 +36,24 @@ class ProjectFacets(StandardLaunchpadFacets):
     def overview(self):
         target = ''
         text = 'Overview'
-        return DefaultLink(target, text)
+        return Link(target, text)
 
     def bugs(self):
         target = '+bugs'
         text = 'Bugs'
-        return Link(target, text, linked=False)
+        return Link(target, text, enabled=False)
 
     def translations(self):
         target = '+translations'
         text = 'Translations'
-        return Link(target, text, linked=False)
+        return Link(target, text, enabled=False)
 
     def calendar(self):
         target = '+calendar'
         text = 'Calendar'
         # only link to the calendar if it has been created
-        linked = ICalendarOwner(self.context).calendar is not None
-        return Link(target, text, linked=linked)
+        enabled = ICalendarOwner(self.context).calendar is not None
+        return Link(target, text, enabled=enabled)
 
 
 #

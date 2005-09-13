@@ -5,6 +5,8 @@
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
+<facet facet="tickets">
+
   <browser:pages
     for="canonical.launchpad.interfaces.ITicketTarget"
     class="canonical.launchpad.browser.TicketTargetView"
@@ -37,5 +39,7 @@
       field="owner"
       class="canonical.widgets.HiddenUserWidget" />
   </browser:addform>
+
+</facet>
 
 </configure>

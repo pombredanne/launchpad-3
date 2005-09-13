@@ -5,6 +5,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+  <facet facet="bugs">
+
     <!-- Bug -->
     <content class="canonical.launchpad.database.Bug">
         <require
@@ -220,9 +222,8 @@
         for="canonical.launchpad.interfaces.IBugSet"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         class="canonical.launchpad.browser.bug.BugAddView"
-        label="File a Bug on a Product"
+        label="Report a bug about a product"
         fields="product title comment owner"
-        content_factory="canonical.launchpad.database.BugFactory"
         arguments=""
         keyword_arguments="product title comment owner"
         permission="launchpad.AnyPerson"
@@ -246,9 +247,8 @@
         for="canonical.launchpad.interfaces.IBugSet"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         class="canonical.launchpad.browser.bug.BugAddView"
-        label="File a Bug on a Package"
+        label="Report a bug about a package"
         fields="distribution sourcepackagename title comment private owner"
-        content_factory="canonical.launchpad.database.BugFactory"
         arguments=""
         keyword_arguments="distribution sourcepackagename title comment private owner"
         permission="launchpad.AnyPerson"
@@ -265,15 +265,11 @@
            height="10" />
     </browser:addform>
 
-    <adapter
-        for="canonical.launchpad.interfaces.IBug"
-        factory="canonical.launchpad.browser.bug.BugAddForm"
-        provides="canonical.launchpad.interfaces.IBugAddForm"
-        />
-
     <!-- BugDelta -->
     <content class="canonical.launchpad.components.bug.BugDelta">
         <allow interface="canonical.launchpad.interfaces.IBugDelta" />
     </content>
+
+  </facet>
 
 </configure>

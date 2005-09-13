@@ -39,10 +39,10 @@ from zope.app.publisher.browser.viewmeta import (
 from zope.app.publisher.browser.metaconfigure import (
     defaultView as original_defaultView)
 
-from canonical.launchpad.layers import setAdditionalLayer
+from canonical.launchpad.layers import setAdditionalLayer, setFirstLayer
 from canonical.launchpad.interfaces import (
     IAuthorization, IOpenLaunchBag, ICanonicalUrlData,
-    IFacetMenu, IExtraFacetMenu, IApplicationMenu, IExtraApplicationMenu)
+    IFacetMenu, IApplicationMenu)
 
 try:
     from zope.publisher.interfaces.browser import IDefaultBrowserLayer
@@ -359,7 +359,10 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
                 if adaptwith is not None:
                     val = adaptwith(val)
                 if newlayer is not None:
-                    setAdditionalLayer(self.request, newlayer)
+                    # Steve told me to comment this and add the setFirstLayer
+                    # line to get shipit to work.
+                    #setAdditionalLayer(self.request, newlayer)
+                    setFirstLayer(self.request, newlayer)
                 #getUtility(IOpenLaunchBag).add(val)
                 return val
 
@@ -372,7 +375,10 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
                 if adaptwith is not None:
                     val = adaptwith(val)
                 if newlayer is not None:
-                    setAdditionalLayer(self.request, newlayer)
+                    # Steve told me to comment this and add the setFirstLayer
+                    # line to get shipit to work.
+                    #setAdditionalLayer(self.request, newlayer)
+                    setFirstLayer(self.request, newlayer)
                 #getUtility(IOpenLaunchBag).add(val)
                 return val
 
@@ -454,9 +460,8 @@ def menus(_context, module, classes):
     if not inspect.ismodule(module):
         raise TypeError("module attribute must be a module: %s, %s" %
                         module, type(module))
-    menutypes = [IFacetMenu, IExtraFacetMenu, IApplicationMenu,
-                 IExtraApplicationMenu]
-    applicationmenutypes = [IApplicationMenu, IExtraApplicationMenu]
+    menutypes = [IFacetMenu, IApplicationMenu]
+    applicationmenutypes = [IApplicationMenu]
     for menuname in classes:
         menuclass = getattr(module, menuname)
         implemented = None
@@ -664,6 +669,7 @@ def page(_context, name, permission, for_,
     If a facet is specified, then it will be available from the view class
     as __launchpad_facetname__.
     """
+    facet = facet or getattr(_context, 'facet', None)
     if facet is None:
         new_class = class_
     else:
@@ -730,8 +736,9 @@ class EditFormDirective(
     def __call__(self):
         # self.bases will be a tuple of base classes for this view.
         # So, insert a new base-class containing the facet name attribute.
-        if self.facet is not None:
-            cdict = {'__launchpad_facetname__': self.facet}
+        facet = self.facet or getattr(self._context, 'facet', None)
+        if facet is not None:
+            cdict = {'__launchpad_facetname__': facet}
             new_class = type('SimpleLaunchpadViewClass', (), cdict)
             self.bases += (new_class, )
 
@@ -754,10 +761,44 @@ class AddFormDirective(
     def __call__(self):
         # self.bases will be a tuple of base classes for this view.
         # So, insert a new base-class containing the facet name attribute.
-        if self.facet is not None:
-            cdict = {'__launchpad_facetname__': self.facet}
+        facet = self.facet or getattr(self._context, 'facet', None)
+        if facet is not None:
+            cdict = {'__launchpad_facetname__': facet}
             new_class = type('SimpleLaunchpadViewClass', (), cdict)
             self.bases += (new_class, )
 
         zope.app.form.browser.metaconfigure.AddFormDirective.__call__(self)
+
+
+class IGroupingFacet(IAssociatedWithAFacet):
+    """Grouping directive that just has a facet attribute."""
+
+
+class GroupingFacet(zope.configuration.config.GroupingContextDecorator):
+    """Grouping facet directive."""
+
+
+class ISchemaDisplayDirective(
+    zope.app.form.browser.metadirectives.ISchemaDisplayDirective,
+    IAssociatedWithAFacet):
+    """Schema display directive with added 'facet' attribute."""
+
+
+class SchemaDisplayDirective(
+    zope.app.form.browser.metaconfigure.SchemaDisplayDirective):
+
+    # This makes 'facet' a valid attribute for the directive.
+    facet = None
+
+    def __call__(self):
+        # self.bases will be a tuple of base classes for this view.
+        # So, insert a new base-class containing the facet name attribute.
+        facet = self.facet or getattr(self._context, 'facet', None)
+        if facet is not None:
+            cdict = {'__launchpad_facetname__': facet}
+            new_class = type('SimpleLaunchpadViewClass', (), cdict)
+            self.bases += (new_class, )
+
+        zope.app.form.browser.metaconfigure.SchemaDisplayDirective.__call__(
+            self)
 

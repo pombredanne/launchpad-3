@@ -26,7 +26,8 @@ class WarningReport:
 class ImportantInfo:
 
     def __init__(self, expressiontext, viewclassname, templatefilename,
-        requesturl, viewclassfilename, viewclasslineno, viewclassfunc):
+        requesturl, viewclassfilename, viewclasslineno, viewclassfunc,
+        doctestname, doctestline):
         self.expressiontext = expressiontext
         self.viewclassname = viewclassname
         self.viewclassfilename = viewclassfilename
@@ -34,6 +35,8 @@ class ImportantInfo:
         self.templatefilename = templatefilename
         self.requesturl = requesturl
         self.viewclassfunc = viewclassfunc
+        self.doctestname = doctestname
+        self.doctestline = doctestline
 
     def __str__(self):
         L = []
@@ -45,6 +48,9 @@ class ImportantInfo:
                 self.viewclassname, self.viewclassfunc))
             #L.append('at line %s of file %s' % (
             #    self.viewclasslineno, self.viewclassfilename)
+        if self.doctestname:
+            L.append("The doctest %s, at the line:" % self.doctestname)
+            L.append("    >>> %s" % self.doctestline)
         if self.requesturl:
             L.append('request url: %s' % self.requesturl)
         return '\n'.join(L)
@@ -80,6 +86,19 @@ def find_important_info():
 
         for frame, filename, lineno, func_name, context, lineidx in stack:
             try:
+                if (filename.startswith('<doctest ') and
+                    "doctest" not in important_objects):
+                    # Very fragile inspection of the state of the doctest
+                    # runner.  So, enclosed in a try-except so it will at
+                    # least fail gracefully if it fails.
+                    try:
+                        line = frame.f_back.f_locals['example'].source
+                    except KeyboardInterrupt:
+                        pass
+                    except Exception:
+                        line = "# cannot get line of code"
+                    important_objects["doctest"] = (filename, line)
+                    metadata["doctest"] = (filename, lineno, func_name)
                 if 'self' in frame.f_locals:
                     fself = frame.f_locals['self']
                     ftype = type(fself)
@@ -101,6 +120,8 @@ def find_important_info():
     viewclassfilename = ''
     viewclasslineno = ''
     viewclassfunc = ''
+    doctestname = ''
+    doctestline = ''
     if simple in important_objects:
         cls = important_objects[simple].__class__
         if cls is not simple:
@@ -118,8 +139,11 @@ def find_important_info():
         ptcontexts = important_objects[TrustedZopeContext].contexts
         requesturl = ptcontexts['request'].getURL()
 
+    if "doctest" in important_objects:
+        doctestname, doctestline = important_objects["doctest"]
     return ImportantInfo(expressiontext, viewclassname, templatefilename,
-        requesturl, viewclassfilename, viewclasslineno, viewclassfunc)
+        requesturl, viewclassfilename, viewclasslineno, viewclassfunc,
+        doctestname, doctestline)
 
 need_page_titles = []
 no_order_by = []

@@ -5,6 +5,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+<facet facet="bugs">
+
     <!-- CVERef -->
     <content class="canonical.launchpad.database.CVERef">
         <allow interface="canonical.launchpad.interfaces.ICVERef" />
@@ -93,5 +95,5 @@
             template="../templates/cvereferences-index.pt"
             lp:url="malone/bugs/$Bug.id/cvereferences" />
     </browser:pages>
-
+</facet>
 </configure>

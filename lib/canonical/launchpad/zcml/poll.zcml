@@ -5,6 +5,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+<facet facet="overview">
+
     <!-- Poll -->
     <content class="canonical.launchpad.database.Poll">
         <allow interface="canonical.launchpad.interfaces.IPoll" />
@@ -140,5 +142,7 @@
         provides="canonical.launchpad.interfaces.IPollOptionSubset"
         factory="canonical.launchpad.components.poll.PollOptionSubset"
         permission="zope.Public" />
+
+</facet>
 
 </configure>

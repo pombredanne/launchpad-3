@@ -25,6 +25,19 @@
 
   <browser:suburl
     for="canonical.publication.RootObject"
+    newlayer="canonical.launchpad.layers.ShipItLayer"
+    name="shipit"
+    utility="canonical.launchpad.interfaces.IShipItApplication"
+    permission="zope.Public"
+    />
+  <browser:url
+    for="canonical.launchpad.interfaces.IShipItApplication"
+    path_expression="string:shipit"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    />
+
+  <browser:suburl
+    for="canonical.publication.RootObject"
     name="people"
     utility="canonical.launchpad.interfaces.IPersonSet"
     permission="zope.Public"
@@ -32,30 +45,6 @@
   <browser:url
     for="canonical.launchpad.interfaces.IPersonSet"
     path_expression="string:people"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    />
-
-  <browser:suburl
-    for="canonical.publication.RootObject"
-    name="shipitrequests"
-    utility="canonical.launchpad.interfaces.IShippingRequestSet"
-    permission="launchpad.Admin"
-    />
-  <browser:url
-    for="canonical.launchpad.interfaces.IShippingRequestSet"
-    path_expression="string:shipitrequests"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    />
-
-  <browser:suburl
-    for="canonical.publication.RootObject"
-    name="standardshipitrequests"
-    utility="canonical.launchpad.interfaces.IStandardShipItRequestSet"
-    permission="launchpad.Admin"
-    />
-  <browser:url
-    for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
-    path_expression="string:standardshipitrequests"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 

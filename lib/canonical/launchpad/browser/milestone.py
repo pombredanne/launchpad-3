@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces import (
     IProduct, IDistribution, IMilestone, IMilestoneSet)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
-from canonical.launchpad.webapp import StandardLaunchpadFacets, DefaultLink
+from canonical.launchpad.webapp import StandardLaunchpadFacets, Link
 
 
 class MilestoneFacets(StandardLaunchpadFacets):
@@ -24,13 +24,13 @@ class MilestoneFacets(StandardLaunchpadFacets):
 
     usedfor = IMilestone
 
-    links = ['overview']
+    enable_only = ['overview']
 
     def overview(self):
         target = ''
         text = 'Overview'
         summary = 'General information about %s' % self.context.displayname
-        return DefaultLink(target, text, summary)
+        return Link(target, text, summary)
 
 
 class MilestoneAddView:

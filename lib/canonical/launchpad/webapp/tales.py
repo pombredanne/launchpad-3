@@ -13,21 +13,21 @@ import os.path
 import warnings
 
 from zope.interface import Interface, Attribute, implements
-from zope.component import getUtility, queryAdapter
+from zope.component import getUtility, queryAdapter, getDefaultViewName
 
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.app.traversing.interfaces import ITraversable
 from zope.exceptions import NotFoundError
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.launchpad.interfaces import (
-    IPerson, ILaunchBag, IFacetMenu, IExtraFacetMenu,
-    IApplicationMenu, IExtraApplicationMenu, NoCanonicalUrl,
-    IBugSet)
+    IPerson, ILaunchBag, IFacetMenu, IApplicationMenu, NoCanonicalUrl, IBugSet)
 from canonical.lp import dbschema
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url, nearest_menu
+from canonical.launchpad.webapp.menu import Url
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.helpers import check_permission
 
@@ -40,17 +40,25 @@ class TraversalError(NotFoundError):
 class MenuAPI:
     """Namespace to give access to the facet menus.
 
-       thing/menu:facet       gives the facet menu of the nearest object
-                              along the canonical url chain that has an
-                              IFacetMenu adapter.
+       CONTEXTS/menu:facet       gives the facet menu of the nearest object
+                                 along the canonical url chain that has an
+                                 IFacetMenu adapter.
 
-       thing/menu:extrafacet  gives the facet menu of the nearest object
-                              along the canonical url chain that has an
-                              IFacetMenu adapter.
     """
 
     def __init__(self, context):
-        self._context = context
+        if zope_isinstance(context, dict):
+            # We have what is probably a CONTEXTS dict.
+            # We get the context out of here, and use that for self.context.
+            # We also want to see if the view has a __launchpad_facetname__
+            # attribute.
+            self._context = context['context']
+            view = context['view']
+            self._selectedfacetname = getattr(
+                view, '__launchpad_facetname__', None)
+        else:
+            self._context = context
+            self._selectedfacetname = None
 
     def _nearest_menu(self, menutype):
         try:
@@ -58,34 +66,26 @@ class MenuAPI:
         except NoCanonicalUrl:
             return None
 
+    def _requesturl(self):
+        request = get_current_browser_request()
+        requesturlobj = Url(request.getURL(), request.get('QUERY_STRING'))
+        # If the default view name is being used, we will want the url
+        # without the default view name.
+        defaultviewname = getDefaultViewName(self._context, request)
+        if requesturlobj.pathnoslash.endswith(defaultviewname):
+            requesturlobj = Url(request.getURL(1), request.get('QUERY_STRING'))
+
     def facet(self):
         menu = self._nearest_menu(IFacetMenu)
         if menu is None:
             return []
         else:
-            menu.request = get_current_browser_request()
-            return list(menu)
-
-    def extrafacet(self):
-        menu = self._nearest_menu(IExtraFacetMenu)
-        if menu is None:
-            return []
-        else:
-            menu.request = get_current_browser_request()
-            return list(menu)
-
-    def _get_selected_facetname(self):
-        """Returns the name of the selected facet, or None if there is no
-        selected facet.
-        """
-        facetmenu = self.facet()
-        for link in facetmenu:
-            if link.selected:
-                return link.name
-        return None
+            return list(menu.iterlinks(
+                requesturl=self._requesturl(),
+                selectedfacetname=self._selectedfacetname))
 
     def application(self):
-        selectedfacetname = self._get_selected_facetname()
+        selectedfacetname = self._selectedfacetname
         if selectedfacetname is None:
             # No facet menu is selected.  So, return empty list.
             return []
@@ -93,21 +93,7 @@ class MenuAPI:
         if menu is None:
             return []
         else:
-            menu.request = get_current_browser_request()
-            return list(menu)
-
-    def extraapplication(self):
-        selectedfacetname = self._get_selected_facetname()
-        if selectedfacetname is None:
-            # No facet menu is selected.  So, return empty list.
-            return []
-        menu = queryAdapter(
-            self._context, IExtraApplicationMenu, selectedfacetname)
-        if menu is None:
-            return []
-        else:
-            menu.request = get_current_browser_request()
-            return list(menu)
+            return list(menu.iterlinks(requesturl = self._requesturl()))
 
 
 class CountAPI:

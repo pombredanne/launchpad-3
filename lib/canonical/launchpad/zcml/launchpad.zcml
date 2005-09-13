@@ -3,6 +3,8 @@
   xmlns:browser="http://namespaces.zope.org/browser"
   i18n_domain="canonical.launchpad">
 
+<facet facet="overview">
+
   <utility
       factory="canonical.launchpad.utilities.LaunchpadCelebrities"
       provides="canonical.launchpad.interfaces.ILaunchpadCelebrities">
@@ -82,5 +84,5 @@
       template="../templates/launchpad-menus-debug.pt"
       permission="zope.Public"
       />
-
+</facet>
 </configure>

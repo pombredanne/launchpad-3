@@ -5,6 +5,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+<facet facet="overview">
+
   <!-- Person -->
 
   <browser:traverse
@@ -82,10 +84,12 @@
           lp:url="/people/$Person.name/+packages" />
       <browser:page
           name="+assignedbugs"
+          facet="bugs"
           template="../templates/person-assignedbugs.pt"
           lp:url="/people/$Person.name/+assignedbugs" />
       <browser:page
           name="+reportedbugs"
+          facet="bugs"
           template="../templates/person-reportedbugs.pt"
           lp:url="/people/$Person.name/+reportedbugs" />
       <browser:page
@@ -94,6 +98,7 @@
           lp:url="/people/$Person.name/+karma" />
       <browser:page
           name="+translations"
+          facet="translations"
           template="../templates/person-translations.pt"
           lp:url="/people/$Person.name/+translations" />
       <browser:page
@@ -102,6 +107,7 @@
           lp:url="/people/$Person.name/+sshkeys" />
       <browser:page
           name="+bounties"
+          facet="bounties"
           template="../templates/person-bounties.pt"
           lp:url="/people/$Person.name/+bounties" />
       <browser:page
@@ -184,16 +190,6 @@
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"
       permission="launchpad.Edit"
-      class="canonical.launchpad.browser.PersonShipItView">
-      <browser:page
-          name="+shipit"
-          template="../templates/person-shipit.pt"
-          lp:url="/people/$person.id/+shipit" />
-  </browser:pages>
-
-  <browser:pages
-      for="canonical.launchpad.interfaces.IPerson"
-      permission="launchpad.Edit"
       class="canonical.launchpad.browser.PersonEditEmailsView">
       <browser:page
           name="+editemails"
@@ -204,6 +200,7 @@
   <browser:pages
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.SpecificationTargetView"
+    facet="specifications"
     permission="zope.Public"
     >
     <!-- there is trickery here, in the view class, which detects the view
@@ -280,12 +277,6 @@
             name="+editemail"
             template="../templates/team-editemail.pt"
             lp:url="/people/$team.id/+editemail" />
-  </browser:pages>
-
-  <browser:pages
-      for="canonical.launchpad.interfaces.ITeam"
-      permission="launchpad.Edit"
-      class="canonical.launchpad.browser.TeamEditView">
   </browser:pages>
 
   <browser:editform
@@ -474,5 +465,5 @@
         name="+portlet-actions"
         template="../templates/people-portlet-actions.pt" />
   </browser:pages>
-
+</facet>
 </configure>

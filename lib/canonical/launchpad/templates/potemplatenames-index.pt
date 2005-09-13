@@ -100,7 +100,7 @@
                   <strong>No PO Template Names matching
                     &#8220;<span tal:replace="view/text">moz</span>&#8221;
                   were found.</strong>
-                  You can <a href="+new">register a new PO Template Name</a>.
+                  You can <a href="+add">register a new PO Template Name</a>.
                 </p>
               </td>
             </tr>

@@ -20,12 +20,12 @@ __all__ = ['ILaunchpadRoot', 'ILaunchpadApplication', 'IMaloneApplication',
            'IHasProductAndAssignee', 'IOpenLaunchBag',
            'IAging', 'IHasDateCreated',
            'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
-           'ILink', 'IDefaultLink', 'IMenu', 'IMenuBase',
-           'IFacetMenu', 'IExtraFacetMenu',
-           'IApplicationMenu', 'IExtraApplicationMenu',
+           'ILinkData', 'ILink', 'IFacetLink',
+           'IMenu', 'IMenuBase', 'IFacetMenu',
+           'IApplicationMenu',
            'ICanonicalUrlData', 'NoCanonicalUrl',
            'IDBSchema', 'IDBSchemaItem', 'IAuthApplication',
-           'IPasswordChangeApp', 'IPasswordResets'
+           'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication'
            ]
 
 
@@ -145,6 +145,10 @@ class IRegistryApplication(ILaunchpadApplication):
 
 class IFOAFApplication(ILaunchpadApplication):
     """FOAF application root."""
+
+
+class IShipItApplication(ILaunchpadApplication):
+    """ShipIt application root."""
 
 
 class IBazaarApplication(ILaunchpadApplication):
@@ -313,56 +317,99 @@ class IOpenLaunchBag(ILaunchBag):
         '''Set the login to the given value.'''
 
 
-class ILink(Interface):
+class ILinkData(Interface):
+    """An object with immutable attributes that represents the data a
+    programmer provides about a link in a menu.
+    """
 
-    name = Attribute(
-        'the name of this link, as declared in python for example')
+    target = Attribute("The place this link should link to.  This may be "
+        "a path relative to the context of the menu this link appears in, "
+        "or an absolute path, or an absolute URL.")
 
-    target = Attribute('the relative path to the target of this link')
+    text = Attribute(
+        "The text of this link, as appears underlined on a page.")
 
-    url = Attribute('canonical url this link points to')
+    summary = Attribute(
+        "The summary text of this link, as appears as a tooltip on the link.")
 
-    text = Attribute('the text of the link')
+    icon = Attribute("The name of the icon to use.")
 
-    summary = Attribute('summary of the link, for example for a tooltip')
-
-    selected = Attribute('whether this link is selected or not')
-
-    linked = Attribute('whether this link should be available to traverse')
+    enabled = Attribute("Boolean to say whether this link is enabled.")
 
 
-class IDefaultLink(ILink):
-    """Link that is selected when other links are not."""
+class ILink(ILinkData):
+    """An object that represents a link in a menu.
+
+    The attributes name, url and linked may be set by the menus infrastructure.
+    """
+
+    name = Attribute("The name of this link in Python data structures.")
+
+    url = Attribute(
+        "The full url this link points to.  Set by the menus infrastructure. "
+        "None before it is set.")
+
+    linked = Attribute(
+        "A boolean value saying whether this link should appear as a clickable"
+        " link in the UI.  The general rule is that a link to the current"
+        " page should not be shown linked.  Defaults to True.")
+
+    enabled = Attribute(
+        "Boolean to say whether this link is enabled.  Can be read and set.")
+
+
+class IFacetLink(ILink):
+    """A link in a facet menu.
+
+    It has a 'selected' attribute that is set by the menus infrastructure,
+    and indicates whether the link is the selected facet.
+    """
+
+    selected = Attribute(
+        "A boolean value saying whether this link is the selected facet menu "
+        "item.  Defaults to False.")
 
 
 class IMenu(Interface):
     """Public interface for facets, menus, extra facets and extra menus."""
 
-    def __iter__():
-        """Iterate over the links in this menu."""
+    def iterlinks(requesturl=None):
+        """Iterate over the links in this menu.
+
+        requesturl, if it is not None, is a Url object that is used to
+        decide whether a menu link points to the page being requested,
+        in which case it will not be linked.
+        """
 
 
 class IMenuBase(IMenu):
     """Common interface for facets, menus, extra facets and extra menus."""
 
     context = Attribute('the object that has this menu')
-    request = Attribute('The web request.  May be None.')
 
 
 class IFacetMenu(IMenuBase):
     """Main facet menu for an object."""
 
+    def iterlinks(requesturl=None, selectedfacetname=None):
+        """Iterate over the links in this menu.
 
-class IExtraFacetMenu(IMenuBase):
-    """Extra facet menu for an object."""
+        requesturl, if it is not None, is a Url object that is used to
+        decide whether a menu link points to the page being requested,
+        in which case it will not be linked.
+
+        If selectedfacetname is provided, the link with that name will be
+        marked as 'selected'.
+        """
+
+    defaultlink = Attribute(
+        "The name of the default link in this menu.  That is, the one that "
+        "will be selected if no others are selected.  It is None if there "
+        "is no default link.")
 
 
 class IApplicationMenu(IMenuBase):
     """Application menu for an object."""
-
-
-class IExtraApplicationMenu(IMenuBase):
-    """Extra application menu for an object."""
 
 
 class ICanonicalUrlData(Interface):
