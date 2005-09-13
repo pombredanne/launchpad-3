@@ -37,9 +37,6 @@ class ProductFacets(StandardLaunchpadFacets):
 
     usedfor = IProduct
 
-    links = ['overview', 'bugs', 'tickets', 'bounties', 'specs',
-             'translations', 'calendar']
-
     def overview(self):
         target = ''
         text = 'Overview'
@@ -55,7 +52,8 @@ class ProductFacets(StandardLaunchpadFacets):
     def tickets(self):
         target = '+tickets'
         text = 'Tickets'
-        summary = 'Technical support requests for %s' % self.context.displayname
+        summary = (
+            'Technical support requests for %s' % self.context.displayname)
         return Link(target, text, summary)
 
     def bounties(self):
@@ -64,7 +62,7 @@ class ProductFacets(StandardLaunchpadFacets):
         summary = 'Bounties related to %s' % self.context.displayname
         return Link(target, text, summary)
 
-    def specs(self):
+    def specifications(self):
         target = '+specs'
         text = 'Specs'
         summary = 'Feature specifications for %s' % self.context.displayname

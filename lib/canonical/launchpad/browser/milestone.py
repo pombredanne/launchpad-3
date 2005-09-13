@@ -24,7 +24,7 @@ class MilestoneFacets(StandardLaunchpadFacets):
 
     usedfor = IMilestone
 
-    links = ['overview']
+    enable_only = ['overview']
 
     def overview(self):
         target = ''

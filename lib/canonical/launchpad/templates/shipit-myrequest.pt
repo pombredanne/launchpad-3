@@ -6,55 +6,49 @@
 
 <body>
 
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-  </metal:leftportlets>
-
-  <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
-  </metal:rightportlets>
-
   <div metal:fill-slot="main">
   
-    <tal:block condition="view/standardShipItRequests">
+    <tal:block condition="view/standardShipItRequests"
+               define="currentRequest view/currentRequest;
+                       user view/user">
 
-      <tal:block condition="not: view/currentRequest">
+      <tal:block condition="not: currentRequest">
         <h1>How many CDs would you like?</h1> 
 
-        <p>Since shipping will often be more than the cost of the CDs, please
-        feel free to request multiple CDs to give away and share with
-        friends.</p>
+        <p>Shipping small numbers of CDs costs almost the same as shipping
+        one, so please feel free to request multiple CDs to give away and
+        share with friends.</p>
       </tal:block>
 
-      <tal:block condition="view/currentRequest">
+      <tal:block condition="currentRequest">
         <h1>Your current ShipIt request</h1>
 
         <table cols="2">
           <tr>
             <td align="right"><strong>Date Requested:</strong></td>
-            <td tal:content="view/currentRequest/daterequested/fmt:date" />
+            <td tal:content="currentRequest/daterequested/fmt:date" />
           </tr>
           <tr>
             <td align="right"><strong>Status:</strong></td>
             <td>
-              <span tal:condition="view/currentRequest/approved">
+              <span tal:condition="currentRequest/approved">
                 Approved
               </span>
-              <span tal:condition="not: view/currentRequest/approved">
+              <span tal:condition="not: currentRequest/approved">
                 Waiting for approval
               </span>
           </tr>
-          <tr tal:condition="view/currentRequest/quantityx86">
-            <td align="right"><strong>X86 CDs:</strong></td>
-            <td tal:content="view/currentRequest/quantityx86" />
+          <tr tal:condition="currentRequest/quantityx86">
+            <td align="right"><strong>PC CDs:</strong></td>
+            <td tal:content="currentRequest/quantityx86" />
           </tr>
-          <tr tal:condition="view/currentRequest/quantityamd64">
-            <td align="right"><strong>AMD64 CDs:</strong></td>
-            <td tal:content="view/currentRequest/quantityamd64" />
+          <tr tal:condition="currentRequest/quantityamd64">
+            <td align="right"><strong>64-bit PC CDs:</strong></td>
+            <td tal:content="currentRequest/quantityamd64" />
           </tr>
-          <tr tal:condition="view/currentRequest/quantityppc">
-            <td align="right"><strong>PowerPC CDs:</strong></td>
-            <td tal:content="view/currentRequest/quantityppc" />
+          <tr tal:condition="currentRequest/quantityppc">
+            <td align="right"><strong>Mac CDs:</strong></td>
+            <td tal:content="currentRequest/quantityppc" />
           </tr>
         </table>
 
@@ -73,22 +67,22 @@
       </tal:block>
       <br />
 
-      <tal:block condition="not: view/currentRequest">
-        <p>These CDs come in three types. Choose:</p>
+      <tal:block condition="not: currentRequest">
+        <p>Ubuntu CDs are made specifically for various types of
+        computers.</p>
 
         <ul>
-        <li><strong>Intel/x86</strong> to run on almost all PCs. This
-        includes most machines with Intel/AMD/etc type processors and
-        computers that can also run Microsoft Windows. Choose this if
-        you are unsure.</li>
+          <li>The <strong>PC</strong> Edition will run on almost all PCs.
+          This includes most machines with Intel/AMD/etc type processors
+          and computers that can also run Microsoft Windows. Choose this
+          if you are unsure.</li>
 
-        <li><strong>PowerPC</strong> to run on Apple Macintosh
-        G3, G4, and G5 computers including iBooks and PowerBooks.</li> 
+          <li>The <strong>64-bit PC</strong> Edition will run on computers
+          based on the AMD64 or EM64T architecture (e.g., Athlon64, Opteron,
+          EM64T Xeon).</li>
 
-        <li><strong>AMD64</strong> to run on computers based on the
-        AMD64 or EM64T architecture (e.g., Athlon64, Opteron, EM64T
-        Xeon). Most CPUs made by AMD require an Intel/x86 CD. Only
-        specialized 64bit CPUs require this special architecture.</li>
+          <li>The <strong>Mac</strong> Edition will run on Apple Macintosh
+          G3, G4, and G5 computers including iBooks and PowerBooks.</li> 
         </ul>
 
         <br />
@@ -99,7 +93,17 @@
            tal:content="msg" />
       </tal:block>
 
-      <h2>Request Details</h2>
+      <tal:block condition="not: currentRequest">
+        <h2>Request Details</h2>
+      </tal:block>
+
+      <tal:block condition="currentRequest">
+        <h2>Change Request Details</h2>
+
+        <p>You can change your request details as many times you want, but
+        doing so may require your request to be approved again.</p>
+        <br />
+      </tal:block>
 
       <form name="shipit" action="" method="POST">
 
@@ -155,7 +159,7 @@
             <div style="margin: 0em 2em">
             <table>
               <tr>
-                <td align="right"><strong>Intel/x86:</strong></td>
+                <td align="right"><strong>PC:</strong></td>
                 <td>
                   <tal:block tal:condition="view/isCustomRequest">
                     <input tal:attributes="value view/quantityx86" 
@@ -167,19 +171,7 @@
                            name="quantityx86" />
                   </tal:block>
                 </td>
-                <td align="right"><strong>PowerPC:</strong></td>
-                <td>
-                  <tal:block tal:condition="view/isCustomRequest">
-                    <input tal:attributes="value view/quantityppc" 
-                           type="text" size="5" align="right" 
-                           name="quantityppc" />
-                  </tal:block>
-                  <tal:block tal:condition="not: view/isCustomRequest">
-                    <input type="text" size="5" align="right" 
-                           name="quantityppc" />
-                  </tal:block>
-                </td>
-                <td align="right"><strong>AMD64:</strong></td>
+                <td align="right"><strong>64-bit PC:</strong></td>
                 <td>
                   <tal:block tal:condition="view/isCustomRequest">
                     <input tal:attributes="value view/quantityamd64" 
@@ -191,6 +183,18 @@
                            name="quantityamd64" />
                   </tal:block>
                 </td>
+                <td align="right"><strong>Mac:</strong></td>
+                <td>
+                  <tal:block tal:condition="view/isCustomRequest">
+                    <input tal:attributes="value view/quantityppc" 
+                           type="text" size="5" align="right" 
+                           name="quantityppc" />
+                  </tal:block>
+                  <tal:block tal:condition="not: view/isCustomRequest">
+                    <input type="text" size="5" align="right" 
+                           name="quantityppc" />
+                  </tal:block>
+                </td>
               </tr>
               <tr>
                 <td colspan="6">
@@ -199,7 +203,7 @@
               <tr>
                 <td colspan="6">
                     <strong>Reason for custom request:</strong>
-                    <textarea name="reason" rows="2"
+                    <textarea name="reason" rows="4"
                               tal:content="view/reason|nothing" />
                 </td>
               </tr>
@@ -209,20 +213,20 @@
         </tr>
       </table>
 
-      <h1>Contact Information</h1>
+      <h1>Shipping Address</h1>
 
       <table>
         <tr>
           <td align="right"><strong>Organization:</strong></td>
           <td>
-            <input tal:attributes="value view/organization|context/organization" type="text"
-                   name="organization" size="30" />
+            <input tal:attributes="value view/organization|user/organization" type="text"
+                   name="organization" size="30" maxlength="30" />
           </td>
         </tr>
         <tr>
           <td align="right"><strong>Address:</strong></td>
           <td>
-            <input tal:attributes="value view/addressline1|context/addressline1" type="text"
+            <input tal:attributes="value view/addressline1|user/addressline1" type="text"
                    name="addressline1" size="30" maxlength="30"/>
             <span class="formHelp">(required)</span>
           </td>
@@ -230,14 +234,14 @@
         <tr>
           <td align="right"></td>
           <td>
-            <input tal:attributes="value view/addressline2|context/addressline2" type="text"
+            <input tal:attributes="value view/addressline2|user/addressline2" type="text"
                    name="addressline2" size="30" maxlength="30" />
           </td>
         </tr>
         <tr>
           <td align="right"><strong>City/Town/etc:</strong></td>
           <td>
-            <input tal:attributes="value view/city|context/city" type="text"
+            <input tal:attributes="value view/city|user/city" type="text"
                    name="city" size="30" maxlength="30" />
             <span class="formHelp">(required)</span>
           </td>
@@ -245,14 +249,14 @@
         <tr>
           <td align="right"><strong>State/etc:</strong></td>
           <td>
-            <input tal:attributes="value view/province|context/province" type="text"
+            <input tal:attributes="value view/province|user/province" type="text"
                    name="province" size="30" maxlength="30" />
           </td>
         </tr>
         <tr>
           <td align="right"><strong>Postcode:</strong></td>
           <td>
-            <input tal:attributes="value view/postcode|context/postcode" type="text"
+            <input tal:attributes="value view/postcode|user/postcode" type="text"
                    name="postcode" size="12" maxlength="12" />
             <span id="postcode-required" class="formHelp">(required)</span>
           </td>
@@ -266,19 +270,19 @@
         <tr>
           <td align="right"><strong>Phone:</strong></td>
           <td>
-            <input tal:attributes="value view/phone|context/phone" type="text"
+            <input tal:attributes="value view/phone|user/phone" type="text"
                    name="phone" size="16" maxlength="16" />
           </td>
         </tr>
       </table>
 
       <div style="text-align: right">
-        <tal:block condition="not: view/currentRequest">
+        <tal:block condition="not: currentRequest">
           <input type="submit" value="Request CDs" name="newrequest"
                  class="formControls"/>
         </tal:block>
 
-        <tal:block condition="view/currentRequest">
+        <tal:block condition="currentRequest">
           <input type="submit" value="Change Request Details" 
                  class="formControls" name="changerequest" />
         </tal:block>
@@ -286,22 +290,22 @@
 
       </form>
 
-      <tal:block condition="view/currentRequest">
-        <p>These CDs come in three types:</p>
+      <tal:block condition="currentRequest">
+        <p>Ubuntu CDs are made specifically for various types of
+        computers.</p>
 
         <ul>
-        <li><strong>Intel/x86</strong> to run on almost all PCs. This
-        includes most machines with Intel/AMD/etc type processors and
-        computers that can also run Microsoft Windows. Choose this if
-        you are unsure.</li>
+          <li>The <strong>PC</strong> Edition will run on almost all PCs.
+          This includes most machines with Intel/AMD/etc type processors
+          and computers that can also run Microsoft Windows. Choose this
+          if you are unsure.</li>
 
-        <li><strong>PowerPC</strong> to run on Apple Macintosh
-        G3, G4, and G5 computers including iBooks and PowerBooks.</li> 
+          <li>The <strong>64-bit PC</strong> Edition will run on computers
+          based on the AMD64 or EM64T architecture (e.g., Athlon64, Opteron,
+          EM64T Xeon).</li>
 
-        <li><strong>AMD64</strong> to run on computers based on the
-        AMD64 or EM64T architecture (e.g., Athlon64, Opteron, EM64T
-        Xeon). Most CPUs made by AMD require an Intel/x86 CD. Only
-        specialized 64bit CPUs require this special architecture.</li>
+          <li>The <strong>Mac</strong> Edition will run on Apple Macintosh
+          G3, G4, and G5 computers including iBooks and PowerBooks.</li> 
         </ul>
 
         <br />

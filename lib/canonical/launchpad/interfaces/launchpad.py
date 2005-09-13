@@ -25,7 +25,7 @@ __all__ = ['ILaunchpadRoot', 'ILaunchpadApplication', 'IMaloneApplication',
            'IApplicationMenu',
            'ICanonicalUrlData', 'NoCanonicalUrl',
            'IDBSchema', 'IDBSchemaItem', 'IAuthApplication',
-           'IPasswordChangeApp', 'IPasswordResets'
+           'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication'
            ]
 
 
@@ -145,6 +145,10 @@ class IRegistryApplication(ILaunchpadApplication):
 
 class IFOAFApplication(ILaunchpadApplication):
     """FOAF application root."""
+
+
+class IShipItApplication(ILaunchpadApplication):
+    """ShipIt application root."""
 
 
 class IBazaarApplication(ILaunchpadApplication):
@@ -350,6 +354,9 @@ class ILink(ILinkData):
         " link in the UI.  The general rule is that a link to the current"
         " page should not be shown linked.  Defaults to True.")
 
+    enabled = Attribute(
+        "Boolean to say whether this link is enabled.  Can be read and set.")
+
 
 class IFacetLink(ILink):
     """A link in a facet menu.
@@ -366,24 +373,30 @@ class IFacetLink(ILink):
 class IMenu(Interface):
     """Public interface for facets, menus, extra facets and extra menus."""
 
-    def __iter__():
-        """Iterate over the links in this menu."""
+    def iterlinks(requesturl=None):
+        """Iterate over the links in this menu.
+
+        requesturl, if it is not None, is a Url object that is used to
+        decide whether a menu link points to the page being requested,
+        in which case it will not be linked.
+        """
 
 
 class IMenuBase(IMenu):
     """Common interface for facets, menus, extra facets and extra menus."""
 
     context = Attribute('the object that has this menu')
-    request = Attribute('The web request.  May be None.')
 
 
 class IFacetMenu(IMenuBase):
     """Main facet menu for an object."""
 
-    def iterlinks(selectedfacetname=None):
+    def iterlinks(requesturl=None, selectedfacetname=None):
         """Iterate over the links in this menu.
 
-        If selectedfacetname is None, this method is equivalent to __iter__.
+        requesturl, if it is not None, is a Url object that is used to
+        decide whether a menu link points to the page being requested,
+        in which case it will not be linked.
 
         If selectedfacetname is provided, the link with that name will be
         marked as 'selected'.

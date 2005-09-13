@@ -26,7 +26,8 @@ Let's create a new request for foo.bar@canonical.com.
   >>> request = requestset.new(recipient, quantityx86, quantityamd64,
   ...                          quantityppc, reason=reason)
 
-We're not allowed to add a second request for the same recipient.
+We're not allowed to add a second request for the same recipient, while the
+existing one is not yet exported.
 
   >>> request = requestset.new(recipient, quantityx86, quantityamd64,
   ...                          quantityppc, reason=reason)
@@ -59,11 +60,12 @@ The number of CDs can be altered by the user, if he wants.
   >>> request.totalCDs
   14
 
-When a request is approved, that means all quantities requested are approved.
-This can be changed later, of course.
+When a request is approved, you must specify the approved quantities.
 
   >>> login('marilize@hbd.com')
-  >>> request.approve(getUtility(ILaunchBag).user)
+  >>> request.approve(request.quantityx86, request.quantityamd64,
+  ...                 request.quantityppc,
+  ...                 whoapproved=getUtility(ILaunchBag).user)
   >>> request.approved
   True
   >>> request.whoapproved.displayname
@@ -75,12 +77,27 @@ This can be changed later, of course.
   >>> request.quantityppcapproved
   1
 
+The approved quantities can be changed only if the request is approved.
+
+  >>> request.setApprovedTotals(quantityx86approved=5, quantityamd64approved=3,
+  ...                           quantityppcapproved=2)
+  >>> request.quantityx86approved
+  5
+  >>> request.quantityamd64approved
+  3
+  >>> request.quantityppcapproved
+  2
+
+If a request is approved but hasn't been exported yet, it can still be denied.
+
+  >>> request.deny()
+  >>> request.approved
+  False
+
 A request can also be cancelled, and this means the approved and
 quantity*approved will be set back to None.
 
   >>> request.cancel(getUtility(ILaunchBag).user)
-  >>> request.approved is None
-  True
   >>> request.cancelled
   True
   >>> request.whocancelled.displayname
@@ -97,7 +114,7 @@ quantity*approved will be set back to None.
 Searching for requests
 ----------------------
 
-We have fixe custom requests. Two of them are cancelled.
+We have five custom requests. Two of them are cancelled.
 
   >>> [r.recipient.name 
   ...      for r in requestset.searchCustomRequests(omit_cancelled=False)]
@@ -126,7 +143,7 @@ And all standard requests are approved automatically.
   [u'stub', u'kreutzm']
 
 
-It's also possible to search for standard queries of a specific type.
+It's also possible to search for standard requests of a specific type.
 
   >>> standardrequest = getUtility(IStandardShipItRequestSet).get(3)
   >>> requests = requestset.searchStandardRequests(standard_type=standardrequest)

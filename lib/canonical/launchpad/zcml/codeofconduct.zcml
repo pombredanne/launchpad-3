@@ -5,6 +5,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+<facet facet="overview">
 
     <!-- CodeofConduct -->
     <content class="canonical.launchpad.database.CodeOfConduct">
@@ -198,5 +199,5 @@
         lp:url="codeofconduct/console/+acknowledge">
     </browser:addform>
 
-
+</facet>
 </configure>

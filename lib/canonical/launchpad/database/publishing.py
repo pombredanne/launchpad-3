@@ -219,7 +219,7 @@ class SecureSourcePackagePublishingHistory(SQLBase):
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket,
                      default=PackagePublishingPocket.RELEASE,
                      notNull=True)
-    embargo = BoolCol(dbName='embargo', default=False)
+    embargo = BoolCol(dbName='embargo', default=False, notNull=True)
     embargolifted = UtcDateTimeCol(default=None)
 
     @classmethod
@@ -262,7 +262,7 @@ class SecureBinaryPackagePublishingHistory(SQLBase):
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
-    embargo = BoolCol(dbName='embargo', default=False)
+    embargo = BoolCol(dbName='embargo', default=False, notNull=True)
     embargolifted = UtcDateTimeCol(default=None)
 
     @classmethod

@@ -32,10 +32,7 @@ class DistributionFacets(StandardLaunchpadFacets):
 
     usedfor = IDistribution
 
-    links = ['overview', 'bugs', 'tickets', 'specs', 'translations',
-             'calendar']
-
-    def specs(self):
+    def specifications(self):
         target = '+specs'
         text = 'Specs'
         summary = 'Feature specifications for %s' % self.context.displayname
@@ -44,7 +41,8 @@ class DistributionFacets(StandardLaunchpadFacets):
     def tickets(self):
         target = '+tickets'
         text = 'Tickets'
-        summary = 'Technical support requests for %s' % self.context.displayname
+        summary = (
+            'Technical support requests for %s' % self.context.displayname)
         return Link(target, text, summary)
 
 

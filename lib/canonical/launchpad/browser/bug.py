@@ -8,7 +8,6 @@ __all__ = [
     'BugEditView',
     'BugAddView',
     'BugAddingView',
-    'BugAddForm',
     'BugRelatedObjectAddView',
     'BugRelatedObjectEditView',
     'DeprecatedAssignedBugsView']
@@ -18,10 +17,9 @@ import urllib
 from zope.interface import implements
 from zope.component import getUtility
 
-from canonical.lp import dbschema, decorates, Passthrough
-from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.interfaces import IBugAddForm, IBug, ILaunchBag
+from canonical.launchpad.interfaces import (
+    IBugAddForm, IBug, ILaunchBag, IBugSet)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
@@ -82,10 +80,15 @@ class BugEditView(BugView, SQLObjectEditView):
 
 
 class BugAddView(SQLObjectAddView):
+    """View for adding a bug."""
+
     def add(self, content):
-        retval = super(BugAddView, self).add(content)
         self.bugadded = content
-        return retval
+        return content
+
+    def create(self, **kw):
+        """"Create a new bug."""
+        return getUtility(IBugSet).createBug(**kw)
 
     def nextURL(self):
         return canonical_url(self.bugadded)
@@ -102,26 +105,6 @@ class BugAddingView(SQLObjectAddView):
 
     def nextURL(self):
         return "."
-
-
-class BugAddForm:
-    implements(IBugAddForm)
-    decorates(IBug, context='bug')
-
-    product = Passthrough('product', 'bugtask')
-    sourcepackagename = Passthrough('sourcepackagename', 'bugtask')
-    binarypackage = Passthrough('binarypackage', 'bugtask')
-    distribution = Passthrough('distribution', 'bugtask')
-
-    def __init__(self, bug):
-        # When we add a new bug there should be exactly one task and one
-        # message.
-        assert len(bug.bugtasks) == 1
-        assert len(bug.messages) == 1
-
-        self.bug = bug
-        self.bugtask = bug.bugtasks[0]
-        self.comment = bug.messages[0]
 
 
 class BugRelatedObjectAddView(SQLObjectAddView):

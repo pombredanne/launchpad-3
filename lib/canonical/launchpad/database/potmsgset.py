@@ -191,11 +191,8 @@ class POTMsgSet(SQLBase):
 
         return translation_set.active_texts
 
-    # Methods defined in IEditPOTMsgSet
-
     def makeMessageIDSighting(self, text, pluralForm, update=False):
-        """Create a new message ID sighting for this message set."""
-
+        """See IPOTMsgSet."""
         try:
             messageID = POMsgID.byMsgid(text)
         except SQLObjectNotFound:
@@ -222,3 +219,48 @@ class POTMsgSet(SQLBase):
             existing.set(datelastseen=UTC_NOW, inlastrevision=True)
             return existing
 
+    def apply_sanity_fixes(self, text):
+        """See IPOTMsgSet."""
+
+        # Fix the visual point that users copy & paste from the web interface.
+        new_text = self.convert_dot_to_space(text)
+        # And now set the same whitespaces at the start/end of the string.
+        new_text = self.normalize_whitespaces(new_text)
+
+        return new_text
+
+    def convert_dot_to_space(self, text):
+        """See IPOTMsgSet."""
+        if u'\u2022' in self.primemsgid_.msgid or u'\u2022' not in text:
+            return text
+
+        return text.replace(u'\u2022', ' ')
+
+    def normalize_whitespaces(self, text):
+        """See IPOTMsgSet."""
+        if text is None:
+            return text
+
+        msgid = self.primemsgid_.msgid
+        stripped_msgid = msgid.strip()
+        stripped_text = text.strip()
+        new_text = None
+
+        if len(stripped_msgid) > 0 and len(stripped_text) == 0:
+            return ''
+
+        if len(stripped_msgid) != len(msgid):
+            # There are whitespaces that we should copy to the 'text'
+            # after stripping it.
+            prefix = msgid[:-len(msgid.lstrip())]
+            postfix = msgid[len(msgid.rstrip()):]
+            new_text = '%s%s%s' % (prefix, stripped_text, postfix)
+        elif len(stripped_text) != len(text):
+            # msgid does not have any whitespace, we need to remove
+            # the extra ones added to this text.
+            new_text = stripped_text
+        else:
+            # The text is not changed.
+            new_text = text
+
+        return new_text

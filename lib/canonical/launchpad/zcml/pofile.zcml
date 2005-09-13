@@ -5,6 +5,8 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
+<facet facet="translations">
+
     <content class="canonical.launchpad.database.POFile">
         <require
             permission="zope.Public"
@@ -135,5 +137,5 @@
         provides="canonical.launchpad.interfaces.IPOFileSet">
         <allow interface="canonical.launchpad.interfaces.IPOFileSet" />
     </securedutility>
-
+</facet>
 </configure>

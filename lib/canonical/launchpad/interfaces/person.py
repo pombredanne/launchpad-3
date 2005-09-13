@@ -169,11 +169,12 @@ class IPerson(Interface):
     branches = Attribute("The branches for a person.")
     maintainerships = Attribute("This person's Maintainerships")
     activities = Attribute("Karma")
-    memberships = Attribute("List of TeamMembership objects for Teams this "
-        "Person is a member of. Either active, inactive or proposed "
-        "member.")
-    activememberships = Attribute("List of TeamMembership objects for "
-        "people who are members in this team.")
+    myactivememberships = Attribute(
+        "List of TeamMembership objects for Teams this Person is an active "
+        "member of.")
+    activememberships = Attribute(
+        "List of TeamMembership objects for people who are active members "
+        "in this team.")
     guessedemails = Attribute("List of emails with status NEW. These email "
         "addresses probably came from a gina or POFileImporter run.")
     validatedemails = Attribute("Emails with status VALIDATED")
@@ -192,9 +193,6 @@ class IPerson(Interface):
     inactivemembers = Attribute(("List of members with EXPIRED or "
                                  "DEACTIVATED status"))
     deactivatedmembers = Attribute("List of members with DEACTIVATED status")
-    members = Attribute("The list of TeamMemberships for people who are "
-        "members or proposed members of this team, sorted by membership "
-        "state.")
     specifications = Attribute("Any specifications related to this "
         "person, either because the are a subscriber, or an assignee, or "
         "a drafter, or the creator. Sorted newest-first.")

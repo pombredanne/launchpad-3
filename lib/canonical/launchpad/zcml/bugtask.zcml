@@ -5,6 +5,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+  <facet facet="bugs">
+
     <browser:page
         for="*"
         name="+bugtask-macros-tableview"
@@ -319,4 +321,7 @@
               template="../templates/bugs-assigned.pt"
               lp:url="malone/assigned/" />
     </browser:pages>
+
+  </facet>
+
 </configure>

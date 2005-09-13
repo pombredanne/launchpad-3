@@ -13,7 +13,7 @@ import os.path
 import warnings
 
 from zope.interface import Interface, Attribute, implements
-from zope.component import getUtility, queryAdapter
+from zope.component import getUtility, queryAdapter, getDefaultViewName
 
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
@@ -27,6 +27,7 @@ from canonical.launchpad.interfaces import (
 from canonical.lp import dbschema
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url, nearest_menu
+from canonical.launchpad.webapp.menu import Url
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.helpers import check_permission
 
@@ -65,13 +66,23 @@ class MenuAPI:
         except NoCanonicalUrl:
             return None
 
+    def _requesturl(self):
+        request = get_current_browser_request()
+        requesturlobj = Url(request.getURL(), request.get('QUERY_STRING'))
+        # If the default view name is being used, we will want the url
+        # without the default view name.
+        defaultviewname = getDefaultViewName(self._context, request)
+        if requesturlobj.pathnoslash.endswith(defaultviewname):
+            requesturlobj = Url(request.getURL(1), request.get('QUERY_STRING'))
+
     def facet(self):
         menu = self._nearest_menu(IFacetMenu)
         if menu is None:
             return []
         else:
-            menu.request = get_current_browser_request()
-            return list(menu.iterlinks(self._selectedfacetname))
+            return list(menu.iterlinks(
+                requesturl=self._requesturl(),
+                selectedfacetname=self._selectedfacetname))
 
     def application(self):
         selectedfacetname = self._selectedfacetname
@@ -82,8 +93,7 @@ class MenuAPI:
         if menu is None:
             return []
         else:
-            menu.request = get_current_browser_request()
-            return list(menu)
+            return list(menu.iterlinks(requesturl = self._requesturl()))
 
 
 class CountAPI:

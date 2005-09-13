@@ -501,11 +501,7 @@ class POTemplate(SQLBase, RosettaStats):
         return messageSet
 
     def createMessageSetFromText(self, text):
-        # This method used to accept 'text' parameters being string objects,
-        # but this is depracated.
-        if not isinstance(text, unicode):
-            raise TypeError("Message ID text must be unicode: %r" % text)
-
+        """See IPOTemplate."""
         try:
             messageID = POMsgID.byMsgid(text)
             if self.hasMessageID(messageID):

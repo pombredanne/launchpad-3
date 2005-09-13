@@ -44,7 +44,13 @@ class IShippingRequest(Interface):
         description=_('People who requests things other than the standard '
                       'options have to explain why they need that.'))
 
+    highpriority = Bool(
+        title=_('High Priority?'), required=False, readonly=False,
+        description=_('Is this a high priority request?'))
+
     totalCDs = Attribute(_('Total number of CDs in this request.'))
+    totalapprovedCDs = Attribute(
+        _('Total number of approved CDs in this request.'))
     quantityx86 = Int(title=_('Requested X86 CDs'), readonly=False)
     quantityppc = Int(title=_('Requested PowerPC CDs'), readonly=False)
     quantityamd64 = Int(title=_('Requested AMD64 CDs'), readonly=False)
@@ -55,24 +61,47 @@ class IShippingRequest(Interface):
     def isStandardRequest():
         """Return True if this is one of the Standard requests."""
 
+    def isDenied():
+        """Return True if this request was denied.
+        
+        A denied request has self.approved == False, while a request that's
+        pending approval has self.approved == None.
+        """
+
+    def isAwaitingApproval():
+        """Return True if this request is still waiting for approval."""
+
+    def isApproved():
+        """Return True if this request was approved."""
+
+    def deny():
+        """Deny this request."""
+
     def clearApproval():
         """Mark this request as waiting for approval.
 
-        This can only be used on approved requests.
+        This method should be used only on approved requests.
         """
 
-    def approve(whoapproved=None):
+    def setApprovedTotals(quantityx86approved, quantityamd64approved,
+                          quantityppcapproved):
+        """Set the approved quantities using the given values.
+
+        This method can be used only on approved requests.
+        """
+
+    def approve(quantityx86approved, quantityamd64approved,
+                quantityppcapproved, whoapproved=None):
         """Approve this request with the exact quantities as it was submitted.
 
         This will set the approved attribute to True and the whoapproved
         attribute to whoapproved. If whoapproved is None, that means this
         request was auto approved.
-        Also, the quantityx86approved, quantityppcapproved and
-        quantityamd64approved will be changed to match the requested
-        quantities.
 
-        This method can only be called on non-cancelled requests. If a request
-        is cancelled, it's necessary to reactivate() it first.
+        quantityx86approved, quantityxamd64pproved and quantityppcapproved
+        must be positive integers.
+
+        This method can only be called on non-cancelled non-approved requests.
         """
 
     def cancel(whocancelled):
@@ -84,20 +113,13 @@ class IShippingRequest(Interface):
         quantityamd64approved, approved and whoapproved to None.
         """
 
-    def reactivate():
-        """Reactivate this request, by unsetting its cancelled attribute.
-
-        This will also unset the whocancelled attribute.
-
-        This method can be called only on cancelled requests.
-        """
-
 
 class ShippingRequestStatus:
     """The status of a ShippingRequest."""
 
-    UNAPPROVED = 'unapproved'
+    PENDING = 'pending'
     APPROVED = 'approved'
+    DENIED = 'denied'
     ALL = 'all'
 
 
@@ -184,6 +206,9 @@ class IStandardShipItRequest(Interface):
         required=False, readonly=False, default=False)
 
     totalCDs = Attribute(_('Total number of CDs in this request.'))
+
+    def destroySelf():
+        """Delete this object from the database."""
 
 
 class IStandardShipItRequestSet(Interface):

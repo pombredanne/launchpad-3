@@ -5,6 +5,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+<facet facet="bugs">
+
     <!-- This is class BugPackageInfestation -->
 
     <!-- CONTENT CLASSES -->
@@ -74,5 +76,5 @@
         permission="launchpad.AnyPerson"
         template="../templates/default-editform.pt"
         lp:url="malone/bugs/$Bug.id/packageinfestations/$BugPackageInfestation.id/+edit" />
-
+</facet>
 </configure>

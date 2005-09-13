@@ -21,7 +21,7 @@
           <a href="+buildlog">View Build Log</a>
         </li>
         <li class="info">
-          <a href="+gethelp">Get Help!</a>
+          <a href="+gethelp">Help and support options</a>
         </li>
         <li class="translations">
           <a href="+translate">Help Translate</a>

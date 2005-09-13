@@ -16,6 +16,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
+    facet="overview"
     permission="zope.Public"
     class="canonical.launchpad.browser.SourcePackageReleasePublishingView">
     <browser:page

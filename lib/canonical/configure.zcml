@@ -28,6 +28,9 @@
     <browser:skin
         name="ubuntulinux"
         interface="canonical.launchpad.layers.UbuntuLinuxLayer"/>
+    <browser:skin
+        name="shipit"
+        interface="canonical.launchpad.layers.ShipItLayer"/>
     <browser:defaultSkin
         name="launchpad" />
 

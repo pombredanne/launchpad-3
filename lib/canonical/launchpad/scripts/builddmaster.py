@@ -21,6 +21,8 @@ import xmlrpclib
 import os
 import socket
 from cStringIO import StringIO
+import datetime
+import pytz
 
 from sqlobject.sqlbuilder import AND, IN
 
@@ -352,8 +354,18 @@ class BuilderGroup:
         # whatever is the original charset ?
         queueItem.logtail = encoding.guess(logtail)
 
+    def updateBuild_ABORTING(self, queueItem, slave, librarian, buildid):
+        """Build was ABORTED.
+        
+        Master-side should wait until the slave finish the process correctly.
+        """
+        queueItem.logtail = "Waiting slave process to be terminated"
+
     def updateBuild_ABORTED(self, queueItem, slave, librarian, buildid):
-        """Build was ABORTED, 'clean' the builder for another jobs. """
+        """ABORTING process has succesfully terminated.
+
+        Clean the builder for another jobs.
+        """
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
         queueItem.builder = None
         queueItem.buildstart = None
@@ -393,7 +405,10 @@ class BuilderGroup:
         queueItem.build.buildlog = self.getLogFromSlave(slave, buildid,
                                                         librarian)
         queueItem.build.datebuilt = UTC_NOW
-        queueItem.build.buildduration = UTC_NOW - queueItem.buildstart
+        # we need dynamic datetime.now() instance to be able to perform
+        # the time operations for duration.
+        RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))
+        queueItem.build.buildduration = RIGHT_NOW - queueItem.buildstart
         queueItem.build.builder = queueItem.builder
         queueItem.build.buildstate = DBBuildStatus.FULLYBUILT
     

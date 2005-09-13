@@ -129,6 +129,8 @@ bounty_edit = ContextTitle('Edit Bounty: %s')
 
 bounty_add = 'Register a bounty in Launchpad'
 
+bounty_link = ContextTitle('Link a bounty to %s')
+
 bounty_edit = ContextTitle('Edit bounty "%s"')
 
 bounty_index = ContextTitle('Launchpad Bounty: %s')
@@ -286,6 +288,8 @@ distribution_memberteam = ContextTitle("Change %s's distribution team")
 distribution_translations = ContextDisplayName('Translating %s')
 
 distribution_translators = 'Appoint Distribution Translation Group'
+
+distribution_search = 'Locate Distributions in Launchpad'
 
 distribution_index = ContextTitle('Launchpad Distribution Summary: %s')
 
@@ -494,9 +498,9 @@ person_reportedbugs = ContextDisplayName('Bugs Reported By %s')
 
 person_review = ContextDisplayName("Review %s' Information")
 
-person_shipit = "Your ShipIt Orders"
-
 person_translations = ContextDisplayName('Translations Made By %s')
+
+person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
 # plone.css is a css file
 
@@ -539,6 +543,8 @@ potemplate_index = ContextTitle('%s in Rosetta')
 
 potemplate_upload = ContextTitle('%s upload in Rosetta')
 
+potemplate_export = ContextTitle('Export %s\'s translations')
+
 potemplatename_add = 'Add a new template name to Rosetta'
 
 potemplatename_edit = ContextTitle('%s edit in Rosetta')
@@ -550,6 +556,8 @@ potemplatenames_index = 'Template names in Launchpad'
 product_add = 'Register a product with Launchpad'
 
 product_bugs = ContextDisplayName('%s upstream bug reports')
+
+product_branches = ContextDisplayName('%s\'s code branches in Launchpad')
 
 product_distros = ContextDisplayName('%s packages: Comparison of distributions')
 
@@ -647,9 +655,17 @@ def productseries(context, view):
     return '%s Release Series: %s' % (
         context.product.displayname, context.displayname)
 
+shipit_index = 'ShipIt'
+
+shipit_myrequest = "Your ShipIt Order"
+
 shipitrequests_index = 'ShipIt Requests'
 
 shipitrequest_edit = 'Edit ShipIt Request'
+
+shipit_notfound = 'Page Not Found'
+
+shipit_default_error = 'System Error'
 
 signedcodeofconduct_index = ContextDisplayName('%s')
 
@@ -670,11 +686,13 @@ def sourcepackage_bugs(context, view):
 
 sourcepackage_buildlog = 'Source Package Build Log'
 
+sourcepackage_translate = ContextTitle('Help translate %s')
+
 sourcepackage_changelog = 'Source Package Changelog'
 
 sourcepackage_filebug = ContextTitle("Report a Bug in %s")
 
-sourcepackage_gethelp = ContextTitle('Sources of Online Help for %s')
+sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 
 sourcepackage_hctstatus = ContextTitle('Source Package HCT Status - %s')
 
@@ -683,7 +701,7 @@ def sourcepackage_index(context, view):
 
 sourcepackage_packaging = ContextTitle('Define the Upstream Series of %s')
 
-sourcepackage_translate = ContextTitle('Help to Translate %s')
+sourcepackage_translate = ContextTitle('Help translate %s')
 
 sourcepackage_translations = ContextTitle(
     'Rosetta Translation Templates for %s')
@@ -703,6 +721,8 @@ sourcepackagerelease_index = ContextTitle('Source Package %s')
 
 def sourcepackages(context, view):
     return '%s Source Packages' % context.distrorelease.title
+
+sourcepackages_comingsoon = 'Coming soon'
 
 sources_index = 'Bazaar: Upstream Revision Control Imports'
 
@@ -778,11 +798,11 @@ ticket_subscription = ContextId('Subscription to Ticket #%s')
 
 tickettarget_tickets = ContextTitle('Support Requests for %s')
 
-standardshipitrequests_index = 'Standard ShipIt Requests'
+standardshipitrequests_index = 'Standard ShipIt Options'
 
-standardshipitrequest_new = 'Create a New Standard ShipIt Request'
+standardshipitrequest_new = 'Create a New Standard Option'
 
-standardshipitrequest_edit = 'Edit Standard ShipIt Request'
+standardshipitrequest_edit = 'Edit Standard Option'
 
 def team_addmember(context, view):
     return '%s: Add members' % context.team.browsername

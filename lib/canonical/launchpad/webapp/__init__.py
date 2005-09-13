@@ -19,7 +19,7 @@ class StandardLaunchpadFacets(FacetMenu):
     # provide your own 'usedfor' in subclasses.
     #   usedfor = IWhatever
 
-    links = ['overview', 'bugs', 'tickets', 'specs', 'bounties',
+    links = ['overview', 'bugs', 'tickets', 'specifications', 'bounties',
              'translations', 'calendar']
 
     defaultlink = 'overview'
@@ -40,14 +40,17 @@ class StandardLaunchpadFacets(FacetMenu):
         return Link(target, text)
 
     def tickets(self):
+        # Note that 'tickets' are disabled by default.  You need to define
+        # a tickets facet with the Link enabled in order to get an enabled
+        # 'tickets' facet tab.
         target = '+tickets'
         text = 'Tickets'
         summary = 'Technical Support Requests'
-        return Link(target, text, summary)
+        return Link(target, text, summary, enabled=False)
 
-    def specs(self):
+    def specifications(self):
         target = '+specs'
-        text = 'Specs'
+        text = 'Specifications'
         summary = 'New Feature Specifications'
         return Link(target, text, summary)
 
@@ -62,4 +65,3 @@ class StandardLaunchpadFacets(FacetMenu):
         target = '+calendar'
         text = 'Calendar'
         return Link(target, text, enabled=False)
-

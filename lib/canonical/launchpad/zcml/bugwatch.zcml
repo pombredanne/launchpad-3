@@ -5,6 +5,8 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
+<facet facet="bugs">
+
     <!-- BugWatch -->
     <content class="canonical.launchpad.database.BugWatch">
         <allow interface="canonical.launchpad.interfaces.IBugWatch" />
@@ -85,5 +87,5 @@
             template="../templates/watches-index.pt"
             lp:url="malone/bugs/$Bug.id/watches/index" />
     </browser:pages>
-
+</facet>
 </configure>

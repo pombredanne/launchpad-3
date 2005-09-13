@@ -227,9 +227,6 @@ class IBugAddForm(IBug):
             title=_("Linux Distribution"), required=False,
             description=_("""Ubuntu, Debian, Gentoo, etc."""),
             vocabulary="Distribution")
-    binarypackage = Choice(
-            title=_("Binary Package"), required=False,
-            vocabulary="BinaryPackage")
     owner = Int(title=_("Owner"), required=True)
     comment = Text(title=_('Description'), required=True,
             description=_("""A detailed description of the problem you are

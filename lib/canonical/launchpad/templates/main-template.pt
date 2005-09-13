@@ -47,37 +47,43 @@
         class="facets app"
         tal:define="facetmenu CONTEXTS/menu:facet"
       >
-        <tal:block condition="facetmenu">
-          <tal:block repeat="link facetmenu">
-            <li
-              tal:condition="link/selected"
-              class="current"
-            >
-              <strong tal:condition="link/linked">
+       <tal:condition tal:condition="python: '+login' not in request.getURL()">
+        <tal:facetmenu condition="facetmenu">
+          <tal:facet repeat="link facetmenu">
+            <tal:available condition="link/enabled">
+              <li tal:condition="link/selected" class="current">
+                <strong tal:condition="link/linked">
+                  <a
+                    tal:attributes="href link/url"
+                    tal:content="link/text"
+                  >abc</a>
+                  </strong>
+                <strong
+                  tal:condition="not: link/linked"
+                  tal:content="link/text"
+                >def</strong>
+              </li>
+              <li tal:condition="not: link/selected">
                 <a
+                  tal:condition="link/linked"
                   tal:attributes="href link/url"
                   tal:content="link/text"
-                >abc</a>
-              </strong>
-              <strong
-                tal:condition="not: link/linked"
-                tal:content="link/text"
-              >def</strong>
-            </li>
-            <li tal:condition="not: link/selected">
-              <a
-                tal:condition="link/linked"
-                tal:attributes="href link/url"
-                tal:content="link/text"
-              >ghi</a>
-              <span
-                class="disabled"
-                tal:condition="not: link/linked"
-                tal:content="link/text"
-              >jkl</span>
-            </li>
-          </tal:block>
-        </tal:block>
+                >ghi</a>
+                <span
+                  class="disabled"
+                  tal:condition="not: link/linked"
+                  tal:content="link/text"
+                >jkl</span>
+              </li>
+            </tal:available>
+            <li
+              tal:condition="not: link/enabled"
+              tal:content="link/text"
+              class="unavailable"
+            />
+          </tal:facet>
+        </tal:facetmenu>
+        </tal:condition>
       </ul>
 
     <!-- Menus -->
@@ -116,23 +122,7 @@
             >
               <ul class="menu">
                 <tal:block repeat="link appmenu">
-                  <li
-                    tal:condition="link/selected"
-                    class="current"
-                  >
-                    <tal:block condition="link/linked">
-                      <strong>
-                        <a 
-                          tal:attributes="href link/url"
-                          tal:content="link/text"
-                        >link text</a>
-                      </strong>
-                    </tal:block>
-                    <tal:block condition="not: link/linked">
-                      <strong tal:content="link/text">link text</strong>
-                    </tal:block>
-                  </li>
-                  <li tal:condition="not: link/selected">
+                  <li>
                     <a
                       tal:attributes="href link/url"
                       tal:content="link/text"

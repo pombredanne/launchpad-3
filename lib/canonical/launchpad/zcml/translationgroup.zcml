@@ -30,6 +30,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.ITranslationGroup"
+        facet="translations"
         class="canonical.launchpad.browser.TranslationGroupView"
         permission="zope.Public">
         <browser:page
@@ -46,6 +47,7 @@
     <browser:page
         name="+rm"
         for="canonical.launchpad.interfaces.ITranslationGroup"
+        facet="translations"
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.TranslationGroupView"
         attribute="removals"
@@ -54,6 +56,7 @@
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.ITranslationGroup"
+        facet="translations"
         label="Modify Translation Group Details:"
         fields="name title summary"
         permission="launchpad.Edit"
@@ -63,6 +66,7 @@
     <browser:addform
         name="+appoint"
         for="canonical.launchpad.interfaces.ITranslationGroup"
+        facet="translations"
         schema="canonical.launchpad.interfaces.ITranslator"
         fields="translationgroup language translator"
         keyword_arguments="translationgroup language translator"
@@ -118,6 +122,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.ITranslationGroupSet"
+        facet="translations"
         permission="zope.Public">
         <browser:page
             template="../templates/translationgroups.pt"
