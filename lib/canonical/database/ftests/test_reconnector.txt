@@ -12,7 +12,8 @@ twisted we use with out version of Python.
 
     >>> import os, sys
     >>> import canonical.lp
-    >>> from canonical.database.ftests import getDBHost
+    >>> from canonical.database.ftests import (
+    ...     getDBHost, wait_until_proxy_is_ready, wait_until_proxy_is_stopped)
     >>> dbhost = getDBHost()
     >>> ver = sys.version[:3]
     >>> cmd = ('mktap%s portforward --port 5555 --dest_port 5432 '
@@ -24,16 +25,6 @@ twisted we use with out version of Python.
 
 Wait for the proxy to start.
 
-    >>> import time
-    >>> def wait_until_proxy_is_ready():
-    ...     start = time.time()
-    ...     while time.time() - start < 5:  # loop for a maximum of 5 seconds
-    ...         try:
-    ...             if 'Starting factory' in open('twistd.log').read():
-    ...                 return
-    ...         except IOError:
-    ...             pass
-    ...     raise RuntimeError('Proxy not ready')
     >>> wait_until_proxy_is_ready()
 
 Install the reconnector.
@@ -77,13 +68,6 @@ Break the connection by stopping the proxy.
 
 Wait for the proxy to stop.
 
-    >>> import os.path
-    >>> def wait_until_proxy_is_stopped():
-    ...     start = time.time()
-    ...     while time.time() - start < 5:  # loop for a maximum of 5 seconds
-    ...         if not os.path.exists('twistd.pid'):
-    ...             return
-    ...     raise RuntimeError('Proxy would not stop')
     >>> wait_until_proxy_is_stopped()
 
 Executing a query now blocks until the database connection can be reestablished.
