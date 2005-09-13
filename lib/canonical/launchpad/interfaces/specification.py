@@ -30,42 +30,39 @@ class ISpecification(IHasOwner):
 
     # id = Int(title=_('Specification ID'), required=True, readonly=True)
     name = TextLine(
-        title=_('Name'), required=True, description=_("Keep this name very "
-        "short, unique, and descriptive, because it will be used in URLs. "
-        "Examples: mozilla-type-ahead-find, postgres-smart-serial."),
+        title=_('Name'), required=True, description=_(
+            "May contain letters, numbers, and dashes only. "
+            "Examples: mozilla-type-ahead-find, postgres-smart-serial."),
         constraint=valid_name)
     title = Title(
-        title=_('Title'), required=True, description=_("Describe the "
-        "feature as clearly as possible in up to 70 characters. This "
-        "title is displayed in every feature list or report."))
+        title=_('Title'), required=True, description=_(
+            "Describe the feature as clearly as possible in up to 70 characters. "
+            "This title is displayed in every feature list or report."))
     specurl = TextLine(
         title=_('Specification URL'), required=True,
-        description=_('The URL of the specification. This is usually a '
-        'wiki page url.'), constraint=valid_webref)
+        description=_(
+            "The URL of the specification. This is usually a wiki page."),
+        constraint=valid_webref)
     summary = Summary(
-        title=_('Summary'), required=True, description=_("A "
-        "single-paragraph description of the feature. This will also be "
-        "displayed in most feature listings."))
+        title=_('Summary'), required=True, description=_(
+            "A single-paragraph description of the feature. "
+            "This will also be displayed in most feature listings."))
     status = Choice(
         title=_('Status'), vocabulary='SpecificationStatus',
-        default=SpecificationStatus.BRAINDUMP, description=_("The current "
-        "status of this feature specification."))
+        default=SpecificationStatus.BRAINDUMP)
     priority = Choice(
         title=_('Priority'), vocabulary='SpecificationPriority',
-        default=SpecificationPriority.MEDIUM, description=_("The priority "
-        "of this feature."))
+        default=SpecificationPriority.MEDIUM)
     assignee = Choice(title=_('Assignee'), required=False,
-        description=_("The person who is responsible for implementing "
-        "this feature specification."),
+        description=_("The person responsible for implementing the feature."),
         vocabulary='ValidPersonOrTeam')
     drafter = Choice(title=_('Drafter'), required=False,
-        description=_("The person who is responsible for drafting "
-        "this feature specification."),
+        description=_("The person responsible for drafting the specification."),
         vocabulary='ValidPersonOrTeam')
     approver = Choice(title=_('Approver'), required=False,
-        description=_("The person who is responsible for approving "
-        "this feature specification, and for reviewing the code when it "
-        "is ready to be landed."),
+        description=_(
+            "The person responsible for approving the specification, "
+            "and for reviewing the code when it's ready to be landed."),
         vocabulary='ValidPersonOrTeam')
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
@@ -73,23 +70,23 @@ class ISpecification(IHasOwner):
         vocabulary='ValidPersonOrTeam')
     milestone = Choice(
         title=_('Milestone'), required=False, vocabulary='Milestone',
-        description=_("The milestone in which we would like this feature "
-        "to be delivered."))
+        description=_(
+            "The milestone in which we would like this feature to be delivered."))
     productseries = Choice(title=_('Targeted Product Series'), required=False,
-        vocabulary='FilteredProductSeries', description=_('Select '
-        'the release series to which this feature is targeted.'))
+        vocabulary='FilteredProductSeries', description=_(
+            "The release series to which this feature is targeted."))
     distrorelease = Choice(title=_('Targeted Release'), required=False,
         vocabulary='FilteredDistroRelease', description=_('Select '
         'the distribution release to which this feature is targeted.'))
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
-        description=_('Any notes on the status of this spec you would '
-        'like to make. This field is a general whiteboard, your changes '
-        'will override the previous version.'))
+        description=_(
+            "Any notes on the status of this spec you would like to make. "
+            "Your changes will override the current text."))
     # other attributes
     product = Attribute('The product to which this feature belongs.')
     distribution = Attribute('The distribution to which this spec belongs.')
-    target = Attribute('The product or distribution to which this spec '
-        'belongs.')
+    target = Attribute(
+        "The product or distribution to which this spec belongs.")
     # joins
     subscriptions = Attribute('The set of subscriptions to this spec.')
     reviews = Attribute('The set of reviews queued.')
@@ -143,8 +140,8 @@ class ISpecificationSet(Interface):
 
     title = Attribute('Title')
 
-    latest_specs = Attribute("The latest 10 specifications registered in "
-        "the Launchpad.")
+    latest_specs = Attribute(
+        "The latest 10 specifications registered in Launchpad.")
 
     def __iter__():
         """Iterate over all specifications."""

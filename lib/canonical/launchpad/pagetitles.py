@@ -732,11 +732,13 @@ soyuz_about = 'About Soyuz'
 
 soyuz_index = 'Soyuz: Linux Distribution Management'
 
-specification_add = 'Register A New Feature Specification'
+specification_add = 'Register a feature specification in Launchpad'
 
-specification_bug = 'Link this Specification to Bug'
+specification_bug = ContextTitle(
+  'Link specification \N{left double quotation mark}%s\N{right double quotation mark} '
+  'to a bug report')
 
-specification_removebug = 'Remove Link to Bug'
+specification_removebug = 'Remove link to bug report'
 
 specification_dependency = 'Create a Specification Dependency'
 

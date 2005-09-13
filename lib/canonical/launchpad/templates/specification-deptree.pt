@@ -30,7 +30,7 @@
     <div tal:repeat="spec context/all_deps"
          tal:replace="structure spec/@@+listing-detailed" />
     <p tal:condition="not: context/dependencies">
-      <i>This spec does not block any others.</i>
+      This specification does not block any others.
     </p>
 
   <h2>This specification</h2>
@@ -42,7 +42,7 @@
     <div tal:repeat="spec context/all_blocked"
          tal:replace="structure spec/@@+listing-detailed" />
     <p tal:condition="not: context/blocked_specs">
-      <i>No specs depend on this one.</i>
+      No specifications depend on this one.
     </p>
   
 </div>

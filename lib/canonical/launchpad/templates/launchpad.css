@@ -743,7 +743,6 @@ legend {
 }
 
 th {
-  font-weight: normal;
   text-align: right;
 }
 thead th {
@@ -928,6 +927,9 @@ table {
 }
 table table {
   width: 100%;
+}
+table table th, table table td {
+  padding: 0.25em;
 }
 table.data, table.data>thead, table.data>tfoot {
 	border: solid #999;
