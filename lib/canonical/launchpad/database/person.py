@@ -1303,7 +1303,7 @@ class GPGKeySet:
         if ownerid:
             query += ' AND owner=%s' % sqlvalues(ownerid)
         
-        return GPGKey.select(query)
+        return GPGKey.select(query, orderBy='id')
 
 
 class SSHKey(SQLBase):
