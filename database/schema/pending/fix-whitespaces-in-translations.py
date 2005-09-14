@@ -105,7 +105,7 @@ def main():
                 # Latest one is going to be removed, we pick previous
                 # submission.
                 pofile.latestsubmission = results[1]
-            elif len(results) == 1:
+            elif len(results) <= 1:
                 # There was only this submission, we don't have any
                 # translation for this pofile!.
                 pofile.latestsubmission = None
