@@ -67,6 +67,8 @@ ALTER TABLE Branch ADD COLUMN cache_url text;
 ALTER TABLE Branch ADD CONSTRAINT valid_cache_url
     CHECK (valid_absolute_url(cache_url));
 
+ALTER TABLE Branch ADD COLUMN started_at int;
+
 -- Migrate data
 UPDATE Branch SET
     product_locked = DEFAULT,
@@ -116,9 +118,17 @@ ALTER TABLE Revision ALTER COLUMN id SET DEFAULT
 ALTER TABLE Revision ADD COLUMN owner int CONSTRAINT revision_owner_fk
     REFERENCES Person;
 
-ALTER TABLE Revision ADD COLUMN revision_id text;
+ALTER TABLE Revision ADD COLUMN revision_id text
+    CONSTRAINT revision_revision_id_unique UNIQUE;
 
 ALTER TABLE Revision RENAME COLUMN datecreated TO date_created;
+
+DELETE FROM Revision; -- Remove everything. ImportD will repopulate it.
+
+ALTER TABLE Revision DROP COLUMN branch;
+
+ALTER TABLE Revision ADD COLUMN committed_against int 
+    CONSTRAINT revisionparent_committed_against_fk REFERENCES Revision;
 
 -- NULLable? If not, what do we default it too?
 ALTER TABLE Revision ADD COLUMN revision_date timestamp WITHOUT TIME ZONE;
@@ -164,11 +174,26 @@ CREATE TABLE RevisionParent (
     id serial PRIMARY KEY,
     revision int NOT NULL CONSTRAINT revisionparent_revision_fk
         REFERENCES Revision,
-    parent int NOT NULL CONSTRAINT revisionparent_parent_fk REFERENCES Revision,
-    -- TODO: This might not be wanted, as per XXX in spec
-    committed_against int 
-            CONSTRAINT revisionparent_committed_against_fk REFERENCES Revision
+    parent int NOT NULL CONSTRAINT revisionparent_parent_fk
+        REFERENCES Revision,
     );
+
+CREATE TABLE RevisionNumber (
+    id serial PRIMARY KEY,
+    rev_no int NOT NULL,
+    branch int NOT NULL CONSTRAINT revisionnumber_branch_fk
+        REFERENCES Branch,
+    revision int NOT NULL CONSTRAINT revisionnumber_revision_fk
+        REFERENCES Revision
+    );
+
+ALTER TABLE RevisionNumber ADD CONSTRAINT revisionnumber_unique
+    UNIQUE (rev_no, branch, revision);
+
+ALTER TABLE Branch ADD CONSTRAINT branch_started_at_fk
+    FOREIGN KEY (started_at) REFERENCES RevisionNumber;
+
+-- TODO: add constraint here so branch.started_at.branch == branch
 
 CREATE TABLE BranchSubscription (
     id serial PRIMARY KEY,
