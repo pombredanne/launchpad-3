@@ -63,7 +63,7 @@
   <!-- Declare robots.txt file for the root -->
 
   <browser:page
-      for="canonical.publication.RootObject"
+      for="canonical.launchpad.interfaces.ILaunchpadRoot"
       name="robots.txt"
       template="../templates/robotstxt.pt"
       permission="zope.Public"

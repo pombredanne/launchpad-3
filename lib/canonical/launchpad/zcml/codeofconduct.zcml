@@ -69,9 +69,9 @@
         <allow interface="canonical.launchpad.interfaces.ICodeOfConductSet" />
     </securedutility>
 
-    <!-- This view registers 'codeofconduct' as a suburl of RootObject. -->
+    <!-- This view registers 'codeofconduct' as a suburl of ILaunchpadRoot. -->
     <browser:suburl
-        for="canonical.publication.RootObject"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
         utility="canonical.launchpad.interfaces.ICodeOfConductSet"
         name="codeofconduct" />
     <browser:url

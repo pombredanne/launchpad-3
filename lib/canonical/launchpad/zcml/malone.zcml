@@ -6,7 +6,7 @@
     i18n_domain="launchpad">
 
     <browser:suburl
-        for="canonical.publication.RootObject"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
         utility="canonical.launchpad.interfaces.IMaloneApplication"
         newlayer="canonical.launchpad.layers.MaloneLayer"
         name="malone" />

@@ -48,7 +48,7 @@ from zope.app.tests import ztapi
 from zope.component import getUtility
 import zope.security.management
 
-from canonical.publication import BrowserPublication
+from canonical.publication import LaunchpadBrowserPublication
 from canonical.chunkydiff import elided_source
 from canonical.config import config
 
@@ -494,7 +494,7 @@ def http(request_string, port=9000, handle_errors=True, debug=False):
         raise RuntimeError("Request method was not GET, POST or HEAD.")
 
     request_cls = BrowserRequest
-    publication_cls = BrowserPublication
+    publication_cls = LaunchpadBrowserPublication
 
     request = app._request(path, instream, outstream,
                            environment=environment,

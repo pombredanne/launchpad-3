@@ -176,7 +176,7 @@
   </securedutility>
 
   <browser:suburl
-    for="canonical.publication.RootObject"
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
     utility="canonical.launchpad.interfaces.ITicketSet"
     name="tickets" />
 

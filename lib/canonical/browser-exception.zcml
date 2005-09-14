@@ -74,7 +74,7 @@
       name="index.html"
       template="launchpad/templates/debug-error.pt"
       for="zope.interface.common.interfaces.IException"
-      class="canonical.publication.DebugView"
+      class="canonical.launchpad.webapp.error.DebugView"
       permission="zope.Public"
       />
 

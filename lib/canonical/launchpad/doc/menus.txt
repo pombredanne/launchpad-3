@@ -443,7 +443,6 @@ menu links for 'sesamestreet'.  So, all links will be linked.
 This next request is for +foo, but with a query string.  So, both links will
 still be linked.
 
-XXX
     >>> request = DummyRequest(
     ...     'http://localhost:8086/sesamestreet/+foo', query="123")
     >>> facets = Facets(street)
@@ -500,37 +499,6 @@ This will be the common case for default links.
     http://localhost:8086/sesamestreet/+bar False
     http://localhost:8086/sesamestreet/+baz True
 
-
-XXX The following stuff needs testing properly, using the TALES code, which
-    does the actual defaultViewName lookup and URL calculations.
-    SteveAlexander, 2005-09-12
-
-Sometimes, we need to take into account the default view name for an object.
-Let's say that the default view name for an IStreet is '+foo'.  This is
-the common case where the overview link is the default view name.
-
-    >> class IStreet(Interface):
-    ..     """A street."""
-    >> directlyProvides(street, IStreet)
-    >> from zope.app.tests import ztapi
-    >> ztapi.setDefaultViewName(IStreet, '+foo')
-    >> from zope.component import getDefaultViewName
-    >> getDefaultViewName(street, request)
-    '+foo'
-
-So, in this example, the first link should not be 'linked' because it is
-equivalent to the default view name for a street.  The TALES infrastructure
-actually calculates a shortened URL for this case.
-XXX: need to test this with the TALES stuff.
-     SteveAlexander, 2005-09-12
-
-    >>> request = Url('http://localhost:8086/sesamestreet/')
-    >>> facets = BlankTargetTestFacets(street)
-    >>> for link in facets.iterlinks(request):
-    ...     print link.url, link.linked
-    http://localhost:8086/sesamestreet/ False
-    http://localhost:8086/sesamestreet/+bar True
-    http://localhost:8086/sesamestreet/+baz True
 
 
 === Absolute url targets ===
@@ -687,6 +655,13 @@ put it too in the canonical.launchpad.ftests module.
 
     >>> class FacetsForThing(Facets):
     ...     usedfor = IThingHavingFacets
+    ...
+    ...     links = ['foo', 'bar', 'baz']
+    ...
+    ...     def baz(self):
+    ...         target = ''
+    ...         text = 'baz'
+    ...         return Link(target, text)
 
     >>> getattr(canonical.launchpad.ftests, 'FacetsForThing', None) is None
     True
@@ -752,15 +727,11 @@ TALES namespace.
 
 First, let's look at `thing/menu:facet`.  What this does is to look up
 nearest_menu(thing, IFacetMenu), getting an IFacetMenu adapter from it.
-Then, it sets the request attribute from the interaction, and returns the
-adapter.
+Then, it gets the request from either the TALES CONTEXTS or the current
+interaction, and calculates a request Url object to pass into IMenu.iterlinks,
+so that it can properly decide whether a particular link should appear linked.
 
     >>> from canonical.launchpad.ftests import test_tales
-
-    >>> participation = DummyRequest(
-    ...     'http://localhost:8086/sesamestreet/+bar')
-    >>> participation.interaction = None
-    >>> login(ANONYMOUS, participation)
 
     >>> class View:
     ...     __launchpad_facetname__ = 'bar'
@@ -771,18 +742,76 @@ adapter.
     >>> directlyProvides(street, IThingHavingFacets)
     >>> house.adapt_to = None
     >>> directlyProvides(house, IThingHavingApplicationMenus)
-    >>> links = test_tales('CONTEXTS/menu:facet', context=house, view=view)
+
+    >>> request = DummyRequest('http://localhost:8086/sesamestreet/+bar')
+
+    >>> links = test_tales(
+    ...     'CONTEXTS/menu:facet', context=house, view=view, request=request)
     >>> for link in links:
-    ...     print link.url, link.selected
-    http://localhost:8086/sesamestreet/+foo False
+    ...     print link.url, link.selected, link.linked
+    http://localhost:8086/sesamestreet/+foo False True
+    http://localhost:8086/sesamestreet/+bar True False
+    http://localhost:8086/sesamestreet/ False True
+
+So, the first link '+foo' is linked, but the second '+bar' is not.  This
+is because the URL of '+bar' is the same as the request in the CONTEXTS.
+
+Let's try again, this time with a request from the participation.
+
+    >>> participation = DummyRequest(
+    ...     'http://localhost:8086/sesamestreet/+bar')
+    >>> participation.interaction = None
+    >>> login(ANONYMOUS, participation)
+    >>> links = test_tales(
+    ...     'context/menu:facet', context=house)
+    >>> for link in links:
+    ...     print link.url, link.selected, link.linked
+    http://localhost:8086/sesamestreet/+foo False True
+    http://localhost:8086/sesamestreet/+bar False False
+    http://localhost:8086/sesamestreet/ False True
+
+Note that '+bar' is not selected.  This is because we're adapting 'context'
+and not 'CONTEXTS', so the menus system has no way of knowing what the
+selected facet is for the current page.
+
+
+Sometimes, we need to take into account the default view name for an object.
+Let's say that the default view name for an IStreet is '+baz'.  This is
+the common case where the overview link is the default view name.
+
+    >>> class IStreet(Interface):
+    ...     """A street."""
+    >>> directlyProvides(street, IStreet, IThingHavingFacets)
+    >>> from zope.app.tests import ztapi
+    >>> ztapi.setDefaultViewName(IStreet, '+baz')
+
+    >>> request = DummyRequest(
+    ...     'http://localhost:8086/sesamestreet/+baz',
+    ...     url1='http://localhost:8086/sesamestreet/')
+
+    >>> from zope.component import getDefaultViewName
+    >>> getDefaultViewName(street, request)
+    '+baz'
+
+So, in this example, the last link should not be 'linked' because it is
+equivalent to the default view name for a street.  The TALES infrastructure
+actually calculates a shortened URL for this case.
+
+    >>> links = test_tales(
+    ...     'CONTEXTS/menu:facet', context=street, view=view, request=request)
+    >>> for link in links:
+    ...     print link.url, link.linked
+    http://localhost:8086/sesamestreet/+foo True
     http://localhost:8086/sesamestreet/+bar True
+    http://localhost:8086/sesamestreet/ False
 
 
 The result of `house/menu:application` will be empty at the moment, because
 we registered only one application menu for a house, against 'foo'.  The
 'bar' facet is the one selected, so we don't get any application menu.
 
-    >>> menu = test_tales('CONTEXTS/menu:application', context=house, view=view)
+    >>> menu = test_tales('CONTEXTS/menu:application',
+    ...     context=house, view=view, request=None)
     >>> list(menu)
     []
 
@@ -790,18 +819,20 @@ Now, if we change the view's __launchpad_facetname__ so that the 'foo' facet
 is selected, we get a couple of menus.
 
     >>> view.__launchpad_facetname__ = 'foo'
-    >>> links = test_tales(
-    ...     'CONTEXTS/menu:application', context=house, view=view)
+    >>> links = test_tales('CONTEXTS/menu:application',
+    ...     context=house, view=view, request=None)
     >>> for link in links:
     ...     print link.url
     http://localhost:8086/sesamestreet/number73/+first
 
 When there is no menu for a thing, we get an empty iterator.
 
-    >>> menu = test_tales('CONTEXTS/menu:facet', context=root, view=view)
+    >>> menu = test_tales(
+    ...     'CONTEXTS/menu:facet', context=root, view=view, request=None)
     >>> list(menu)
     []
-    >>> menu = test_tales('CONTEXTS/menu:application', context=root, view=view)
+    >>> menu = test_tales('CONTEXTS/menu:application',
+    ...     context=root, view=view, request=request)
     >>> list(menu)
     []
 

@@ -47,44 +47,19 @@
         permission="zope.Public"
         />
 
-    <!-- This is the HTTP server, set up to do ZODB-free publication.  -->
-    <utility
-        name="HTTP"
-        component="canonical.publication.http"
-        provides="zope.app.server.servertype.IServerType"
-        />
-
-    <!-- This is the HTTP server, with post-mortem debugging support,
-        set up to do ZODB-free publication.  -->
-    <utility
-        name="PostmortemDebuggingHTTP"
-        component="canonical.publication.pmhttp"
-        provides="zope.app.server.servertype.IServerType"
-        />
-
-    <!-- This is the HTTP server, but making each request have the
-        DebugLayer as the first layer searched.  Effectively, this turns
-        on the debug error pages. -->
-    <utility
-        name="DebugLayerHTTP"
-        component="canonical.publication.debughttp"
-        provides="zope.app.server.servertype.IServerType"
-        />
-
-
     <!-- This is an index.html view on the root object.
         The root object is not ever published itself.  Only its views are.
         -->
 
     <browser:page
-        for="canonical.publication.RootObject"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="index.html"
         template="launchpad/templates/root-index.pt"
         permission="zope.Public"
         />
 
     <browser:pages
-        for="canonical.publication.RootObject"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
         permission="zope.Public"
         >
         <browser:page
@@ -93,7 +68,7 @@
     </browser:pages>
 
     <browser:pages
-        for="canonical.publication.RootObject"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
         class="canonical.launchpad.browser.BountySetView"
         permission="zope.Public"
         >
@@ -103,7 +78,7 @@
     </browser:pages>
 
     <browser:pages
-        for="canonical.publication.RootObject"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
         class="canonical.launchpad.browser.RosettaApplicationView"
         permission="zope.Public"
         >
@@ -113,7 +88,7 @@
     </browser:pages>
 
     <browser:pages
-        for="canonical.publication.RootObject"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
         class="canonical.launchpad.browser.FOAFSearchView"
         permission="zope.Public"
         >
@@ -127,7 +102,7 @@
         the development server. -->
 
     <browser:page
-        for="canonical.publication.RootObject"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="index.html"
         template="launchpad/templates/debug-root-index.pt"
         permission="zope.Public"
@@ -136,7 +111,7 @@
 
     <!-- This lets us see the real root index even from the debug layer. -->
     <browser:page
-        for="canonical.publication.RootObject"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="real-index.html"
         template="launchpad/templates/root-index.pt"
         permission="zope.Public"
@@ -154,64 +129,6 @@
         />
     </content>
 
-    <!-- enable the error reporting service at /errors -->
-    <browser:suburl
-        for="canonical.publication.RootObject"
-        name="errors"
-        utility="zope.app.errorservice.interfaces.ILocalErrorReportingService"
-        />
-
-    <content class="zope.app.errorservice.RootErrorReportingService">
-        <require
-            permission="zope.Public"
-            interface="zope.app.errorservice.interfaces.IErrorReportingService"
-            />
-        <require
-            permission="zope.Public"
-            interface="zope.app.errorservice.interfaces.ILocalErrorReportingService"
-            />
-        </content>
-    <serviceType
-        id="ErrorLogging"
-        interface="zope.app.errorservice.interfaces.IErrorReportingService" 
-        />
-
-    <utility
-        provides="zope.app.errorservice.interfaces.ILocalErrorReportingService"
-        component="canonical.publication.globalErrorUtility"
-        />
-    <service 
-        serviceType="ErrorLogging"
-        permission="zope.Public"
-        component="canonical.publication.globalErrorService" 
-        />
-
-    <browser:pages
-        for="zope.app.errorservice.interfaces.IErrorReportingService"
-        permission="zope.Public"
-        class="zope.app.errorservice.browser.EditErrorLog">
-
-        <browser:page
-            name="index.html"
-            template="launchpad/templates/errorservice-index.pt"
-            />
-        <browser:page
-            name="configure.html"
-            template="launchpad/templates/errorservice-config.pt"
-            />
-        <browser:page
-            name="edit.html"
-            attribute="updateProperties"
-            />
-        <browser:page
-            name="showEntry.html"
-            template="launchpad/templates/errorservice-entry.pt"
-            />
-        <browser:page
-            name="showTextTBEntry.html"
-            template="launchpad/templates/errorservice-tbentry.pt"
-            />
-    </browser:pages>
 
     <include package="canonical.lp" />
 
