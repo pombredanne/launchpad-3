@@ -220,7 +220,7 @@ class ImporterHandler:
         if not sourcepackage:
             # If the sourcepackagerelease is not imported, not way to import
             # this binarypackage. Warn and giveup.
-            log.warn("FMO courtesy of TROUP & TROUT inc. on %s (%s)" % (
+            log.info("FMO courtesy of TROUP & TROUT inc. on %s (%s)" % (
                 binarypackagedata.source, binarypackagedata.source_version
                 ))
             return None

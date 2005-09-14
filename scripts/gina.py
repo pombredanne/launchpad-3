@@ -230,7 +230,7 @@ def import_binarypackages(pocket, packages_map, kdb, package_root,
                             binary_data.package, binary_data.version,
                             )
 
-                    log.warn(msg)
+                    log.info(msg)
                     messages.append(msg)
                     nosource += 1
             except (AttributeError, ValueError, TypeError):
