@@ -70,7 +70,8 @@ Wait for the proxy to stop.
 
     >>> wait_until_proxy_is_stopped()
 
-Executing a query now blocks until the database connection can be reestablished.
+Executing a query now blocks until the database connection can be
+reestablished.
 
     >>> import threading
     >>> thread_result = []
@@ -79,22 +80,27 @@ Executing a query now blocks until the database connection can be reestablished.
     >>> def foo():
     ...     before_select.set()
     ...     cur.execute('SELECT 1;')
-    ...     print "thread after execute"
     ...     thread_result.append(cur.fetchone()[0])
     ...     after_select.set()
-    ...     print "thread end"
+
+Create the thread, and make sure it has started running:
+
     >>> thread = threading.Thread(target=foo)
     >>> thread.start()
     >>> before_select.wait()
+
+Execution does not get past the execute() call because the database
+can't be reached:
+
     >>> after_select.wait(1)
-    >>> thread_result
-    []
+    >>> after_select.isSet()
+    False
     >>> thread.isAlive()
     True
 
 # TODO: test that the disconnection is logged -- spiv
 
-And restart it.
+Restart the proxy:
 
     >>> os.system('twistd%s -of portforward.tap' % ver)
     0
@@ -103,8 +109,8 @@ And restart it.
 Now, our blocked thread should've finished successfully.
 
     >>> after_select.wait()
-    thread after execute
-    thread end
+    >>> after_select.isSet()
+    True
     >>> thread_result
     [1]
     >>> thread.isAlive()
