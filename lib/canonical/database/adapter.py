@@ -9,6 +9,13 @@ from psycopgda.adapter import PsycopgAdapter
 
 from canonical.config import config
 
+__all__ = [
+    'LaunchpadDatabaseAdapter',
+    'RequestExpired',
+    'set_request_started',
+    'clear_request_started',
+    ]
+
 
 class LaunchpadDatabaseAdapter(PsycopgAdapter):
     """A subclass of PsycopgAdapter that performs some additional
@@ -55,7 +62,7 @@ def _request_expired():
         return False # no current request
 
     requesttime = (time.time() - starttime) * 1000
-    return requesttime > config.launchpad.db_statement_timeout * 1000
+    return requesttime > config.launchpad.db_statement_timeout
 
 
 class RequestExpired(RuntimeError):
