@@ -1,11 +1,7 @@
-<div class="portlet">
-
-  <h4>Actions:</h4>
-  
-  <div class="portletBody portletContent">
-    <ul><base href="">
-      <li class="info"><a href="/requests">See Current Requests</a></li>
-      <li class="edit"><a href="/standardoptions">Edit Standard Options</a></li>
-    </ul>
-  </div>
+<h4 style="padding-top: 0; margin-top: 0; clear: none">Actions:</h4>
+<div class="shipitPortletBody">
+  <ul><base href="">
+    <li class="info"><a href="/requests">See Current Requests</a></li>
+    <li class="edit"><a href="/standardoptions">Edit Standard Options</a></li>
+  </ul>
 </div>

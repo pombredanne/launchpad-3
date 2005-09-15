@@ -66,8 +66,9 @@ fieldset.two-column {
 }
 
 /* Classes for error indication in forms */
+.portalErrorMessage,
 .portalError {
-    background-color: #ffc9c9;
+    background-color: #ff9070;
     border: 1px solid #ddb0b0;
     color: Black;
     margin: 0em 0em 0em 0em;
@@ -79,6 +80,13 @@ fieldset.two-column {
     border: none;
     padding: 0;
     font-size: 85%;
+}
+
+.portalErrorMessage {
+    background-image: url(/++resource++alert_icon.gif);
+    background-repeat: no-repeat;
+    background-position: 5px 50%;
+    padding: 0.5em 1em 0.5em 3em;
 }
 
 
@@ -743,6 +751,7 @@ legend {
 }
 
 th {
+  font-weight: bold;
   text-align: right;
 }
 thead th {
@@ -856,7 +865,7 @@ ul.app>li.current {
   max-width: 50%;
 }
 
-.sidebar > h4 { /* plone.css .portlet h4 paste-o */
+.sidebar h4 { /* plone.css .portlet h4 paste-o */
     background-color: #dee7ec;
     border-top: 1px solid #8cacbb;
     border-bottom: 1px solid #8cacbb;
@@ -867,7 +876,7 @@ ul.app>li.current {
     font-weight: normal;
 }
 
-.sidebar > ul {
+.sidebar ul {
     margin-left: 2.5em;
 }
 

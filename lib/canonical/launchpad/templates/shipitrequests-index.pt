@@ -5,12 +5,12 @@
       i18n:domain="launchpad">
 <body>
 
-<div metal:fill-slot="body">
+  <div metal:fill-slot="body" style="padding-left: 1em">
 
   <h1>ShipIt Requests</h1>
 
   <div class="sidebar">
-    <div tal:replace="structure context/@@+sidebar-actions" />
+    <div tal:replace="structure context/@@+portlet-actions" />
   </div>
 
   <form name="search" action="" method="POST">

@@ -8,10 +8,11 @@
         <h1>
         Sorry, you don't have permission to access this page.
         </h1>
-        <p>You are logged in as
-            <span tal:content="request/lp:person/title|default">
-            No user is logged in
-            </span>
+        <p tal:condition="request/lp:person">
+          You are logged in as <span tal:content="request/lp:person/title" />.
+        </p>
+        <p tal:condition="not: request/lp:person">
+          You are not logged in.
         </p>
 
         <tal:block condition="view/show_tracebacks">
