@@ -74,6 +74,7 @@ from canonical.launchpad.database.specificationdependency import *
 from canonical.launchpad.database.specificationreview import *
 from canonical.launchpad.database.specificationsubscription import *
 from canonical.launchpad.database.spokenin import *
+from canonical.launchpad.database.sprint import *
 from canonical.launchpad.database.cal import *
 from canonical.launchpad.database.logintoken import *
 from canonical.launchpad.database.codeofconduct import *

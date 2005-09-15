@@ -66,6 +66,8 @@
     <resource name="search_icon.gif" file="../images/search_icon.gif" />
     <resource name="sendto.gif" file="../images/sendto.gif" />
     <resource name="spec" file="../images/topic_icon.gif" />
+    <resource name="sprint" file="../images/backtalk.gif" />
+    <resource name="statistic" file="../images/statistic.png" />
     <resource name="ticket" file="../images/phone_icon.gif" />
     <resource name="target" file="../images/target.png" />
     <resource name="topic_icon.gif" file="../images/topic_icon.gif" />

@@ -341,8 +341,23 @@ COMMENT ON COLUMN POMsgSet.iscomplete IS 'This indicates if we believe that
 Rosetta has an active translation for every expected plural form of this
 message set.';
 
-/* Ticket */
 
+/* Sprint */
+COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
+COMMENT ON COLUMN Sprint.time_zone IS 'The timezone of the sprint, stored in text format from the Olsen database names, like "US/Eastern".';
+
+
+/* SprintAttendance */
+COMMENT ON TABLE SprintAttendance IS 'The record that someone will be attending a particular sprint or meeting.';
+COMMENT ON COLUMN SprintAttendance.time_starts IS 'The time from which the person will be available to participate in meetings at the sprint.';
+COMMENT ON COLUMN SprintAttendance.time_ends IS 'The time of departure from the sprint or conference - this is the last time at which the person is available for meetings during the sprint.';
+
+
+/* SprintSpecification */
+COMMENT ON TABLE SprintSpecification IS 'The link between a sprint and a specification, so that we know which specs are going to be discussed at which sprint.';
+
+
+/* Ticket */
 COMMENT ON TABLE Ticket IS 'A trouble ticket, or support request, for a distribution or for an application. Such tickets are created by end users who need support on a particular feature or package or product.';
 COMMENT ON COLUMN Ticket.assignee IS 'The person who has been assigned to resolve this support ticket. Note that there is no requirement that every ticket be assigned somebody. Anybody can chip in to help resolve a ticket, and if they think they have done so we call them the "answerer".';
 COMMENT ON COLUMN Ticket.answerer IS 'The person who last claimed to have "answered" this support ticket, giving a response that they believe should be sufficient to close the ticket. This will move the status of the ticket to "answered". Note that the only person who can actually set the status to "closed" (other than an admin) is the person who made the support request.';

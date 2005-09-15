@@ -9,6 +9,11 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+  <div tal:replace="structure context/@@+portlet-sprints" />
+</metal:rightportlets>
+
 <div metal:fill-slot="main">
 
   <h1>Feature tracking in Launchpad</h1>

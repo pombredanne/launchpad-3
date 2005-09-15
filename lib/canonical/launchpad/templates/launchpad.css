@@ -460,6 +460,12 @@ ul.person>li, li.person, ul.people>li, li.people {
 ul.spec>li, li.spec {
     list-style-image: url(/++resource++spec);
 }
+ul.sprint>li, li.sprint {
+    list-style-image: url(/++resource++sprint);
+}
+ul.statistic>li, ul.statistics, li.statistic {
+    list-style-image: url(/++resource++statistic);
+}
 ul.ticket>li, li.ticket {
     list-style-image: url(/++resource++ticket);
 }

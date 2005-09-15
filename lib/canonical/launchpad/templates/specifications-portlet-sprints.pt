@@ -1,0 +1,18 @@
+<div class="portlet">
+
+  <h4>Upcoming Sprints:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul class="sprint">
+      <li tal:repeat="sprint context/upcoming_sprints">
+        <span tal:replace="sprint/time_starts/fmt:date">2005-10-12</span>
+        <br />
+        <a tal:attributes="href sprint/fmt:url"
+           tal:content="sprint/title">ubuntu Below Zero</a>
+      </li>
+    </ul>
+
+  </div>
+
+</div>

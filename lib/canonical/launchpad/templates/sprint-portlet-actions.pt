@@ -1,0 +1,13 @@
+<div class="portlet">
+
+  <h4>Actions:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li class="edit"><a href="+edit">Edit Details</a></li>
+    </ul>
+
+  </div>
+
+</div>

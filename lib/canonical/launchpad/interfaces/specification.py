@@ -89,6 +89,7 @@ class ISpecification(IHasOwner):
         "The product or distribution to which this spec belongs.")
     # joins
     subscriptions = Attribute('The set of subscriptions to this spec.')
+    sprints = Attribute('The sprints at which this spec is discussed.')
     reviews = Attribute('The set of reviews queued.')
     bugs = Attribute('Bugs related to this spec')
     dependencies = Attribute('Specs on which this spec depends.')
@@ -118,6 +119,13 @@ class ISpecification(IHasOwner):
     def unLinkBug(bug_number):
         """Remove any link to this bug number, and return None."""
 
+    # sprints
+    def linkSprint(sprint):
+        """Put this spec on the agenda of the sprint."""
+
+    def unlinkSprint(sprint):
+        """Remove this spec from the agenda of the sprint."""
+
     # dependencies
     def createDependency(specification):
         """Create a dependency for this spec on the spec provided."""
@@ -142,6 +150,8 @@ class ISpecificationSet(Interface):
 
     latest_specs = Attribute(
         "The latest 10 specifications registered in Launchpad.")
+
+    upcoming_sprints = Attribute("The next 5 sprints in the system.")
 
     def __iter__():
         """Iterate over all specifications."""

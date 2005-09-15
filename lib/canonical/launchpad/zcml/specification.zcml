@@ -233,6 +233,18 @@
     template="../templates/specification-removedep.pt">
   </browser:addform>
 
+  <browser:addform
+    name="+linksprint"
+    for="canonical.launchpad.interfaces.ISpecification"
+    schema="canonical.launchpad.interfaces.ISprintSpecification"
+    class="canonical.launchpad.browser.SprintSpecificationAddView"
+    label="Add Spec to Sprint Topic List"
+    fields="sprint"
+    keyword_arguments="sprint"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-linksprint.pt">
+  </browser:addform>
+
 
   <!-- SpecificationSet -->
   <content class="canonical.launchpad.database.SpecificationSet">
@@ -267,8 +279,14 @@
       name="+index"
       template="../templates/specifications-index.pt" />
     <browser:page
+      name="+portlet-actions"
+      template="../templates/specifications-portlet-actions.pt" />
+    <browser:page
       name="+portlet-details"
       template="../templates/specifications-portlet-details.pt" />
+    <browser:page
+      name="+portlet-sprints"
+      template="../templates/specifications-portlet-sprints.pt" />
   </browser:pages>
 
 </facet>

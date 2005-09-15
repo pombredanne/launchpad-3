@@ -1088,6 +1088,23 @@ class PersonSet:
             ''' % vars())
         skip.append(('specificationsubscription', 'person'))
 
+        # Update only the SprintAttendances that will not conflict
+        cur.execute('''
+            UPDATE SprintAttendance
+            SET attendee=%(to_id)d
+            WHERE attendee=%(from_id)d AND sprint NOT IN
+                (
+                SELECT sprint
+                FROM SprintAttendance 
+                WHERE attendee = %(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over
+        cur.execute('''
+            DELETE FROM SprintAttendance WHERE attendee=%(from_id)d
+            ''' % vars())
+        skip.append(('sprintattendance', 'attendee'))
+
         # Update only the POSubscriptions that will not conflict
         # XXX: Add sampledata and test to confirm this case
         # -- StuartBishop 20050331

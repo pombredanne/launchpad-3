@@ -40,7 +40,13 @@
        tal:content="context/approver/browsername"
        tal:attributes="href context/approver/fmt:url">Foo Bar</a>
     <i tal:condition="not: context/approver">No approver</i><br />
-	
+    <tal:has_sprints define="sprints context/sprints" condition="sprints">
+      <b>Sprints:</b>
+      <tal:sprint repeat="sprint sprints">
+        <a tal:attributes="href sprint/fmt:url"
+           tal:content="sprint/name" />,
+      </tal:sprint>
+	</tal:has_sprints>
   </div>
 
 </div>

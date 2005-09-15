@@ -206,6 +206,11 @@
     />
 
   <vocabulary
+    name="Sprint"
+    factory="canonical.launchpad.vocabularies.SprintVocabulary"
+    />
+
+  <vocabulary
     name="TeamSubscriptionPolicy"
     factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
     />

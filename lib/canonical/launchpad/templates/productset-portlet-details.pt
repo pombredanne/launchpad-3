@@ -1,23 +1,25 @@
-<div class="portlet portletBody portletContent">
-  <p>
-    There are currently
-    <strong tal:content="context/count_all">5</strong>
-    products registered in Launchpad, of which:
-  </p>
-  <ul>
-            <li><span tal:replace="context/count_translatable">5</span> 
-            have translations</li>
+<div class="portlet">
 
-            <li><span tal:replace="context/count_buggy">5</span> 
-            have bugs reported</li>
+  <h4>Statistics:</h4>
 
-            <li><span tal:replace="context/count_bounties">5</span> 
-            have bounties</li>
-
-            <li><span tal:replace="context/count_reviewed">5</span> 
-            have been reviewed.</li>
-  </ul>
-  <ul>
-    <li class="list"><a href="/products/+all">List all products</a></li>
-  </ul>
+  <div class="portletBody portletContent">
+    <p>
+      There are currently
+      <strong tal:content="context/count_all">5</strong>
+      products registered in Launchpad, of which:
+    </p>
+    <ul class="statistics">
+      <li><span tal:replace="context/count_translatable">5</span> 
+      have translations</li>
+      <li><span tal:replace="context/count_buggy">5</span> 
+      have bugs reported</li>
+      <li><span tal:replace="context/count_bounties">5</span> 
+      have bounties</li>
+      <li><span tal:replace="context/count_reviewed">5</span> 
+      have been reviewed.</li>
+    </ul>
+    <ul>
+      <li class="list"><a href="/products/+all">List all products</a></li>
+    </ul>
+  </div>
 </div>

@@ -48,6 +48,8 @@ from canonical.launchpad.browser.specificationbug import *
 from canonical.launchpad.browser.specificationdependency import *
 from canonical.launchpad.browser.specificationreview import *
 from canonical.launchpad.browser.specificationtarget import *
+from canonical.launchpad.browser.sprint import *
+from canonical.launchpad.browser.sprintspecification import *
 from canonical.launchpad.browser.ticket import *
 from canonical.launchpad.browser.ticketbug import *
 from canonical.launchpad.browser.tickettarget import *

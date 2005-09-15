@@ -284,8 +284,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (43, 46, 53, 2, '2005-07-12 14:35:44.635842', NULL, 13, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (44, 16, 53, 2, '2005-07-12 14:36:09.587753', NULL, 13, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (45, 55, 54, 2, '2005-07-12 14:36:09.587753', NULL, NULL, NULL);
-INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires,
-reviewer, reviewercomment) VALUES (46, 12, 31, 4, '2005-07-12 14:36:09.587753', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (46, 12, 31, 4, '2005-07-12 14:36:09.587753', NULL, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'teammembership'::pg_catalog.regclass;
@@ -1115,7 +1114,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'binarypackagerelease'::pg_catalog.regclass;
 
-INSERT INTO binarypackagerelease (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', NULL, NULL, NULL, 'mozilla-firefox', FALSE, NULL, NULL, NULL, true, '''web'':3C,7 ''browser'':4C,8 ''firefox'':2C,6 ''mozilla'':1C,5');
+INSERT INTO binarypackagerelease (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', NULL, NULL, NULL, 'mozilla-firefox', false, NULL, NULL, NULL, true, '''web'':3C,7 ''browser'':4C,8 ''firefox'':2C,6 ''mozilla'':1C,5');
 INSERT INTO binarypackagerelease (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''pmount'':1C,3 ''descript'':4 ''shortdesc'':2C');
 
 
@@ -7748,12 +7747,12 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'shippingrequest'::pg_catalog.regclass;
 
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (1, 52, NULL, 55, false, NULL, '2005-08-01 18:38:24.526648', true, NULL, 'noreason');
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (2, 22, NULL, NULL, false, NULL, '2005-09-01 18:38:24.526648', true, NULL, NULL);
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (3, 51, NULL, NULL, false, NULL, '2005-07-01 18:38:24.526648', true, NULL, NULL);
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (4, 29, NULL, NULL, false, NULL, '2005-06-01 18:38:24.526648', true, NULL, NULL);
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (5, 23, NULL, NULL, false, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason');
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason) VALUES (6, 28, NULL, NULL, true, 55, '2005-04-01 18:38:24.526648', NULL, NULL, 'noreason');
+INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority) VALUES (1, 52, NULL, 55, false, NULL, '2005-08-01 18:38:24.526648', true, NULL, 'noreason', false);
+INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority) VALUES (2, 22, NULL, NULL, false, NULL, '2005-09-01 18:38:24.526648', true, NULL, NULL, false);
+INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority) VALUES (3, 51, NULL, NULL, false, NULL, '2005-07-01 18:38:24.526648', true, NULL, NULL, false);
+INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority) VALUES (4, 29, NULL, NULL, false, NULL, '2005-06-01 18:38:24.526648', true, NULL, NULL, false);
+INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority) VALUES (5, 23, NULL, NULL, false, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason', false);
+INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority) VALUES (6, 28, NULL, NULL, true, 55, '2005-04-01 18:38:24.526648', NULL, NULL, 'noreason', false);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'shippingrequest'::pg_catalog.regclass;
@@ -7795,6 +7794,68 @@ INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, 
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'standardshipitrequest'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'developmentmanifest'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'developmentmanifest'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sprint'::pg_catalog.regclass;
+
+INSERT INTO sprint (id, "owner", name, title, summary, home_page, address, time_zone, time_starts, time_ends, datecreated) VALUES (1, 12, 'ubz', 'Ubuntu Below Zero', 'This is the next Ubuntu developer Summit. Join us in Montreal for discussions around Ubuntu and Launchpad. The focus will be the road to Dapper, our April 2006 release, focused on the enterprise.', 'http://wiki.ubuntu.com/UbuntuBelowZero', 'Montreal, Canada', 'US/Eastern', '2005-10-07 23:30:00', '2005-11-17 00:11:00', '2005-09-15 09:04:01.762108');
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sprint'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sprintattendance'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sprintattendance'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sprintspecification'::pg_catalog.regclass;
+
+INSERT INTO sprintspecification (id, sprint, specification) VALUES (1, 1, 3);
+INSERT INTO sprintspecification (id, sprint, specification) VALUES (2, 1, 1);
+INSERT INTO sprintspecification (id, sprint, specification) VALUES (3, 1, 4);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sprintspecification'::pg_catalog.regclass;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -82,6 +82,7 @@
     <include file="specificationreview.zcml" />
     <include file="specificationsubscription.zcml" />
     <include file="specificationtarget.zcml" />
+    <include file="sprint.zcml" />
     <include file="ticket.zcml" />
     <include file="ticketreopening.zcml" />
     <include file="ticketsubscription.zcml" />

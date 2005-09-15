@@ -106,6 +106,9 @@ from canonical.launchpad.interfaces.specificationdependency import *
 from canonical.launchpad.interfaces.specificationreview import *
 from canonical.launchpad.interfaces.specificationsubscription import *
 from canonical.launchpad.interfaces.spokenin import *
+from canonical.launchpad.interfaces.sprint import *
+from canonical.launchpad.interfaces.sprintattendance import *
+from canonical.launchpad.interfaces.sprintspecification import *
 from canonical.launchpad.interfaces.ssh import *
 from canonical.launchpad.interfaces.ticket import *
 from canonical.launchpad.interfaces.ticketbug import *

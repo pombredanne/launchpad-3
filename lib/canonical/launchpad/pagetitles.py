@@ -760,6 +760,8 @@ specification_requestreview = 'Request a Review of This Specification'
 
 specification_edit = 'Edit Specification Details'
 
+specification_linksprint = 'Put Specification on Sprint Agenda'
+
 specification_status = 'Edit Specification Status'
 
 specification_index = ContextTitle('Feature Specification: %s')
@@ -773,6 +775,14 @@ specifications_index = ContextTitle('%s')
 specificationtarget_specs = ContextTitle('Specifications for %s')
 
 specificationtarget_specplan = ContextTitle('Project Plan for %s')
+
+sprint_index = ContextTitle('%s (Sprint or Meeting)')
+
+sprint_edit = ContextTitle('Edit Meeting Details: %s')
+
+sprint_new = 'Register a new Meeting or Sprint in Launchpad'
+
+sprints_index = 'Launchpad Meeting or Sprint Registry'
 
 tickets_index = 'Launchpad Support Ticket Tracker'
 
