@@ -58,7 +58,6 @@ from canonical.launchpad.database.translator import *
 from canonical.launchpad.database.processor import *
 from canonical.launchpad.database.manifest import *
 from canonical.launchpad.database.manifestentry import *
-from canonical.launchpad.database.manifestancestry import *
 from canonical.launchpad.database.branch import *
 from canonical.launchpad.database.build import *
 from canonical.launchpad.database.publishing import *
