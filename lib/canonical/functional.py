@@ -51,6 +51,8 @@ import zope.security.management
 from canonical.publication import LaunchpadBrowserPublication
 from canonical.chunkydiff import elided_source
 from canonical.config import config
+import canonical.launchpad.layers
+
 
 # XXX: When we've upgraded Zope 3 to a newer version, we'll just import
 #      IHeaderOutput from zope.publisher.interfaces.http.
@@ -500,6 +502,8 @@ def http(request_string, port=9000, handle_errors=True, debug=False):
                            environment=environment,
                            request=request_cls, publication=publication_cls)
     request.response.setHeaderOutput(header_output)
+    canonical.launchpad.layers.setFirstLayer(
+        request, canonical.launchpad.layers.PageTestLayer)
     response = DocResponseWrapper(request.response, outstream, path,
                                   header_output)
     if debug:

@@ -26,9 +26,6 @@
         name="rosetta"
         interface="canonical.launchpad.layers.RosettaLayer"/>
     <browser:skin
-        name="ubuntulinux"
-        interface="canonical.launchpad.layers.UbuntuLinuxLayer"/>
-    <browser:skin
         name="shipit"
         interface="canonical.launchpad.layers.ShipItLayer"/>
     <browser:defaultSkin
@@ -97,35 +94,18 @@
           template="launchpad/templates/root-portlet-foaf.pt" />
     </browser:pages>
 
-    <!-- The root index for the debug view. This is a bit of a bodge, but it
-        lets us have a different page on the production server from the one on
-        the development server. 
+    <!-- The root index for the debug view at /+debug-index.
 
-        XXX sabdfl 08/09/2005 commented out because our production server
-            should now be identical to the development ones
-
+         This is a good place to get access to functionality we're
+         developing, but don't want explicitly linked yet.
+      -->
     <browser:page
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        name="index.html"
+        name="+debug-index"
         template="launchpad/templates/debug-root-index.pt"
         permission="zope.Public"
         layer="canonical.launchpad.layers.DebugLayer"
         />
-    -->
-
-    <!-- This lets us see the real root index even from the debug layer.
-
-       XXX sabdfl 08/09/2005 commented out because we can see the real root
-           at / anyway
-    
-    <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        name="real-index.html"
-        template="launchpad/templates/root-index.pt"
-        permission="zope.Public"
-        layer="canonical.launchpad.layers.DebugLayer"
-        />
-    -->
 
     <include file="browser-exception.zcml" />
     <include package="canonical.widgets" />
@@ -137,7 +117,6 @@
         attributes="publishTraverse"
         />
     </content>
-
 
     <include package="canonical.lp" />
 

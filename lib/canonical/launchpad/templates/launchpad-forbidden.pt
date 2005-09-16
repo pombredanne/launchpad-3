@@ -15,13 +15,7 @@
           You are not logged in.
         </p>
 
-        <tal:block condition="view/show_tracebacks">
-            <h3>Error type: <span tal:replace="view/error_type" /></h3>
-            <div tal:content="structure view/htmltext | default">
-                HTML rendering of error should go here.
-            </div>
-        </tal:block>
-
+    <tal:replace tal:replace="structure view/maybeShowTraceback" />
     </div>
 </body>
 </html>

@@ -15,7 +15,6 @@
   <browser:suburl
       for="canonical.launchpad.interfaces.ILaunchpadRoot"
       utility="canonical.launchpad.interfaces.IFOAFApplication"
-      newlayer="canonical.launchpad.layers.FOAFLayer"
       name="foaf" />
   <browser:url
       for="canonical.launchpad.interfaces.IFOAFApplication"
