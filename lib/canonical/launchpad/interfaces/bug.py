@@ -278,7 +278,7 @@ class IBugSet(IAddFormCustomization):
         raised.
         """
 
-    def search(duplicateof=None):
+    def search(duplicateof=None, orderBy=None, limit=None):
         """Find bugs matching the search criteria provided."""
 
     def queryByRemoteBug(bugtracker, remotebug):

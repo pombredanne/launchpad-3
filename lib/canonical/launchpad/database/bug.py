@@ -239,9 +239,23 @@ class BugSet(BugSetBase):
             raise NotFoundError(
                 "Unable to locate bug with ID %s" % str(bugid))
 
-    def search(self, duplicateof=None):
+    def search(self, duplicateof=None, orderBy=None, limit=None):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
-        return Bug.selectBy(duplicateofID=duplicateof.id)
+        where_clause = ''
+        if duplicateof:
+            where_clause += "duplicateof = %d" % duplicateof.id
+
+
+        other_params = {}
+        if orderBy:
+            other_params['orderBy'] = orderBy
+        if limit:
+            other_params['limit'] = limit
+
+        if where_clause:
+            return Bug.select(where_clause, **other_params)
+        else:
+            return Bug.select(**other_params)
 
     def queryByRemoteBug(self, bugtracker, remotebug):
         """See IBugSet."""

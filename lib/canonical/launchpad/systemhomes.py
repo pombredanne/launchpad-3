@@ -1,15 +1,16 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-"""This module contains the content classes for the 'home pages' of the
-subsystems of Launchpad.
-"""
+
+"""Content classes for the 'home pages' of the subsystems of Launchpad."""
+
 __metaclass__ = type
 
+from zope.component import getUtility
 from zope.interface import implements
 from canonical.launchpad.interfaces import (
     IRegistryApplication, IFOAFApplication, IMaloneApplication,
-    IBazaarApplication, IShipItApplication)
-from canonical.launchpad.database import (Bug, BugWatch, BugExternalRef,
-    BugTask, BugTracker)
+    IBazaarApplication, IShipItApplication, IBugSet, IBugWatchSet,
+    IBugExternalRefSet, IBugTaskSet, IBugTrackerSet, ILaunchBag,
+    BugTaskSearchParams)
 
 class RegistryApplication:
     implements(IRegistryApplication)
@@ -31,33 +32,36 @@ class MaloneApplication:
 
     @property
     def bug_count(self):
-        return Bug.select().count()
+        return getUtility(IBugSet).search().count()
 
     @property
     def bugwatch_count(self):
-        return BugWatch.select().count()
+        return getUtility(IBugWatchSet).search().count()
 
     @property
     def bugextref_count(self):
-        return BugExternalRef.select().count()
+        return getUtility(IBugExternalRefSet).search().count()
 
     @property
     def bugtask_count(self):
-        return BugTask.select().count()
+        user = getUtility(ILaunchBag).user
+        search_params = BugTaskSearchParams(user=user)
+        return getUtility(IBugTaskSet).search(search_params).count()
 
     @property
     def bugtracker_count(self):
-        return BugTracker.select().count()
+        return getUtility(IBugTrackerSet).search().count()
 
     @property
     def top_bugtrackers(self):
-        result = list(BugTracker.select())
+        all_bugtrackers = getUtility(IBugTrackerSet).search()
+        result = list(all_bugtrackers)
         result.sort(key=lambda a: -a.watchcount)
         return result[:5]
 
     @property
     def latest_bugs(self):
-        return Bug.select(orderBy='-datecreated', limit=5)
+        return getUtility(IBugSet).search(orderBy='-datecreated', limit=5)
 
 
 class BazaarApplication:
@@ -65,4 +69,3 @@ class BazaarApplication:
 
     def __init__(self):
         self.title = 'The Open Source Bazaar'
-
