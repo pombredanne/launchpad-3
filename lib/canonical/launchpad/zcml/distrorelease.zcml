@@ -97,6 +97,11 @@
             facet="translations"
             template="../templates/object-pots.pt" />
         <browser:page
+            name="+builds"
+            template="../templates/distrorelease-builds.pt"
+            lp:url="/distros/$distribution/$distrorelease/+builds"
+            />
+        <browser:page
             name="+portlet-details"
             facet="overview"
             template="../templates/distrorelease-portlet-details.pt" />

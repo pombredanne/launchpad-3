@@ -346,6 +346,13 @@ o ValidTeamOwner - With the exception of the team itself and all teams owned
     >>> [t.token for t in vocab.search('foo.bar')]
     ['foo.bar@canonical.com']
 
+o Processor - all processors type available in Launchpad.
+
+    >>> vocab = vocabulary_registry.get(None, "Processor")
+    >>> stuff = vocab.search('386')
+    >>> [t.token for t in stuff]
+    ['386']
+
 o SchemaVocabulary - launchpad Schema Vocabulary..
 
     >>> vocabulary = vocabulary_registry.get(None,"Schema")

@@ -270,6 +270,11 @@
     factory="canonical.launchpad.vocabularies.ValidTeamOwnerVocabulary"
     />
 
+  <vocabulary
+    name="Processor"
+    factory="canonical.launchpad.vocabularies.ProcessorVocabulary"
+    />
+
   <!-- Define the widget used by Choice fields that use huge vocabularies -->
   <view
     type="zope.publisher.interfaces.browser.IBrowserRequest"

@@ -237,6 +237,18 @@ bugtrackers_add = 'Register External Bugtracker in Malone'
 
 bugtrackers_index = 'Malone-Registered Bug Trackers'
 
+builders = 'Launchpad Build Farm Overview'
+
+builder_edit = ContextTitle('Editing %s details')
+
+builder_index = ContextTitle('%s Overview')
+
+builder_abort = ContextTitle('%s Abort')
+
+builder_stop = ContextTitle('%s Stop')
+
+calendar = ContextTitle('%s')
+
 calendar_index = ContextTitle('%s')
 
 calendar_event_addform = ContextTitle('Add Event to Calendar "%s"')
@@ -315,6 +327,8 @@ distro_edit = 'Create a new Distribution in Launchpad'
 
 distroarchrelease_index = ContextTitle('%s overview')
 
+distroarchrelease_builds = ContextTitle('Builds for %s')
+
 distroarchrelease_pkgsearch = 'Binary Package Search'
 
 distrorelease_bugs = ContextTitle('Release %s: Bugs')
@@ -345,6 +359,9 @@ def distrorelease_sources(context, view):
         )
 
 distrorelease_translations = ContextTitle('Translation of %s')
+
+distrorelease_builds = ContextTitle(
+    'Builds for %s')
 
 distroreleaselanguage = ContextTitle('%s')
 
@@ -703,7 +720,9 @@ def sourcepackage_bugs(context, view):
         context.distrorelease.distribution.name,
         context.sourcepackagename)
 
-sourcepackage_buildlog = 'Source Package Build Log'
+sourcepackage_buildlog = ContextTitle('%s Build Logs')
+
+sourcepackage_builds = ContextTitle('%s Builds')
 
 sourcepackage_translate = ContextTitle('Help translate %s')
 

@@ -637,6 +637,7 @@ h1 {
 
 table.listing {
   border: none;
+  width: 100%;
 }
 table.listing, table.listing tbody {
   border-bottom: 1px solid #8cacbb;
@@ -700,6 +701,14 @@ q {
   font-family: inherit;
   font-style: inherit;
   font-size: inherit;
+}
+
+/* -- Temporarily make *all* buttons look plone-y. Ugh. -- */
+
+button {
+  border: 1px solid #8cacbb;  
+  color: Black;
+  background-color: white;
 }
 
 /* -- Other bugs: -- */
@@ -772,7 +781,7 @@ th {
   font-weight: bold;
   text-align: right;
 }
-thead th {
+thead th, tr.thead th {
   text-align: center;
 }
 thead {
@@ -898,6 +907,10 @@ ul.app>li.current {
     margin-left: 2.5em;
 }
 
+input[type="image"] {
+  border: none;
+}
+
 .debug {
   background-color: #ffddee;
 }
@@ -950,7 +963,9 @@ ul {
   margin-left: 24px;
 }
 table {
-	border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  border-collapse: collapse;
 }
 table table {
   width: 100%;

@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'SourcePackageFacets',
     'traverseSourcePackage',
     'traverseSourcePackageSet',
     'SourcePackageFacets',
@@ -32,12 +33,14 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.soyuz.generalapp import builddepsSet
 from canonical.launchpad.browser.addview import SQLObjectAddView
+
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets)
 
 from apt_pkg import ParseSrcDepends
 
 BATCH_SIZE = 40
+
 
 def linkify_changelog(changelog, sourcepkgnametxt):
     # XXX: salgado: No bugtracker URL should be hardcoded.

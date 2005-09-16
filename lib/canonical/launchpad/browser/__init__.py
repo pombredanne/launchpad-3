@@ -55,6 +55,7 @@ from canonical.launchpad.browser.ticket import *
 from canonical.launchpad.browser.ticketbug import *
 from canonical.launchpad.browser.tickettarget import *
 from canonical.launchpad.browser.team import *
+from canonical.launchpad.browser.builder import *
 from canonical.launchpad.browser.translationgroup import *
 from canonical.launchpad.browser.translator import *
 from canonical.launchpad.browser.traversers import *

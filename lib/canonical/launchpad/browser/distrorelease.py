@@ -18,12 +18,12 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 
 from canonical.launchpad import helpers
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp import StandardLaunchpadFacets
+from canonical.launchpad.webapp import (
+    canonical_url, StandardLaunchpadFacets, Link)
 
 from canonical.launchpad.interfaces import (IDistroReleaseLanguageSet,
     IBugTaskSearchListingView, IDistroRelease, ICountry,
-    IDistroReleaseSet, ILaunchBag)
+    IDistroReleaseSet, ILaunchBag, IBuildSet)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 
@@ -108,6 +108,15 @@ class DistroReleaseView:
         """
         distro_url = canonical_url(self.context.distribution)
         return self.request.response.redirect(distro_url + "/+filebug")
+
+
+    def getBuilt(self):
+        """Return the last build records within the DistroRelease context.
+
+        The number of entries can also be determined in the future.
+        """
+        bset = getUtility(IBuildSet)
+        return bset.getBuiltForDistroRelease(self.context)
 
 
 class DistroReleaseBugsView(BugTaskSearchListingView):

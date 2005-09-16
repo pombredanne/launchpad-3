@@ -25,6 +25,7 @@
     <include file="bugwatch.zcml" />
     <include file="bug.zcml" />
     <include file="build.zcml" />
+    <include file="builder.zcml" />
     <include file="calendar.zcml" />
     <include file="codeofconduct.zcml" />
     <include file="country.zcml" />

@@ -28,6 +28,7 @@ __all__ = [
     'PackageReleaseVocabulary',
     'PersonAccountToMergeVocabulary',
     'POTemplateNameVocabulary',
+    'ProcessorVocabulary',
     'ProductReleaseVocabulary',
     'ProductSeriesVocabulary',
     'ProductVocabulary',
@@ -60,7 +61,7 @@ from canonical.launchpad.database import (
     Milestone, Product, Project, ProductRelease,
     ProductSeries, TranslationGroup, BugTracker,
     POTemplateName, Schema, Bounty, Country,
-    Specification, Bug)
+    Specification, Bug, Processor)
 from canonical.launchpad.interfaces import (
     ILaunchBag, ITeam, ITeamMembershipSubset, IPersonSet, IEmailAddressSet)
 
@@ -926,6 +927,24 @@ class POTemplateNameVocabulary(NamedSQLObjectVocabulary):
 
             for o in objs:
                 yield self._toTerm(o)
+
+
+class ProcessorVocabulary(NamedSQLObjectVocabulary):
+    implements(IHugeVocabulary)
+
+    _table = Processor
+    _orderBy = 'name'
+
+    def search(self, query):
+        """Return terms where query is a substring of the name"""
+        if query:
+            query = query.lower()
+            processors = self._table.select(
+                CONTAINSSTRING(Processor.q.name, query),
+                orderBy=self._orderBy
+                )
+            for processor in processors:
+                yield self._toTerm(processor)
 
 
 class SchemaVocabulary(NamedSQLObjectVocabulary):

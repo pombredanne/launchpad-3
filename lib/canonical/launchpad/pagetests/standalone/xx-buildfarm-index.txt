@@ -1,0 +1,26 @@
+
+  >>> print http(r"""
+  ... GET /buildfarm/+index HTTP/1.1
+  ... Referer: http://localhost:9000/buildfarm
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...
+            <tr>
+              <td>
+                <a href="bob"><img alt="" src="">
+                  bob
+                </a>
+              </td>
+              <td>Intel 386</td>
+              <td>Mark Shuttleworth</td>
+              <td>NOT OK : None</td>
+            </tr>
+            <tr>
+              <td class="discreet" colspan="6">
+                http://localhost:8221/
+                &#8212;
+                The default build-slave
+              </td>
+            </tr>
+  ...
