@@ -15,12 +15,15 @@ from canonical.librarian.client import LibrarianClient
 from canonical.archivepublisher.pool import AlreadyInPool
 from canonical.database.constants import nowUTC
 
+__all__ = [ 'Publisher', 'pocketsuffix', 'suffixpocket' ]
+
 pocketsuffix = {
     PackagePublishingPocket.RELEASE: "",
     PackagePublishingPocket.SECURITY: "-security",
     PackagePublishingPocket.UPDATES: "-updates",
     PackagePublishingPocket.PROPOSED: "-proposed"
     }
+suffixpocket = dict((v,k) for (k,v) in pocketsuffix.items())
 
 class Publisher(object):
     """Publisher is the class used to provide the facility to publish

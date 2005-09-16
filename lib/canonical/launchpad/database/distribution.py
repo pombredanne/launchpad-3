@@ -206,6 +206,27 @@ class Distribution(SQLBase):
         linker = DistributionBounty(distribution=self, bounty=bounty)
         return None
 
+    def getDistroReleaseAndPocket(self, distrorelease_name):
+        """See IDistribution."""
+        from canonical.archivepublisher.publishing import (
+            pocketsuffix, suffixpocket)
+
+        # Get the list of suffixes
+        suffixes = [suffix for suffix, ignored in suffixpocket.items()]
+        # Sort it longest string first
+        suffixes.sort(key=len, reverse=True)
+        
+        for suffix in suffixes:
+            if distrorelease_name.endswith(suffix):
+                try:
+                    left_size = len(distrorelease_name) - len(suffix)
+                    return (self[distrorelease_name[:left_size]],
+                            suffixpocket[suffix])
+                except KeyError:
+                    # Swallow KeyError to continue round the loop
+                    pass
+
+        raise KeyError(distrorelease_name)
 
 class DistributionSet:
     """This class is to deal with Distribution related stuff"""
