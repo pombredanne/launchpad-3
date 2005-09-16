@@ -214,17 +214,6 @@
         class="canonical.widgets.HiddenUserWidget" />
   </browser:addform>
 
-
-    <browser:view
-        for="canonical.launchpad.interfaces.IBug"
-        name="+messages"
-        class="canonical.launchpad.browser.MessagesView"
-        provides="canonical.launchpad.interfaces.IMessagesView"
-        permission="zope.Public"
-        lp:url="malone/projects/$Bug.id/+messages">
-        <defaultPage name="+index" />
-    </browser:view>
-
   <browser:page
     name="+linkcve"
     for="canonical.launchpad.interfaces.IBug"
@@ -240,6 +229,7 @@
     permission="launchpad.AnyPerson"
     template="../templates/bug-removecve.pt">
   </browser:page>
+
 
     <!-- BugSet -->
     <content class="canonical.launchpad.database.BugSet">

@@ -29,6 +29,9 @@ class IBugMessageSet(Interface):
         owner -- an IPerson
         content -- a string
 
+        The created message will have the bug's initial message as its
+        parent.
+
         Returns the created IBugMessage.
         """
 

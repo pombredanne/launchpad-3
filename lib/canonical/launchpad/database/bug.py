@@ -7,6 +7,7 @@ __all__ = ['Bug', 'BugSet']
 from sets import Set
 from email.Utils import make_msgid
 
+from zope.event import notify
 from zope.interface import implements
 from zope.exceptions import NotFoundError
 from zope.event import notify
@@ -106,6 +107,12 @@ class Bug(SQLBase):
         result = BugTask.select("bug=%s" % sqlvalues(self.id))
         return sorted(result, key=bugtask_sort_key)
 
+    @property
+    def initial_message(self):
+        """See IBug."""
+        messages = sorted(self.messages, key=lambda ob: ob.id)
+        return messages[0]
+
     def followup_subject(self):
         return 'Re: '+ self.title
 
@@ -174,6 +181,7 @@ class Bug(SQLBase):
             rfc822msgid=make_msgid('malone'), subject=subject)
         chunk = MessageChunk(messageID=msg.id, content=content, sequence=1)
         bugmsg = BugMessage(bug=self, message=msg)
+        notify(SQLObjectCreatedEvent(bugmsg, user=owner))
         return msg
 
     def linkMessage(self, message):

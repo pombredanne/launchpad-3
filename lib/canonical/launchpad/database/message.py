@@ -88,33 +88,29 @@ class Message(SQLBase):
         return '\n\n'.join(bits)
 
 
-def get_parent_msgid(parsed_message):
-    """Returns the message id the mail was a reply to.
+def get_parent_msgids(parsed_message):
+    """Returns a list of message ids the mail was a reply to.
 
-    If it can't be identified, None is returned.
+        >>> get_parent_msgids({'In-Reply-To': '<msgid1>'})
+        ['<msgid1>']
 
-        >>> get_parent_msgid({'In-Reply-To': '<msgid1>'})
-        '<msgid1>'
+        >>> get_parent_msgids({'References': '<msgid1> <msgid2>'})
+        ['<msgid1>', '<msgid2>']
 
-        >>> get_parent_msgid({'References': '<msgid1> <msgid2>'})
-        '<msgid2>'
+        >>> get_parent_msgids({'In-Reply-To': '<msgid1> <msgid2>'})
+        ['<msgid1>', '<msgid2>']
 
-        >>> get_parent_msgid({'In-Reply-To': '<msgid1> <msgid2>'})
-        '<msgid2>'
+        >>> get_parent_msgids({'In-Reply-To': '', 'References': ''})
+        []
 
-        >>> get_parent_msgid({'In-Reply-To': '', 'References': ''}) is None
-        True
-
-        >>> get_parent_msgid({}) is None
-        True
+        >>> get_parent_msgids({})
+        []
     """
     for name in ['In-Reply-To', 'References']:
         if parsed_message.has_key(name):
-            msgids = parsed_message[name].split()
-            if len(msgids) > 0:
-                return parsed_message.get(name).split()[-1]
+            return parsed_message.get(name).split()
 
-    return None
+    return []
 
 
 class MessageSet:
@@ -129,7 +125,8 @@ class MessageSet:
     def fromText(self, subject, content, owner=None):
         """See IMessageSet."""
         rfc822msgid = make_msgid("launchpad")
-        message = Message(subject=subject, rfc822msgid=rfc822msgid, owner=owner)
+        message = Message(
+            subject=subject, rfc822msgid=rfc822msgid, owner=owner)
         chunk = MessageChunk(message=message, sequence=1, content=content)
         return message
 
@@ -140,7 +137,7 @@ class MessageSet:
 
     def fromEmail(self, email_message, owner=None, filealias=None,
             parsed_message=None, distribution=None,
-            create_missing_persons=False):
+            create_missing_persons=False, fallback_parent=None):
         """See IMessageSet.fromEmail."""
         # It does not make sense to handle Unicode strings, as email
         # messages may contain chunks encoded in differing character sets.
@@ -236,16 +233,20 @@ class MessageSet:
                 if owner is None:
                     raise UnknownSender(senderemail)
 
-        # get the parent email, if needed and available in the db
-        parent_msgid = get_parent_msgid(parsed_message)
-        if parent_msgid is None:
-            parent = None
-        else:
+        # Get the parent of the message, if available in the db. We'll
+        # go through all the message's parents until we find one that's
+        # in the db.
+        parent = None
+        for parent_msgid in reversed(get_parent_msgids(parsed_message)):
             try:
                 # we assume it's the first matching message
                 parent = self.get(parent_msgid)[0]
+                break
             except NotFoundError:
-                parent = None
+                pass
+
+        if parent is None:
+            parent = fallback_parent
 
         # figure out the date of the message
         try:

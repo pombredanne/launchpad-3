@@ -86,6 +86,8 @@ class IBug(Interface, IMessageTarget):
     displayname = TextLine(title=_("Text of the form 'Bug #X"),
         readonly=True)
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
+    initial_message = Attribute(
+        "The message that was specified when creating the bug")
     bugtasks = Attribute('BugTasks on this bug, sorted upstream, then '
         'ubuntu, then other distroreleases.')
     productinfestations = Attribute('List of product release infestations.')

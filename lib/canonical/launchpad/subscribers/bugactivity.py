@@ -134,7 +134,7 @@ def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
 
 def record_product_task_added(product_task, object_created_event):
     getUtility(IBugActivitySet).new(
-        bug=product_task.bugID,
+        bug=product_task.bug,
         datechanged=UTC_NOW,
         person=object_created_event.user,
         whatchanged='bug',
@@ -160,7 +160,7 @@ def record_package_infestation_added(package_infestation, object_created_event):
         package_infestation.sourcepackagerelease.sourcepackagename.name,
         package_infestation.sourcepackagerelease.version)
     getUtility(IBugActivitySet).new(
-        bug=package_infestation.bugID,
+        bug=package_infestation.bug,
         datechanged=UTC_NOW,
         person=package_infestation.creatorID,
         whatchanged="bug",
@@ -190,7 +190,7 @@ def record_product_infestation_added(product_infestation, object_created_event):
         product_infestation.productrelease.product.name,
         product_infestation.productrelease.version)
     getUtility(IBugActivitySet).new(
-        bug=product_infestation.bugID,
+        bug=product_infestation.bug,
         datechanged=UTC_NOW,
         person=product_infestation.creatorID,
         whatchanged="bug",

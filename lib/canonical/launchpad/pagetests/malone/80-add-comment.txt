@@ -14,7 +14,7 @@ email.
   0
 
   >>> print http(r"""
-  ... POST /malone/bugs/2/+messages/+new HTTP/1.1
+  ... POST /malone/bugs/2/+addmessage HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 78
   ... Content-Type: application/x-www-form-urlencoded
@@ -23,7 +23,7 @@ email.
   ... field.subject=test+comment+subject&field.content=test+comment&UPDATE_SUBMIT=Post+Comment""")
   HTTP/1.1 303 See Other
   ...
-          <h1>Add a comment</h1>
+          <h1>Add Message or Comment</h1>
   ...
 
 

@@ -14,7 +14,7 @@ from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.interfaces import (
         IProduct, IDistribution, IDistroRelease, IPersonSet,
         ISourcePackage, IBugEmailCommand, IBugEditEmailCommand, IBugSet,
-        ILaunchBag, IBugTaskSet, BugTaskSearchParams, IBugTarget)
+        ILaunchBag, IBugTaskSet, BugTaskSearchParams, IBugTarget, IMessageSet)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
@@ -99,18 +99,23 @@ class EmailCommand:
         self.string_args += [sub_command.name] + sub_command.string_args
 
 
-# XXX: Add docstrings to all classes and methods.
-#      -- Bjorn Tillenius, 2005-08-18
 class BugEmailCommand(EmailCommand):
+    """Creates new bug, or returns an existing one."""
     implements(IBugEmailCommand)
 
     _numberOfArguments = 1
 
-    def execute(self, message):
+    def execute(self, parsed_msg, filealias):
+        """See IBugEmailCommand."""
         self._ensureNumberOfArguments()
         bugid = self.string_args[0]
 
         if bugid == 'new':
+            message = getUtility(IMessageSet).fromEmail(
+                parsed_msg.as_string(),
+                owner=getUtility(ILaunchBag).user,
+                filealias=filealias,
+                parsed_message=parsed_msg)
             bug = getUtility(IBugSet).createBug(
                 msg=message,
                 title=message.title,
@@ -123,8 +128,13 @@ class BugEmailCommand(EmailCommand):
 
 
 class EditEmailCommand(EmailCommand):
+    """Helper class for commands that edits the context.
+
+    It makes sure that the correct events are notified.
+    """
 
     def execute(self, context, current_event):
+        """See IEmailCommand."""
         self._ensureNumberOfArguments()
         args = self.convertArguments()
         context_snapshot = Snapshot(
@@ -146,6 +156,8 @@ class EditEmailCommand(EmailCommand):
 
 
 class PrivateEmailCommand(EditEmailCommand):
+    """Marks a bug public or private."""
+
     implements(IBugEditEmailCommand)
 
     _numberOfArguments = 1
@@ -162,9 +174,12 @@ class PrivateEmailCommand(EditEmailCommand):
 
 
 class SubscribeEmailCommand(EmailCommand):
+    """Subscribes someone to the bug."""
+
     implements(IBugEditEmailCommand)
 
     def execute(self, bug, current_event):
+        """See IEmailCommand."""
         string_args = self.string_args
         # preserve compatibility with the original command that let you
         # specify a subscription type
@@ -206,10 +221,12 @@ class SubscribeEmailCommand(EmailCommand):
 
 
 class UnsubscribeEmailCommand(EmailCommand):
+    """Unsubscribes someone from the bug."""
 
     implements(IBugEditEmailCommand)
 
     def execute(self, bug, current_event):
+        """See IEmailCommand."""
         string_args = self.string_args
         if len(string_args) == 1:
             person_name_or_email = string_args.pop()
@@ -248,10 +265,13 @@ class TitleEmailCommand(EditEmailCommand):
 
 
 class AffectsEmailCommand(EditEmailCommand):
+    """Either creates a new task, or edits an existing task."""
+
     implements(IBugEditEmailCommand)
     _subCommandNames = ['status', 'severity', 'assignee']
 
     def execute(self, bug, current_event):
+        """See IEmailCommand."""
         try:
             path = self.string_args.pop(0)
         except IndexError:
@@ -352,6 +372,8 @@ class AffectsEmailCommand(EditEmailCommand):
 
 
 class AssigneeEmailCommand(EmailCommand):
+    """Assigns someone to the bug."""
+
     implements(IBugEditEmailCommand)
 
     _numberOfArguments = 1
@@ -371,6 +393,17 @@ class AssigneeEmailCommand(EmailCommand):
 
 
 class DBSchemaEditEmailCommand(EditEmailCommand):
+    """Helper class for edit DBSchema attributes.
+
+    Subclasses should set 'dbschema' to the correct schema.
+
+    For example, if context.foo can be assigned to values in
+    FooDBSchema, the follwing command class could be created:
+
+        class FooEmailCommand(DBSchemaEditEmailCommand):
+            dbschema = FooDBSchema
+    """
+
     implements(IBugEditEmailCommand)
 
     _numberOfArguments = 1
