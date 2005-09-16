@@ -1,9 +1,4 @@
-<div class="portlet">
-
-  <h4>Actions:</h4>
-
-  <div class="portletBody">
-    <div class="portletContent">
+<div class="portlet portletBody portletContent">
       <ul>
         <li class="edit">
           <a href="+edit">Edit Details</a>
@@ -18,7 +13,4 @@
           <a href="+export">Download translations</a>
         </li>
       </ul>
-
-    </div>
-  </div>
 </div>

@@ -1,13 +1,5 @@
-<div class="portlet">
-
-  <h4>actions:</h4>
-
-  <div class="portletBody portletContent">
-
+<div class="portlet portletBody portletContent">
     <ul>
       <li class="edit"><a href="+edit">Edit Milestone</a></li>
     </ul>
-	
-  </div>
-
 </div>

@@ -7,17 +7,10 @@
 
 <metal:rightportlets fill-slot="portlets_two">
 
-<div class="portlet">
-
-    <h4>Actions:</h4>
-
-    <div class="portletBody">
-        <div class="portletContent">
+<div class="portlet portletBody portletContent">
           <ul>
-            <li class="add"><a href="+add">Add a new template name.</li>
+            <li class="add"><a href="+add">New Template Name</li>
           </ul>
-        </div>
-    </div>
 </div>
 
 </metal:rightportlets>

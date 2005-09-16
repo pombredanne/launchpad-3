@@ -1,10 +1,4 @@
-<div class="portlet">
-
-  <h4>Actions:</h4>
-
-  <div class="portletBody">
-
-    <div class="portletContent">
+<div class="portlet portletBody portletContent">
 
       <ul>
         <li class="languages">
@@ -26,10 +20,6 @@
           <a href="../">View Template</a>
         </li>
       </ul>
-
-    </div>
-
-  </div>
 
 </div>
 

@@ -1,5 +1,7 @@
-<h4 style="padding-top: 0; margin-top: 0; clear: none">Actions:</h4>
-<div class="shipitPortletBody">
+<div
+  class="shipitPortlet shipitPortletBody"
+  style="padding: 1em; border: 1px solid #5b4832; background-color: #f6eecc;"
+>
   <ul><base href="">
     <li class="info"><a href="/requests">See Current Requests</a></li>
     <li class="edit"><a href="/standardoptions">Edit Standard Options</a></li>

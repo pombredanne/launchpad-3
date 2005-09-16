@@ -50,8 +50,9 @@
     <resource name="green-bar.png" file="../images/green-bar.png" />
     <resource name="hackergotchi" file="../images/nobody.png" />
     <resource name="info.gif" file="../images/info.gif" />
-    <resource name="info_icon.gif" file="../images/info_icon.gif" />
     <resource name="info.png" file="../images/info.png" />
+    <resource name="info_icon.gif" file="../images/info_icon.gif" />
+    <resource name="list" file="../images/info.png" />
     <resource name="languages.gif" file="../images/languages.gif" />
     <resource name="link" file="../images/link_icon.gif" />
     <resource name="link_icon.gif" file="../images/link_icon.gif" />

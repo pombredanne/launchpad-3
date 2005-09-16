@@ -445,6 +445,9 @@ ul.info>li, li.info {
 ul.languages>li, li.languages {
   list-style-image: url(/++resource++languages.gif);
 }
+ul.list>li, li.list {
+  list-style-image: url(/++resource++list);
+}
 ul.locked>li, li.locked {
   list-style-image: url(/++resource++lock_icon.gif);
 }
@@ -456,6 +459,9 @@ ul.menu>li, li.menu {
 }
 ul.milestone>li, li.milestone {
   list-style-image: url(/++resource++target);
+}
+ul.news>li, li.news {
+  list-style-image: url(/++resource++news);
 }
 ul.packages>li, li.packages, ul.products>li, li.products {
   list-style-image: url(/++resource++product_icon.gif);

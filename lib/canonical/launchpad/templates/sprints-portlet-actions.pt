@@ -1,13 +1,7 @@
-<div class="portlet">
-
-  <h4>Actions:</h4>
-
-  <div class="portletBody portletContent">
+<div class="portlet portletBody portletContent">
 
     <ul>
       <li class="add"><a href="+new">Register New Meeting</a></li>
     </ul>
-
-  </div>
 
 </div>

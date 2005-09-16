@@ -1,7 +1,4 @@
-<div class="portlet">
-    <h4>Actions:</h4>
-
-    <div class="portletBody portletContent">
+<div class="portlet portletBody portletContent">
         <ul>
             <li class="info"><a href=".">Series Overview</a></li>
             <li class="info"><a href="+specs">Show Specifications</a></li>
@@ -32,5 +29,4 @@
                 <a href="+review">Review Series Details</a>
             </li>
         </ul>
-    </div>
 </div>

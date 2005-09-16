@@ -1,7 +1,4 @@
-<div class="portlet">
-  <h4>Actions:</h4>
-  <div class="portletBody portletContent">
-
+<div class="portlet portletBody portletContent">
     <ul>
       <li class="add">
         <a tal:attributes="href string:${context/fmt:url}/+add">
@@ -21,5 +18,4 @@
         </li>
       </tal:block>
     </ul>
-  </div>
 </div>

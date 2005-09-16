@@ -9,18 +9,19 @@
 
   <h1>ShipIt Requests</h1>
 
-  <div class="sidebar">
-    <div tal:replace="structure context/@@+portlet-actions" />
-  </div>
+  <table>
+  <tbody>
+  <tr>
+  <td width="80%">
 
   <form name="search" action="" method="POST">
   <table>
+    <tbody>
     <tr>
       <td align="right">
         <label>Show:</label>
       </td>
       <td>
-        &nbsp;
         <select name="statusfilter">
           <option value="pending" 
                   tal:attributes="selected python: view.selectedStatus == 'pending'">
@@ -35,12 +36,14 @@
                   tal:attributes="selected python: view.selectedStatus == 'all'">
             All</option>
         </select>
+        requests
       </td>
-
+    </tr>
+    <tr>
+      <td align="right">
+        <label>for:</label>
+      </td>
       <td>
-        &nbsp;
-        requests for
-        &nbsp;
         <select name="typefilter">
           <option value="custom" 
                   tal:attributes="selected python: view.selectedType == 'custom'">
@@ -54,14 +57,12 @@
             <span tal:replace="request/description" /></option>
         </select>
       </td>
-      
-      <td>
-        &nbsp;
-        <input type="submit" value="Change" name="CHANGE" />
-      </td>
     </tr>
     <tr>
-      <td>&nbsp;</td>
+      <td></td>
+      <td>
+        <input type="submit" value="Show" name="CHANGE" />
+      </td>
     </tr>
   </table>
   </form>
@@ -112,6 +113,16 @@
 
     </tal:block>
   </tal:block>
+
+  </td>
+  <td
+    width="20%"
+    style="vertical-align: top;"
+    tal:content="structure context/@@+portlet-actions"
+  />
+  </tr>
+  </table>  
+  
 </div>
 
 </body>

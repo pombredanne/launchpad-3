@@ -31,7 +31,6 @@
         }
         /* Undo Ubuntu's CSS treachery */
         .shipitPortlet {
-            margin-top: 2em;
             font-size: 80%;
          }
         .shipitPortlet .shipitPortletBody {

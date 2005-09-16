@@ -1,13 +1,5 @@
-<div class="portlet">
-
-  <h4>actions:</h4>
-
-  <div class="portletBody portletContent">
-
+<div class="portlet portletBody portletContent">
     <ul>
-      <li class="add"><a href="+newbugtracker">Register New Bugtracker</a></li>
+      <li class="add"><a href="+newbugtracker">Register Bug Tracker</a></li>
     </ul>
-	
-  </div>
-
 </div>

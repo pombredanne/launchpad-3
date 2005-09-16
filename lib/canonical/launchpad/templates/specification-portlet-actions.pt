@@ -1,9 +1,4 @@
-<div class="portlet">
-
-  <h4>actions:</h4>
-
-  <div class="portletBody portletContent">
-
+<div class="portlet portletBody portletContent">
     <ul>
       <li class="edit"><a href="+edit">Edit Summary and Title</a></li>
       <li class="edit"><a href="+people">Change People</a></li>
@@ -32,7 +27,4 @@
       <li tal:condition="context/required:launchpad.Admin"
           class="edit"><a href="+admin">Administer</a></li>
     </ul>
-	
-  </div>
-
 </div>

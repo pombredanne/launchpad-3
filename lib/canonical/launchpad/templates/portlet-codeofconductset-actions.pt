@@ -1,14 +1,23 @@
-<div class="portlet">
-    <h4>Codes of Conduct Actions:</h4>
-
-    <div class="portletBody">
-        <div class="portletContent even">
-	<ul>
-	   <li class="edit"
-               tal:condition="context/required:launchpad.Admin">
-               <a href="console">Administrator Console</a>
-           </li>
-	</ul>	
-        </div>
-    </div>
+<div
+  tal:condition="context/required:launchpad.Admin"
+  class="portlet portletBody portletContent"
+>
+<tal:XXX condition="nothing">
+  mpt 20050817: Need to show the portlet also if not logged in at all,
+  otherwise the second <li></li> below is dead code.
+</tal:XXX>
+  <ul>
+    <li
+      tal:condition="context/required:launchpad.Admin"
+      class="edit"
+    >
+      <a href="console">Administrator Console</a>
+    </li>
+    <li
+      tal:condition="not: context/required:launchpad.Admin"
+      class="locked"
+    >
+      <a href="console">Administrator Console</a>
+    </li>
+  </ul>	
 </div>
