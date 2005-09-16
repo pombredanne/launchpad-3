@@ -1,0 +1,49 @@
+
+The LibrarianFormatter works just like a normal logger.Formatter if there
+is no Librarian available or active
+
+>>> from canonical.launchpad.scripts.logger import LibrarianFormatter
+
+This is a helper to quickly construct a Logger instance with a particular
+formatter. Each call generates a unique Logger.
+
+>>> _count = 0
+>>> def make_logger(formatter_class):
+...     global _count
+...     _count += 1
+...     logger = logging.getLogger('log%d' % _count)
+...     output = StringIO()
+...     handler = logging.StreamHandler(output)
+...     # Note - no timestamp so we can make valid comparisons!
+...     formatter = formatter_class(fmt='%(levelname)s %(message)s')
+...     handler.setFormatter(formatter)
+...     logger.addHandler(handler)
+...     logger.setLevel(logging.DEBUG)
+...     return logger, output
+
+Now setup two identical Logger instances except for their formatter
+
+>>> normal_log, normal_out= make_logger(logging.Formatter)
+>>> librarian_log, librarian_out = make_logger(LibrarianFormatter)
+
+Output from the standard formatter should match the output from
+LibrianFormatter at this stage, as we have no component architecture
+loaded and no Librarian running.
+
+First, create an exception we can reuse
+
+>>> try:
+...     raise RuntimeError('An Exception')
+... except RuntimeError:
+...     exception = sys.exc_info()
+
+Now send some identical log messages to the loggers.
+
+>>> for log in (normal_log, librarian_log):
+...     log.info('Some crap')
+...     log.error('Oops!', exc_info=exception)
+...     log.error('Error %d occured', 42)
+>>> normal_out.getvalue() == librarian_out.getvalue()
+True
+
+

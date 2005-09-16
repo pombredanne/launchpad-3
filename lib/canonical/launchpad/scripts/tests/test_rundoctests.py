@@ -11,10 +11,9 @@ def test_suite():
     suite.addTest(DocTestSuite('canonical.launchpad.scripts.rosetta'))
     suite.addTest(DocTestSuite('canonical.launchpad.scripts.sort_sql'))
     suite.addTest(DocTestSuite('canonical.launchpad.scripts.builddmaster'))
-    suite.addTest(DocTestSuite('canonical.launchpad.scripts'))
+    suite.addTest(DocTestSuite('canonical.launchpad.scripts.logger'))
     return suite
 
 if __name__ == '__main__':
-    runner = unittest.TextTestRunner()
-    runner.run(test_suite())
+    unittest.main(defaultTest='test_suite')
 

@@ -31,6 +31,12 @@ class LibrarianTestSetup(TacTestSetup):
     'Copyright 2004-2005 Canonical Ltd.\n'
 
     >>> LibrarianTestSetup().tearDown()
+
+    Make sure it is not running
+    >>> urlopen('http://%s:%d/' % (host, port))
+    Traceback (most recent call last):
+    ...
+    IOError: ...
     
     And again for luck.
 
