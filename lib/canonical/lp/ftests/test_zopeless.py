@@ -145,7 +145,7 @@ class TestZopeless(unittest.TestCase):
         MoreBeer(name='Victoria Bitter')
         try:
             MoreBeer(name='Victoria Bitter')
-        except psycopg.IntegrityError:
+        except psycopg.DatabaseError:
             pass
         else:
             self.fail('Unique constraint was not triggered')

@@ -22,6 +22,12 @@
 
 /* Launchpad classes */
 
+.highlighted {
+  background-color: #f7f9fa;
+  border: 1px dotted #8cacbb;
+  padding: 0.5em;
+}
+
 .rosettaTile {
   display: block;
   width: 40%;
@@ -421,8 +427,8 @@ ul.bug.remote>li, li.bug.remote {
 ul.bugs>li, li.bugs {
   list-style-image: url(/++resource++bugs);
 }
-ul.cveref>li, li.cveref {
-    list-style-image: url(/++resource++cve.ico);
+ul.cve>li, li.cve, {
+    list-style-image: url(/++resource++cve);
 }
 ul.document>li, li.document {
   list-style-image: url(/++resource++document_icon.gif);

@@ -83,6 +83,8 @@ class IBug(Interface, IMessageTarget):
         "have subscribed anyone who needs to see this bug."),
         default=False)
 
+    displayname = TextLine(title=_("Text of the form 'Bug #X"),
+        readonly=True)
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
     bugtasks = Attribute('BugTasks on this bug, sorted upstream, then '
         'ubuntu, then other distroreleases.')
@@ -90,7 +92,8 @@ class IBug(Interface, IMessageTarget):
     packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
     externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
-    cverefs = Attribute('CVE references for this bug')
+    cves = Attribute('CVE entries related to this bug.')
+    cve_links = Attribute('LInks between this bug and CVE entries.')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
     duplicates = Attribute(
         'MultiJoin of the bugs which are dups of this one')
@@ -126,6 +129,20 @@ class IBug(Interface, IMessageTarget):
     def addWatch(bugtracker, remotebug, owner):
         """Create a new watch for this bug on the given remote bug and bug
         tracker, owned by the person given as the owner.
+        """
+
+    # CVE related methods
+    def linkCVE(cve, user=None):
+        """Ensure that this CVE is linked to this bug."""
+
+    def unlinkCVE(cve, user=None):
+        """Ensure that any links between this bug and the given CVE are
+        removed.
+        """
+
+    def findCvesInText(self, bug, text):
+        """Find any CVE references in the given text, make sure they exist
+        in the database, and are linked to this bug.
         """
 
 
@@ -196,12 +213,12 @@ class IBugDelta(Interface):
     bugwatch = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
         "IBugWatch's.")
-    cveref = Attribute(
-        "A dict with two keys, 'old' and 'new', or None. Key values are "
-        "ICVERef's.")
     attachment = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
         "IBugAttachment's.")
+    cve = Attribute(
+        "A dict with two keys, 'old' and 'new', or None. Key values are "
+        "ICve's")
     added_bugtasks = Attribute(
         "A list or tuple of IBugTasks, one IBugTask, or None.")
     bugtask_deltas = Attribute(

@@ -166,11 +166,9 @@ def bug_attachment_edit(context, view):
 
 bug_attachments = ContextId('Malone Bug Attachments for Bug #%s')
 
-bug_cveref_add = LaunchbagBugID("Bug #%d - Add CVE Reference")
+bug_cve = LaunchbagBugID("Bug #%d - Add CVE Reference")
 
-def bug_cveref_edit(context, view):
-    return "Bug #%d - Edit CVE Reference (%s)" % (
-        context.bug.id, context.cveref)
+bug_distrotask = ContextId('Request fix of bug #%s in additional distribution')
 
 bug_edit = BugPageTitle()
 
@@ -186,11 +184,15 @@ bug_mark_as_duplicate = ContextId('Bug #%d - Mark as Duplicate')
 
 bug_references = ContextId('External references for bug #%s')
 
+bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE Reference")
+
 bug_secrecy = ContextId('Set secrecy for bug #%s')
 
 bug_secrecy = ContextId('Bug #%d - Set Bug Secrecy')
 
 bug_subscription = ContextId('Subscribe or unsubscribe from Bug #%s')
+
+bug_upstreamtask = ContextId('Request fix of bug #%s in additional application')
 
 bug_watch_add = LaunchbagBugID('Bug #%d - Add an External Bug Watch')
 
@@ -260,6 +262,16 @@ codeofconduct_index = ContextTitle('%s')
 
 codeofconduct_list = 'Codes of Conduct in Launchpad'
 
+cveset_all = 'All CVE Entries Registered in the Launchpad'
+
+cveset_index = 'Launchpad CVE Tracker'
+
+cve_index = ContextDisplayName('%s')
+
+cve_bug = ContextDisplayName('Link %s to a Malone  Bug')
+
+cve_removebug = ContextDisplayName('Remove Link between %s and Malone Bug')
+
 def cvereference_index(context, view):
     return 'Malone Bug #%s CVE Reference' % context.bug.id
 
@@ -307,6 +319,8 @@ distroarchrelease_pkgsearch = 'Binary Package Search'
 
 distrorelease_bugs = ContextTitle('Release %s: Bugs')
 
+distrorelease_cvereport = ContextDisplayName('CVE Report for %s')
+
 def distrorelease_deliver(context, view):
     return 'Generate ISO image for %s' % context.release.title
 
@@ -330,8 +344,7 @@ def distrorelease_sources(context, view):
         context.release.title
         )
 
-distrorelease_translations = ContextTitle(
-    'Rosetta Translation Templates for %s')
+distrorelease_translations = ContextTitle('Translation of %s')
 
 distroreleaselanguage = ContextTitle('%s')
 
@@ -390,6 +403,8 @@ launchpad_feedback = 'Help us improve Launchpad'
 launchpad_forbidden = 'Forbidden'
 
 launchpad_forgottenpassword = 'Forgot Your Launchpad Password?'
+
+template_form = 'XXX PLEASE DO NOT USE TEMPLATE XXX'
 
 launchpad_join = 'Join the Launchpad'
 
@@ -478,6 +493,8 @@ person_editemails = ContextDisplayName('Edit %s Email Addresses')
 
 person_editgpgkeys = ContextDisplayName('%s GPG Keys')
 
+person_edithomepage = ContextDisplayName('Edit %s Home Page')
+
 person_editircnicknames = ContextDisplayName('%s IRC Nicknames')
 
 person_editjabberids = ContextDisplayName('%s Jabber IDs')
@@ -487,6 +504,8 @@ person_editsshkeys = ContextDisplayName('%s SSH Keys')
 person_editwikinames = ContextDisplayName('%s Wiki Names')
 
 # person_foaf is an rdf file
+
+person_images = ContextDisplayName('%s Hackergotchi and Emblem')
 
 person_index = ContextDisplayName('%s: Launchpad Overview')
 
@@ -584,7 +603,7 @@ productseries_translations = ContextTitle(
 
 productseries_ubuntupkg = 'Ubuntu Source Package'
 
-products_index = 'Launchpad product registry'
+products_index = 'Launchpad Product / Applications Registry'
 
 products_search = 'Launchpad: Advanced Upstream Product Search'
 

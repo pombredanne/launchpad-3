@@ -1,0 +1,9 @@
+<div class="portlet">
+  <h4>Actions:</h4>
+  <div class="portletBody portletContent">
+    <ul>
+      <li class="add"><a href="/products/+new">Register a New Product</a></li>
+      <li class="list"><a href="/products/+all">List All Products</a></li>
+    </ul>
+  </div>
+</div>

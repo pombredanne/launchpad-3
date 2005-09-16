@@ -69,7 +69,8 @@ class Distribution(SQLBase):
     def open_cve_bugtasks(self):
         """See IDistribution."""
         result = BugTask.select("""
-           CVERef.bug = Bug.id AND
+            CVE.id = BugCve.cve AND
+            BugCve.bug = Bug.id AND
             BugTask.bug = Bug.id AND
             BugTask.distribution=%s AND
             BugTask.status IN (%s, %s)
@@ -77,7 +78,7 @@ class Distribution(SQLBase):
                 self.id,
                 BugTaskStatus.NEW,
                 BugTaskStatus.ACCEPTED),
-            clauseTables=['Bug', 'CVERef'],
+            clauseTables=['Bug', 'Cve', 'BugCve'],
             orderBy=['-severity', 'datecreated'])
         return result
 
@@ -85,7 +86,8 @@ class Distribution(SQLBase):
     def resolved_cve_bugtasks(self):
         """See IDistribution."""
         result = BugTask.select("""
-            CVERef.bug = Bug.id AND
+            CVE.id = BugCve.cve AND
+            BugCve.bug = Bug.id AND
             BugTask.bug = Bug.id AND
             BugTask.distribution=%s AND
             BugTask.status IN (%s, %s, %s)
@@ -94,7 +96,7 @@ class Distribution(SQLBase):
                 BugTaskStatus.REJECTED,
                 BugTaskStatus.FIXED,
                 BugTaskStatus.PENDINGUPLOAD),
-            clauseTables=['Bug', 'CVERef'],
+            clauseTables=['Bug', 'Cve', 'BugCve'],
             orderBy=['-severity', 'datecreated'])
         return result
 

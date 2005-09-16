@@ -414,50 +414,13 @@ out to the bug notification recipient list. Let's create a CVE ref and
 attach it to the firefox_crashes bug that we've been using throughout
 this document:
 
-    >>> from canonical.launchpad.interfaces import ICVERefSet
-    >>> from canonical.lp.dbschema import CVEState
-    >>> cveref = getUtility(ICVERefSet).createCVERef(
-    ...     bug = 1, cveref = "2004-0276", cvestate=CVEState.ENTRY,
-    ...     title="test", owner = 12)
-    >>> cveref_added = SQLObjectCreatedEvent(cveref)
-    >>> notify(cveref_added)
-
-    >>> transaction.commit()
-
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
-    4
-    >>> all_to_addrs = [
-    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
-    >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
-    >>> print from_addr
-    Sample Person via Malone <...>
-    >>> msg = email.message_from_string(raw_message)
-    >>> msg["Subject"]
-    '[Bug 1] Firefox does not support SVG'
-
-    >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/1
-    ...
-
-    >>> stub.test_emails = []
-
-Next, let's take a look at what the edit notification looks like:
-
-    >>> cveref_before_modification = MockObject()
-    >>> cveref_before_modification.displayname = cveref.displayname
-    >>> cveref_before_modification.cveref = cveref.cveref
-    >>> cveref_before_modification.title = cveref.title
-    >>> cveref.title = "a much better title"
-    >>> cveref_edited = SQLObjectModifiedEvent(
-    ...     object_before_modification = cveref_before_modification,
-    ...     object = cveref,
-    ...     edited_fields = ("title",))
-    >>> notify(cveref_edited)
+    >>> from canonical.launchpad.interfaces import ICveSet
+    >>> from canonical.lp.dbschema import CveStatus
+    >>> cve = getUtility(ICveSet).new(sequence="2004-0276",
+    ...     description="a brief CVE description", status=CveStatus.ENTRY)
+    >>> from canonical.launchpad.database import Bug
+    >>> bug = Bug.get(1)
+    >>> bugcve = cve.linkBug(bug) # note this creates the event and notifies
 
     >>> transaction.commit()
 

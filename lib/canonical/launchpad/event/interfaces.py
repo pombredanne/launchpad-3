@@ -12,6 +12,11 @@ class ISQLObjectCreatedEvent(IObjectCreatedEvent):
     user = Attribute("The user who created the object.")
 
 
+class ISQLObjectDeletedEvent(IObjectEvent):
+    """An SQLObject is being deleted."""
+    user = Attribute("The user who is making this change.")
+
+
 class ISQLObjectModifiedEvent(IObjectModifiedEvent):
     """An SQLObject has been modified."""
 

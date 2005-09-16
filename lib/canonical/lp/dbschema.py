@@ -43,7 +43,7 @@ __all__ = (
 'BugTaskSeverity',
 'BuildStatus',
 'CodereleaseRelationships',
-'CVEState',
+'CveStatus',
 'DistributionReleaseStatus',
 'EmailAddressStatus',
 'GPGKeyAlgorithm',
@@ -472,7 +472,7 @@ class BugTrackerType(DBSchema):
         """)
 
 
-class CVEState(DBSchema):
+class CveStatus(DBSchema):
     """The Status of this item in the CVE Database
 
     When a potential problem is reported to the CVE authorities they assign
@@ -504,6 +504,7 @@ class CVEState(DBSchema):
         defines the problem, or the original candidate was never promoted to
         "Entry" status.
         """)
+
 
 class ProjectStatus(DBSchema):
     """A Project Status

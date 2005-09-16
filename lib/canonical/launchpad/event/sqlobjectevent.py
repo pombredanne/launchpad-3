@@ -3,15 +3,17 @@
 __metaclass__ = type
 
 __all__ = ['SQLObjectCreatedEvent',
+           'SQLObjectDeletedEvent',
            'SQLObjectModifiedEvent',
-           'SQLObjectToBeModifiedEvent']
+           'SQLObjectToBeModifiedEvent',
+           ]
 
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.event.interfaces import (
     ISQLObjectModifiedEvent, ISQLObjectToBeModifiedEvent,
-    ISQLObjectCreatedEvent)
+    ISQLObjectCreatedEvent, ISQLObjectDeletedEvent)
 from canonical.launchpad.interfaces import ILaunchBag
 
 class SQLObjectEventBase:
@@ -29,6 +31,12 @@ class SQLObjectCreatedEvent(SQLObjectEventBase):
     """See canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent."""
 
     implements(ISQLObjectCreatedEvent)
+
+
+class SQLObjectDeletedEvent(SQLObjectEventBase):
+    """See ISQLObjectDeletedEvent."""
+
+    implements(ISQLObjectDeletedEvent)
 
 
 class SQLObjectModifiedEvent(SQLObjectEventBase):

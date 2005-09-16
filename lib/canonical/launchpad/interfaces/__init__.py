@@ -27,6 +27,8 @@ from canonical.launchpad.interfaces.bugactivity import *
 from canonical.launchpad.interfaces.bugattachment import *
 from canonical.launchpad.interfaces.bugextref import *
 from canonical.launchpad.interfaces.bug import *
+from canonical.launchpad.interfaces.bugcve import *
+from canonical.launchpad.interfaces.buglink import *
 from canonical.launchpad.interfaces.bugmessage import *
 from canonical.launchpad.interfaces.bugsubscription import *
 from canonical.launchpad.interfaces.bugtask import *
@@ -36,7 +38,8 @@ from canonical.launchpad.interfaces.build import *
 from canonical.launchpad.interfaces.codeofconduct import *
 from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
-from canonical.launchpad.interfaces.cveref import *
+from canonical.launchpad.interfaces.cve import *
+from canonical.launchpad.interfaces.cvereference import *
 from canonical.launchpad.interfaces.distribution import *
 from canonical.launchpad.interfaces.distributionbounty import *
 from canonical.launchpad.interfaces.distroarchrelease import *

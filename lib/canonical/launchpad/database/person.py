@@ -66,6 +66,11 @@ class Person(SQLBase):
     familyname = StringCol(dbName='familyname', default=None)
     displayname = StringCol(dbName='displayname', notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
+    homepage_content = StringCol(default=None)
+    emblem = ForeignKey(dbName='emblem',
+        foreignKey='LibraryFileAlias', default=None)
+    hackergotchi = ForeignKey(dbName='hackergotchi',
+        foreignKey='LibraryFileAlias', default=None)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)

@@ -42,6 +42,9 @@
             name="activity"
             template="../templates/bug-activity.pt" />
         <browser:page
+            name="+listing-detailed"
+            template="../templates/bug-listing-detailed.pt" />
+        <browser:page
             name="+portlet-watch"
             template="../templates/bug-portlet-watch.pt" />
         <browser:page
@@ -175,6 +178,42 @@
       class="canonical.widgets.HiddenUserWidget" />
   </browser:addform>
 
+  <browser:addform
+    name="+distrotask"
+    for="canonical.launchpad.interfaces.IBug"
+    schema="canonical.launchpad.interfaces.IDistroBugTask"
+    class="canonical.launchpad.browser.bug.BugAddingView"
+    label="Request Fix in Additional Distribution"
+    fields="distribution sourcepackagename owner"
+    content_factory="canonical.launchpad.database.BugTaskFactory"
+    keyword_arguments="distribution sourcepackagename owner"
+    permission="launchpad.AnyPerson"
+    template="../templates/bug-distrotask.pt"
+    >
+    <browser:widget
+      field="owner"
+      class="canonical.widgets.HiddenUserWidget"
+      />
+  </browser:addform>
+
+  <browser:addform
+    name="+upstreamtask"
+    for="canonical.launchpad.interfaces.IBug"
+    schema="canonical.launchpad.interfaces.IUpstreamBugTask"
+    class="canonical.launchpad.browser.bug.BugAddingView"
+    label="Request Fix in Upstream App"
+    fields="product owner"
+    keyword_arguments="product owner"
+    content_factory="canonical.launchpad.database.BugTaskFactory"
+    arguments=""
+    permission="launchpad.AnyPerson"
+    template="../templates/bug-upstreamtask.pt"
+    >
+    <browser:widget
+        field="owner"
+        class="canonical.widgets.HiddenUserWidget" />
+  </browser:addform>
+
 
     <browser:view
         for="canonical.launchpad.interfaces.IBug"
@@ -185,6 +224,22 @@
         lp:url="malone/projects/$Bug.id/+messages">
         <defaultPage name="+index" />
     </browser:view>
+
+  <browser:page
+    name="+linkcve"
+    for="canonical.launchpad.interfaces.IBug"
+    class="canonical.launchpad.browser.CveLinkView"
+    permission="launchpad.AnyPerson"
+    template="../templates/bug-cve.pt">
+  </browser:page>
+
+  <browser:page
+    name="+unlinkcve"
+    for="canonical.launchpad.interfaces.IBug"
+    class="canonical.launchpad.browser.CveUnlinkView"
+    permission="launchpad.AnyPerson"
+    template="../templates/bug-removecve.pt">
+  </browser:page>
 
     <!-- BugSet -->
     <content class="canonical.launchpad.database.BugSet">

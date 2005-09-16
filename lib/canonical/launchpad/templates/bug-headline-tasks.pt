@@ -16,16 +16,16 @@
     <tal:request repeat="bugtask context/bugtasks">
     <tr>
       <td tal:condition="bugtask/required:launchpad.Edit">
-        <a
+        <a style="text-decoration: none;"
           tal:attributes="
             href string:${bugtask/fmt:url}/+edit;
             title string:To change the status or assignee, click here.
-          "
+            "
           tal:content="bugtask/targetname"
         />
       </td>
       <td tal:condition="not:bugtask/required:launchpad.Edit">
-        <a
+        <a style="text-decoration: none;"
           tal:attributes="
             href string:${bugtask/fmt:url};
             title string:To view status details, click here.
@@ -34,9 +34,15 @@
         />
       </td>
 
-      <td tal:content="bugtask/status/title"
-          tal:attributes="class string:status${bugtask/status/title}">
+      <td>
+        <span tal:content="bugtask/status/title"
+              tal:attributes="class string:status${bugtask/status/title}">
           $BugTask.status
+        </span>
+        <img tal:condition="bugtask/statusexplanation"
+             tal:attributes="title bugtask/statusexplanation"
+             src="/++resource++text"
+             />
       </td>
 
       <td tal:content="bugtask/severity/title"
@@ -44,14 +50,31 @@
         Critical
       </td>
 
-      <td tal:condition="bugtask/assignee">
-          <img src="/++resource++user.gif" alt="" />
-          <span tal:replace="bugtask/assignee/browsername">
-            assignee.browsername
-          </span>
-      </td>
-      <td tal:condition="not: bugtask/assignee">
-        &mdash;
+      <td>
+        <tal:has_watch condition="bugtask/bugwatch">
+          <img tal:condition="bugtask/assignee"
+               src="/++resource++user.gif" alt="" />
+          <img
+            alt="Linked to "
+            src="/++resource++arrowRight.gif"
+          />
+          <a style="text-decoration: none;"
+             tal:attributes="href bugtask/bugwatch/url">
+            <span tal:replace="bugtask/bugwatch/bugtracker/name">Zilla</span>
+            #<span tal:replace="bugtask/bugwatch/remotebug">123</span>
+          </a>
+        </tal:has_watch>
+        <tal:has_no_watch condition="not: bugtask/bugwatch">
+          <tal:has_assignee condition="bugtask/assignee">
+            <img src="/++resource++user.gif" alt="" />
+            <span tal:replace="bugtask/assignee/browsername">
+              assignee.browsername
+            </span>
+          </tal:has_assignee>
+          <tal:no_assignee condition="not: bugtask/assignee">
+            &mdash;
+          </tal:no_assignee>
+        </tal:has_no_watch>
       </td>
 
     </tr>
@@ -59,16 +82,10 @@
       tal:condition="bugtask/bugwatch"
       tal:define="watch bugtask/bugwatch"
       class="note"
-    >
-      <td colspan="4">
-        <img
-          alt="Linked to "
-          src="/++resource++arrowRight.gif"
-        />
-        <a tal:attributes="href watch/url">
-          <tal:bugtracker content="watch/bugtracker/name">Zilla</tal:bugtracker>
-          #<tal:bugid content="watch/remotebug">123</tal:bugid>
-        </a>
+      >
+      <td colspan="3">
+      </td>
+      <td>
       </td>
     </tr>
     </tal:request>
@@ -76,14 +93,12 @@
 
 </table>
 
-</tal:block>
-
 <div style="font-size: 80%; text-align: right; margin-bottom:1em;">
 
   Request fix:
   <span style="white-space: nowrap">
       <img src="/++resource++add.gif" alt="+" />
-      <a href="+upstreamtask"
+      <a tal:attributes="href string:${bug_url}/+upstreamtask"
          title="Mark this bug as occurring upstream">
         Upstream&hellip;
       </a>
@@ -91,10 +106,13 @@
 
   <span style="white-space: nowrap">
       <img src="/++resource++add.gif" alt="+" />
-      <a href="+distrotask"
+      <a tal:attributes="href string:${bug_url}/+distrotask"
          title="Mark this bug as occurring in a distro package">
         In Distribution&hellip;
       </a>
   </span>
 
 </div>
+
+</tal:block>
+

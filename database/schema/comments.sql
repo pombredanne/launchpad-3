@@ -77,12 +77,34 @@ COMMENT ON COLUMN BugTracker.contactdetails IS 'The contact details of the peopl
 COMMENT ON COLUMN BugTracker.baseurl IS 'The base URL for this bug tracker. Using our knowledge of the bugtrackertype, and the details in the BugWatch table we are then able to calculate relative URL\'s for relevant pages in the bug tracker based on this baseurl.';
 COMMENT ON COLUMN BugTracker.owner IS 'The person who created this bugtracker entry and who thus has permission to modify it. Ideally we would like this to be the person who coordinates the running of the actual bug tracker upstream.';
 
-/* CVERef */
 
-COMMENT ON TABLE CVERef IS 'This table stores CVE references for bugs. CVE is a way of tracking security problems across multiple vendor products.';
-COMMENT ON COLUMN CVERef.cveref IS 'This is the actual CVE number assigned to this specific problem.';
-COMMENT ON COLUMN CVERef.cvestate IS 'This is a dbschema enum which tells us the state (CVE or CAN) of the CVE problem report. It is defined in dbschema.CVEState';
-COMMENT ON COLUMN CVERef.owner IS 'This refers to the person who created the entry.';
+/* CVE */
+
+COMMENT ON TABLE CVE IS 'A CVE Entry. The formal database of CVE entries is available at http://cve.mitre.org/ and we sync that database into Launchpad on a regular basis.';
+COMMENT ON COLUMN CVE.sequence IS 'The official CVE entry number. It takes the form XXXX-XXXX where the first four digits are a year indicator, like 2004, and the latter four are the sequence number of the vulnerability in that year.';
+COMMENT ON COLUMN CVE.status IS 'The current status of the CVE. The values are documented in dbschema.CVEState, and are Entry, Candidate, and Deprecated.';
+COMMENT ON COLUMN CVE.datemodified IS 'The last time this CVE entry changed in some way - including addition or modification of references.';
+
+
+/* BugCve */
+
+COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone bug number, and a CVE entry.';
+
+
+/* CveReference */
+
+COMMENT ON TABLE CveReference IS 'A reference in the CVE system that shows what outside tracking numbers are associated with the CVE. These are tracked in the CVE database and extracted from the daily XML dump that we fetch.';
+COMMENT ON COLUMN CveReference.source IS 'The SOURCE of the CVE reference. This is a text string, like XF or BUGTRAQ or MSKB. Each string indicates a different kind of reference. The list of known types is documented on the CVE web site. At some future date we might turn this into an enum rather than a text, but for the moment we prefer to keep it fluid and just suck in what CVE gives us. This means that CVE can add new source types without us having to update our code.';
+COMMENT ON COLUMN CveReference.url IS 'The URL to this reference out there on the web, if it was present in the CVE database.';
+COMMENT ON COLUMN CveReference.content IS 'The content of the ref in the CVE database. This is sometimes a comment, sometimes a description, sometimes a bug number... it is not predictable.';
+
+
+/* CVERef OBSOLETE */
+
+COMMENT ON TABLE CVERefObsolete IS 'OBSOLETE: THIS TABLE IS PARKED AND WILL BE DELETED IN FAVOUR OF THE NEW CVE TABLE. This table stores CVE references for bugs. CVE is a way of tracking security problems across multiple vendor products.';
+COMMENT ON COLUMN CVERefObsolete.cveref IS 'This is the actual CVE number assigned to this specific problem.';
+COMMENT ON COLUMN CVERefObsolete.cvestate IS 'This is a dbschema enum which tells us the state (CVE or CAN) of the CVE problem report. It is defined in dbschema.CVEState';
+COMMENT ON COLUMN CVERefObsolete.owner IS 'This refers to the person who created the entry.';
 
 
 -- LaunchpadStatistic
@@ -537,11 +559,6 @@ COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.embargo IS 'The publishin
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
 COMMENT ON VIEW BinaryPackagePublishingHistory IS 'View on SecureBinaryPackagePublishingHistory that restricts access to embargoed entries';
 
--- PersonLanguage
-COMMENT ON TABLE PersonLanguage IS 'PersonLanguage: This table stores the preferred languages that a Person has, it''s used in Rosetta to select the languages that should be showed to be translated.';
-COMMENT ON COLUMN PersonLanguage.person IS 'This field is a reference to a Person object that has this preference.';
-COMMENT ON COLUMN PersonLanguage.language IS 'This field is a reference to a Language object that says that the Person associated to this row knows how to translate/understand this language.';
-
 -- soyuz views
 COMMENT ON VIEW VSourcePackageInDistro IS 'This view allows us to answer the question: what source packages have releases in a certain distribution. This is an interesting case of where a view can actually solve a problem that SQLObject can''t -- there is no way of doing this query (that I see at least) in regular sqlos because there is no DISTINCT and no way to filter things without iterating in
 Python (which generates N queries and we don''t want to go down that route).';
@@ -606,6 +623,14 @@ COMMENT ON COLUMN Person.name IS 'Short mneumonic name uniquely identifying this
 COMMENT ON COLUMN Person.language IS 'Preferred language for this person (unset for teams). UI should be displayed in this language wherever possible.';
 COMMENT ON COLUMN Person.calendar IS 'The calendar associated with this person.';
 COMMENT ON COLUMN Person.timezone IS 'The name of the time zone this person prefers (if unset, UTC is used).  UI should display dates and times in this time zone wherever possible.';
+COMMENT ON COLUMN Person.homepage_content IS 'A home page for this person in the Launchpad. In short, this is like a personal wiki page. The person will get to edit their own page, and it will be published on /people/foo/. Note that this is in text format, and will migrate to being in Moin format as a sort of mini-wiki-homepage.';
+COMMENT ON COLUMN Person.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem or icon whenever we are referring to that person.';
+COMMENT ON COLUMN Person.hackergotchi IS 'The library file alias of a hackergotchi image to display as the "face" of a person, on their home page.';
+
+-- PersonLanguage
+COMMENT ON TABLE PersonLanguage IS 'PersonLanguage: This table stores the preferred languages that a Person has, it''s used in Rosetta to select the languages that should be showed to be translated.';
+COMMENT ON COLUMN PersonLanguage.person IS 'This field is a reference to a Person object that has this preference.';
+COMMENT ON COLUMN PersonLanguage.language IS 'This field is a reference to a Language object that says that the Person associated to this row knows how to translate/understand this language.';
 
 -- Bounty
 COMMENT ON TABLE Bounty IS 'A set of bounties for work to be done by the open source community. These bounties will initially be offered only by Canonical, but later we will create the ability for people to offer the bounties themselves, using us as a clearing house.';

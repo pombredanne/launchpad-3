@@ -3,19 +3,25 @@
   
   <div class="portletBody portletContent">
 	
-    <b>Name:</b>
-    <a tal:attributes="href context/fmt:url"
-       tal:content="context/name">sabdfl</a><br />
-
     <tal:block condition="not: context/teamowner">
-      <b>Display name:</b><br />
-      <span tal:replace="context/displayname">Mark Shuttleworth</span><br />
+      <b tal:content="context/browsername">Mark Shuttleworth</b>
+      (<img tal:condition="context/emblem"
+            tal:attributes="src context/emblem/url" /><a
+            tal:attributes="href context/fmt:url"
+            tal:content="context/name">sabdfl</a>)<br />
 
-      <b>Given name:</b><br />
-      <span tal:replace="context/givenname">Mark</span><br />
-
-      <b>Family name:</b><br />
-      <span tal:replace="context/familyname">Shuttleworth</span><br />
+      <tal:logged_in condition="request/lp:person">
+        <b>Preferred Email:</b><br />
+        <img tal:condition="context/preferredemail"
+             src="/++resource++email" />
+        <span tal:condition="context/preferredemail"
+              tal:replace="context/preferredemail/email">foo@bar.com</span>
+        <tal:no_pref_mail condition="not: context/preferredemail">
+          <img src="/++resource++alert" />
+          <i>None set</i>
+        </tal:no_pref_mail>
+        <br />
+      </tal:logged_in>
 
       <b>Timezone:</b>
       <span tal:replace="context/timezone">UTC</span>
@@ -32,6 +38,11 @@
     </tal:block>
     <tal:block condition="context/teamowner">
 
+      <b>Team:</b>
+      <img tal:condition="context/emblem"
+            tal:attributes="src context/emblem/url" />
+      <a tal:attributes="href context/fmt:url"
+         tal:content="context/name">sabdfl</a><br />
       <b>Team Owner:</b><br />
       <a tal:attributes="href string:../${context/teamowner/name}"
          tal:content="context/teamowner/browsername">sabdfl</a><br />
@@ -49,6 +60,15 @@
       <br />
 
     </tal:block>
+    
+    <tal:comment replace="nothing">
+      Here we are going to put all the emblems from teams this person
+      belongs to.
+    </tal:comment>
+    <tal:memberships repeat="membership context/activememberships">
+      <img tal:condition="membership/team/emblem"
+           tal:attributes="src membership/team/emblem/url" />
+    </tal:memberships>
     
   </div>
 

@@ -21,6 +21,9 @@
       <li class="bugs">
         <a tal:attributes="href string:${context/fmt:url}/+bugs">View 
             Release Bugs</a></li>
+      <li class="info">
+        <a tal:attributes="href string:${context/fmt:url}/+cve">View 
+            CVE Report</a></li>
       <li class="translations">
         <a tal:attributes="href string:${context/fmt:url}/+translations">View 
             Translations</a></li>

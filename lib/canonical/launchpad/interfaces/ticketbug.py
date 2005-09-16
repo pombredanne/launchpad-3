@@ -19,7 +19,7 @@ _ = MessageIDFactory('launchpad')
 class ITicketBug(Interface):
     """A link between a Bug and a ticket."""
 
-    ticket = Int(title=_('Ticket ID'), required=True,
+    ticket = Int(title=_('Ticket Number'), required=True,
         readonly=True)
     bug = Int(title=_('Bug Number'), required=True, readonly=True,
         description=_("Please enter the bug number which is related to "

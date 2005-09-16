@@ -61,11 +61,11 @@ class PublishedPackageSet:
             name.replace('%','%%')
             querytxt += " AND binarypackagename ILIKE %s" % quote('%'+name+'%')
         if distribution:
-            querytxt += " AND distribution = %d" % distribution
+            querytxt += " AND distribution = %d" % distribution.id
         if distrorelease:
-            querytxt += " AND distrorelease = %d" % distrorelease
+            querytxt += " AND distrorelease = %d" % distrorelease.id
         if distroarchrelease:
-            querytxt += " AND distroarchrelease = %d" % distroarchrelease
+            querytxt += " AND distroarchrelease = %d" % distroarchrelease.id
         if component:
             querytxt += " AND component = %s" % quote(component)
         if text:

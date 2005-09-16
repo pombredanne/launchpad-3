@@ -1,0 +1,14 @@
+<div class="portlet">
+
+  <h4>actions:</h4>
+
+  <div class="portletBody portletContent">
+
+    You can jump straight to a specific CVE by entering its number in the
+    space provided, and pressing "Search". Alternatively, enter some text
+    and you will see CVE entries that match your text. Finally, for the
+    brave, there is a list of <a href="+all">all registered CVE</a> entries.
+	
+  </div>
+
+</div>

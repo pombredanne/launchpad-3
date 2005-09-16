@@ -83,11 +83,12 @@
   <!-- Rosetta Stats Views -->
   <browser:pages
     for="canonical.launchpad.interfaces.IRosettaStats"
+    class="canonical.launchpad.browser.RosettaStatsView"
     facet="translations"
     permission="zope.Public">
     <browser:page
       name="+barchart"
-      template="../templates/pofile-barchart.pt" />
+      template="../templates/rosettastats-barchart.pt" />
   </browser:pages>
 
   <!-- portlets to show language prefs -->

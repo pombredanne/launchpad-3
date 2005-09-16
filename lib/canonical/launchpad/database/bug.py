@@ -9,6 +9,7 @@ from email.Utils import make_msgid
 
 from zope.interface import implements
 from zope.exceptions import NotFoundError
+from zope.event import notify
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
@@ -20,6 +21,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp import dbschema
+from canonical.launchpad.database.bugcve import BugCve
 from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.message import (
     Message, MessageChunk)
@@ -28,6 +30,8 @@ from canonical.launchpad.database.bugtask import BugTask, bugtask_sort_key
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.maintainership import Maintainership
+from canonical.launchpad.event.sqlobjectevent import (
+    SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 
 from zope.i18n import MessageIDFactory
 _ = MessageIDFactory("launchpad")
@@ -74,7 +78,9 @@ class Bug(SQLBase):
     watches = MultipleJoin('BugWatch', joinColumn='bug')
     externalrefs = MultipleJoin(
             'BugExternalRef', joinColumn='bug', orderBy='id')
-    cverefs = MultipleJoin('CVERef', joinColumn='bug', orderBy='cveref')
+    cves = RelatedJoin('Cve', intermediateTable='BugCve',
+        orderBy='sequence', joinColumn='bug', otherColumn='cve')
+    cve_links = MultipleJoin('BugCve', joinColumn='bug', orderBy='id')
     subscriptions = MultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id')
     duplicates = MultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
@@ -86,6 +92,13 @@ class Bug(SQLBase):
         otherColumn='ticket', intermediateTable='TicketBug',
         orderBy='-datecreated')
 
+    @property
+    def displayname(self):
+        """See IBug."""
+        dn = 'Bug #%d' % self.id
+        if self.name:
+            dn += ' ('+self.name+')'
+        return dn
 
     @property
     def bugtasks(self):
@@ -179,6 +192,27 @@ class Bug(SQLBase):
         # ok, we need a new one
         return BugWatch(bug=self, bugtracker=bugtracker,
             remotebug=remotebug, owner=owner)
+
+    def linkCVE(self, cve, user=None):
+        """See IBug."""
+        if cve not in self.cves:
+            bugcve = BugCve(bug=self, cve=cve)
+            notify(SQLObjectCreatedEvent(bugcve, user=user))
+            return bugcve
+
+    def unlinkCVE(self, cve, user=None):
+        """See IBug."""
+        for cve_link in self.cve_links:
+            if cve_link.cve.id == cve.id:
+                notify(SQLObjectDeletedEvent(cve_link, user=user))
+                BugCve.delete(cve_link.id)
+                break
+
+    def findCvesInText(self, bug, text):
+        """See IBug."""
+        cves = getUtility(ICveSet).inText(text)
+        for cve in cves:
+            self.linkCVE(cve)
 
 
 class BugSet(BugSetBase):

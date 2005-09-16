@@ -87,6 +87,7 @@ class IMaloneApplication(ILaunchpadApplication):
     bugtask_count = Attribute("The number of bug tasks in Malone")
     bugtracker_count = Attribute("The number of bug trackers in Malone")
     top_bugtrackers = Attribute("The BugTrackers with the most watches.")
+    latest_bugs = Attribute("The latest 5 bugs filed.")
 
 
 class IRosettaApplication(ILaunchpadApplication):

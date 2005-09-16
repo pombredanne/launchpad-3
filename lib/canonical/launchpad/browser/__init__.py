@@ -17,6 +17,7 @@ from canonical.launchpad.browser.bugtask import *
 from canonical.launchpad.browser.bugtracker import *
 from canonical.launchpad.browser.cal import *
 from canonical.launchpad.browser.codeofconduct import *
+from canonical.launchpad.browser.cve import *
 from canonical.launchpad.browser.distribution import *
 from canonical.launchpad.browser.distroarchrelease import *
 from canonical.launchpad.browser.distrorelease import *

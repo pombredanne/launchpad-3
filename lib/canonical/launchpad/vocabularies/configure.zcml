@@ -76,8 +76,8 @@
       />
 
   <vocabulary
-    name="CVEState"
-    factory="canonical.launchpad.vocabularies.CVEStateVocabulary"
+    name="CveStatus"
+    factory="canonical.launchpad.vocabularies.CveStatusVocabulary"
     />
 
   <vocabulary

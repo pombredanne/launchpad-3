@@ -13,6 +13,7 @@
     <include file="branch.zcml" />
     <include file="bugactivity.zcml" />
     <include file="bugattachment.zcml" />
+    <include file="bugcve.zcml" />
     <include file="bugextref.zcml" />
     <include file="buginfestation.zcml" />
     <include file="bugmessage.zcml" />
@@ -28,7 +29,9 @@
     <include file="codeofconduct.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
-    <include file="cveref.zcml" />
+    <include file="cve.zcml" />
+    <include file="cve-events.zcml" />
+    <include file="cvereference.zcml" />
     <include file="datetime.zcml" />
     <include file="distribution.zcml" />
     <include file="distrorelease.zcml" />

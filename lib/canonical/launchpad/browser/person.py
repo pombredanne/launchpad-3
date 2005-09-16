@@ -9,6 +9,8 @@ __all__ = [
     'UbuntiteListView',
     'FOAFSearchView',
     'PersonEditView',
+    'PersonEmblemView',
+    'PersonHackergotchiView',
     'PersonRdfView',
     'PersonView',
     'TeamJoinView',
@@ -23,11 +25,15 @@ __all__ = [
 
 import cgi
 import sets
+from StringIO import StringIO
 from datetime import datetime
 
+from zope.schema import Text, Bytes
+from zope.interface import Interface, Attribute
 from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
+from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -47,9 +53,11 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, IKarmaActionSet,
     IKarmaSet, UBUNTU_WIKI_URL, ITeamMembershipSet, IObjectReassignment,
     ITeamReassignment, IPollSubset, IPerson, ICalendarOwner,
-    BugTaskSearchParams)
+    BugTaskSearchParams, valid_emblem, valid_hackergotchi,
+    ILibraryFileAliasSet)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.form import FormView
 from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
@@ -58,6 +66,8 @@ from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url)
 
+from zope.i18nmessageid import MessageIDFactory
+_ = MessageIDFactory('launchpad')
 
 class PersonFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IPerson."""
@@ -797,13 +807,53 @@ class PersonEditView(SQLObjectEditView):
         """Redirect to the person page.
 
         We need this because people can now change their names, and this will
-        make their canonical_url to change too. If we don't redirect them here
-        they'll get a page with all links broken and in an URL that doesn't
-        exist anymore.
+        make their canonical_url to change too.
         """
-        url = '%s/+edit?updated=%s' % (canonical_url(self.context),
-                                       datetime.utcnow().ctime())
-        self.request.response.redirect(url)
+        self.request.response.redirect(canonical_url(self.context))
+
+
+class PersonEmblemView(FormView):
+
+    schema = IPerson
+    fieldNames = ['emblem',]
+    _arguments = ['emblem',]
+
+    def process(self, emblem):
+        # XXX use Bjorn's nice file upload widget when he writes it
+        if emblem is not None:
+            filename = self.request.get('field.emblem').filename
+            content_type, encoding = guess_content_type(
+                name=filename, body=emblem)
+            self.context.emblem = getUtility(ILibraryFileAliasSet).create(
+                name=filename, size=len(emblem), file=StringIO(emblem),
+                contentType=content_type)
+        return 'Success'
+
+    def nextURL(self):
+        return canonical_url(self.context)
+
+
+class PersonHackergotchiView(FormView):
+
+    schema = IPerson
+    fieldNames = ['hackergotchi',]
+    _arguments = ['hackergotchi',]
+
+    def process(self, hackergotchi):
+        # XXX use Bjorn's nice file upload widget when he writes it
+        if hackergotchi is not None:
+            filename = self.request.get('field.hackergotchi').filename
+            content_type, encoding = guess_content_type(
+                name=filename, body=hackergotchi)
+            hkg = getUtility(ILibraryFileAliasSet).create(
+                name=filename, size=len(hackergotchi),
+                file=StringIO(hackergotchi),
+                contentType=content_type)
+            self.context.hackergotchi = hkg
+        return 'Success'
+
+    def nextURL(self):
+        return canonical_url(self.context)
 
 
 class TeamJoinView(PersonView):

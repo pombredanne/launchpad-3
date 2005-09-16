@@ -99,7 +99,10 @@
 
     <!-- The root index for the debug view. This is a bit of a bodge, but it
         lets us have a different page on the production server from the one on
-        the development server. -->
+        the development server. 
+
+        XXX sabdfl 08/09/2005 commented out because our production server
+            should now be identical to the development ones
 
     <browser:page
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
@@ -108,8 +111,13 @@
         permission="zope.Public"
         layer="canonical.launchpad.layers.DebugLayer"
         />
+    -->
 
-    <!-- This lets us see the real root index even from the debug layer. -->
+    <!-- This lets us see the real root index even from the debug layer.
+
+       XXX sabdfl 08/09/2005 commented out because we can see the real root
+           at / anyway
+    
     <browser:page
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="real-index.html"
@@ -117,6 +125,7 @@
         permission="zope.Public"
         layer="canonical.launchpad.layers.DebugLayer"
         />
+    -->
 
     <include file="browser-exception.zcml" />
     <include package="canonical.widgets" />

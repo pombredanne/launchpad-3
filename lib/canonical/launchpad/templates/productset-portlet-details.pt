@@ -1,7 +1,5 @@
 <div class="portlet">
-
   <h4>Statistics:</h4>
-
   <div class="portletBody portletContent">
     <p>
       There are currently
@@ -17,9 +15,6 @@
       have bounties</li>
       <li><span tal:replace="context/count_reviewed">5</span> 
       have been reviewed.</li>
-    </ul>
-    <ul>
-      <li class="list"><a href="/products/+all">List all products</a></li>
     </ul>
   </div>
 </div>

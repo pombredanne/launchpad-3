@@ -55,6 +55,11 @@ class MaloneApplication:
         result.sort(key=lambda a: -a.watchcount)
         return result[:5]
 
+    @property
+    def latest_bugs(self):
+        return Bug.select(orderBy='-datecreated', limit=5)
+
+
 class BazaarApplication:
     implements(IBazaarApplication)
 

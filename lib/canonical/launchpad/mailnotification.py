@@ -190,14 +190,14 @@ def generate_bug_edit_email(bug_delta):
             body += u"    - Bug %s [%s]\n" % (
                 old_bug_watch.remotebug, old_bug_watch.bugtracker.title)
 
-    if bug_delta.cveref is not None:
-        new_cve_ref = bug_delta.cveref['new']
-        body += u"CVE references changed:\n"
-        body += u"    + %s [%s]\n" % (new_cve_ref.displayname, new_cve_ref.title)
-        old_cveref = bug_delta.cveref.get('old')
-        if old_cveref:
-            body += u"    - %s [%s]\n" % (
-                old_cveref.displayname, old_cveref.title)
+    if bug_delta.cve is not None:
+        new_cve = bug_delta.cve.get('new', None)
+        old_cve = bug_delta.cve.get('old', None)
+        body += u""
+        if new_cve:
+            body += u"Added %s\n" % new_cve.title
+        if old_cve:
+            body += u"Removed %s\n" % old_cve.title
 
     if bug_delta.attachment is not None:
         body += "    - Changed attachments:\n"
@@ -930,49 +930,41 @@ def notify_bug_watch_modified(modified_bug_watch, event):
                 to_addrs=to_addrs, bug_delta=bug_delta)
 
 
-def notify_bug_cveref_added(cveref, event):
-    """Notify CC'd list that a new cveref has been added to this bug.
+def notify_bug_cve_added(bugcve, event):
+    """Notify CC'd list that a new cve ref has been added to this bug.
 
-    cveref must be an ICVERef. event must be an
-    ISQLObjectCreatedEvent.
+    bugcve must be an IBugCve. event must be an ISQLObjectCreatedEvent.
     """
-    to_addrs = get_cc_list(cveref.bug)
+    to_addrs = get_cc_list(bugcve.bug)
 
     if to_addrs:
         bug_delta = BugDelta(
-            bug=cveref.bug,
-            bugurl=canonical_url(cveref.bug),
+            bug=bugcve.bug,
+            bugurl=canonical_url(bugcve.bug),
             user=event.user,
-            cveref={'new': cveref})
+            cve={'new': bugcve.cve})
 
         send_bug_edit_notification(
-            get_bugmail_from_address(cveref.bug.id, event.user),
+            get_bugmail_from_address(bugcve.bug.id, event.user),
             to_addrs, bug_delta)
 
+def notify_bug_cve_deleted(bugcve, event):
+    """Notify CC'd list that a cve ref has been removed from this bug.
 
-def notify_bug_cveref_edited(edited_cveref, event):
-    """Notify CC'd list that a cveref has been edited.
-
-    edited_cveref must be an ICVERef. event must be an
-    ISQLObjectModifiedEvent.
+    bugcve must be an IBugCve. event must be an ISQLObjectDeletedEvent.
     """
-    to_addrs = get_cc_list(edited_cveref.bug)
+    to_addrs = get_cc_list(bugcve.bug)
 
     if to_addrs:
-        old = event.object_before_modification
-        new = event.object
-        if ((old.cveref != new.cveref) or (old.title != new.title)):
-            # There's a change worth notifying about, so let's go
-            # ahead and send a notification email.
-            bug_delta = BugDelta(
-                bug=new.bug,
-                bugurl=canonical_url(new.bug),
-                user=event.user,
-                cveref={'old' : old, 'new': new})
+        bug_delta = BugDelta(
+            bug=bugcve.bug,
+            bugurl=canonical_url(bugcve.bug),
+            user=event.user,
+            cve={'old': bugcve.cve})
 
-            send_bug_edit_notification(
-                get_bugmail_from_address(new.id, event.user),
-                to_addrs, bug_delta)
+        send_bug_edit_notification(
+            get_bugmail_from_address(bugcve.bug.id, event.user),
+            to_addrs, bug_delta)
 
 
 def notify_bug_attachment_added(bugattachment, event):
