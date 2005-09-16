@@ -365,7 +365,7 @@ class PersonView:
         search_params = BugTaskSearchParams(
             assignee=self.context, user=self.user,
             status=any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
-            orderby="-dateassigned")
+            omit_dupes=True, orderby="-dateassigned")
 
         return getUtility(IBugTaskSet).search(search_params)
 

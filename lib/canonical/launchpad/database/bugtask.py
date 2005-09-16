@@ -547,6 +547,9 @@ class BugTaskSet:
 
         filters = prioAndSevFilter + showclosed + privatenessFilter
 
+        # Don't show duplicate bug reports.
+        filters += ' AND Bug.duplicateof IS NULL'
+
         maintainedPackageBugTasksQuery = ('''
             BugTask.sourcepackagename = Maintainership.sourcepackagename AND
             BugTask.distribution = Maintainership.distribution AND
