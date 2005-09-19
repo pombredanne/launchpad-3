@@ -642,8 +642,8 @@ class PersonView:
         self._validateGPG(key)
 
         return ('A message has been sent to <code>%s</code>, encrypted with '
-                'the key <code>%s<code>. To confirm the key is yours, decrypt '
-                'the message and follow the link inside.'
+                'the key <code>%s</code>. To confirm the key is yours, '
+                'decrypt the message and follow the link inside.'
                 % (self.context.preferredemail.email, key.displayname))
 
     def deactivate_gpg(self):
