@@ -88,6 +88,10 @@
             template="../templates/sourcepackage-buildlog.pt"
             lp:url="/distros/ubuntu/hoary/+sources/evolution/+buildlog" />
         <browser:page
+            name="+builds"
+            template="../templates/sourcepackage-builds.pt"
+            lp:url="/distros/$distribution/$distrorelease/+sources/$sourcepackagename/+buildlog" />
+        <browser:page
             name="+potlist"
             facet="translations"
             template="../templates/object-pots.pt"

@@ -5,7 +5,7 @@
   <div class="portletBody">
     <div class="portletContent even">
 	
-	  <ul>
+	  <ul class="statistics">
         <li>Testing: <span tal:replace="view/testing_count">3</span></li>
         <li>Autotested: <span tal:replace="view/autotested_count">3</span></li>
         <li>Test Failed: <span tal:replace="view/testfailed_count">3</span></li>

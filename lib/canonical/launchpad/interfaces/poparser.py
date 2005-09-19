@@ -8,25 +8,25 @@ __metaclass__ = type
 __all__ = ('IPOMessage', 'IPOHeader', 'IPOParser')
 
 class IPOMessage(Interface):
-    """Represents a logic set of msgid/msgstr items that refer to a same message"""
+    """A logical set of msgid/msgstr items that refer to a same message"""
     msgid = Attribute(
-        "The msgid of the message (as an unicode).")
+        "The msgid of the message (as unicode).")
     msgidPlural = Attribute(
-        "The plural msgid of the message (as an unicode), if present.")
+        "The plural msgid of the message (as unicode), if present.")
     msgstr = Attribute(
-        "The msgstr of the message (as an unicode).")
+        "The msgstr of the message (as unicode).")
     msgstrPlurals = Attribute(
         "The msgstr's of the message, if more than one (as a list of unicodes).")
     commentText = Attribute(
-        "The human-written comments ('# foo') of the message (as an unicode).")
+        "The human-written comments ('# foo') of the message (as unicode).")
     sourceComment = Attribute(
-        "The parser-generated comments ('#. foo') of the message (as an unicode).")
+        "The parser-generated comments ('#. foo') of the message (as unicode).")
     fileReferences = Attribute(
-        "The references ('#: foo') of the message (as an unicode).")
+        "The references ('#: foo') of the message (as unicode).")
     flags = Attribute(
         "The flags of the message (a Set of strings).")
     obsolete = Attribute(
-        """True if this message is obsolete (#~ msgid "foo"\\n#~ msgstr "bar").""")
+        """True if message is obsolete (#~ msgid "foo"\\n#~ msgstr "bar").""")
     nplurals = Attribute(
         """The number of plural forms for this language, as used in this file.
         None means the header does not have a Plural-Forms entry.""")
@@ -34,9 +34,9 @@ class IPOMessage(Interface):
         """The expression used to get a plural form from a number.""")
 
     def flagsText(flags=None):
-        """The flags of the message, as an unicode; or, if a sequence
+        """The flags of the message, as unicode; or, if a sequence
         or set is passed in, pretend these are the messages flags and
-        return an unicode representing them"""
+        return a unicode representing them"""
 
 class IPOHeader(IMapping):
     """Represents a PO header; items from the header can be fetched using the
@@ -59,6 +59,15 @@ class IPOHeader(IMapping):
         or the date format is not valid, the datetime object is None and
         the string is set with the error.
         This method is 100% code from Canonical.
+        """
+
+    def getPluralFormExpression():
+        """Returns the plural form expression, if defined in the header.
+
+        Returns the plural form expression (for instance, "n != 1")
+        if present in the header; otherwise, return None. Note that the
+        plural-forms header may be incomplete or incorrectly defined;
+        the function will return None, and the callsite must handle it.
         """
 
 

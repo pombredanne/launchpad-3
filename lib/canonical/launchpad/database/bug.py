@@ -7,8 +7,10 @@ __all__ = ['Bug', 'BugSet']
 from sets import Set
 from email.Utils import make_msgid
 
+from zope.event import notify
 from zope.interface import implements
 from zope.exceptions import NotFoundError
+from zope.event import notify
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
@@ -20,6 +22,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp import dbschema
+from canonical.launchpad.database.bugcve import BugCve
 from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.message import (
     Message, MessageChunk)
@@ -28,6 +31,8 @@ from canonical.launchpad.database.bugtask import BugTask, bugtask_sort_key
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.maintainership import Maintainership
+from canonical.launchpad.event.sqlobjectevent import (
+    SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 
 from zope.i18n import MessageIDFactory
 _ = MessageIDFactory("launchpad")
@@ -74,7 +79,9 @@ class Bug(SQLBase):
     watches = MultipleJoin('BugWatch', joinColumn='bug')
     externalrefs = MultipleJoin(
             'BugExternalRef', joinColumn='bug', orderBy='id')
-    cverefs = MultipleJoin('CVERef', joinColumn='bug', orderBy='cveref')
+    cves = RelatedJoin('Cve', intermediateTable='BugCve',
+        orderBy='sequence', joinColumn='bug', otherColumn='cve')
+    cve_links = MultipleJoin('BugCve', joinColumn='bug', orderBy='id')
     subscriptions = MultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id')
     duplicates = MultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
@@ -86,12 +93,25 @@ class Bug(SQLBase):
         otherColumn='ticket', intermediateTable='TicketBug',
         orderBy='-datecreated')
 
+    @property
+    def displayname(self):
+        """See IBug."""
+        dn = 'Bug #%d' % self.id
+        if self.name:
+            dn += ' ('+self.name+')'
+        return dn
 
     @property
     def bugtasks(self):
         """See IBug."""
         result = BugTask.select("bug=%s" % sqlvalues(self.id))
         return sorted(result, key=bugtask_sort_key)
+
+    @property
+    def initial_message(self):
+        """See IBug."""
+        messages = sorted(self.messages, key=lambda ob: ob.id)
+        return messages[0]
 
     def followup_subject(self):
         return 'Re: '+ self.title
@@ -161,6 +181,7 @@ class Bug(SQLBase):
             rfc822msgid=make_msgid('malone'), subject=subject)
         chunk = MessageChunk(messageID=msg.id, content=content, sequence=1)
         bugmsg = BugMessage(bug=self, message=msg)
+        notify(SQLObjectCreatedEvent(bugmsg, user=owner))
         return msg
 
     def linkMessage(self, message):
@@ -180,6 +201,27 @@ class Bug(SQLBase):
         return BugWatch(bug=self, bugtracker=bugtracker,
             remotebug=remotebug, owner=owner)
 
+    def linkCVE(self, cve, user=None):
+        """See IBug."""
+        if cve not in self.cves:
+            bugcve = BugCve(bug=self, cve=cve)
+            notify(SQLObjectCreatedEvent(bugcve, user=user))
+            return bugcve
+
+    def unlinkCVE(self, cve, user=None):
+        """See IBug."""
+        for cve_link in self.cve_links:
+            if cve_link.cve.id == cve.id:
+                notify(SQLObjectDeletedEvent(cve_link, user=user))
+                BugCve.delete(cve_link.id)
+                break
+
+    def findCvesInText(self, bug, text):
+        """See IBug."""
+        cves = getUtility(ICveSet).inText(text)
+        for cve in cves:
+            self.linkCVE(cve)
+
 
 class BugSet(BugSetBase):
     implements(IBugSet)
@@ -197,9 +239,23 @@ class BugSet(BugSetBase):
             raise NotFoundError(
                 "Unable to locate bug with ID %s" % str(bugid))
 
-    def search(self, duplicateof=None):
+    def search(self, duplicateof=None, orderBy=None, limit=None):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
-        return Bug.selectBy(duplicateofID=duplicateof.id)
+        where_clause = ''
+        if duplicateof:
+            where_clause += "duplicateof = %d" % duplicateof.id
+
+
+        other_params = {}
+        if orderBy:
+            other_params['orderBy'] = orderBy
+        if limit:
+            other_params['limit'] = limit
+
+        if where_clause:
+            return Bug.select(where_clause, **other_params)
+        else:
+            return Bug.select(**other_params)
 
     def queryByRemoteBug(self, bugtracker, remotebug):
         """See IBugSet."""

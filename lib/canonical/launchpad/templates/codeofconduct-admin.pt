@@ -15,7 +15,8 @@
 
       <p>
         As an admin, you can
-        approve or reject code of conduct signatures.
+        approve or reject code of conduct signatures,
+        and also register signatures that were not submitted digitally.
       </p>
 
       <form name="search" action="." method="POST">

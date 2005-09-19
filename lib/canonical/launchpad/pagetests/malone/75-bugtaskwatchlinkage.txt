@@ -107,12 +107,8 @@ form.
 
 
 
-Finally, let's view the bug page again. We should see the padlock next to
-the relevant task. The padlock is an initial UI choice to represent the
-linking of the task to the bugwatch, symbolising the idea that the status of
-the task is "locked" to the status of the remote bug being watched. That's
-not entirely true, because we will allow people to edit the status of a bug
-that is linked to a remote watch.
+Finally, let's view the bug page again. We should seea link to the remote bug
+under the relevant task.
 
   >>> print http(r"""
   ... GET /malone/bugs/1 HTTP/1.1
@@ -122,6 +118,6 @@ that is linked to a remote watch.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-  .../++resource++lock_icon.gif" alt="Watch"...
-  ...
+  .../++resource++arrowRight.gif...
+  ...http://bugzilla.mozilla.org//show_bug.cgi?id=2000...
 

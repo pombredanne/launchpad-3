@@ -69,9 +69,9 @@
         <allow interface="canonical.launchpad.interfaces.ICodeOfConductSet" />
     </securedutility>
 
-    <!-- This view registers 'codeofconduct' as a suburl of RootObject. -->
+    <!-- This view registers 'codeofconduct' as a suburl of ILaunchpadRoot. -->
     <browser:suburl
-        for="canonical.publication.RootObject"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
         utility="canonical.launchpad.interfaces.ICodeOfConductSet"
         name="codeofconduct" />
     <browser:url
@@ -188,15 +188,15 @@
 
 
     <browser:addform
-        name="+acknowledge"
+        name="+new"
         for="canonical.launchpad.interfaces.ISignedCodeOfConductSet"
         schema="canonical.launchpad.interfaces.ISignedCodeOfConduct"
-        label="Acknowledge a Paper Submitted Code of Conduct"
+        label="Register a Code of Conduct signature"
         fields="owner"
         class="canonical.launchpad.browser.SignedCodeOfConductAckView"
         permission="launchpad.Admin"
         template="../templates/signedcodeofconduct-acknowledge.pt"
-        lp:url="codeofconduct/console/+acknowledge">
+        lp:url="codeofconduct/console/+new">
     </browser:addform>
 
 </facet>

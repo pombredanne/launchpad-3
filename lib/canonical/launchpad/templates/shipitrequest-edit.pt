@@ -5,9 +5,8 @@
       i18n:domain="launchpad">
 
 <metal:rightportlets fill-slot="portlets_two">
-  <br />
-  <br />
-  <div tal:replace="structure context/@@+portlet-actions" />
+  <div class="shipitPortlet"
+       tal:content="structure context/@@+portlet-actions" />
 </metal:rightportlets>
 
 <body>
@@ -21,6 +20,7 @@
     </h1>
 
     <tal:block condition="context/cancelled">
+      <br />
       <p class="portalMessage">This request was cancelled by 
         <span tal:replace="context/whocancelled/displayname" />.
       </p>
@@ -28,15 +28,18 @@
 
     <tal:block condition="not: context/cancelled">
       <tal:block condition="context/isApproved">
+        <br />
         <p class="portalMessage">This request is currently approved. The
         approved quantities are shown below.</p>
       </tal:block>
       <tal:block condition="context/isAwaitingApproval">
+        <br />
         <p style="margin-bottom: 1em" class="portalMessage">This request is
         still waiting for approval.  It's possible to approve it and change the
         approved quantities later, if necessary.</p>
       </tal:block>
       <tal:block condition="context/isDenied">
+        <br />
         <p class="portalMessage">This request is currently denied.</p>
       </tal:block>
     </tal:block>
@@ -65,9 +68,11 @@
         <td align="right"><strong>X86 CDs:</strong></td>
         <td>
           <input type="text" name="quantityx86" align="right" size="5"
+                 maxlength="5"
                  tal:condition="context/isApproved"
                  tal:attributes="value context/quantityx86approved" />
           <input type="text" name="quantityx86" align="right" size="5"
+                 maxlength="5"
                  tal:condition="not: context/isApproved"
                  tal:attributes="value context/quantityx86" />
         </td>
@@ -76,9 +81,11 @@
         <td align="right"><strong>AMD64 CDs:</strong></td>
         <td>
           <input type="text" name="quantityamd64" align="right" size="5"
+                 maxlength="5"
                  tal:condition="context/isApproved"
                  tal:attributes="value context/quantityamd64approved" />
           <input type="text" name="quantityamd64" align="right" size="5"
+                 maxlength="5"
                  tal:condition="not: context/isApproved"
                  tal:attributes="value context/quantityamd64" />
         </td>
@@ -87,9 +94,11 @@
         <td align="right"><strong>PPC CDs:</strong></td>
         <td>
           <input type="text" name="quantityppc" align="right" size="5"
+                 maxlength="5"
                  tal:condition="context/isApproved"
                  tal:attributes="value context/quantityppcapproved" />
           <input type="text" name="quantityppc" align="right" size="5"
+                 maxlength="5"
                  tal:condition="not: context/isApproved"
                  tal:attributes="value context/quantityppc" />
         </td>

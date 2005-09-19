@@ -55,6 +55,7 @@ Examples:
 
 __metaclass__  = type
 
+import commands
 import urlparse
 
 from psycopg import IntegrityError
@@ -65,7 +66,9 @@ from zope.exceptions import NotFoundError
 import canonical.lp
 
 from pybaz import NameParser
-from canonical.lp.dbschema import ManifestEntryType, RevisionControlSystems
+from canonical.lp.dbschema import (
+    ManifestEntryType, ManifestEntryHint, RevisionControlSystems
+    )
 from canonical.librarian.db import Library
 from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.database.constants import UTC_NOW
@@ -73,8 +76,8 @@ from canonical.launchpad.database import (
      Product, ProductSeries, ProductRelease,
      Distribution, DistroRelease, DistroReleaseSet,
      SourcePackageName, SourcePackage, SourcePackageRelease,
-     Manifest, ManifestEntry, Archive, ArchNamespace, Branch, Changeset,
-     VersionMapper
+     Manifest, ManifestEntry, ManifestAncestry, Archive, ArchNamespace,
+     Branch, Changeset, VersionMapper
      )
 from hct.url import register_backend, UrlError
 
@@ -89,12 +92,20 @@ default_distro = "ubuntu"
 
 # Mapping from ManifestEntryType to typeName
 MANIFEST_ENTRY_TYPE_MAP = (
-    ( ManifestEntryType.DIR.value,    "dir"   ),
-    ( ManifestEntryType.COPY.value,   "copy"  ),
-    ( ManifestEntryType.FILE.value,   "file"  ),
-    ( ManifestEntryType.TAR.value,    "tar"   ),
-    ( ManifestEntryType.ZIP.value,    "zip"   ),
-    ( ManifestEntryType.PATCH.value,  "patch" ),
+    (ManifestEntryType.DIR,    "dir"),
+    (ManifestEntryType.COPY,   "copy"),
+    (ManifestEntryType.FILE,   "file"),
+    (ManifestEntryType.TAR,    "tar"),
+    (ManifestEntryType.ZIP,    "zip"),
+    (ManifestEntryType.PATCH,  "patch"),
+    )
+
+# Mapping from dbschema.ManifestEntryHint to hct equivalents
+from hct.manifest import ManifestEntryHint as HctHint
+MANIFEST_ENTRY_HINT_MAP = (
+    (ManifestEntryHint.ORIGINAL_SOURCE,  HctHint.ORIGINAL_SOURCE),
+    (ManifestEntryHint.PATCH_BASE,       HctHint.PATCH_BASE),
+    (ManifestEntryHint.PACKAGING,        HctHint.PACKAGING),
     )
 
 
@@ -506,13 +517,21 @@ def get_manifest_from(obj):
     The object should be a database Manifest record object, it is
     converted to an HCT object with the same entries.
 
+    One difference is that we take the uuid from the database Manifest
+    record and set the ancestor of the HCT object using that; in other
+    words, the manifest object we hand to HCT is already considered an
+    ancestor of what was in the database.
+
+    This saves much mucking around trying to decide whether we changed
+    it or not, and getting things wrong.
+
     Returns hct.manifest.Manifest class.
     """
     if obj is None:
         return None
 
     from hct.manifest import Manifest, new_manifest_entry
-    manifest = Manifest(new_id=str(obj.uuid))
+    manifest = Manifest(ancestor=str(obj.uuid))
 
     sequence_map = {}
     patch_on_map = []
@@ -525,9 +544,18 @@ def get_manifest_from(obj):
                         obj_entry.entrytype,)
                     )
 
+        hint_map = dict(MANIFEST_ENTRY_HINT_MAP)
+        if obj_entry.hint is not None and obj_entry.hint not in hint_map:
+            raise LaunchpadError(
+                "Unknown manifest entry hint from database: %d"
+                % obj_entry.hint
+                )
+
         # Create ManifestEntry and set up properties
         entry = new_manifest_entry(type_map[obj_entry.entrytype],
                                    obj_entry.path)
+        if obj_entry.hint is not None:
+            entry.hint = hint_map[obj_entry.hint]
         entry.dirname = obj_entry.dirname
         entry.branch = get_branch_from(obj_entry.branch)
         entry.changeset = get_changeset_from(obj_entry.changeset)
@@ -728,7 +756,17 @@ def identify_file(ref_url, size, digest, upstream=False):
 
 
 def put_manifest(url, manifest):
-    """Add new manifest under the URL given."""
+    """Add new manifest under the URL given.
+
+    The opposite number to get_manifest_from(), takes an HCT Manifest object
+    and converts it into a database Manifest record object which gets stored
+    under the object at the URL given.
+
+    HCT Manifest objects don't have a uuid, instead they have the ancestor
+    manifest they were based from.  We always create a new uuid for the
+    incoming manifest, and add an ancestry record for it to link to the
+    old one.
+    """
     success = False
     begin_transaction()
     try:
@@ -745,7 +783,22 @@ def put_manifest(url, manifest):
         sequence_map = {}
         patch_on_map = []
 
-        obj.manifest = Manifest(uuid=manifest.id)
+        obj.manifest = Manifest(uuid=commands.getoutput('uuidgen'))
+        try:
+            for merge in manifest.merges:
+                parent = Manifest.byUuid(merge)
+                ManifestAncestry(parentID=parent.id,
+                                 childID=obj.manifest.id)
+
+            if manifest.ancestor is not None:
+                parent = Manifest.byUuid(manifest.ancestor)
+                ManifestAncestry(parentID=parent.id,
+                                 childID=obj.manifest.id)
+        except SQLObjectNotFound:
+            raise LaunchpadError(
+                "Unknown manifest referenced in ancestor or merges"
+                )
+
         for entry in manifest:
             type_map = dict([ (_t, _v) for _v, _t in MANIFEST_ENTRY_TYPE_MAP ])
             if entry.typeName() not in type_map:
@@ -754,15 +807,25 @@ def put_manifest(url, manifest):
                             entry.typeName(),)
                         )
 
+            hint_map = dict([(_t, _v) for _v, _t in MANIFEST_ENTRY_HINT_MAP])
+            if entry.hint is not None and entry.hint not in hint_map:
+                raise LaunchpadError(
+                    "Unknown manifest entry hint from import: %s"
+                    % entry.hint
+                    )
+
             sequence += 1
             obj_entry = ManifestEntry(manifestID=obj.manifest.id,
                                       sequence=sequence,
                                       entrytype=type_map[entry.typeName()],
+                                      hint=None,
                                       path=entry.path,
                                       branchID=None,
                                       changesetID=None,
                                       patchon=None,
                                       dirname=entry.dirname)
+            if entry.hint is not None:
+                obj_entry.hint = hint_map[entry.hint]
 
             # FIXME this is the "hard" way
             # a lot of the heavy lifting here belongs in Launchpad interfaces

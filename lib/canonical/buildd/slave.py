@@ -3,6 +3,10 @@
 
 # Buildd Slave implementation
 
+from os.path import isdir, exists
+from os import mkdir, symlink, kill, environ, remove
+from signal import SIGKILL
+import xmlrpclib
 __metaclass__ = type
 
 import os
@@ -275,11 +279,14 @@ class BuildDSlave(object):
         """Get the last 'amount' bytes of the log.        
 
         This will only return whole lines, so it may return less than
-        'amount'  bytes, so amount needs to be an integer or if is None or
-        not specified, this will return the entire log.
+        'amount' bytes. 'amount' is originally an string provided by
+        xmlrpc interface and needs cast to an integer or None or not
+        specified), when 'amount' isn't specified or is None it will
+        return the entire log.
         """
         if amount is None:
             return self._log
+        amount = int(amount)
         ret = self._log[-amount:]
         return ret[ret.find("\n")+1:]
     
@@ -389,7 +396,7 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
 
     def status_WAITING(self):
         """Handler for xmlrpc_status WAITING.
-
+        
         Returns the build id and the set of files waiting to be returned
         unless the builder failed in which case we return the buildstatus
         and the build id but no file set.

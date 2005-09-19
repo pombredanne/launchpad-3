@@ -1,0 +1,96 @@
+
+The LibrarianFormatter works just like a normal logger.Formatter if there
+is no Librarian available or active
+
+>>> from canonical.launchpad.scripts.logger import LibrarianFormatter
+
+This is a helper to quickly construct a Logger instance with a particular
+formatter. Each call generates a unique Logger.
+
+>>> _count = 0
+>>> def make_logger(formatter_class):
+...     global _count
+...     _count += 1
+...     logger = logging.getLogger('log%d' % _count)
+...     output = StringIO()
+...     handler = logging.StreamHandler(output)
+...     # Note - no timestamp so we can make valid comparisons!
+...     formatter = formatter_class(fmt='%(levelname)s %(message)s')
+...     handler.setFormatter(formatter)
+...     logger.addHandler(handler)
+...     logger.setLevel(logging.DEBUG)
+...     return logger, output
+
+Create an exception we can reuse
+
+>>> try:
+...     raise RuntimeError('An Exception')
+... except RuntimeError:
+...     exception = sys.exc_info()
+
+Because no Librarian is running, output from the two loggers should be
+identical. Note the overhead involved in attempting to contact the
+Librarian is not significant.
+
+>>> normal_log, normal_out= make_logger(logging.Formatter)
+>>> librarian_log, librarian_out = make_logger(LibrarianFormatter)
+>>> import time
+>>> start_time = time.time()
+>>> for log in (normal_log, librarian_log):
+...     log.error('Blah!', exc_info=exception)
+>>> end_time = time.time()
+>>> (end_time - start_time) < 5.0
+True
+
+>>> print normal_out.getvalue()
+ERROR Blah!
+Traceback (most recent call last):
+...
+RuntimeError: An Exception
+<BLANKLINE>
+
+>>> print librarian_out.getvalue()
+ERROR Blah!
+Traceback (most recent call last):
+...
+RuntimeError: An Exception
+<BLANKLINE>
+
+>>> normal_out.getvalue() == librarian_out.getvalue()
+True
+
+Now if we fire up the Librarian, the LibrarianFormatter should start
+storing tracebacks there instead, reducing the verbosity of spam from
+cronjobs
+
+>>> LibrarianTestSetup().setUp()
+>>> librarian_log, librarian_out = make_logger(LibrarianFormatter)
+>>> librarian_log.error('Oops', exc_info=exception)
+>>> print librarian_out.getvalue()
+ERROR Oops
+ -> http://localhost:58000/...
+>>> url = librarian_out.getvalue().splitlines()[-1].split()[-1]
+>>> url
+'http://localhost:58000/...
+>>> print urlopen(url).read()
+Traceback (most recent call last):
+    ...
+RuntimeError: An Exception
+
+
+The end result of this is to not have scripts display exceptions to
+stderr, instead reporting URLs and greatly reducing the verbosity.
+
+>>> script = os.path.join(this_directory, 'raiseexception.py')
+>>> import subprocess
+>>> p = subprocess.Popen([sys.executable, script], stdin=subprocess.PIPE,
+...     stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+>>> (out, err) = p.communicate()
+>>> p.returncode
+0
+>>> print out
+Script Output
+... ERROR   Oops
+ -> http://localhost:58000/...
+
+

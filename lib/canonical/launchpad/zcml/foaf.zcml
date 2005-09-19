@@ -11,11 +11,10 @@
         <allow interface="canonical.launchpad.interfaces.IFOAFApplication" />
     </securedutility>
 
-  <!-- This view registers 'foaf' as a suburl of RootObject. -->
+  <!-- This view registers 'foaf' as a suburl of ILaunchpadRoot. -->
   <browser:suburl
-      for="canonical.publication.RootObject"
+      for="canonical.launchpad.interfaces.ILaunchpadRoot"
       utility="canonical.launchpad.interfaces.IFOAFApplication"
-      newlayer="canonical.launchpad.layers.FOAFLayer"
       name="foaf" />
   <browser:url
       for="canonical.launchpad.interfaces.IFOAFApplication"
@@ -34,7 +33,7 @@
       permission="zope.Public"
       name="projects" />
 
-  <!-- This view registers 'people' as a suburl of RootObject/foaf/,
+  <!-- This view registers 'people' as a suburl of ILaunchpadRoot/foaf/,
        and as such is deprecated. -->
   <browser:suburl
       for="canonical.launchpad.interfaces.IFOAFApplication"

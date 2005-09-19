@@ -26,9 +26,10 @@ to handle attachments correctly)
 u'The Content'
 
 Messages are threaded, although this is not necessarily displayed in the
-UI. Each message has a parent attribute
+UI. Each message has a parent attribute. If the message was created via
+IBugMessageSet, the parent gets set to the bug's initial message.
 
->>> msg.parent is None
+>>> msg.parent == bug_one.initial_message
 True
 
 Messages always have a message id, which is used when notifications
@@ -178,6 +179,52 @@ SQLObject doesn't necessarily give us the same intance back)
 
 >>> msg2 = msgset.fromEmail(raw_msg)
 >>> msg == msg2
+True
+
+
+fromEmail will set the parent of the message as well. We can only set
+the parent if it's already in the database, though. To ensure that
+threads aren't broken, if the direct parent of the message isn't in the
+database, the next parent will be used.
+
+>>> foo_msg = msgset.fromEmail('''\
+... From: foo.bar@canonical.com
+... Subject: Test
+... Date: Fri, 17 Jun 2005 10:45:13 +0100
+... Message-Id: <foo>
+...
+... Foo Bar
+... ''')
+
+>>> baz_msg = msgset.fromEmail('''\
+... From: foo.bar@canonical.com
+... Subject: Test
+... Date: Fri, 17 Jun 2005 10:45:13 +0100
+... Message-Id: <baz>
+... References: <foo> <bar1> <bar2>
+...
+... Foo Bar
+... ''')
+
+Since <bar1> and <bar2> aren't in the database, the parent will be
+set to <foo>
+
+>>> baz_msg.parent == foo_msg
+True
+
+We can specify a parent to be used, if no parent could be found for the
+message. This is useful for bugs, where we want all messages except for
+the first one to have a parent.
+
+>>> bar_msg = msgset.fromEmail('''\
+... From: foo.bar@canonical.com
+... Subject: Test
+... Date: Fri, 17 Jun 2005 10:45:13 +0100
+... Message-Id: <bar>
+...
+... Bar Baz
+... ''', fallback_parent=foo_msg)
+>>> bar_msg.parent == foo_msg
 True
 
 The fromEmail method handles non-multipart and minimalist messages

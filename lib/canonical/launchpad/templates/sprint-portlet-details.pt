@@ -1,0 +1,30 @@
+<div class="portlet">
+
+  <h4>Meeting Details:</h4>
+
+  <div class="portletBody portletContent">
+    
+    <b tal:content="context/title">Ubuntu Below Zero</b><br />
+    <tal:has_home_page condition="context/home_page">
+      <img src="/++resource++linkTransparent.gif" />
+      <a tal:attributes="href context/home_page">
+        View Home Page
+      </a><br />
+    </tal:has_home_page>
+    <b>Registrant:</b><br />
+    <img src="/++resource++user" />
+    <a tal:attributes="href context/owner/fmt:url" 
+       tal:content="context/owner/browsername" /><br />
+    <b>Starts:</b><br />
+    <span tal:replace="context/time_starts/fmt:datetime">08:00 12 Nov
+    2005</span><br />
+    <b>Ends:</b><br />
+    <span tal:replace="context/time_ends/fmt:datetime">08:00 12 Nov
+    2005</span><br />
+    <b>Address:</b><br />
+    <span tal:replace="context/address" />
+    <br />
+
+  </div>
+
+</div>

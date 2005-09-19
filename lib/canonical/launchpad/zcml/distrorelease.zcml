@@ -60,6 +60,10 @@
             name="+portlet-bugtasklist-releasebugs"
             template="../templates/bugtask-portlet-releasebugs.pt"
             lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-releasebugs" />
+        <browser:page
+            name="+portlet-aboutcve"
+            template="../templates/distribution-portlet-aboutcve.pt"
+            lp:url="/distros/$DistroRelease.name/+portlet-aboutcve" />
     </browser:pages>
 
     <browser:pages
@@ -70,6 +74,9 @@
             name="+filebug"
             facet="bugs"
             attribute="redirectToDistroFileBug" />
+        <browser:page
+            name="+cve"
+            template="../templates/distrorelease-cvereport.pt" />
         <browser:page
             name="+index"
             facet="overview"
@@ -89,6 +96,11 @@
             name="+potlist"
             facet="translations"
             template="../templates/object-pots.pt" />
+        <browser:page
+            name="+builds"
+            template="../templates/distrorelease-builds.pt"
+            lp:url="/distros/$distribution/$distrorelease/+builds"
+            />
         <browser:page
             name="+portlet-details"
             facet="overview"

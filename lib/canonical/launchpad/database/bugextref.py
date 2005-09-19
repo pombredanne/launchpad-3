@@ -46,6 +46,9 @@ class BugExternalRefSet(BugSetBase):
         return BugExternalRef(
             bug = bug, url = url, title = title, owner = owner)
 
+    def search(self):
+        return BugExternalRef.select()
+
 def BugExternalRefFactory(context, **kw):
     bug = context.context.bug
     datecreated = UTC_NOW

@@ -15,12 +15,15 @@ from canonical.librarian.client import LibrarianClient
 from canonical.archivepublisher.pool import AlreadyInPool
 from canonical.database.constants import nowUTC
 
+__all__ = [ 'Publisher', 'pocketsuffix', 'suffixpocket' ]
+
 pocketsuffix = {
     PackagePublishingPocket.RELEASE: "",
     PackagePublishingPocket.SECURITY: "-security",
     PackagePublishingPocket.UPDATES: "-updates",
     PackagePublishingPocket.PROPOSED: "-proposed"
     }
+suffixpocket = dict((v,k) for (k,v) in pocketsuffix.items())
 
 class Publisher(object):
     """Publisher is the class used to provide the facility to publish
@@ -40,6 +43,14 @@ class Publisher(object):
         self._library = LibrarianClient()
         self._logger = logger
         self._pathfor = diskpool.pathFor
+
+        # We need somewhere to note down where the debian-installer
+        # components came from. in _di_release_components we store
+        # sets, keyed by distrorelease name of the component names
+        # which contain debian-installer binaries.  This is filled out
+        # when generating overrides and file lists, and then consumed
+        # when generating apt-ftparchive configuration.
+        self._di_release_components = {}
 
     def debug(self, *args, **kwargs):
         self._logger.debug(*args, **kwargs)
@@ -128,6 +139,7 @@ class Publisher(object):
 
         for so in sourceoverrides:
             distrorelease = so.distroreleasename.encode('utf-8')
+            distrorelease += pocketsuffix[so.pocket]
             component = so.componentname.encode('utf-8')
             section = so.sectionname.encode('utf-8')
             sourcepackagename = so.sourcepackagename.encode('utf-8')
@@ -140,6 +152,7 @@ class Publisher(object):
 
         for bo in binaryoverrides:
             distrorelease = bo.distroreleasename.encode('utf-8')
+            distrorelease += pocketsuffix[bo.pocket]
             component = bo.componentname.encode('utf-8')
             section = bo.sectionname.encode('utf-8')
             binarypackagename = bo.binarypackagename.encode('utf-8')
@@ -158,14 +171,37 @@ class Publisher(object):
         for distrorelease in overrides:
             self.debug("Generating overrides for %s..." % distrorelease)
             for component in overrides[distrorelease]:
+                di_overrides = []
                 f = open("%s/override.%s.%s" % (self._config.overrideroot,
                                                 distrorelease, component), "w")
                 for tup in overrides[distrorelease][component]['bin']:
-                    f.write("\t".join(tup))
-                    f.write("\n")
-                    
+                    if tup[2].endswith("debian-installer"):
+                        # Note in _di_release_components that this
+                        # distrorelease has d-i contents in this component.
+                        self._di_release_components.setdefault(distrorelease,
+                                                Set()).add(component)
+                        # And record the tuple for later output in the d-i
+                        # override file instead
+                        di_overrides.append(tup)
+                    else:
+                        f.write("\t".join(tup))
+                        f.write("\n")
                 f.close()
 
+                if len(di_overrides):
+                    # We managed to find some d-i bits in these binaries,
+                    # so we output a magical "component"-ish "section"-y sort
+                    # of thing.
+                    # Elmo informs me that the technical term for the d-i stuff
+                    # is "horrible f***ing bodge"
+                    f = open("%s/override.%s.%s.debian-installer" % (
+                        self._config.overrideroot, distrorelease, component),
+                             "w")
+                    for tup in di_overrides:
+                        f.write("\t".join(tup))
+                        f.write("\n")
+                    f.close()
+                    
                 f = open("%s/override.%s.%s.src" % (self._config.overrideroot,
                                                     distrorelease,
                                                     component), "w")
@@ -214,15 +250,36 @@ class Publisher(object):
             filelist[distrorelease][component][architecturetag].append(ondiskname)
 
         # Now write them out...
-        for dr in filelist:
-            self.debug("Writing file lists for %s" % dr)
-            for comp in filelist[dr]:
-                for arch in filelist[dr][comp]:
+        for distrorelease, components in filelist.items():
+            self.debug("Writing file lists for %s" % distrorelease)
+            for component, architectures in components.items():
+                for architecture, file_names in architectures.items():
+                    di_files = []
                     f = open("%s/%s_%s_%s" % (self._config.overrideroot,
-                                              dr, comp, arch), "w")
-                    for name in filelist[dr][comp][arch]:
-                        f.write("%s\n" % name)
+                                              distrorelease, component,
+                                              architecture), "w")
+                    for name in file_names:
+                        if name.endswith(".udeb"):
+                            # Once again, note that this componentonent in this
+                            # distrorelease has d-i elements
+                            self._di_release_components.setdefault(
+                                distrorelease, Set()).add(component)
+                            # And note the name for output later
+                            di_files.append(name)
+                        else:
+                            f.write("%s\n" % name)
                     f.close()
+                    if len(di_files):
+                        # Once again, some d-i stuff to write out...
+                        self.debug("Writing d-i file list for %s/%s/%s" % (
+                            distrorelease, component, architecture))
+                        f = open("%s/%s_%s_debian-installer_%s" % (
+                            self._config.overrideroot, distrorelease,
+                            component, architecture), "w")
+                        f.write("\n".join(di_files))
+                        f.write("\n")
+                        f.close()
+    
 
     def generateAptFTPConfig(self):
         """Generate an APT FTPArchive configuration from the provided
@@ -259,24 +316,25 @@ TreeDefault
         self._config.miscroot
         ))
 
-        # cnf now contains a basic header. Add a dists entry for each
-        # of the distroreleases
-        for dr in self._config.distroReleaseNames():
-            for pocket in pocketsuffix:
-                self.debug("Checking for generating config for %s%s" % (dr,pocketsuffix[pocket]))
-                s = """
-tree "dists/%(DISTRORELEASE)s"
+        stanza_template = """
+tree "dists/%(DISTRORELEASEONDISK)s"
 {
-  FileList "%(LISTPATH)s/%(DISTRORELEASE)s_$(SECTION)_binary-$(ARCH)";
+  FileList "%(LISTPATH)s/%(DISTRORELEASEBYFILE)s_$(SECTION)_binary-$(ARCH)";
   SourceFileList "%(LISTPATH)s/%(DISTRORELEASE)s_$(SECTION)_source";
   Sections "%(SECTIONS)s";
   Architectures "%(ARCHITECTURES)s";
   BinOverride "override.%(DISTRORELEASE)s.$(SECTION)";
   SrcOverride "override.%(DISTRORELEASE)s.$(SECTION).src";
+  Packages::Extensions "%(EXTENSIONS)s";
+  BinCacheDB "packages-%(CACHEINSERT)s$(ARCH).db";
   Contents " ";
 }
 
-                """
+"""
+        # cnf now contains a basic header. Add a dists entry for each
+        # of the distroreleases
+        for dr in self._config.distroReleaseNames():
+            for pocket in pocketsuffix:
                 oarchs = self._config.archTagsForRelease(dr)
                 ocomps = self._config.componentsForRelease(dr)
                 # Firstly, pare comps down to the ones we've output
@@ -304,24 +362,59 @@ tree "dists/%(DISTRORELEASE)s"
                     self.debug("Didn't find any archs to include in config "
                                "for %s%s" % (dr, pocketsuffix[pocket]))
                     continue
+                self.debug("Generating apt config for %s%s" % (
+                    dr, pocketsuffix[pocket]))
                 # Replace those tokens
-                cnf.write(s % {
+
+                cnf.write(stanza_template % {
                     "LISTPATH": self._config.overrideroot,
                     "DISTRORELEASE": dr + pocketsuffix[pocket],
+                    "DISTRORELEASEBYFILE": dr + pocketsuffix[pocket],
+                    "DISTRORELEASEONDISK": dr + pocketsuffix[pocket],
                     "ARCHITECTURES": " ".join(archs),
-                    "SECTIONS": " ".join(comps)
+                    "SECTIONS": " ".join(comps),
+                    "EXTENSIONS": ".deb",
+                    "CACHEINSERT": ""
                     })
+                dr_full_name = dr + pocketsuffix[pocket]
+                if dr_full_name in self._di_release_components:
+                    for component in self._di_release_components[dr_full_name]:
+                        cnf.write(stanza_template % {
+                            "LISTPATH": self._config.overrideroot,
+                            "DISTRORELEASEONDISK": "%s%s/%s" % (dr,
+                                                          pocketsuffix[pocket],
+                                                          component),
+                            "DISTRORELEASEBYFILE": "%s%s_%s" % (dr,
+                                                          pocketsuffix[pocket],
+                                                          component),
+                            "DISTRORELEASE": "%s%s.%s" % (dr,
+                                                          pocketsuffix[pocket],
+                                                          component),
+                            "ARCHITECTURES": " ".join(archs),
+                            "SECTIONS": "debian-installer",
+                            "EXTENSIONS": ".udeb",
+                            "CACHEINSERT": "debian-installer-"
+                            })
+
+                def safe_mkdir(path):
+                    if not os.path.exists(path):
+                        os.makedirs(path)
+
+                
                 for comp in comps:
-                    basepath = os.path.join(
-                        self._config.distsroot,
-                        dr+pocketsuffix[pocket],
-                        comp)
-                    for arch in archs:
-                        if not os.path.exists(os.path.join(basepath,
-                                                           "binary-"+arch)):
-                            os.makedirs(os.path.join(basepath, "binary-"+arch))
-                    if not os.path.exists(os.path.join(basepath, "source")):
-                        os.makedirs(os.path.join(basepath, "source"))
+                    component_path = os.path.join(self._config.distsroot,
+                                                  dr+pocketsuffix[pocket],
+                                                  comp)
+                    base_paths = [component_path]
+                    if dr_full_name in self._di_release_components:
+                        if comp in self._di_release_components[dr_full_name]:
+                            base_paths.append(os.path.join(component_path,
+                                                           "debian-installer"))
+                    for base_path in base_paths:
+                        if "debian-installer" not in base_path:
+                            safe_mkdir(os.path.join(base_path, "source"))
+                        for arch in archs:
+                            safe_mkdir(os.path.join(base_path, "binary-"+arch))
         # And now return that string.
         s = cnf.getvalue()
         cnf.close()

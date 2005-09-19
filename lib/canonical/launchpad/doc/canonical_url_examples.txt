@@ -155,9 +155,9 @@ An IProductRelease.
     >>> from canonical.launchpad.interfaces import (
     ...     IBug, IBugSet, IBugTaskSet, IUpstreamBugTask, IDistroBugTask,
     ...     IDistroReleaseBugTask, IBugWatchSet, 
-    ...     ICVERefSet, IBugExternalRefSet)
+    ...     IBugExternalRefSet)
     >>> from canonical.launchpad.database import (
-    ...     BugWatchSet, CVERefSet, BugExternalRefSet)
+    ...     BugWatchSet, BugExternalRefSet)
 
 The IBugSet.
 
@@ -204,14 +204,6 @@ An IBugWatchSet.
     xxx bug_one_watches = BugWatchSet(bug=1)
     xxx canonical_url(bug_one_watches)
     u'http://localhost:8086/malone/bugs/1/watches'
-
-An ICVERefSet.
-
-    This doesn't work, because CVERefSet.bug is an int, not an IBug object.
-
-    xxx bug_one_cverefs = CVERefSet(bug=1)
-    xxx canonical_url(bug_one_cverefs)
-    u'http://localhost:8086/malone/bugs/1/cverefs'
 
 An IBugExternalRefSet.
 

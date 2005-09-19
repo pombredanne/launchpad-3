@@ -13,6 +13,7 @@
       <p i18n:translate="">
         Otherwise, check that you typed the address correctly.
       </p>
+    <tal:replace tal:replace="structure view/maybeShowTraceback" />
     </div>
   </body>
 </html>

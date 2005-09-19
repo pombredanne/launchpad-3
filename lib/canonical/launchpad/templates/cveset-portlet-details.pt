@@ -1,0 +1,14 @@
+<div class="portlet">
+
+  <h4>About The CVE System:</h4>
+
+  <div class="portletBody portletContent">
+	
+    Launchpad includes full support for the CVE framework. We update the
+    Launchpad CVE database daily to ensure that includes details of all
+    known vulnerabilities. Read more
+    <a href="http://cve.mitre.org/">about the CVE datebase</a>.
+    
+  </div>
+
+</div>

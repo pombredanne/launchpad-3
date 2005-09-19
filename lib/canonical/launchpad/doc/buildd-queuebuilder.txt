@@ -120,7 +120,7 @@ marked as NEEDSBUILD we can create BuildQueue entries for it
 
   >>> bm.addMissingBuildQueueEntries()  
   >>> BuildQueue.select().count()
-  1
+  2
 
 Since the BuildQueue table was filled above we can reorganise the
 job by the most interesting parameters, See buildd-scoring.txt

@@ -1,14 +1,8 @@
-<div class="portlet">
-
-  <h4>actions:</h4>
-
-  <div class="portletBody portletContent">
+<div class="portlet portletBody portletContent">
 
     <ul>
-      <li class="info"><a href="/products/">Find Upstream App</a></li>
-      <li class="info"><a href="/distros/">Find Distribution</a></li>
+      <li class="search"><a href="/products">Find Upstream Product</a></li>
+      <li class="search"><a href="/distros">Find Distribution</a></li>
     </ul>
 	
-  </div>
-
 </div>

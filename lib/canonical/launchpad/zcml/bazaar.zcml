@@ -12,7 +12,7 @@
     </securedutility>
 
     <browser:suburl
-        for="canonical.publication.RootObject"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
         utility="canonical.launchpad.interfaces.IBazaarApplication"
         newlayer="canonical.launchpad.layers.BazaarLayer"
         name="bazaar" />

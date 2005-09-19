@@ -1,0 +1,1099 @@
+
+<strong>Report forwarded</strong> to <code>debian-bugs-dist@lists.debian.org, Eric Dorland &lt;eric@debian.org&gt;</code>:<br>
+<code>Bug#327452</code>; Package <code>mozilla-firefox</code>.
+
+
+debian-bugs-dist@lists.debian.orgEric Dorland <eric@debian.org>
+
+X-Loop: owner@bugs.debian.org
+Subject: Bug#327452: security issue revealed: CAN-2005-2871
+Reply-To: Alexander Sack <asac@debian.org>, 327452@bugs.debian.org
+Resent-From: Alexander Sack <asac@debian.org>
+Resent-To: debian-bugs-dist@lists.debian.org
+Resent-CC: Eric Dorland <eric@debian.org>
+Resent-Date: Sat, 10 Sep 2005 09:03:04 UTC
+Resent-Message-ID: <handler.327452.B.11263427666564@bugs.debian.org>
+Resent-Sender: owner@bugs.debian.org
+X-Debian-PR-Message: report 327452
+X-Debian-PR-Package: mozilla-firefox
+X-Debian-PR-Keywords: patch security
+Received: via spool by submit@bugs.debian.org id=B.11263427666564
+          (code B ref -1); Sat, 10 Sep 2005 09:03:04 UTC
+Received: (at submit) by bugs.debian.org; 10 Sep 2005 08:59:26 +0000
+Received: from moutng.kundenserver.de [212.227.126.171] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1EE1Cn-0001hg-00; Sat, 10 Sep 2005 01:59:26 -0700
+Received: from c155145.adsl.hansenet.de [213.39.155.145] (helo=senica.personalfree.com)
+	by mrelayeu.kundenserver.de with ESMTP (Nemesis),
+	id 0ML29c-1EE1Cl0AeA-0008Gk; Sat, 10 Sep 2005 10:59:23 +0200
+Received: from [10.0.1.2] (helo=hanson ident=Debian-exim)
+	by senica.personalfree.com with esmtps (TLS-1.0:RSA_AES_256_CBC_SHA:32)
+	(Exim 4.50)
+	id 1EE1Cj-00078E-DA; Sat, 10 Sep 2005 10:59:21 +0200
+Received: from alex by hanson with local (Exim 4.52)
+	id 1EE1Ci-0005kl-An; Sat, 10 Sep 2005 10:59:20 +0200
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+From: Alexander Sack <asac@debian.org>
+To: Debian Bug Tracking System <submit@bugs.debian.org>
+X-Mailer: reportbug 3.15
+Date: Sat, 10 Sep 2005 10:59:20 +0200
+Message-Id: <E1EE1Ci-0005kl-An@hanson>
+X-Provags-ID: kundenserver.de abuse@kundenserver.de login:cbe77bd78e1b43e9d8afa4235a070258
+Delivered-To: submit@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-8.0 required=4.0 tests=BAYES_00,HAS_PACKAGE 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+
+Package: mozilla-firefox
+Version: 1.0.4-2sarge3
+Severity: critical
+Tags: security patch
+
+a security issue has been discovered. A workaround fix is available from
+the bug report. This applies to sarge/unstable and experimental version
+of firefox.
+
+The issue is named: CAN-2005-2871
+
+MFSA id is still missing.
+
+The upstream bug report is: #307259.
+
+A patch for aviary branch and HEAD is attached to the bugzilla bug.
+
+
+
+
+<strong>Acknowledgement sent</strong> to <code>Alexander Sack &lt;asac@debian.org&gt;</code>:<br>
+New Bug report received and forwarded.  Copy sent to <code>Eric Dorland &lt;eric@debian.org&gt;</code>.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: Alexander Sack <asac@debian.org>
+Subject: Bug#327452: Acknowledgement (security issue revealed: CAN-2005-2871)
+Message-ID: <handler.327452.B.11263427666564.ack@bugs.debian.org>
+In-Reply-To: <E1EE1Ci-0005kl-An@hanson>
+References: <E1EE1Ci-0005kl-An@hanson>
+Precedence: bulk
+X-Debian-PR-Message: ack 327452
+X-Debian-PR-Package: mozilla-firefox
+X-Debian-PR-Keywords: patch security
+Reply-To: 327452@bugs.debian.org
+
+Thank you for the problem report you have sent regarding Debian.
+This is an automatically generated reply, to let you know your message has
+been received.  It is being forwarded to the package maintainers and other
+interested parties for their attention; they will reply in due course.
+
+Your message has been sent to the package maintainer(s):
+ Eric Dorland <eric@debian.org>
+
+If you wish to submit further information on your problem, please send
+it to 327452@bugs.debian.org (and *not* to
+submit@bugs.debian.org).
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the Bug-tracking system.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+
+
+Received: (at submit) by bugs.debian.org; 10 Sep 2005 08:59:26 +0000
+From SRS0=13jN=XM=debian.org=asac@srs.kundenserver.de Sat Sep 10 01:59:26 2005
+Return-path: <SRS0=13jN=XM=debian.org=asac@srs.kundenserver.de>
+Received: from moutng.kundenserver.de [212.227.126.171] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1EE1Cn-0001hg-00; Sat, 10 Sep 2005 01:59:26 -0700
+Received: from c155145.adsl.hansenet.de [213.39.155.145] (helo=senica.personalfree.com)
+	by mrelayeu.kundenserver.de with ESMTP (Nemesis),
+	id 0ML29c-1EE1Cl0AeA-0008Gk; Sat, 10 Sep 2005 10:59:23 +0200
+Received: from [10.0.1.2] (helo=hanson ident=Debian-exim)
+	by senica.personalfree.com with esmtps (TLS-1.0:RSA_AES_256_CBC_SHA:32)
+	(Exim 4.50)
+	id 1EE1Cj-00078E-DA; Sat, 10 Sep 2005 10:59:21 +0200
+Received: from alex by hanson with local (Exim 4.52)
+	id 1EE1Ci-0005kl-An; Sat, 10 Sep 2005 10:59:20 +0200
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+From: Alexander Sack <asac@debian.org>
+To: Debian Bug Tracking System <submit@bugs.debian.org>
+Subject: security issue revealed: CAN-2005-2871
+X-Mailer: reportbug 3.15
+Date: Sat, 10 Sep 2005 10:59:20 +0200
+Message-Id: <E1EE1Ci-0005kl-An@hanson>
+X-Provags-ID: kundenserver.de abuse@kundenserver.de login:cbe77bd78e1b43e9d8afa4235a070258
+Delivered-To: submit@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-8.0 required=4.0 tests=BAYES_00,HAS_PACKAGE 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+
+Package: mozilla-firefox
+Version: 1.0.4-2sarge3
+Severity: critical
+Tags: security patch
+
+a security issue has been discovered. A workaround fix is available from
+the bug report. This applies to sarge/unstable and experimental version
+of firefox.
+
+The issue is named: CAN-2005-2871
+
+MFSA id is still missing.
+
+The upstream bug report is: #307259.
+
+A patch for aviary branch and HEAD is attached to the bugzilla bug.
+
+
+
+
+<strong>Information forwarded</strong> to <code>debian-bugs-dist@lists.debian.org, Eric Dorland &lt;eric@debian.org&gt;</code>:<br>
+<code>Bug#327452</code>; Package <code>mozilla-firefox</code>.
+
+
+debian-bugs-dist@lists.debian.orgEric Dorland <eric@debian.org>
+
+X-Loop: owner@bugs.debian.org
+Subject: Bug#327452: security issue revealed: CAN-2005-2871
+Reply-To: Alexander Sack <asac@jwsdot.com>, 327452@bugs.debian.org
+Resent-From: Alexander Sack <asac@jwsdot.com>
+Resent-To: debian-bugs-dist@lists.debian.org
+Resent-CC: Eric Dorland <eric@debian.org>
+Resent-Date: Sat, 10 Sep 2005 09:33:09 UTC
+Resent-Message-ID: <handler.327452.B327452.112634424727800@bugs.debian.org>
+Resent-Sender: owner@bugs.debian.org
+X-Debian-PR-Message: report 327452
+X-Debian-PR-Package: mozilla-firefox
+X-Debian-PR-Keywords: patch security
+Received: via spool by 327452-submit@bugs.debian.org id=B327452.112634424727800
+          (code B ref 327452); Sat, 10 Sep 2005 09:33:09 UTC
+Received: (at 327452) by bugs.debian.org; 10 Sep 2005 09:24:07 +0000
+Received: from moutng.kundenserver.de [212.227.126.177] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1EE1ah-0007Dj-00; Sat, 10 Sep 2005 02:24:07 -0700
+Received: from c155145.adsl.hansenet.de [213.39.155.145] (helo=senica.personalfree.com)
+	by mrelayeu.kundenserver.de with ESMTP (Nemesis),
+	id 0MKxQS-1EE1ag0DdB-0006ax; Sat, 10 Sep 2005 11:24:06 +0200
+Received: from [10.0.1.2] (helo=hanson ident=Debian-exim)
+	by senica.personalfree.com with esmtps (TLS-1.0:RSA_AES_256_CBC_SHA:32)
+	(Exim 4.50)
+	id 1EE1ae-0007Aj-DT; Sat, 10 Sep 2005 11:24:04 +0200
+Received: from alex by hanson with local (Exim 4.52)
+	id 1EE1ad-0005mF-0V; Sat, 10 Sep 2005 11:24:03 +0200
+Date: Sat, 10 Sep 2005 11:24:03 +0200
+From: Alexander Sack <asac@jwsdot.com>
+To: Alexander Sack <asac@debian.org>, 327452@bugs.debian.org
+Message-ID: <20050910092402.GA22194@jwsdot.com>
+References: <E1EE1Ci-0005kl-An@hanson>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1EE1Ci-0005kl-An@hanson>
+User-Agent: Mutt/1.5.10i
+X-Provags-ID: kundenserver.de abuse@kundenserver.de login:cbe77bd78e1b43e9d8afa4235a070258
+Delivered-To: 327452@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-6.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+
+On Sat, Sep 10, 2005 at 10:59:20AM +0200, Alexander Sack wrote:
+> Package: mozilla-firefox
+> Version: 1.0.4-2sarge3
+> Severity: critical
+> Tags: security patch
+> 
+> a security issue has been discovered. A workaround fix is available from
+> the bug report. This applies to sarge/unstable and experimental version
+> of firefox.
+> 
+> The issue is named: CAN-2005-2871
+> 
+> MFSA id is still missing.
+> 
+> The upstream bug report is: #307259.
+> 
+> A patch for aviary branch and HEAD is attached to the bugzilla bug.
+> 
+> 
+
+additional info on this issue:
+
+https://addons.mozilla.org/messages/307259.html
+
+
+-- 
+ GPG messages preferred.   |  .''`.  ** Debian GNU/Linux **
+ Alexander Sack            | : :' :      The  universal
+ asac@debian.org           | `. `'      Operating System
+ http://www.asoftsite.org  |   `-    http://www.debian.org
+
+
+
+
+<strong>Acknowledgement sent</strong> to <code>Alexander Sack &lt;asac@jwsdot.com&gt;</code>:<br>
+Extra info received and forwarded to list.  Copy sent to <code>Eric Dorland &lt;eric@debian.org&gt;</code>.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: Alexander Sack <asac@jwsdot.com>
+Subject: Bug#327452: Info received (was Bug#327452: security issue revealed: CAN-2005-2871)
+Message-ID: <handler.327452.B327452.112634424727800.ackinfo@bugs.debian.org>
+In-Reply-To: <20050910092402.GA22194@jwsdot.com>
+References: <20050910092402.GA22194@jwsdot.com>
+Precedence: bulk
+X-Debian-PR-Message: ack-info 327452
+X-Debian-PR-Package: mozilla-firefox
+X-Debian-PR-Keywords: patch security
+
+Thank you for the additional information you have supplied regarding
+this problem report.  It has been forwarded to the package maintainer(s)
+and to other interested parties to accompany the original report.
+
+Your message has been sent to the package maintainer(s):
+ Eric Dorland <eric@debian.org>
+
+If you wish to continue to submit further information on your problem,
+please send it to 327452@bugs.debian.org, as before.
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the Bug-tracking system.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+
+
+Received: (at 327452) by bugs.debian.org; 10 Sep 2005 09:24:07 +0000
+From alex@jwsdot.com Sat Sep 10 02:24:07 2005
+Return-path: <alex@jwsdot.com>
+Received: from moutng.kundenserver.de [212.227.126.177] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1EE1ah-0007Dj-00; Sat, 10 Sep 2005 02:24:07 -0700
+Received: from c155145.adsl.hansenet.de [213.39.155.145] (helo=senica.personalfree.com)
+	by mrelayeu.kundenserver.de with ESMTP (Nemesis),
+	id 0MKxQS-1EE1ag0DdB-0006ax; Sat, 10 Sep 2005 11:24:06 +0200
+Received: from [10.0.1.2] (helo=hanson ident=Debian-exim)
+	by senica.personalfree.com with esmtps (TLS-1.0:RSA_AES_256_CBC_SHA:32)
+	(Exim 4.50)
+	id 1EE1ae-0007Aj-DT; Sat, 10 Sep 2005 11:24:04 +0200
+Received: from alex by hanson with local (Exim 4.52)
+	id 1EE1ad-0005mF-0V; Sat, 10 Sep 2005 11:24:03 +0200
+Date: Sat, 10 Sep 2005 11:24:03 +0200
+From: Alexander Sack <asac@jwsdot.com>
+To: Alexander Sack <asac@debian.org>, 327452@bugs.debian.org
+Subject: Re: Bug#327452: security issue revealed: CAN-2005-2871
+Message-ID: <20050910092402.GA22194@jwsdot.com>
+References: <E1EE1Ci-0005kl-An@hanson>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1EE1Ci-0005kl-An@hanson>
+User-Agent: Mutt/1.5.10i
+X-Provags-ID: kundenserver.de abuse@kundenserver.de login:cbe77bd78e1b43e9d8afa4235a070258
+Delivered-To: 327452@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-6.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+
+On Sat, Sep 10, 2005 at 10:59:20AM +0200, Alexander Sack wrote:
+> Package: mozilla-firefox
+> Version: 1.0.4-2sarge3
+> Severity: critical
+> Tags: security patch
+> 
+> a security issue has been discovered. A workaround fix is available from
+> the bug report. This applies to sarge/unstable and experimental version
+> of firefox.
+> 
+> The issue is named: CAN-2005-2871
+> 
+> MFSA id is still missing.
+> 
+> The upstream bug report is: #307259.
+> 
+> A patch for aviary branch and HEAD is attached to the bugzilla bug.
+> 
+> 
+
+additional info on this issue:
+
+https://addons.mozilla.org/messages/307259.html
+
+
+-- 
+ GPG messages preferred.   |  .''`.  ** Debian GNU/Linux **
+ Alexander Sack            | : :' :      The  universal
+ asac@debian.org           | `. `'      Operating System
+ http://www.asoftsite.org  |   `-    http://www.debian.org
+
+
+
+
+<strong>Reply sent</strong> to <code>Eric Dorland &lt;eric@debian.org&gt;</code>:<br>
+You have taken responsibility.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: Eric Dorland <eric@debian.org>
+Subject: Bug#327452: marked as done (security issue revealed: CAN-2005-2871)
+Message-ID: <handler.327452.D327452.112641535223210.ackdone@bugs.debian.org>
+In-Reply-To: <E1EEJyn-0000Yx-00@spohr.debian.org>
+References: <E1EEJyn-0000Yx-00@spohr.debian.org> <E1EE1Ci-0005kl-An@hanson>
+Precedence: bulk
+X-Debian-PR-Message: closed 327452
+X-Debian-PR-Package: mozilla-firefox
+X-Debian-PR-Keywords: patch security
+
+Your message dated Sat, 10 Sep 2005 22:02:13 -0700
+with message-id <E1EEJyn-0000Yx-00@spohr.debian.org>
+and subject line Bug#327452: fixed in mozilla-firefox 1.0.6-5
+has caused the attached Bug report to be marked as done.
+
+This means that you claim that the problem has been dealt with.
+If this is not the case it is now your responsibility to reopen the
+Bug report if necessary, and/or fix the problem forthwith.
+
+(NB: If you are a system administrator and have no idea what I am
+talking about this indicates a serious mail system misconfiguration
+somewhere.  Please contact me immediately.)
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+--------------------------------------
+Received: (at submit) by bugs.debian.org; 10 Sep 2005 08:59:26 +0000
+From SRS0=13jN=XM=debian.org=asac@srs.kundenserver.de Sat Sep 10 01:59:26 2005
+Return-path: <SRS0=13jN=XM=debian.org=asac@srs.kundenserver.de>
+Received: from moutng.kundenserver.de [212.227.126.171] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1EE1Cn-0001hg-00; Sat, 10 Sep 2005 01:59:26 -0700
+Received: from c155145.adsl.hansenet.de [213.39.155.145] (helo=senica.personalfree.com)
+	by mrelayeu.kundenserver.de with ESMTP (Nemesis),
+	id 0ML29c-1EE1Cl0AeA-0008Gk; Sat, 10 Sep 2005 10:59:23 +0200
+Received: from [10.0.1.2] (helo=hanson ident=Debian-exim)
+	by senica.personalfree.com with esmtps (TLS-1.0:RSA_AES_256_CBC_SHA:32)
+	(Exim 4.50)
+	id 1EE1Cj-00078E-DA; Sat, 10 Sep 2005 10:59:21 +0200
+Received: from alex by hanson with local (Exim 4.52)
+	id 1EE1Ci-0005kl-An; Sat, 10 Sep 2005 10:59:20 +0200
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+From: Alexander Sack <asac@debian.org>
+To: Debian Bug Tracking System <submit@bugs.debian.org>
+Subject: security issue revealed: CAN-2005-2871
+X-Mailer: reportbug 3.15
+Date: Sat, 10 Sep 2005 10:59:20 +0200
+Message-Id: <E1EE1Ci-0005kl-An@hanson>
+X-Provags-ID: kundenserver.de abuse@kundenserver.de login:cbe77bd78e1b43e9d8afa4235a070258
+Delivered-To: submit@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-8.0 required=4.0 tests=BAYES_00,HAS_PACKAGE 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+
+Package: mozilla-firefox
+Version: 1.0.4-2sarge3
+Severity: critical
+Tags: security patch
+
+a security issue has been discovered. A workaround fix is available from
+the bug report. This applies to sarge/unstable and experimental version
+of firefox.
+
+The issue is named: CAN-2005-2871
+
+MFSA id is still missing.
+
+The upstream bug report is: #307259.
+
+A patch for aviary branch and HEAD is attached to the bugzilla bug.
+
+---------------------------------------
+Received: (at 327452-close) by bugs.debian.org; 11 Sep 2005 05:09:12 +0000
+From katie@spohr.debian.org Sat Sep 10 22:09:12 2005
+Return-path: <katie@spohr.debian.org>
+Received: from katie by spohr.debian.org with local (Exim 3.36 1 (Debian))
+	id 1EEJyn-0000Yx-00; Sat, 10 Sep 2005 22:02:13 -0700
+From: Eric Dorland <eric@debian.org>
+To: 327452-close@bugs.debian.org
+X-Katie: $Revision: 1.56 $
+Subject: Bug#327452: fixed in mozilla-firefox 1.0.6-5
+Message-Id: <E1EEJyn-0000Yx-00@spohr.debian.org>
+Sender: Archive Administrator <katie@spohr.debian.org>
+Date: Sat, 10 Sep 2005 22:02:13 -0700
+Delivered-To: 327452-close@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-6.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-CrossAssassin-Score: 2
+
+Source: mozilla-firefox
+Source-Version: 1.0.6-5
+
+We believe that the bug you reported is fixed in the latest version of
+mozilla-firefox, which is due to be installed in the Debian FTP archive:
+
+mozilla-firefox-dom-inspector_1.0.6-5_i386.deb
+  to pool/main/m/mozilla-firefox/mozilla-firefox-dom-inspector_1.0.6-5_i386.deb
+mozilla-firefox-gnome-support_1.0.6-5_i386.deb
+  to pool/main/m/mozilla-firefox/mozilla-firefox-gnome-support_1.0.6-5_i386.deb
+mozilla-firefox_1.0.6-5.diff.gz
+  to pool/main/m/mozilla-firefox/mozilla-firefox_1.0.6-5.diff.gz
+mozilla-firefox_1.0.6-5.dsc
+  to pool/main/m/mozilla-firefox/mozilla-firefox_1.0.6-5.dsc
+mozilla-firefox_1.0.6-5_i386.deb
+  to pool/main/m/mozilla-firefox/mozilla-firefox_1.0.6-5_i386.deb
+
+
+
+A summary of the changes between this version and the previous one is
+attached.
+
+Thank you for reporting the bug, which will now be closed.  If you
+have further comments please address them to 327452@bugs.debian.org,
+and the maintainer will reopen the bug report if appropriate.
+
+Debian distribution maintenance software
+pp.
+Eric Dorland <eric@debian.org> (supplier of updated mozilla-firefox package)
+
+(This message was generated automatically at their request; if you
+believe that there is a problem with it please contact the archive
+administrators by mailing ftpmaster@debian.org)
+
+
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Format: 1.7
+Date: Sat, 10 Sep 2005 23:03:26 -0400
+Source: mozilla-firefox
+Binary: mozilla-firefox mozilla-firefox-gnome-support mozilla-firefox-dom-inspector
+Architecture: source i386
+Version: 1.0.6-5
+Distribution: unstable
+Urgency: critical
+Maintainer: Eric Dorland <eric@debian.org>
+Changed-By: Eric Dorland <eric@debian.org>
+Description: 
+ mozilla-firefox - lightweight web browser based on Mozilla
+ mozilla-firefox-dom-inspector - tool for inspecting the DOM of pages in Mozilla Firefox
+ mozilla-firefox-gnome-support - Support for Gnome in Mozilla Firefox
+Closes: 325535 327452
+Changes: 
+ mozilla-firefox (1.0.6-5) unstable; urgency=critical
+ .
+   * xpcom/reflect/xptcall/src/md/unix/xptcstubs_arm.cpp: Fix for previous
+     arm fix. Thanks Steve. (Closes: #325535)
+   * netwerk/base/src/nsStandardURL.cpp: Patch from bz#307259 to fix
+     CAN-2005-2871, a buffer overflow vulnerability in IDN
+     processing. (Closes: #327452)
+Files: 
+ 56a1477e9f18f99f5a7a62246860b8b8 972 web optional mozilla-firefox_1.0.6-5.dsc
+ 1f52ba9cd95c548771d8d21c28a7f0d3 233388 web optional mozilla-firefox_1.0.6-5.diff.gz
+ 562b0e559e4cf88bb049882be50157b3 7621334 web optional mozilla-firefox_1.0.6-5_i386.deb
+ adccd0ee8960fc29846d7342ca8c72bc 155300 web optional mozilla-firefox-dom-inspector_1.0.6-5_i386.deb
+ fee07215fd81b41dbee83b849485e6a8 53148 web optional mozilla-firefox-gnome-support_1.0.6-5_i386.deb
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFDI7XQYemOzxbZcMYRAtz+AJ0Uxby8FVyZpfyUlEf/nrZuYhsrTgCgpkZj
+E/+JV4frnQbUMHfI7XbKNSQ=
+=91jz
+-----END PGP SIGNATURE-----
+
+
+
+
+<strong>Notification sent</strong> to <code>Alexander Sack &lt;asac@debian.org&gt;</code>:<br>
+Bug acknowledged by developer.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: Alexander Sack <asac@debian.org>
+Subject: Bug#327452 acknowledged by developer
+         (Bug#327452: fixed in mozilla-firefox 1.0.6-5)
+Message-ID: <handler.327452.D327452.112641535223210.notifdone@bugs.debian.org>
+In-Reply-To: <E1EE1Ci-0005kl-An@hanson>
+References: <E1EEJyn-0000Yx-00@spohr.debian.org> <E1EE1Ci-0005kl-An@hanson>
+X-Debian-PR-Message: they-closed 327452
+X-Debian-PR-Package: mozilla-firefox
+X-Debian-PR-Keywords: patch security
+Reply-To: 327452@bugs.debian.org
+
+This is an automatic notification regarding your Bug report
+#327452: security issue revealed: CAN-2005-2871,
+which was filed against the mozilla-firefox package.
+
+It has been closed by one of the developers, namely
+Eric Dorland <eric@debian.org>.
+
+Their explanation is attached below.  If this explanation is
+unsatisfactory and you have not received a better one in a separate
+message then please contact the developer, by replying to this email.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+Received: (at 327452-close) by bugs.debian.org; 11 Sep 2005 05:09:12 +0000
+From katie@spohr.debian.org Sat Sep 10 22:09:12 2005
+Return-path: <katie@spohr.debian.org>
+Received: from katie by spohr.debian.org with local (Exim 3.36 1 (Debian))
+	id 1EEJyn-0000Yx-00; Sat, 10 Sep 2005 22:02:13 -0700
+From: Eric Dorland <eric@debian.org>
+To: 327452-close@bugs.debian.org
+X-Katie: $Revision: 1.56 $
+Subject: Bug#327452: fixed in mozilla-firefox 1.0.6-5
+Message-Id: <E1EEJyn-0000Yx-00@spohr.debian.org>
+Sender: Archive Administrator <katie@spohr.debian.org>
+Date: Sat, 10 Sep 2005 22:02:13 -0700
+Delivered-To: 327452-close@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-6.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-CrossAssassin-Score: 2
+
+Source: mozilla-firefox
+Source-Version: 1.0.6-5
+
+We believe that the bug you reported is fixed in the latest version of
+mozilla-firefox, which is due to be installed in the Debian FTP archive:
+
+mozilla-firefox-dom-inspector_1.0.6-5_i386.deb
+  to pool/main/m/mozilla-firefox/mozilla-firefox-dom-inspector_1.0.6-5_i386.deb
+mozilla-firefox-gnome-support_1.0.6-5_i386.deb
+  to pool/main/m/mozilla-firefox/mozilla-firefox-gnome-support_1.0.6-5_i386.deb
+mozilla-firefox_1.0.6-5.diff.gz
+  to pool/main/m/mozilla-firefox/mozilla-firefox_1.0.6-5.diff.gz
+mozilla-firefox_1.0.6-5.dsc
+  to pool/main/m/mozilla-firefox/mozilla-firefox_1.0.6-5.dsc
+mozilla-firefox_1.0.6-5_i386.deb
+  to pool/main/m/mozilla-firefox/mozilla-firefox_1.0.6-5_i386.deb
+
+
+
+A summary of the changes between this version and the previous one is
+attached.
+
+Thank you for reporting the bug, which will now be closed.  If you
+have further comments please address them to 327452@bugs.debian.org,
+and the maintainer will reopen the bug report if appropriate.
+
+Debian distribution maintenance software
+pp.
+Eric Dorland <eric@debian.org> (supplier of updated mozilla-firefox package)
+
+(This message was generated automatically at their request; if you
+believe that there is a problem with it please contact the archive
+administrators by mailing ftpmaster@debian.org)
+
+
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Format: 1.7
+Date: Sat, 10 Sep 2005 23:03:26 -0400
+Source: mozilla-firefox
+Binary: mozilla-firefox mozilla-firefox-gnome-support mozilla-firefox-dom-inspector
+Architecture: source i386
+Version: 1.0.6-5
+Distribution: unstable
+Urgency: critical
+Maintainer: Eric Dorland <eric@debian.org>
+Changed-By: Eric Dorland <eric@debian.org>
+Description: 
+ mozilla-firefox - lightweight web browser based on Mozilla
+ mozilla-firefox-dom-inspector - tool for inspecting the DOM of pages in Mozilla Firefox
+ mozilla-firefox-gnome-support - Support for Gnome in Mozilla Firefox
+Closes: 325535 327452
+Changes: 
+ mozilla-firefox (1.0.6-5) unstable; urgency=critical
+ .
+   * xpcom/reflect/xptcall/src/md/unix/xptcstubs_arm.cpp: Fix for previous
+     arm fix. Thanks Steve. (Closes: #325535)
+   * netwerk/base/src/nsStandardURL.cpp: Patch from bz#307259 to fix
+     CAN-2005-2871, a buffer overflow vulnerability in IDN
+     processing. (Closes: #327452)
+Files: 
+ 56a1477e9f18f99f5a7a62246860b8b8 972 web optional mozilla-firefox_1.0.6-5.dsc
+ 1f52ba9cd95c548771d8d21c28a7f0d3 233388 web optional mozilla-firefox_1.0.6-5.diff.gz
+ 562b0e559e4cf88bb049882be50157b3 7621334 web optional mozilla-firefox_1.0.6-5_i386.deb
+ adccd0ee8960fc29846d7342ca8c72bc 155300 web optional mozilla-firefox-dom-inspector_1.0.6-5_i386.deb
+ fee07215fd81b41dbee83b849485e6a8 53148 web optional mozilla-firefox-gnome-support_1.0.6-5_i386.deb
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFDI7XQYemOzxbZcMYRAtz+AJ0Uxby8FVyZpfyUlEf/nrZuYhsrTgCgpkZj
+E/+JV4frnQbUMHfI7XbKNSQ=
+=91jz
+-----END PGP SIGNATURE-----
+
+
+
+
+Received: (at 327452-close) by bugs.debian.org; 11 Sep 2005 05:09:12 +0000
+From katie@spohr.debian.org Sat Sep 10 22:09:12 2005
+Return-path: <katie@spohr.debian.org>
+Received: from katie by spohr.debian.org with local (Exim 3.36 1 (Debian))
+	id 1EEJyn-0000Yx-00; Sat, 10 Sep 2005 22:02:13 -0700
+From: Eric Dorland <eric@debian.org>
+To: 327452-close@bugs.debian.org
+X-Katie: $Revision: 1.56 $
+Subject: Bug#327452: fixed in mozilla-firefox 1.0.6-5
+Message-Id: <E1EEJyn-0000Yx-00@spohr.debian.org>
+Sender: Archive Administrator <katie@spohr.debian.org>
+Date: Sat, 10 Sep 2005 22:02:13 -0700
+Delivered-To: 327452-close@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-6.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-CrossAssassin-Score: 2
+
+Source: mozilla-firefox
+Source-Version: 1.0.6-5
+
+We believe that the bug you reported is fixed in the latest version of
+mozilla-firefox, which is due to be installed in the Debian FTP archive:
+
+mozilla-firefox-dom-inspector_1.0.6-5_i386.deb
+  to pool/main/m/mozilla-firefox/mozilla-firefox-dom-inspector_1.0.6-5_i386.deb
+mozilla-firefox-gnome-support_1.0.6-5_i386.deb
+  to pool/main/m/mozilla-firefox/mozilla-firefox-gnome-support_1.0.6-5_i386.deb
+mozilla-firefox_1.0.6-5.diff.gz
+  to pool/main/m/mozilla-firefox/mozilla-firefox_1.0.6-5.diff.gz
+mozilla-firefox_1.0.6-5.dsc
+  to pool/main/m/mozilla-firefox/mozilla-firefox_1.0.6-5.dsc
+mozilla-firefox_1.0.6-5_i386.deb
+  to pool/main/m/mozilla-firefox/mozilla-firefox_1.0.6-5_i386.deb
+
+
+
+A summary of the changes between this version and the previous one is
+attached.
+
+Thank you for reporting the bug, which will now be closed.  If you
+have further comments please address them to 327452@bugs.debian.org,
+and the maintainer will reopen the bug report if appropriate.
+
+Debian distribution maintenance software
+pp.
+Eric Dorland <eric@debian.org> (supplier of updated mozilla-firefox package)
+
+(This message was generated automatically at their request; if you
+believe that there is a problem with it please contact the archive
+administrators by mailing ftpmaster@debian.org)
+
+
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Format: 1.7
+Date: Sat, 10 Sep 2005 23:03:26 -0400
+Source: mozilla-firefox
+Binary: mozilla-firefox mozilla-firefox-gnome-support mozilla-firefox-dom-inspector
+Architecture: source i386
+Version: 1.0.6-5
+Distribution: unstable
+Urgency: critical
+Maintainer: Eric Dorland <eric@debian.org>
+Changed-By: Eric Dorland <eric@debian.org>
+Description: 
+ mozilla-firefox - lightweight web browser based on Mozilla
+ mozilla-firefox-dom-inspector - tool for inspecting the DOM of pages in Mozilla Firefox
+ mozilla-firefox-gnome-support - Support for Gnome in Mozilla Firefox
+Closes: 325535 327452
+Changes: 
+ mozilla-firefox (1.0.6-5) unstable; urgency=critical
+ .
+   * xpcom/reflect/xptcall/src/md/unix/xptcstubs_arm.cpp: Fix for previous
+     arm fix. Thanks Steve. (Closes: #325535)
+   * netwerk/base/src/nsStandardURL.cpp: Patch from bz#307259 to fix
+     CAN-2005-2871, a buffer overflow vulnerability in IDN
+     processing. (Closes: #327452)
+Files: 
+ 56a1477e9f18f99f5a7a62246860b8b8 972 web optional mozilla-firefox_1.0.6-5.dsc
+ 1f52ba9cd95c548771d8d21c28a7f0d3 233388 web optional mozilla-firefox_1.0.6-5.diff.gz
+ 562b0e559e4cf88bb049882be50157b3 7621334 web optional mozilla-firefox_1.0.6-5_i386.deb
+ adccd0ee8960fc29846d7342ca8c72bc 155300 web optional mozilla-firefox-dom-inspector_1.0.6-5_i386.deb
+ fee07215fd81b41dbee83b849485e6a8 53148 web optional mozilla-firefox-gnome-support_1.0.6-5_i386.deb
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFDI7XQYemOzxbZcMYRAtz+AJ0Uxby8FVyZpfyUlEf/nrZuYhsrTgCgpkZj
+E/+JV4frnQbUMHfI7XbKNSQ=
+=91jz
+-----END PGP SIGNATURE-----
+
+
+
+
+
+<strong>Bug marked as found in version 1.0.99+deerpark-alpha1-1.</strong>
+Request was from <code>Mike Hommey &lt;mh@glandium.org&gt;</code>
+to <code>control@bugs.debian.org</code>. 
+
+
+Received: (at control) by bugs.debian.org; 11 Sep 2005 08:13:11 +0000
+From mh@glandium.org Sun Sep 11 01:13:11 2005
+Return-path: <mh@glandium.org>
+Received: from aputeaux-153-1-33-28.w82-124.abo.wanadoo.fr (namakemono.glandium.org) [82.124.3.28] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1EEMxa-00065o-00; Sun, 11 Sep 2005 01:13:11 -0700
+Received: from mh by namakemono.glandium.org with local (Exim 4.52)
+	id 1EEMwu-0001uG-Iz
+	for control@bugs.debian.org; Sun, 11 Sep 2005 10:12:28 +0200
+Date: Sun, 11 Sep 2005 10:12:28 +0200
+From: Mike Hommey <mh@glandium.org>
+To: control@bugs.debian.org
+Subject: Re: Bug#327452: marked as done (security issue revealed: CAN-2005-2871)
+Message-ID: <20050911081228.GB5416@glandium.org>
+References: <E1EEJyn-0000Yx-00@spohr.debian.org> <E1EE1Ci-0005kl-An@hanson> <handler.327452.D327452.112641535223210.ackdone@bugs.debian.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <handler.327452.D327452.112641535223210.ackdone@bugs.debian.org>
+X-GPG-Fingerprint: A479 A824 265C B2A5 FC54  8D1E DE4B DA2C 54FD 2A58
+Organization: glandium.org
+User-Agent: Mutt/1.5.10i
+Delivered-To: control@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-6.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+
+found 327452 1.0.99+deerpark-alpha1-1
+thanks
+
+
+
+
+<strong>Tags added: fixed-in-experimental</strong>
+Request was from <code>Mike Hommey &lt;glandium@debian.org&gt;</code>
+to <code>control@bugs.debian.org</code>. 
+
+
+Received: (at control) by bugs.debian.org; 11 Sep 2005 11:48:46 +0000
+From katie@spohr.debian.org Sun Sep 11 04:48:46 2005
+Return-path: <katie@spohr.debian.org>
+Received: from katie by spohr.debian.org with local (Exim 3.36 1 (Debian))
+	id 1EEQIo-0007Lg-00; Sun, 11 Sep 2005 04:47:18 -0700
+From: Mike Hommey <glandium@debian.org>
+To: control@bugs.debian.org
+Cc: Mike Hommey <glandium@debian.org>
+X-Katie: $Revision: 1.56 $
+Subject: Fixed in upload of mozilla-firefox 1.4.99+1.5beta1-2 to experimental
+Message-Id: <E1EEQIo-0007Lg-00@spohr.debian.org>
+Sender: Archive Administrator <katie@spohr.debian.org>
+Date: Sun, 11 Sep 2005 04:47:18 -0700
+Delivered-To: control@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-5.0 required=4.0 tests=BAYES_00,VALID_BTS_CONTROL 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+
+tag 327451 + fixed-in-experimental
+tag 327452 + fixed-in-experimental
+
+quit
+
+This message was generated automatically in response to an
+upload to the experimental distribution.  The .changes file follows.
+
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Format: 1.7
+Date: Sun, 11 Sep 2005 10:45:34 +0200
+Source: mozilla-firefox
+Binary: mozilla-firefox mozilla-firefox-gnome-support mozilla-firefox-dom-inspector
+Architecture: source i386
+Version: 1.4.99+1.5beta1-2
+Distribution: experimental
+Urgency: critical
+Maintainer: Mike Hommey <glandium@debian.org>
+Changed-By: Mike Hommey <glandium@debian.org>
+Description: 
+ mozilla-firefox - lightweight web browser based on Mozilla
+ mozilla-firefox-dom-inspector - tool for inspecting the DOM of pages in Mozilla Firefox
+ mozilla-firefox-gnome-support - Support for Gnome in Mozilla Firefox
+Closes: 327451 327452
+Changes: 
+ mozilla-firefox (1.4.99+1.5beta1-2) experimental; urgency=critical
+ .
+   * Sync with unstable branch.
+   * netwerk/base/src/nsStandardURL.cpp: Apply the patch for the 1.8 branch
+     from bz#307259 to fix CAN-2005-2871. (Closes: #327452)
+   * debian/mozilla-firefox-gnome-support.install, debian/rules: Move out
+     imgicon module in mozilla-firefox-gnome-support. (Closes: #327451)
+Files: 
+ afea632558a5926d0df55520c72dc510 1020 web optional mozilla-firefox_1.4.99+1.5beta1-2.dsc
+ 02310a8d0650b98bbfbfe74abfa2aa7c 79203 web optional mozilla-firefox_1.4.99+1.5beta1-2.diff.gz
+ 88e9faf341615c0612f565ddae11968a 7767980 web optional mozilla-firefox_1.4.99+1.5beta1-2_i386.deb
+ e1002ce80b288351ba87e0f3f2232c65 174982 web optional mozilla-firefox-dom-inspector_1.4.99+1.5beta1-2_i386.deb
+ 1f0f891339b749b6246d87700584bd01 63246 web optional mozilla-firefox-gnome-support_1.4.99+1.5beta1-2_i386.deb
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFDJBhY3kvaLFT9KlgRArhLAJ9qHNZjWCYBrUHy1bD9cCIDfszsFwCdFxNW
+7PZpymIxk5tma6+75P4MdRM=
+=Xyqn
+-----END PGP SIGNATURE-----
+
+
+
+
+
+<strong>Tags removed: fixed-in-experimental</strong>
+Request was from <code>Mike Hommey &lt;mh@glandium.org&gt;</code>
+to <code>control@bugs.debian.org</code>. 
+
+
+Received: (at control) by bugs.debian.org; 11 Sep 2005 12:17:04 +0000
+From mh@glandium.org Sun Sep 11 05:17:04 2005
+Return-path: <mh@glandium.org>
+Received: from aputeaux-153-1-33-28.w82-124.abo.wanadoo.fr (namakemono.glandium.org) [82.124.3.28] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1EEQlc-0007A9-00; Sun, 11 Sep 2005 05:17:04 -0700
+Received: from mh by namakemono.glandium.org with local (Exim 4.52)
+	id 1EEQkv-00026B-TD
+	for control@bugs.debian.org; Sun, 11 Sep 2005 14:16:21 +0200
+Date: Sun, 11 Sep 2005 14:16:21 +0200
+From: Mike Hommey <mh@glandium.org>
+To: control@bugs.debian.org
+Subject: Fixed in upload of mozilla-firefox 1.4.99+1.5beta1-2 to experimental
+Message-ID: <20050911121621.GD5416@glandium.org>
+References: <E1EEQIo-0007Lg-00@spohr.debian.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1EEQIo-0007Lg-00@spohr.debian.org>
+X-GPG-Fingerprint: A479 A824 265C B2A5 FC54  8D1E DE4B DA2C 54FD 2A58
+Organization: glandium.org
+User-Agent: Mutt/1.5.10i
+Delivered-To: control@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-5.0 required=4.0 tests=BAYES_00,VALID_BTS_CONTROL 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+
+tag 327451 - fixed-in-experimental
+tag 327452 - fixed-in-experimental
+tag 327451 1.4.99+1.5beta1-2
+tag 327452 1.4.99+1.5beta1-2
+thanks
+
+> 
+> This message was generated automatically in response to an
+> upload to the experimental distribution.  The .changes file follows.
+> 
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+> 
+> Format: 1.7
+> Date: Sun, 11 Sep 2005 10:45:34 +0200
+> Source: mozilla-firefox
+> Binary: mozilla-firefox mozilla-firefox-gnome-support mozilla-firefox-dom-inspector
+> Architecture: source i386
+> Version: 1.4.99+1.5beta1-2
+> Distribution: experimental
+> Urgency: critical
+> Maintainer: Mike Hommey <glandium@debian.org>
+> Changed-By: Mike Hommey <glandium@debian.org>
+> Description: 
+>  mozilla-firefox - lightweight web browser based on Mozilla
+>  mozilla-firefox-dom-inspector - tool for inspecting the DOM of pages in Mozilla Firefox
+>  mozilla-firefox-gnome-support - Support for Gnome in Mozilla Firefox
+> Closes: 327451 327452
+> Changes: 
+>  mozilla-firefox (1.4.99+1.5beta1-2) experimental; urgency=critical
+>  .
+>    * Sync with unstable branch.
+>    * netwerk/base/src/nsStandardURL.cpp: Apply the patch for the 1.8 branch
+>      from bz#307259 to fix CAN-2005-2871. (Closes: #327452)
+>    * debian/mozilla-firefox-gnome-support.install, debian/rules: Move out
+>      imgicon module in mozilla-firefox-gnome-support. (Closes: #327451)
+> Files: 
+>  afea632558a5926d0df55520c72dc510 1020 web optional mozilla-firefox_1.4.99+1.5beta1-2.dsc
+>  02310a8d0650b98bbfbfe74abfa2aa7c 79203 web optional mozilla-firefox_1.4.99+1.5beta1-2.diff.gz
+>  88e9faf341615c0612f565ddae11968a 7767980 web optional mozilla-firefox_1.4.99+1.5beta1-2_i386.deb
+>  e1002ce80b288351ba87e0f3f2232c65 174982 web optional mozilla-firefox-dom-inspector_1.4.99+1.5beta1-2_i386.deb
+>  1f0f891339b749b6246d87700584bd01 63246 web optional mozilla-firefox-gnome-support_1.4.99+1.5beta1-2_i386.deb
+> 
+> -----BEGIN PGP SIGNATURE-----
+> Version: GnuPG v1.4.1 (GNU/Linux)
+> 
+> iD8DBQFDJBhY3kvaLFT9KlgRArhLAJ9qHNZjWCYBrUHy1bD9cCIDfszsFwCdFxNW
+> 7PZpymIxk5tma6+75P4MdRM=
+> =Xyqn
+> -----END PGP SIGNATURE-----
+> 
+
+
+
+
+<strong>Tags added: </strong>
+Request was from <code>Mike Hommey &lt;mh@glandium.org&gt;</code>
+to <code>control@bugs.debian.org</code>. 
+
+
+Received: (at control) by bugs.debian.org; 11 Sep 2005 12:17:04 +0000
+From mh@glandium.org Sun Sep 11 05:17:04 2005
+Return-path: <mh@glandium.org>
+Received: from aputeaux-153-1-33-28.w82-124.abo.wanadoo.fr (namakemono.glandium.org) [82.124.3.28] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1EEQlc-0007A9-00; Sun, 11 Sep 2005 05:17:04 -0700
+Received: from mh by namakemono.glandium.org with local (Exim 4.52)
+	id 1EEQkv-00026B-TD
+	for control@bugs.debian.org; Sun, 11 Sep 2005 14:16:21 +0200
+Date: Sun, 11 Sep 2005 14:16:21 +0200
+From: Mike Hommey <mh@glandium.org>
+To: control@bugs.debian.org
+Subject: Fixed in upload of mozilla-firefox 1.4.99+1.5beta1-2 to experimental
+Message-ID: <20050911121621.GD5416@glandium.org>
+References: <E1EEQIo-0007Lg-00@spohr.debian.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1EEQIo-0007Lg-00@spohr.debian.org>
+X-GPG-Fingerprint: A479 A824 265C B2A5 FC54  8D1E DE4B DA2C 54FD 2A58
+Organization: glandium.org
+User-Agent: Mutt/1.5.10i
+Delivered-To: control@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-5.0 required=4.0 tests=BAYES_00,VALID_BTS_CONTROL 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+
+tag 327451 - fixed-in-experimental
+tag 327452 - fixed-in-experimental
+tag 327451 1.4.99+1.5beta1-2
+tag 327452 1.4.99+1.5beta1-2
+thanks
+
+> 
+> This message was generated automatically in response to an
+> upload to the experimental distribution.  The .changes file follows.
+> 
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+> 
+> Format: 1.7
+> Date: Sun, 11 Sep 2005 10:45:34 +0200
+> Source: mozilla-firefox
+> Binary: mozilla-firefox mozilla-firefox-gnome-support mozilla-firefox-dom-inspector
+> Architecture: source i386
+> Version: 1.4.99+1.5beta1-2
+> Distribution: experimental
+> Urgency: critical
+> Maintainer: Mike Hommey <glandium@debian.org>
+> Changed-By: Mike Hommey <glandium@debian.org>
+> Description: 
+>  mozilla-firefox - lightweight web browser based on Mozilla
+>  mozilla-firefox-dom-inspector - tool for inspecting the DOM of pages in Mozilla Firefox
+>  mozilla-firefox-gnome-support - Support for Gnome in Mozilla Firefox
+> Closes: 327451 327452
+> Changes: 
+>  mozilla-firefox (1.4.99+1.5beta1-2) experimental; urgency=critical
+>  .
+>    * Sync with unstable branch.
+>    * netwerk/base/src/nsStandardURL.cpp: Apply the patch for the 1.8 branch
+>      from bz#307259 to fix CAN-2005-2871. (Closes: #327452)
+>    * debian/mozilla-firefox-gnome-support.install, debian/rules: Move out
+>      imgicon module in mozilla-firefox-gnome-support. (Closes: #327451)
+> Files: 
+>  afea632558a5926d0df55520c72dc510 1020 web optional mozilla-firefox_1.4.99+1.5beta1-2.dsc
+>  02310a8d0650b98bbfbfe74abfa2aa7c 79203 web optional mozilla-firefox_1.4.99+1.5beta1-2.diff.gz
+>  88e9faf341615c0612f565ddae11968a 7767980 web optional mozilla-firefox_1.4.99+1.5beta1-2_i386.deb
+>  e1002ce80b288351ba87e0f3f2232c65 174982 web optional mozilla-firefox-dom-inspector_1.4.99+1.5beta1-2_i386.deb
+>  1f0f891339b749b6246d87700584bd01 63246 web optional mozilla-firefox-gnome-support_1.4.99+1.5beta1-2_i386.deb
+> 
+> -----BEGIN PGP SIGNATURE-----
+> Version: GnuPG v1.4.1 (GNU/Linux)
+> 
+> iD8DBQFDJBhY3kvaLFT9KlgRArhLAJ9qHNZjWCYBrUHy1bD9cCIDfszsFwCdFxNW
+> 7PZpymIxk5tma6+75P4MdRM=
+> =Xyqn
+> -----END PGP SIGNATURE-----
+> 
+
+
+
+
+<strong>Bug marked as fixed in version 1.4.99+1.5beta1-2, send any further explanations to Alexander Sack &lt;asac@debian.org&gt;</strong>
+Request was from <code>Mike Hommey &lt;mh@glandium.org&gt;</code>
+to <code>control@bugs.debian.org</code>. 
+
+
+Received: (at control) by bugs.debian.org; 11 Sep 2005 14:27:03 +0000
+From mh@glandium.org Sun Sep 11 07:27:03 2005
+Return-path: <mh@glandium.org>
+Received: from aputeaux-153-1-33-28.w82-124.abo.wanadoo.fr (namakemono.glandium.org) [82.124.3.28] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1EESnP-0004PA-00; Sun, 11 Sep 2005 07:27:03 -0700
+Received: from mh by namakemono.glandium.org with local (Exim 4.52)
+	id 1EESmi-0002A1-Uf
+	for control@bugs.debian.org; Sun, 11 Sep 2005 16:26:20 +0200
+Date: Sun, 11 Sep 2005 16:26:20 +0200
+From: Mike Hommey <mh@glandium.org>
+To: control@bugs.debian.org
+Subject: [owner@bugs.debian.org: Processed: Fixed in upload of mozilla-firefox 1.4.99+1.5beta1-2 to experimental]
+Message-ID: <20050911142620.GA8076@glandium.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-GPG-Fingerprint: A479 A824 265C B2A5 FC54  8D1E DE4B DA2C 54FD 2A58
+Organization: glandium.org
+User-Agent: Mutt/1.5.10i
+Delivered-To: control@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-3.0 required=4.0 tests=BAYES_00 autolearn=no 
+	version=2.60-bugs.debian.org_2005_01_02
+
+close 327451 1.4.99+1.5beta1-2
+close 327452 1.4.99+1.5beta1-2
+
+
+

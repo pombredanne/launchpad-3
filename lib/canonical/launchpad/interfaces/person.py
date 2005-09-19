@@ -23,14 +23,17 @@ __all__ = [
     ]
 
 from zope.schema import (
-    List, Tuple, Choice, Datetime, Int, Text, TextLine, Password,
-    ValidationError)
+    List, Tuple, Choice, Datetime, Int, Text, TextLine, Password, Object,
+    ValidationError, Bytes)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
+from canonical.launchpad.interfaces.validation import (
+    valid_emblem, valid_hackergotchi)
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, EmailAddressStatus)
@@ -96,6 +99,21 @@ class IPerson(Interface):
             title=_('Karma'), readonly=False,
             description=_('The cached karma for this person.')
             )
+    homepage_content = Text(title=_("Homepage Content"), required=False,
+        description=_("The content of your home page. Edit this and it "
+        "will be displayed for all the world to see. It is NOT a wiki "
+        "so you cannot undo changes."))
+    emblem = Bytes(
+        title=_("Emblem"), required=False, description=_("A small image, "
+        "max 16x16, that can be used to refer to this team of person."),
+        constraint=valid_emblem)
+    hackergotchi = Bytes(
+        title=_("Hackergotchi"), required=False, description=_("An image, "
+        "max size 96x96, that will be displayed on your home page. "
+        "Traditionally this is a great big grinning image of your mug. "
+        "Make the most of it."),
+        constraint=valid_hackergotchi)
+
     addressline1 = TextLine(
             title=_('Address'), required=True, readonly=False,
             description=_('Your address (Line 1)')
@@ -156,9 +174,10 @@ class IPerson(Interface):
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
-    gpgkeys = Attribute("List of GPGkeys")
+    gpgkeys = Attribute("List of valid GPGkeys ordered by ID")
     pendinggpgkeys = Attribute("Set of GPG fingerprints pending validation")
-    inactivegpgkeys = Attribute("List of inactive GPG keys in LP Context")
+    inactivegpgkeys = Attribute("List of inactive GPG keys in LP Context, "
+                                "ordered by ID")
     ubuntuwiki = Attribute("The Ubuntu WikiName of this Person.")
     otherwikis = Attribute(
         "All WikiNames of this Person that are not the Ubuntu one.")
@@ -438,6 +457,7 @@ class IPerson(Interface):
 
         If the given language is not present, nothing  will happen.
         """
+
 
 class ITeam(IPerson):
     """ITeam extends IPerson.

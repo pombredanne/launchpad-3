@@ -26,6 +26,8 @@ from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IShippingRequestSet, ILaunchBag, IShipItCountry,
     ShippingRequestStatus, ILaunchpadCelebrities, ICanonicalUrlData)
 
+from canonical.launchpad import _
+
 
 class ShippingRequestURL:
     implements(ICanonicalUrlData)
@@ -113,9 +115,16 @@ Reason:
         self.request = request
         setUpWidgets(self, IShipItCountry, IInputWidget)
         self.user = getUtility(ILaunchBag).user
-        self.errorMessages = []
-        self.currentRequest = None
-        self.isCustomRequest = False
+        self.addressFormMessages = []
+        self.requestFormMessages = []
+        self.currentOrder = None
+        self.isCustomOrder = False
+        self.orderCreated = False
+        self.orderChanged = False
+
+    def hasErrorMessages(self):
+        """Return True if there are any error messages we need to display."""
+        return bool(self.addressFormMessages or self.requestFormMessages)
 
     def standardShipItRequests(self):
         """Return all standard ShipIt Requests."""
@@ -123,10 +132,10 @@ Reason:
 
     def processForm(self):
         """Process the ShipIt form, if it was submitted."""
-        self.currentRequest = self.user.currentShipItRequest()
+        self.currentOrder = self.user.currentShipItRequest()
 
         if self.request.method != "POST":
-            if self.currentRequest is not None:
+            if self.currentOrder is not None:
                 self._loadRequestForDisplay()
             return
 
@@ -134,49 +143,52 @@ Reason:
         if 'newrequest' in form or 'changerequest' in form:
             self._readAndValidateRequestDetails()
             self._readAndValidateContactDetails()
-            if not self.errorMessages:
+            if not self.hasErrorMessages():
                 self._saveContactDetails()
                 if 'newrequest' in form:
+                    if self.currentOrder is not None:
+                        # User reloaded the page after posting a new order;
+                        # when we accept multiple orders at once this will
+                        # need to be changed.
+                        return
                     self._createNewRequest()
                 elif 'changerequest' in form:
-                    assert self.currentRequest
+                    assert self.currentOrder
                     self._changeExistingRequest()
         elif 'cancelrequest' in form:
-            assert self.currentRequest
-            self.currentRequest.cancel(getUtility(ILaunchBag).user)
-            self.currentRequest = None
+            assert self.currentOrder
+            self.currentOrder.cancel(getUtility(ILaunchBag).user)
+            self.currentOrder = None
 
         flush_database_updates()
 
     def _loadRequestForDisplay(self):
-        shipitrequest = self.currentRequest
+        order = self.currentOrder
         standardrequestset = getUtility(IStandardShipItRequestSet)
         standardrequest = standardrequestset.getByNumbersOfCDs(
-            shipitrequest.quantityx86, shipitrequest.quantityamd64,
-            shipitrequest.quantityppc)
+            order.quantityx86, order.quantityamd64, order.quantityppc)
         if standardrequest is not None:
-            self.selectedRequest = standardrequest.id
+            self.selectedOrder = standardrequest.id
             self.reason = None
         else:
-            self.quantityx86 = shipitrequest.quantityx86
-            self.quantityamd64 = shipitrequest.quantityamd64
-            self.quantityppc = shipitrequest.quantityppc
-            self.isCustomRequest = True
-            self.reason = shipitrequest.reason
+            self.quantityx86 = order.quantityx86
+            self.quantityamd64 = order.quantityamd64
+            self.quantityppc = order.quantityppc
+            self.isCustomOrder = True
+            self.reason = order.reason
 
-    def _notifyShipItAdmins(self, shipitrequest):
+    def _notifyShipItAdmins(self, order):
         """Notify the shipit admins by email that there's a new request."""
-        subject = ('[ShipIt] New Custom Request for %d CDs'
-                   % shipitrequest.totalCDs)
-        recipient = shipitrequest.recipient
+        subject = ('[ShipIt] New Custom Request for %d CDs' % order.totalCDs)
+        recipient = order.recipient
         headers = {'Reply-To': recipient.preferredemail.email}
         replacements = {'recipientname': recipient.displayname,
                         'recipientemail': recipient.preferredemail.email,
-                        'requesturl': canonical_url(shipitrequest),
-                        'quantityx86': shipitrequest.quantityx86,
-                        'quantityamd64': shipitrequest.quantityamd64,
-                        'quantityppc': shipitrequest.quantityppc,
-                        'reason': shipitrequest.reason}
+                        'requesturl': canonical_url(order),
+                        'quantityx86': order.quantityx86,
+                        'quantityamd64': order.quantityamd64,
+                        'quantityppc': order.quantityppc,
+                        'reason': order.reason}
         message = self.mail_template % replacements
         simple_sendmail(self.from_addr, self.shipit_admins, subject, message,
                         headers)
@@ -189,18 +201,19 @@ Reason:
         The attributes used to create this ShippingRequest are the ones stored
         in this object by the _readAndValidateRequestDetails() method.
         """
-        shipitrequest = getUtility(IShippingRequestSet).new(
+        self.orderCreated = True
+        order = getUtility(IShippingRequestSet).new(
             self.user, self.quantityx86, self.quantityamd64,
             self.quantityppc, self.reason)
 
-        self.currentRequest = shipitrequest
-        if self.isCustomRequest:
-            self._notifyShipItAdmins(shipitrequest)
+        self.currentOrder = order
+        if self.isCustomOrder:
+            self._notifyShipItAdmins(order)
         else:
-            shipitrequest.approve(
+            order.approve(
                 self.quantityx86, self.quantityamd64, self.quantityppc,)
 
-        return shipitrequest
+        return order
 
     def _saveContactDetails(self):
         """Save the contact details for this user.
@@ -223,26 +236,28 @@ Reason:
         this object. This is obtained by calling
         self._readAndValidateRequestDetails().
         """
-        shipitrequest = self.currentRequest
-        wasStandard = shipitrequest.isStandardRequest()
-        shipitrequest.quantityx86 = self.quantityx86
-        shipitrequest.quantityppc = self.quantityppc
-        shipitrequest.quantityamd64 = self.quantityamd64
-        shipitrequest.reason = self.reason
-        if shipitrequest.isStandardRequest() and not wasStandard:
+        self.orderChanged = True
+        order = self.currentOrder
+        wasStandard = order.isStandardRequest()
+        order.quantityx86 = self.quantityx86
+        order.quantityppc = self.quantityppc
+        order.quantityamd64 = self.quantityamd64
+        order.reason = self.reason
+        if order.isStandardRequest() and not wasStandard:
             # Changing an existing custom order to a standard one has the same
             # effect of creating a new standard one. In other words, it's
             # marked approved.
-            shipitrequest.approve()
-        elif not shipitrequest.isStandardRequest() and wasStandard:
+            order.approve(
+                order.quantityx86, order.quantityamd64, order.quantityppc)
+        elif not order.isStandardRequest() and wasStandard:
             # Changing an existing standard order into a custom one will mark
             # it as pending approval, and sent an email notification to the
             # shipit admins.
-            if shipitrequest.isApproved():
+            if order.isApproved():
                 # Even a standard request may have been denied by one of the
                 # shipit admins.
-                shipitrequest.clearApproval()
-            self._notifyShipItAdmins(shipitrequest)
+                order.clearApproval()
+            self._notifyShipItAdmins(order)
 
     def _readAndValidateRequestDetails(self):
         """Read the request details from the form, do any necessary validation
@@ -250,42 +265,42 @@ Reason:
         form = self.request.form
         requesttype = form.get('requesttype')
         if requesttype == 'standard':
-            self.isCustomRequest = False
-            self.selectedRequest = int(form.get('standardrequest'))
-            shipitrequest = getUtility(IStandardShipItRequestSet).get(
-                self.selectedRequest)
-            if shipitrequest is None:
-                msg = ('The standard request numbers have changed since you '
-                       'submitted your request; please review the new numbers '
-                       'and make a new selection.')
-                self.errorMessages.append(msg)
+            self.isCustomOrder = False
+            self.selectedOrder = int(form.get('standardrequest'))
+            order = getUtility(IStandardShipItRequestSet).get(
+                self.selectedOrder)
+            if order is None:
+                msg = _('The standard request numbers have changed since you '
+                        'submitted your request; please review the new numbers '
+                        'and make a new selection.')
+                self.requestFormMessages.append(msg)
                 return
-            self.quantityx86 = shipitrequest.quantityx86
-            self.quantityamd64 = shipitrequest.quantityamd64
-            self.quantityppc = shipitrequest.quantityppc
+            self.quantityx86 = order.quantityx86
+            self.quantityamd64 = order.quantityamd64
+            self.quantityppc = order.quantityppc
             self.reason = None
         elif requesttype == 'custom':
-            self.isCustomRequest = True
+            self.isCustomOrder = True
             self.quantityx86 = intOrZero(form.get('quantityx86'))
             self.quantityamd64 = intOrZero(form.get('quantityamd64'))
             self.quantityppc = intOrZero(form.get('quantityppc'))
 
             if (self.quantityx86 < 0 or self.quantityamd64 < 0 or
                 self.quantityppc < 0):
-                self.errorMessages.append(
+                self.requestFormMessages.append(_(
                     "You requested a negative number of CDs, which doesn't "
-                    "make sense. Please correct the number below.")
+                    "make sense. Please correct the number below."))
 
             if (self.quantityx86 + self.quantityamd64 + self.quantityppc) == 0:
-                self.errorMessages.append(
+                self.requestFormMessages.append(_(
                     "You have requested a total of zero CDs. An order must "
-                    "have at least one CD requested; please correct below.")
+                    "have at least one CD requested; please correct below."))
 
             self.reason = form.get('reason')
             if not self.reason:
-                msg = ("You've chosen to make a custom request. Please "
-                       "provide a reason to justify it.")
-                self.errorMessages.append(msg)
+                msg = _(("You've chosen to make a custom request. Please "
+                         "provide a reason to justify it."))
+                self.requestFormMessages.append(msg)
 
     def _readAndValidateContactDetails(self):
         """Read the contact details from the form, do any necesary validation
@@ -294,17 +309,18 @@ Reason:
         #   - addressline1
         #   - city
         #   - zip (only if in ['US', 'GB', 'FR', 'IT', 'DE', 'NO', 'SE', 'ES'])
-        validators = {'addressline1': self._validateaddressline1,
-                      'addressline2': self._validateaddressline2,
-                      'city': self._validatecity,
-                      'postcode': self._validatepostcode,
-                      'province': None,
-                      'organization': self._validateorganization,
-                      'phone': self._validatephone}
+        validators = {'organization': ("Organization",
+                                       self._validateorganization),
+                      'addressline1': ("Address", self._validateaddressline1),
+                      'addressline2': ("Address", self._validateaddressline2),
+                      'city': ("City", self._validatecity),
+                      'province': ("State", None),
+                      'postcode': ("Postcode", self._validatepostcode),
+                      'phone': ("Phone", self._validatephone)}
         form = self.request.form
         msg = None
         self.country = self.country_widget.getInputValue()
-        for field, validator in validators.items():
+        for field, (field_title, validator) in validators.items():
             value = form.get(field)
             # Save all field values in the view so we can display them, if
             # anything goes wrong.
@@ -314,11 +330,12 @@ Reason:
             except UnicodeEncodeError, e:
                 first_non_ascii_char = value[e.start:e.end]
                 e_with_accute = u'\N{LATIN SMALL LETTER E WITH ACUTE}'
-                msg = ("Sorry, but non-ASCII characters (such as '%s', in the "
-                       "%s field) aren't understood by our shipping company. "
-                       "Please change these to ASCII equivalents. (For "
-                       "instance, '%s' should be changed to 'e')"
-                       % (first_non_ascii_char, field, e_with_accute))
+                msg = _("Sorry, but address fields containing non-ASCII "
+                        "characters (such as '%s', in the %s field) aren't "
+                        "accepted by our shipping company. Please change "
+                        "these to ASCII equivalents. (For instance, '%s' "
+                        "should be changed to 'e')"
+                        % (first_non_ascii_char, field_title, e_with_accute))
 
             if validator is not None:
                 validator(value)
@@ -326,7 +343,7 @@ Reason:
         # Add the error message only once, even if there's errors in more
         # than one field.
         if msg:
-            self.errorMessages.append(msg)
+            self.addressFormMessages.append(msg)
 
     #
     # Following are validator methods to make sure we follow the constraints
@@ -336,70 +353,70 @@ Reason:
     def _validatepostcode(self, value):
         """Make sure postcode follows the mailing constraints.
 
-        Add an error message to self.errorMessages if it doesn't.
+        Add an error message to self.addressFormMessages if it doesn't.
         """
         code = self.country.iso3166code2
         if (not value and
             code in ('US', 'GB', 'FR', 'IT', 'DE', 'NO', 'SE', 'ES')):
-            self.errorMessages.append(
-                'You must enter your postcode in the form.')
+            self.addressFormMessages.append(_(
+                "Shipping to your country requires a postcode, but you didn't "
+                "provide one. Please enter one below."))
         elif len(value) > 12:
-            self.errorMessages.append(
-                "Your postcode can't have more than 12 characters.")
+            self.addressFormMessages.append(_(
+                "Your postcode can't have more than 12 characters."))
 
     def _validatecity(self, value):
         """Make sure city follows the mailing constraints.
 
-        Add an error message to self.errorMessages if it doesn't.
+        Add an error message to self.addressFormMessages if it doesn't.
         """
         if not value:
-            self.errorMessages.append(
-                'You must enter your city in the form.')
+            self.addressFormMessages.append(_(
+                'You must enter your city in the form.'))
         elif len(value) > 30:
-            self.errorMessages.append(
-                "Your city name can't have more than 30 characters.")
+            self.addressFormMessages.append(_(
+                "Your city name can't have more than 30 characters."))
 
     def _validateaddressline1(self, value):
         """Make sure addressline1 follows the mailing constraints.
 
-        Add an error message to self.errorMessages if it doesn't.
+        Add an error message to self.addressFormMessages if it doesn't.
         """
         if not value:
-            self.errorMessages.append(
-                'You must enter an address.')
+            self.addressFormMessages.append(_('You must enter an address.'))
         elif len(value) > 30:
-            self.errorMessages.append(
+            self.addressFormMessages.append(_(
                 "Address (first line) can't have more than 30 characters. "
-                "You should use the second line if your address is too long.")
+                "You should use the second line if your address is too long."))
 
     def _validateaddressline2(self, value):
         """Make sure addressline2 follows the mailing constraints.
 
-        Add an error message to self.errorMessages if it doesn't.
+        Add an error message to self.addressFormMessages if it doesn't.
         """
         if value and len(value) > 30:
-            self.errorMessages.append(
+            self.addressFormMessages.append(_(
                 "Address (second line) can't have more than 30 characters. "
-                "You should use the first line if your address is too long.")
+                "You should use the first line if your address is too long."))
 
     def _validatephone(self, value):
         """Make sure phone follows the mailing constraints.
 
-        Add an error message to self.errorMessages if it doesn't.
+        Add an error message to self.addressFormMessages if it doesn't.
         """
         if value and len(value) > 16:
-            self.errorMessages.append(
+            self.addressFormMessages.append(_(
                 "Your phone mumber must be less than 16 characters. Leave it "
-                "blank if it will not fit.")
+                "blank if it will not fit."))
 
     def _validateorganization(self, value):
         """Make sure organization follows the mailing constraints.
 
-        Add an error message to self.errorMessages if it doesn't.
+        Add an error message to self.addressFormMessages if it doesn't.
         """
         if value and len(value) > 30:
-            self.errorMessages.append(
-                "Your organization can't have more than 30 characters.")
+            self.addressFormMessages.append(_(
+                "Your organization can't have more than 30 characters."))
 
 
 class ShippingRequestsView:

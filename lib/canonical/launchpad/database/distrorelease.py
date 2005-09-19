@@ -36,8 +36,8 @@ from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName, SourcePackageNameSet)
 from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.bugtask import BugTaskSet, BugTask
 from canonical.launchpad.database.binarypackagerelease import BinaryPackageRelease
-from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.helpers import shortlist
 
 
@@ -186,6 +186,41 @@ class DistroRelease(SQLBase):
         return SourcePackageInDistro.select(
             query, clauseTables=["BugTask"], distinct=True)
 
+    @property
+    def open_cve_bugtasks(self):
+        """See IDistroRelease."""
+        result = BugTask.select("""
+            CVE.id = BugCve.cve AND
+            BugCve.bug = Bug.id AND
+            BugTask.bug = Bug.id AND
+            BugTask.distrorelease=%s AND
+            BugTask.status IN (%s, %s)
+            """ % sqlvalues(
+                self.id,
+                BugTaskStatus.NEW,
+                BugTaskStatus.ACCEPTED),
+            clauseTables=['Bug', 'Cve', 'BugCve'],
+            orderBy=['-severity', 'datecreated'])
+        return result
+
+    @property
+    def resolved_cve_bugtasks(self):
+        """See IDistroRelease."""
+        result = BugTask.select("""
+            CVE.id = BugCve.cve AND
+            BugCve.bug = Bug.id AND
+            BugTask.bug = Bug.id AND
+            BugTask.distrorelease=%s AND
+            BugTask.status IN (%s, %s, %s)
+            """ % sqlvalues(
+                self.id,
+                BugTaskStatus.REJECTED,
+                BugTaskStatus.FIXED,
+                BugTaskStatus.PENDINGUPLOAD),
+            clauseTables=['Bug', 'Cve', 'BugCve'],
+            orderBy=['-severity', 'datecreated'])
+        return result
+
     def getDistroReleaseLanguage(self, language):
         """See IDistroRelease."""
         return DistroReleaseLanguage.selectOneBy(
@@ -278,7 +313,7 @@ class DistroRelease(SQLBase):
     def publishedBinaryPackages(self, component=None):
         """See IDistroRelease."""
         # XXX sabdfl 04/07/05 this can become a utility when that works
-        # XXX kiko: this method is untested and possibly unused
+        # this is used by the debbugs import process, mkdebwatches
         pubpkgset = getUtility(IPublishedPackageSet)
         result = pubpkgset.query(distrorelease=self, component=component)
         return [BinaryPackageRelease.get(pubrecord.binarypackagerelease)

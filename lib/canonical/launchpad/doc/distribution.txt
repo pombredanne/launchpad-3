@@ -74,3 +74,40 @@ There should be NO resolved CVE tasks:
 [1] https://wiki.launchpad.canonical.com/DerivationOverview
 
 
+Finding distroreleases and pockets from distribution names
+----------------------------------------------------------
+
+A distribution knows what distroreleases it has. Those distroreleases have
+pockets which have suffixes used by the archive publisher. Because we sometimes
+need to talk about distroreleases such as ubuntu/hoary-security we need some
+way to decompose that into the distrorelease and the pocket. Distribution
+can do that for us.
+
+If we ask for a totally unknown distrorelease, we raise KeyError
+    >>> ubuntu.getDistroReleaseAndPocket('unknown') 
+    Traceback (most recent call last):
+    ...
+    KeyError: 'unknown'
+
+If we ask for a plain distrorelease, it should come back with the RELEASE
+pocket as the pocket.
+    >>> dr, pocket = ubuntu.getDistroReleaseAndPocket('hoary')
+    >>> print dr.name
+    hoary
+    >>> print pocket.name
+    RELEASE
+
+If we ask for a security pocket in a known distrorelease it should come out
+on the other side.
+    >>> dr, pocket = ubuntu.getDistroReleaseAndPocket('hoary-security')
+    >>> print dr.name
+    hoary
+    >>> print pocket.name
+    SECURITY
+
+If we ask for a valid distrorelease which doesn't have a given pocket it should
+raise KeyError for us
+    >>> ubuntu.getDistroReleaseAndPocket('hoary-bullshit')
+    Traceback (most recent call last):
+    ...
+    KeyError: 'hoary-bullshit'

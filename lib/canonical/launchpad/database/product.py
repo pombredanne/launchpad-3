@@ -339,6 +339,9 @@ class ProductSet:
             raise NotFoundError(name)
         return item
 
+    def latest(self, quantity=5):
+        return Product.select(orderBy='-datecreated', limit=quantity)
+
     def get(self, productid):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         try:

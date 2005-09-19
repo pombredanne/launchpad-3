@@ -281,7 +281,7 @@ It's also possible to iterate over all the bug tasks:
 
     >>> bugtasks = [bugtask for bugtasks in bugtaskset]
     >>> len(bugtasks)
-    16
+    17
 
 Bug Task Maintainers
 --------------------
@@ -613,12 +613,19 @@ distribution column set. In fact, a task must have exactly one of its product,
 distribution or distrorelease fields set, otherwise the database integrity
 constraints will be violated.
 
-    >>> bad_task = bugtaskset.createTask(
+note that DatabaseError is a superclass of both IntegrityError and
+ProgrammingError
+
+    >>> from psycopg import DatabaseError
+    >>> import sys
+    >>> try: bad_task = bugtaskset.createTask(
     ...     bug=bug_one, distribution=ubuntu, distrorelease=hoary,
     ...     owner=sabdfl, status=STATUS_NEW, priority=PRIORITY_MEDIUM,
     ...     severity=SEVERITY_NORMAL)
-    Traceback (most recent call last):
-      ...
-    IntegrityError: ...
+    ... except DatabaseError: print sys.exc_value
+    ERROR:  new row for relation "bugtask" violates check constraint "bugtask_assignment_checks"
+    <BLANKLINE>
+    INSERT INTO BugTask ...
+
 
 

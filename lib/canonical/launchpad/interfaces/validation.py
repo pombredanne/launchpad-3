@@ -4,9 +4,14 @@ __all__ = [
     'valid_webref',
     'non_duplicate_bug',
     'valid_bug_number',
+    'valid_emblem',
+    'valid_hackergotchi',
     ]
 
 import urllib
+import PIL.Image
+from StringIO import StringIO
+
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
 from sqlobject import SQLObjectNotFound
@@ -50,6 +55,7 @@ def validate_url(url, valid_schemes):
         return False
     return True
 
+
 def valid_webref(web_ref):
     return validate_url(web_ref, ['http', 'https'])
 
@@ -74,6 +80,7 @@ def non_duplicate_bug(value):
     else:
         return False
 
+
 def valid_bug_number(value):
     from canonical.launchpad.interfaces.bug import IBugSet
     bugset = getUtility(IBugSet)
@@ -82,4 +89,37 @@ def valid_bug_number(value):
     except NotFoundError:
         return False
     return True
+
+
+def valid_emblem(emblem):
+    if len(emblem) > 6000:
+        return False
+    try:
+        image = PIL.Image.open(StringIO(emblem))
+    except IOError:
+        # cannot identify image type
+        return False
+    size = image.size
+    if size[0] > 16:
+        return False
+    if size[1] > 16:
+        return False
+    return True
+
+
+def valid_hackergotchi(hackergotchi):
+    if len(hackergotchi) > 16000:
+        return False
+    try:
+        image = PIL.Image.open(StringIO(hackergotchi))
+    except IOError:
+        # cannot identify image type
+        return False
+    size = image.size
+    if size[0] > 96:
+        return False
+    if size[1] > 96:
+        return False
+    return True
+
 

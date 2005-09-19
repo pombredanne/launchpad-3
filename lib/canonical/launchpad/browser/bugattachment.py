@@ -19,7 +19,7 @@ from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.interfaces import (
     IBugAttachment, IBugAttachmentSet, ILibraryFileAlias,
-    ILibraryFileAliasSet, ILaunchBag, IMessageSet,
+    ILibraryFileAliasSet, ILaunchBag, IBugMessageSet,
     IBugAttachmentAddForm, IBugAttachmentEditForm)
 
 
@@ -50,14 +50,13 @@ class BugAttachmentAddView(SQLObjectAddView):
             file=StringIO(filecontent),
             contentType=content_type)
 
-        add_comment = getUtility(IMessageSet).fromText(
-            subject=title, owner=getUtility(ILaunchBag).user, content=comment)
-
-        self.context.linkMessage(add_comment)
+        add_comment = getUtility(IBugMessageSet).createMessage(
+            subject=title, bug=self.context, owner=getUtility(ILaunchBag).user,
+            content=comment)
 
         return getUtility(IBugAttachmentSet).create(
-            bug=self.context, filealias=filealias, attach_type=attach_type, title=title,
-            message=add_comment)
+            bug=self.context, filealias=filealias, attach_type=attach_type,
+            title=title, message=add_comment.message)
 
     def nextURL(self):
         """Return the user to the bug page."""

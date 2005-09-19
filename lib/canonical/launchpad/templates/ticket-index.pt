@@ -37,9 +37,11 @@
     </tbody>
   </table>
 
-  <tal:description content="structure context/description/fmt:text-to-html">
-    $Ticket.description
-  </tal:description>
+  <div class="highlighted">
+    <tal:desc replace="structure context/description/fmt:text-to-html">
+      $Ticket.description
+    </tal:desc>
+  </div>
 
   <tal:block repeat="message context/messages">
     <div class="boardComment"

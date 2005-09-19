@@ -6,8 +6,12 @@ __all__ = ['DistroArchRelease']
 from zope.interface import implements
 from zope.component import getUtility
 
-from sqlobject import StringCol, ForeignKey, RelatedJoin
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from sqlobject import (
+    StringCol, ForeignKey, RelatedJoin)
+
+from canonical.database.sqlbase import (
+    SQLBase, sqlvalues)
+
 from canonical.lp import dbschema
 
 from canonical.launchpad.interfaces import (

@@ -1,8 +1,4 @@
-<div class="portlet">
-    <h4>Actions:</h4>
-
-    <div class="portletBody">
-      <div class="portletContent">
+<div class="portlet portletBody portletContent">
 
         <ul>
           <li class="edit">
@@ -23,6 +19,5 @@
           <li class="download">
             <a href="+rdf">Download RDF Metadata</a>
           </li>
-        </div>
-    </div>
+        </ul>
 </div>

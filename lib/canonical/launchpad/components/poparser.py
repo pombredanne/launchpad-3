@@ -485,6 +485,17 @@ class POHeader(dict, POMessage):
 
         return (date_string, date)
 
+    def getPluralFormExpression(self):
+        """See IPOHeader."""
+        plural = self.get('Plural-Forms')
+        if not plural:
+            return None
+        parts = parse_assignments(plural)
+        if parts.has_key("plural"):
+            return parts["plural"]
+        else:
+            return None
+
 
 class POParser(object):
     implements(IPOParser)

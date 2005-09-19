@@ -138,6 +138,9 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         None.
         """
 
+    def getDistroReleaseAndPocket(distroreleasename):
+        """Return a (distrorelease,pocket) tuple which is the given textual
+        distroreleasename in this distribution."""
 
 class IDistributionSet(Interface):
     """Interface for DistrosSet"""

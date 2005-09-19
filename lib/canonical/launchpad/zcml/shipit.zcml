@@ -147,9 +147,9 @@
     <browser:page
         for="canonical.launchpad.interfaces.IShippingRequestSet"
         permission="launchpad.Admin"
-        name="+sidebar-actions"
-        template="../templates/shipit-sidebar-actions.pt"
-        lp:url="/shipit/requests/+sidebar-actions">
+        name="+portlet-actions"
+        template="../templates/shipit-portlet-actions.pt"
+        lp:url="/shipit/requests/+portlet-actions">
     </browser:page>
 
 
@@ -222,9 +222,9 @@
     <browser:page
         for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
         permission="launchpad.Admin"
-        name="+sidebar-actions"
-        template="../templates/shipit-sidebar-actions.pt"
-        lp:url="/shipit/requests/+sidebar-actions">
+        name="+portlet-actions"
+        template="../templates/shipit-portlet-actions.pt"
+        lp:url="/shipit/requests/+portlet-actions">
     </browser:page>
 
     <browser:addform

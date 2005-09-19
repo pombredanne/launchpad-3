@@ -36,7 +36,7 @@ team participation:
   >>> tasks = list(assignedbugs_view.bugTasksOnMaintainedSoftware())
   >>> task_ids = sorted([task.id for task in tasks])
   >>> task_ids
-  [2, 13, 14, 15]
+  [2, 13, 14]
 
 Finally, when a user views the +assignedbugs page of another user, the
 bugs for which the current user and the displayed user share a common

@@ -1,13 +1,13 @@
 <div class="portlet">
 
-  <h4>actions:</h4>
+  <h4>The Specification Tracker:</h4>
 
   <div class="portletBody portletContent">
 
-    <ul>
-      <li class="info"><a href="/products/">Find Upstream App</a></li>
-      <li class="info"><a href="/distros/">Find Distribution</a></li>
-    </ul>
+    Each specification describes a new feature. You can coordinate
+    "sprints", which are meetings at which specs will be defined and
+    implemented. See the <a href="/sprints/">Sprint Tracker</a> for the full
+    list of sprints.
 
   </div>
 

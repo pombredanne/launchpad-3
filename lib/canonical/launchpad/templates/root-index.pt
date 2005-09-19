@@ -18,11 +18,11 @@
 
   <h1 i18n:translate="">Welcome to The Launchpad!</h1>
 
-  <p i18n:translate="">The Launchpad is a collection of services for
+  <div i18n:translate="">The Launchpad is a collection of services for
     projects in the open source universe. You can register your
-    project, and collaborate with the open source community on translations,
-    bug squashing and the code you write.
-  </p>
+    project, and then collaborate with the open source community on
+    translations, bug tracking and code.
+  </div>
 
   <form action="/products/" method="get">
 
@@ -35,10 +35,10 @@
       </tr>
     </table>
 
-    <p class="formHelp">
+    <div class="formHelp">
       Use this form to find an open source application. Enter any part of
       the application name, title or description, and click "Search".
-    </p>
+    </div>
 
   </form>
 
@@ -79,6 +79,24 @@
   </div>
 
   <hr />
+
+  <h2>Other Services</h2>
+
+  <table>
+    <tr style="valign: top;">
+      <td>
+        <b>Support Ticket Tracker:</b><br />
+        Launchpad allows your project to track technical support requests
+        from your users. <a href="/tickets/">Learn More...</a>
+      </td>
+      <td>
+        <b>Meeting Tracker:</b><br />
+        You can plan sprints and meetings, and keep track of the
+        specifications and bugs to be addressed at the meeting.
+        <a href="/sprints/">Learn More...</a>
+      </td>
+    </tr>
+  </table>
 
 </div>
 

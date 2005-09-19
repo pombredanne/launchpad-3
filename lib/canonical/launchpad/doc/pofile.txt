@@ -63,6 +63,11 @@ Now, get a POHeader object with that information.
 >>> new_header = POHeader(commentText=comment, msgstr=msgstr)
 >>> new_header.finish()
 
+We check that the plural forms expression is correctly parsed:
+
+>>> new_header.getPluralFormExpression() == 'n != 1'
+True
+
 To be sure the new header is being applied, here we have the old values:
 
 >>> print pofile.topcomment.encode('utf-8')
@@ -104,3 +109,23 @@ False
 
 >>> pofile.pluralforms
 2
+
+Now I'm going to test creating a header with invalid plural-forms and
+trying to parse the number and type of plural forms it has.
+
+>>> msgstr = '''Project-Id-Version: es
+... POT-Creation-Date: 2004-08-18 11:10+0200
+... PO-Revision-Date: 2005-08-18 13:22+0000
+... Last-Translator: Carlos Perelló Marín <carlos@canonical.com>
+... Language-Team: Spanish <traductores@es.gnome.org>
+... MIME-Version: 1.0
+... Content-Type: text/plain; charset=UTF-8
+... Content-Transfer-Encoding: 8bit
+... Report-Msgid-Bugs-To: serrador@hispalinux.es
+... X-Generator: Rosetta (http://launchpad.ubuntu.com/rosetta/)
+... Plural-Forms: n != 1'''
+>>> new_header = POHeader(msgstr=msgstr)
+>>> new_header.finish()
+>>> new_header.getPluralFormExpression() == None
+True
+

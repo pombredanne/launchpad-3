@@ -28,6 +28,7 @@ __all__ = [
     'PackageReleaseVocabulary',
     'PersonAccountToMergeVocabulary',
     'POTemplateNameVocabulary',
+    'ProcessorVocabulary',
     'ProductReleaseVocabulary',
     'ProductSeriesVocabulary',
     'ProductVocabulary',
@@ -36,6 +37,7 @@ __all__ = [
     'SourcePackageNameVocabulary',
     'SpecificationVocabulary',
     'SpecificationDependenciesVocabulary',
+    'SprintVocabulary',
     'TranslationGroupVocabulary',
     'ValidPersonOrTeamVocabulary',
     'ValidTeamMemberVocabulary',
@@ -54,10 +56,12 @@ from canonical.lp.dbschema import EmailAddressStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.database import (
     Distribution, DistroRelease, Person, SourcePackageRelease,
-    SourcePackageName, BinaryPackageRelease, BugWatch, BinaryPackageName, Language,
-    Milestone, Product, Project, ProductRelease, ProductSeries,
-    TranslationGroup, BugTracker, POTemplateName, Schema, Bounty, Country,
-    Specification, Bug)
+    SourcePackageName, BinaryPackageRelease, BugWatch, Sprint,
+    BinaryPackageName, Language,
+    Milestone, Product, Project, ProductRelease,
+    ProductSeries, TranslationGroup, BugTracker,
+    POTemplateName, Schema, Bounty, Country,
+    Specification, Bug, Processor)
 from canonical.launchpad.interfaces import (
     ILaunchBag, ITeam, ITeamMembershipSubset, IPersonSet, IEmailAddressSet)
 
@@ -780,6 +784,13 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
                 yield SimpleTerm(spec, spec.name, spec.title)
 
 
+class SprintVocabulary(NamedSQLObjectVocabulary):
+    _table = Sprint
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.title)
+
+
 class BugWatchVocabulary(SQLObjectVocabularyBase):
     _table = BugWatch
 
@@ -916,6 +927,24 @@ class POTemplateNameVocabulary(NamedSQLObjectVocabulary):
 
             for o in objs:
                 yield self._toTerm(o)
+
+
+class ProcessorVocabulary(NamedSQLObjectVocabulary):
+    implements(IHugeVocabulary)
+
+    _table = Processor
+    _orderBy = 'name'
+
+    def search(self, query):
+        """Return terms where query is a substring of the name"""
+        if query:
+            query = query.lower()
+            processors = self._table.select(
+                CONTAINSSTRING(Processor.q.name, query),
+                orderBy=self._orderBy
+                )
+            for processor in processors:
+                yield self._toTerm(processor)
 
 
 class SchemaVocabulary(NamedSQLObjectVocabulary):

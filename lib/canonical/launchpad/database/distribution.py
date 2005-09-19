@@ -69,7 +69,8 @@ class Distribution(SQLBase):
     def open_cve_bugtasks(self):
         """See IDistribution."""
         result = BugTask.select("""
-           CVERef.bug = Bug.id AND
+            CVE.id = BugCve.cve AND
+            BugCve.bug = Bug.id AND
             BugTask.bug = Bug.id AND
             BugTask.distribution=%s AND
             BugTask.status IN (%s, %s)
@@ -77,7 +78,7 @@ class Distribution(SQLBase):
                 self.id,
                 BugTaskStatus.NEW,
                 BugTaskStatus.ACCEPTED),
-            clauseTables=['Bug', 'CVERef'],
+            clauseTables=['Bug', 'Cve', 'BugCve'],
             orderBy=['-severity', 'datecreated'])
         return result
 
@@ -85,7 +86,8 @@ class Distribution(SQLBase):
     def resolved_cve_bugtasks(self):
         """See IDistribution."""
         result = BugTask.select("""
-            CVERef.bug = Bug.id AND
+            CVE.id = BugCve.cve AND
+            BugCve.bug = Bug.id AND
             BugTask.bug = Bug.id AND
             BugTask.distribution=%s AND
             BugTask.status IN (%s, %s, %s)
@@ -94,7 +96,7 @@ class Distribution(SQLBase):
                 BugTaskStatus.REJECTED,
                 BugTaskStatus.FIXED,
                 BugTaskStatus.PENDINGUPLOAD),
-            clauseTables=['Bug', 'CVERef'],
+            clauseTables=['Bug', 'Cve', 'BugCve'],
             orderBy=['-severity', 'datecreated'])
         return result
 
@@ -204,6 +206,27 @@ class Distribution(SQLBase):
         linker = DistributionBounty(distribution=self, bounty=bounty)
         return None
 
+    def getDistroReleaseAndPocket(self, distrorelease_name):
+        """See IDistribution."""
+        from canonical.archivepublisher.publishing import (
+            pocketsuffix, suffixpocket)
+
+        # Get the list of suffixes
+        suffixes = [suffix for suffix, ignored in suffixpocket.items()]
+        # Sort it longest string first
+        suffixes.sort(key=len, reverse=True)
+        
+        for suffix in suffixes:
+            if distrorelease_name.endswith(suffix):
+                try:
+                    left_size = len(distrorelease_name) - len(suffix)
+                    return (self[distrorelease_name[:left_size]],
+                            suffixpocket[suffix])
+                except KeyError:
+                    # Swallow KeyError to continue round the loop
+                    pass
+
+        raise KeyError(distrorelease_name)
 
 class DistributionSet:
     """This class is to deal with Distribution related stuff"""

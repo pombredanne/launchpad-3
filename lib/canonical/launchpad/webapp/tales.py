@@ -8,7 +8,6 @@ __metaclass__ = type
 import bisect
 import cgi
 import re
-import sets
 import os.path
 import warnings
 
@@ -54,10 +53,12 @@ class MenuAPI:
             # attribute.
             self._context = context['context']
             view = context['view']
+            self._request = context['request']
             self._selectedfacetname = getattr(
                 view, '__launchpad_facetname__', None)
         else:
             self._context = context
+            self._request = get_current_browser_request()
             self._selectedfacetname = None
 
     def _nearest_menu(self, menutype):
@@ -67,13 +68,16 @@ class MenuAPI:
             return None
 
     def _requesturl(self):
-        request = get_current_browser_request()
+        request = self._request
+        if request is None:
+            return None
         requesturlobj = Url(request.getURL(), request.get('QUERY_STRING'))
         # If the default view name is being used, we will want the url
         # without the default view name.
         defaultviewname = getDefaultViewName(self._context, request)
         if requesturlobj.pathnoslash.endswith(defaultviewname):
             requesturlobj = Url(request.getURL(1), request.get('QUERY_STRING'))
+        return requesturlobj
 
     def facet(self):
         menu = self._nearest_menu(IFacetMenu)
@@ -93,7 +97,7 @@ class MenuAPI:
         if menu is None:
             return []
         else:
-            return list(menu.iterlinks(requesturl = self._requesturl()))
+            return list(menu.iterlinks(requesturl=self._requesturl()))
 
 
 class CountAPI:
@@ -244,7 +248,7 @@ class NoneFormatter:
     """
     implements(ITraversable)
 
-    allowed_names = sets.Set([
+    allowed_names = set([
         'nl_to_br',
         'nice_pre',
         'breadcrumbs',

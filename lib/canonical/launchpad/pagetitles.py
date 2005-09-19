@@ -166,11 +166,9 @@ def bug_attachment_edit(context, view):
 
 bug_attachments = ContextId('Malone Bug Attachments for Bug #%s')
 
-bug_cveref_add = LaunchbagBugID("Bug #%d - Add CVE Reference")
+bug_cve = LaunchbagBugID("Bug #%d - Add CVE Reference")
 
-def bug_cveref_edit(context, view):
-    return "Bug #%d - Edit CVE Reference (%s)" % (
-        context.bug.id, context.cveref)
+bug_distrotask = ContextId('Request fix of bug #%s in additional distribution')
 
 bug_edit = BugPageTitle()
 
@@ -186,11 +184,15 @@ bug_mark_as_duplicate = ContextId('Bug #%d - Mark as Duplicate')
 
 bug_references = ContextId('External references for bug #%s')
 
+bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE Reference")
+
 bug_secrecy = ContextId('Set secrecy for bug #%s')
 
 bug_secrecy = ContextId('Bug #%d - Set Bug Secrecy')
 
 bug_subscription = ContextId('Subscribe or unsubscribe from Bug #%s')
+
+bug_upstreamtask = ContextId('Request fix of bug #%s in additional application')
 
 bug_watch_add = LaunchbagBugID('Bug #%d - Add an External Bug Watch')
 
@@ -235,6 +237,18 @@ bugtrackers_add = 'Register External Bugtracker in Malone'
 
 bugtrackers_index = 'Malone-Registered Bug Trackers'
 
+builders = 'Launchpad Build Farm Overview'
+
+builder_edit = ContextTitle('Editing %s details')
+
+builder_index = ContextTitle('%s Overview')
+
+builder_abort = ContextTitle('%s Abort')
+
+builder_stop = ContextTitle('%s Stop')
+
+calendar = ContextTitle('%s')
+
 calendar_index = ContextTitle('%s')
 
 calendar_event_addform = ContextTitle('Add Event to Calendar "%s"')
@@ -259,6 +273,16 @@ codeofconduct_admin = 'Administer codes of conduct in Launchpad'
 codeofconduct_index = ContextTitle('%s')
 
 codeofconduct_list = 'Codes of Conduct in Launchpad'
+
+cveset_all = 'All CVE Entries Registered in the Launchpad'
+
+cveset_index = 'Launchpad CVE Tracker'
+
+cve_index = ContextDisplayName('%s')
+
+cve_bug = ContextDisplayName('Link %s to a Malone  Bug')
+
+cve_removebug = ContextDisplayName('Remove Link between %s and Malone Bug')
 
 def cvereference_index(context, view):
     return 'Malone Bug #%s CVE Reference' % context.bug.id
@@ -303,9 +327,13 @@ distro_edit = 'Create a new Distribution in Launchpad'
 
 distroarchrelease_index = ContextTitle('%s overview')
 
+distroarchrelease_builds = ContextTitle('Builds for %s')
+
 distroarchrelease_pkgsearch = 'Binary Package Search'
 
 distrorelease_bugs = ContextTitle('Release %s: Bugs')
+
+distrorelease_cvereport = ContextDisplayName('CVE Report for %s')
 
 def distrorelease_deliver(context, view):
     return 'Generate ISO image for %s' % context.release.title
@@ -330,8 +358,10 @@ def distrorelease_sources(context, view):
         context.release.title
         )
 
-distrorelease_translations = ContextTitle(
-    'Rosetta Translation Templates for %s')
+distrorelease_translations = ContextTitle('Translation of %s')
+
+distrorelease_builds = ContextTitle(
+    'Builds for %s')
 
 distroreleaselanguage = ContextTitle('%s')
 
@@ -390,6 +420,8 @@ launchpad_feedback = 'Help us improve Launchpad'
 launchpad_forbidden = 'Forbidden'
 
 launchpad_forgottenpassword = 'Forgot Your Launchpad Password?'
+
+template_form = 'XXX PLEASE DO NOT USE TEMPLATE XXX'
 
 launchpad_join = 'Join the Launchpad'
 
@@ -478,6 +510,8 @@ person_editemails = ContextDisplayName('Edit %s Email Addresses')
 
 person_editgpgkeys = ContextDisplayName('%s GPG Keys')
 
+person_edithomepage = ContextDisplayName('Edit %s Home Page')
+
 person_editircnicknames = ContextDisplayName('%s IRC Nicknames')
 
 person_editjabberids = ContextDisplayName('%s Jabber IDs')
@@ -487,6 +521,8 @@ person_editsshkeys = ContextDisplayName('%s SSH Keys')
 person_editwikinames = ContextDisplayName('%s Wiki Names')
 
 # person_foaf is an rdf file
+
+person_images = ContextDisplayName('%s Hackergotchi and Emblem')
 
 person_index = ContextDisplayName('%s: Launchpad Overview')
 
@@ -584,7 +620,7 @@ productseries_translations = ContextTitle(
 
 productseries_ubuntupkg = 'Ubuntu Source Package'
 
-products_index = 'Launchpad product registry'
+products_index = 'Launchpad Product / Applications Registry'
 
 products_search = 'Launchpad: Advanced Upstream Product Search'
 
@@ -684,7 +720,9 @@ def sourcepackage_bugs(context, view):
         context.distrorelease.distribution.name,
         context.sourcepackagename)
 
-sourcepackage_buildlog = 'Source Package Build Log'
+sourcepackage_buildlog = ContextTitle('%s Build Logs')
+
+sourcepackage_builds = ContextTitle('%s Builds')
 
 sourcepackage_translate = ContextTitle('Help translate %s')
 
@@ -732,11 +770,13 @@ soyuz_about = 'About Soyuz'
 
 soyuz_index = 'Soyuz: Linux Distribution Management'
 
-specification_add = 'Register A New Feature Specification'
+specification_add = 'Register a feature specification in Launchpad'
 
-specification_bug = 'Link this Specification to Bug'
+specification_bug = ContextTitle(
+  'Link specification \N{left double quotation mark}%s\N{right double quotation mark} '
+  'to a bug report')
 
-specification_removebug = 'Remove Link to Bug'
+specification_removebug = 'Remove link to bug report'
 
 specification_dependency = 'Create a Specification Dependency'
 
@@ -758,6 +798,8 @@ specification_requestreview = 'Request a Review of This Specification'
 
 specification_edit = 'Edit Specification Details'
 
+specification_linksprint = 'Put Specification on Sprint Agenda'
+
 specification_status = 'Edit Specification Status'
 
 specification_index = ContextTitle('Feature Specification: %s')
@@ -771,6 +813,14 @@ specifications_index = ContextTitle('%s')
 specificationtarget_specs = ContextTitle('Specifications for %s')
 
 specificationtarget_specplan = ContextTitle('Project Plan for %s')
+
+sprint_index = ContextTitle('%s (Sprint or Meeting)')
+
+sprint_edit = ContextTitle('Edit Meeting Details: %s')
+
+sprint_new = 'Register a new Meeting or Sprint in Launchpad'
+
+sprints_index = 'Launchpad Meeting or Sprint Registry'
 
 tickets_index = 'Launchpad Support Ticket Tracker'
 

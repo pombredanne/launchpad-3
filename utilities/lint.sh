@@ -54,7 +54,9 @@ if [ -z "$files" ]; then
 fi
 
 for file in $files; do
-    if grep -q -e '<<<<<<<' -e '>>>>>>>' $file; then
+    # NB. Odd syntax on following line to stop lint.sh detecting conflict
+    # markers in itself.
+    if grep -q -e '<<<''<<<<' -e '>>>''>>>>' $file; then
         echo "============================================================="
         echo "Conflict marker found in $file"
     fi

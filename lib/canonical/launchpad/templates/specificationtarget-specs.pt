@@ -15,15 +15,12 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Specification Listing</h1>
+  <h1>
+    Specifications for
+    <span tal:replace="context/displayname">Ubuntu 5.04</span>
+  </h1>
 
-  <p class="documentDescription">
-    Each of the specifications below is relevant to
-    <span tal:replace="context/displayname">Ubuntu 5.04</span>.
-  </p>
-
-  <p tal:replace="nothing">
-    <!-- ABOUT THIS PAGE
+      <p tal:replace="nothing"><!--
     This page uses a view class that organises the tasks into a set of
     categories (by status). it determines the sequence of the categories,
     and the sequence of the specs in each category.
@@ -32,30 +29,28 @@
        category/status => the category SpecificationStatus
        category/specs => the list of specs
        spec => an ISpecification
-    -->
-  </p>
+      --></p>
 
-  <p tal:condition="not:context/specifications">
-    <i>There are no specifications currently registered for
-    <span tal:replace="context/displayname">Ubuntu 5.04</span> at
-    present.</i>
-  </p>
-
-  <tal:block repeat="category view/categories">
-
-    <h2 tal:content="category/status/title">Approved</h2>
-
-    <div tal:repeat="spec category/specs"
-         tal:replace="structure spec/@@+listing-detailed" />
-
-  </tal:block>
-
-  <p>
-    Each specification describes a feature for a product, or a distribution.
-    Click on the specification title for more information on the current
-    status of the spec.
-  </p>
-
-</div>
-</body>
+      <p tal:condition="not:context/specifications">
+        There are no specifications registered for
+        <span tal:replace="context/displayname">Ubuntu 5.04</span> at the moment.
+      </p>
+      <tal:specifications condition="context/specifications">
+        <p>
+          Each specification describes a feature for
+          <span tal:replace="context/displayname" />.
+        </p>
+        <tal:block repeat="category view/categories">
+          <h2 tal:content="category/status/title">Approved</h2>
+          <div
+            tal:repeat="spec category/specs"
+            tal:replace="structure spec/@@+listing-detailed"
+          />
+        </tal:block>
+      </tal:specifications>
+      <ul>
+        <li class="add"><a href="+addspec">Add Specification&hellip;</a></li>
+      </ul>
+    </div>
+  </body>
 </html>
