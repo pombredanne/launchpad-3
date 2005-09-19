@@ -30,7 +30,7 @@
 
           <label>
             <input type="checkbox" checked="checked" name="logmein" />
-            Log me in after resetting my password
+            Log me in after validating my email address
           </label><br />
 
           <div class="formControls">
