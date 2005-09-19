@@ -113,8 +113,9 @@ Reason:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        setUpWidgets(self, IShipItCountry, IInputWidget)
         self.user = getUtility(ILaunchBag).user
+        setUpWidgets(self, IShipItCountry, IInputWidget,
+                     initial={'country': self.user.country})
         self.addressFormMessages = []
         self.requestFormMessages = []
         self.currentOrder = None
