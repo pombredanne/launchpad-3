@@ -4,6 +4,7 @@ __metaclass__ = type
 
 import threading
 import time
+import warnings
 
 from psycopgda.adapter import PsycopgAdapter
 
@@ -37,23 +38,32 @@ class LaunchpadDatabaseAdapter(PsycopgAdapter):
 _local = threading.local()
 
 def set_request_started(starttime=None):
-    '''Set the start time for the request being served by the current
+    """Set the start time for the request being served by the current
     thread.
 
     If the argument is given, it is used as the start time for the
     request, as returned by time.time().  If it is not given, the
-    current time is used.'''
+    current time is used.
+    """
+    if getattr(_local, 'request_start_time', None) is not None:
+        warnings.warn('set_request_started() called before previous request '
+                      'finished', stacklevel=1)
+
     if starttime is None:
         starttime = time.time()
     _local.request_start_time = starttime
 
 def clear_request_started():
-    '''Clear the request timer.  This function should be called when
-    the request completes.'''
+    """Clear the request timer.  This function should be called when
+    the request completes.
+    """
+    if getattr(_local, 'request_start_time', None) is None:
+        warnings.warn('clear_request_started() called outside of a request')
+
     _local.request_start_time = None
 
 def _request_expired():
-    '''Checks whether the current request has expired.'''
+    """Checks whether the current request has expired."""
     if config.launchpad.db_statement_timeout is None:
         return False # no timeout configured
 
@@ -66,10 +76,15 @@ def _request_expired():
 
 
 class RequestExpired(RuntimeError):
-    '''Request has timed out'''
+    """Request has timed out"""
 
 
 class ConnectionWrapper:
+    """A simple wrapper around a DB-API connection object.
+
+    Overrides the cursor() method to return CursorWrapper objects.
+    """
+    
     def __init__(self, connection):
         self.__dict__['_conn'] = connection
 
@@ -82,7 +97,14 @@ class ConnectionWrapper:
     def __setattr__(self, attr, value):
         setattr(self._conn, attr, value)
 
+
 class CursorWrapper:
+    """A simple wrapper for a DB-API cursor object.
+
+    Overrides the execute() method to check whether the current
+    request has expired.
+    """
+    
     def __init__(self, cursor):
         self.__dict__['_cur'] = cursor
 

@@ -78,6 +78,7 @@ Signal the start of a request:
 Perform an operation before the time limit expires:
 
     >>> cursor.execute('SELECT 1')
+    >>> clear_request_started()
 
 
 The request start time can also be passed to set_request_started().
@@ -116,6 +117,7 @@ affect other threads:
     >>> cursor.execute('SELECT 1')
     >>> statement_issued.set()
     >>> thread.join()
+    >>> clear_request_started()
 
 Similarly, starting a new request in another thread will not reset the
 remove the timout:
@@ -137,6 +139,7 @@ remove the timout:
     RequestExpired: The current request has expired
     >>> statement_issued.set()
     >>> thread.join()
+    >>> clear_request_started()
 
 
 If no timeout has been set, then requests will not time out:
@@ -147,6 +150,7 @@ If no timeout has been set, then requests will not time out:
     >>> cursor = conn.cursor()
     >>> set_request_started(time.time() - 60)
     >>> cursor.execute('SELECT 1')
+    >>> clear_request_started()
 
 Cleanup:
 
