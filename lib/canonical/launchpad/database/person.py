@@ -36,7 +36,7 @@ from canonical.launchpad.interfaces import (
     IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IMaintainershipSet,
     IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
     ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
-    ILoginTokenSet, KEYSERVER_QUERY_URL)
+    ILoginTokenSet, KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -912,11 +912,10 @@ class PersonSet:
 
     def getByEmail(self, email, default=None):
         """See IPersonSet."""
-        result = EmailAddress.selectOne(
-            "lower(email) = %s" % quote(email.strip().lower()))
-        if result is None:
+        emailaddress = getUtility(IEmailAddressSet).getByEmail(email)
+        if emailaddress is None:
             return default
-        return result.person
+        return emailaddress.person
 
     def getUbuntites(self, orderBy=None):
         """See IPersonSet."""
@@ -1251,7 +1250,7 @@ class EmailAddress(SQLBase):
     _table = 'EmailAddress'
     _defaultOrder = ['email']
 
-    email = StringCol(dbName='email', notNull=True, alternateID=True)
+    email = StringCol(dbName='email', notNull=True, unique=True)
     status = EnumCol(dbName='status', schema=EmailAddressStatus, notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
@@ -1282,13 +1281,17 @@ class EmailAddressSet:
         return EmailAddress.selectBy(personID=person.id, orderBy='email')
 
     def getByEmail(self, email, default=None):
-        try:
-            return EmailAddress.byEmail(email)
-        except SQLObjectNotFound:
+        result = EmailAddress.selectOne(
+            "lower(email) = %s" % quote(email.strip().lower()))
+        if result is None:
             return default
+        return result
 
     def new(self, email, personID, status=EmailAddressStatus.NEW):
         email = email.strip()
+        if self.getByEmail(email):
+            raise EmailAddressAlreadyTaken(
+                "The email address %s is already registered." % email)
         assert status in EmailAddressStatus.items
         return EmailAddress(email=email, status=status, person=personID)
 
