@@ -115,7 +115,7 @@ Reason:
         self.request = request
         self.user = getUtility(ILaunchBag).user
         setUpWidgets(self, IShipItCountry, IInputWidget,
-                     initial={'country': self.user.country})
+                     initial={'country': getattr(self.user, 'country', None)})
         self.addressFormMessages = []
         self.requestFormMessages = []
         self.currentOrder = None
