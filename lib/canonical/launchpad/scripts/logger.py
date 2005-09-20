@@ -155,12 +155,14 @@ def _logger(level, name=None):
     elif level > logging.CRITICAL:
         level = logging.CRITICAL
 
-    # Create our logger
-    logger = logging.getLogger(name)
+    # We install our custom handlers and formatters on the root logger.
+    # This means that if the root logger is used, we still get correct
+    # formatting. The root logger should probably not be used.
+    root_logger = logging.getLogger()
 
     # Trash any existing handlers
-    for hdlr in logger.handlers[:]:
-        logger.removeHandler(hdlr)
+    for hdlr in root_logger.handlers[:]:
+        root_logger.removeHandler(hdlr)
 
     # Make it print output in a standard format, suitable for 
     # both command line tools and cron jobs (command line tools often end
@@ -174,8 +176,13 @@ def _logger(level, name=None):
         )
     formatter.converter = time.gmtime # Output should be UTC
     hdlr.setFormatter(formatter)
-    logger.addHandler(hdlr)
+    root_logger.addHandler(hdlr)
+
+    # Create our logger
+    logger = logging.getLogger(name)
+
     logger.setLevel(level)
+
 
     global log
     log._log = logger
