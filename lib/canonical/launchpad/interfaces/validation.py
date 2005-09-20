@@ -9,7 +9,6 @@ __all__ = [
     ]
 
 import urllib
-import PIL.Image
 from StringIO import StringIO
 
 from zope.component import getUtility
@@ -92,6 +91,8 @@ def valid_bug_number(value):
 
 
 def valid_emblem(emblem):
+    # No global import to avoid hard dependancy on PIL being installed
+    import PIL.Image
     if len(emblem) > 6000:
         return False
     try:
@@ -108,6 +109,8 @@ def valid_emblem(emblem):
 
 
 def valid_hackergotchi(hackergotchi):
+    # No global import to avoid hard dependancy on PIL being installed
+    import PIL.Image
     if len(hackergotchi) > 16000:
         return False
     try:
