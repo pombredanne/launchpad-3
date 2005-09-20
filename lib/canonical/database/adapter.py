@@ -114,6 +114,14 @@ class CursorWrapper:
         self.__dict__['_cur'] = cursor
 
     def execute(self, *args, **kwargs):
+        """Execute an SQL query, provided that the current request hasn't
+        timed out.
+
+        If the request has timed out, the current transaction will be
+        doomed (but not completed -- further queries will fail til the
+        transaction completes) and the RequestExpired exception will
+        be raised.
+        """
         if _request_expired():
             # make sure the current transaction can not be committed by
             # sending a broken SQL statement to the database
