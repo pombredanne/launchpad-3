@@ -277,20 +277,24 @@ class MessageSet:
         default_charset = parsed_message.get_content_charset() or 'iso-8859-1'
 
         sequence = 1
-        if getattr(parsed_message, 'preamble', None):
-            # We strip a leading and trailing newline - the email parser
-            # seems to arbitrarily add them :-/
-            preamble = parsed_message.preamble.decode(
-                    default_charset, 'replace')
-            if preamble.strip():
-                if preamble[0] == '\n':
-                    preamble = preamble[1:]
-                if preamble[-1] == '\n':
-                    preamble = preamble[:-1]
-                MessageChunk(
-                    messageID=message.id, sequence=sequence, content=preamble
-                    )
-                sequence += 1
+
+        # Don't store the preamble or epilogue -- they are only there
+        # to give hints to non-MIME aware clients
+        #
+        # if getattr(parsed_message, 'preamble', None):
+        #     # We strip a leading and trailing newline - the email parser
+        #     # seems to arbitrarily add them :-/
+        #     preamble = parsed_message.preamble.decode(
+        #             default_charset, 'replace')
+        #     if preamble.strip():
+        #         if preamble[0] == '\n':
+        #             preamble = preamble[1:]
+        #         if preamble[-1] == '\n':
+        #             preamble = preamble[:-1]
+        #         MessageChunk(
+        #             messageID=message.id, sequence=sequence, content=preamble
+        #             )
+        #         sequence += 1
 
         for part in parsed_message.walk():
             mime_type = part.get_content_type()
@@ -332,17 +336,18 @@ class MessageSet:
                         )
                     sequence += 1
 
-        if getattr(parsed_message, 'epilogue', None):
-            epilogue = parsed_message.epilogue.decode(
-                    default_charset, 'replace')
-            if epilogue.strip():
-                if epilogue[0] == '\n':
-                    epilogue = epilogue[1:]
-                if epilogue[-1] == '\n':
-                    epilogue = epilogue[:-1]
-                MessageChunk(
-                    messageID=message.id, sequence=sequence, content=epilogue
-                    )
+        # Don't store the epilogue
+        # if getattr(parsed_message, 'epilogue', None):
+        #     epilogue = parsed_message.epilogue.decode(
+        #             default_charset, 'replace')
+        #     if epilogue.strip():
+        #         if epilogue[0] == '\n':
+        #             epilogue = epilogue[1:]
+        #         if epilogue[-1] == '\n':
+        #             epilogue = epilogue[:-1]
+        #         MessageChunk(
+        #             messageID=message.id, sequence=sequence, content=epilogue
+        #             )
         return message
 
 class MessageChunk(SQLBase):

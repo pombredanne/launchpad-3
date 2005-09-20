@@ -70,7 +70,7 @@ unadulterated, email into the Librarian and builds all the MessageChunks.
 ... Date: Thu Jun 16 14:12:54 BST 2005
 ... To: cabal@ubuntu.com
 ...
-... The preamble is included, including Unicode\N{COPYRIGHT SIGN}
+... The preamble is not included, including Unicode\N{COPYRIGHT SIGN}
 ... --===============0294339828==
 ... Content-Type: text/plain; charset="us-ascii"
 ... MIME-Version: 1.0
@@ -110,7 +110,7 @@ unadulterated, email into the Librarian and builds all the MessageChunks.
 ... =00<=00u=00n=00i=00c=00o=00d=00e=00>=00"!<=00/=00u=00n=00i=00c=00o=00d=00e=
 ... =00>=00
 ... --===============0294339828==--
-... The epilogue is included, including Unicode\N{COPYRIGHT SIGN}
+... The epilogue is not included, including Unicode\N{COPYRIGHT SIGN}
 ... """.encode('latin1')
 >>> msg = msgset.fromEmail(raw_msg)
 
@@ -128,19 +128,17 @@ u'Unicode\u2122'
 >>> for chunk in chunks:
 ...     if chunk.content:
 ...         print '%2d - %r' % (chunk.sequence, chunk.content)
- 1 - u'The preamble is included, including Unicode\xa9'
- 2 - u'Plain text'
- 4 - u'Unicode\u2122 text'
- 6 - u'The epilogue is included, including Unicode\xa9'
+ 1 - u'Plain text'
+ 3 - u'Unicode\u2122 text'
 
-Note that the third and fifth chunks were not of type text/plain,
+Note that the second and forth chunks were not of type text/plain,
 so are stored as blobs.
 
->>> chunks[2].sequence
-3
->>> chunks[2].content is None
+>>> chunks[1].sequence
+2
+>>> chunks[1].content is None
 True
->>> blob = chunks[2].blob
+>>> blob = chunks[1].blob
 >>> blob.filename
 u'anna.jpg.exe'
 >>> blob.url.startswith(u'http://localhost:58000/')
@@ -148,7 +146,7 @@ True
 >>> blob.url.endswith(u'/anna.jpg.exe')
 True
 
->>> blob2 = chunks[4].blob
+>>> blob2 = chunks[3].blob
 >>> blob2.filename
 u'unnamed'
 >>> blob2.mimetype
