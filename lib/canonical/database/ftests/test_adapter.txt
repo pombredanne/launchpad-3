@@ -7,6 +7,7 @@ Imports and test setup:
 
     >>> import threading
     >>> import time
+    >>> import psycopg
     >>> from zope.component import getUtility
     >>> from zope.app.rdb.interfaces import IZopeDatabaseAdapter
     >>> from sqlos.interfaces import IConnectionName
@@ -78,6 +79,10 @@ Signal the start of a request:
 Perform an operation before the time limit expires:
 
     >>> cursor.execute('SELECT 1')
+
+Once the request has been completed, clear_request_started() should be
+called:
+
     >>> clear_request_started()
 
 
@@ -92,12 +97,21 @@ another query:
     RequestExpired: The current request has expired
 
 
-The current request can be cleared, which will allow queries to be
-performed again:
+When a RequestExpired exception is raised, the current database
+transaction will be doomed, and future queries will fail:
 
     >>> clear_request_started()
-    >>> cursor.execute('SELECT 1')
+    >>> try:
+    ...     cursor.execute('SELECT 1')
+    ... except psycopg.DatabaseError, e:
+    ...     print str(e)
+    ERROR:  current transaction is aborted, commands ignored until end of transaction block
+    <BLANKLINE>
+    SELECT 1
 
+Cleanup:
+
+    >>> conn.rollback()
 
 The LaunchpadDatabaseAdapter assumes that each thread services a
 different request, so a request timing out on one thread will not
@@ -140,6 +154,7 @@ remove the timout:
     >>> statement_issued.set()
     >>> thread.join()
     >>> clear_request_started()
+    >>> conn.rollback()
 
 
 If no timeout has been set, then requests will not time out:

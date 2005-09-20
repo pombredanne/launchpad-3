@@ -6,9 +6,13 @@ import threading
 import time
 import warnings
 
+from zope.interface import implements
+
 from psycopgda.adapter import PsycopgAdapter
+import psycopg
 
 from canonical.config import config
+from canonical.database.interfaces import IRequestExpired
 
 __all__ = [
     'LaunchpadDatabaseAdapter',
@@ -77,6 +81,7 @@ def _request_expired():
 
 class RequestExpired(RuntimeError):
     """Request has timed out"""
+    implements(IRequestExpired)
 
 
 class ConnectionWrapper:
@@ -110,6 +115,12 @@ class CursorWrapper:
 
     def execute(self, *args, **kwargs):
         if _request_expired():
+            # make sure the current transaction can not be committed by
+            # sending a broken SQL statement to the database
+            try:
+                self._cur.execute('break this transaction')
+            except psycopg.DatabaseError:
+                pass
             raise RequestExpired('The current request has expired')
         return self._cur.execute(*args, **kwargs)
 
