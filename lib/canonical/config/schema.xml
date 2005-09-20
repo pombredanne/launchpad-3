@@ -84,7 +84,9 @@
                 main,universe,restricted
             </example>
         </key>
-        <key name="keyrings" datatype="existing-directory"
+        <!-- datatype changed from existing-directory to allow config
+        to load without ubuntu-keyrings installed (such as on emperor) -->
+        <key name="keyrings" datatype="string"
             default="/usr/share/keyrings">
             <description>
                 A full path to where the keyrings files are
