@@ -32,7 +32,6 @@
       <tal:block condition="context/isTeam">
         <!-- these are only for teams -->
         <li class="people"><a href="+members">Edit Members</a></li>
-        <li class="people"><a href="+teamhierarchy">Show Team Hierarchy</a></li>
         <li class="mail" tal:condition="context/required:launchpad.Edit">
             <a href="+editemail">Edit Contact Address</a>
         </li>
