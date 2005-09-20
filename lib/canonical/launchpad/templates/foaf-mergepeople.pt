@@ -31,10 +31,12 @@
           <input type="password" size="30" name="password" />
           <br>
 
-          <label>
-            <input type="checkbox" checked="checked" name="logmein" />
-            Log me in after merging the accounts
-          </label><br />
+          <tal:block condition="not: request/lp:person">
+            <label>
+              <input type="checkbox" checked="checked" name="logmein" />
+              Log me in after merging the accounts
+            </label><br />
+          </tal:block>
 
           <div class="formControls">
             <input type="submit" name="SUBMIT_CHANGES" value="Submit" />
