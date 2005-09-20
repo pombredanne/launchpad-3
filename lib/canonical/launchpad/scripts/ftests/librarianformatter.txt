@@ -91,6 +91,7 @@ stderr, instead reporting URLs and greatly reducing the verbosity.
 >>> print out
 Script Output
 ... ERROR   Oops
+... ERROR   Root oops
  -> http://localhost:58000/...
 
 
