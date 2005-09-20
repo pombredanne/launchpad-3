@@ -162,7 +162,6 @@
         for="canonical.launchpad.interfaces.ISourcePackage"
         facet="bugs"
         schema="canonical.launchpad.interfaces.IBugAddForm"
-        label="Report a bug about a distribution source package"
         class="canonical.launchpad.browser.sourcepackage.SourcePackageFilebugView"
         permission="launchpad.AnyPerson"
         fields="title comment private owner"

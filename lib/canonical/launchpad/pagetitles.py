@@ -151,7 +151,7 @@ def bug_add(context, view):
     distrorelease_context = IDistroRelease(context, None)
 
     if product_context or distro_context or distrorelease_context is not None:
-        context_title = ContextTitle('Report a bug in %s')
+        context_title = ContextTitle('Report a bug about %s')
         return context_title(context, view)
     else:
         return "Report a bug"
@@ -728,7 +728,7 @@ sourcepackage_translate = ContextTitle('Help translate %s')
 
 sourcepackage_changelog = 'Source Package Changelog'
 
-sourcepackage_filebug = ContextTitle("Report a Bug in %s")
+sourcepackage_filebug = ContextTitle("Report a bug about %s")
 
 sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 

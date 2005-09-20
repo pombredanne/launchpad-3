@@ -252,7 +252,6 @@
         name="+filebug"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBugAddForm"
-        label="Report Bug on Upstream Product"
         fields="title comment private owner"
         class="canonical.launchpad.browser.ProductFileBugView"
         facet="bugs"
