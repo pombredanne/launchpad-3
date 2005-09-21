@@ -39,7 +39,7 @@ class BinaryPackageRelease(SQLBase):
                            notNull=True)
     section = ForeignKey(dbName='section', foreignKey='Section', notNull=True)
     priority = EnumCol(dbName='priority',
-                       schema=dbschema.BinaryPackagePriority)
+                       schema=dbschema.PackagePublishingPriority)
     shlibdeps = StringCol(dbName='shlibdeps')
     depends = StringCol(dbName='depends')
     recommends = StringCol(dbName='recommends')
