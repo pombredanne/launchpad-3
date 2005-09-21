@@ -210,7 +210,7 @@ class Dominator(object):
 
         sources = SecureSourcePackagePublishingHistory.selectBy(
             distroreleaseID=dr.id, pocket=pocket,
-            status=PackagePublishingStatus.SUPERSEDED)
+            status=PackagePublishingStatus.PUBLISHED)
 
         self._dominateSource(self._sortPackages(sources))
 
@@ -221,10 +221,22 @@ class Dominator(object):
             binaries = SecureBinaryPackagePublishingHistory.selectBy(
                 distroarchreleaseID=distroarchrelease.id,
                 pocket=pocket,
-                status=PackagePublishingStatus.SUPERSEDED)
+                status=PackagePublishingStatus.PUBLISHED)
             
             self._dominateBinary(self._sortPackages(binaries, False))
         
+        sources = SecureSourcePackagePublishingHistory.selectBy(
+            distroreleaseID=dr.id, pocket=pocket,
+            status=PackagePublishingStatus.SUPERSEDED)
+        
+        binaries = SecureBinaryPackagePublishingHistory.select("""
+            securebinarypackagepublishinghistory.distroarchrelease =
+                distroarchrelease.id AND
+            distroarchrelease.distrorelease = %s AND
+            securebinarypackagepublishinghistory.status = %s""" % sqlvalues(
+            dr.id, PackagePublishingStatus.SUPERSEDED), clauseTables=[
+            'DistroArchRelease'])
+
         self._judgeSuperseded(sources, binaries, config)
 
         self.debug("Domination for %s/%s finished" %
