@@ -31,8 +31,7 @@ class Build(SQLBase):
     implements(IBuild)
     _table = 'Build'
 
-    datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
-                                 default=UTC_NOW)
+    datecreated = UtcDateTimeCol(dbName='datecreated', default=UTC_NOW)
 
     processor = ForeignKey(dbName='processor', foreignKey='Processor', 
                            notNull=True)
@@ -47,21 +46,20 @@ class Build(SQLBase):
                                       foreignKey='SourcePackageRelease', 
                                       notNull=True)
 
-    datebuilt = UtcDateTimeCol(dbName='datebuilt', notNull=False, default=None)
+    datebuilt = UtcDateTimeCol(dbName='datebuilt', default=None)
 
-    buildduration = IntervalCol(dbName='buildduration', notNull=False,
-                                default=None)
+    buildduration = IntervalCol(dbName='buildduration', default=None)
 
     buildlog = ForeignKey(dbName='buildlog', foreignKey='LibraryFileAlias',
-                          notNull=False, default=None)
+                          default=None)
 
     builder = ForeignKey(dbName='builder', foreignKey='Builder',
-                         notNull=False, default=None)
+                         default=None)
 
     gpgsigningkey = ForeignKey(dbName='gpgsigningkey', foreignKey='GPGKey',
-                               notNull=False, default=None)
+                               default=None)
 
-    changes = StringCol(dbName='changes', notNull=False, default=None)
+    changes = StringCol(dbName='changes', default=None)
 
     @property
     def distrorelease(self):
@@ -105,4 +103,3 @@ class BuildSet:
                             distrorelease.architectures])[:-1]
         
         return Build.select("distroarchrelease IN (%s)" % arch_ids)
-    
