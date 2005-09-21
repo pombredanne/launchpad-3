@@ -1,7 +1,7 @@
 Sample Person tries to add an upstream task without specifying a product:
 
   >>> print http(r"""
-  ... POST /malone/bugs/3/+upstreamtask HTTP/1.1
+  ... POST /distros/debian/+sources/mozilla-firefox/+bug/3/+upstreamtask HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1187
   ... Content-Type: multipart/form-data; boundary=---------------------------19404241471267257110193928386

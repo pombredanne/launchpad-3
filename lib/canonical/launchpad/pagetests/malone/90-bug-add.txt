@@ -21,7 +21,6 @@ redirected to the bug page.
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 729
   ... Content-Type: multipart/form-data; boundary=---------------------------124775592710556272331137042681
-  ... Referer: http://localhost:9000/malone/bugs/+package
   ... 
   ... -----------------------------124775592710556272331137042681
   ... Content-Disposition: form-data; name="field.distribution"
@@ -47,5 +46,5 @@ redirected to the bug page.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/malone/bugs/7
+  Location: http://localhost:9000/distros/ubuntu/+sources/mozilla-firefox/+bug/7
   ...

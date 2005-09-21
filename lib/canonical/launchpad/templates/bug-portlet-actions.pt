@@ -1,55 +1,70 @@
 <div class="portlet portletBody portletContent"
-       tal:define="bug_url context/fmt:url">
+       tal:define="current_task view/currentBugTask;
+                   url current_task/fmt:url">
     <ul>
       <li class="edit">
-        <a href="#" tal:attributes="href string:$bug_url/+edit">Edit
-        Description</a>
+        <a href="#" tal:attributes="href string:$url/+edit">
+          Edit Description
+        </a>
       </li>
       <li class="edit">
-        <a href="#" tal:attributes="href string:$bug_url/+secrecy">Bug Secrecy</a>
+        <a href="#" tal:attributes="href string:$url/+secrecy">Bug Secrecy</a>
       </li>
       <li class="edit">
         <a href="#"
-           tal:attributes="href string:$bug_url/+duplicate">Mark as
-           Duplicate</a>
+           tal:attributes="href string:$url/+duplicate">
+           Mark as Duplicate
+        </a>
       </li>
       <li class="add" tal:condition="not: view/subscription">
-        <a href="#" tal:attributes="href string:$bug_url/+subscribe"
-           >Subscribe</a>
+        <a href="#" tal:attributes="href string:$url/+subscribe">Subscribe</a>
       </li>
       <li class="add" tal:condition="view/subscription">
-        <a href="#" tal:attributes="href string:$bug_url/+subscribe"
-           >Unsubscribe</a>
-      </li>
-      <li class="add">
-        <a href="#" tal:attributes="href string:$bug_url/+addsubscriber"
-           >Subscribe Someone Else</a>
+        <a href="#" tal:attributes="href string:$url/+subscribe">Unsubscribe</a>
       </li>
       <li class="add">
         <a href="#"
-           tal:attributes="href string:$bug_url/+addattachment"
-           >Add Attachment</a>
+           tal:attributes="href string:$url/+addsubscriber">
+           Subscribe Someone Else
+        </a>
+      </li>
+      <li class="add">
+        <a href="#"
+           tal:attributes="href string:$url/+addattachment">
+           Add Attachment
+        </a>
       </li>
       <li class="add">
         <a href="#" tal:attributes="href
-           string:$bug_url/+linkcve">Link to <abbr title="Common Vulnerabilities and Exposures Index">CVE</abbr></a>
+           string:$url/+linkcve">Link to <abbr title="Common Vulnerabilities and Exposures Index">CVE</abbr></a>
       </li>
       <li class="edit" tal:condition="context/cves">
-        <a tal:attributes="href string:$bug_url/+unlinkcve">Remove
+        <a tal:attributes="href string:$url/+unlinkcve">Remove
           CVE link</a>
       </li>
       <li class="add">
         <a href="#"
-           tal:attributes="href string:$bug_url/references/+new">Link to
-           Web Page</a>
+           tal:attributes="href string:$url/+addurl">
+           Link to Web Page
+        </a>
       </li>
       <li class="add">
-        <a href="#" tal:attributes="href string:$bug_url/watches/+new">Link
-           To Other Bug Tracker</a>
+        <a href="#" tal:attributes="href string:$url/+addwatch">
+          Link To Other Bugtracker
+        </a>
+      </li>
+      <li class="add">
+        <a tal:attributes="href string:${current_task/target/fmt:url}/+filebug">
+          Report a Bug in <span tal:replace="current_task/target/displayname" />
+        </a></li>
+      <li class="bugs">
+        <a tal:attributes="href string:${current_task/target/fmt:url}/+bugs">
+          Search <span tal:replace="current_task/target/displayname" /> Bugs
+        </a>
       </li>
       <li class="list">
         <a href="#"
-           tal:attributes="href string:$bug_url/activity">Activity Log</a>
+           tal:attributes="href string:$url/+activity">Activity Log</a>
       </li>
     </ul>
 </div>

@@ -8,12 +8,14 @@ __all__ = [
     'traverse_malone_application',
     'traverse_project',
     'traverse_product',
+    'traverse_sourcepackage',
+    'traverse_distro_sourcepackage',
     'traverse_distribution',
     'traverse_distrorelease',
     'traverse_person',
     'traverse_potemplate',
     'traverse_team',
-    'traverse_bug',
+    'traverse_bugtask',
     'traverse_bugs',
     'traverse_poll',
     ]
@@ -21,26 +23,90 @@ __all__ = [
 from zope.component import getUtility, queryView
 from zope.exceptions import NotFoundError
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
-    IBugSet, IBugTaskSet, IDistributionSet, IProjectSet,
-    IProductSet, IBugTrackerSet, ILaunchBag,
-    ITeamMembershipSubset, ICalendarOwner, ILanguageSet,
-    IBugAttachmentSet, IPublishedPackageSet, IPollSet,
-    IPollOptionSet, BugTaskSearchParams,
-    IDistroReleaseLanguageSet, ICveSet)
-from canonical.launchpad.database import (
-    BugExternalRefSet, BugWatchSet, BugTasksReport,
-    BugProductInfestationSet, BugPackageInfestationSet,
-    ProductSeriesSet, SourcePackageSet)
+    IBugSet, IBugTaskSet, IDistributionSet, IProjectSet, IProductSet,
+    IBugTrackerSet, ILaunchBag, ITeamMembershipSubset, ICalendarOwner,
+    ILanguageSet, IBugAttachmentSet, IPublishedPackageSet, IPollSet,
+    IPollOptionSet, BugTaskSearchParams, IDistroReleaseLanguageSet,
+    IBugExternalRefSet, ICveSet, IBugWatchSet, IProduct, IUpstreamBugTask,
+    IDistroBugTask, IDistroReleaseBugTask, IDistroSourcePackageSet,
+    ISourcePackageNameSet, IPOTemplateSet, IDistribution, IDistroRelease,
+    ISourcePackage, IDistroSourcePackage)
+from canonical.launchpad.database import ProductSeriesSet, SourcePackageSet
+from canonical.launchpad.components.bugtask import NullBugTask, mark_task
 
-def _skip_one(context, request):
+def _consume_next_path_step(request):
+    """Consume the next traversal step in the request.
+
+    This function is particularly useful if you have a URL path like:
+
+        /foo/+things/1
+
+    and you want the "foo" object to be the context used when rendering your ZPT
+    template. Your traverser code can use this function to"consume" the +things
+    path element when it traverses, so that the context remains as the "foo"
+    object.
+
+    Returns a string that is the path element that was consumed, or
+    None, if there was no next path element to consume.
+    """
     travstack = request.getTraversalStack()
     if len(travstack) == 0:
-        return
+        return None
     name = travstack.pop()
     request._traversed_names.append(name)
     request.setTraversalStack(travstack)
     return name
+
+
+def _get_task_for_context(bugid, context):
+    """Return the IBugTask for this bugid in this context.
+
+    If the bug has been reported, but not in this specific context, a
+    NullBugTask will be returned.
+
+    If no bug with the given bugid is found, None is returned.
+
+    If the context type does provide IProduct, IDistribution,
+    IDistroRelease, ISourcePackage or IDistroSourcePackage a TypeError
+    is raised.
+    """
+    try:
+        bug = getUtility(IBugSet).get(bugid)
+    except NotFoundError:
+        # No bug with that ID exists, so return None.
+        return None
+
+    params = BugTaskSearchParams(
+        user=getUtility(ILaunchBag).user, bug=bug)
+    bugtasks = context.searchTasks(params)
+    if bugtasks.count():
+        return bugtasks[0]
+    else:
+        # Return a null bug task. This makes it possible to, for
+        # example, return a bug page for a context in which the bug
+        # hasn't yet been reported.
+        if IProduct.providedBy(context):
+            null_bugtask = NullBugTask(bug=bug, product=context)
+        elif IDistribution.providedBy(context):
+            null_bugtask = NullBugTask(bug=bug, distribution=context)
+        elif IDistroSourcePackage.providedBy(context):
+            null_bugtask = NullBugTask(
+                bug=bug, distribution=context.distribution,
+                sourcepackagename=context.sourcepackagename)
+        elif IDistroRelease.providedBy(context):
+            null_bugtask = NullBugTask(bug=bug, distrorelease=context)
+        elif ISourcePackage.providedBy(context):
+            null_bugtask = NullBugTask(
+                bug=bug, distrorelease=context.distrorelease,
+                sourcepackagename=context.sourcepackagename)
+        else:
+            raise TypeError(
+                "Unknown context type for bug task: %s" % repr(context))
+
+        return null_bugtask
+
 
 def traverse_malone_application(malone_application, request, name):
     """Traverse the Malone application object."""
@@ -56,8 +122,15 @@ def traverse_malone_application(malone_application, request, name):
         return getUtility(IProductSet)
     elif name == "bugtrackers":
         return getUtility(IBugTrackerSet)
+    elif name.isdigit():
+        # Make /bugs/$bug.id and /malone/$bug.id Just Work
+        try:
+            return getUtility(IBugSet).get(name)
+        except NotFoundError:
+            return None
 
     return None
+
 
 def traverse_potemplate(potemplate, request, name):
     user = getUtility(ILaunchBag).user
@@ -80,44 +153,55 @@ def traverse_project(project, request, name):
             return None
 
 
+def traverse_sourcepackage(sourcepackage, request, name):
+    if name == '+pots':
+        potemplateset = getUtility(IPOTemplateSet)
+        return potemplateset.getSubset(
+                   distrorelease=sourcepackage.distrorelease,
+                   sourcepackagename=sourcepackage.sourcepackagename)
+    elif name == '+bug':
+        nextstep = _consume_next_path_step(request)
+        if nextstep.isdigit():
+            return _get_task_for_context(nextstep, sourcepackage)
+        else:
+            return None
+
+    return None
+
+
+def traverse_distro_sourcepackage(distro_sourcepackage, request, name):
+    if name == '+bug':
+        nextstep = _consume_next_path_step(request)
+        if nextstep.isdigit():
+            return _get_task_for_context(nextstep, distro_sourcepackage)
+        else:
+            return None
+
+    return None
+
+
 def traverse_product(product, request, name):
     """Traverse an IProduct."""
     if name == '+series':
         return ProductSeriesSet(product=product)
     elif name == '+spec':
-        spec_name = _skip_one(product, request)
+        spec_name = _consume_next_path_step(request)
         return product.getSpecification(spec_name)
     elif name == '+milestone':
-        milestone_name = _skip_one(product, request)
+        milestone_name = _consume_next_path_step(request)
         return product.getMilestone(milestone_name)
+    elif name == '+bug':
+        nextstep = _consume_next_path_step(request)
+        if nextstep.isdigit():
+            return _get_task_for_context(nextstep, product)
     elif name == '+ticket':
-        ticket_num = _skip_one(product, request)
+        ticket_num = _consume_next_path_step(request)
         # tickets should be int's
         try:
             ticket_num = int(ticket_num)
         except ValueError:
             return None
         return product.getTicket(ticket_num)
-    elif name == '+bugs':
-        travstack = request.getTraversalStack()
-        if len(travstack) == 0:
-            return queryView(product, "+bugs-only", request)
-        else:
-            # XXX, Brad Bollenbach, 2005-07-20: This
-            # request.setTraversalStack stuff is nasty. I've discussed
-            # this with SteveA, and will follow his recommendation to
-            # refactor this when his "nav stuff" lands.
-            nextstep = travstack.pop()
-            request._traversed_names.append(nextstep)
-            request.setTraversalStack(travstack)
-
-            if nextstep.isdigit():
-                try:
-                    bug = getUtility(IBugSet).get(nextstep)
-                except NotFoundError:
-                    return None
-                return _get_task_for_context(bug, product)
-
     elif name == '+calendar':
         return ICalendarOwner(product).calendar
     else:
@@ -133,39 +217,53 @@ def traverse_distribution(distribution, request, name):
     """Traverse an IDistribution."""
     if name == '+packages':
         return getUtility(IPublishedPackageSet)
+    elif name == '+sources':
+        # XXX: Brad Bollenbach, 2005-09-12: There is not yet an
+        # interface for $distro/+sources; for now, this code's only
+        # promise is that it will return the correct
+        # IDistroSourcePackage for a URL path like:
+        #
+        # /distros/ubuntu/+sources/mozilla-firefox
+        #
+        # Obviously, there needs to be a simple page designed for a
+        # bare +sources. Here's the bug report to track that task:
+        #
+        # https://launchpad.net/malone/bugs/2230
+        nextstep = _consume_next_path_step(request)
+        if not nextstep:
+            return None
+
+        sourcepackagename = getUtility(ISourcePackageNameSet).queryByName(nextstep)
+        if not sourcepackagename:
+            return None
+
+        return getUtility(IDistroSourcePackageSet).getPackage(
+            distribution=distribution, sourcepackagename=sourcepackagename)
     elif name == '+milestone':
-        milestone_name = _skip_one(distribution, request)
-        return distribution.getMilestone(milestone_name)
+        milestone_name = _consume_next_path_step(request)
+        try:
+            return distribution.getMilestone(milestone_name)
+        except NotFoundError:
+            return None
     elif name == '+spec':
-        spec_name = _skip_one(distribution, request)
+        spec_name = _consume_next_path_step(request)
         return distribution.getSpecification(spec_name)
     elif name == '+ticket':
-        ticket_num = _skip_one(distribution, request)
+        ticket_num = _consume_next_path_step(request)
         # tickets should be int's
         try:
             ticket_num = int(ticket_num)
         except ValueError:
             return None
         return distribution.getTicket(ticket_num)
-    elif name == '+bugs':
-        # XXX, Brad Bollenbach, 2005-07-20: This
-        # request.setTraversalStack stuff is nasty. I've discussed
-        # this with SteveA, and will follow his recommendation to
-        # refactor this when his "nav stuff" lands.
-        travstack = request.getTraversalStack()
-        if len(travstack) == 0:
-            return queryView(distribution, "+bugs-only", request)
+    elif name == '+bug':
+        nextstep = _consume_next_path_step(request)
+        if nextstep is None:
+            return None
+        elif nextstep.isdigit():
+            return _get_task_for_context(nextstep, distribution)
         else:
-            nextstep = travstack.pop()
-            request._traversed_names.append(nextstep)
-            request.setTraversalStack(travstack)
-
-            if nextstep.isdigit():
-                try:
-                    bug = getUtility(IBugSet).get(nextstep)
-                except NotFoundError:
-                    return None
-                return _get_task_for_context(bug, distribution)
+            return None
     else:
         bag = getUtility(ILaunchBag)
         try:
@@ -173,32 +271,13 @@ def traverse_distribution(distribution, request, name):
         except KeyError:
             return None
 
+
 def traverse_distrorelease(distrorelease, request, name):
     """Traverse an IDistroRelease."""
     if name == '+sources':
         return SourcePackageSet(distrorelease=distrorelease)
     elif name  == '+packages':
         return getUtility(IPublishedPackageSet)
-    elif name == '+bugs':
-        # XXX, Brad Bollenbach, 2005-07-20: This
-        # request.setTraversalStack stuff is nasty. I've discussed
-        # this with SteveA, and will follow his recommendation to
-        # refactor this when his "nav stuff" lands.
-        travstack = request.getTraversalStack()
-        if len(travstack) == 0:
-            return queryView(distrorelease, "+bugs-only", request)
-        else:
-            nextstep = travstack.pop()
-            request._traversed_names.append(nextstep)
-            request.setTraversalStack(travstack)
-
-            if nextstep.isdigit():
-                try:
-                    bug = getUtility(IBugSet).get(nextstep)
-                except NotFoundError:
-                    return None
-                return _get_task_for_context(bug, distrorelease)
-
     elif name == '+lang':
         travstack = request.getTraversalStack()
         if len(travstack) == 0:
@@ -219,20 +298,19 @@ def traverse_distrorelease(distrorelease, request, name):
         else:
             drlangset = getUtility(IDistroReleaseLanguageSet)
             return drlangset.getDummy(distrorelease, lang)
+    elif name == '+bug':
+        nextstep = _consume_next_path_step(request)
+        if nextstep is None:
+            return None
+        elif nextstep.isdigit():
+            return _get_task_for_context(nextstep, distrorelease)
+        else:
+            return None
     else:
         try:
             return distrorelease[name]
         except KeyError:
             return None
-
-
-def _get_task_for_context(bug, context):
-    user = getUtility(ILaunchBag).user
-    search_params = BugTaskSearchParams(bug=bug, user=user)
-    bugtasks = context.searchTasks(search_params)
-    if bugtasks.count() != 1: # id not found in context. Return a 404.
-        return None
-    return bugtasks[0]
 
 
 def traverse_person(person, request, name):
@@ -263,26 +341,31 @@ def traverse_team(team, request, name):
     return None
 
 
-# XXX: Brad Bollenbach, 2005-06-23: From code review discussion with
-# salgado, we decided it would be a good idea to turn this
-# database-class using code into adapters from IBug to the appropriate
-# *Set (or *Subset, perhaps.)
-#
-# See https://launchpad.ubuntu.com/malone/bugs/1118.
-def traverse_bug(bug, request, name):
-    """Traverse an IBug."""
-    if name == 'attachments':
-        return getUtility(IBugAttachmentSet)
-    elif name == 'references':
-        return BugExternalRefSet(bug=bug.id)
-    elif name == 'watches':
-        return BugWatchSet(bug=bug.id)
-    elif name == 'tasks':
-        return getUtility(IBugTaskSet).get(bug.id)
-    elif name == 'productinfestations':
-        return BugProductInfestationSet(bug=bug.id)
-    elif name == 'packageinfestations':
-        return BugPackageInfestationSet(bug=bug.id)
+def traverse_bugtask(bugtask, request, name):
+    """Traverse an IBugTask."""
+    utility_interface = {
+        'attachments': IBugAttachmentSet,
+        'references': IBugExternalRefSet,
+        'watches': IBugWatchSet,
+        'tasks': IBugTaskSet}
+
+    nextstep = _consume_next_path_step(request)
+    utility_iface = utility_interface.get(name)
+    if utility_iface is None:
+        # This is not a URL path we handle, so return None.
+        return None
+
+    utility = getUtility(utility_iface)
+
+    if not nextstep:
+        return utility
+
+    if nextstep.isdigit():
+        try:
+            return utility[nextstep]
+        except KeyError:
+            # The object couldn't be found.
+            return None
 
     return None
 

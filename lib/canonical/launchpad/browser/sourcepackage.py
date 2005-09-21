@@ -3,8 +3,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'SourcePackageFacets',
-    'traverseSourcePackage',
     'traverseSourcePackageSet',
     'SourcePackageFacets',
     'SourcePackageReleasePublishingView',
@@ -61,14 +59,6 @@ def linkify_changelog(changelog, sourcepkgnametxt):
     return changelog
 
 
-def traverseSourcePackage(sourcepackage, request, name):
-    if name == '+pots':
-        potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(
-                   distrorelease=sourcepackage.distrorelease,
-                   sourcepackagename=sourcepackage.sourcepackagename)
-    return None
-
 def traverseSourcePackageSet(sourcepackageset, request, name):
     try:
         return sourcepackageset[name]
@@ -111,8 +101,13 @@ class SourcePackageFilebugView(SQLObjectAddView):
         assert 'distribution' not in kw
         assert 'sourcepackagename' not in kw
 
-        kw['distribution'] = self.context.distrorelease.distribution
-        kw['sourcepackagename'] = self.context.sourcepackagename
+        sourcepackage = self.context
+        if sourcepackage.distribution:
+            kw['distribution'] = sourcepackage.distribution
+        else:
+            kw['distribution'] = sourcepackage.distrorelease.distribution
+
+        kw['sourcepackagename'] = sourcepackage.sourcepackagename
 
         # Store the added bug so that it can be accessed easily in any
         # other method on this class (e.g. nextURL)
@@ -121,8 +116,13 @@ class SourcePackageFilebugView(SQLObjectAddView):
         return self.addedBug
 
     def nextURL(self):
-        """Return the bug page URL of the bug that was just filed."""
-        return canonical_url(self.addedBug)
+        """Return the bug page URL of the bug that was just filed.
+
+        Effectively, this is the canonical URL of the first task that
+        has just been created.
+        """
+        bugtask = self.addedBug.bugtasks[0]
+        return canonical_url(bugtask)
 
 
 class SourcePackageReleasePublishingView:

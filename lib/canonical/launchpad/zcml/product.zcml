@@ -146,8 +146,8 @@
         facet="bugs"
         permission="zope.Public">
         <browser:page
-            name="+bugs-only"
-            lp:url="/products/$Product.name/+bugs-only"
+            name="+bugs"
+            lp:url="/products/$Product.name/+bugs"
             template="../templates/bugs-for-context.pt" />
         <browser:page
             name="+portlet-bugtasklist-actions"

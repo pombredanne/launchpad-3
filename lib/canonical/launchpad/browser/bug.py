@@ -10,17 +10,17 @@ __all__ = [
     'BugAddingView',
     'BugLinkView',
     'BugUnlinkView',
-    'BugRelatedObjectAddView',
     'BugRelatedObjectEditView',
+    'BugAlsoReportInView',
+    'BugWithoutContextView',
     'DeprecatedAssignedBugsView']
-
-import urllib
 
 from zope.interface import implements
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.publisher import nearest
 from canonical.launchpad.interfaces import (
     IBug, ILaunchBag, IBugSet, IBugLinkTarget, IBugCve)
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -29,35 +29,83 @@ from canonical.launchpad.browser.form import FormView
 
 
 class BugView:
-    """The view for the main bug page"""
+    """View class for presenting information about an IBug."""
 
     def __init__(self, context, request):
-        self.context = context
+        self.context = IBug(context)
         self.request = request
-        self.notices = []
 
-        # figure out who the user is for this transaction
-        self.user = getUtility(ILaunchBag).user
+    def currentBugTask(self):
+        """Return the current IBugTask.
 
-        # establish if a subscription form was posted
-        newsub = request.form.get('subscribe', None)
-        if newsub is not None and self.user and request.method == 'POST':
-            if newsub == 'Subscribe':
-                self.context.subscribe(self.user)
-                self.notices.append("You have subscribed to this bug.")
-            elif newsub == 'Unsubscribe':
-                self.context.unsubscribe(self.user)
-                self.notices.append("You have unsubscribed from this bug.")
+        'current' is determined by simply looking in the ILaunchBag
+        utility.
+        """
+        return getUtility(ILaunchBag).bugtask
+
+    def getFixRequestRowCSSClassForBugTask(self, bugtask):
+        """Return the fix request row CSS class for the bugtask.
+
+        The class is used to style the bugtask's row in the "fix requested for"
+        table on the bug page.
+        """
+        if bugtask == self.currentBugTask():
+            # The "current" bugtask is highlighted.
+            return 'highlight'
+        else:
+            # Anything other than the "current" bugtask gets no
+            # special row styling.
+            return ''
 
     @property
     def subscription(self):
-        """establish if this user has a subscription"""
-        if self.user is None:
+        """Return the current user's IBugSubscription.
+
+        If the user is not subscribed to this bug, return None.
+        """
+        user = getUtility(ILaunchBag).user
+        if user is None:
             return None
         for subscription in self.context.subscriptions:
-            if subscription.person.id == self.user.id:
+            if subscription.person.id == user.id:
                 return subscription
+
         return None
+
+    @property
+    def maintainers(self):
+        """Return the set of maintainers associated with this IBug."""
+        maintainers = set()
+        for task in self.context.bugtasks:
+            if task.maintainer:
+                maintainers.add(task.maintainer)
+
+        return maintainers
+
+
+class BugWithoutContextView:
+    """View that redirects to the new bug page.
+
+    The user is redirected, to the oldest IBugTask ('oldest' being
+    defined as the IBugTask with the smallest ID.)
+    """
+    def redirectToNewBugPage(self):
+        """Redirect the user to the 'first' report of this bug."""
+        # An example of practicality beating purity.
+        bugtasks = sorted(self.context.bugtasks, key=lambda task: task.id)
+
+        self.request.response.redirect(canonical_url(bugtasks[0]))
+
+
+class BugAlsoReportInView(SQLObjectAddView):
+    """View class for reporting a bug in other contexts."""
+
+    def add(self, content):
+        self.taskadded = content
+
+    def nextURL(self):
+        """Return the user to the URL of the task they just added."""
+        return canonical_url(self.taskadded)
 
 
 class BugSetView:
@@ -66,6 +114,7 @@ class BugSetView:
     Essentially, this exists only to allow forms to post IDs here and be
     redirected to the right place.
     """
+
     def redirectToBug(self):
         bug_id = self.request.form.get("id")
         if bug_id:
@@ -74,13 +123,15 @@ class BugSetView:
 
 
 class BugEditView(BugView, SQLObjectEditView):
-    """The view for the edit bug page"""
+    """The view for the edit bug page."""
     def __init__(self, context, request):
+        self.current_bugtask = context
+        context = IBug(context)
         BugView.__init__(self, context, request)
         SQLObjectEditView.__init__(self, context, request)
 
     def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
+        self.request.response.redirect(canonical_url(self.current_bugtask))
 
 
 class BugAddView(SQLObjectAddView):
@@ -95,7 +146,8 @@ class BugAddView(SQLObjectAddView):
         return getUtility(IBugSet).createBug(**kw)
 
     def nextURL(self):
-        return canonical_url(self.bugadded)
+        bugtask = self.bugadded.bugtasks[0]
+        return canonical_url(bugtask)
 
 
 class BugAddingView(SQLObjectAddView):
@@ -111,17 +163,6 @@ class BugAddingView(SQLObjectAddView):
         return "."
 
 
-class BugRelatedObjectAddView(SQLObjectAddView):
-    """View class for add views of bug-related objects.
-
-    Examples would include the add cve page, the add subscription
-    page, etc.
-    """
-    def __init__(self, context, request):
-        SQLObjectAddView.__init__(self, context, request)
-        self.bug = getUtility(ILaunchBag).bug
-
-
 class BugRelatedObjectEditView(SQLObjectEditView):
     """View class for edit views of bug-related object.
 
@@ -130,11 +171,14 @@ class BugRelatedObjectEditView(SQLObjectEditView):
     """
     def __init__(self, context, request):
         SQLObjectEditView.__init__(self, context, request)
+        # Store the current bug in an attribute of the view, so that
+        # ZPT rendering code can access it.
         self.bug = getUtility(ILaunchBag).bug
 
     def changed(self):
         """Redirect to the bug page."""
-        self.request.response.redirect(canonical_url(self.bug))
+        bugtask = getUtility(ILaunchBag).bugtask
+        self.request.response.redirect(canonical_url(bugtask))
 
 
 class BugLinkView(FormView):

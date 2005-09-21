@@ -13,7 +13,7 @@
     <p tal:condition="not: context/specifications">
       No related specifications.
     </p>
-	
+
   </div>
 
 </div>

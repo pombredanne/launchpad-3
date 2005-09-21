@@ -1,7 +1,7 @@
 Foo Bar can't edit the bug:
 
   >>> print http(r"""
-  ... GET /products/firefox/+bugs/4/+edit HTTP/1.1
+  ... GET /products/firefox/+bug/4/+editstatus HTTP/1.1
   ... Accept-Language: en-us,en;q=0.5
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
@@ -11,7 +11,7 @@ Foo Bar can't edit the bug:
 Sample Person may edit the bug task:
 
   >>> print http(r"""
-  ... GET /products/firefox/+bugs/4/+edit HTTP/1.1
+  ... GET /products/firefox/+bug/4/+editstatus HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -20,7 +20,7 @@ Sample Person may edit the bug task:
 Edit the target:
 
   >>> print http(r"""
-  ... POST /products/firefox/+bugs/4/+edit HTTP/1.1
+  ... POST /products/firefox/+bug/4/+editstatus HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1442
   ... Content-Type: multipart/form-data; boundary=---------------------------9725916581164147154144110168
@@ -74,7 +74,7 @@ Edit the target:
 Assign the task to the Ubuntu Team, of which Foo Bar is a member:
 
   >>> print http(r"""
-  ... POST /products/firefox/+bugs/4/+edit HTTP/1.1
+  ... POST /products/firefox/+bug/4/+editstatus HTTP/1.1
   ... Accept-Language: en-us,en;q=0.5
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1445
@@ -129,14 +129,14 @@ Assign the task to the Ubuntu Team, of which Foo Bar is a member:
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  Location: http://.../malone/bugs/4
+  Location: http://.../products/firefox/+bug/4
   <BLANKLINE>
   ...
 
 Now Foo Bar may edit the bug, since he's part of the maintainer team:
 
   >>> print http(r"""
-  ... GET /products/firefox/+bugs/4/+edit HTTP/1.1
+  ... GET /products/firefox/+bug/4/+editstatus HTTP/1.1
   ... Accept-Language: en-us,en;q=0.5
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
@@ -145,7 +145,7 @@ Now Foo Bar may edit the bug, since he's part of the maintainer team:
 
 
   >>> print http(r"""
-  ... POST /products/firefox/+bugs/4/+edit HTTP/1.1
+  ... POST /products/firefox/+bug/4/+editstatus HTTP/1.1
   ... Accept-Language: en-us,en;q=0.5
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1459
@@ -200,14 +200,14 @@ Now Foo Bar may edit the bug, since he's part of the maintainer team:
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  Location: http://.../malone/bugs/4
+  Location: http://.../products/firefox/+bug/4
   <BLANKLINE>
   ...
 
 Un-assign the bug task:
 
   >>> print http(r"""
-  ... POST /products/firefox/+bugs/4/+edit HTTP/1.1
+  ... POST /products/firefox/+bug/4/+editstatus HTTP/1.1
   ... Accept-Language: en-us,en;q=0.5
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1439
@@ -258,7 +258,7 @@ Un-assign the bug task:
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  Location: http://.../malone/bugs/4
+  Location: http://.../products/firefox/+bug/4
   <BLANKLINE>
   ...
 

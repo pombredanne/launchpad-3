@@ -1,5 +1,6 @@
 <div class="portlet" tal:condition="context/attachments"
-     tal:define="bug_url context/fmt:url">
+     tal:define="current_task view/currentBugTask;
+                 url current_task/fmt:url">
 
   <h4>Bug Attachments:</h4>
 
@@ -13,13 +14,13 @@
             Attachment Title
           </a>
           <small>
-            (<a tal:attributes="href attachment/fmt:url">edit</a>)
+            (<a tal:attributes="href string:${url}/attachments/${attachment/id}">edit</a>)
           </small>
         </li>
       </ul>
       <ul style="text-align: right">
         <li class="add">
-          <a tal:attributes="href string:$bug_url/+addattachment">
+          <a tal:attributes="href string:$url/+addattachment">
             Add
           </a>
         </li>

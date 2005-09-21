@@ -7,6 +7,8 @@ __metaclass__ = type
 __all__ = [
     'ISourcePackage',
     'ISourcePackageSet',
+    'IDistroSourcePackage',
+    'IDistroSourcePackageSet'
     ]
 
 from zope.interface import Interface, Attribute
@@ -142,6 +144,26 @@ class ISourcePackage(IBugTarget, ITicketTarget):
         The attribute is True or False.""")
 
 
+class IDistroSourcePackage(IBugTarget):
+    """A distribution sourcepackage.
+
+    This object knows nothing about a specific distrorelease. This
+    object is particularly useful for, say, Malone, where most
+    distribution bugs are filed on the distribution as a whole, and
+    not a specific release.
+    """
+
+    name = Attribute("The name of the source package.")
+    displayname = Attribute("A displayname for this package")
+    title = Attribute("A title for this package")
+    distribution = Attribute("The IDistribution for this package")
+    sourcepackagename = Attribute("The ISourcePackageName of this package")
+    currentrelease = Attribute("""The latest published SourcePackageRelease
+        of a source package with this name in the distribution or
+        distrorelease, or None if no source package with that name is
+        published in this distrorelease.""")
+
+
 class ISourcePackageSet(Interface):
     """A set for ISourcePackage objects."""
 
@@ -191,3 +213,12 @@ class ISourcePackageSet(Interface):
         packages.
         """
 
+class IDistroSourcePackageSet(Interface):
+    """The set of all IDistroSourcePackages in Launchpad."""
+
+    def getPackage(distribution, sourcepackagename):
+        """Return the appropriate IDistroSourcePackage.
+
+        :distribution: The IDistribution of the package.
+        :sourcepackagename: The ISourcePackageName of the package.
+        """

@@ -190,7 +190,8 @@ class DistributionFileBugView(SQLObjectAddView):
         return bug
 
     def nextURL(self):
-        return canonical_url(self.addedBug, self.request)
+        task = self.addedBug.bugtasks[0]
+        return canonical_url(task)
 
 
 class DistributionSetView:

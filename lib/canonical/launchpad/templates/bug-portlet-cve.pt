@@ -1,9 +1,10 @@
 <div class="portlet" tal:condition="context/cves"
-     tal:define="bug_url context/fmt:url">
+     tal:define="current_task view/currentBugTask;
+                 url current_task/fmt:url">
 
   <h4>
     <abbr title="Common Vulnerabilities and Exposures index">CVE</abbr>
-    References
+    References:
   </h4>
 
   <div class="portletBody">

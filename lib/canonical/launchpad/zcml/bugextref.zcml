@@ -32,25 +32,6 @@
             lp:url="malone/bugs/$Bug.id/reference/$Reference.id" />
     </browser:pages>
 
-    <browser:addform
-        name="+new"
-        schema="canonical.launchpad.interfaces.IBugExternalRef"
-        for="canonical.launchpad.interfaces.IBugExternalRefSet"
-        class="canonical.launchpad.browser.BugRelatedObjectAddView"
-        label="Add External Reference"
-        fields="url title"
-        content_factory="canonical.launchpad.database.BugExternalRefFactory"
-        arguments=""
-        keyword_arguments="url title"
-        permission="launchpad.AnyPerson"
-        template="../templates/bug-extref-add.pt"
-        lp:url="malone/bugs/$Bugs.id/references/+new">
-        <browser:widget
-            field="url"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="60" />
-    </browser:addform>
-
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IBugExternalRef"

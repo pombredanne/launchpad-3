@@ -20,7 +20,7 @@
         <div class="row" metal:fill-slot="extra_top">
             <div class="label">Distribution</div>
             <div class="field"
-                 tal:content="context/distrorelease/distribution/displayname" />
+                 tal:content="context/distribution/displayname" />
             <div class="label">Source Package Name</div>
             <div class="field" tal:content="context/name" />
         </div>

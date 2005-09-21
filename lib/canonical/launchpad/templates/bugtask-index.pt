@@ -10,14 +10,13 @@
     <div tal:replace="structure context/@@+portlet-subscribers" />
     <div tal:replace="structure context/@@+portlet-maintainers" />
     <div tal:replace="structure context/@@+portlet-tickets" />
-    <div tal:replace="structure context/@@+portlet-productinfestation" />
-    <div tal:replace="structure context/@@+portlet-packageinfestation" />
     <div tal:replace="structure context/@@+portlet-duplicates" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-actions" />
-    <div tal:condition="context/specifications"
+    <div tal:replace="structure context/target/@@+portlet-latestbugs" />
+    <div tal:condition="context/bug/specifications"
          tal:replace="structure context/@@+portlet-specs" />
     <div tal:replace="structure context/@@+portlet-attachments" />
     <div tal:replace="structure context/@@+portlet-cve" />
@@ -27,44 +26,68 @@
 
 <div metal:fill-slot="main">
 
-  <p class="portalMessage" tal:condition="context/duplicateof" 
+  <tal:block condition="view/reportBugInContext" />
+  <tal:block condition="view/handleSubscriptionRequest" />
+
+  <p class="portalMessage"
+     tal:condition="view/notices"
+     tal:repeat="notice view/notices"
+     tal:content="notice">
+     Reported this bug as also occurring in upstream firefox
+  </p>
+
+  <p class="portalMessage" tal:condition="context/bug/duplicateof"
      style="margin-bottom: 1em">
     This bug is a duplicate of
     <a href="#"
-       tal:attributes="href context/duplicateof/fmt:url"
-       tal:content="string:bug #${context/duplicateof/id}">bug 42</a>
+       tal:attributes="href context/bug/duplicateof/fmt:url"
+       tal:content="string:bug #${context/bug/duplicateof/id}">bug 42</a>
   </p>
+
+  <div class="portalMessage" tal:condition="not:view/isReportedInContext">
+    This bug has <b>not yet been reported</b> in
+    <a tal:attributes="href string:${context/target/fmt:url}/+bugs"
+       tal:content="context/targetname">upstream firefox</a>.
+
+    <tal:loggedin condition="request/lp:person">
+      Do you want to report it?<br /><br />
+
+      <form name="alsooccursin" method="POST">
+        <input type="submit" name="reportbug"
+               tal:attributes="value string:Yes, I want to report this bug in ${context/targetname}" />
+      </form>
+    </tal:loggedin>
+    <tal:notloggedin condition="not:request/lp:person">
+      If you wish report it in <tal:block content="context/targetname" />,
+      you must <a href="+login">log in</a> first.
+    </tal:notloggedin>
+  </div>
 
   <p class="documentDescription"
-     tal:condition="context/summary"
-     tal:content="context/summary">
+     tal:condition="context/bug/summary"
+     tal:content="context/bug/summary">
      $bug.summary
-  </p>
-
-  <p tal:repeat="notice view/notices" tal:content="notice"
-     class="portalMessage">
-    notice goes here
   </p>
 
   <div tal:replace="structure context/@@+headline-tasks" />
 
     <tal:description
-      content="structure context/description/fmt:text-to-html"
+      content="structure context/bug/description/fmt:text-to-html"
     >
       $Bug.description
     </tal:description>
 
-  <tal:block repeat="message context/messages">
+  <tal:block repeat="message context/bug/messages">
     <div class="boardComment"
-         tal:condition="python:context.description != message.contents">
+         tal:condition="python:context.bug.description != message.contents">
 
       <div class="boardCommentDetails">
         <strong tal:content="message/title">$Bugmessage.title</strong>
 
-        Posted by <a href="#" tal:attributes="href message/owner/fmt:url" 
+        Posted by <a href="#" tal:attributes="href message/owner/fmt:url"
                               tal:content="message/owner/browsername|string:(none)">
           $Person.browsername</a>
-        at <span tal:replace="message/datecreated/fmt:datetime">Thursday 
+        at <span tal:replace="message/datecreated/fmt:datetime">Thursday
         13:21</span>
         <tal:block condition="message/bugattachments">
         - with attachments:
@@ -91,8 +114,8 @@
       <legend>Add comment to this bug</legend>
         <form action="+addmessage" method="post">
           <b>Subject:</b>
-          <input name="field.subject" type="text" size="50" 
-                 tal:attributes="value context/followup_subject" /><br />
+          <input name="field.subject" type="text" size="50"
+                 tal:attributes="value context/bug/followup_subject" /><br />
           <b>Comment:</b> <textarea name="field.content" rows="10"></textarea>
         <input type="submit" name="UPDATE_SUBMIT" value="Post Comment" />
         </form>

@@ -533,6 +533,8 @@ ul.search>li, li.search {
 
 /* -- Stop accessing resources on plone.org: -- */
 
+.portalMessage {font-weight: normal;}
+
 ul {
   list-style-image: none;
 }

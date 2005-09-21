@@ -13,16 +13,15 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import ICve, ICveSet, ILaunchBag
+from canonical.launchpad.interfaces import ICve, ICveSet, ILaunchBag, IBug
 from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.webapp import canonical_url
-
 from canonical.launchpad.browser.form import FormView
 
 class CveView:
 
     __used_for__ = ICve
-    
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -37,12 +36,16 @@ class CveLinkView(FormView):
     fieldNames = ['sequence']
     _arguments = ['sequence',]
 
+    def __init__(self, context, request):
+        self._nextURL = canonical_url(context)
+        context = IBug(context)
+        FormView.__init__(self, context, request)
+
     def process(self, sequence):
         cve = getUtility(ICveSet)[sequence]
         if cve is None:
             return '%s is not a known CVE sequence number.' % sequence
         user = getUtility(ILaunchBag).user
-        self._nextURL = canonical_url(self.context)
         self.context.linkCVE(cve, user)
         return 'CVE-%s added to bug #%d' % (sequence, self.context.id)
 
@@ -54,12 +57,16 @@ class CveUnlinkView(FormView):
     fieldNames = ['sequence']
     _arguments = ['sequence',]
 
+    def __init__(self, context, request):
+        self._nextURL = canonical_url(context)
+        context = IBug(context)
+        FormView.__init__(self, context, request)
+
     def process(self, sequence):
         cve = getUtility(ICveSet)[sequence]
         if cve is None:
             return '%s is not a known CVE sequence number.' % sequence
         user = getUtility(ILaunchBag).user
-        self._nextURL = canonical_url(self.context)
         self.context.unlinkCVE(cve, user)
         return 'CVE-%s removed from bug #%d' % (sequence, self.context.id)
 
@@ -91,7 +98,7 @@ class CveSetView:
             cve = cveset[sequence]
             if cve:
                 self.request.response.redirect(canonical_url(cve))
-        
+
         # ok, we have text, but it is not a valid sequence. lets try
         # searching
         self.searchrequested = True

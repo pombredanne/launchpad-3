@@ -421,7 +421,8 @@ class ProductFileBugView(SQLObjectAddView):
         return bug
 
     def nextURL(self):
-        return canonical_url(self.addedBug, self.request)
+        bugtask = self.addedBug.bugtasks[0]
+        return canonical_url(bugtask)
 
 
 class ProductRdfView(object):

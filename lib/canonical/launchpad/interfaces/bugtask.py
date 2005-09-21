@@ -29,8 +29,9 @@ from zope.schema import (
 from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
-from canonical.launchpad.interfaces.launchpad import IHasDateCreated
 from canonical.launchpad.interfaces.bugattachment import IBugAttachment
+from canonical.launchpad.interfaces.launchpad import IHasDateCreated
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
 _ = MessageIDFactory('launchpad')
 
@@ -94,7 +95,6 @@ class IBugTask(IHasDateCreated):
         title=_("Maintainer"), required=True, readonly=True)
     target = Attribute("The software in which this bug should be fixed")
     targetname = Attribute("The short, descriptive name of the target")
-    title = Attribute("The title used for a task's Web page.")
     related_tasks = Attribute("IBugTasks related to this one, namely other "
                               "IBugTasks on the same IBug.")
     statusdisplayhtml = Attribute(
@@ -405,7 +405,12 @@ class BugTaskSearchParams:
     def setSourcePackage(self, sourcepackage):
         """Set the sourcepackage context on which to filter the search."""
         assert not self._has_context
-        self.distrorelease = sourcepackage.distrorelease
+        if ISourcePackage.providedBy(sourcepackage):
+            # This is a sourcepackage in a distro release.
+            self.distrorelease = sourcepackage.distrorelease
+        else:
+            # This is a sourcepackage in a distribution.
+            self.distribution = sourcepackage.distribution
         self.sourcepackagename = sourcepackage.sourcepackagename
         self._has_context = True
 

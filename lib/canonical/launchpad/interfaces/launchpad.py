@@ -295,18 +295,19 @@ class IHasDateCreated(Interface):
 
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')
-    person = Attribute('Person, or None')
-    project = Attribute('Project, or None')
-    product = Attribute('Product, or None')
-    distribution = Attribute('Distribution, or None')
-    distrorelease = Attribute('DistroRelease, or None')
-    distroarchrelease = Attribute('DistroArchRelease, or None')
-    sourcepackage = Attribute('Sourcepackage, or None')
+    person = Attribute('IPerson, or None')
+    project = Attribute('IProject, or None')
+    product = Attribute('IProduct, or None')
+    distribution = Attribute('IDistribution, or None')
+    distrorelease = Attribute('IDistroRelease, or None')
+    distroarchrelease = Attribute('IDistroArchRelease, or None')
+    sourcepackage = Attribute('ISourcepackage, or None')
     sourcepackagereleasepublishing = Attribute(
-        'SourcepackageReleasePublishing, or None')
-    bug = Attribute('Bug, or None')
+        'ISourcepackageReleasePublishing, or None')
+    bug = Attribute('IBug, or None')
+    bugtask = Attribute('IBugTask, or None')
 
-    user = Attribute('Currently authenticated person, or None')
+    user = Attribute('Currently authenticated IPerson, or None')
     login = Attribute('The login used by the authenticated person, or None')
 
     timezone = Attribute("The user's time zone")

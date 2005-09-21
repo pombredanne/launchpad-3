@@ -53,14 +53,8 @@ class BugTaskPageTitle:
 
 class BugTaskTargetingTitle:
     def __call__(self, context, view):
-        task_target = context.target
-        if IDistribution.providedBy(task_target):
-            distribution_title = task_target.title
-        elif IDistroRelease.providedBy(task_target):
-            distribution_title = task_target.distribution.title 
-
         return "Bug #%d in %s - Target Fix to Releases" % (
-            context.bug.id, distribution_title)
+            context.bug.id, context.targetname)
 
 
 class SubstitutionHelper:
@@ -220,6 +214,8 @@ def bugsubscription_edit(context, view):
     return "Bug #%d - Edit Subscription (%s)" % (
         context.bug.id, context.person.browsername)
 
+bugtask_index = BugTaskPageTitle()
+
 bugtask_release_targeting = BugTaskTargetingTitle()
 
 bugtask_view = BugTaskPageTitle()
@@ -367,6 +363,10 @@ distroreleaselanguage = ContextTitle('%s')
 
 distros_index = 'Overview of Distributions in Launchpad'
 
+def distrosourcepackage_bugs(context, view):
+    return 'Bugs in %s %s' % (
+        context.distribution.name, context.name)
+
 errorservice_config = 'Configure Error Log'
 
 errorservice_entry = 'View Error Log Report'
@@ -461,7 +461,7 @@ malone_to_do = 'Malone ToDo'
 
 # messages_index is a redirect
 
-message_add = ContextTitle('Add Message to %s')
+message_add = ContextId('Bug #%d - Add a Comment')
 
 milestone_add = ContextDisplayName('Add Milestone for %s')
 
