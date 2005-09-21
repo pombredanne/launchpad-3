@@ -32,15 +32,15 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         text = 'Bugs'
         return Link(target, text)
 
-    def tickets(self):
-        target = 'tickets'
-        text = 'Tickets'
+    def support(self):
+        target = 'support'
+        text = 'Support'
         summary = 'Launchpad technical support tracker.'
         return Link(target, text, summary)
 
     def specifications(self):
         target = 'specs'
-        text = 'Specs'
+        text = 'Specifications'
         summary = 'Launchpad feature specification tracker.'
         return Link(target, text, summary)
 

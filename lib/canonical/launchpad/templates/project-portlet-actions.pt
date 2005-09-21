@@ -1,23 +1,7 @@
 <div class="portlet portletBody portletContent">
-
         <ul>
           <li class="edit">
-            <a href="+edit">Edit Project Details</a>
-          </li>
-          <li class="edit">
-            <a href="+reassign">Change Maintainer</a>
-          </li>
-          <li class="edit">
             <a href="+changetranslators">Change Translators</a>
-          </li>
-          <li class="add">
-            <a href="+linkbounty">Link Existing Bounty</a>
-          </li>
-          <li class="add">
-            <a href="+addbounty">Register New Bounty</a>
-          </li>
-          <li class="download">
-            <a href="+rdf">Download RDF Metadata</a>
           </li>
         </ul>
 </div>

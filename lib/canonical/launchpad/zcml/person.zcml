@@ -27,7 +27,8 @@
 
   <browser:menus
       module="canonical.launchpad.browser.person"
-      classes="PersonFacets" />
+      classes="PersonFacets PersonBugsMenu PersonSpecsMenu PersonSupportMenu
+               PersonContextMenu TeamContextMenu" />
 
   <browser:url
       for="canonical.launchpad.interfaces.IPerson"
@@ -268,6 +269,7 @@
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.TicketTargetView"
     permission="zope.Public"
+    facet="support"
     >
     <!-- there is trickery here, in the view class, which detects the view
     name and then gives the template a different set of tickets to work

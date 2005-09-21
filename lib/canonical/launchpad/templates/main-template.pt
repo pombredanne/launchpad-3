@@ -51,34 +51,43 @@
         <tal:facetmenu condition="facetmenu">
           <tal:facet repeat="link facetmenu">
             <tal:available condition="link/enabled">
-              <li tal:condition="link/selected" class="current">
+              <li
+                tal:condition="link/selected"
+                tal:attributes="title link/summary"
+                class="current"
+              >
                 <strong tal:condition="link/linked">
                   <a
                     tal:attributes="href link/url"
-                    tal:content="link/text"
+                    tal:content="structure link/escapedtext"
                   >abc</a>
                   </strong>
                 <strong
                   tal:condition="not: link/linked"
-                  tal:content="link/text"
+                  tal:attributes="title link/summary"
+                  tal:content="structure link/escapedtext"
                 >def</strong>
               </li>
-              <li tal:condition="not: link/selected">
+              <li
+                tal:condition="not: link/selected"
+                tal:attributes="title link/summary"
+              >
                 <a
                   tal:condition="link/linked"
                   tal:attributes="href link/url"
-                  tal:content="link/text"
+                  tal:content="structure link/escapedtext"
                 >ghi</a>
                 <span
                   class="disabled"
                   tal:condition="not: link/linked"
-                  tal:content="link/text"
+                  tal:content="structure link/escapedtext"
                 >jkl</span>
               </li>
             </tal:available>
             <li
               tal:condition="not: link/enabled"
-              tal:content="link/text"
+              tal:attributes="title link/summary"
+              tal:content="structure link/escapedtext"
               class="unavailable"
             />
           </tal:facet>
@@ -120,20 +129,19 @@
               tal:condition="appmenu"
               class="portlet portletBody portletContent"
             >
-              <ul class="menu">
+              <ul>
                 <tal:block repeat="link appmenu">
-                  <li>
+                  <li tal:attributes="class link/icon">
                     <a
                       tal:attributes="href link/url"
-                      tal:content="link/text"
+                      tal:content="structure link/escapedtext"
                     >link text</a>
                   </li>
                 </tal:block>
               </ul>
             </div>
-                        <metal:portlets define-slot="portlets_two">
-
-                        </metal:portlets>
+            <metal:portlets define-slot="portlets_two">
+            </metal:portlets>
           </td>
                 <!-- end of the right (by default at least) column -->
         </tr>

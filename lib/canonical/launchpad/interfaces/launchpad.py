@@ -22,9 +22,9 @@ __all__ = ['ILaunchpadRoot', 'ILaunchpadApplication', 'IMaloneApplication',
            'IHasProductAndAssignee', 'IOpenLaunchBag',
            'IAging', 'IHasDateCreated',
            'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
-           'ILinkData', 'ILink', 'IFacetLink',
+           'ILinkData', 'ILink', 'IFacetLink', 'IStructuredString',
            'IMenu', 'IMenuBase', 'IFacetMenu',
-           'IApplicationMenu',
+           'IApplicationMenu', 'IContextMenu',
            'ICanonicalUrlData', 'NoCanonicalUrl',
            'IDBSchema', 'IDBSchemaItem', 'IAuthApplication',
            'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
@@ -321,6 +321,14 @@ class IOpenLaunchBag(ILaunchBag):
         '''Set the login to the given value.'''
 
 
+class IStructuredString(Interface):
+    """An object that represents a string that is to retain its html structure
+    in a menu's link text.
+    """
+
+    escapedtext = Attribute("The escaped text for display on a web page.")
+
+
 class ILinkData(Interface):
     """An object with immutable attributes that represents the data a
     programmer provides about a link in a menu.
@@ -360,6 +368,8 @@ class ILink(ILinkData):
 
     enabled = Attribute(
         "Boolean to say whether this link is enabled.  Can be read and set.")
+
+    escapedtext = Attribute("Text string, escaped as necessary.")
 
 
 class IFacetLink(ILink):
@@ -414,6 +424,10 @@ class IFacetMenu(IMenuBase):
 
 class IApplicationMenu(IMenuBase):
     """Application menu for an object."""
+
+
+class IContextMenu(IMenuBase):
+    """Context menu for an object."""
 
 
 class ICanonicalUrlData(Interface):

@@ -5,7 +5,7 @@
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
-<facet facet="tickets">
+<facet facet="support">
 
   <!-- Ticket -->
   <content class="canonical.launchpad.database.Ticket">
@@ -23,10 +23,6 @@
     for="canonical.launchpad.interfaces.ITicket"
     path_expression="string:+ticket/${id}"
     attribute_to_parent="target" />
-
-  <browser:menus
-    module="canonical.launchpad.browser.ticket"
-    classes="TicketFacets" />
 
   <browser:pages
     for="canonical.launchpad.interfaces.ITicket"
@@ -178,7 +174,7 @@
   <browser:suburl
     for="canonical.launchpad.interfaces.ILaunchpadRoot"
     utility="canonical.launchpad.interfaces.ITicketSet"
-    name="tickets" />
+    name="support" />
 
   <browser:traverse
     for="canonical.launchpad.interfaces.ITicketSet"

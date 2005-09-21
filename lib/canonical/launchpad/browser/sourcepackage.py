@@ -91,10 +91,10 @@ class SourcePackageFacets(StandardLaunchpadFacets):
 
     usedfor = ISourcePackage
 
-    enable_only = ['overview', 'bugs', 'tickets', 'translations']
+    enable_only = ['overview', 'bugs', 'support', 'translations']
 
-    def tickets(self):
-        link = StandardLaunchpadFacets.tickets(self)
+    def support(self):
+        link = StandardLaunchpadFacets.support(self)
         link.enabled = True
         return link
 

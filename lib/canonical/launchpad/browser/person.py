@@ -53,7 +53,7 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, IKarmaActionSet,
     IKarmaSet, UBUNTU_WIKI_URL, ITeamMembershipSet, IObjectReassignment,
     ITeamReassignment, IPollSubset, IPerson, ICalendarOwner,
-    BugTaskSearchParams, valid_emblem, valid_hackergotchi,
+    BugTaskSearchParams, ITeam, valid_emblem, valid_hackergotchi,
     ILibraryFileAliasSet)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -64,7 +64,8 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url)
+    StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
+    enabled_with_permission)
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -77,7 +78,8 @@ class PersonFacets(StandardLaunchpadFacets):
     def overview(self):
         target = ''
         text = 'Overview'
-        return Link(target, text)
+        summary = 'General information about %s' % self.context.browsername
+        return Link(target, text, summary)
 
     def bugs(self):
         # XXX: Soon the +assignedbugs and +reportedbugs pages of IPerson will
@@ -85,19 +87,36 @@ class PersonFacets(StandardLaunchpadFacets):
         # -- GuilhermeSalgado, 2005-07-29
         target = '+assignedbugs'
         text = 'Bugs'
-        return Link(target, text)
+        summary = (
+            'Bug reports that %s is involved with' % self.context.browsername
+        )
+        return Link(target, text, summary)
+
+    def support(self):
+        target = '+tickets'
+        text = 'Support'
+        summary = (
+            'Support requests that %s is involved with' %
+            self.context.browsername
+        )
+        return Link(target, text, summary)
 
     def specifications(self):
         target = '+specs'
-        text = 'Specs'
+        text = 'Specifications'
         summary = (
-            'Feature specifications related to %s' % self.context.browsername)
+            'Feature specifications that %s is involved with' %
+            self.context.browsername
+        )
         return Link(target, text, summary)
 
     def bounties(self):
         target = '+bounties'
         text = 'Bounties'
-        return Link(target, text)
+        summary = (
+            'Bounty offers that %s is involved with' % self.context.browsername
+        )
+        return Link(target, text, summary)
 
     def code(self):
         target = '+branches'
@@ -108,14 +127,223 @@ class PersonFacets(StandardLaunchpadFacets):
     def translations(self):
         target = '+translations'
         text = 'Translations'
-        return Link(target, text)
+        summary = (
+            'Software that %s is involved in translating' %
+            self.context.browsername
+        )
+        return Link(target, text, summary)
 
     def calendar(self):
         target = '+calendar'
         text = 'Calendar'
+        summary = (
+            u'%s\N{right single quotation mark}s scheduled events' %
+            self.context.browsername
+        )
         # only link to the calendar if it has been created
         enabled = ICalendarOwner(self.context).calendar is not None
-        return Link(target, text, enabled=enabled)
+        return Link(target, text, summary, enabled=enabled)
+
+
+class PersonBugsMenu(ApplicationMenu):
+
+    usedfor = IPerson
+
+    facet = 'bugs'
+
+    links = ['assigned', 'reported']
+
+    def assigned(self):
+        text = 'Bugs Reported'
+        return Link('+reportedbugs', text, icon='bugs')
+
+    def reported(self):
+        text = 'Bugs Assigned'
+        return Link('+assignedbugs', text, icon='bugs')
+
+
+class PersonSpecsMenu(ApplicationMenu):
+
+    usedfor = IPerson
+
+    facet = 'specifications'
+
+    links = ['created', 'assigned', 'drafted', 'review', 'subscribed']
+
+    def created(self):
+        text = 'Specifications Created'
+        return Link('+createdspecs', text, icon='spec')
+
+    def assigned(self):
+        text = 'Specifications Assigned'
+        return Link('+assignedspecs', text, icon='spec')
+
+    def drafted(self):
+        text = 'Specifications Drafted'
+        return Link('+draftedspecs', text, icon='spec')
+
+    def review(self):
+        text = 'Specifications To Review'
+        return Link('+reviewspecs', text, icon='spec')
+
+    def subscribed(self):
+        text = 'Subscribed Specifications'
+        return Link('+subscribedspecs', text, icon='spec')
+
+
+class PersonSupportMenu(ApplicationMenu):
+
+    usedfor = IPerson
+    facet = 'support'
+    links = ['created', 'assigned', 'answered', 'subscribed']
+
+    def created(self):
+        text = 'Tickets Created'
+        return Link('+createdtickets', text, icon='ticket')
+
+    def assigned(self):
+        text = 'Tickets Assigned'
+        return Link('+assignedtickets', text, icon='ticket')
+
+    def answered(self):
+        text = 'Tickets Answered'
+        return Link('+answeredtickets', text, icon='ticket')
+
+    def subscribed(self):
+        text = 'Tickets Subscribed'
+        return Link('+subscribedtickets', text, icon='ticket')
+
+
+class CommonMenuLinks:
+
+    def common_edit(self):
+        target = '+edit'
+        text = 'Edit Details'
+        return Link(target, text, icon='edit')
+
+    def common_edithomepage(self):
+        target = '+edithomepage'
+        text = 'Edit Home Page'
+        return Link(target, text, icon='edit')
+
+    def common_edithackergotchi(self):
+        target = '+edithackergotchi'
+        text = 'Edit Hackergotchi'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def common_editemblem(self):
+        target = '+editemblem'
+        text = 'Edit Emblem'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def common_reassign(self):
+        target = '+reassign'
+        text = 'Change Owner'
+        summary = 'Change the owner'
+        # alt="(Change owner)"
+        return Link(target, text, summary, icon='edit')
+
+    def common_packages(self):
+        target = '+packages'
+        text = 'Packages'
+        summary = 'Packages assigned to %s' % self.context.browsername
+        return Link(target, text, summary, icon='packages')
+
+
+class PersonContextMenu(ContextMenu, CommonMenuLinks):
+
+    usedfor = IPerson
+
+    links = ['common_edit', 'common_edithomepage', 'common_edithackergotchi',
+             'common_editemblem', 'karma', 'editsshkeys', 'editgpgkeys',
+             'codesofconduct', 'administer', 'common_reassign',
+             'common_packages']
+
+    def karma(self):
+        target = '+karma'
+        text = 'Karma'
+        summary = (
+            u'%s\N{right single quotation mark}s activities '
+            u'in Launchpad' % self.context.browsername
+        )
+        return Link(target, text, summary, icon='info')
+
+    def editsshkeys(self):
+        target = '+editsshkeys'
+        text = 'Edit SSH Keys'
+        summary = (
+            'Used if %s stores code on the Supermirror' %
+            self.context.browsername
+        )
+        return Link(target, text, summary, icon='edit')
+
+    def editgpgkeys(self):
+        target = '+editgpgkeys'
+        text = 'Edit GPG Keys'
+        summary = 'Used for the Supermirror, and when maintaining packages'
+        return Link(target, text, summary, icon='edit')
+
+    def codesofconduct(self):
+        target = '+codesofconduct'
+        text = 'Codes of Conduct'
+        summary = (
+            'Agreements to abide by the rules of a distribution or project')
+        return Link(target, text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        target = '+review'
+        text = 'Administer'
+        return Link(target, text, icon='edit')
+
+
+class TeamContextMenu(ContextMenu, CommonMenuLinks):
+
+    usedfor = ITeam
+
+    links = ['common_edit', 'common_edithomepage', 'common_edithackergotchi',
+             'common_editemblem', 'members', 'editemail',
+             'joinleave', 'common_reassign', 'common_packages']
+
+    def members(self):
+        target = '+members'
+        text = 'Edit Members'
+        return Link(target, text, icon='people')
+
+    def teamhierarchy(self):
+        # XXX: removed because of bug https://launchpad.net/malone/bugs/2435
+        #      that i cannot see at the moment.
+        #      SteveAlexander / Salgado, 2005-09-21
+        target = '+teamhierarchy'
+        text = 'Team Hierarchy'
+        summary = (
+            'Which teams are members of %s, and which teams %s is a member of'
+            % (self.context.browsername, self.context.browsername)
+        )
+        return Link(target, text, summary, icon='people')
+
+    @enabled_with_permission('launchpad.Edit')
+    def editemail(self):
+        target = '+editemail'
+        text = 'Edit Contact Address'
+        summary = (
+            'The address Launchpad uses to contact %s' %
+            self.context.browsername
+        )
+        return Link(target, text, summary, icon='mail')
+
+    def joinleave(self):
+        if userIsActiveTeamMember(self.context):
+            target = '+leave'
+            text = 'Leave the team' # &#8230;
+            icon = 'remove'
+        else:
+            target = '+join'
+            text = 'Join the team' # &#8230;
+            icon = 'add'
+        return Link(target, text, icon=icon)
 
 
 ##XXX: (batch_size+global) cprov 20041003
@@ -235,6 +463,13 @@ class PersonRdfView:
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
 
+def userIsActiveTeamMember(team):
+    """Return True if the user is an active member of this team."""
+    user = getUtility(ILaunchBag).user
+    if user is None:
+        return False
+    return user in team.activemembers
+
 
 class PersonView:
     """A View class used in almost all Person's pages."""
@@ -282,10 +517,7 @@ class PersonView:
 
     def userIsActiveMember(self):
         """Return True if the user is an active member of this team."""
-        user = getUtility(ILaunchBag).user
-        if user is None:
-            return False
-        return user in self.context.activemembers
+        return userIsActiveTeamMember(self.context)
 
     def membershipStatusDesc(self):
         tm = self._getMembershipForUser()

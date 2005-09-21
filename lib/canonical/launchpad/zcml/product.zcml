@@ -27,7 +27,13 @@
 
     <browser:menus
         module="canonical.launchpad.browser.product"
-        classes="ProductFacets" />
+        classes="
+            ProductFacets ProductOverviewMenu ProductBountiesMenu
+            ProductSupportMenu ProductSpecificationsMenu 
+            ProductTranslationsMenu
+        "
+    />
+    <!-- XXX ProductBugsMenu undeclared until layout bug is fixed -->
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IProduct"

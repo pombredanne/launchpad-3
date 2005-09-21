@@ -4,11 +4,13 @@ that is to do with aspects such as security, menus, zcml, tales and so on.
 This module also has an API for use by the application.
 """
 
-__all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'nearest_menu',
-           'canonical_url', 'nearest', 'StandardLaunchpadFacets']
+__all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
+           'nearest_menu', 'canonical_url', 'nearest', 'structured',
+           'StandardLaunchpadFacets', 'enabled_with_permission']
 
 from canonical.launchpad.webapp.menu import (
-    Link, FacetMenu, ApplicationMenu, nearest_menu)
+    Link, FacetMenu, ApplicationMenu, ContextMenu, nearest_menu, structured,
+    enabled_with_permission)
 
 from canonical.launchpad.webapp.publisher import canonical_url, nearest
 
@@ -19,7 +21,7 @@ class StandardLaunchpadFacets(FacetMenu):
     # provide your own 'usedfor' in subclasses.
     #   usedfor = IWhatever
 
-    links = ['overview', 'bugs', 'tickets', 'specifications', 'bounties',
+    links = ['overview', 'bugs', 'support', 'bounties', 'specifications',
              'translations', 'calendar']
 
     defaultlink = 'overview'
@@ -39,12 +41,12 @@ class StandardLaunchpadFacets(FacetMenu):
         text = 'Bugs'
         return Link(target, text)
 
-    def tickets(self):
-        # Note that 'tickets' are disabled by default.  You need to define
-        # a tickets facet with the Link enabled in order to get an enabled
-        # 'tickets' facet tab.
+    def support(self):
+        # This facet is visible but unavailable by default. You need to define
+        # a 'support' facet with the Link enabled in order to get an enabled
+        # 'Support' facet tab.
         target = '+tickets'
-        text = 'Tickets'
+        text = 'Support'
         summary = 'Technical Support Requests'
         return Link(target, text, summary, enabled=False)
 
