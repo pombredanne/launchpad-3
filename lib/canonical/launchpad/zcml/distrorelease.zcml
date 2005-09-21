@@ -134,9 +134,9 @@
         lp:url="/distros/$distro.id/$release.id/+reassign" />
     </browser:pages>
 
-   <browser:menus
+    <browser:menus
         module="canonical.launchpad.browser.distrorelease"
-        classes="DistroReleaseFacets"
+        classes="DistroReleaseFacets DistroReleaseOverviewMenu"
         />
 
 </configure>

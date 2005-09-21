@@ -31,7 +31,9 @@
 
    <browser:menus
         module="canonical.launchpad.browser.sourcepackage"
-        classes="SourcePackageFacets"
+        classes="
+            SourcePackageFacets SourcePackageOverviewMenu
+            SourcePackageSupportMenu SourcePackageTranslationsMenu"
         />
 
     <browser:pages

@@ -42,19 +42,24 @@ optionally source package too.
   HTTP/1.1 200 Ok
   .../distros/ubuntu/+addticket">Request Support...
 
-On a source package we should see the Support facet menu link, and a Request
-Support link.
+On a source package we should see the Support facet menu link.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/hoary/+sources/evolution HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   .../distros/ubuntu/hoary/+sources/evolution/+tickets">Support...
-  ...+addticket">Request Support...
   ...Latest...Support Requests:...
 
-Let's make sure we can actually see the +tickets page on a Product, and it
-has a link to "Request Support".
+And on the source package's Support page, we should see "Request Support".
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+tickets HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...+addticket">Request Support...
+
+The +tickets page for a Product should similarly link to "Request Support".
 
   >>> print http(r"""
   ... GET /products/gnomebaker/+tickets HTTP/1.1
@@ -87,4 +92,3 @@ Now, let's look at a ticket.
   ... """)
   HTTP/1.1 200 Ok
   ...
-

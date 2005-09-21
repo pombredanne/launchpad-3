@@ -311,7 +311,7 @@ distribution_translators = 'Appoint Distribution Translation Group'
 
 distribution_search = 'Locate Distributions in Launchpad'
 
-distribution_index = ContextTitle('Launchpad Distribution Summary: %s')
+distribution_index = ContextTitle('%s in Launchpad')
 
 distro_add = 'Adding New Distribution'
 

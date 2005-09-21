@@ -57,6 +57,7 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Edit Details'
         return Link('+edit', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def reassign(self):
         text = 'Change Admin'
         return Link('+reassign', text, icon='edit')

@@ -3,9 +3,6 @@
       <li class="info">
         <a href="+cve">Show CVE Report</a>
       </li>
-      <li class="edit">
-        <a href="+changetranslators">Change Translators</a>
-      </li>
       <li class="search">
         <a href="+packages">Search Packages</a>
       </li>
