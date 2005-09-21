@@ -21,7 +21,7 @@ from sqlos.interfaces import ISQLObject
 import pytz
 
 from zope.exceptions import NotFoundError
-from zope.component import getUtility, getAdapter
+from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -36,7 +36,7 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (BugTaskSearchParams,
     IBugTask, IBugTasksReport, IBugTaskSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, IAuthorization)
+    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag)
 
 debbugsstatusmap = {'open': BugTaskStatus.NEW,
                     'forwarded': BugTaskStatus.ACCEPTED,
@@ -349,7 +349,7 @@ class BugTaskSet:
                           WHERE Bug.id = BugSubscription.bug AND
                                 TeamParticipation.person = %(personid)s AND
                                 BugSubscription.person =
-                                  TeamParticipation.team))) 
+                                  TeamParticipation.team)))
                                   """ %
                       sqlvalues(personid=params.user.id))
         else:

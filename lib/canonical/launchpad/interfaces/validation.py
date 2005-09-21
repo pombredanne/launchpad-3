@@ -71,7 +71,9 @@ def non_duplicate_bug(value):
     bugset = getUtility(IBugSet)
     duplicate = getUtility(ILaunchBag).bug
     dup_target = bugset.get(value)
-    current_bug_has_dup_refs = bugset.search(duplicateof = duplicate).count()
+    current_bug_has_dup_refs = bugset.searchAsUser(
+        user=getUtility(ILaunchBag).user,
+        duplicateof=duplicate).count()
     target_is_dup = dup_target.duplicateof
 
     if (not target_is_dup) and (not current_bug_has_dup_refs):
