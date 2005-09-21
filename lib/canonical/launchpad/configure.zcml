@@ -12,7 +12,7 @@
   <authorizations module="canonical.launchpad.security" />
 
   <browser:suburl
-    for="canonical.publication.RootObject"
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
     name="products"
     utility="canonical.launchpad.interfaces.IProductSet"
     permission="zope.Public"
@@ -24,7 +24,7 @@
     />
 
   <browser:suburl
-    for="canonical.publication.RootObject"
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
     newlayer="canonical.launchpad.layers.ShipItLayer"
     name="shipit"
     utility="canonical.launchpad.interfaces.IShipItApplication"
@@ -37,7 +37,7 @@
     />
 
   <browser:suburl
-    for="canonical.publication.RootObject"
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
     name="people"
     utility="canonical.launchpad.interfaces.IPersonSet"
     permission="zope.Public"
@@ -49,8 +49,7 @@
     />
 
   <browser:suburl
-    for="canonical.publication.RootObject"
-    newlayer="canonical.launchpad.layers.SoyuzLayer"
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
     name="distros"
     utility="canonical.launchpad.interfaces.IDistributionSet"
     permission="zope.Public"
@@ -62,7 +61,7 @@
     />
 
   <browser:suburl
-    for="canonical.publication.RootObject"
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
     name="sourcepackagenames"
     utility="canonical.launchpad.interfaces.ISourcePackageNameSet"
     permission="zope.Public"
@@ -74,7 +73,7 @@
     />
 
   <browser:suburl
-    for="canonical.publication.RootObject"
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
     name="binarypackagenames"
     utility="canonical.launchpad.interfaces.IBinaryPackageNameSet"
     permission="zope.Public"
@@ -86,7 +85,7 @@
     />
 
   <browser:suburl
-    for="canonical.publication.RootObject"
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
     name="projects"
     utility="canonical.launchpad.interfaces.IProjectSet"
     permission="zope.Public"
@@ -98,7 +97,7 @@
     />
 
   <browser:suburl
-    for="canonical.publication.RootObject"
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
     name="token"
     utility="canonical.launchpad.interfaces.ILoginTokenSet"
     permission="zope.Public"
@@ -110,14 +109,14 @@
     />
 
   <browser:suburl
-    for="canonical.publication.RootObject"
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
     name="karmaaction"
     utility="canonical.launchpad.interfaces.IKarmaActionSet"
     permission="launchpad.Admin"
     />
 
   <browser:suburl
-    for="canonical.publication.RootObject"
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
     name="potemplatenames"
     utility="canonical.launchpad.interfaces.IPOTemplateNameSet"
     permission="launchpad.Edit"
@@ -130,7 +129,7 @@
 
   <!-- legal link -->
   <browser:page
-    for="canonical.publication.RootObject"
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
     name="legal"
     template="templates/launchpad-legal.pt"
     permission="zope.Public"
@@ -138,7 +137,7 @@
 
   <!-- feedback page -->
   <browser:page
-    for="canonical.publication.RootObject"
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
     name="feedback"
     template="templates/launchpad-feedback.pt"
     permission="zope.Public"
@@ -146,7 +145,7 @@
 
   <!-- RDF downloadable documents -->
   <browser:page
-    for="canonical.publication.RootObject"
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
     name="rdf"
     template="templates/rdf-index.pt"
     permission="zope.Public"

@@ -1,5 +1,5 @@
-<div class="portlet" tal:condition="context/cverefs"
-     tal:define="bug_url string:/malone/bugs/${context/id}">
+<div class="portlet" tal:condition="context/cves"
+     tal:define="bug_url context/fmt:url">
 
   <h4>
     <abbr title="Common Vulnerabilities and Exposures index">CVE</abbr>
@@ -9,19 +9,14 @@
   <div class="portletBody">
     <div class="portletContent">
       <ul>
-        <li class="cveref" tal:repeat="ref context/cverefs">
-          <a tal:attributes="href ref/url;
-                             title ref/title"
-             tal:content="ref/cveref"
-             >CVE-2002-1342</a>
-             <small>(<a tal:attributes="href string:$bug_url/cverefs/${ref/id}/+edit">edit</a>)</small>
+        <li class="cve" tal:repeat="cve context/cves">
+          <a tal:attributes="href cve/fmt:url;
+                             title cve/description/fmt:shorten/40"
+             tal:content="cve/sequence"
+             >2002-1342</a>
         </li>
       </ul>
 
-      <div style="text-align: right;">
-        <img src="/++resource++add.gif" alt="Add CVE Ref">
-        <a tal:attributes="href string:$bug_url/cverefs/+new">Add</a>
-      </div>
     </div>
   </div>
 

@@ -11,6 +11,7 @@ from canonical.launchpad.database.project import *
 from canonical.launchpad.database.projectbounty import *
 from canonical.launchpad.database.poll import *
 from canonical.launchpad.database.bug import *
+from canonical.launchpad.database.bugcve import *
 from canonical.launchpad.database.bugwatch import *
 from canonical.launchpad.database.bugsubscription import *
 from canonical.launchpad.database.bugmessage import *
@@ -18,7 +19,8 @@ from canonical.launchpad.database.bugtask import *
 from canonical.launchpad.database.bugactivity import *
 from canonical.launchpad.database.bugattachment import *
 from canonical.launchpad.database.bugextref import *
-from canonical.launchpad.database.cveref import *
+from canonical.launchpad.database.cve import *
+from canonical.launchpad.database.cvereference import *
 from canonical.launchpad.database.bugtracker import *
 from canonical.launchpad.database.potemplatename import *
 from canonical.launchpad.database.pofile import *
@@ -58,8 +60,10 @@ from canonical.launchpad.database.translator import *
 from canonical.launchpad.database.processor import *
 from canonical.launchpad.database.manifest import *
 from canonical.launchpad.database.manifestentry import *
+from canonical.launchpad.database.manifestancestry import *
 from canonical.launchpad.database.branch import *
 from canonical.launchpad.database.build import *
+from canonical.launchpad.database.builder import *
 from canonical.launchpad.database.publishing import *
 from canonical.launchpad.database.files import *
 from canonical.launchpad.database.bounty import *
@@ -74,6 +78,7 @@ from canonical.launchpad.database.specificationdependency import *
 from canonical.launchpad.database.specificationreview import *
 from canonical.launchpad.database.specificationsubscription import *
 from canonical.launchpad.database.spokenin import *
+from canonical.launchpad.database.sprint import *
 from canonical.launchpad.database.cal import *
 from canonical.launchpad.database.logintoken import *
 from canonical.launchpad.database.codeofconduct import *

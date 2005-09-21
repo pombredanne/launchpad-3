@@ -38,12 +38,14 @@
             </li>
           </ul>
         </li>
+        <!-- Need to confirm and test this
         <li>
           <p>
             If a problem in Launchpad prevents you from reporting bugs,
-            <a href="mailto:launchpad-error-reports@lists.canonical.com">tell us the problem by e-mail</a>.
+            <a href="mailto:system-error@launchpad.net">tell us the problem by e-mail</a>.
           </p>
         </li>
+        -->
         <li>
           <p>
             Got an idea for a new feature? Search

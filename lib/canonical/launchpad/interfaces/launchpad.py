@@ -5,8 +5,10 @@ Note that these are not interfaces to application content objects.
 """
 __metaclass__ = type
 
-from zope.interface import Interface, Attribute
+from zope.interface import Interface, Attribute, implements
 from zope.i18nmessageid import MessageIDFactory
+import zope.app.publication.interfaces
+import zope.app.traversing.interfaces
 from persistent import IPersistent
 
 _ = MessageIDFactory('launchpad')
@@ -25,7 +27,9 @@ __all__ = ['ILaunchpadRoot', 'ILaunchpadApplication', 'IMaloneApplication',
            'IApplicationMenu',
            'ICanonicalUrlData', 'NoCanonicalUrl',
            'IDBSchema', 'IDBSchemaItem', 'IAuthApplication',
-           'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication'
+           'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
+           'IAfterTraverseEvent', 'AfterTraverseEvent',
+           'IBeforeTraverseEvent', 'BeforeTraverseEvent'
            ]
 
 
@@ -70,7 +74,7 @@ class ILaunchpadApplication(Interface):
     title = Attribute('Title')
 
 
-class ILaunchpadRoot(Interface):
+class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
     """Marker interface for the root object of Launchpad."""
 
 
@@ -83,6 +87,7 @@ class IMaloneApplication(ILaunchpadApplication):
     bugtask_count = Attribute("The number of bug tasks in Malone")
     bugtracker_count = Attribute("The number of bug trackers in Malone")
     top_bugtrackers = Attribute("The BugTrackers with the most watches.")
+    latest_bugs = Attribute("The latest 5 bugs filed.")
 
 
 class IRosettaApplication(ILaunchpadApplication):
@@ -180,11 +185,10 @@ class IPasswordResets(IPersistent):
     """Interface for PasswordResets"""
 
     lifetime = Attribute("Maximum time between request and reset password")
-    
+
     def newURL(person):
         """Create a new URL and store person and creation time"""
-        
-        
+
     def getPerson(long_url):
         """Get the person object using the long_url if not expired"""
 
@@ -474,3 +478,41 @@ class IDBSchemaItem(Interface):
     def __hash__():
         """Returns a hash value."""
 
+
+class IAfterTraverseEvent(Interface):
+    """An event which gets sent after publication traverse."""
+
+
+class AfterTraverseEvent:
+    """An event which gets sent after publication traverse."""
+
+    implements(IAfterTraverseEvent)
+
+    def __init__(self, ob, request):
+        self.object = ob
+        self.request = request
+
+
+class IBeforeTraverseEvent(
+    zope.app.publication.interfaces.IBeforeTraverseEvent):
+    pass
+
+
+class BeforeTraverseEvent(zope.app.publication.interfaces.BeforeTraverseEvent):
+    pass
+
+
+# XXX: These need making into a launchpad version rather than the zope versions
+#      for the publisher simplification work.  SteveAlexander 2005-09-14
+# class IEndRequestEvent(Interface):
+#     """An event which gets sent when the publication is ended"""
+# 
+# # called in zopepublication's endRequest method, after ending
+# # the interaction.  it is used only by local sites, to clean
+# # up per-thread state.
+# class EndRequestEvent(object):
+#     """An event which gets sent when the publication is ended"""
+#     implements(IEndRequestEvent)
+#     def __init__(self, ob, request):
+#         self.object = ob
+#         self.request = request

@@ -15,13 +15,13 @@ from zope.schema import ASCII
 
 class ISignedMessage(Interface):
     """A message that's possibly signed with a GPG key.
-    
+
     If the message wasn't signed, all attributes will be None.
     """
 
     def __getitem__(name):
         """Returns the message header with the given name."""
-        
+
     signedMessage = Attribute("The part that was signed, represented"
                               " as an email.Message.")
 
@@ -48,23 +48,23 @@ class IMailHandler(Interface):
 
         The 'to_address' is the address the mail was sent to.
         The 'filealias' is an ILibraryFileAlias.
-        
+
         Return True if the mesage was processed, otherwise False.
         """
 
 
 class IEmailCommand(Interface):
     """An email command.
-    
+
     Email commands can be embedded in mails sent to Launchpad. For
     example in comments to bugs sent via email, you can include:
-      
+
       private yes
 
     in order to make the bug private.
     """
     subCommands = Attribute("A list of subcommand names.")
-    
+
     def execute(context):
         """Execute the command in a context."""
 
@@ -77,21 +77,24 @@ class IEmailCommand(Interface):
 
 class IBugEmailCommand(IEmailCommand):
     """An email command specific to getting or creating a bug."""
-    
-    def execute(message):
-        """Execute the command in the context of the message.
 
-        The modified bug and an event is returned.
+    def execute(parsed_msg, filealias):
+        """Either create or get an exiting bug.
+
+        If a bug is created, parsed_msg and filealias will be used to
+        create the initial comment of the bug.
+
+        The bug and an event is returned as a two-tuple.
         """
 
 
 class IBugEditEmailCommand(IEmailCommand):
     """An email command specific to editing bug.
-    
+
     It edits either the bug directly or a sub object of the bug, like a
     bug task.
     """
-    
+
     def execute(bug):
         """Execute the command in the context of the bug.
 

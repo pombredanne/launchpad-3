@@ -89,6 +89,9 @@ class BugWatchSet(BugSetBase):
         except SQLObjectNotFound:
             raise NotFoundError, watch_id
 
+    def search(self):
+        return BugWatch.select()
+
     def _find_watches(self, pattern, trackertype, text, bug, owner):
         """Find the watches in a piece of text, based on a given pattern and
         tracker type."""

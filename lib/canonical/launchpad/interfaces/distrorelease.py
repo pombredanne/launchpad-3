@@ -98,6 +98,14 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
     previous_releases = Attribute("Previous distroreleases from the same "
         "distribution.")
 
+    open_cve_bugtasks = Attribute(
+        "Any bugtasks on this distrorelease that are for bugs with "
+        "CVE references, and are still open.")
+
+    resolved_cve_bugtasks = Attribute(
+        "Any bugtasks on this distrorelease that are for bugs with "
+        "CVE references, and are resolved.")
+
     def getBugSourcePackages():
         """Get SourcePackages in a DistroRelease with BugTask"""
 

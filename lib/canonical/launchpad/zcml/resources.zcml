@@ -25,6 +25,8 @@
     <resource name="arrowDownAlternative.gif" file="../images/arrowDownAlternative.gif" />
     <resource name="arrowDown.gif" file="../images/arrowDown.gif" />
     <resource name="arrowRight.gif" file="../images/arrowRight.gif" />
+    <resource name="build-failure" file="../images/build-failure.png" />
+    <resource name="build-success" file="../images/build-success.png" />
     <resource name="up" file="../images/arrowUp.gif" />
     <resource name="blue-bar.png" file="../images/blue-bar.png" />
     <resource name="bounty" file="../images/bounty.jpg" />
@@ -36,36 +38,49 @@
     <resource name="bugs" file="../images/bugs.png" />
     <resource name="bullet.gif" file="../images/bullet.gif" />
     <resource name="close_icon.png" file="../images/close_icon.png" />
-    <resource name="cve.ico" file="../images/cve.ico" />
+    <resource name="cve" file="../images/cve.ico" />
     <resource name="defaultFavicon.gif" file="../images/defaultFavicon.gif" />
     <resource name="ubuntuFavicon.ico" file="../images/ubuntuFavicon.ico" />
     <resource name="discussionitem_icon.gif" file="../images/discussionitem_icon.gif" />
     <resource name="document_icon.gif" file="../images/document_icon.gif" />
     <resource name="download.png" file="../images/download.png" />
     <resource name="edit.gif" file="../images/edit.gif" />
+    <resource name="email" file="../images/mail_icon.gif" />
     <resource name="favicon.png" file="../images/defaultFavicon.gif" />
     <resource name="favorite_icon.gif" file="../images/favorite_icon.gif" />
     <resource name="file_icon.gif" file="../images/file_icon.gif" />
     <resource name="green-bar.png" file="../images/green-bar.png" />
+    <resource name="hackergotchi" file="../images/nobody.png" />
     <resource name="info.gif" file="../images/info.gif" />
-    <resource name="info_icon.gif" file="../images/info_icon.gif" />
     <resource name="info.png" file="../images/info.png" />
+    <resource name="info_icon.gif" file="../images/info_icon.gif" />
+    <resource name="list" file="../images/info.png" />
     <resource name="languages.gif" file="../images/languages.gif" />
+    <resource name="link" file="../images/link_icon.gif" />
     <resource name="link_icon.gif" file="../images/link_icon.gif" />
     <resource name="linkOpaque.gif" file="../images/linkOpaque.gif" />
     <resource name="linkTransparent.gif" file="../images/linkTransparent.gif" />
     <resource name="lock_icon.gif" file="../images/lock_icon.gif" />
     <resource name="mail_icon.gif" file="../images/mail_icon.gif" />
+    <resource name="package-binary" file="../images/package-binary.png" />
+    <resource name="package-source" file="../images/package-source.png" />
     <resource name="news" file="../images/newsitem_icon.gif" />
     <resource name="phone_icon.gif" file="../images/phone_icon.gif" />
     <resource name="print.gif" file="../images/print.gif" />
     <resource name="product_icon.gif" file="../images/product_icon.gif" />
+    <resource name="progress" file="../images/progress.gif" />
+    <resource name="product" file="../images/product_icon.gif" />
     <resource name="purple-bar.png" file="../images/purple-bar.png" />
     <resource name="red-bar.png" file="../images/red-bar.png" />
     <resource name="required.gif" file="../images/required.gif" />
+    <resource name="retry" file="../images/retry.png" />
     <resource name="search_icon.gif" file="../images/search_icon.gif" />
     <resource name="sendto.gif" file="../images/sendto.gif" />
     <resource name="spec" file="../images/topic_icon.gif" />
+    <resource name="stop" file="../images/stop.png" />
+    <resource name="sprint" file="../images/backtalk.gif" />
+    <resource name="statistic" file="../images/statistic.png" />
+    <resource name="text" file="../images/discussionitem_icon.gif" />
     <resource name="ticket" file="../images/phone_icon.gif" />
     <resource name="target" file="../images/target.png" />
     <resource name="topic_icon.gif" file="../images/topic_icon.gif" />

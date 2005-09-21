@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistroArchReleaseFacets',
     'DistroArchReleaseView',
     'DistroArchReleaseBinariesView',
     ]
@@ -10,7 +11,19 @@ __all__ = [
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
+from canonical.launchpad.webapp import (
+    canonical_url, StandardLaunchpadFacets, Link)
+
+from canonical.launchpad.interfaces import IDistroArchRelease
+
 BATCH_SIZE = 40
+
+class DistroArchReleaseFacets(StandardLaunchpadFacets):
+
+    usedfor = IDistroArchRelease
+
+    enable_only = ['overview']
+
 
 class DistroArchReleaseView:
 

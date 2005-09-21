@@ -15,4 +15,8 @@ Ensure exceptions generate the desired output.
   ... GET /error-test HTTP/1.1
   ... """)
   HTTP/1.1 500 Internal Server Error
-  ...system error occurred...
+  ...
+  Traceback (innermost last):
+  ...
+  TypeError: default __new__ takes no parameters
+

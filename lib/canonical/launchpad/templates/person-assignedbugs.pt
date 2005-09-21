@@ -31,7 +31,7 @@
       <div style="margin-bottom: 1em"
            tal:define="tasks tasks_assigned;">
 
-        <h2 style="margin-bottom: 0;">Directly assigned</h2>
+        <h2 style="margin-bottom: 0;">Bugs assigned to you</h2>
 
       <tal:assignedbugs
           metal:use-macro="context/@@+bugtask-macros-tableview/table" />
@@ -42,8 +42,7 @@
            tal:condition="tasks_on_maintained_software"
            tal:define="tasks tasks_on_maintained_software">
 
-        <h2 style="margin-bottom: 0;">Assigned to maintained packages
-        and products</h2>
+        <h2 style="margin-bottom: 0;">Bugs reported on software you maintain</h2>
 
       <tal:assignedbugs
           metal:use-macro="context/@@+bugtask-macros-tableview/table" />

@@ -22,14 +22,16 @@ from zope.component import getUtility, queryView
 from zope.exceptions import NotFoundError
 
 from canonical.launchpad.interfaces import (
-    IBugSet, IBugTaskSet, IDistributionSet, IProjectSet, IProductSet,
-    IBugTrackerSet, ILaunchBag, ITeamMembershipSubset, ICalendarOwner,
-    ILanguageSet, IBugAttachmentSet, IPublishedPackageSet, IPollSet,
-    IPollOptionSet, BugTaskSearchParams, IDistroReleaseLanguageSet)
+    IBugSet, IBugTaskSet, IDistributionSet, IProjectSet,
+    IProductSet, IBugTrackerSet, ILaunchBag,
+    ITeamMembershipSubset, ICalendarOwner, ILanguageSet,
+    IBugAttachmentSet, IPublishedPackageSet, IPollSet,
+    IPollOptionSet, BugTaskSearchParams,
+    IDistroReleaseLanguageSet, ICveSet)
 from canonical.launchpad.database import (
-    BugExternalRefSet, 
-    BugWatchSet, BugTasksReport, CVERefSet, BugProductInfestationSet,
-    BugPackageInfestationSet, ProductSeriesSet, SourcePackageSet)
+    BugExternalRefSet, BugWatchSet, BugTasksReport,
+    BugProductInfestationSet, BugPackageInfestationSet,
+    ProductSeriesSet, SourcePackageSet)
 
 def _skip_one(context, request):
     travstack = request.getTraversalStack()
@@ -44,6 +46,8 @@ def traverse_malone_application(malone_application, request, name):
     """Traverse the Malone application object."""
     if name == "bugs":
         return getUtility(IBugSet)
+    elif name == "cve":
+        return getUtility(ICveSet)
     elif name == "distros":
         return getUtility(IDistributionSet)
     elif name == "projects":
@@ -271,8 +275,6 @@ def traverse_bug(bug, request, name):
         return getUtility(IBugAttachmentSet)
     elif name == 'references':
         return BugExternalRefSet(bug=bug.id)
-    elif name == 'cverefs':
-        return CVERefSet(bug=bug.id)
     elif name == 'watches':
         return BugWatchSet(bug=bug.id)
     elif name == 'tasks':

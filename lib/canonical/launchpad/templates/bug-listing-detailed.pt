@@ -1,0 +1,24 @@
+<img src="/++resource++bug" />
+ #<span tal:replace="context/id" />: 
+<span tal:replace="context/datecreated/fmt:date">2005-10-05</span>:
+<a tal:attributes="href context/fmt:url"
+   tal:content="context/title">Bug Title Here</a>
+<div style="font-size: 80%;">
+  <b>
+    <tal:per_task repeat="task context/bugtasks">
+      <span tal:replace="task/targetname" />,
+    </tal:per_task>
+  </b>
+  filed by <img src="/++resource++user.gif" />&nbsp;<a
+      tal:attributes="href context/owner/fmt:url"
+      tal:content="context/owner/browsername">Foo Bar</a>
+  <br />
+  <span tal:replace="context/summary">
+    Summary Goes Here
+  </span>
+  <span tal:condition="not: context/summary"
+        tal:replace="context/description/fmt:shorten/320">
+    Description Goes Here *if* there is no summary
+  </span>
+</div>
+<hr />

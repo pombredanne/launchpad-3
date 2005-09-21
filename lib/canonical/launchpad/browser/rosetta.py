@@ -3,7 +3,11 @@
 
 __metaclass__ = type
 
-__all__ = ['RosettaApplicationView', 'RosettaPreferencesView']
+__all__ = [
+    'RosettaApplicationView',
+    'RosettaStatsView',
+    'RosettaPreferencesView',
+    ]
 
 from sets import Set
 
@@ -40,6 +44,18 @@ class RosettaApplicationView:
 
     def browserLanguages(self):
         return IRequestPreferredLanguages(self.request).getPreferredLanguages()
+
+
+class RosettaStatsView:
+    """A view class for objects that support IRosettaStats. This is mainly
+    used for the sortable untranslated percentage."""
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def sortable_untranslated(self):
+        return '%06.2f' % self.context.untranslatedPercentage()
 
 
 class RosettaPreferencesView:

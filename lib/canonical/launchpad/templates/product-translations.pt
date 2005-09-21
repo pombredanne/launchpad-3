@@ -8,6 +8,7 @@
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-preflangs" />
     <div tal:replace="structure context/@@+portlet-summary" />
     <div tal:condition="context/project"
          tal:replace="structure context/project/@@+portlet-details" />
@@ -15,7 +16,6 @@
 
   <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-actions" />
-    <div tal:replace="structure context/@@+portlet-preflangs" />
     <div tal:replace="structure context/@@+portlet-translatables" />
   </metal:rightportlets>
 
@@ -55,14 +55,13 @@
     <tal:block condition="context/primary_translatable"
                define="target context/primary_translatable">
       
-      <p><strong>The recommended target for current translation activity is
-      <span tal:replace="target/displayname" />.</strong> If you wish to
-      provide translations for <span
-      tal:replace="context/displayname">product name</span> then we
-      recommend you translate one of the templates below from <span
-      tal:replace="target/displayname">primary translatable</span>.  You can
-      also choose any of the specific templates listed on the right which
-      are related to this product.</p>
+      <p>
+        The recommended target for current translation activity is
+        <strong><span tal:replace="target/displayname" />.</strong> 
+        Rosetta includes translations for upstream and Ubuntu, see
+        the "translatable branches" (on the right of this page)
+        for any upstream translation templates.
+      </p>
 
       <div tal:replace="structure target/@@+potlist" />
 

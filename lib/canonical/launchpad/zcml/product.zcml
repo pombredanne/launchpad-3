@@ -68,6 +68,10 @@
             facet="overview"
             template="../templates/product-distros.pt"
             />
+        <browser:page
+            name="+listing-detailed"
+            template="../templates/product-listing-detailed.pt"
+            />
 	<!-- Products Portlets -->
         <browser:page
             name="+portlet-details"
@@ -248,7 +252,6 @@
         name="+filebug"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBugAddForm"
-        label="Report Bug on Upstream Product"
         fields="title comment private owner"
         class="canonical.launchpad.browser.ProductFileBugView"
         facet="bugs"
@@ -378,16 +381,16 @@
         class="canonical.launchpad.browser.ProductSetView" >
         <browser:page
             name="+index"
-            template="../templates/products-index.pt"
-            lp:url="/products/+index" />
+            template="../templates/products-index.pt" />
         <browser:page
             name="+all"
-            template="../templates/registry-listall.pt"
-            lp:url="/products/+all" />
+            template="../templates/registry-listall.pt" />
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/productset-portlet-actions.pt" />
         <browser:page
             name="+portlet-details"
-            template="../templates/productset-portlet-details.pt"
-            lp:url="/products/+portlet-details" />
+            template="../templates/productset-portlet-details.pt" />
     </browser:pages>
 
     <browser:pages

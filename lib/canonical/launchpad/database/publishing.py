@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces import ( IBinaryPackagePublishing,
     ISourcePackagePublishingHistory, IBinaryPackagePublishingHistory )
 
 from canonical.lp.dbschema import \
-    EnumCol, BinaryPackagePriority, PackagePublishingStatus, \
+    EnumCol, PackagePublishingPriority, PackagePublishingStatus, \
     PackagePublishingPocket
 
 from warnings import warn
@@ -42,7 +42,7 @@ class BinaryPackagePublishing(SQLBase):
                                    dbName='distroarchrelease')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
-    priority = EnumCol(dbName='priority', schema=BinaryPackagePriority)
+    priority = EnumCol(dbName='priority', schema=PackagePublishingPriority)
     status = EnumCol(dbName='status', schema=PackagePublishingStatus)
     scheduleddeletiondate = UtcDateTimeCol(default=None)
     datepublished = UtcDateTimeCol(default=None)
@@ -251,7 +251,7 @@ class SecureBinaryPackagePublishingHistory(SQLBase):
                                    dbName='distroarchrelease')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
-    priority = EnumCol(dbName='priority', schema=BinaryPackagePriority)
+    priority = EnumCol(dbName='priority', schema=PackagePublishingPriority)
     status = EnumCol(dbName='status', schema=PackagePublishingStatus)
     scheduleddeletiondate = UtcDateTimeCol(default=None)
     datepublished = UtcDateTimeCol(default=None)
@@ -315,7 +315,7 @@ class BinaryPackagePublishingHistory(SQLBase):
                                    dbName='distroarchrelease')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
-    priority = EnumCol(dbName='priority', schema=BinaryPackagePriority)
+    priority = EnumCol(dbName='priority', schema=PackagePublishingPriority)
     status = EnumCol(dbName='status', schema=PackagePublishingStatus)
     scheduleddeletiondate = UtcDateTimeCol(default=None)
     datepublished = UtcDateTimeCol(default=None)

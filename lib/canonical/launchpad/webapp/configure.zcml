@@ -3,6 +3,9 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="canonical.launchpad">
 
+    <include file="servers.zcml" />
+    <include file="errorlog.zcml" />
+
     <!-- links -->
     <content class="canonical.launchpad.webapp.menu.LinkData">
       <allow interface="canonical.launchpad.interfaces.ILinkData" />
@@ -34,10 +37,10 @@
         />
     </content>
 
-    <!-- urls -->
+    <!-- Launchpad root object -->
     <utility
         provides="canonical.launchpad.interfaces.ILaunchpadRoot"
-        component="canonical.publication.rootObject"
+        component="canonical.launchpad.webapp.publisher.rootObject"
         />
 
     <adapter
@@ -208,7 +211,7 @@
         />
 
     <subscriber
-        for="canonical.publication.IAfterTraverseEvent"
+        for="canonical.launchpad.interfaces.IAfterTraverseEvent"
         factory="canonical.launchpad.webapp.authentication.handle"
         />
 
@@ -264,7 +267,7 @@
 
     <browser:page
         layer="canonical.launchpad.layers.DebugLayer"
-        for="canonical.publication.RootObject"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="changelog.html"
         template="../templates/debug-root-changelog.pt"
         class="canonical.launchpad.webapp.changelog.ChangeLog"
@@ -301,7 +304,7 @@
         /@@/favicon.png to access resource and resourceDirectory -->
     <browser:page
         name=""
-        for="canonical.publication.RootObject"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
         class="zope.app.publisher.browser.resources.Resources"
         permission="zope.Public"
         allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"

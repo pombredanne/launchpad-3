@@ -89,8 +89,9 @@
   This is the first email 'salgado' is validating, it must be set as the
   preferred one.
 
-  >>> from canonical.launchpad.database import EmailAddress
-  >>> e = EmailAddress.byEmail(to_addrs)
+  >>> from canonical.launchpad.database import EmailAddressSet
+  >>> [to_addr] = to_addrs
+  >>> e = EmailAddressSet().getByEmail(to_addr)
   >>> e.statusname
   'Preferred Email Address'
 

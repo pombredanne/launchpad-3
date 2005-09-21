@@ -176,6 +176,12 @@ includes commands, the email has to be GPG signed.
     >>> print bug_one.title
     Better title
 
+If the message doesn't have a Reference or In-Reply-To header, the
+parent will be set to the bug's initial message.
+
+    >>> added_message.parent == bug_one.initial_message
+    True
+
 
 Edit bugs
 ---------

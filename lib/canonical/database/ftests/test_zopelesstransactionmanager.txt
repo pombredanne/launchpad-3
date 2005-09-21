@@ -73,13 +73,14 @@ True
 A failed commit, e.g. due to a transaction conflict or integrity error, will
 raise an exception, but still make it possible to begin a new transaction.
 
+>>> from psycopg import DatabaseError
+>>> import sys
 >>> ztm.begin()
 >>> andrew = Person.byName('spiv')
 >>> andrew.name = 'sabdfl'
->>> ztm.commit()
-Traceback (most recent call last):
-...
-IntegrityError: ERROR:  duplicate key violates unique constraint "person_name_key"
+>>> try: ztm.commit()
+... except DatabaseError: print sys.exc_value
+ERROR:  duplicate key violates unique constraint "person_name_key"
 <BLANKLINE>
 UPDATE Person SET name = 'sabdfl' WHERE id = 7
 >>> ztm.begin()

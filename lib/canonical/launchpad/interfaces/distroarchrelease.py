@@ -18,6 +18,7 @@ _ = MessageIDFactory('launchpad')
 
 class IDistroArchRelease(IHasOwner):
     """DistroArchRelease Table Interface"""
+    id = Attribute("Identifier")
     distrorelease = Attribute("DistroRelease")
     processorfamily = Attribute("ProcessorFamily")
     architecturetag = Attribute("ArchitectureTag")

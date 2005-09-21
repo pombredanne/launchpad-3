@@ -1,8 +1,4 @@
-<div class="portlet">
-
-  <h4>actions:</h4>
-
-  <div class="portletBody portletContent odd"
+<div class="portlet portletBody portletContent"
        tal:define="bug_url context/fmt:url">
     <ul>
       <li class="edit">
@@ -10,8 +6,7 @@
         Description</a>
       </li>
       <li class="edit">
-        <a href="#" tal:attributes="href string:$bug_url/+secrecy">Set
-        Bug Secrecy</a>
+        <a href="#" tal:attributes="href string:$bug_url/+secrecy">Bug Secrecy</a>
       </li>
       <li class="edit">
         <a href="#"
@@ -31,13 +26,17 @@
            >Subscribe Someone Else</a>
       </li>
       <li class="add">
-        <a href="#" tal:attributes="href
-           string:$bug_url/cverefs/+new">Add <abbr title="Common Vulnerabilities and Exposures Index">CVE</abbr> Reference</a>
-      </li>
-      <li class="add">
         <a href="#"
            tal:attributes="href string:$bug_url/+addattachment"
            >Add Attachment</a>
+      </li>
+      <li class="add">
+        <a href="#" tal:attributes="href
+           string:$bug_url/+linkcve">Link to <abbr title="Common Vulnerabilities and Exposures Index">CVE</abbr></a>
+      </li>
+      <li class="edit" tal:condition="context/cves">
+        <a tal:attributes="href string:$bug_url/+unlinkcve">Remove
+          CVE link</a>
       </li>
       <li class="add">
         <a href="#"
@@ -46,12 +45,11 @@
       </li>
       <li class="add">
         <a href="#" tal:attributes="href string:$bug_url/watches/+new">Link
-           To Other Bugtracker</a>
+           To Other Bug Tracker</a>
       </li>
-      <li class="info">
+      <li class="list">
         <a href="#"
-           tal:attributes="href string:$bug_url/activity">View Activity Log</a>
+           tal:attributes="href string:$bug_url/activity">Activity Log</a>
       </li>
     </ul>
-  </div>
 </div>

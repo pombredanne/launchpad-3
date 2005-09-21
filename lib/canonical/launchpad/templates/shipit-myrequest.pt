@@ -9,10 +9,26 @@
   <div metal:fill-slot="main">
   
     <tal:block condition="view/standardShipItRequests"
-               define="currentRequest view/currentRequest;
+               define="currentOrder view/currentOrder;
                        user view/user">
 
-      <tal:block condition="not: currentRequest">
+      <tal:block condition="view/orderCreated">
+        <br />
+        <p class="portalMessage">New request accepted.</p>
+      </tal:block>
+
+      <tal:block condition="view/orderChanged">
+        <br />
+        <p class="portalMessage">Request changed.</p>
+      </tal:block>
+
+      <tal:block condition="view/hasErrorMessages">
+        <br />
+        <p class="portalErrorMessage">There were errors in your request:
+        please see the messages below.</p>
+      </tal:block>
+
+      <tal:block condition="not: currentOrder">
         <h1>How many CDs would you like?</h1> 
 
         <p>Shipping small numbers of CDs costs almost the same as shipping
@@ -20,35 +36,35 @@
         share with friends.</p>
       </tal:block>
 
-      <tal:block condition="currentRequest">
+      <tal:block condition="currentOrder">
         <h1>Your current ShipIt request</h1>
 
         <table cols="2">
           <tr>
-            <td align="right"><strong>Date Requested:</strong></td>
-            <td tal:content="currentRequest/daterequested/fmt:date" />
+            <th>Date Requested:</th>
+            <td tal:content="currentOrder/daterequested/fmt:date" />
           </tr>
           <tr>
-            <td align="right"><strong>Status:</strong></td>
+            <th>Status:</th>
             <td>
-              <span tal:condition="currentRequest/approved">
+              <span tal:condition="currentOrder/approved">
                 Approved
               </span>
-              <span tal:condition="not: currentRequest/approved">
+              <span tal:condition="not: currentOrder/approved">
                 Waiting for approval
               </span>
           </tr>
-          <tr tal:condition="currentRequest/quantityx86">
-            <td align="right"><strong>PC CDs:</strong></td>
-            <td tal:content="currentRequest/quantityx86" />
+          <tr tal:condition="currentOrder/quantityx86">
+            <th>PC CDs:</th>
+            <td tal:content="currentOrder/quantityx86" />
           </tr>
-          <tr tal:condition="currentRequest/quantityamd64">
-            <td align="right"><strong>64-bit PC CDs:</strong></td>
-            <td tal:content="currentRequest/quantityamd64" />
+          <tr tal:condition="currentOrder/quantityamd64">
+            <th>64-bit PC CDs:</th>
+            <td tal:content="currentOrder/quantityamd64" />
           </tr>
-          <tr tal:condition="currentRequest/quantityppc">
-            <td align="right"><strong>Mac CDs:</strong></td>
-            <td tal:content="currentRequest/quantityppc" />
+          <tr tal:condition="currentOrder/quantityppc">
+            <th>Mac CDs:</th>
+            <td tal:content="currentOrder/quantityppc" />
           </tr>
         </table>
 
@@ -61,13 +77,7 @@
 
       </tal:block>
         
-      <tal:block condition="view/errorMessages">
-        <p class="portalMessage">There are errors in the form data. Please see the
-        messages below.</p>
-      </tal:block>
-      <br />
-
-      <tal:block condition="not: currentRequest">
+      <tal:block condition="not: currentOrder">
         <p>Ubuntu CDs are made specifically for various types of
         computers.</p>
 
@@ -88,22 +98,22 @@
         <br />
       </tal:block>
 
-      <tal:block condition="view/errorMessages">
-        <p class="portalMessage" tal:repeat="msg view/errorMessages" 
-           tal:content="msg" />
-      </tal:block>
-
-      <tal:block condition="not: currentRequest">
+      <tal:block condition="not: currentOrder">
         <h2>Request Details</h2>
       </tal:block>
 
-      <tal:block condition="currentRequest">
+      <tal:block condition="currentOrder">
         <h2>Change Request Details</h2>
 
         <p>You can change your request details as many times you want, but
         doing so may require your request to be approved again.</p>
-        <br />
       </tal:block>
+
+      <tal:block condition="view/requestFormMessages">
+        <p class="portalErrorMessage" tal:repeat="msg view/requestFormMessages"
+        tal:content="msg" />
+      </tal:block>
+      <br />
 
       <form name="shipit" action="" method="POST">
 
@@ -113,7 +123,7 @@
             <label>
               <input type="radio" name="requesttype" value="standard" 
                      onClick="javascript: updateWidgets()"
-                     tal:attributes="checked not:view/isCustomRequest" />
+                     tal:attributes="checked not:view/isCustomOrder" />
               Standard request
             </label>
             <div style="margin: 0em 2em">
@@ -122,16 +132,16 @@
                 should choose a standard one.
               </div>
               <select name="standardrequest" class="listing">
-                <tal:block tal:condition="view/selectedRequest|nothing">
+                <tal:block tal:condition="view/selectedOrder|nothing">
                   <option tal:repeat="request view/standardShipItRequests"
                           tal:attributes="
                             value request/id;
-                            selected python: view.selectedRequest == request.id"
+                            selected python: view.selectedOrder == request.id"
                           tal:content="request/description">
                     Request description
                   </option>
                 </tal:block>
-                <tal:block tal:condition="not: view/selectedRequest|nothing">
+                <tal:block tal:condition="not: view/selectedOrder|nothing">
                   <option tal:repeat="request view/standardShipItRequests"
                           tal:attributes="value request/id; selected request/isdefault"
                           tal:content="request/description">
@@ -152,47 +162,47 @@
             <label>
               <input type="radio" name="requesttype" value="custom"
                      onClick="javascript: updateWidgets()"
-                     tal:attributes="checked view/isCustomRequest"/>
+                     tal:attributes="checked view/isCustomOrder"/>
               Custom request
             </label>
 
             <div style="margin: 0em 2em">
             <table>
               <tr>
-                <td align="right"><strong>PC:</strong></td>
+                <th>PC:</th>
                 <td>
-                  <tal:block tal:condition="view/isCustomRequest">
+                  <tal:block tal:condition="view/isCustomOrder">
                     <input tal:attributes="value view/quantityx86" 
-                           type="text" size="5" align="right" 
-                           name="quantityx86" />
+                           type="text" size="4" align="right" 
+                           maxlength="4" name="quantityx86" />
                   </tal:block>
-                  <tal:block tal:condition="not: view/isCustomRequest">
-                    <input type="text" size="5" align="right" 
-                           name="quantityx86" />
+                  <tal:block tal:condition="not: view/isCustomOrder">
+                    <input type="text" size="4" align="right" 
+                           maxlength="4" name="quantityx86" />
                   </tal:block>
                 </td>
-                <td align="right"><strong>64-bit PC:</strong></td>
+                <th>64-bit PC:</th>
                 <td>
-                  <tal:block tal:condition="view/isCustomRequest">
+                  <tal:block tal:condition="view/isCustomOrder">
                     <input tal:attributes="value view/quantityamd64" 
-                           type="text" size="5" align="right" 
-                           name="quantityamd64">
+                           type="text" size="4" align="right" 
+                           maxlength="4" name="quantityamd64">
                   </tal:block>
-                  <tal:block tal:condition="not: view/isCustomRequest">
-                    <input type="text" size="5" align="right" 
-                           name="quantityamd64" />
+                  <tal:block tal:condition="not: view/isCustomOrder">
+                    <input type="text" size="4" align="right" 
+                           maxlength="4" name="quantityamd64" />
                   </tal:block>
                 </td>
-                <td align="right"><strong>Mac:</strong></td>
+                <th>Mac:</th>
                 <td>
-                  <tal:block tal:condition="view/isCustomRequest">
+                  <tal:block tal:condition="view/isCustomOrder">
                     <input tal:attributes="value view/quantityppc" 
-                           type="text" size="5" align="right" 
-                           name="quantityppc" />
+                           type="text" size="4" align="right" 
+                           maxlength="4" name="quantityppc" />
                   </tal:block>
-                  <tal:block tal:condition="not: view/isCustomRequest">
-                    <input type="text" size="5" align="right" 
-                           name="quantityppc" />
+                  <tal:block tal:condition="not: view/isCustomOrder">
+                    <input type="text" size="4" align="right" 
+                           maxlength="4" name="quantityppc" />
                   </tal:block>
                 </td>
               </tr>
@@ -203,6 +213,7 @@
               <tr>
                 <td colspan="6">
                     <strong>Reason for custom request:</strong>
+                    <span class="formHelp">(required)</span>
                     <textarea name="reason" rows="4"
                               tal:content="view/reason|nothing" />
                 </td>
@@ -215,16 +226,26 @@
 
       <h1>Shipping Address</h1>
 
+      <tal:block condition="view/addressFormMessages">
+        <p class="portalErrorMessage" tal:repeat="msg view/addressFormMessages" 
+           tal:content="msg" />
+        <br />
+      </tal:block>
+
       <table>
         <tr>
-          <td align="right"><strong>Organization:</strong></td>
+          <th>Name:</th>
+          <td tal:content="user/displayname" />
+        </tr>
+        <tr>
+          <th>Organization:</th>
           <td>
             <input tal:attributes="value view/organization|user/organization" type="text"
                    name="organization" size="30" maxlength="30" />
           </td>
         </tr>
         <tr>
-          <td align="right"><strong>Address:</strong></td>
+          <th>Address:</th>
           <td>
             <input tal:attributes="value view/addressline1|user/addressline1" type="text"
                    name="addressline1" size="30" maxlength="30"/>
@@ -239,7 +260,7 @@
           </td>
         </tr>
         <tr>
-          <td align="right"><strong>City/Town/etc:</strong></td>
+          <th>City/Town/etc:</th>
           <td>
             <input tal:attributes="value view/city|user/city" type="text"
                    name="city" size="30" maxlength="30" />
@@ -247,14 +268,14 @@
           </td>
         </tr>
         <tr>
-          <td align="right"><strong>State/etc:</strong></td>
+          <th>State/Province:</th>
           <td>
             <input tal:attributes="value view/province|user/province" type="text"
                    name="province" size="30" maxlength="30" />
           </td>
         </tr>
         <tr>
-          <td align="right"><strong>Postcode:</strong></td>
+          <th>Postcode:</th>
           <td>
             <input tal:attributes="value view/postcode|user/postcode" type="text"
                    name="postcode" size="12" maxlength="12" />
@@ -262,13 +283,13 @@
           </td>
         </tr>
         <tr>
-          <td align="right"><strong>Country:</strong></td>
+          <th>Country:</th>
           <td>
             <span tal:replace="structure view/country_widget" />
           </td>
         </tr>
         <tr>
-          <td align="right"><strong>Phone:</strong></td>
+          <th>Phone:</th>
           <td>
             <input tal:attributes="value view/phone|user/phone" type="text"
                    name="phone" size="16" maxlength="16" />
@@ -277,12 +298,12 @@
       </table>
 
       <div style="text-align: right">
-        <tal:block condition="not: currentRequest">
+        <tal:block condition="not: currentOrder">
           <input type="submit" value="Request CDs" name="newrequest"
                  class="formControls"/>
         </tal:block>
 
-        <tal:block condition="currentRequest">
+        <tal:block condition="currentOrder">
           <input type="submit" value="Change Request Details" 
                  class="formControls" name="changerequest" />
         </tal:block>
@@ -290,7 +311,7 @@
 
       </form>
 
-      <tal:block condition="currentRequest">
+      <tal:block condition="currentOrder">
         <p>Ubuntu CDs are made specifically for various types of
         computers.</p>
 

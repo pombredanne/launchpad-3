@@ -33,7 +33,7 @@ from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
 from canonical.database.sqlbase import quote
 
 from canonical.lp.dbschema import (PackagePublishingStatus,
-    BinaryPackagePriority, SourcePackageUrgency, BuildStatus)
+    PackagePublishingPriority, SourcePackageUrgency, BuildStatus)
 
 from canonical.launchpad.scripts import log
 from canonical.database.constants import nowUTC
@@ -50,12 +50,12 @@ priomap = {
     }
 
 prioritymap = {
-"required": BinaryPackagePriority.REQUIRED,
-"important": BinaryPackagePriority.IMPORTANT,
-"standard": BinaryPackagePriority.STANDARD,
-"optional": BinaryPackagePriority.OPTIONAL,
-"extra": BinaryPackagePriority.EXTRA,
-"source": BinaryPackagePriority.EXTRA #Some binarypackages ended up
+"required": PackagePublishingPriority.REQUIRED,
+"important": PackagePublishingPriority.IMPORTANT,
+"standard": PackagePublishingPriority.STANDARD,
+"optional": PackagePublishingPriority.OPTIONAL,
+"extra": PackagePublishingPriority.EXTRA,
+"source": PackagePublishingPriority.EXTRA #Some binarypackages ended up
                                            #with priority source.
 }
 
@@ -220,7 +220,7 @@ class ImporterHandler:
         if not sourcepackage:
             # If the sourcepackagerelease is not imported, not way to import
             # this binarypackage. Warn and giveup.
-            log.warn("FMO courtesy of TROUP & TROUT inc. on %s (%s)" % (
+            log.info("FMO courtesy of TROUP & TROUT inc. on %s (%s)" % (
                 binarypackagedata.source, binarypackagedata.source_version
                 ))
             return None

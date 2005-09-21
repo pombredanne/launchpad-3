@@ -14,9 +14,9 @@ import logging
 
 from canonical.launchpad.interfaces import IPOMessage, IPOHeader, IPOParser
 from zope.interface import implements
-from zope.app.datetimeutils import SyntaxError, DateError, DateTimeError, \
-    parseDatetimetz
-
+from zope.app.datetimeutils import (
+        SyntaxError, DateError, DateTimeError, parseDatetimetz
+        )
 
 # Exceptions and warnings
 
@@ -296,8 +296,8 @@ class POHeader(dict, POMessage):
     def finish(self):
         for attr in ('msgidPlural', 'msgstrPlurals', 'fileReferences'):
             if getattr(self, attr):
-                logging.warning(POSyntaxWarning(msg='PO file header entry should have no %s'
-                                              % attr))
+                logging.warning(POSyntaxWarning(
+                    msg='PO file header entry should have no %s' % attr))
                 setattr(self, attr, u'')
 
         for l in self.msgstr.strip().split('\n'):
@@ -315,20 +315,23 @@ class POHeader(dict, POMessage):
                 try:
                     self.__setitem__(field, value, False)
                 except ValueError:
-                    raise POInvalidInputError(msg='Malformed plural-forms header entry')
+                    raise POInvalidInputError(
+                            msg='Malformed plural-forms header entry')
             else:
                 self.__setitem__(field, value, False)
         if 'content-type' not in self:
-            logging.warning(POSyntaxWarning(msg='PO file header entry has no content-type field'))
+            logging.warning(POSyntaxWarning(
+                msg='PO file header entry has no content-type field'))
             self['Content-Type'] = 'text/plain; charset=us-ascii'
 
     def _decode(self, v):
         try:
             v = unicode(v, self.charset)
         except UnicodeError:
-            logging.warning(POSyntaxWarning(self._lineno,
-                                          'string is not in declared charset %r'
-                                          % self.charset))
+            logging.warning(POSyntaxWarning(
+                self._lineno,
+                'string is not in declared charset %r' % self.charset
+                ))
             v = unicode(v, self.charset, 'replace')
         except LookupError:
             raise POInvalidInputError(msg='Unknown charset %s' % self.charset)
@@ -485,6 +488,17 @@ class POHeader(dict, POMessage):
 
         return (date_string, date)
 
+    def getPluralFormExpression(self):
+        """See IPOHeader."""
+        plural = self.get('Plural-Forms')
+        if not plural:
+            return None
+        parts = parse_assignments(plural)
+        if parts.has_key("plural"):
+            return parts["plural"]
+        else:
+            return None
+
 
 class POParser(object):
     implements(IPOParser)
@@ -555,9 +569,10 @@ class POParser(object):
             try:
                 return unicode(text, self.header.charset)
             except UnicodeError:
-                logging.warning(POSyntaxWarning(self._lineno,
-                                              'string is not in declared charset %r'
-                                              % self.header.charset))
+                logging.warning(POSyntaxWarning(
+                    self._lineno,
+                    'string is not in declared charset %r' % self.header.charset
+                    ))
                 return unicode(text, self.header.charset, 'replace')
         else:
             return text
@@ -631,24 +646,25 @@ class POParser(object):
                 # plural case
                 new_plural_case, l = l[1:].split(']', 1)
                 new_plural_case = int(new_plural_case)
-                if (self._plural_case is not None) and (new_plural_case != 
-                                                        self._plural_case + 1):
+                if (self._plural_case is not None) and (
+                        new_plural_case != self._plural_case + 1):
                     logging.warning(POSyntaxWarning(self._lineno,
                                                   'bad plural case number'))
                 if new_plural_case != self._plural_case:
                     self._partial_transl['msgstrPlurals'].append('')
                     self._plural_case = new_plural_case
                 else:
-                    logging.warning(POSyntaxWarning(self._lineno,
-                                                  'msgstr[] but same plural case number'))
+                    logging.warning(POSyntaxWarning(
+                        self._lineno, 'msgstr[] but same plural case number'))
             else:
                 self._plural_case = None
 
         l = l.strip()
         if not l:
-            logging.warning(POSyntaxWarning(self._lineno,
-                                          'line has no content; this is not supported by '
-                                          'some implementations of msgfmt'))
+            logging.warning(POSyntaxWarning(
+                self._lineno,
+                'line has no content; this is not supported by '
+                'some implementations of msgfmt'))
             return
 
         # Parse a str line

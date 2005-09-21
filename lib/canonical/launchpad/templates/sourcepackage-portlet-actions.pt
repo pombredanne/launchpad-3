@@ -1,24 +1,19 @@
-<div class="portlet">
-  <h4>Actions:</h4>
-
-  <div class="portletBody">
-    <div class="portletContent">
-
+<div class="portlet portletBody portletContent">
       <ul>
         <li class="info">
           <a href=".">Overview</a>
         </li>
-        <li class="info">
-          <a href="+bugs">View Package Bugs</a>
+        <li class="bugs">
+          <a href="+bugs">Package Bugs</a>
         </li>
         <li class="info">
-          <a href="+hctstatus">View HCT Status</a>
+          <a href="+hctstatus">HCT Status</a>
         </li>
-        <li class="info">
-          <a href="+changelog">View Changelog</a>
+        <li class="news">
+          <a href="+changelog">Changelog</a>
         </li>
-        <li class="info">
-          <a href="+buildlog">View Build Log</a>
+        <li class="list">
+          <a href="+buildlog">Build Log</a>
         </li>
         <li class="info">
           <a href="+gethelp">Help and support options</a>
@@ -37,6 +32,4 @@
           <a href="+potemplatenames">Edit Template Names</a>
         </li>
       </ul>
-    </div>
-  </div>
 </div>

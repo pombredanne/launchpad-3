@@ -231,10 +231,6 @@ class POFileView:
         else:
             return length - (length % self.count)
 
-    def pluralFormExpression(self):
-        plural = self.header['Plural-Forms']
-        return plural.split(';', 1)[1].split('=',1)[1].split(';', 1)[0].strip()
-
     def untranslated(self):
         return self.context.untranslatedCount()
 
@@ -301,6 +297,10 @@ class POFileView:
                 'There was a problem uploading the file: %s.' % error)
 
     def edit(self):
+        # XXX: See bug 2358; the plural-forms here should be validated
+        # before assignment. For instance, expression and pluralforms
+        # can /not/ contain semi-colons!
+        #   -- kiko, 2005-09-16
         self.header['Plural-Forms'] = 'nplurals=%s; plural=%s;' % (
             self.request.form['pluralforms'],
             self.request.form['expression'])

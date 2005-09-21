@@ -5,12 +5,12 @@
       i18n:domain="launchpad">
 <body>
 
-<div metal:fill-slot="body">
+  <div metal:fill-slot="body" style="padding-left: 1em">
 
   <h1>Standard Request Options</h1>
 
   <div class="sidebar">
-    <div tal:replace="structure context/@@+sidebar-actions" />
+    <div tal:replace="structure context/@@+portlet-actions" />
   </div>
 
   <tal:block define="alloptions context/getAll">
@@ -20,7 +20,7 @@
     <em>Standard Request</em>. Only one of these should be the default option,
     and that is the one that will be initially selected for the user.</p>
 
-    <table class="listing">
+    <table class="listing sortable" id="standardrequests">
       <thead>
         <tr>
           <th>Description</th>
@@ -32,7 +32,6 @@
         </tr>
       </thead>
       <tbody>
-        <form action="" method="POST" name="delete">
         <tr tal:repeat="shipitrequest context/getAll">
           <td>
             <img src="/++resource++edit.gif">
@@ -45,11 +44,12 @@
           <td tal:condition="shipitrequest/isdefault">yes</td>
           <td tal:condition="not: shipitrequest/isdefault">no</td>
           <td class="formControls">
-            <input type="submit" value="Delete" 
-                   tal:attributes="name shipitrequest/id" />
+            <form action="" method="POST" name="delete" style="display: inline">
+              <input type="submit" value="Delete" 
+                     tal:attributes="name shipitrequest/id" />
+            </form>
           </td>
         </tr>
-        </form>
       </tbody>
     </table>
   </tal:block>

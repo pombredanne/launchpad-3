@@ -11,7 +11,6 @@ Some of the tests for this file are elsewhere. See:
 __metaclass__ = type
 
 import doctest
-import logging
 import os
 import sys
 import tarfile

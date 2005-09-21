@@ -280,10 +280,9 @@ class BinaryPackageData(AbstractPackageData):
             self.source_version = self.version
         else:
             # handle cases like "Source: myspell (1:3.0+pre3.1-6)"
-            src_bits = self.source.split(" ", 2)
-            self.source = src_bits[0]
-            if len(src_bits) > 1:
-                self.source_version = src_bits[1][1:-1]
+            # Which apt-pkg kindly splits for us already
+            if hasattr(self, 'sversion'):
+                self.source_version = self.sversion
         if not hasattr(self, 'section'):
             log.info("Binary package %s lacks a section... assuming misc" %
                      self.package)

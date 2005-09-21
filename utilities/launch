@@ -36,14 +36,14 @@ cd $LAUNCHPAD/launchpad
 # check for loose files
 baz status --lint --untagged-files --strict
 if [ $? -gt 0 ]; then
-  echo "You have untagged files. Please add and commit before refueling."
+  echo "You have untagged files. Please add and commit before launching."
   exit 1
 fi
 
 # then check if there are unmerged changes
 baz diff --quiet
 if [ $? -gt 0 ]; then
-    echo "You've got changes! Please commit them before refueling"
+    echo "You've got changes! Please commit them before launching."
     exit 1
 fi;
 

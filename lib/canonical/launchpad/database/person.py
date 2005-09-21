@@ -36,7 +36,7 @@ from canonical.launchpad.interfaces import (
     IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IMaintainershipSet,
     IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
     ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
-    ILoginTokenSet, KEYSERVER_QUERY_URL)
+    ILoginTokenSet, KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -66,6 +66,11 @@ class Person(SQLBase):
     familyname = StringCol(dbName='familyname', default=None)
     displayname = StringCol(dbName='displayname', notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
+    homepage_content = StringCol(default=None)
+    emblem = ForeignKey(dbName='emblem',
+        foreignKey='LibraryFileAlias', default=None)
+    hackergotchi = ForeignKey(dbName='hackergotchi',
+        foreignKey='LibraryFileAlias', default=None)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)
@@ -907,11 +912,10 @@ class PersonSet:
 
     def getByEmail(self, email, default=None):
         """See IPersonSet."""
-        result = EmailAddress.selectOne(
-            "lower(email) = %s" % quote(email.strip().lower()))
-        if result is None:
+        emailaddress = getUtility(IEmailAddressSet).getByEmail(email)
+        if emailaddress is None:
             return default
-        return result.person
+        return emailaddress.person
 
     def getUbuntites(self, orderBy=None):
         """See IPersonSet."""
@@ -1088,6 +1092,23 @@ class PersonSet:
             ''' % vars())
         skip.append(('specificationsubscription', 'person'))
 
+        # Update only the SprintAttendances that will not conflict
+        cur.execute('''
+            UPDATE SprintAttendance
+            SET attendee=%(to_id)d
+            WHERE attendee=%(from_id)d AND sprint NOT IN
+                (
+                SELECT sprint
+                FROM SprintAttendance 
+                WHERE attendee = %(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over
+        cur.execute('''
+            DELETE FROM SprintAttendance WHERE attendee=%(from_id)d
+            ''' % vars())
+        skip.append(('sprintattendance', 'attendee'))
+
         # Update only the POSubscriptions that will not conflict
         # XXX: Add sampledata and test to confirm this case
         # -- StuartBishop 20050331
@@ -1151,6 +1172,61 @@ class PersonSet:
                 src_tab, src_col, to_person.id, src_col, from_person.id
                 ))
 
+        # Transfer active team memberships
+        approved = TeamMembershipStatus.APPROVED
+        admin = TeamMembershipStatus.ADMIN
+        cur.execute('SELECT team, status FROM TeamMembership WHERE person = %s '
+                    'AND status IN (%s,%s)' 
+                    % sqlvalues(from_person.id, approved, admin))
+        for team_id, status in cur.fetchall():
+            cur.execute('SELECT status FROM TeamMembership WHERE person = %s '
+                        'AND team = %s'
+                        % sqlvalues(to_person.id, team_id))
+            result = cur.fetchone()
+            if result:
+                current_status = result[0]
+                # Now we can safely delete from_person's membership record,
+                # because we know to_person has a membership entry for this
+                # team, so may only need to change its status.
+                cur.execute(
+                    'DELETE FROM TeamMembership WHERE person = %s AND team = %s'
+                    % sqlvalues(from_person.id, team_id))
+
+                if current_status == admin.value:
+                    # to_person is already an administrator of this team, no
+                    # need to do anything else.
+                    continue
+                # to_person is either an approved or an inactive member,
+                # while from_person is either admin or approved. That means we
+                # can safely set from_person's membership status on
+                # to_person's membership.
+                assert status in (approved.value, admin.value)
+                cur.execute(
+                    'UPDATE TeamMembership SET status = %s WHERE person = %s '
+                    'AND team = %s' % sqlvalues(status, to_person.id, team_id))
+            else:
+                # to_person is not a member of this team. just change
+                # from_person with to_person in the membership record.
+                cur.execute(
+                    'UPDATE TeamMembership SET person = %s WHERE person = %s '
+                    'AND team = %s'
+                    % sqlvalues(to_person.id, from_person.id, team_id))
+
+        cur.execute('SELECT team FROM TeamParticipation WHERE person = %s '
+                    'AND person != team' % sqlvalues(from_person.id))
+        for team_id in cur.fetchall():
+            cur.execute('SELECT team FROM TeamParticipation WHERE person = %s '
+                        'AND team = %s' % sqlvalues(to_person.id, team_id))
+            if not cur.fetchone():
+                cur.execute(
+                    'UPDATE TeamParticipation SET person = %s WHERE '
+                    'person = %s AND team = %s'
+                    % sqlvalues(to_person.id, from_person.id, team_id))
+            else:
+                cur.execute(
+                    'DELETE FROM TeamParticipation WHERE person = %s AND '
+                    'team = %s' % sqlvalues(from_person.id, team_id))
+
         # Flag the account as merged
         cur.execute('''
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
@@ -1174,7 +1250,7 @@ class EmailAddress(SQLBase):
     _table = 'EmailAddress'
     _defaultOrder = ['email']
 
-    email = StringCol(dbName='email', notNull=True, alternateID=True)
+    email = StringCol(dbName='email', notNull=True, unique=True)
     status = EnumCol(dbName='status', schema=EmailAddressStatus, notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
@@ -1205,13 +1281,17 @@ class EmailAddressSet:
         return EmailAddress.selectBy(personID=person.id, orderBy='email')
 
     def getByEmail(self, email, default=None):
-        try:
-            return EmailAddress.byEmail(email)
-        except SQLObjectNotFound:
+        result = EmailAddress.selectOne(
+            "lower(email) = %s" % quote(email.strip().lower()))
+        if result is None:
             return default
+        return result
 
     def new(self, email, personID, status=EmailAddressStatus.NEW):
         email = email.strip()
+        if self.getByEmail(email):
+            raise EmailAddressAlreadyTaken(
+                "The email address %s is already registered." % email)
         assert status in EmailAddressStatus.items
         return EmailAddress(email=email, status=status, person=personID)
 
@@ -1303,7 +1383,7 @@ class GPGKeySet:
         if ownerid:
             query += ' AND owner=%s' % sqlvalues(ownerid)
         
-        return GPGKey.select(query)
+        return GPGKey.select(query, orderBy='id')
 
 
 class SSHKey(SQLBase):

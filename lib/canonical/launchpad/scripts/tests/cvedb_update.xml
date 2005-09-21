@@ -1,0 +1,127 @@
+<?xml version="1.0"?>
+<cve xmlns="http://cve.mitre.org/cve/downloads/xml_schema_info.html" xmlns:cve="http://cve.mitre.org/cve/downloads/xml_schema_info.html" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://cve.mitre.org/cve/downloads/xml_schema_info.html cve_schema.xsd" schemaVersion="0.1">
+<item type="CVE" name="CVE-1999-0002" seq="1999-0002">
+<desc>Buffer overflow in NFS mountd gives root access to remote attackers, mostly in Linux systems.</desc>
+<refs>
+<ref source="SGI">19981006-01-I</ref>
+<ref source="CERT">CA-98.12.mountd</ref>
+<ref source="CIAC">J-006</ref>
+<ref source="BID">121</ref>
+<ref source="XF">linux-mountd-bo</ref>
+</refs>
+</item>
+
+<item type="CVE" name="CVE-1999-0003" seq="1999-0003">
+<desc>Execute commands as root via buffer overflow in Tooltalk database server (rpc.ttdbserverd)</desc>
+<refs>
+<ref source="NAI">NAI-29</ref>
+<ref source="CERT">CA-98.11.tooltalk</ref>
+<ref source="SGI">19981101-01-A</ref>
+<ref source="SGI">19981101-01-PX</ref>
+<ref source="XF">aix-ttdbserver</ref>
+<ref source="XF">tooltalk</ref>
+<ref source="BID">122</ref>
+</refs>
+</item>
+
+<item type="CVE" name="CVE-1999-0005" seq="1999-0005">
+<desc>Arbitrary command execution via IMAP buffer overflow in authenticate command.</desc>
+<refs>
+<ref source="CERT">CA-98.09.imapd</ref>
+<ref source="SUN">00177</ref>
+<ref source="BID">130</ref>
+<ref source="XF">imap-authenticate-bo</ref>
+</refs>
+</item>
+
+<item type="CVE" name="CVE-1999-0006" seq="1999-0006">
+<desc>Buffer overflow in POP servers based on BSD/Qualcomm's qpopper allows remote attackers to gain root access using a long PASS command.</desc>
+<refs>
+<ref source="CERT">CA-98.08.qpopper_vul</ref>
+<ref source="SGI">19980801-01-I</ref>
+<ref source="AUSCERT">AA-98.01</ref>
+<ref source="XF">qpopper-pass-overflow</ref>
+<ref source="BID">133</ref>
+</refs>
+</item>
+
+<item type="CVE" name="CVE-1999-0007" seq="1999-0007">
+<desc>Information from SSL-encrypted sessions via PKCS #1</desc>
+<refs>
+<ref source="CERT">CA-98.07.PKCS</ref>
+<ref source="XF">nt-ssl-fix</ref>
+</refs>
+</item>
+
+<item type="CAN" name="CAN-2005-2761" seq="2005-2761">
+<phase date="20050831">Assigned</phase>
+<desc>Cross-site scripting (XSS) vulnerability in phpGroupWare 0.9.16.000 allows administrators to inject arbitrary web script or HTML by modifying the main screen message.</desc>
+<refs>
+<ref source="MISC" url="http://savannah.gnu.org/bugs/?func=detailitem&amp;item_id=13863">http://savannah.gnu.org/bugs/?func=detailitem&amp;item_id=13863</ref>
+<ref source="DEBIAN" url="http://www.debian.org/security/2005/dsa-798">DSA-798</ref>
+<ref source="SECUNIA" url="http://secunia.com/advisories/16558">16558</ref>
+</refs>
+<votes>
+</votes>
+<comments>
+</comments>
+</item>
+
+<item type="CAN" name="CAN-2005-2734" seq="2005-2734">
+<phase date="20050831">Assigned</phase>
+<desc>** RESERVED ** This candidate has been reserved by an organization or individual that will use it when announcing a new security problem.  When the candidate has been publicized, the details for this candidate will be provided.</desc>
+<refs>
+</refs>
+<votes>
+</votes>
+<comments>
+</comments>
+</item>
+
+<item type="CAN" name="CAN-2005-2763" seq="2005-2763">
+<phase date="20050901">Assigned</phase>
+<desc>** RESERVED ** This candidate has been reserved by an organization or individual that will use it when announcing a new security problem.  When the candidate has been publicized, the details for this candidate will be provided.</desc>
+<refs>
+</refs>
+<votes>
+</votes>
+<comments>
+</comments>
+</item>
+
+<item type="CAN" name="CAN-2005-2764" seq="2005-2764">
+<phase date="20050901">Assigned</phase>
+<desc>** RESERVED ** This candidate has been reserved by an organization or individual that will use it when announcing a new security problem.  When the candidate has been publicized, the details for this candidate will be provided.</desc>
+<refs>
+</refs>
+<votes>
+</votes>
+<comments>
+</comments>
+</item>
+
+<item type="CAN" name="CAN-2005-2765" seq="2005-2765">
+<phase date="20050901">Assigned</phase>
+<desc>The user interface in the Windows Firewall does not properly display certain malformed entries in the Windows Registry, which makes it easier for attackers with administrator privileges to hide activities if the administrator only uses the Windows Firewall interface to monitor exceptions.  NOTE: the vendor disputes this issue, saying that since administrative privileges are already required, it is not a vulnerability.  CVE has not yet formally decided if such &quot;information hiding&quot; issues should be included.</desc>
+<refs>
+<ref source="MSKB" url="http://www.microsoft.com/technet/security/advisory/897663.mspx">897663</ref>
+</refs>
+<votes>
+</votes>
+<comments>
+</comments>
+</item>
+
+<item type="CAN" name="CAN-2005-2766" seq="2005-2766">
+<phase date="20050902">Assigned</phase>
+<desc>Symantec AntiVirus Corporate Edition 9.0.1.x and 9.0.4.x, and possibly other versions, when obtaining updates from an internal LiveUpdate server, stored sensitive information in cleartext in the Log.Liveupdate log file, which allows attackers to obtain the username and password to the internal LiveUpdate server.</desc>
+<refs>
+<ref source="BUGTRAQ" url="http://marc.theaimsgroup.com/?l=bugtraq&amp;m=112552401413998&amp;w=2">20050831 Vulnerability in Symantec Anti Virus Corporate Edition v9.x</ref>
+</refs>
+<votes>
+</votes>
+<comments>
+</comments>
+</item>
+
+</cve>

@@ -8,6 +8,8 @@ __all__ = [
     'BugEditView',
     'BugAddView',
     'BugAddingView',
+    'BugLinkView',
+    'BugUnlinkView',
     'BugRelatedObjectAddView',
     'BugRelatedObjectEditView',
     'DeprecatedAssignedBugsView']
@@ -16,12 +18,14 @@ import urllib
 
 from zope.interface import implements
 from zope.component import getUtility
+from zope.app.form.browser.add import AddView
 
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
-    IBugAddForm, IBug, ILaunchBag, IBugSet)
+    IBug, ILaunchBag, IBugSet, IBugLinkTarget, IBugCve)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.form import FormView
 
 
 class BugView:
@@ -133,6 +137,44 @@ class BugRelatedObjectEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(self.bug))
 
 
+class BugLinkView(FormView):
+    """This view will be used for objects that support IBugLinkTarget, and
+    so can be linked and unlinked from bugs.
+    """
+
+    schema = IBugCve
+    fieldNames = ['bug']
+    _arguments = ['bug']
+
+    def process(self, bug):
+        # we are not creating, but we need to find the bug from the bug num
+        malone_bug = getUtility(IBugSet).get(bug)
+        user = getUtility(ILaunchBag).user
+        assert IBugLinkTarget.providedBy(self.context)
+        return self.context.linkBug(malone_bug, user)
+
+    def nextURL(self):
+        return canonical_url(self.context)
+
+
+class BugUnlinkView(FormView):
+    """This view will be used for objects that support IBugLinkTarget, and
+    thus can be unlinked from bugs.
+    """
+
+    schema = IBugCve
+    fieldNames = ['bug']
+    _arguments = ['bug']
+
+    def process(self, bug):
+        malone_bug = getUtility(IBugSet).get(bug)
+        user = getUtility(ILaunchBag).user
+        return self.context.unlinkBug(malone_bug, user)
+
+    def nextURL(self):
+        return canonical_url(self.context)
+
+
 class DeprecatedAssignedBugsView:
     """Deprecate the /malone/assigned namespace.
 
@@ -150,3 +192,5 @@ class DeprecatedAssignedBugsView:
         self.request.response.redirect(
             canonical_url(getUtility(ILaunchBag).user) +
             "/+assignedbugs")
+
+

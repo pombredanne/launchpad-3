@@ -158,6 +158,16 @@ except:
     sys.exit(1)
 
 try:
+    # Generate the Release files...
+    debug("Generating log files...")
+    pub.writeReleaseFiles(distro)
+    
+except:
+    logging.getLogger().exception("Bad muju while doing release files")
+    txn.abort()
+    sys.exit(1)
+
+try:
     # Unpublish death row
     debug("Unpublishing death row...")
 

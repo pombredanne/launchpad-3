@@ -25,13 +25,15 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 class UnauthorizedView(SystemErrorView):
 
+    response_code = None
+
     forbidden_page = ViewPageTemplateFile(
         '../templates/launchpad-forbidden.pt')
 
     def __call__(self):
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
             if 'loggingout' in self.request.form:
-                target = '%s?loggingout=1' % self.request.URL[-1]
+                target = '%s?loggingout=1' % self.request.URL[-2]
                 self.request.response.redirect(target)
                 return ''
             if self.request.method == 'POST':

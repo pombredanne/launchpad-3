@@ -39,8 +39,6 @@ class TrebuchetServer(XMLRPC):
         self.log.debug("Asked to get manifest %s", url)
 
         def bottom_half(manifest):
-            self.log.debug("Found manifest %s", manifest.id)
-
             return pickle_manifest(manifest)
 
         deferred = deferToThread(self.backend.get_manifest, url)

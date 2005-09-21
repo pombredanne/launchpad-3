@@ -22,6 +22,12 @@
 
 /* Launchpad classes */
 
+.highlighted {
+  background-color: #f7f9fa;
+  border: 1px dotted #8cacbb;
+  padding: 0.5em;
+}
+
 .rosettaTile {
   display: block;
   width: 40%;
@@ -66,8 +72,9 @@ fieldset.two-column {
 }
 
 /* Classes for error indication in forms */
+.portalErrorMessage,
 .portalError {
-    background-color: #ffc9c9;
+    background-color: #ff9070;
     border: 1px solid #ddb0b0;
     color: Black;
     margin: 0em 0em 0em 0em;
@@ -79,6 +86,13 @@ fieldset.two-column {
     border: none;
     padding: 0;
     font-size: 85%;
+}
+
+.portalErrorMessage {
+    background-image: url(/++resource++alert_icon.gif);
+    background-repeat: no-repeat;
+    background-position: 5px 50%;
+    padding: 0.5em 1em 0.5em 3em;
 }
 
 
@@ -413,8 +427,8 @@ ul.bug.remote>li, li.bug.remote {
 ul.bugs>li, li.bugs {
   list-style-image: url(/++resource++bugs);
 }
-ul.cveref>li, li.cveref {
-    list-style-image: url(/++resource++cve.ico);
+ul.cve>li, li.cve, {
+    list-style-image: url(/++resource++cve);
 }
 ul.document>li, li.document {
   list-style-image: url(/++resource++document_icon.gif);
@@ -431,6 +445,9 @@ ul.info>li, li.info {
 ul.languages>li, li.languages {
   list-style-image: url(/++resource++languages.gif);
 }
+ul.list>li, li.list {
+  list-style-image: url(/++resource++list);
+}
 ul.locked>li, li.locked {
   list-style-image: url(/++resource++lock_icon.gif);
 }
@@ -443,6 +460,9 @@ ul.menu>li, li.menu {
 ul.milestone>li, li.milestone {
   list-style-image: url(/++resource++target);
 }
+ul.news>li, li.news {
+  list-style-image: url(/++resource++news);
+}
 ul.packages>li, li.packages, ul.products>li, li.products {
   list-style-image: url(/++resource++product_icon.gif);
 }
@@ -451,6 +471,12 @@ ul.person>li, li.person, ul.people>li, li.people {
 }
 ul.spec>li, li.spec {
     list-style-image: url(/++resource++spec);
+}
+ul.sprint>li, li.sprint {
+    list-style-image: url(/++resource++sprint);
+}
+ul.statistic>li, ul.statistics, li.statistic {
+    list-style-image: url(/++resource++statistic);
 }
 ul.ticket>li, li.ticket {
     list-style-image: url(/++resource++ticket);
@@ -611,6 +637,7 @@ h1 {
 
 table.listing {
   border: none;
+  width: 100%;
 }
 table.listing, table.listing tbody {
   border-bottom: 1px solid #8cacbb;
@@ -623,7 +650,13 @@ table.listing th {
 }
 table.listing>tr>td, table.listing>tbody>tr>td {
   border: 1px #8cacbb;
-  border-style: dotted none;
+  border-style: dotted none none none;
+}
+table.listing>tr.note>td, table.listing>tbody>tr.note>td {
+  border-style: none;
+}
+table.listing>tr.note, table.listing>tbody>tr.note {
+  font-size: smaller;
 }
 table.listing>thead, table.listing>thead>tr>th {
   border: 1px solid #8cacbb;
@@ -668,6 +701,14 @@ q {
   font-family: inherit;
   font-style: inherit;
   font-size: inherit;
+}
+
+/* -- Temporarily make *all* buttons look plone-y. Ugh. -- */
+
+button {
+  border: 1px solid #8cacbb;  
+  color: Black;
+  background-color: white;
 }
 
 /* -- Other bugs: -- */
@@ -737,10 +778,10 @@ legend {
 }
 
 th {
-  font-weight: normal;
+  font-weight: bold;
   text-align: right;
 }
-thead th {
+thead th, tr.thead th {
   text-align: center;
 }
 thead {
@@ -851,7 +892,7 @@ ul.app>li.current {
   max-width: 50%;
 }
 
-.sidebar > h4 { /* plone.css .portlet h4 paste-o */
+.sidebar h4 { /* plone.css .portlet h4 paste-o */
     background-color: #dee7ec;
     border-top: 1px solid #8cacbb;
     border-bottom: 1px solid #8cacbb;
@@ -862,8 +903,12 @@ ul.app>li.current {
     font-weight: normal;
 }
 
-.sidebar > ul {
+.sidebar ul {
     margin-left: 2.5em;
+}
+
+input[type="image"] {
+  border: none;
 }
 
 .debug {
@@ -918,10 +963,15 @@ ul {
   margin-left: 24px;
 }
 table {
-	border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  border-collapse: collapse;
 }
 table table {
   width: 100%;
+}
+table table th, table table td {
+  padding: 0.25em;
 }
 table.data, table.data>thead, table.data>tfoot {
 	border: solid #999;
@@ -935,6 +985,15 @@ table.data>tr>th, table.data>tr>td,
 table.data>thead>tr>th, table.data>thead>tr>td,
 table.data>tbody>tr>th, table.data>tbody>tr>td, table.data>tfoot>tr>th,table.data>tfoot>tr>td {
   padding: 0.25em 0.125em 0.25em;
+}
+th.icon, td.icon {
+  width: 1px;
+}
+th.icon.left, td.icon.left {
+  padding-right: 0;
+}
+th.icon.right, td.icon.right {
+  padding-left: 0;
 }
 td p:first-child, td ol:first-child, td blockquote:first-child {
 	margin-top: 0;

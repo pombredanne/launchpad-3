@@ -1,7 +1,4 @@
-<div class="portlet">
-  <h4>Actions:</h4>
-
-  <div class="portletBody portletContent">
+<div class="portlet portletBody portletContent">
 
     <ul>
       <li class="info">
@@ -45,6 +42,5 @@
         <a href="+add">Add New Distribution Release</a>
       </li>
     </ul>
-  </div>
 </div>
 

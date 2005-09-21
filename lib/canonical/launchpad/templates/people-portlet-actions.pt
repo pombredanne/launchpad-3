@@ -1,16 +1,8 @@
-<div class="portlet">
-
-  <h4>Actions:</h4>
-
-  <div class="portletBody portletContent">
-	
+<div class="portlet portletBody portletContent">
     <ul>
-      <li class="info"><a href="+peoplelist">List all people</a></li>
-      <li class="info"><a href="+teamlist">List all teams</a></li>
-      <li class="info"><a href="+ubuntitelist">List all ubuntites</a></li>
-      <li class="add"><a href="+newteam">Create a new team</a></li>
+      <li class="people"><a href="+peoplelist">All People</a></li>
+      <li class="people"><a href="+teamlist">All Teams</a></li>
+      <li class="people"><a href="+ubuntitelist">All Ubuntites</a></li>
+      <li class="add"><a href="+newteam">Create New Team</a></li>
     </ul>
-
-  </div>
-
 </div>

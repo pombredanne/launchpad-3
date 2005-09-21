@@ -88,6 +88,10 @@
             template="../templates/sourcepackage-buildlog.pt"
             lp:url="/distros/ubuntu/hoary/+sources/evolution/+buildlog" />
         <browser:page
+            name="+builds"
+            template="../templates/sourcepackage-builds.pt"
+            lp:url="/distros/$distribution/$distrorelease/+sources/$sourcepackagename/+buildlog" />
+        <browser:page
             name="+potlist"
             facet="translations"
             template="../templates/object-pots.pt"
@@ -158,7 +162,6 @@
         for="canonical.launchpad.interfaces.ISourcePackage"
         facet="bugs"
         schema="canonical.launchpad.interfaces.IBugAddForm"
-        label="Report a bug about a distribution source package"
         class="canonical.launchpad.browser.sourcepackage.SourcePackageFilebugView"
         permission="launchpad.AnyPerson"
         fields="title comment private owner"

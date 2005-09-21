@@ -4,15 +4,15 @@
 
   <div class="portletBody portletContent">
 
-    <ul>
+    <ul tal:condition="context/blocked_specs">
       <li class="spec" tal:repeat="spec context/blocked_specs">
         <a tal:attributes="href spec/fmt:url"
            tal:content="spec/title">Spec Title Goes Here</a>
       </li>
-      <li class="info" tal:condition="not: context/blocked_specs">
-        <i>No specs blocked on this one.</i>
-      </li>
     </ul>
+    <p tal:condition="not: context/blocked_specs">
+      No specifications are blocked on this one.
+    </p>
 	
   </div>
 
