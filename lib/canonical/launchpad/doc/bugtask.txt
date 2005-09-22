@@ -372,8 +372,9 @@ Editing Bug Tasks
 Upstream Bug Tasks
 ^^^^^^^^^^^^^^^^^^
 
-Only the maintainer and the assignee (if there is one) may edit upstream
-bug tasks.
+Only the maintainer and the assignee (if there is one) may edit
+upstream bug tasks. Launchpad admins may edit public upstream bugtasks
+as well.
 
     >>> login(ANONYMOUS)
     >>> upstream_task.status = STATUS_ACCEPTED
@@ -381,10 +382,11 @@ bug tasks.
       ...
     Unauthorized: ('status', 'launchpad.Edit')
 
-As you can see an anonymous user was not able to edit the task. Also the
-task is not editable by an authenticated user who is not the maintainer.
+As you can see an anonymous user was not able to edit the task. Also
+the task is not editable by an authenticated user who is not the
+maintainer (nor an admin.)
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('scott.james.remnant@ubuntulinux.com')
     >>> upstream_task.status = STATUS_FIXED
     Traceback (most recent call last):
       ...
@@ -393,6 +395,13 @@ task is not editable by an authenticated user who is not the maintainer.
 Now let's login as a maintainer and try again.
 
     >>> login('test@canonical.com')
+    >>> upstream_task.status = STATUS_FIXED
+
+Same thing again, this time with a user who can edit this bugtask by
+right of being a Launchpad Admin:
+
+    >>> login('andrew.bennetts@ubuntulinux.com')
+    >>> upstream_task.status = STATUS_ACCEPTED
     >>> upstream_task.status = STATUS_FIXED
 
 The maintainer could be a team as well. In that case, all members of
@@ -420,7 +429,7 @@ associate the same bug with this product:
     >>> upstream_task.maintainer_displayname
     u'The Foo Team'
 
-Then let's login as the Sample Person user:
+Then let's login again as Sample Person:
 
     >>> login('test@canonical.com')
 
@@ -429,7 +438,8 @@ Note that Sample Person is not a member of the Foo team:
     >>> sample_person.inTeam(foo_team)
     False
 
-Thus, he can't edit the task:
+Thus, he can't edit the task (note: Sample Person is also not an
+admin):
 
     >>> upstream_task.status = STATUS_ACCEPTED
     Traceback (most recent call last):
@@ -676,10 +686,39 @@ exception:
       ...
     Unauthorized: ('bug', 'launchpad.View')
 
-As well, trying to edit a distro task as David Allouche will also
-raise an Unauthorized exception:
+Logging in as a member of the illustrious Launchpad admin team will
+still not allow viewing of this private bug:
+
+    >>> login("carlos@canonical.com")
+
+    >>> bug_firefox_no_svg_support.bug
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('bug', 'launchpad.View')
+
+The same is true for carlos trying to edit an upstream task, e.g. the
+one we created earlier on:
+
+    >>> upstream_task.status = STATUS_ACCEPTED
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('status', 'launchpad.Edit')
+
+Trying to edit a distro task as David Allouche will raise an
+Unauthorized exception:
+
+    >>> login("david.allouche@canonical.com")
 
     >>> bug_debian_firefox_no_svg_support = bugtaskset.get(4)
+    >>> bug_debian_firefox_no_svg_support.status = BugTaskStatus.FIXED
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('status', 'launchpad.Edit')
+
+Same, again, for an LP admin:
+
+    >>> login("carlos@canonical.com")
+
     >>> bug_debian_firefox_no_svg_support.status = BugTaskStatus.FIXED
     Traceback (most recent call last):
       ...

@@ -8,7 +8,6 @@ be better as a method on an existing content object or IFooSet object.
 
 __metaclass__ = type
 
-import base64
 import email
 import gettextpo
 import os
@@ -17,7 +16,6 @@ import re
 import sha
 import tarfile
 import time
-import urllib
 import warnings
 from StringIO import StringIO
 from select import select
@@ -37,21 +35,16 @@ from zope.app.security.permission import (
 
 import canonical.base
 from canonical.database.constants import UTC_NOW
-from canonical.lp.dbschema import (RosettaImportStatus, TranslationPermission,
-                                   SourcePackageFileType, BinaryPackageFormat,
-                                   BinaryPackageFileType)
+from canonical.lp.dbschema import (
+    RosettaImportStatus, SourcePackageFileType,
+    BinaryPackageFormat, BinaryPackageFileType)
 from canonical.librarian.interfaces import (
-    ILibrarianClient, UploadFailed, DownloadFailed
-    )
+    ILibrarianClient, UploadFailed, DownloadFailed)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IOpenLaunchBag, IHasOwner, IGeoIP, IRequestPreferredLanguages,
-    ILanguageSet, IRequestLocalLanguages, RawFileAttachFailed, ITeam,
-    RawFileFetchFailed, ILoginTokenSet
-    )
+    ILaunchBag, IOpenLaunchBag, IHasOwner, IRequestPreferredLanguages,
+    IRequestLocalLanguages, RawFileAttachFailed, ITeam, RawFileFetchFailed)
 from canonical.launchpad.components.poparser import (
-    POSyntaxError, POInvalidInputError, POParser
-    )
-from canonical.launchpad.components.rosettastats import RosettaStats
+    POSyntaxError, POInvalidInputError, POParser)
 from canonical.launchpad.mail import SignedMessage
 from canonical.launchpad.mail.ftests import testmails_path
 
@@ -305,7 +298,7 @@ class Snapshot:
     """Provides a simple snapshot of the given object.
 
     The snapshot will have the attributes given in attributenames. It
-    will also provide the same interfaces as the original object. 
+    will also provide the same interfaces as the original object.
     """
     def __init__(self, ob, names=None, providing=None):
         if names is None and providing is None:
@@ -335,7 +328,7 @@ def get_attribute_names(ob):
 
         >>> from zope.interface import Interface, implements, Attribute
         >>> class IFoo(Interface):
-        ...     foo = Attribute('Foo') 
+        ...     foo = Attribute('Foo')
         ...     baz = Attribute('Baz')
         >>> class IBar(Interface):
         ...     bar = Attribute('Bar')
@@ -445,7 +438,8 @@ def is_maintainer(owned_object):
     owned_object provides IHasOwner.
     """
     if not IHasOwner.providedBy(owned_object):
-        raise TypeError, "Object %s doesn't provide IHasOwner" % repr(owned_object)
+        raise TypeError(
+            "Object %r doesn't provide IHasOwner" % repr(owned_object))
     launchbag = getUtility(ILaunchBag)
     if launchbag.user is not None:
         return launchbag.user.inTeam(owned_object.owner)
@@ -586,9 +580,9 @@ def contactEmailAddresses(person):
     """Return a Set of email addresses to contact this Person.
 
     If <person> has a preferred email, the Set will contain only that
-    preferred email. 
+    preferred email.
 
-    If <person> doesn't have a preferred email but implements ITeam, the 
+    If <person> doesn't have a preferred email but implements ITeam, the
     Set will contain the preferred email address of each member of <person>.
 
     Finally, if <person> doesn't have a preferred email neither implement
@@ -1049,21 +1043,21 @@ def sanitiseFingerprint(fpr):
     'C85826521A6EF6A6037BB3F79FF2583E681B6469'
     >>> sanitiseFingerprint('681B 6469')
     False
-    
+
     >>> sanitiseFingerprint('abnckjdiue')
     False
-    
-    """ 
+
+    """
     # replace the white spaces
     fpr = fpr.replace(' ', '')
 
     if not valid_fingerprint(fpr):
         return False
-    
+
     return fpr
 
 class Participation:
-    implements(IParticipation) 
+    implements(IParticipation)
 
     interaction = None
     principal = None
@@ -1073,7 +1067,7 @@ def setupInteraction(principal, login=None, participation=None):
     """Sets up a new interaction with the given principal.
 
     The login gets added to the launch bag.
-    
+
     You can optionally pass in a participation to be used.  If no
     participation is given, a Participation is used.
     """
@@ -1110,13 +1104,13 @@ def check_permission(permission_name, context):
     """
     # This will raise ValueError if the permission doesn't exist.
     check_permission_is_registered(context, permission_name)
-    
+
     # Now call Zope's checkPermission.
     return zcheckPermission(permission_name, context)
 
 
 def filenameToContentType(fname):
-    """ Return the a ContentType-like entry for arbitrary filenames 
+    """ Return the a ContentType-like entry for arbitrary filenames
 
     deb files
 
@@ -1129,7 +1123,7 @@ def filenameToContentType(fname):
     'text/plain'
 
     Not recognized format
-    
+
     >>> filenameToContentType('test.tgz')
     'application/octet-stream'
     """
@@ -1147,8 +1141,8 @@ def filenameToContentType(fname):
 
 def get_filename_from_message_id(message_id):
     """Returns a librarian filename based on the email message_id.
-    
-    It generates a file name that's not easily guessable.  
+
+    It generates a file name that's not easily guessable.
     """
     return '%s.msg' % (
             canonical.base.base(long(sha.new(message_id).hexdigest(), 16), 62))

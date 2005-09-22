@@ -106,7 +106,6 @@ marked private. So, when we mark bug #6 private:
     ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent,
     ...     SQLObjectCreatedEvent)
     >>> from canonical.launchpad.interfaces import IPersonSet
-    >>> from canonical.database.sqlbase import flush_database_updates
 
     >>> new_values = {"private" : True}
     >>> bug_will_be_set_private = SQLObjectToBeModifiedEvent(

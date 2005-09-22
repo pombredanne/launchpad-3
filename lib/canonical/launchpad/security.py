@@ -289,17 +289,45 @@ class EditUpstreamBugTask(AuthorizationBase):
     usedfor = IUpstreamBugTask
 
     def checkAuthenticated(self, user):
-        """Allow the maintainer and possible assignee to edit the task.
+        """Allow the maintainer,  assignee, and LP admins to edit the task.
 
         If the maintainer or assignee is a team, everyone belonging to the team
         is allowed to edit the task.
         """
-        if user.inTeam(self.obj.maintainer):
-            return True
-        elif self.obj.assignee is not None and user.inTeam(self.obj.assignee):
-            return True
+        bugtask = self.obj
+        user_is_maintainer = user.inTeam(bugtask.maintainer)
+        user_is_assignee = (
+            bugtask.assignee is not None and user.inTeam(bugtask.assignee))
+        user_is_admin = user.inTeam(getUtility(ILaunchpadCelebrities).admin)
+
+        if bugtask.bug.private:
+            # This is a private bug so, in addition to the standard
+            # checks we do here, we must also verify that the person
+            # is subscribed to the bug.
+            #
+            # LP admins are given no special privileges WRT private
+            # bugs. If they wouldn't have otherwise been able to edit
+            # the bugtask, they won't be able to edit it when it's set
+            # private (whereas they *would* be able to edit it if it
+            # were public.)
+            user_is_subscribed_to_bug = bugtask.bug.isSubscribed(user)
+
+            if user_is_maintainer and user_is_subscribed_to_bug:
+                return True
+            elif user_is_assignee and user_is_subscribed_to_bug:
+                return True
+            else:
+                return False
         else:
-            return False
+            # This is a public bug.
+            if user_is_maintainer:
+                return True
+            elif user_is_assignee:
+                return True
+            elif user_is_admin:
+                return True
+            else:
+                return False
 
 
 class EditDistroBugTask(AuthorizationBase):
