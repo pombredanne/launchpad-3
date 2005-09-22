@@ -1,13 +1,14 @@
 <div class="portlet">
 
-  <h4>Bug details</h4>
+  <h4>Bug details:</h4>
 
 
-  <div class="portletBody portletContent">
+  <div class="portletBody portletContent"
+       tal:define="bugtask view/currentBugTask">
     <img alt="" src="/++resource++bug" />
     <a href="#"
        style="text-decoration: underline"
-       tal:attributes="href context/fmt:url">
+       tal:attributes="href bugtask/fmt:url">
        Bug #<span tal:replace="context/id">3252543</span></a><br />
 
     <tal:nickname tal:condition="context/name">

@@ -27,7 +27,13 @@
 
     <browser:menus
         module="canonical.launchpad.browser.product"
-        classes="ProductFacets" />
+        classes="
+            ProductFacets ProductOverviewMenu ProductBountiesMenu
+            ProductSupportMenu ProductSpecificationsMenu 
+            ProductTranslationsMenu
+        "
+    />
+    <!-- XXX ProductBugsMenu undeclared until layout bug is fixed -->
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IProduct"
@@ -140,8 +146,8 @@
         facet="bugs"
         permission="zope.Public">
         <browser:page
-            name="+bugs-only"
-            lp:url="/products/$Product.name/+bugs-only"
+            name="+bugs"
+            lp:url="/products/$Product.name/+bugs"
             template="../templates/bugs-for-context.pt" />
         <browser:page
             name="+portlet-bugtasklist-actions"
@@ -252,7 +258,6 @@
         name="+filebug"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBugAddForm"
-        label="Report Bug on Upstream Product"
         fields="title comment private owner"
         class="canonical.launchpad.browser.ProductFileBugView"
         facet="bugs"

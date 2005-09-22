@@ -1,4 +1,4 @@
-# (c) Canonical Software Ltd. 2004, all rights reserved.
+# (C) Canonical Software Ltd. 2004, all rights reserved.
 #
 # arch-tag: 9503b5c7-7f87-48ee-a617-2a23b567d7a9
 
@@ -9,11 +9,13 @@ from canonical.lp.dbschema import PackagePublishingStatus, \
                                   PackagePublishingPocket
 
 from StringIO import StringIO
-from sets import Set
 
 from canonical.librarian.client import LibrarianClient
 from canonical.archivepublisher.pool import AlreadyInPool
 from canonical.database.constants import nowUTC
+
+from md5 import md5
+from sha import sha
 
 __all__ = [ 'Publisher', 'pocketsuffix', 'suffixpocket' ]
 
@@ -24,6 +26,8 @@ pocketsuffix = {
     PackagePublishingPocket.PROPOSED: "-proposed"
     }
 suffixpocket = dict((v,k) for (k,v) in pocketsuffix.items())
+
+from datetime import datetime
 
 class Publisher(object):
     """Publisher is the class used to provide the facility to publish
@@ -51,6 +55,12 @@ class Publisher(object):
         # when generating overrides and file lists, and then consumed
         # when generating apt-ftparchive configuration.
         self._di_release_components = {}
+
+        # As we generate apt-ftparchive configuration we record which
+        # distroreleases and so on we need to generate Release files for.
+        # We store this in _release_files_needed and consume the information
+        # when writeReleaseFiles is called.
+        self._release_files_needed = {}
 
     def debug(self, *args, **kwargs):
         self._logger.debug(*args, **kwargs)
@@ -179,7 +189,7 @@ class Publisher(object):
                         # Note in _di_release_components that this
                         # distrorelease has d-i contents in this component.
                         self._di_release_components.setdefault(distrorelease,
-                                                Set()).add(component)
+                                                set()).add(component)
                         # And record the tuple for later output in the d-i
                         # override file instead
                         di_overrides.append(tup)
@@ -255,24 +265,32 @@ class Publisher(object):
             for component, architectures in components.items():
                 for architecture, file_names in architectures.items():
                     di_files = []
-                    f = open("%s/%s_%s_%s" % (self._config.overrideroot,
-                                              distrorelease, component,
-                                              architecture), "w")
+                    f = open(os.path.join(self._config.overrideroot,
+                                          "%s_%s_%s" % (distrorelease,
+                                                        component,
+                                                        architecture)), "w")
                     for name in file_names:
                         if name.endswith(".udeb"):
                             # Once again, note that this componentonent in this
                             # distrorelease has d-i elements
                             self._di_release_components.setdefault(
-                                distrorelease, Set()).add(component)
+                                distrorelease, set()).add(component)
                             # And note the name for output later
                             di_files.append(name)
                         else:
                             f.write("%s\n" % name)
                     f.close()
+                    # Record this distrorelease/component/arch as needing a
+                    # Release file.
+                    self._release_files_needed.setdefault(
+                        distrorelease, {}).setdefault(component,
+                                                      set()).add(architecture)
                     if len(di_files):
                         # Once again, some d-i stuff to write out...
                         self.debug("Writing d-i file list for %s/%s/%s" % (
                             distrorelease, component, architecture))
+                        # Erm, os.path.join would be much more of a pain
+                        # here than the interpolation.
                         f = open("%s/%s_%s_debian-installer_%s" % (
                             self._config.overrideroot, distrorelease,
                             component, architecture), "w")
@@ -296,7 +314,7 @@ Dir
 Default
 {
   Packages::Compress ". gzip";
-  Sources::Compress "gzip";
+  Sources::Compress ". gzip";
   Contents::Compress "gzip";
   DeLinkLimit 0;
   MaxContentsChange 12000;
@@ -371,7 +389,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                     "DISTRORELEASE": dr + pocketsuffix[pocket],
                     "DISTRORELEASEBYFILE": dr + pocketsuffix[pocket],
                     "DISTRORELEASEONDISK": dr + pocketsuffix[pocket],
-                    "ARCHITECTURES": " ".join(archs),
+                    "ARCHITECTURES": " ".join(archs) + " source",
                     "SECTIONS": " ".join(comps),
                     "EXTENSIONS": ".deb",
                     "CACHEINSERT": ""
@@ -427,8 +445,8 @@ tree "dists/%(DISTRORELEASEONDISK)s"
         You should only pass in entries you want to be unpublished because
         this will result in the files being removed if they're not otherwise
         in use"""
-        livefiles = Set()
-        condemnedfiles = Set()
+        livefiles = set()
+        condemnedfiles = set()
         details = {}
         
         for p in livesources:
@@ -473,4 +491,89 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                 # Do something to log the failure to remove
                 self.logger.logexception("Removing file generated exception")
                 pass
+
+    def _writeSumLine(self, distrorelease_name, out_file, file_name, sum_form):
+        """Write out a checksum line to the given file for the given
+        filename in the given form."""
+        full_name = os.path.join(self._config.distsroot,
+                                 distrorelease_name, file_name)
+        if not os.path.exists(full_name):
+            # The file we were asked to write out doesn't exist.
+            # Most likely we have an incomplete archive (E.g. no sources
+            # for a given distrorelease). This is a non-fatal issue
+            self.debug("Failed to find " + full_name)
+            return
+        in_file = open(full_name,"r")
+        contents = in_file.read()
+        in_file.close()
+        length = len(contents)
+        checksum = sum_form(contents).hexdigest()
+        out_file.write(" %s % 16d %s\n" % (checksum, length, file_name))
         
+    def _writeDistroRelease(self, distribution, distrorelease, full_name):
+        """Write out the Release files for the provided distrorelease."""
+        all_components = set()
+        all_architectures = set()
+        all_files = set()
+        release_files_needed = self._release_files_needed[full_name]
+        for component, architectures in release_files_needed.items():
+            all_components.add(component)
+            for architecture in architectures:
+                self.debug("Writing Release file for %s/%s/%s" % (
+                    full_name, component, architecture))
+                if architecture != "source":
+                    # Strip "binary-" off the front of the architecture before
+                    # noting it in all_architectures
+                    all_architectures.add(architecture[7:])
+                    file_stub = "Packages"
+                else:
+                    file_stub = "Sources"
+                    all_architectures.add(architecture)
+                file_stub = os.path.join(component, architecture, file_stub)
+                all_files.add(file_stub)
+                all_files.add(file_stub + ".gz")
+                all_files.add(os.path.join(component, architecture, "Release"))
+                f = open(os.path.join(self._config.distsroot, full_name,
+                                      component, architecture, "Release"), "w")
+                contents = """Archive: %s
+Version: %s
+Component: %s
+Origin: %s
+Label: %s
+Architecture: %s
+""" % (full_name, distrorelease.version, component, distribution.name,
+       distribution.name, architecture)
+                f.write(contents)
+                f.close()
+    
+        f = open(os.path.join(self._config.distsroot, full_name, "Release"),
+                 "w")
+        f.write("""Origin: %s
+Label: %s
+Suite: %s
+Codename: %s
+Date: %s
+Architectures: %s
+Components: %s
+Description: %s
+""" % (distribution.name, distribution.name, full_name, full_name,
+       datetime.utcnow().strftime("%a, %d %b %Y %k:%M:%S UTC"),
+       " ".join(all_architectures), " ".join(all_components),
+       distrorelease.summary))
+        f.write("MD5Sum:\n");
+        for file_name in all_files:
+            self._writeSumLine(full_name, f, file_name, md5)
+        f.write("SHA1:\n");
+        for file_name in all_files:
+            self._writeSumLine(full_name, f, file_name, sha)
+        f.close()
+
+    def writeReleaseFiles(self, distribution):
+        """Write out the Release files for the provided distribution."""
+        for distrorelease in distribution.releases:
+            for pocket, suffix in pocketsuffix.items():
+                full_distrorelease_name = distrorelease.name + suffix
+                if full_distrorelease_name in self._release_files_needed:
+                    self._writeDistroRelease(distribution, distrorelease,
+                                             full_distrorelease_name)
+                

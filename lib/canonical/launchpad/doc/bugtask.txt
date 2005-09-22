@@ -121,6 +121,58 @@ zope.exceptions.NotFoundError:
       ...
     NotFoundError: 'BugTask with ID -1 does not exist'
 
+Bug Task Targets
+----------------
+
+The "target" of an IBugTask is one of the following things:
+
+ * an upstream product
+
+    >>> upstream_task.target == evolution
+    True
+
+  * a distribution
+
+    >>> distro_task.target == ubuntu
+    True
+
+  * a distrorelease
+
+    >>> distro_release_task.target == hoary
+    True
+
+  * a distribution sourcepackage
+
+    >>> from canonical.launchpad.database.sourcepackage import DistroSourcePackage
+    >>> from canonical.launchpad.interfaces import IDistroSourcePackage
+    >>> distro_sp_task = bugtaskset.get(4)
+    >>> expected_target = DistroSourcePackage(
+    ...     distribution=distro_sp_task.distribution,
+    ...     sourcepackagename=distro_sp_task.sourcepackagename)
+    >>> got_target = distro_sp_task.target
+    >>> IDistroSourcePackage.providedBy(distro_sp_task.target)
+    True
+    >>> got_target.distribution == expected_target.distribution
+    True
+    >>> got_target.sourcepackagename == expected_target.sourcepackagename
+    True
+
+  * a distrorelease sourcepackage
+
+    >>> from canonical.launchpad.database import SourcePackage
+    >>> from canonical.launchpad.interfaces import ISourcePackage
+    >>> distro_release_sp_task = bugtaskset.get(16)
+    >>> expected_target = SourcePackage(
+    ...     distrorelease=distro_release_sp_task.distrorelease,
+    ...     sourcepackagename=distro_release_sp_task.sourcepackagename)
+    >>> got_target = distro_release_sp_task.target
+    >>> ISourcePackage.providedBy(distro_release_sp_task.target)
+    True
+    >>> got_target.distrorelease == expected_target.distrorelease
+    True
+    >>> got_target.sourcepackagename == expected_target.sourcepackagename
+    True
+
 Each task has a "targetname", a string describing the site of the
 task. It concatenates the display names of the distribution,
 
@@ -165,7 +217,7 @@ state.
     >>> bugtask.targetname()
     Traceback (most recent call last):
     ...
-    AssertionError
+    AssertionError: ...
 
 Product alone:
 
@@ -442,6 +494,88 @@ We can edit the task:
     >>> distro_task.status = STATUS_FIXED
     >>> distro_release_task.assignee = sample_person
 
+Null Bug Tasks
+--------------
+
+Sometimes we need to be able to render a page for a bug in a context,
+when the bug hasn't actually been filed yet in that context. For cases
+like these, use the NullBugTask object.
+
+    >>> from canonical.launchpad.components.bugtask import NullBugTask
+
+    >>> netapplet = productset.get(11)
+    >>> null_bugtask = NullBugTask(bug=bug_one, product=netapplet)
+    >>> IUpstreamBugTask.providedBy(null_bugtask)
+    True
+
+    >>> null_bugtask.id is None
+    True
+    >>> null_bugtask.product is netapplet
+    True
+    >>> null_bugtask.bug == bug_one
+    True
+    >>> null_bugtask.datecreated is None
+    True
+    >>> null_bugtask.dateassigned is None
+    True
+    >>> null_bugtask.age is None
+    True
+    >>> null_bugtask.status is None
+    True
+    >>> null_bugtask.priority is None
+    True
+    >>> null_bugtask.sourcepackagename is None
+    True
+    >>> null_bugtask.distribution is None
+    True
+    >>> null_bugtask.distrorelease is None
+    True
+    >>> null_bugtask.milestone is None
+    True
+    >>> null_bugtask.statusexplanation is None
+    True
+    >>> null_bugtask.severity is None
+    True
+    >>> null_bugtask.assignee is None
+    True
+    >>> null_bugtask.binarypackagename is None
+    True
+    >>> null_bugtask.bugwatch is None
+    True
+    >>> null_bugtask.owner is None
+    True
+    >>> null_bugtask.maintainer == netapplet.owner
+    True
+    >>> null_bugtask.maintainer_displayname == netapplet.owner.displayname
+    True
+    >>> null_bugtask.target == netapplet
+    True
+    >>> null_bugtask.targetname
+    u'upstream netapplet'
+    >>> expected_related_task_ids = [
+    ...     task.id for task in null_bugtask.related_tasks]
+    >>> actual_related_task_ids = [task.id for task in bug_one.bugtasks]
+    >>> expected_related_task_ids.sort()
+    >>> actual_related_task_ids.sort()
+    >>> expected_related_task_ids == actual_related_task_ids
+    True
+    >>> null_bugtask.statusdisplayhtml
+    u'Not reported in upstream netapplet'
+    >>> null_bugtask.statuselsewhere
+    'Fixed in 3 of 8 places'
+
+The astute reader will have noticed that NullBugTask automatically
+"marked" itself as providing the correct IBugTask interface. Let's see
+two more examples:
+
+    >>> ubuntu_null_bugtask = NullBugTask(bug=bug_one, distribution=ubuntu)
+    >>> IDistroBugTask.providedBy(ubuntu_null_bugtask)
+    True
+
+    >>> hoary_null_bugtask = NullBugTask(bug=bug_one, distrorelease=hoary)
+    >>> IDistroReleaseBugTask.providedBy(hoary_null_bugtask)
+    True
+
 Bug Privacy
 ===========
 
@@ -599,6 +733,18 @@ Let's just make sure that the tasks on bug_one sort correctly.
     ubuntu mozilla-firefox
     ubuntu hoary
     debian mozilla-firefox
+
+BugTask Adaptation
+------------------
+
+An IBugTask can be adapted to an IBug.
+
+   >>> from canonical.launchpad.interfaces import IBug
+
+   >>> bugtask_four = bugtaskset.get(4)
+   >>> bug = IBug(bugtask_four)
+   >>> bug.title
+   u'Firefox does not support SVG'
 
 Handling IntegrityError and ProgrammingError
 --------------------------------------------

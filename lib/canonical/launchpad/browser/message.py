@@ -18,11 +18,7 @@ from canonical.launchpad.webapp import canonical_url
 
 
 class MessageAddView(SQLObjectAddView):
-    """Adds a Message to the underlying context. This is used to add a
-    message to a Ticket, or a Bug, and could be used for other types of
-    object in Launchpad that have a series of comments or messages 
-    associated with them.
-    """
+    """View class for adding an IMessage to an IMessageTarget."""
 
     def __init__(self, context, request):
         self._nextURL = '.'

@@ -42,8 +42,8 @@
         facet="bugs"
         permission="zope.Public">
         <browser:page
-            name="+bugs-only"
-            lp:url="/distros/$Distribution.name/+bugs-only"
+            name="+bugs"
+            lp:url="/distros/$Distribution.name/+bugs"
             template="../templates/bugs-for-context.pt" />
         <browser:page
             name="+portlet-bugtasklist-actions"
@@ -81,6 +81,7 @@
             lp:url="/distros/$Distribution.name/+cve" />
         <browser:page
             name="+translations"
+            facet="translations"
             template="../templates/distribution-translations.pt" />
     </browser:pages>
     
@@ -331,7 +332,11 @@
 
     <browser:menus
         module="canonical.launchpad.browser.distribution"
-        classes="DistributionFacets"
-        />
+        classes="
+            DistributionFacets DistributionOverviewMenu
+            DistributionSupportMenu DistributionBountiesMenu
+            DistributionSpecificationsMenu DistributionTranslationsMenu
+        "
+    />
 
 </configure>

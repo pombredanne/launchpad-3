@@ -26,7 +26,8 @@ from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser import BugTaskSearchListingView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, canonical_url, Link)
+    StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
+    enabled_with_permission)
 
 class DistributionFacets(StandardLaunchpadFacets):
 
@@ -34,17 +35,113 @@ class DistributionFacets(StandardLaunchpadFacets):
 
     def specifications(self):
         target = '+specs'
-        text = 'Specs'
+        text = 'Specifications'
         summary = 'Feature specifications for %s' % self.context.displayname
         return Link(target, text, summary)
 
-    def tickets(self):
+    def support(self):
         target = '+tickets'
-        text = 'Tickets'
+        text = 'Support'
         summary = (
             'Technical support requests for %s' % self.context.displayname)
         return Link(target, text, summary)
 
+
+class DistributionOverviewMenu(ApplicationMenu):
+
+    usedfor = IDistribution
+    facet = 'overview'
+    links = ['edit', 'reassign', 'members', 'milestone_add']
+
+    def edit(self):
+        text = 'Edit Details'
+        return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def reassign(self):
+        text = 'Change Admin'
+        return Link('+reassign', text, icon='edit')
+
+    def members(self):
+        text = 'Change Members'
+        return Link('+selectmemberteam', text, icon='edit')
+
+    def milestone_add(self):
+        text = 'Add Milestone'
+        return Link('+addmilestone', text, icon='add')
+
+
+class DistributionBugsMenu(ApplicationMenu):
+
+    usedfor = IDistribution
+    facet = 'bugs'
+    links = ['cve_list', 'new']
+
+    def cve_list(self):
+        text = 'CVE List'
+        return Link('+cve', text, icon='info')
+
+    def new(self):
+        text = 'Report a Bug'
+        return Link('+filebug', text, icon='add')
+
+
+class DistributionBountiesMenu(ApplicationMenu):
+
+    usedfor = IDistribution
+    facet = 'bounties'
+    links = ['new', 'link']
+
+    def new(self):
+        text = 'Register a New Bounty'
+        return Link('+addbounty', text, icon='add')
+
+    def link(self):
+        text = 'Link Existing Bounty'
+        return Link('+linkbounty', text, icon='edit')
+
+
+class DistributionSpecificationsMenu(ApplicationMenu):
+
+    usedfor = IDistribution
+    facet = 'specifications'
+    links = ['roadmap', 'new']
+
+    def roadmap(self):
+        text = 'Roadmap'
+        return Link('+specplan', text, icon='info')
+
+    def new(self):
+        text = 'Register a New Specification'
+        return Link('+addspec', text, icon='add')
+
+
+class DistributionSupportMenu(ApplicationMenu):
+
+    usedfor = IDistribution
+    facet = 'support'
+    links = ['new']
+    # XXX: MatthewPaulThomas, 2005-09-20
+    # Add 'help' once +gethelp is implemented for a distribution
+
+    def help(self):
+        text = 'Help and Support Options'
+        return Link('+gethelp', text, icon='info')
+
+    def new(self):
+        text = 'Request Support'
+        return Link('+addticket', text, icon='add')
+
+
+class DistributionTranslationsMenu(ApplicationMenu):
+
+    usedfor = IDistribution
+    facet = 'translations'
+    links = ['edit']
+
+    def edit(self):
+        text = 'Change Translators'
+        return Link('+changetranslators', text, icon='edit')
 
 
 class DistributionView:
@@ -94,7 +191,8 @@ class DistributionFileBugView(SQLObjectAddView):
         return bug
 
     def nextURL(self):
-        return canonical_url(self.addedBug, self.request)
+        task = self.addedBug.bugtasks[0]
+        return canonical_url(task)
 
 
 class DistributionSetView:

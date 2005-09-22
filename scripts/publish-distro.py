@@ -29,6 +29,15 @@ from canonical.database.sqlbase import sqlvalues, SQLBase
 # much so it's not worth making it an option.
 SQLBase._lazyUpdate = False
 
+careful = False
+if sys.argv[1] == "--careful":
+    careful = True
+    # XXX: dsilvers: 20050921: Replace all this with an option parser
+    # but for now, and just for SteveA:
+    # "lookee here, altering sys.argv"
+    sys.argv.remove(1)
+    
+
 distroname = sys.argv[1]
 
 
@@ -73,7 +82,8 @@ debug("Preparing on-disk pool representation...")
 
 dp = DiskPool(Poolifier(POOL_DEBIAN),
               pubconf.poolroot, logging.getLogger("DiskPool"))
-
+# Set the diskpool's log level to INFO to suppress debug output
+dp.logger.setLevel(20)
 dp.scan()
 
 debug("Preparing publisher...")
@@ -83,12 +93,14 @@ pub = Publisher(logging.getLogger("Publisher"), pubconf, dp)
 try:
     # main publishing section
     debug("Attempting to publish pending sources...")
-    spps = SourcePackageFilePublishing.selectBy(
-        distribution = distro.id )
+    clause = "distribution = %s" % sqlvalues(distro.id)
+    if not careful:
+        clause = clause + (" AND publishingstatus = %s" %
+                           sqlvalues(PackagePublishingStatus.PENDING))
+    spps = SourcePackageFilePublishing.select(clause)
     pub.publish(spps, isSource=True)
     debug("Attempting to publish pending binaries...")
-    pps = BinaryPackageFilePublishing.selectBy(
-        distribution = distro.id )
+    pps = BinaryPackageFilePublishing.select(clause)
     pub.publish(pps, isSource=False)
         
 except:
@@ -154,6 +166,16 @@ try:
 
 except:
     logging.getLogger().exception("Bad muju while doing apt-ftparchive work")
+    txn.abort()
+    sys.exit(1)
+
+try:
+    # Generate the Release files...
+    debug("Generating log files...")
+    pub.writeReleaseFiles(distro)
+    
+except:
+    logging.getLogger().exception("Bad muju while doing release files")
     txn.abort()
     sys.exit(1)
 

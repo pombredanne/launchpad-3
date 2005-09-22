@@ -23,7 +23,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link)
+    StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
+    enabled_with_permission, structured)
 
 _ = MessageIDFactory('launchpad')
 
@@ -56,10 +57,42 @@ class ProjectFacets(StandardLaunchpadFacets):
         return Link(target, text, enabled=enabled)
 
 
-#
-# This is a View on a Project object, which is used in the Hatchery
-# system.
-#
+class ProjectOverviewMenu(ApplicationMenu):
+
+    usedfor = IProject
+    facet = 'overview'
+    links = ['edit', 'reassign', 'rdf']
+
+    def edit(self):
+        text = 'Edit Project Details'
+        return Link('+edit', text, icon='edit')
+
+    def reassign(self):
+        text = 'Change Admin'
+        return Link('+reassign', text, icon='edit')
+
+    def rdf(self):
+        text = structured(
+            'Download <abbr title="Resource Description Framework">'
+            'RDF</abbr> Metadata')
+        return Link('+rdf', text, icon='download')
+
+
+class ProjectBountiesMenu(ApplicationMenu):
+
+    usedfor = IProject
+    facet = 'bounties'
+    links = ['new', 'link']
+
+    def new(self):
+        text = 'Register a New Bounty'
+        return Link('+addbounty', text, icon='add')
+
+    def link(self):
+        text = 'Link Existing Bounty'
+        return Link('+linkbounty', text, icon='edit')
+
+
 class ProjectView(object):
 
     def __init__(self, context, request):
@@ -89,7 +122,7 @@ class ProjectView(object):
         self.context.homepageurl = self.form['homepageurl']
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
-        
+
     def hasProducts(self):
         return len(list(self.context.products())) > 0
 
@@ -234,16 +267,18 @@ class ProjectSetView(object):
         time the method is called, otherwise return previous results.
         """
         if self.results is None:
-            self.results = self.context.search(text=self.text,
-                                               bazaar=self.bazaar,
-                                               malone=self.malone,
-                                               rosetta=self.rosetta,
-                                               soyuz=self.soyuz)
+            self.results = self.context.search(
+                text=self.text,
+                bazaar=self.bazaar,
+                malone=self.malone,
+                rosetta=self.rosetta,
+                soyuz=self.soyuz)
         self.matches = self.results.count()
         return self.results
 
+
 class ProjectAddView(AddView):
-    
+
     _nextURL = '.'
 
     def createAndAdd(self, data):
@@ -256,19 +291,20 @@ class ProjectAddView(AddView):
 
         # Now create a new project in the db
         project = getUtility(IProjectSet).new(
-                          name=self.name,
-                          title=data['title'],
-                          displayname=data['displayname'],
-                          summary=data['summary'],
-                          description=data['description'],
-                          owner=owner,
-                          homepageurl=data['homepageurl'])
+            name=self.name,
+            title=data['title'],
+            displayname=data['displayname'],
+            summary=data['summary'],
+            description=data['description'],
+            owner=owner,
+            homepageurl=data['homepageurl'])
         notify(ObjectCreatedEvent(project))
         self._nextURL = canonical_url(project)
         return project
 
     def nextURL(self):
         return self._nextURL
+
 
 class ProjectRdfView(object):
     """A view that sets its mime-type to application/rdf+xml"""
@@ -289,9 +325,9 @@ class ProjectRdfView(object):
         As a side-effect, HTTP headers are set for the mime type
         and filename for download."""
         self.request.response.setHeader('Content-Type', 'application/rdf+xml')
-        self.request.response.setHeader('Content-Disposition',
-                                        'attachment; filename=%s-project.rdf' %
-                                            self.context.name)
+        self.request.response.setHeader(
+            'Content-Disposition',
+            'attachment; filename=%s-project.rdf' % self.context.name)
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata

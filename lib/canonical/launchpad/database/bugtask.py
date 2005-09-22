@@ -1,11 +1,15 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BugTask', 'BugTaskSet', 'BugTaskFactory', 'BugTasksReport',
-           'bugtask_sort_key']
+__all__ = [
+    'BugTask',
+    'BugTaskSet',
+    'BugTaskFactory',
+    'BugTasksReport',
+    'bugtask_sort_key']
 
-import cgi
 import urllib
+import cgi
 import datetime
 from sets import Set
 
@@ -17,8 +21,8 @@ from sqlos.interfaces import ISQLObject
 import pytz
 
 from zope.exceptions import NotFoundError
-from zope.component import getUtility, getAdapter
-from zope.interface import implements, directlyProvides, directlyProvidedBy
+from zope.component import getUtility
+from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.lp.dbschema import (
@@ -27,13 +31,12 @@ from canonical.lp.dbschema import (
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.database.maintainership import Maintainership
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.helpers import shortlist
-
+from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (BugTaskSearchParams,
     IBugTask, IBugTasksReport, IBugTaskSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, IAuthorization)
+    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag)
 
 debbugsstatusmap = {'open': BugTaskStatus.NEW,
                     'forwarded': BugTaskStatus.ACCEPTED,
@@ -79,7 +82,7 @@ def bugtask_sort_key(bugtask):
             sourcepackagename)
 
 
-class BugTask(SQLBase):
+class BugTask(SQLBase, BugTaskMixin):
     implements(IBugTask)
     _table = "BugTask"
     _defaultOrder = ['distribution', 'product', 'distrorelease',
@@ -136,93 +139,6 @@ class BugTask(SQLBase):
         return now - self.datecreated
 
     @property
-    def maintainer(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        if self.product:
-            return self.product.owner
-        if self.distribution and self.sourcepackagename:
-            maintainership = Maintainership.selectOneBy(
-                distributionID=self.distribution.id,
-                sourcepackagenameID=self.sourcepackagename.id)
-            if maintainership is not None:
-                return maintainership.maintainer
-        return None
-
-    @property
-    def maintainer_displayname(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        if self.maintainer:
-            return self.maintainer.displayname
-        else:
-            return None
-
-    @property
-    def target(self):
-        distro = self.distribution
-        distrorelease = self.distrorelease
-        if distro or distrorelease:
-            parent = distrorelease or distro
-            # XXX 2005-06-25 kiko: This needs API and fixages in Soyuz,
-            # but I don't want to leave us with broken links meanwhile.
-            # Filed bugs 1146 and 1147.
-            return parent
-            # if self.sourcepackagename:
-            #     return parent.getSourcePackage(self.sourcepackagename)
-            # elif self.binarypackagename:
-            #     return parent.getBinaryPackageByName(self.binarypackagename)
-            # else:
-            #     return parent
-        elif self.product:
-            return self.product
-        else:
-            raise AssertionError
-
-    # XXX 2005-06-25 kiko: if target actually works, we can probably
-    # nuke this or simplify it significantly.
-    @property
-    def targetname(self):
-        """See canonical.launchpad.interfaces.IBugTask.
-
-        Depending on whether the task has a distribution,
-        distrorelease, sourcepackagename, binarypackagename, and/or
-        product, the targetname will have one of these forms:
-        * distribution.displayname
-        * distribution.displayname sourcepackagename.name
-        * distribution.displayname sourcepackagename.name binarypackagename.name
-        * distribution.displayname distrorelease.displayname
-        * distribution.displayname distrorelease.displayname
-          sourcepackagename.name
-        * distribution.displayname distrorelease.displayname
-          sourcepackagename.name binarypackagename.name
-        * upstream product.name
-        """
-        if self.distribution or self.distrorelease:
-            if self.sourcepackagename is None:
-                sourcepackagename_name = None
-            else:
-                sourcepackagename_name = self.sourcepackagename.name
-            if self.binarypackagename is None:
-                binarypackagename_name = None
-            else:
-                binarypackagename_name = self.binarypackagename.name
-            L = []
-            if self.distribution:
-                L.append(self.distribution.displayname)
-            elif self.distrorelease:
-                L.append(self.distrorelease.distribution.displayname)
-                L.append(self.distrorelease.displayname)
-            if self.sourcepackagename:
-                L.append(self.sourcepackagename.name)
-            if (binarypackagename_name and
-                binarypackagename_name != sourcepackagename_name):
-                L.append(binarypackagename_name)
-            return ' '.join(L)
-        elif self.product:
-            return 'upstream ' + self.product.name
-        else:
-            raise AssertionError
-
-    @property
     def title(self):
         """Generate the title for this bugtask based on the id of the bug
         and the bugtask's targetname.  See IBugTask.
@@ -230,14 +146,6 @@ class BugTask(SQLBase):
         title = 'Bug #%s in %s: "%s"' % (
             self.bug.id, self.targetname, self.bug.title)
         return title
-
-    @property
-    def related_tasks(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        other_tasks = [
-            task for task in self.bug.bugtasks if task != self]
-
-        return other_tasks
 
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
@@ -252,6 +160,22 @@ class BugTask(SQLBase):
         else:
             # This is a distro task.
             mark_task(self, IDistroBugTask)
+
+    def setStatusFromDebbugs(self, status):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        try:
+            self.status = debbugsstatusmap[status]
+        except KeyError:
+            raise ValueError('Unknown debbugs status "%s"' % status)
+        return self.status
+
+    def setSeverityFromDebbugs(self, severity):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        try:
+            self.severity = debbugsseveritymap[severity]
+        except KeyError:
+            raise ValueError('Unknown debbugs severity "%s"' % severity)
+        return self.severity
 
     @property
     def statusdisplayhtml(self):
@@ -280,41 +204,6 @@ class BugTask(SQLBase):
                 return status.title.lower()
 
             return 'not assigned'
-
-    @property
-    def statuselsewhere(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        related_tasks = self.related_tasks
-        if related_tasks:
-            fixes_found = len(
-                [task for task in related_tasks
-                 if task.status == BugTaskStatus.FIXED])
-            if fixes_found:
-                return "Fixed in %d of %d places" % (
-                    fixes_found, len(self.bug.bugtasks))
-            else:
-                if len(related_tasks) == 1:
-                    return "Filed in 1 other place"
-                else:
-                    return "Filed in %d other places" % len(related_tasks)
-        else:
-            return "Not filed elsewhere"
-
-    def setStatusFromDebbugs(self, status):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        try:
-            self.status = debbugsstatusmap[status]
-        except KeyError:
-            raise ValueError('Unknown debbugs status "%s"' % status)
-        return self.status
-
-    def setSeverityFromDebbugs(self, severity):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        try:
-            self.severity = debbugsseveritymap[severity]
-        except KeyError:
-            raise ValueError('Unknown debbugs severity "%s"' % severity)
-        return self.severity
 
 
 class BugTaskSet:
@@ -460,7 +349,7 @@ class BugTaskSet:
                           WHERE Bug.id = BugSubscription.bug AND
                                 TeamParticipation.person = %(personid)s AND
                                 BugSubscription.person =
-                                  TeamParticipation.team))) 
+                                  TeamParticipation.team)))
                                   """ %
                       sqlvalues(personid=params.user.id))
         else:
@@ -579,9 +468,6 @@ class BugTaskSet:
         person2Tasks = self.maintainedBugTasks(person2, user=user)
         return person1Tasks.intersect(person2Tasks, orderBy=orderBy)
 
-
-def mark_task(obj, iface):
-    directlyProvides(obj, iface + directlyProvidedBy(obj))
 
 def BugTaskFactory(context, **kw):
     # XXX kiko: WTF, context is ignored?! LaunchBag? ARGH!

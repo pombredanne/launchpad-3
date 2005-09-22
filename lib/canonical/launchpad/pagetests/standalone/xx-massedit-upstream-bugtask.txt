@@ -1,4 +1,3 @@
-
 Check so that a Foo Bar which is the member of the maintainer team
 sees the checkboxes.
 

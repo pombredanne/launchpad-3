@@ -1,3 +1,4 @@
+<div class="portlet portletBody portletContent">
 <ul>
   <li class="add">
     <a href="#"
@@ -6,7 +7,8 @@
     </a>
   </li>
 </ul>
-<h4>Bug lists</h4>
+</div>
+<div class="portlet portletBody portletContent">
 <ul class="bugs">
   <li>
     <a href="#"
@@ -56,3 +58,4 @@
     (<span tal:replace="view/total_count">115</span>)
   </li>
 </ul>
+</div>

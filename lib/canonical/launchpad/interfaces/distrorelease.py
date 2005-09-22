@@ -34,7 +34,7 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         description=_("The release's full name, e.g. Ubuntu Warty"))
     title = Title(
         title=_("Title"), required=True,
-        description=_("""The title of this release. It should be distinctive 
+        description=_("""The title of this release. It should be distinctive
                       and designed to look good at the top of a page."""))
     summary = Summary(title=_("Summary"), required=True,
         description=_("A brief summary of the highlights of this release. "

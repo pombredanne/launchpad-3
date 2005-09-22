@@ -8,14 +8,14 @@
     <tal:taskicon content="structure task/fmt:icon" />&nbsp;
   </td>
   <th>
-    <a tal:attributes="href task/bug/fmt:url">
+    <a tal:attributes="href task/fmt:url">
       <tal:id replace="task/bug/id">42</tal:id>.&nbsp;
     </a>
   </th>
   <td>
     <div>
       <a
-        tal:attributes="href task/bug/fmt:url"
+        tal:attributes="href task/fmt:url"
         tal:content="task/bug/title"
       >A Test Title</a>
       <small

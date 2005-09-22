@@ -42,7 +42,7 @@ from zope.app.publisher.browser.metaconfigure import (
 from canonical.launchpad.layers import setAdditionalLayer, setFirstLayer
 from canonical.launchpad.interfaces import (
     IAuthorization, IOpenLaunchBag, ICanonicalUrlData,
-    IFacetMenu, IApplicationMenu)
+    IFacetMenu, IApplicationMenu, IContextMenu)
 
 try:
     from zope.publisher.interfaces.browser import IDefaultBrowserLayer
@@ -460,7 +460,7 @@ def menus(_context, module, classes):
     if not inspect.ismodule(module):
         raise TypeError("module attribute must be a module: %s, %s" %
                         module, type(module))
-    menutypes = [IFacetMenu, IApplicationMenu]
+    menutypes = [IFacetMenu, IApplicationMenu, IContextMenu]
     applicationmenutypes = [IApplicationMenu]
     for menuname in classes:
         menuclass = getattr(module, menuname)

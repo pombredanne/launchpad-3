@@ -35,17 +35,27 @@ def get_email_template(filename):
     return open(fullpath).read()
 
 
-def get_bugmail_from_address(userpart, user):
+def get_bugmail_from_address(user):
     """Return an appropriate bugmail From address.
-
-    :userpart: the part before the '@' in the bugmail from address.
 
     :user: an IPerson whose name will appear in the From address, e.g.:
 
-        From: Foo Bar via Malone <...>
+        From: Foo Bar <foo.bar@canonical.com>
+    """
+    return u"%s <%s>" % (user.displayname, user.preferredemail.email)
+
+
+def get_bugmail_replyto_address(bug, user):
+    """Return an appropriate bugmail Reply-To address.
+
+    :bug: the IBug.
+
+    :user: an IPerson whose name will appear in the From address, e.g.:
+
+        From: Foo Bar via Malone <123@bugs...>
     """
     return u"%s via Malone <%s@%s>" % (
-        user.displayname, userpart, config.launchpad.bugs_domain)
+        user.displayname, bug.id, config.launchpad.bugs_domain)
 
 
 def get_bugmail_error_address():
@@ -423,7 +433,11 @@ def send_bug_notification(bug, user, subject, body,
     if not zope_isinstance(to_addrs, (list, tuple)):
         to_addrs = [to_addrs]
 
-    from_addr = get_bugmail_from_address(bug.id, user)
+    if "Reply-To" not in headers:
+        headers["Reply-To"] = get_bugmail_replyto_address(bug, user)
+    if "Sender" not in headers:
+        headers["Sender"] = config.bounce_address
+    from_addr = get_bugmail_from_address(user)
     for to_addr in to_addrs:
         simple_sendmail(from_addr, to_addr, subject, body, headers=headers)
 
@@ -663,124 +677,6 @@ def notify_bugtask_edited(modified_bugtask, event):
     send_bug_edit_notification(bug_delta)
 
 
-def notify_bug_product_infestation_added(product_infestation, event):
-    """Notify CC'd list that this bug has infested a product release.
-
-    product_infestation must be an IBugProductInfestation. event must
-    be an ISQLObjectCreatedEvent.
-    """
-    notification_recipient_emails = get_cc_list(product_infestation.bug)
-
-    if notification_recipient_emails:
-        msg = """\
-Product: %(product)s
-Infestation: %(infestation)s
-""" % {'product' :
-             product_infestation.productrelease.product.name + " " +
-             product_infestation.productrelease.version,
-           'infestation' : product_infestation.infestationstatus.title}
-
-        simple_sendmail(
-            get_bugmail_from_address(product_infestation.bug.id, event.user),
-            notification_recipient_emails,
-            "[Bug %d] %s" % (
-                product_infestation.bug.id,
-                product_infestation.bug.title),
-            msg)
-
-
-def notify_bug_product_infestation_modified(modified_product_infestation, 
-                                            event):
-    """Notify CC'd list that this product infestation has been edited.
-
-    modified_product_infestation must be an IBugProductInfestation. event must
-    be an ISQLObjectModifiedEvent.
-    """
-    notification_recipient_emails = get_cc_list(modified_product_infestation.bug)
-
-    if notification_recipient_emails:
-        changes = get_changes(
-            before=event.object_before_modification,
-            after=event.object,
-            fields=(
-                ("productrelease", lambda v: "%s %s" % (
-                    v.product.name, v.version)),
-                ("infestationstatus", lambda v: v.title)))
-
-        bug = modified_product_infestation.bug
-        productrelease = event.object_before_modification.productrelease
-        send_bug_edit_notification(
-            bug=bug,
-            from_addr=get_bugmail_from_address(bug.id, event.user),
-            to_addrs=notification_recipient_emails,
-            subject="[Bug %d] %s" % (bug.id, bug.title),
-            edit_header_line=(
-                "Edited infested product: %s" %
-                productrelease.product.displayname + " " +
-                productrelease.version),
-            changes=changes, user=event.user)
-
-
-def notify_bug_package_infestation_added(package_infestation, event):
-    """Notify CC'd list that this bug has infested a source package
-    release.
-
-
-    package_infestation must be an IBugPackageInfestation. event must
-    be an ISQLObjectCreatedEvent.
-    """
-    notification_recipient_emails = get_cc_list(package_infestation.bug)
-
-    if notification_recipient_emails:
-        msg = """\
-Source Package: %(package)s
-Infestation: %(infestation)s
-""" % {'package' :
-           package_infestation.sourcepackagerelease.name + " " +
-           package_infestation.sourcepackagerelease.version,
-       'infestation' : package_infestation.infestationstatus.title}
-
-        simple_sendmail(
-            get_bugmail_from_address(package_infestation.bug.id, event.user),
-            notification_recipient_emails,
-            "[Bug %d] %s" % (
-                package_infestation.bug.id,
-                package_infestation.bug.title),
-            msg)
-
-
-def notify_bug_package_infestation_modified(modified_package_infestation, event):
-    """Notify CC'd list that this package infestation has been
-    modified.
-
-    modified_package_infestation must be an IBugPackageInfestation. event
-    must be an ISQLObjectModifiedEvent.
-    """
-    notification_recipient_emails = get_cc_list(modified_package_infestation.bug)
-
-    if notification_recipient_emails:
-        changes = get_changes(
-            before=event.object_before_modification,
-            after=event.object,
-            fields=(
-                ("sourcepackagerelease", lambda v: "%s %s" % (
-                    v.sourcepackagename.name, v.version)),
-                ("infestationstatus", lambda v: v.title)))
-
-        bug = modified_package_infestation.bug
-        packagerelease = event.object_before_modification.sourcepackagerelease
-        send_bug_edit_notification(
-            bug=bug,
-            from_addr=get_bugmail_from_address(bug.id, event.user),
-            to_addrs=notification_recipient_emails,
-            subject="[Bug %d] %s" % (bug.id, bug.title),
-            edit_header_line=(
-                "Edited infested package: %s" %
-                packagerelease.sourcepackagename.name + " " +
-                packagerelease.version),
-            changes=changes, user=event.user)
-
-
 def notify_bug_comment_added(bugmessage, event):
     """Notify CC'd list that a message was added to this bug.
 
@@ -831,7 +727,7 @@ def notify_bug_comment_added(bugmessage, event):
 
     headers['References'] = ' '.join(references)
     send_bug_notification(
-        bug, event.user, subject, body, 
+        bug, event.user, subject, body,
         to_addrs=to_addrs, headers=headers)
 
 

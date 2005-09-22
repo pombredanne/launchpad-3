@@ -19,7 +19,8 @@ __all__ = [
     'IShipItCountry',
     'ITeamReassignment',
     'ITeamCreation',
-    'NameAlreadyTaken'
+    'NameAlreadyTaken',
+    'EmailAddressAlreadyTaken'
     ]
 
 from zope.schema import (
@@ -45,6 +46,11 @@ class NameAlreadyTaken(ValidationError):
     __doc__ = _("""This name is already in use""")
     # XXX mpt 20050826: This should be moved out of person to be more generic.
     # (It's currently used by projects too.)
+
+
+class EmailAddressAlreadyTaken(Exception):
+    """The email address is already registered in Launchpad."""
+
 
 class PersonNameField(TextLine):
 

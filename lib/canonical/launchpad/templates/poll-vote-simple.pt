@@ -1,0 +1,117 @@
+<tal:do-this-first replace="view/processForm" />
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+<body>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/team/@@+portlet-details" />
+  </metal:leftportlets>
+
+  <metal:leftportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-actions" />
+  </metal:leftportlets>
+
+  <div metal:fill-slot="main">
+
+    <h1 tal:content="context/proposition" />
+
+    <p class="portalMessage" tal:condition="view/feedback"
+       tal:content="view/feedback" />
+
+    <form action="" method="POST">
+
+    <tal:block condition="view/userVoted">
+      <tal:block condition="view/isSecret">
+        <h2>You must enter your vote key</h2>
+
+        <p>This is a secret poll: your vote is identified only by the key you
+        were given when you voted. To view or change your vote you must enter
+        your key:</p>
+
+        <input type="text" name="token" 
+               tal:attributes="value view/token|nothing" />
+        <br />
+        <br />
+      </tal:block>
+    </tal:block>
+
+    <table cols="2">
+      <tr>
+        <td>
+          <h3>Your current vote</h3>
+          <tal:block condition="not: view/userVoted">
+            <p>You have not yet voted in this poll.</p>
+          </tal:block>
+
+          <tal:block condition="view/userVoted">
+            <tal:block condition="view/gotTokenAndVotes">
+              <p>Your current vote is for
+                <b tal:condition="not: view/currentVote/option">
+                  none of the options.
+                </b>
+                <b tal:condition="view/currentVote/option" 
+                   tal:content="view/currentVote/option/name" />
+            </tal:block>
+
+            <tal:block condition="not: view/gotTokenAndVotes">
+              <p>You have voted in this poll. Launchpad can display your vote
+              using the vote key you entered above.</p>
+
+              <input type="submit" value="Show My Vote" name="showvote" />
+            </tal:block>
+          </tal:block>
+        </td>
+        <td>
+          <tal:block condition="not: view/userVoted">
+            <h3>Vote now</h3>
+            <p>Choose one option</p>
+
+            <label>
+              <input type="radio" name="newoption" value="donotvote" checked />
+              I'm not voting yet
+            </label>
+            <br />
+          </tal:block>
+
+          <tal:block condition="view/userVoted">
+            <h3>Change your vote</h3>
+            <p>Choose one option</p>
+
+            <label>
+              <input type="radio" name="newoption" value="donotchange" checked />
+              Don't change my vote
+            </label>
+            <br />
+          </tal:block>
+
+          <tal:block repeat="option context/getActiveOptions">
+            <label>
+              <input type="radio" name="newoption" 
+                     tal:attributes="value option/id" />
+              <span tal:replace="option/name" />
+            </label>
+            <br />
+          </tal:block>
+
+          <tal:block condition="context/allowspoilt">
+            <label>
+              <input type="radio" name="newoption" value="none" />
+              None of these options
+            </label>
+            <br />
+          </tal:block>
+          <br />
+
+          <input type="submit" value="Continue" name="continue" />
+        </td>
+      </tr>
+    </table>
+    </form>
+
+  </div>
+
+</body>
+</html>

@@ -1,7 +1,11 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['SourcePackage', 'SourcePackageSet']
+__all__ = [
+    'SourcePackage',
+    'SourcePackageSet',
+    'DistroSourcePackage',
+    'DistroSourcePackageSet']
 
 import sets
 
@@ -19,8 +23,9 @@ from canonical.lp.dbschema import (
     PackagePublishingPocket)
 
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces import (ISourcePackage,
-    ISourcePackageSet, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces import (
+    ISourcePackage, IDistroSourcePackage, ISourcePackageSet,
+    IDistroSourcePackageSet, ILaunchpadCelebrities)
 
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
@@ -45,7 +50,7 @@ class SourcePackage:
     """A source package, e.g. apache2, in a distribution or distrorelease.
     This object implements the MagicSourcePackage specification. It is not a
     true database object, but rather attempts to represent the concept of a
-    source package in a distribution, with links to the relevant dataase
+    source package in a distribution, with links to the relevant database
     objects.
 
     Note that the Magic SourcePackage can be initialised with EITHER a
@@ -141,7 +146,7 @@ class SourcePackage:
                  'SourcePackageRelease.id'
                  % (self.sourcepackagename.id,
                     self.distrorelease.id)
-                 ) 
+                 )
 
         spreleases = SourcePackageRelease.select(query,
                                                  clauseTables=clauseTables,
@@ -150,7 +155,7 @@ class SourcePackage:
 
         for spr in spreleases:
             changelog += '%s \n\n' % spr.changelog
-        
+
         return changelog
 
     @property
@@ -176,7 +181,7 @@ class SourcePackage:
         ret = SourcePackageRelease.select('''
             SourcePackageRelease.sourcepackagename = %d AND
             SourcePackagePublishingHistory.distrorelease = %d AND
-            SourcePackagePublishingHistory.sourcepackagerelease = 
+            SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id
             ''' % (self.sourcepackagename.id, self.distrorelease.id),
             clauseTables=['SourcePackagePublishingHistory'])
@@ -191,10 +196,10 @@ class SourcePackage:
         """See ISourcePackage."""
         ret = SourcePackageRelease.select('''
             SourcePackageRelease.sourcepackagename = %d AND
-            SourcePackagePublishingHistory.distrorelease = 
+            SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %d
-            SourcePackagePublishingHistory.sourcepackagerelease = 
+            SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id
             ''' % (self.sourcepackagename.id, self.distribution.id),
             clauseTables=['SourcePackagePublishingHistory'])
@@ -303,7 +308,7 @@ class SourcePackage:
             return sp.packaging
         # capitulate
         return None
-        
+
 
     @property
     def shouldimport(self):
@@ -454,6 +459,45 @@ class SourcePackage:
         return ticket
 
 
+class DistroSourcePackage:
+    """See canonical.launchpad.interfaces.IDistroSourcePackage."""
+
+    implements(IDistroSourcePackage)
+
+    def __init__(self, distribution, sourcepackagename):
+        self.distribution = distribution
+        self.sourcepackagename = sourcepackagename
+        package = SourcePackageInDistro.selectOneBy(
+            sourcepackagenameID=sourcepackagename.id,
+            distroreleaseID=distribution.currentrelease.id,
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.RELEASE)
+
+        if package is None:
+            self.currentrelease = None
+        else:
+            self.currentrelease = SourcePackageRelease.get(package.id)
+
+    @property
+    def name(self):
+        return self.sourcepackagename.name
+
+    @property
+    def displayname(self):
+        return "%s %s" % (
+            self.distribution.name, self.sourcepackagename.name)
+
+    @property
+    def title(self):
+        return "%s %s" % (
+            self.distribution.name, self.sourcepackagename.name)
+
+    def searchTasks(self, search_params):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        search_params.setSourcePackage(self)
+        return BugTaskSet().search(search_params)
+
+
 class SourcePackageSet(object):
     """A set of Magic SourcePackage objects."""
 
@@ -498,7 +542,7 @@ class SourcePackageSet(object):
         if text:
             if len(querystr):
                 querystr += ' AND '
-            querystr += "name ILIKE " + quote('%%' + text + '%%') 
+            querystr += "name ILIKE " + quote('%%' + text + '%%')
         return querystr
 
     def query(self, text=None):
@@ -529,7 +573,7 @@ class SourcePackageSet(object):
         pkgname = pkgname.strip().lower()
         if not valid_name(pkgname):
             raise ValueError('Invalid package name: %s' % pkgname)
- 
+
         # ubuntu is used as a special case below
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         #ubuntu = self._get_ubuntu()
@@ -559,11 +603,11 @@ class SourcePackageSet(object):
                 return (sourcepackagename, None)
             # it's neither a sourcepackage, nor a binary package name
             raise ValueError('Unknown package: %s' % pkgname)
- 
+
         # ok, so we have a binarypackage with that name. let's see if it's
         # published, and what it's sourcepackagename is
         publishings = PublishedPackage.selectBy(
-            binarypackagename=binarypackagename.name, 
+            binarypackagename=binarypackagename.name,
             distrorelease=ubuntu.currentrelease.id,
             orderBy=['id'])
         if publishings.count() == 0:
@@ -582,3 +626,13 @@ class SourcePackageSet(object):
         sourcepackagename = SourcePackageName.byName(sourcepackagenametxt)
         return (sourcepackagename, binarypackagename)
 
+
+class DistroSourcePackageSet:
+    """See canonical.launchpad.interfaces.IDistroSourcePackageSet."""
+
+    implements(IDistroSourcePackageSet)
+
+    def getPackage(self, distribution, sourcepackagename):
+        """See canonical.launchpad.interfaces.IDistroSourcePackageSet."""
+        return DistroSourcePackage(
+            distribution=distribution, sourcepackagename=sourcepackagename)

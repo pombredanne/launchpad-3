@@ -53,14 +53,8 @@ class BugTaskPageTitle:
 
 class BugTaskTargetingTitle:
     def __call__(self, context, view):
-        task_target = context.target
-        if IDistribution.providedBy(task_target):
-            distribution_title = task_target.title
-        elif IDistroRelease.providedBy(task_target):
-            distribution_title = task_target.distribution.title 
-
         return "Bug #%d in %s - Target Fix to Releases" % (
-            context.bug.id, distribution_title)
+            context.bug.id, context.targetname)
 
 
 class SubstitutionHelper:
@@ -151,7 +145,7 @@ def bug_add(context, view):
     distrorelease_context = IDistroRelease(context, None)
 
     if product_context or distro_context or distrorelease_context is not None:
-        context_title = ContextTitle('Report a bug in %s')
+        context_title = ContextTitle('Report a bug about %s')
         return context_title(context, view)
     else:
         return "Report a bug"
@@ -219,6 +213,8 @@ bugs_index = 'Malone Master Bug List'
 def bugsubscription_edit(context, view):
     return "Bug #%d - Edit Subscription (%s)" % (
         context.bug.id, context.person.browsername)
+
+bugtask_index = BugTaskPageTitle()
 
 bugtask_release_targeting = BugTaskTargetingTitle()
 
@@ -315,7 +311,7 @@ distribution_translators = 'Appoint Distribution Translation Group'
 
 distribution_search = 'Locate Distributions in Launchpad'
 
-distribution_index = ContextTitle('Launchpad Distribution Summary: %s')
+distribution_index = ContextTitle('%s in Launchpad')
 
 distro_add = 'Adding New Distribution'
 
@@ -366,6 +362,10 @@ distrorelease_builds = ContextTitle(
 distroreleaselanguage = ContextTitle('%s')
 
 distros_index = 'Overview of Distributions in Launchpad'
+
+def distrosourcepackage_bugs(context, view):
+    return 'Bugs in %s %s' % (
+        context.distribution.name, context.name)
 
 errorservice_config = 'Configure Error Log'
 
@@ -461,7 +461,7 @@ malone_to_do = 'Malone ToDo'
 
 # messages_index is a redirect
 
-message_add = ContextTitle('Add Message to %s')
+message_add = ContextId('Bug #%d - Add a Comment')
 
 milestone_add = ContextDisplayName('Add Milestone for %s')
 
@@ -568,6 +568,12 @@ def poll_new(context, view):
 
 def polloption_edit(context, view):
     return 'Edit option %s' % context.shortname
+
+poll_options = ContextTitle('Options of Poll %s')
+
+poll_vote_condorcet = ContextTitle('Vote in %s')
+
+poll_vote_simple = ContextTitle('Vote in %s')
 
 potemplate_add = 'Add a new template to Rosetta'
 
@@ -728,7 +734,7 @@ sourcepackage_translate = ContextTitle('Help translate %s')
 
 sourcepackage_changelog = 'Source Package Changelog'
 
-sourcepackage_filebug = ContextTitle("Report a Bug in %s")
+sourcepackage_filebug = ContextTitle("Report a bug about %s")
 
 sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 

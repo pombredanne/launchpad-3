@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'TicketFacets',
     'TicketView',
     'TicketAddView',
     'TicketEditView',
@@ -21,20 +20,6 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url)
-
-
-class TicketFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for an ITicket."""
-
-    usedfor = ITicket
-
-    enable_only = ['overview']
-
-    def overview(self):
-        target = ''
-        text = 'Overview'
-        summary = 'Overview of Support Request'
-        return Link(target, text, summary)
 
 
 class TicketView:

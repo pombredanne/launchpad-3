@@ -259,7 +259,6 @@ class IBugAddForm(IBug):
             default=False)
 
 
-# Interfaces for set
 class IBugSet(IAddFormCustomization):
     """A set of bugs."""
 
@@ -278,8 +277,12 @@ class IBugSet(IAddFormCustomization):
         raised.
         """
 
-    def search(duplicateof=None, orderBy=None, limit=None):
-        """Find bugs matching the search criteria provided."""
+    def searchAsUser(user, duplicateof=None, orderBy=None, limit=None):
+        """Find bugs matching the search criteria provided.
+
+        To search as an anonymous user, the user argument passed
+        should be None.
+        """
 
     def queryByRemoteBug(bugtracker, remotebug):
         """Find one or None bugs in Malone that have a BugWatch matching the

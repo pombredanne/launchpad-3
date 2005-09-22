@@ -19,9 +19,11 @@ from zope.app.form.browser.add import AddView
 
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import (
-    canonical_url, StandardLaunchpadFacets, Link)
+    canonical_url, StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu,
+    enabled_with_permission)
 
-from canonical.launchpad.interfaces import (IDistroReleaseLanguageSet,
+from canonical.launchpad.interfaces import (
+    IDistroReleaseLanguageSet,
     IBugTaskSearchListingView, IDistroRelease, ICountry,
     IDistroReleaseSet, ILaunchBag, IBuildSet)
 from canonical.launchpad.browser.potemplate import POTemplateView
@@ -30,8 +32,40 @@ from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 class DistroReleaseFacets(StandardLaunchpadFacets):
 
     usedfor = IDistroRelease
-
     enable_only = ['overview', 'bugs', 'specifications', 'translations']
+
+
+class DistroReleaseOverviewMenu(ApplicationMenu):
+
+    usedfor = IDistroRelease
+    facet = 'overview'
+    links = ['edit', 'reassign', 'sources', 'cve', 'packaging', 'support']
+
+    def edit(self):
+        text = 'Edit Details'
+        return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def reassign(self):
+        text = 'Change Admin'
+        return Link('+reassign', text, icon='edit')
+
+    def sources(self):
+        text = 'Source Packages'
+        return Link('+sources', text, icon='product')
+
+    def cve(self):
+        text = 'CVE Report'
+        return Link('+cve', text, icon='info')
+
+    def packaging(self):
+        text = 'Upstream Links'
+        return Link('+packaging', text, icon='info')
+
+    def support(self):
+        text = 'Request Support'
+        url = canonical_url(self.context.distribution) + '/+addticket'
+        return Link(url, text, icon='add')
 
 
 class DistroReleaseView:

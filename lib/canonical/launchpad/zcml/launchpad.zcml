@@ -76,6 +76,13 @@
       classes="LaunchpadRootFacets RosettaAppMenus"
       />
 
+  <browser:page
+      for="zope.interface.Interface"
+      name="+contextmenu"
+      template="../templates/launchpad-contextmenu.pt"
+      permission="zope.Public"
+      />
+
   <!-- Menus debug page. -->
 
   <browser:page

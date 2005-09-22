@@ -1,5 +1,3 @@
-<tal:block define="bug_url context/fmt:url">
-
 <table class="listing"
        style="width: 100%; margin-bottom: 1px; margin-top: 2px;
               font-size: 90%;">
@@ -14,11 +12,11 @@
 
   <tbody>
     <tal:request repeat="bugtask context/bugtasks">
-    <tr>
+    <tr tal:attributes="class python:view.getFixRequestRowCSSClassForBugTask(bugtask)">
       <td tal:condition="bugtask/required:launchpad.Edit">
         <a style="text-decoration: none;"
           tal:attributes="
-            href string:${bugtask/fmt:url}/+edit;
+            href string:${bugtask/fmt:url}/+editstatus;
             title string:To change the status or assignee, click here.
             "
           tal:content="bugtask/targetname"
@@ -27,7 +25,7 @@
       <td tal:condition="not:bugtask/required:launchpad.Edit">
         <a style="text-decoration: none;"
           tal:attributes="
-            href string:${bugtask/fmt:url};
+            href string:${bugtask/fmt:url}/+viewstatus;
             title string:To view status details, click here.
           "
           tal:content="bugtask/targetname"
@@ -78,27 +76,18 @@
       </td>
 
     </tr>
-    <tr
-      tal:condition="bugtask/bugwatch"
-      tal:define="watch bugtask/bugwatch"
-      class="note"
-      >
-      <td colspan="3">
-      </td>
-      <td>
-      </td>
-    </tr>
     </tal:request>
   </tbody>
 
 </table>
 
-<div style="font-size: 80%; text-align: right; margin-bottom:1em;">
+<div style="font-size: 80%; text-align: right; margin-bottom:1em;"
+     tal:define="current_bugtask view/currentBugTask">
 
   Request fix:
   <span style="white-space: nowrap">
       <img src="/++resource++add.gif" alt="+" />
-      <a tal:attributes="href string:${bug_url}/+upstreamtask"
+      <a tal:attributes="href string:${current_bugtask/fmt:url}/+upstreamtask"
          title="Mark this bug as occurring upstream">
         Upstream&hellip;
       </a>
@@ -106,13 +95,11 @@
 
   <span style="white-space: nowrap">
       <img src="/++resource++add.gif" alt="+" />
-      <a tal:attributes="href string:${bug_url}/+distrotask"
+      <a tal:attributes="href string:${current_bugtask/fmt:url}/+distrotask"
          title="Mark this bug as occurring in a distro package">
         In Distribution&hellip;
       </a>
   </span>
 
 </div>
-
-</tal:block>
 

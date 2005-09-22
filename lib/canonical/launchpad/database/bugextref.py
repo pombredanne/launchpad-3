@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BugExternalRef', 'BugExternalRefSet', 'BugExternalRefFactory']
+__all__ = ['BugExternalRef', 'BugExternalRefSet']
 
 from datetime import datetime
 
@@ -48,12 +48,3 @@ class BugExternalRefSet(BugSetBase):
 
     def search(self):
         return BugExternalRef.select()
-
-def BugExternalRefFactory(context, **kw):
-    bug = context.context.bug
-    datecreated = UTC_NOW
-    return BugExternalRef(
-        bug=bug,
-        owner=context.request.principal.id,
-        **kw)
-

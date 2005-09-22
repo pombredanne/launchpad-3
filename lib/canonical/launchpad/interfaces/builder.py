@@ -128,6 +128,11 @@ class IBuildQueue(Interface):
     created = Attribute("The datetime that the queue entry waw created")
     buildstart = Attribute("The datetime of the last build attempt")
     logtail = Attribute("The current tail of the log of the build")
+    urgency = Attribute("SourcePackageRelease Urgency")
+    component_name = Attribute("Component name where the job got published")
+    name = Attribute("SourcePackageRelease name")
+    version = Attribute("SourcePackageRelease version")
+    files = Attribute("SourcePackageRelease files")
     partialDuration = Attribute("Time elapsed since start, None is not "
                                 "started")
     
