@@ -125,10 +125,10 @@ try:
     debug("Generating overrides for the distro...")
     spps = SourcePackagePublishingView.select(
         AND(SourcePackagePublishingView.q.distribution == distro.id,
-        SourcePackagePublishingView.q.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL ))
+        SourcePackagePublishingView.q.publishingstatus == PackagePublishingStatus.PUBLISHED ))
     pps = BinaryPackagePublishingView.select(
         AND(BinaryPackagePublishingView.q.distribution == distro.id,
-        BinaryPackagePublishingView.q.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL ))
+        BinaryPackagePublishingView.q.publishingstatus == PackagePublishingStatus.PUBLISHED ))
 
     pub.publishOverrides(spps, pps)
 except:
@@ -141,10 +141,10 @@ try:
     debug("Generating file lists...")
     spps = SourcePackageFilePublishing.select(
         AND(SourcePackageFilePublishing.q.distribution == distro.id,
-        SourcePackageFilePublishing.q.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL ))
+        SourcePackageFilePublishing.q.publishingstatus == PackagePublishingStatus.PUBLISHED ))
     pps = BinaryPackageFilePublishing.select(
         AND(BinaryPackageFilePublishing.q.distribution == distro.id,
-        BinaryPackageFilePublishing.q.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL ))
+        BinaryPackageFilePublishing.q.publishingstatus == PackagePublishingStatus.PUBLISHED ))
 
     pub.publishFileLists(spps,pps)
 except:
@@ -171,7 +171,7 @@ except:
 
 try:
     # Generate the Release files...
-    debug("Generating log files...")
+    debug("Generating Release files...")
     pub.writeReleaseFiles(distro)
     
 except:

@@ -152,49 +152,93 @@ class Dominator(object):
 
         return outpkgs
 
-    def _judgeSuperseded(self, sourcepackages, binarypackages, conf):
-        """Determine whether the superseded packages supplied should be moved
-        to death row or not.
+    def _judgeSuperseded(self, source_records, binary_records, conf):
+        """Determine whether the superseded packages supplied should
+        be moved to death row or not.
 
-        Currently this is done by assuming that any superseded package should
-        be removed. In the future this should attempt to supersede binaries
-        in build-sized chunks only.
+        Currently this is done by assuming that any superseded binary
+        package should be removed. In the future this should attempt
+        to supersede binaries in build-sized chunks only.
 
-        When a package is considered for death row its status in the publishing
-        table is set to PENDINGREMOVAL and the datemadepending is set to now.
+        Superseded source packages are considered removable when they
+        have no binaries in this distrorelease which are published or
+        superseded
 
-        The package is then given a scheduled deletion date of now plus the
-        defined stay of execution time provided in the configuration parameter.
+        When a package is considered for death row its status in the
+        publishing table is set to PENDINGREMOVAL and the
+        datemadepending is set to now.
+
+        The package is then given a scheduled deletion date of now
+        plus the defined stay of execution time provided in the
+        configuration parameter.
         """
-
-        # XXX dsilvers 2004-11-12 This needs work. Unfortunately I'm not
-        # completely sure how to correct for this.
-        # For now; binaries were dominated as per sources and we just
-        # treat everything as entirely separate. Nothing stays superseded
-        # but we keep the separation for later correct implementation
 
         self.debug("Beginning superseded processing...")
 
-        for p in sourcepackages:
-            if p.status == SUPERSEDED:
-                self.debug("%s/%s (source) has been judged eligible for removal" %
-                           (p.sourcepackagerelease.sourcepackagename.name,
-                            p.sourcepackagerelease.version))
-                           
-                p.status = PENDINGREMOVAL
-                p.scheduleddeletiondate = UTC_NOW + \
-                                          timedelta(days=conf.stayofexecution)
-                p.datemadepending = UTC_NOW
-        for p in binarypackages:
-            if p.status == SUPERSEDED:
+        # XXX: dsilvers: 20050922: Need to make binaries go in groups
+        # but for now this'll do.
+        # Essentially we ideally don't want to lose superseded binaries
+        # unless the entire group is ready to be made pending removal.
+        # In this instance a group is defined as all the binaries from a
+        # given build. This assumes we've copied the arch_all binaries
+        # from whichever build provided them into each arch-specific build
+        # which we publish. If instead we simply publish the arch-all
+        # binaries from another build then instead we should scan up from
+        # the binary to its source, and then back from the source to each
+        # binary published in *this* distroarchrelease for that source.
+        # if the binaries as a group (in that definition) are all superseded
+        # then we can consider them eligible for removal.
+        for pub_record in binary_records:
+            if pub_record.status == SUPERSEDED:
                 self.debug("%s/%s (%s) has been judged eligible for removal" %
-                           (p.binarypackagerelease.binarypackagename.name,
-                            p.binarypackagerelease.version,
-                            p.distroarchrelease.architecturetag))
-                p.status = PENDINGREMOVAL
-                p.scheduleddeletiondate = UTC_NOW + \
+                           (pub_record.binarypackagerelease.binarypackagename.name,
+                            pub_record.binarypackagerelease.version,
+                            pub_record.distroarchrelease.architecturetag))
+                pub_record.status = PENDINGREMOVAL
+                pub_record.scheduleddeletiondate = UTC_NOW + \
                                           timedelta(days=conf.stayofexecution)
-                p.datemadepending = UTC_NOW
+                pub_record.datemadepending = UTC_NOW
+
+        for pub_record in source_records:
+            if pub_record.status == SUPERSEDED:
+                # Attempt to find all binaries of this
+                # SourcePackageReleace which are/have been in this
+                # distrorelease...
+                considered_binaries = BinaryPackagePublishing.select('''
+                    (binarypackagepublishing.status = %s OR
+                     binarypackagepublishing.status = %s OR
+                     binarypackagepublishing.status = %s) AND
+                    binarypackagepublishing.distroarchrelease =
+                        distroarchrelease.id AND
+                    distroarchrelease.distrorelease = %s AND
+                    binarypackagepublishing.binarypackagerelease =
+                        binarypackagerelease.id AND
+                    binarypackagerelease.build = build.id AND
+                    build.sourcepackagerelease = %s''' % sqlvalues(
+                    PENDING, PUBLISHED, SUPERSEDED,
+                    pub_record.distrorelease.id, pub_record.sourcepackagerelease.id),
+                    clauseTables=['DistroArchRelease', 'BinaryPackageRelease',
+                                  'Build'])
+                if considered_binaries.count() > 0:
+                    # There is at least one non-superseded binary to consider
+                    self.debug("%s/%s (source) has at least %d non-removed "
+                               "binaries as yet" % (
+                        pub_record.sourcepackagerelease.sourcepackagename.name,
+                        pub_record.sourcepackagerelease.version,
+                        considered_binaries.count()))
+                    continue
+
+                # Okay, so there's no unremoved binaries, let's go for it...
+                self.debug(
+                    "%s/%s (source) has been judged eligible for removal" %
+                           (pub_record.sourcepackagerelease.sourcepackagename.name,
+                            pub_record.sourcepackagerelease.version))
+                           
+                pub_record.status = PENDINGREMOVAL
+                pub_record.scheduleddeletiondate = UTC_NOW + \
+                                          timedelta(days=conf.stayofexecution)
+                pub_record.datemadepending = UTC_NOW
+
 
     def judgeAndDominate(self, dr, pocket, config):
         """Perform the domination and superseding calculations across the
