@@ -99,6 +99,7 @@
 
 
     <div class="visualClear" id="body">
+      <tal:replace tal:replace="structure context/@@+maintenancemessage" />
       <metal:block define-slot="body">
       </metal:block>
     </div>

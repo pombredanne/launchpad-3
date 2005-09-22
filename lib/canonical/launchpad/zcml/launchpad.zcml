@@ -10,6 +10,14 @@
       provides="canonical.launchpad.interfaces.ILaunchpadCelebrities">
   </utility>
 
+  <browser:page
+      for="*"
+      name="+maintenancemessage"
+      template="../templates/launchpad-maintenance.pt"
+      class="canonical.launchpad.browser.MaintenanceMessage"
+      permission="zope.Public"
+      />
+
   <!-- Login and logout pages, and login status. -->
   <browser:page
       for="canonical.launchpad.interfaces.ILaunchpadApplication"
