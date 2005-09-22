@@ -68,6 +68,12 @@ class IShippingRequest(Interface):
         pending approval has self.approved == None.
         """
 
+    def highlightColour():
+        """Return the colour to highlight this request if it's high priority.
+
+        Return None otherwise.
+        """
+
     def isAwaitingApproval():
         """Return True if this request is still waiting for approval."""
 

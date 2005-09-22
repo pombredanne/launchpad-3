@@ -105,6 +105,13 @@ class ShippingRequest(SQLBase):
     quantityamd64 = RequestedCDsDescriptor(ShipItArchitecture.AMD64, 'quantity')
     quantityppc = RequestedCDsDescriptor(ShipItArchitecture.PPC, 'quantity')
 
+    def highlightColour(self):
+        """See IShippingRequest"""
+        if self.highpriority:
+            return "#ff6666"
+        else:
+            return None
+
     def isStandardRequest(self):
         """See IShippingRequest"""
         return (getUtility(IStandardShipItRequestSet).getByNumbersOfCDs(
