@@ -86,38 +86,19 @@ class IRosettaApplication(ILaunchpadApplication):
 
     statsdate = Attribute("""The date stats were last updated.""")
 
-    def translatable_products(self):
+    def translatable_products():
         """Return a list of the translatable products."""
 
-    def translatable_distroreleases(self):
+    def translatable_distroreleases():
         """Return a list of the distroreleases in launchpad for which
         translations can be done.
         """
 
-    def translation_groups(self):
+    def translation_groups():
         """Return a list of the translation groups in the system."""
 
-    def updateStatistics(self):
+    def updateStatistics():
         """Update the Rosetta statistics in the system."""
-
-    def potemplate_count(self):
-        """Return the number of potemplates in the system."""
-
-    def pofile_count(self):
-        """Return the number of pofiles in the system."""
-
-    def pomsgid_count(self):
-        """Return the number of msgs in the system."""
-
-    def translator_count(self):
-        """Return the number of people who have given translations."""
-
-    def language_count(self):
-        """Return the number of languages Rosetta can translate into."""
-
-    def translation_groups():
-        """Return an iterator over the set of translation groups in
-        Rosetta."""
 
     def potemplate_count():
         """Return the number of potemplates in the system."""
@@ -126,13 +107,13 @@ class IRosettaApplication(ILaunchpadApplication):
         """Return the number of pofiles in the system."""
 
     def pomsgid_count():
-        """Return the number of PO MsgID's in the system."""
+        """Return the number of msgs in the system."""
 
     def translator_count():
-        """Return the number of translators in the system."""
+        """Return the number of people who have given translations."""
 
     def language_count():
-        """Return the number of languages in the system."""
+        """Return the number of languages Rosetta can translate into."""
 
 
 class IRegistryApplication(ILaunchpadApplication):
