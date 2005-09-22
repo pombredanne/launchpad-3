@@ -569,6 +569,12 @@ def poll_new(context, view):
 def polloption_edit(context, view):
     return 'Edit option %s' % context.shortname
 
+poll_options = ContextTitle('Options of Poll %s')
+
+poll_vote_condorcet = ContextTitle('Vote in %s')
+
+poll_vote_simple = ContextTitle('Vote in %s')
+
 potemplate_add = 'Add a new template to Rosetta'
 
 # potemplate_chart is a fragment

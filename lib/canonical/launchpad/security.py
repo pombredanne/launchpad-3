@@ -15,9 +15,9 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseBugTask, ITranslator, IProduct, IProductSeries,
     IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
     ILaunchpadCelebrities, IDistroRelease, IBugTracker, IBugAttachment,
-    IPoll, IPollSubset, IPollOption, IPollOptionSubset, IProductRelease,
-    IShippingRequest, IShippingRequestSet, IRequestedCDs,
-    IStandardShipItRequestSet, IStandardShipItRequest)
+    IPoll, IPollSubset, IPollOption, IProductRelease, IShippingRequest,
+    IShippingRequestSet, IRequestedCDs, IStandardShipItRequestSet,
+    IStandardShipItRequest)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -234,12 +234,6 @@ class EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
                     return True
 
         return False
-
-
-class EditPollOptionSubsetByTeamOwnerOrTeamAdminsOrAdmins(
-        EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins):
-    permission = 'launchpad.Edit'
-    usedfor = IPollOptionSubset
 
 
 class AdminDistribution(AdminByAdminsTeam):

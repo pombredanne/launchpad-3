@@ -5,6 +5,14 @@
 
 <body>
 
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+  </metal:leftportlets>
+
+  <metal:leftportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-actions" />
+  </metal:leftportlets>
+
   <div metal:fill-slot="main">
     <tal:block condition="not: context/isClosed">
       <div metal:use-macro="context/@@launchpad_addform/addform">

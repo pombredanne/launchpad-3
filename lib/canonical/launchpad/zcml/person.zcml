@@ -373,7 +373,7 @@
       for="canonical.launchpad.interfaces.ITeam"
       class="canonical.launchpad.browser.PollAddView"
       schema="canonical.launchpad.interfaces.IPoll"
-      fields="name title proposition type secrecy allowspoilt
+      fields="name title proposition secrecy allowspoilt
               dateopens datecloses"
       label="Create a New Poll"
       permission="launchpad.Edit"

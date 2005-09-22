@@ -237,14 +237,6 @@ class CommonMenuLinks:
         text = 'Edit Emblem'
         return Link(target, text, icon='edit')
 
-    @enabled_with_permission('launchpad.Admin')
-    def common_reassign(self):
-        target = '+reassign'
-        text = 'Change Owner'
-        summary = 'Change the owner'
-        # alt="(Change owner)"
-        return Link(target, text, summary, icon='edit')
-
     def common_packages(self):
         target = '+packages'
         text = 'Packages'
@@ -258,8 +250,7 @@ class PersonContextMenu(ContextMenu, CommonMenuLinks):
 
     links = ['common_edit', 'common_edithomepage', 'common_edithackergotchi',
              'common_editemblem', 'karma', 'editsshkeys', 'editgpgkeys',
-             'codesofconduct', 'administer', 'common_reassign',
-             'common_packages']
+             'codesofconduct', 'administer', 'common_packages']
 
     def karma(self):
         target = '+karma'
@@ -304,13 +295,26 @@ class TeamContextMenu(ContextMenu, CommonMenuLinks):
     usedfor = ITeam
 
     links = ['common_edit', 'common_edithomepage', 'common_edithackergotchi',
-             'common_editemblem', 'members', 'editemail',
-             'joinleave', 'common_reassign', 'common_packages']
+             'common_editemblem', 'members', 'editemail', 'polls',
+             'joinleave', 'reassign', 'common_packages']
+
+    @enabled_with_permission('launchpad.Admin')
+    def reassign(self):
+        target = '+reassign'
+        text = 'Change Owner'
+        summary = 'Change the owner'
+        # alt="(Change owner)"
+        return Link(target, text, summary, icon='edit')
 
     def members(self):
         target = '+members'
         text = 'Edit Members'
         return Link(target, text, icon='people')
+
+    def polls(self):
+        target = '+polls'
+        text = 'Show Polls'
+        return Link(target, text, icon='info')
 
     def teamhierarchy(self):
         # XXX: removed because of bug https://launchpad.net/malone/bugs/2435

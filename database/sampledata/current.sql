@@ -12,7 +12,7 @@ INSERT INTO person (id, displayname, givenname, familyname, "password", teamowne
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (3, 'Dave Miller', 'Dave', 'Miller', NULL, NULL, NULL, 'justdave', NULL, '''dave'':2B,4C ''miller'':3B,5C ''justdav'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.610048', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (4, 'Colin Watson', 'Colin', 'Watson', NULL, NULL, NULL, 'kamion', NULL, '''colin'':2B,4C ''kamion'':1A ''watson'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.611185', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (5, 'Scott James Remnant', 'Scott James', 'Remnant', NULL, NULL, NULL, 'keybuk', NULL, '''jame'':3B,6C ''scott'':2B,5C ''keybuk'':1A ''remnant'':4B,7C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.608802', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (6, 'Jeff Waugh', 'Jeff', 'Waugh', NULL, NULL, NULL, 'jdub', NULL, '''jdub'':1A ''jeff'':2B,4C ''waugh'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.600523', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (6, 'Jeff Waugh', 'Jeff', 'Waugh', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'jdub', NULL, '''jdub'':1A ''jeff'':2B,4C ''waugh'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.600523', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (7, 'Andrew Bennetts', 'Andrew', 'Bennetts', NULL, NULL, NULL, 'spiv', NULL, '''spiv'':1A ''andrew'':2B,4C ''bennett'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.551196', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (8, 'James Blackwell', 'James', 'Blackwell', NULL, NULL, NULL, 'jblack', NULL, '''jame'':2B,4C ''jblack'':1A ''blackwel'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.601584', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (9, 'Christian Reis', 'Christian', 'Reis', NULL, NULL, NULL, 'kiko', NULL, '''rei'':3B,5C ''kiko'':1A ''christian'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.594941', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
@@ -79,7 +79,7 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (9, 'scott.james.rem
 INSERT INTO emailaddress (id, email, person, status) VALUES (10, 'andrew.bennetts@ubuntulinux.com', 7, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (11, 'james.blackwell@ubuntulinux.com', 8, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (12, 'christian.reis@ubuntulinux.com', 9, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (13, 'jeff.waugh@ubuntulinux.com', 6, 1);
+INSERT INTO emailaddress (id, email, person, status) VALUES (13, 'jeff.waugh@ubuntulinux.com', 6, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (14, 'dave.miller@ubuntulinux.com', 3, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (15, 'justdave@bugzilla.org', 3, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (16, 'test@canonical.com', 12, 4);
@@ -7607,6 +7607,11 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'poll'::pg_catalog.regclass;
 
+INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy) VALUES (1, 17, 'director-2004', '2004 Director''s Elections', '2004-01-01 00:00:00', '2004-01-15 00:00:00', 'Who''s going to be the next director?', 2, true, 3);
+INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy) VALUES (2, 17, 'leader-2004', '2004 Leader''s Elections', '2004-01-01 00:00:00', '2004-01-15 00:00:00', 'Who''s going to be the next leader?', 1, true, 3);
+INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy) VALUES (3, 17, 'never-closes', 'A random poll that never closes', '2004-01-01 00:00:00', '2104-01-15 00:00:00', 'Whatever proposition.', 1, true, 3);
+INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy) VALUES (4, 17, 'never-closes2', 'A second random poll that never closes', '2004-01-01 00:00:00', '2104-01-15 00:00:00', 'Whatever proposition.', 2, true, 3);
+INSERT INTO poll (id, team, name, title, dateopens, datecloses, proposition, "type", allowspoilt, secrecy) VALUES (5, 17, 'never-closes3', 'A third random poll that never closes', '2004-01-01 00:00:00', '2104-01-15 00:00:00', 'Whatever proposition.', 2, true, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'poll'::pg_catalog.regclass;
@@ -7614,6 +7619,25 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'polloption'::pg_catalog.regclass;
 
+INSERT INTO polloption (id, poll, name, shortname, active) VALUES (1, 1, 'A', 'A', true);
+INSERT INTO polloption (id, poll, name, shortname, active) VALUES (2, 1, 'B', 'B', true);
+INSERT INTO polloption (id, poll, name, shortname, active) VALUES (3, 1, 'C', 'C', true);
+INSERT INTO polloption (id, poll, name, shortname, active) VALUES (4, 1, 'D', 'D', true);
+INSERT INTO polloption (id, poll, name, shortname, active) VALUES (5, 2, 'William Big-Middle-Name Graham', 'Will Graham', true);
+INSERT INTO polloption (id, poll, name, shortname, active) VALUES (6, 2, 'Jack Crawford', 'Jack Crawford', true);
+INSERT INTO polloption (id, poll, name, shortname, active) VALUES (7, 2, 'Francis Dolarhyde', 'Francis Dolarhyde', true);
+INSERT INTO polloption (id, poll, name, shortname, active) VALUES (8, 3, 'A', 'A', true);
+INSERT INTO polloption (id, poll, name, shortname, active) VALUES (9, 3, 'B', 'B', true);
+INSERT INTO polloption (id, poll, name, shortname, active) VALUES (10, 3, 'C', 'C', true);
+INSERT INTO polloption (id, poll, name, shortname, active) VALUES (11, 3, 'D', 'D', true);
+INSERT INTO polloption (id, poll, name, shortname, active) VALUES (12, 4, 'Option 1', 'Option 1', true);
+INSERT INTO polloption (id, poll, name, shortname, active) VALUES (13, 4, 'Option 2', 'Option 2', true);
+INSERT INTO polloption (id, poll, name, shortname, active) VALUES (14, 4, 'Option 3', 'Option 3', true);
+INSERT INTO polloption (id, poll, name, shortname, active) VALUES (15, 4, 'Option 4', 'Option 4', true);
+INSERT INTO polloption (id, poll, name, shortname, active) VALUES (16, 5, 'Option 1', 'Option 1', true);
+INSERT INTO polloption (id, poll, name, shortname, active) VALUES (17, 5, 'Option 2', 'Option 2', true);
+INSERT INTO polloption (id, poll, name, shortname, active) VALUES (18, 5, 'Option 3', 'Option 3', true);
+INSERT INTO polloption (id, poll, name, shortname, active) VALUES (19, 5, 'Option 4', 'Option 4', true);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'polloption'::pg_catalog.regclass;
@@ -7621,6 +7645,16 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'votecast'::pg_catalog.regclass;
 
+INSERT INTO votecast (id, person, poll) VALUES (1, 6, 1);
+INSERT INTO votecast (id, person, poll) VALUES (2, 11, 1);
+INSERT INTO votecast (id, person, poll) VALUES (3, 4, 1);
+INSERT INTO votecast (id, person, poll) VALUES (4, 16, 1);
+INSERT INTO votecast (id, person, poll) VALUES (5, 11, 2);
+INSERT INTO votecast (id, person, poll) VALUES (6, 6, 2);
+INSERT INTO votecast (id, person, poll) VALUES (7, 4, 2);
+INSERT INTO votecast (id, person, poll) VALUES (8, 16, 2);
+INSERT INTO votecast (id, person, poll) VALUES (9, 16, 4);
+INSERT INTO votecast (id, person, poll) VALUES (10, 16, 5);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'votecast'::pg_catalog.regclass;
@@ -7628,6 +7662,34 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'vote'::pg_catalog.regclass;
 
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (1, NULL, 1, 1, 4, '9WjxQq2V9p');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (2, NULL, 1, 2, 2, '9WjxQq2V9p');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (3, NULL, 1, 3, 1, '9WjxQq2V9p');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (4, NULL, 1, 3, 3, '9WjxQq2V9p');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (5, NULL, 1, 1, 2, 'sg7PtBR5Ws');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (6, NULL, 1, 2, 4, 'sg7PtBR5Ws');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (7, NULL, 1, 3, 3, 'sg7PtBR5Ws');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (8, NULL, 1, 4, 1, 'sg7PtBR5Ws');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (9, NULL, 1, 1, 1, 'DKHm6SjXGZ');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (10, NULL, 1, 2, 3, 'DKHm6SjXGZ');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (11, NULL, 1, 3, 2, 'DKHm6SjXGZ');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (12, NULL, 1, 4, 4, 'DKHm6SjXGZ');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (13, NULL, 1, 1, 1, 'f7bN6RjgRB');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (14, NULL, 1, 2, 2, 'f7bN6RjgRB');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (15, NULL, 1, 2, 3, 'f7bN6RjgRB');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (16, NULL, 1, 2, 4, 'f7bN6RjgRB');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (17, NULL, 2, 1, 6, 'W7gR5mjNrX');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (18, NULL, 2, 1, 5, '6r8vWPKPk8');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (19, NULL, 2, 1, 7, 'TCzMzxK3m7');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (20, NULL, 2, 1, 5, 'bn4FDCWp4n');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (21, NULL, 4, 1, 12, 'xn9FDCTp4m');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (22, NULL, 4, 2, 13, 'xn9FDCTp4m');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (23, NULL, 4, NULL, 14, 'xn9FDCTp4m');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (24, NULL, 4, 3, 15, 'xn9FDCTp4m');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (25, 16, 5, 1, 16, 'vz4FDCbp4h');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (26, 16, 5, 2, 17, 'vz4FDCbp4h');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (27, 16, 5, 3, 18, 'vz4FDCbp4h');
+INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (28, 16, 5, 4, 19, 'vz4FDCbp4h');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'vote'::pg_catalog.regclass;
