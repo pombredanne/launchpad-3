@@ -240,10 +240,9 @@ class RosettaReadTarFile:
         # safe. # We don't support other kinds of tarballs and before calling
         # this function we did already the needed tests to be sure that
         # pot_paths follows our requirements.
-        potemplate.attachRawFileData(
-            contents=self.tarfile.extractfile(pot_paths[0]).read(),
-            published=True,
-            importer=importer)
+        contents = self.tarfile.extractfile(pot_paths[0]).read()
+        potemplate.attachRawFileData(contents=contents, published=True,
+                                     importer=importer)
         pot_base_dir = os.path.dirname(pot_paths[0])
 
         # List of .pot and .po files that were not able to be imported.
@@ -635,7 +634,7 @@ def convertToHtmlCode(text):
     This is usefull to avoid email harvesting, while keeping the email address
     in a form that a 'normal' person can read.
     """
-    return ''.join(map(lambda c: "&#%s;" % ord(c), text))
+    return ''.join(["&#%s;" % ord(c) for c in text])
 
 def validate_translation(original, translation, flags):
     """Check with gettext if a translation is correct or not.

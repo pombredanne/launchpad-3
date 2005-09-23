@@ -3,17 +3,14 @@
 __metaclass__ = type
 __all__ = ['Build', 'BuildSet']
 
-from datetime import datetime
-import xmlrpclib
 from urllib2 import URLError
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 from zope.component import getUtility
 
 # SQLObject/SQLBase
 from sqlobject import (
-    StringCol, ForeignKey, BoolCol, IntCol, IntervalCol)
+    StringCol, ForeignKey, IntervalCol)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -98,8 +95,11 @@ class BuildSet:
 
     def getBuiltForDistroRelease(self, distrorelease, size=10):
         """See IBuilderSet"""
-        
+        # XXX: what is size useful for? Nothing, it appears!
+        #   -- kiko, 2005-09-23
+
         arch_ids = ''.join(['%d,' % arch.id for arch in
                             distrorelease.architectures])[:-1]
-        
+
         return Build.select("distroarchrelease IN (%s)" % arch_ids)
+

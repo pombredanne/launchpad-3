@@ -10,10 +10,9 @@ import os.path
 from datetime import timedelta, datetime
 
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ILaunchpadRoot, IRosettaApplication, IAging)
+    ILaunchBag, ILaunchpadRoot, IRosettaApplication)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ApplicationMenu, Link)
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no

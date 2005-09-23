@@ -17,7 +17,7 @@ from zope.schema import Choice, TextLine, Bool
 
 _ = MessageIDFactory('launchpad')
 
-from canonical.launchpad.fields import Title, Summary, Description
+from canonical.launchpad.fields import Title, Description
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad.validators.name import valid_name
 
@@ -69,10 +69,10 @@ class IBuilder(IHasOwner):
                                             'and details.')
                               )
 
-    trusted =Bool(title=_('Trusted'), required=True,
-                  description=_('Whether not the builder is trusted to '
+    trusted = Bool(title=_('Trusted'), required=True,
+                   description=_('Whether not the builder is trusted to '
                                 'build packages under security embargo.')
-                  )
+                   )
 
     builderok = Attribute("Whether or not the builder is ok")
     failnotes = Attribute("The reason for a builder not being ok")

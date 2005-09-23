@@ -15,12 +15,9 @@ __all__ = [
     'BugWithoutContextView',
     'DeprecatedAssignedBugsView']
 
-from zope.interface import implements
 from zope.component import getUtility
-from zope.app.form.browser.add import AddView
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp.publisher import nearest
 from canonical.launchpad.interfaces import (
     IBug, ILaunchBag, IBugSet, IBugLinkTarget, IBugCve)
 from canonical.launchpad.browser.addview import SQLObjectAddView

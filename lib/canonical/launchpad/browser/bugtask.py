@@ -12,6 +12,7 @@ __all__ = [
     'BugTaskView',
     'BugTaskReleaseTargetingView']
 
+
 import urllib
 
 from zope.interface import implements
@@ -26,7 +27,7 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
     IPersonSet, ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch,
-    IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask, IBugTaskSet,
+    IBugSet, IProduct, IDistribution, IDistroRelease, IBugTaskSet,
     IDistroReleaseSet, ISourcePackageNameSet, BugTaskSearchParams,
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
 from canonical.launchpad.interfaces import IBugTaskSearchListingView

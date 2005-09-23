@@ -19,7 +19,7 @@ from zope.app.form.browser.add import AddView
 
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import (
-    canonical_url, StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu,
+    canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu,
     enabled_with_permission)
 
 from canonical.launchpad.interfaces import (
@@ -84,7 +84,6 @@ class DistroReleaseView:
         language prefs indicate might be interesting.
         """
         drlangs = []
-        drlangset = getUtility(IDistroReleaseLanguageSet)
         for language in self.languages:
             drlang = self.context.getDistroReleaseLanguageOrDummy(language)
             drlangs.append(drlang)

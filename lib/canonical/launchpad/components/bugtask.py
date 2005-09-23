@@ -10,9 +10,6 @@ __all__ = [
     'NullBugTask',
     'mark_task']
 
-import cgi
-import urllib
-
 from zope.component import getUtility
 from zope.interface import implements, directlyProvides, directlyProvidedBy
 

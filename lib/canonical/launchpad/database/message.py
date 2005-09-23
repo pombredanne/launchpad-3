@@ -13,6 +13,8 @@ from datetime import datetime
 
 from zope.interface import implements
 from zope.component import getUtility
+# XXX: do we really need this?
+#   -- kiko, 2005-09-23
 from zope.security.proxy import isinstance
 from zope.exceptions import NotFoundError
 
@@ -25,7 +27,7 @@ from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
 from canonical.launchpad.interfaces import (
     IMessage, IMessageSet, IMessageChunk, IPersonSet, ILibraryFileAliasSet, 
-    UnknownSender, DuplicateMessageId, InvalidEmailMessage)
+    UnknownSender, InvalidEmailMessage)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -127,7 +129,7 @@ class MessageSet:
         rfc822msgid = make_msgid("launchpad")
         message = Message(
             subject=subject, rfc822msgid=rfc822msgid, owner=owner)
-        chunk = MessageChunk(message=message, sequence=1, content=content)
+        MessageChunk(message=message, sequence=1, content=content)
         return message
 
     def _decode_header(self, header):
@@ -244,8 +246,7 @@ class MessageSet:
                 break
             except NotFoundError:
                 pass
-
-        if parent is None:
+        else:
             parent = fallback_parent
 
         # figure out the date of the message
@@ -270,16 +271,19 @@ class MessageSet:
             rawID=raw_email_message.id, datecreated=datecreated,
             distribution=distribution)
 
-        # Determine the encoding to use for non-multipart messages, and the
-        # preamble and epilogue of multipart messages. We default to iso-8859-1
-        # as it seems fairly harmless to cope with old, broken email clients
-        # (The RFCs state US-ASCII as the default character set).
-        default_charset = parsed_message.get_content_charset() or 'iso-8859-1'
-
         sequence = 1
 
         # Don't store the preamble or epilogue -- they are only there
         # to give hints to non-MIME aware clients
+        #
+        # Determine the encoding to use for non-multipart messages, and the
+        # preamble and epilogue of multipart messages. We default to iso-8859-1
+        # as it seems fairly harmless to cope with old, broken email clients
+        # (The RFCs state US-ASCII as the default character set).
+        # default_charset = parsed_message.get_content_charset() or 'iso-8859-1'
+        #
+        # XXX: is default_charset only useful here?
+        #   -- kiko, 2005-09-23
         #
         # if getattr(parsed_message, 'preamble', None):
         #     # We strip a leading and trailing newline - the email parser

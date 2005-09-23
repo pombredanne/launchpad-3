@@ -16,7 +16,6 @@ from urllib import quote as urlquote
 
 from zope.component import getUtility
 
-from canonical.lp.dbschema import BugTaskSeverity, BugTaskStatus
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
@@ -61,6 +60,8 @@ class DistrosReleaseBinariesSearchView:
         if name:
             binary_packages = list(self.context.findPackagesByName(name))
             start = int(self.request.get('batch_start', 0))
+            # XXX: Why is end unused?
+            #   -- kiko, 2005-09-23
             end = int(self.request.get('batch_end', BATCH_SIZE))
             batch_size = BATCH_SIZE
             batch = Batch(list = binary_packages, start = start,
@@ -132,8 +133,6 @@ class SourcePackageBugsView:
     @property
     def general_unresolved_bugs(self):
         """Return a list of unresolved bugs that not targeted to a release."""
-        release_bugs = {}
-
         # Remember that the context is an ISourcePackage; let's figure
         # out which distribution is relevant.
         mydistribution = self.context.distrorelease.distribution

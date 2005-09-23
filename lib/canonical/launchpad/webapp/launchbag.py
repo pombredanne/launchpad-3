@@ -8,7 +8,7 @@ __metaclass__ = type
 
 import pytz
 
-from zope.interface import Interface, implements
+from zope.interface import implements
 from zope.component import getUtility
 import zope.security.management
 import zope.thread
@@ -67,7 +67,7 @@ class LaunchBag:
         else:
             try:
                 person = IPerson(principals[0])
-            except TypeError, err:
+            except TypeError:
                 person = None
             return person
 

@@ -13,7 +13,6 @@ from StringIO import StringIO
 
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
-from sqlobject import SQLObjectNotFound
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 
 
@@ -42,7 +41,7 @@ def validate_url(url, valid_schemes):
 
            >>> _validate_url('http://', ['http'])
            False
-           
+
       """
     if not url:
         return False
@@ -86,7 +85,7 @@ def valid_bug_number(value):
     from canonical.launchpad.interfaces.bug import IBugSet
     bugset = getUtility(IBugSet)
     try:
-        bug = bugset.get(value)
+        bugset.get(value)
     except NotFoundError:
         return False
     return True

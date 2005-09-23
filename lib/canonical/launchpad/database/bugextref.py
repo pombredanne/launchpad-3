@@ -3,8 +3,6 @@
 __metaclass__ = type
 __all__ = ['BugExternalRef', 'BugExternalRefSet']
 
-from datetime import datetime
-
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol

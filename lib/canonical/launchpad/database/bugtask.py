@@ -555,10 +555,7 @@ class BugTasksReport:
             user, minseverity, minpriority, showclosed):
             bugs.add(bugtask.bug)
 
-        # XXX kiko: use a key instead of this DSU
-        buglistwithdates = [(bug.datecreated, bug) for bug in bugs]
-        buglistwithdates.sort()
-        buglistwithdates.reverse()
-        bugs = [bug for datecreated, bug in buglistwithdates]
-
+        bugs = list(bugs)
+        bugs.sort(key=lambda bug: bug.datecreated, reverse=True)
         return bugs
+

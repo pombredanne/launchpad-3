@@ -17,14 +17,13 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
     IPerson, IProject, IProjectSet, IProductSet, ICalendarOwner)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission, structured)
+    StandardLaunchpadFacets, Link, canonical_url, ApplicationMenu,
+    structured)
 
 _ = MessageIDFactory('launchpad')
 

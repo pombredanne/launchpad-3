@@ -14,8 +14,7 @@ import sys, os
 from canonical.launchpad.database import (
     Distribution, DistroRelease, SourcePackagePublishingView,
     BinaryPackagePublishingView, SourcePackageFilePublishing,
-    BinaryPackageFilePublishing, SourcePackagePublishing,
-    BinaryPackagePublishing)
+    BinaryPackageFilePublishing)
 
 from sqlobject import AND
 
@@ -114,7 +113,7 @@ try:
     debug("Attempting to perform domination...")
     for distrorelease in drs:
         for pocket in PackagePublishingPocket.items:
-            judgejudy.judgeAndDominate(distrorelease,pocket, pubconf)
+            judgejudy.judgeAndDominate(distrorelease, pocket, pubconf)
 except:
     logging.getLogger().exception("Bad muju while dominating")
     txn.abort()
@@ -125,10 +124,12 @@ try:
     debug("Generating overrides for the distro...")
     spps = SourcePackagePublishingView.select(
         AND(SourcePackagePublishingView.q.distribution == distro.id,
-        SourcePackagePublishingView.q.publishingstatus == PackagePublishingStatus.PUBLISHED ))
+            SourcePackagePublishingView.q.publishingstatus == 
+                PackagePublishingStatus.PUBLISHED ))
     pps = BinaryPackagePublishingView.select(
         AND(BinaryPackagePublishingView.q.distribution == distro.id,
-        BinaryPackagePublishingView.q.publishingstatus == PackagePublishingStatus.PUBLISHED ))
+            BinaryPackagePublishingView.q.publishingstatus == 
+                PackagePublishingStatus.PUBLISHED ))
 
     pub.publishOverrides(spps, pps)
 except:
@@ -141,12 +142,14 @@ try:
     debug("Generating file lists...")
     spps = SourcePackageFilePublishing.select(
         AND(SourcePackageFilePublishing.q.distribution == distro.id,
-        SourcePackageFilePublishing.q.publishingstatus == PackagePublishingStatus.PUBLISHED ))
+            SourcePackageFilePublishing.q.publishingstatus ==
+            PackagePublishingStatus.PUBLISHED ))
     pps = BinaryPackageFilePublishing.select(
         AND(BinaryPackageFilePublishing.q.distribution == distro.id,
-        BinaryPackageFilePublishing.q.publishingstatus == PackagePublishingStatus.PUBLISHED ))
+            BinaryPackageFilePublishing.q.publishingstatus ==
+                PackagePublishingStatus.PUBLISHED ))
 
-    pub.publishFileLists(spps,pps)
+    pub.publishFileLists(spps, pps)
 except:
     logging.getLogger().exception("Bad muju while generating file lists")
     txn.abort()
@@ -200,9 +203,11 @@ try:
                             clauseTables=['binarypackagepublishing'])
 
     livesrc = SourcePackageFilePublishing.select(
-        SourcePackageFilePublishing.q.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL)
+        SourcePackageFilePublishing.q.publishingstatus != 
+            PackagePublishingStatus.PENDINGREMOVAL)
     livebin = BinaryPackageFilePublishing.select(
-        BinaryPackageFilePublishing.q.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL)
+        BinaryPackageFilePublishing.q.publishingstatus != 
+            PackagePublishingStatus.PENDINGREMOVAL)
     
     pub.unpublishDeathRow(consrc, conbin, livesrc, livebin)
 

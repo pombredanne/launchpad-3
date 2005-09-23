@@ -100,6 +100,8 @@ class SourcePackage:
     def _get_ubuntu(self):
         """This is a temporary measure while
         getUtility(IlaunchpadCelebrities) is bustificated here."""
+        # XXX: fix and get rid of this and clean up callsites
+        #   -- kiko, 2005-09-23
         from canonical.launchpad.database.distribution import Distribution
         return Distribution.byName('ubuntu')
 
@@ -185,11 +187,9 @@ class SourcePackage:
                 SourcePackageRelease.id
             ''' % (self.sourcepackagename.id, self.distrorelease.id),
             clauseTables=['SourcePackagePublishingHistory'])
+
         # sort by debian version number
-        L = [(Version(item.version), item) for item in ret]
-        L.sort()
-        ret = [item for sortkey, item in L]
-        return ret
+        return sorted(list(ret), key=lambda item: Version(item.version))
 
     @property
     def releasehistory(self):
@@ -203,11 +203,9 @@ class SourcePackage:
                 SourcePackageRelease.id
             ''' % (self.sourcepackagename.id, self.distribution.id),
             clauseTables=['SourcePackagePublishingHistory'])
+
         # sort by debian version number
-        L = [(Version(item.version), item) for item in ret]
-        L.sort()
-        ret = [item for sortkey, item in L]
-        return ret
+        return sorted(list(ret), key=lambda item: Version(item.version))
 
     @property
     def name(self):
@@ -224,8 +222,7 @@ class SourcePackage:
         result = POTemplate.selectBy(
             distroreleaseID=self.distrorelease.id,
             sourcepackagenameID=self.sourcepackagename.id)
-        result = list(result)
-        return sorted(result, key=lambda x: x.potemplatename.name)
+        return sorted(list(result), key=lambda x: x.potemplatename.name)
 
     @property
     def currentpotemplates(self):
@@ -233,8 +230,7 @@ class SourcePackage:
             distroreleaseID=self.distrorelease.id,
             sourcepackagenameID=self.sourcepackagename.id,
             iscurrent=True)
-        result = list(result)
-        return sorted(result, key=lambda x: x.potemplatename.name)
+        return sorted(list(result), key=lambda x: x.potemplatename.name)
 
     @property
     def product(self):
@@ -322,7 +318,7 @@ class SourcePackage:
         #ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         ubuntu = self._get_ubuntu()
 
-        if self.distribution <> ubuntu:
+        if self.distribution != ubuntu:
             return False
         ps = self.productseries
         if ps is None:
@@ -372,8 +368,8 @@ class SourcePackage:
         flush_database_updates()
 
     def bugsCounter(self):
-        from canonical.launchpad.database.bugtask import BugTask
-
+        # XXX: where does self.bugs come from?
+        #   -- kiko, 2005-09-23
         ret = [len(self.bugs)]
         severities = [
             BugTaskSeverity.CRITICAL,
