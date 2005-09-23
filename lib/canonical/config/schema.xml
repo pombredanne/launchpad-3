@@ -244,7 +244,30 @@
         <description>
             Malone-specific configuration options.
         </description>
-        <key name="bugmail_error_from_address" datatype="string" required="yes" />
+        <key name="bugmail_error_from_address" datatype="string"
+            required="yes" />
+    </sectiontype>
+
+    <sectiontype name="poimport">
+        <description>
+            Configuration for cronscripts/rosetta-poimport
+        </description>
+        <key name="dbuser" datatype="string" default="poimport" />
+    </sectiontype>
+
+    <sectiontype name="poattach">
+        <description>
+            Configuration for cronscripts/rosetta-package-po-attach
+        </description>
+        <key name="dbuser" datatype="string" default="poattach" />
+    </sectiontype>
+
+    <sectiontype name="rosetta">
+        <description>
+            Rosetta-specific configuration options
+        </description>
+        <section name="*" type="poimport" attribute="poimport" required="no" />
+        <section name="*" type="poattach" attribute="poattach" required="no" />
     </sectiontype>
 
     <sectiontype name="gpghandler">
@@ -345,6 +368,7 @@
             default="/tmp" />
         <section name="*" type="launchpad" attribute="launchpad" />
         <section name="*" type="malone" attribute="malone" />
+        <section name="*" type="rosetta" attribute="rosetta" />
         <section name="*" type="librarian" attribute="librarian" />
         <section name="*" type="zopeless" attribute="zopeless" />
         <section name="*" type="gpghandler" attribute="gpghandler" />

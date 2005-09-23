@@ -2,7 +2,7 @@
 
 __metaclass__ = type
 
-import sys, os
+import sys, os, warnings
 from types import ClassType
 from zope.interface.advice import addClassAdvisor
 from zope.interface import classImplements
@@ -68,6 +68,14 @@ def isZopeless():
 def initZopeless(debug=False, dbname=None, dbhost=None, dbuser=None,
                  implicitBegin=True):
     registerTypes()
+    if dbuser is None:
+        # Nothing calling initZopeless should be connecting as the
+        # 'launchpad' user, which is the default.
+        # StuartBishop 20050923
+        warnings.warn(
+                "Passing dbuser parameter to initZopeless will soon "
+                "be mandatory", DeprecationWarning, stacklevel=2
+                )
     if dbname is None:
         dbname = globals()['dbname']
     if dbhost is None:
