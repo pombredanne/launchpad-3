@@ -267,7 +267,7 @@ class BuilderGroup:
                                  conflicts=None,
                                  replaces=None,
                                  provides=None,
-                                 essential=None,
+                                 essential=False,
                                  installedsize=None,
                                  copyright=None,
                                  licence=None)
@@ -891,13 +891,13 @@ class BuilddMaster:
             self.startBuild(builders, builder, queueItems.pop(0), pocket)
             builder = builders.firstAvailable()                
 
-    def startBuild(self, builders, builder, queueitem, pocket):
+    def startBuild(self, builders, builder, queueItem, pocket):
         """Find the list of files and give them to the builder."""
         archrelease = queueitem.build.distroarchrelease
 
         self.getLogger().debug("startBuild(%s, %s, %s, %s)"
-                               % (builder.url, job.name,
-                                  job.version, pocket.title))
+                               % (builder.url, queueItem.name,
+                                  queueItem.version, pocket.title))
 
         # ensure build has the need chroot
         chroot = archrelease.getChroot(pocket)
@@ -912,7 +912,7 @@ class BuilddMaster:
         else:
             filemap = {}
             
-            for f in job.files:
+            for f in queueItem.files:
                 fname = f.libraryfile.filename
                 filemap[fname] = f.libraryfile.content.sha1
                 builders.giveToBuilder(builder, f.libraryfile, self.librarian)
