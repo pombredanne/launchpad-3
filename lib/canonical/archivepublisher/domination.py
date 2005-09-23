@@ -12,8 +12,7 @@ from canonical.lp.dbschema import PackagePublishingStatus
 from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.database import (
-     SourcePackagePublishing, BinaryPackagePublishing,
-     SecureSourcePackagePublishingHistory,
+     BinaryPackagePublishing, SecureSourcePackagePublishingHistory,
      SecureBinaryPackagePublishingHistory)
 
 from canonical.database.sqlbase import sqlvalues
@@ -69,16 +68,23 @@ class Dominator(object):
             # to SUPERSEDED unless they're already there or pending
             # removal
 
+            # XXX: what happens when sourceinput[source] is None, or can
+            # we assert it's not None?
+            #   -- kiko, 2005-09-23
+            super_release = sourceinput[source][0].sourcepackagerelease
+            super_release_name = super_release.sourcepackagename.name
             for pubrec in sourceinput[source][1:]:
                 if pubrec.status == PUBLISHED or pubrec.status == PENDING:
+                    this_release = pubrec.sourcepackagerelease
+
+                    this_release_name = this_release.sourcepackagename.name
                     self.debug("%s/%s has been judged as superseded by %s/%s" %
-                               (pubrec.sourcepackagerelease.sourcepackagename.name,
-                                pubrec.sourcepackagerelease.version,
-                                sourceinput[source][0].sourcepackagerelease.sourcepackagename.name,
-                                sourceinput[source][0].sourcepackagerelease.version))
+                               (this_release_name, this_release.version,
+                                super_release_name, super_release.version))
+
                     pubrec.status = SUPERSEDED;
                     pubrec.datesuperseded = UTC_NOW;
-                    pubrec.supersededby = sourceinput[source][0].sourcepackagerelease
+                    pubrec.supersededby = super_release
 
     def _dominateBinary(self, binaryinput):
         """
@@ -102,7 +108,9 @@ class Dominator(object):
             for pubrec in binaryinput[binary][1:]:
                 if pubrec.status == PUBLISHED or pubrec.status == PENDING:
                     thisrelease = pubrec.binarypackagerelease
-                    self.debug("The %s build of %s/%s has been judged as superseded by the %s build of %s/%s. Arch-specific == %s" % (
+                    self.debug("The %s build of %s/%s has been judged "
+                               "as superseded by the %s build of %s/%s.  "
+                               "Arch-specific == %s" % (
                         thisrelease.build.distroarchrelease.architecturetag,
                         thisrelease.binarypackagename.name,
                         thisrelease.version,
@@ -112,7 +120,10 @@ class Dominator(object):
                         thisrelease.architecturespecific))
                     pubrec.status = SUPERSEDED;
                     pubrec.datesuperseded = UTC_NOW;
-                    pubrec.supersededby = binaryinput[binary][0].binarypackagerelease.build
+                    # XXX is this really .build? When superseding above
+                    # we set supersededby = super_release..
+                    #   -- kiko, 2005-09-23
+                    pubrec.supersededby = dominantrelease.build
 
 
     def _sortPackages(self, pkglist, isSource = True):
@@ -189,10 +200,11 @@ class Dominator(object):
         # if the binaries as a group (in that definition) are all superseded
         # then we can consider them eligible for removal.
         for pub_record in binary_records:
+            binpkg_release = pub_record.binarypackage
             if pub_record.status == SUPERSEDED:
                 self.debug("%s/%s (%s) has been judged eligible for removal" %
-                           (pub_record.binarypackagerelease.binarypackagename.name,
-                            pub_record.binarypackagerelease.version,
+                           (binpkg_release.binarypackagename.name,
+                            binpkg_release.version,
                             pub_record.distroarchrelease.architecturetag))
                 pub_record.status = PENDINGREMOVAL
                 pub_record.scheduleddeletiondate = UTC_NOW + \
@@ -200,6 +212,7 @@ class Dominator(object):
                 pub_record.datemadepending = UTC_NOW
 
         for pub_record in source_records:
+            srcpkg_release = pub_record.sourcepackagerelease
             if pub_record.status == SUPERSEDED:
                 # Attempt to find all binaries of this
                 # SourcePackageReleace which are/have been in this
@@ -216,23 +229,23 @@ class Dominator(object):
                     binarypackagerelease.build = build.id AND
                     build.sourcepackagerelease = %s''' % sqlvalues(
                     PENDING, PUBLISHED, SUPERSEDED,
-                    pub_record.distrorelease.id, pub_record.sourcepackagerelease.id),
+                    pub_record.distrorelease.id, srcpkg_release.id),
                     clauseTables=['DistroArchRelease', 'BinaryPackageRelease',
                                   'Build'])
                 if considered_binaries.count() > 0:
                     # There is at least one non-superseded binary to consider
                     self.debug("%s/%s (source) has at least %d non-removed "
                                "binaries as yet" % (
-                        pub_record.sourcepackagerelease.sourcepackagename.name,
-                        pub_record.sourcepackagerelease.version,
+                        srcpkg_release.sourcepackagename.name,
+                        srcpkg_release.version,
                         considered_binaries.count()))
                     continue
 
                 # Okay, so there's no unremoved binaries, let's go for it...
                 self.debug(
                     "%s/%s (source) has been judged eligible for removal" %
-                           (pub_record.sourcepackagerelease.sourcepackagename.name,
-                            pub_record.sourcepackagerelease.version))
+                           (srcpkg_release.sourcepackagename.name,
+                            srcpkg_release.version))
                            
                 pub_record.status = PENDINGREMOVAL
                 pub_record.scheduleddeletiondate = UTC_NOW + \

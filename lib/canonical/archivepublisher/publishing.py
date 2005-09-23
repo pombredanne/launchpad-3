@@ -25,7 +25,7 @@ pocketsuffix = {
     PackagePublishingPocket.UPDATES: "-updates",
     PackagePublishingPocket.PROPOSED: "-proposed"
     }
-suffixpocket = dict((v,k) for (k,v) in pocketsuffix.items())
+suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 
 from datetime import datetime
 
@@ -42,7 +42,8 @@ class Publisher(object):
         self._config = config
         self._root = config.poolroot
         if not os.path.isdir(self._root):
-            raise ValueError, "Root %s is not a directory or does not exist" % self._root
+            raise ValueError("Root %s is not a directory or does "
+                             "not exist" % self._root)
         self._diskpool = diskpool
         self._library = LibrarianClient()
         self._logger = logger
@@ -69,7 +70,8 @@ class Publisher(object):
         """Extract the given file from the librarian, construct the
         path to it in the pool and store the file. (assuming it's not already
         there)"""
-        #print "%s/%s/%s: Publish from %d" % (component,source,filename,alias)
+        #print "%s/%s/%s: Publish from %d" % (component, source, filename, 
+        #                                     alias)
         # Dir is ready, extract from the librarian...
         # self._library should be a client for fetching from the library...
         # We're going to assume here that we'll eventually be allowed to
@@ -107,8 +109,11 @@ class Publisher(object):
             source = pubrec.sourcepackagename.encode('utf-8')
             component = pubrec.componentname.encode('utf-8')
             filename = pubrec.libraryfilealiasfilename.encode('utf-8')
-            self._publish( source, component, filename,
-                           pubrec.libraryfilealias )
+            self._publish(source, component, filename, pubrec.libraryfilealias)
+
+            # XXX: if you used a variable for
+            # pubrec.sourcepackagepublishing, the code below would flow
+            # a lot nicer. -- kiko, 2005-09-23
             if isSource:
                 if pubrec.sourcepackagepublishing.status == \
                    PackagePublishingStatus.PENDING:
@@ -154,11 +159,13 @@ class Publisher(object):
             section = so.sectionname.encode('utf-8')
             sourcepackagename = so.sourcepackagename.encode('utf-8')
             if component != defaultcomponent:
-                section = "%s/%s" % (component,section)
+                section = "%s/%s" % (component, section)
             overrides.setdefault(distrorelease, {})
-            overrides[distrorelease].setdefault(component, {})
-            overrides[distrorelease][component].setdefault('src', [])
-            overrides[distrorelease][component]['src'].append( (sourcepackagename,section) )
+            this_override = overrides[distrorelease]
+            this_override.setdefault(component, {})
+            this_override[component].setdefault('src', [])
+            this_override[component]['src'].append((sourcepackagename,
+                                                    section))
 
         for bo in binaryoverrides:
             distrorelease = bo.distroreleasename.encode('utf-8')
@@ -171,17 +178,22 @@ class Publisher(object):
                 raise ValueError, "Unknown priority value %d" % priority
             priority = prio[priority]
             if component != defaultcomponent:
-                section = "%s/%s" % (component,section)
+                section = "%s/%s" % (component, section)
             overrides.setdefault(distrorelease, {})
-            overrides[distrorelease].setdefault(component, {})
-            overrides[distrorelease][component].setdefault('bin', [])
-            overrides[distrorelease][component]['bin'].append( (binarypackagename,priority,section) )
+            this_override = overrides[distrorelease]
+            this_override.setdefault(component, {})
+            this_override[component].setdefault('bin', [])
+            this_override[component]['bin'].append((binarypackagename,
+                                                    priority,
+                                                    section))
 
         # Now generate the files on disk...
         for distrorelease in overrides:
             self.debug("Generating overrides for %s..." % distrorelease)
             for component in overrides[distrorelease]:
                 di_overrides = []
+                # XXX: use os.path.join
+                #   -- kiko, 2005-09-23
                 f = open("%s/override.%s.%s" % (self._config.overrideroot,
                                                 distrorelease, component), "w")
                 for tup in overrides[distrorelease][component]['bin']:
@@ -204,6 +216,8 @@ class Publisher(object):
                     # of thing.
                     # Elmo informs me that the technical term for the d-i stuff
                     # is "horrible f***ing bodge"
+                    # XXX: use os.path.join
+                    #   -- kiko, 2005-09-23
                     f = open("%s/override.%s.%s.debian-installer" % (
                         self._config.overrideroot, distrorelease, component),
                              "w")
@@ -212,6 +226,8 @@ class Publisher(object):
                         f.write("\n")
                     f.close()
                     
+                # XXX: use os.path.join
+                #   -- kiko, 2005-09-23
                 f = open("%s/override.%s.%s.src" % (self._config.overrideroot,
                                                     distrorelease,
                                                     component), "w")
@@ -235,7 +251,8 @@ class Publisher(object):
             component = f.componentname.encode('utf-8')
             sourcepackagename = f.sourcepackagename.encode('utf-8')
             filename = f.libraryfilealiasfilename.encode('utf-8')
-            ondiskname = self._pathfor(component,sourcepackagename,filename)
+            ondiskname = self._pathfor(component, sourcepackagename,
+                                       filename)
 
             filelist.setdefault(distrorelease, {})
             filelist[distrorelease].setdefault(component,{})
@@ -252,12 +269,13 @@ class Publisher(object):
             architecturetag = f.architecturetag.encode('utf-8')
             architecturetag = "binary-%s" % architecturetag
             
-            ondiskname = self._pathfor(component,sourcepackagename,filename)
+            ondiskname = self._pathfor(component, sourcepackagename, filename)
 
             filelist.setdefault(distrorelease, {})
-            filelist[distrorelease].setdefault(component,{})
-            filelist[distrorelease][component].setdefault(architecturetag,[])
-            filelist[distrorelease][component][architecturetag].append(ondiskname)
+            this_file = filelist[distrorelease]
+            this_file.setdefault(component,{})
+            this_file[component].setdefault(architecturetag, [])
+            this_file[component][architecturetag].append(ondiskname)
 
         # Now write them out...
         for distrorelease, components in filelist.items():
@@ -448,20 +466,22 @@ tree "dists/%(DISTRORELEASEONDISK)s"
         livefiles = set()
         condemnedfiles = set()
         details = {}
-        
+       
+        # XXX: the duplication below begs creation of a method 
+        #   -- kiko, 2005-09-23
         for p in livesources:
             fn = p.libraryfilealiasfilename.encode('utf-8')
             sn = p.sourcepackagename.encode('utf-8')
             cn = p.componentname.encode('utf-8')
             filename = self._pathfor(cn, sn, fn)
-            details.setdefault(filename,[cn,sn,fn])
+            details.setdefault(filename,[cn, sn, fn])
             livefiles.add(filename)
         for p in livebinaries:
             fn = p.libraryfilealiasfilename.encode('utf-8')
             sn = p.sourcepackagename.encode('utf-8')
             cn = p.componentname.encode('utf-8')
             filename = self._pathfor(cn, sn, fn)
-            details.setdefault(filename,[cn,sn,fn])
+            details.setdefault(filename,[cn, sn, fn])
             livefiles.add(filename)
 
         for p in condemnedsources:
@@ -469,7 +489,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
             sn = p.sourcepackagename.encode('utf-8')
             cn = p.componentname.encode('utf-8')
             filename = self._pathfor(cn, sn, fn)
-            details.setdefault(filename,[cn,sn,fn])
+            details.setdefault(filename,[cn, sn, fn])
             condemnedfiles.add(filename)
 
         for p in condemnedbinaries:
@@ -477,7 +497,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
             sn = p.sourcepackagename.encode('utf-8')
             cn = p.componentname.encode('utf-8')
             filename = self._pathfor(cn, sn, fn)
-            details.setdefault(filename,[cn,sn,fn])
+            details.setdefault(filename,[cn, sn, fn])
             condemnedfiles.add(filename)
 
         for f in condemnedfiles - livefiles:
