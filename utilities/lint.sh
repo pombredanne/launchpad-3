@@ -63,7 +63,8 @@ export PYTHONPATH=lib:$PYTHONPATH
 if [ -z "$1" ]; then
     files=`baz status | grep '^ ' | cut -c5-`
 else
-    files=$*
+    # Add newlines so grep filters out pyfiles correctly later
+    files=`echo $* | tr " " "\n"`
 fi
 
 if [ -z "$files" ]; then
