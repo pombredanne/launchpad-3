@@ -43,57 +43,54 @@
         tal:content="context/title | default"
       >Launchpad</metal:block>
     </h2>    
-      <ul
-        class="facets app"
-        tal:define="facetmenu CONTEXTS/menu:facet"
-      >
-       <tal:condition tal:condition="python: '+login' not in request.getURL()">
-        <tal:facetmenu condition="facetmenu">
-          <tal:facet repeat="link facetmenu">
-            <tal:available condition="link/enabled">
-              <li
-                tal:condition="link/selected"
-                tal:attributes="title link/summary"
-                class="current"
-              >
-                <strong tal:condition="link/linked">
-                  <a
-                    tal:attributes="href link/url"
-                    tal:content="structure link/escapedtext"
-                  >abc</a>
-                  </strong>
-                <strong
-                  tal:condition="not: link/linked"
-                  tal:attributes="title link/summary"
-                  tal:content="structure link/escapedtext"
-                >def</strong>
-              </li>
-              <li
-                tal:condition="not: link/selected"
-                tal:attributes="title link/summary"
-              >
+    <ul
+      class="facets app"
+      tal:define="facetmenu CONTEXTS/menu:facet"
+    >
+     <tal:condition tal:condition="python: '+login' not in request.getURL()">
+      <tal:facetmenu condition="facetmenu">
+        <tal:facet repeat="link facetmenu">
+          <tal:available condition="link/enabled">
+            <tal:comment condition="nothing">
+            The unfortunate lack of whitespace below is required to
+            avoid layout issues with the tabs.
+            </tal:comment>
+            <li
+              tal:condition="link/selected"
+              tal:attributes="title link/summary"
+              class="current"
+            ><strong tal:condition="link/linked">
                 <a
-                  tal:condition="link/linked"
                   tal:attributes="href link/url"
                   tal:content="structure link/escapedtext"
-                >ghi</a>
-                <span
-                  class="disabled"
-                  tal:condition="not: link/linked"
-                  tal:content="structure link/escapedtext"
-                >jkl</span>
-              </li>
-            </tal:available>
+                >abc</a></strong><strong
+                tal:condition="not: link/linked"
+                tal:attributes="title link/summary"
+                tal:content="structure link/escapedtext"
+              >def</strong></li>
             <li
-              tal:condition="not: link/enabled"
+              tal:condition="not: link/selected"
               tal:attributes="title link/summary"
-              tal:content="structure link/escapedtext"
-              class="unavailable"
-            />
-          </tal:facet>
-        </tal:facetmenu>
-        </tal:condition>
-      </ul>
+            ><a
+                tal:attributes="href link/url"
+                tal:content="structure link/escapedtext"
+              >ghi</a><span
+                class="disabled"
+                tal:condition="not: link/linked"
+                tal:content="structure link/escapedtext"
+              >jkl</span></li>
+          </tal:available>
+          <li
+            tal:condition="not: link/enabled"
+            tal:attributes="title link/summary"
+            tal:content="structure link/escapedtext"
+            class="unavailable"
+          />
+        </tal:facet>
+      </tal:facetmenu>
+      </tal:condition>
+      &nbsp;
+    </ul>
 
     <!-- Menus -->
 
