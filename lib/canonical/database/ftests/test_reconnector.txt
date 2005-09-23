@@ -76,12 +76,10 @@ reestablished.
     >>> import threading
     >>> thread_result = []
     >>> before_select = threading.Event()
-    >>> after_select = threading.Event()
     >>> def foo():
     ...     before_select.set()
     ...     cur.execute('SELECT 1;')
     ...     thread_result.append(cur.fetchone()[0])
-    ...     after_select.set()
 
 Create the thread, and make sure it has started running:
 
@@ -89,12 +87,10 @@ Create the thread, and make sure it has started running:
     >>> thread.start()
     >>> before_select.wait()
 
-Execution does not get past the execute() call because the database
+Execution does not complete because the database
 can't be reached:
 
-    >>> after_select.wait(1)
-    >>> after_select.isSet()
-    False
+    >>> thread.join(1)
     >>> thread.isAlive()
     True
 
@@ -108,13 +104,11 @@ Restart the proxy:
 
 Now, our blocked thread should've finished successfully.
 
-    >>> after_select.wait()
-    >>> after_select.isSet()
-    True
-    >>> thread_result
-    [1]
+    >>> thread.join()
     >>> thread.isAlive()
     False
+    >>> thread_result
+    [1]
 
 Also, using our connection should still work.
 

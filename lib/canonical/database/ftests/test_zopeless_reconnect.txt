@@ -80,14 +80,12 @@ reestablished.
 
     >>> import threading
     >>> before_txn = threading.Event()
-    >>> after_select = threading.Event()
     >>> thread_result = []
     >>> def foo():
     ...     before_txn.set()
     ...     ztm.begin()
     ...     name = Person.get(1).name
     ...     thread_result.append(name)
-    ...     after_select.set()
 
 Create the thread and ensure that it has started:
 
@@ -95,12 +93,10 @@ Create the thread and ensure that it has started:
     >>> thread.start()
     >>> before_txn.wait()
 
-Execution does not progress, since the database connection can not be
+Execution does complete, since the database connection can not be
 established:
 
-    >>> after_select.wait(1)
-    >>> after_select.isSet()
-    False
+    >>> thread.join(1)
     >>> thread.isAlive()
     True
 
@@ -114,13 +110,11 @@ Restart the proxy:
 
 Now, our blocked thread should've finished successfully.
 
-    >>> after_select.wait()
-    >>> after_select.isSet()
-    True
-    >>> thread_result
-    [u'sabdfl']
+    >>> thread.join()
     >>> thread.isAlive()
     False
+    >>> thread_result
+    [u'sabdfl']
 
 The interrupted transaction in this thread still fails.
 
