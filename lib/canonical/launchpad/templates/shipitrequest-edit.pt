@@ -13,14 +13,23 @@
 
   <div metal:fill-slot="main">
 
-    <h1 tal:condition="not: context/isStandardRequest">
+    <br />
+    <tal:block condition="request/previous|nothing">
+      <p class="portalMessage">
+        The request #<span tal:replace="request/previous" />
+        <span tal:condition="request/approved|nothing">was approved.</span>
+        <span tal:condition="request/denied|nothing">was denied.</span>
+        <span tal:condition="request/changed|nothing">was changed.</span>
+      </p>
+    </tal:block>
+
+    <h1>
       <span tal:condition="not: context/isStandardRequest">Custom</span>
       <span tal:condition="context/isStandardRequest">Standard</span>
       Request #<span tal:replace="context/id" />
     </h1>
 
     <tal:block condition="context/cancelled">
-      <br />
       <p class="portalMessage">This request was cancelled by 
         <span tal:replace="context/whocancelled/displayname" />.
       </p>
@@ -53,7 +62,7 @@
 
     <div class="form controls" tal:condition="not: context/isDenied">
       <form name="denyrequest" action="" method="POST">
-        <input type="submit" value="Deny Request" name="DENY" />
+        <input type="submit" value="Deny" name="DENY" />
       </form>
     </div>
 
@@ -119,7 +128,7 @@
     <div class="form controls">
       <tal:block condition="not: context/cancelled">
         <tal:block condition="not: context/isApproved">
-          <input type="submit" value="Approve Request" name="APPROVE" />
+          <input type="submit" value="Approve" name="APPROVE" />
         </tal:block>
         <tal:block condition="context/isApproved">
           <input type="submit" value="Change Approved Totals" name="CHANGE" />

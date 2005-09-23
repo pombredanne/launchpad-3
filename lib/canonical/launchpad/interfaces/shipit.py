@@ -141,6 +141,12 @@ class IShippingRequestSet(Interface):
         information about what is a current request.
         """
 
+    def getOldestPending():
+        """Return the oldest request with status PENDING.
+        
+        Return None if there's no requests with status PENDING.
+        """
+
     def get(id, default=None):
         """Return the ShippingRequest with the given id.
         

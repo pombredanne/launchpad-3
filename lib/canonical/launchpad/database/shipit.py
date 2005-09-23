@@ -46,7 +46,7 @@ class ShippingRequest(SQLBase):
     """See IShippingRequest"""
 
     implements(IShippingRequest)
-    _defaultOrder = 'id'
+    _defaultOrder = 'daterequested'
 
     recipient = ForeignKey(dbName='recipient', foreignKey='Person',
                            notNull=True)
@@ -222,6 +222,15 @@ class ShippingRequestSet:
             query = ""
         return query
 
+    def getOldestPending(self):
+        """See IShippingRequestSet"""
+        q = AND(ShippingRequest.q.cancelled==False,
+                ShippingRequest.q.approved==None)
+        results = ShippingRequest.select(q, orderBy='daterequested', limit=1)
+        try:
+            return results[0]
+        except IndexError:
+            return None
 
     # XXX: Must come back here and refactor these two search methods. It's
     # probably possible to share more things between them. -- GuilhermeSalgado

@@ -105,7 +105,7 @@
                   <span tal:condition="shipitrequest/isApproved">approved</span>
                   <span tal:condition="shipitrequest/isDenied">denied</span>
                   <span tal:condition="shipitrequest/isAwaitingApproval">
-                    waiting for approval
+                    pending
                   </span>
                 </tal:block>
                 <span tal:condition="shipitrequest/cancelled">cancelled</span>
