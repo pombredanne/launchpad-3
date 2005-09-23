@@ -296,25 +296,32 @@ class BinaryPackageHandler:
 
     def _getBinary(self, binaryname, version, architecture, distroarchinfo):
         """Returns a binarypackage if it exists."""
-        if architecture == "all":
-            binpkg = BinaryPackageRelease.selectOneBy(
-                binarypackagenameID=binaryname.id, version=version)
 
-            if binpkg:
-                return binpkg
-
-        clauseTables=("BinaryPackageRelease","Build",)
+        clauseTables=["BinaryPackageRelease","Build"]
         query = ("BinaryPackageRelease.binarypackagename=%s AND "
                  "BinaryPackageRelease.version=%s AND "
-                 "Build.Processor=%s AND "
-                 "Build.distroarchrelease=%s AND "
                  "Build.id = BinaryPackageRelease.build"
                  % (binaryname.id,
-                    quote(version),
-                    distroarchinfo['processor'].id,
-                    distroarchinfo['distroarchrelease'].id)
+                    quote(version)
+                    )
                  )
 
+        if architecture != "all":
+            query = ("Build.Processor=%s AND "
+                     "Build.distroarchrelease=%s AND "
+                     "%s" % (distroarchinfo['processor'].id,
+                             distroarchinfo['distroarchrelease'].id,
+                             query)
+                     )
+        else:
+            query = ("Build.distroarchrelease = distroarchrelease.id AND "
+                     "DistroArchRelease.id = %s AND "
+                     "%s" %
+                     (distroarchinfo['distroarchrelease'].distrorelease.id,
+                      query)
+                     )
+            clauseTables.append('DistroArchRelease')
+            
         return BinaryPackageRelease.selectOne(query, clauseTables=clauseTables)
             
         
@@ -551,7 +558,7 @@ class SourcePackageReleaseHandler:
         if ":" in sp_version:
             sp_version = sp_version[sp_version.find(":")+1:]
 
-        dsc_name = "%s_%s.dsc" % (sp_name, file_version)
+        dsc_name = "%s_%s.dsc" % (sp_name, sp_version)
 
         sp_path = os.path.join(self.archiveroot, "pool",
                                self.poolify(sp_name, sp_component),
