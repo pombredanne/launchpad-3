@@ -96,7 +96,8 @@ def main(options, target_section):
 
     # Create the ImporterHandler Object
     importer_handler = ImporterHandler(distro, pocket_distrorelease,
-                                       dry_run)
+                                       dry_run, kdb, package_root, keyrings,
+                                       pocket)
     
 
     import_sourcepackages(packages_map, kdb, package_root,
