@@ -89,6 +89,10 @@ special = {
             '../doc/message.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
             ),
+    'cve-update.txt': FunctionalDocFileSuite(
+            '../doc/cve-update.txt',
+            setUp=librarianSetUp, tearDown=librarianTearDown
+            ),
     }
 
 def test_suite():
