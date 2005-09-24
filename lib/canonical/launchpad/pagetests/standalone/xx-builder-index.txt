@@ -61,7 +61,7 @@
                 </a>
               </td>
               <td>
-        <a title="To show the Distribution Release, click here."
+         <a title="To show the Distribution Release, click here."
            href="http://localhost:9000/distros/ubuntu/warty">The Warty Warthog Release</a>
               </td>
               <td></td>
@@ -77,7 +77,7 @@
   <BLANKLINE>
   <BLANKLINE>
             <tr>
-              <td colspan="5">Dummy sampledata entry, not processing</td>
+              <td colspan="5">&lt;pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;"&gt;Dummy sampledata entry, not processing&lt;/pre&gt;</td>
             </tr>
   <BLANKLINE>
   ...

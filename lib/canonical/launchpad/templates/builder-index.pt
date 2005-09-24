@@ -13,7 +13,7 @@
       <h1>Build machine &#8220;<span tal:replace="context/name"/>&#8221;</h1>
       <p>
         <dfn tal:replace="context/name">BUILDER</dfn> is part of
-        <a href="/buildfarm/">the Launchpad build farm</a>.
+        <a href="/+builds">the Launchpad Build Farm</a>.
       </p>
       <table>
         <tr>
@@ -100,7 +100,7 @@
           <tal:block condition="job">
           <tr tal:condition="job/logtail">
             <td
-              tal:content="job/logtail"
+              tal:content="job/logtail/fmt:nice_pre"
               colspan="5"
             >Things are crashing and burning all over the place.</td>
           </tr>
