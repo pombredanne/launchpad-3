@@ -81,13 +81,15 @@
 
   <browser:menus
       module="canonical.launchpad.browser.launchpad"
-      classes="LaunchpadRootFacets RosettaAppMenus"
+      classes="LaunchpadRootFacets RosettaContextMenu MaloneContextMenu"
       />
 
+  <!-- This is a view on TALES CONTEXTS rather than all dicts. -->
   <browser:page
-      for="zope.interface.Interface"
-      name="+contextmenu"
-      template="../templates/launchpad-contextmenu.pt"
+      for="dict"
+      name="+menubox"
+      class="canonical.launchpad.browser.launchpad.MenuBox"
+      template="../templates/launchpad-menubox.pt"
       permission="zope.Public"
       />
 

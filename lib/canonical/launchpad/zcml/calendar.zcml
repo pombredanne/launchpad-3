@@ -135,7 +135,7 @@
 
   <browser:menus
       module="canonical.launchpad.browser.cal"
-      classes="CalendarAppMenus CalendarRangeAppMenus" />
+      classes="CalendarAppMenu CalendarRangeAppMenu CalendarContextMenu" />
 
   <content class="canonical.launchpad.browser.CalendarDay">
     <allow interface="canonical.launchpad.interfaces.ICalendarDay" />

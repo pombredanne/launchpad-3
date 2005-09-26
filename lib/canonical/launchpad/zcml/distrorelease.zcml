@@ -53,9 +53,10 @@
             lp:url="/distros/$DistroRelease.name/+bugs"
             template="../templates/bugs-for-context.pt" />
         <browser:page
-            name="+portlet-bugtasklist-actions"
-            template="../templates/bugtasklist-portlet-actions.pt"
-            lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-actions" />
+            name="+portlet-bugtasklist-mybugs"
+            template="../templates/bugtasklist-portlet-mybugs.pt"
+            lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-mybugs"
+            />
         <browser:page
             name="+portlet-bugtasklist-releasebugs"
             template="../templates/bugtask-portlet-releasebugs.pt"

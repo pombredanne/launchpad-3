@@ -30,8 +30,8 @@
         classes="
             ProductFacets ProductOverviewMenu ProductBountiesMenu
             ProductSupportMenu ProductSpecificationsMenu 
-            ProductTranslationsMenu
-        "
+            ProductTranslationsMenu ProductBugsMenu
+            "
     />
     <!-- XXX ProductBugsMenu undeclared until layout bug is fixed -->
 
@@ -150,9 +150,9 @@
             lp:url="/products/$Product.name/+bugs"
             template="../templates/bugs-for-context.pt" />
         <browser:page
-            name="+portlet-bugtasklist-actions"
-            template="../templates/bugtasklist-portlet-actions.pt"
-            lp:url="/products/$Product.name/+portlet-bugtasklist-actions" />
+            name="+portlet-bugtasklist-mybugs"
+            template="../templates/bugtasklist-portlet-mybugs.pt"
+            lp:url="/products/$Product.name/+portlet-bugtasklist-mybugs" />
     </browser:pages>
 
     <browser:pages

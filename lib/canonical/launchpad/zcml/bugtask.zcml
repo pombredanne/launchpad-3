@@ -7,6 +7,11 @@
 
   <facet facet="bugs">
 
+    <browser:menus
+        module="canonical.launchpad.browser"
+        classes="BugTaskContextMenu"
+        />
+
     <browser:page
         for="*"
         name="+bugtask-macros-tableview"

@@ -1,14 +1,4 @@
 <div class="portlet portletBody portletContent">
-<ul>
-  <li class="add">
-    <a href="#"
-       tal:attributes="href string:${context/fmt:url}/+filebug">
-       Report a bug
-    </a>
-  </li>
-</ul>
-</div>
-<div class="portlet portletBody portletContent">
 <ul class="bugs">
   <li>
     <a href="#"

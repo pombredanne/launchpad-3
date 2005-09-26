@@ -2,7 +2,8 @@
 """Browser code for the launchpad application."""
 
 __metaclass__ = type
-__all__ = ['LoginStatus', 'MaintenanceMessage']
+__all__ = ['LoginStatus', 'MaintenanceMessage', 'MenuBox',
+           'RosettaContextMenu', 'MaloneContextMenu']
 
 import cgi
 import urllib
@@ -12,14 +13,40 @@ from datetime import timedelta, datetime
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ILaunchpadRoot, IRosettaApplication)
+    ILaunchBag, ILaunchpadRoot, IRosettaApplication, IMaloneApplication)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ApplicationMenu, Link)
+    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView)
+
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
 #     be factored out into a generally available adapter for both this
 #     code and for TALES namespace code to use.
-from canonical.launchpad.webapp.tales import DurationFormatterAPI
+#     Same for MenuAPI.
+from canonical.launchpad.webapp.tales import (
+    DurationFormatterAPI, MenuAPI)
+
+
+class MenuBox(LaunchpadView):
+    """View class that helps its template render the actions menu box.
+
+    Nothing at all is rendered if there are no contextmenu items and also
+    no applicationmenu items.
+
+    If there is at least one item, the template is rendered.
+    """
+
+    usedfor = dict  # Really a TALES CONTEXTS object.
+
+    def initialize(self):
+        menuapi = MenuAPI(self.context)
+        self.contextmenuitems = menuapi.context()
+        self.applicationmenuitems = menuapi.application()
+
+    def render(self):
+        if not self.contextmenuitems and not self.applicationmenuitems:
+            return ''
+        else:
+            return self.template()
 
 
 class MaintenanceMessage:
@@ -112,9 +139,17 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         return Link(target, text)
 
 
-class RosettaAppMenus(ApplicationMenu):
+class MaloneContextMenu(ContextMenu):
+    usedfor = IMaloneApplication
+    links = ['cvetracker']
+
+    def cvetracker(self):
+        text = 'CVE Tracker'
+        return Link('cve/', text, icon='info')
+
+
+class RosettaContextMenu(ContextMenu):
     usedfor = IRosettaApplication
-    facet = 'translations'
     links = ['overview', 'about', 'preferences']
 
     def overview(self):

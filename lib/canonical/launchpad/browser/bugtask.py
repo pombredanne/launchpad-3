@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugTaskContextMenu',
     'BugTasksReportView',
     'BugTaskEditView',
     'BugTaskSearchListingView',
@@ -22,12 +23,13 @@ from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
 
 from canonical.lp import dbschema
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import (
+    canonical_url, ContextMenu, Link, structured)
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
     IPersonSet, ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch,
-    IBugSet, IProduct, IDistribution, IDistroRelease, IBugTaskSet,
+    IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask, IBugTaskSet,
     IDistroReleaseSet, ISourcePackageNameSet, BugTaskSearchParams,
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
 from canonical.launchpad.interfaces import IBugTaskSearchListingView
@@ -41,6 +43,92 @@ from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
 #       -- kiko, 2005-08-23
 STATUS_OPEN = any(dbschema.BugTaskStatus.NEW,
                   dbschema.BugTaskStatus.ACCEPTED)
+
+
+class BugTaskContextMenu(ContextMenu):
+    usedfor = IBugTask
+    links = ['editdescription', 'editstatus', 'targetfix',
+             'secrecy', 'markduplicate', 'subscription',
+             'addsubscriber', 'addattachment',
+             'linktocve', 'addurl', 'addwatch',
+             'filebug', 'searchbugs', 'activitylog']
+
+    def editdescription(self):
+        text = 'Edit Description'
+        return Link('+edit', text, icon='edit')
+
+    def editstatus(self):
+        text = 'Edit Status'
+        return Link('+editstatus', text, icon='edit')
+
+    def targetfix(self):
+        enabled = (
+            IDistroBugTask.providedBy(self.context) or
+            IDistroReleaseBugTask.providedBy(self.context))
+        text = 'Target Fix to Releases'
+        return Link('+target', text, icon='edit', enabled=enabled)
+
+    def secrecy(self):
+        text = 'Bug Secrecy'
+        return Link('+secrecy', text, icon='edit')
+
+    def markduplicate(self):
+        text = 'Mark as Duplicate'
+        return Link('+duplicate', text, icon='edit')
+
+    def subscription(self):
+        user = getUtility(ILaunchBag).user
+        if user is not None and self.context.bug.isSubscribed(user):
+            text = 'Unsubscribe'
+        else:
+            text = 'Subscribe'
+        return Link('+subscribe', text, icon='add')
+
+    def addsubscriber(self):
+        text = 'Subscribe Someone Else'
+        return Link('+addsubscriber', text, icon='add')
+
+    def addattachment(self):
+        text = 'Add Attachment'
+        return Link('+addattachment', text, icon='add')
+
+    def linktocve(self):
+        text = structured(
+            'Link to '
+            '<abbr title="Common Vulnerabilities and Exposures Index">'
+            'CVE'
+            '</abbr>')
+        return Link('+linkcve', text, icon='add')
+
+    def unlinkcve(self):
+        enabled = bool(self.context.bug.cves)
+        text = 'Remove CVE link'
+        return Link('+unlinkcve', text, icon='edit', enabled=enabled)
+
+    def addurl(self):
+        text = 'Link to Web Page'
+        return Link('+addurl', text, icon='add')
+
+    def addwatch(self):
+        text = 'Link To Other Bugtracker'
+        return Link('+addwatch', text, icon='add')
+
+    def filebug(self):
+        bugtarget = self.context.target
+        linktarget = '%s/%s' % (canonical_url(bugtarget), '+filebug')
+        text = 'Report a Bug in %s' % bugtarget.displayname
+        return Link(linktarget, text, icon='add')
+
+    def searchbugs(self):
+        bugtarget = self.context.target
+        linktarget = '%s/%s' % (canonical_url(bugtarget), '+bugs')
+        text = 'Search %s Bugs' % bugtarget.displayname
+        return Link(linktarget, text, icon='bugs')
+
+    def activitylog(self):
+        text = 'Activity Log'
+        return Link('+activity', text, icon='list')
+
 
 class BugTasksReportView:
     """The view class for the assigned bugs report."""

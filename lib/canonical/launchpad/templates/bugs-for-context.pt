@@ -15,8 +15,7 @@
               <div metal:use-macro="context/@@+bugtask-search-listing/buglisting" />
             </td>
             <td style="width: 25%">
-              <tal:contextmenu replace="structure context/@@+contextmenu" />
-    <tal:block content="structure context/@@+portlet-bugtasklist-actions" />
+    <tal:block content="structure context/@@+portlet-bugtasklist-mybugs" />
     <tal:releasebugs condition="context/@@+portlet-bugtasklist-releasebugs|nothing">
       <tal:block content="structure context/@@+portlet-bugtasklist-releasebugs" />
     </tal:releasebugs>

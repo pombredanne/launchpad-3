@@ -29,6 +29,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission)
 
+
 class DistributionFacets(StandardLaunchpadFacets):
 
     usedfor = IDistribution
@@ -45,6 +46,25 @@ class DistributionFacets(StandardLaunchpadFacets):
         summary = (
             'Technical support requests for %s' % self.context.displayname)
         return Link(target, text, summary)
+
+
+class DistributionContextMenu(ContextMenu):
+
+    usedfor = IDistribution
+    links = ['showcve', 'searchpackages', 'addrelease']
+
+    def showcve(self):
+        text = 'Show CVE Report'
+        return Link('+cve', text, icon='info')
+
+    def searchpackages(self):
+        text = 'Search Packages'
+        return Link('+packages', text, icon='search')
+
+    @enabled_with_permission('launchpad.Admin')
+    def addrelease(self):
+        text = 'Add New Distribution Release'
+        return Link('+add', text, icon='add')
 
 
 class DistributionOverviewMenu(ApplicationMenu):

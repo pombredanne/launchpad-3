@@ -9,8 +9,9 @@ __all__ = [
     'CalendarMonth',
     'CalendarYear',
     'CalendarView',
-    'CalendarAppMenus',
-    'CalendarRangeAppMenus',
+    'CalendarContextMenu',
+    'CalendarAppMenu',
+    'CalendarRangeAppMenu',
     'CalendarDayView',
     'CalendarWeekView',
     'CalendarMonthView',
@@ -49,7 +50,7 @@ from canonical.launchpad.interfaces import (
      ICalendarEventSet, ICalendarSubscriptionSubset, ICalendarRange,
      ILaunchBag)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, Link, canonical_url)
+    ApplicationMenu, ContextMenu, Link, canonical_url)
 
 from schoolbell.interfaces import ICalendar
 from schoolbell.utils import (
@@ -282,7 +283,25 @@ class CalendarView:
         self.events.sort(key=lambda x: x.dtstart)
 
 
-class CalendarAppMenus(ApplicationMenu):
+class CalendarContextMenu(ContextMenu):
+
+    usedfor = ICalendar
+    links = ['addevent', 'subscribe']
+
+    def addevent(self):
+        text = 'Add Event'
+        return Link('+add', text, icon='add')
+
+    def subscribe(self):
+        # The merged calendar view at "/calendar" is not stored in the
+        # database, so has no ID.  Therefore, it can't be subscribed to,
+        # so we leave out the link.
+        enabled = (self.context.id is not None)
+        text = 'Subscribe to This Calendar'
+        return Link('+subscribe', text, icon='edit', enabled=enabled)
+
+
+class CalendarAppMenu(ApplicationMenu):
     """Application menus for the base calendar view.
 
     The application menus take you to the day, week, month and year
@@ -325,7 +344,7 @@ class CalendarAppMenus(ApplicationMenu):
         return Link(target, text)
 
 
-class CalendarRangeAppMenus(CalendarAppMenus):
+class CalendarRangeAppMenu(CalendarAppMenu):
     """Application menus for the various calendar date range views.
 
     The date used for the links comes from the current date range
@@ -335,7 +354,7 @@ class CalendarRangeAppMenus(CalendarAppMenus):
     usedfor = ICalendarRange
 
     def __init__(self, context):
-        CalendarAppMenus.__init__(self,
+        CalendarAppMenu.__init__(self,
                                   context.calendar,
                                   context.date)
 
