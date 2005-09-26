@@ -17,10 +17,10 @@ __all__ = [
     'traverse_team',
     'traverse_bugtask',
     'traverse_bugs',
-    'traverse_poll',
+    'traverse_poll'
     ]
 
-from zope.component import getUtility
+from zope.component import getUtility, getView
 from zope.exceptions import NotFoundError
 
 from canonical.launchpad.interfaces import (
@@ -28,7 +28,7 @@ from canonical.launchpad.interfaces import (
     IBugTrackerSet, ILaunchBag, ITeamMembershipSubset, ICalendarOwner,
     ILanguageSet, IBugAttachmentSet, IPublishedPackageSet, IPollSet,
     IPollOptionSet, BugTaskSearchParams, IDistroReleaseLanguageSet,
-    IBugExternalRefSet, ICveSet, IBugWatchSet, IProduct,
+    IBugExternalRefSet, ICveSet, IBugWatchSet, IProduct, INullBugTask,
     IDistroSourcePackageSet, ISourcePackageNameSet, IPOTemplateSet,
     IDistribution, IDistroRelease, ISourcePackage, IDistroSourcePackage)
 from canonical.launchpad.database import ProductSeriesSet, SourcePackageSet
@@ -341,6 +341,26 @@ def traverse_team(team, request, name):
 
 def traverse_bugtask(bugtask, request, name):
     """Traverse an IBugTask."""
+    # Are we traversing to the view or edit status page of the
+    # bugtask? If so, and the task actually exists, return the
+    # appropriate page. If the task doesn't yet exist (i.e. it's a
+    # NullBugTask), then return a 404. In other words, the URL:
+    #
+    #   /products/foo/+bug/1/+viewstatus
+    #
+    # will return the +viewstatus page if bug 1 has actually been
+    # reported in "foo". If bug 1 has not yet been reported in "foo",
+    # a 404 will be returned.
+    if name in ("+viewstatus", "+editstatus"):
+        if INullBugTask.providedBy(bugtask):
+            # The bug has not been reported in this context.
+            return None
+        else:
+            # The bug has been reported in this context.
+            return getView(bugtask, name + "-page", request)
+
+    # This was not a traversal to the view or edit status page, so
+    # let's try other alternatives.
     utility_interface = {
         'attachments': IBugAttachmentSet,
         'references': IBugExternalRefSet,

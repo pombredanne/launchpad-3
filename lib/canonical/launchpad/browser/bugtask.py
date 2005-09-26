@@ -47,19 +47,13 @@ STATUS_OPEN = any(dbschema.BugTaskStatus.NEW,
 
 class BugTaskContextMenu(ContextMenu):
     usedfor = IBugTask
-    links = ['editdescription', 'editstatus', 'targetfix',
-             'secrecy', 'markduplicate', 'subscription',
-             'addsubscriber', 'addattachment',
-             'linktocve', 'addurl', 'addwatch',
-             'filebug', 'searchbugs', 'activitylog']
+    links = ['editdescription', 'targetfix', 'secrecy', 'markduplicate',
+             'subscription', 'addsubscriber', 'addattachment', 'linktocve',
+             'addurl', 'addwatch', 'filebug', 'searchbugs', 'activitylog']
 
     def editdescription(self):
         text = 'Edit Description'
         return Link('+edit', text, icon='edit')
-
-    def editstatus(self):
-        text = 'Edit Status'
-        return Link('+editstatus', text, icon='edit')
 
     def targetfix(self):
         enabled = (

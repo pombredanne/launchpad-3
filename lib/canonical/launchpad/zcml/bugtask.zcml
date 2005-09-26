@@ -300,7 +300,7 @@
     </browser:addform>
 
     <browser:editform
-        name="+editstatus"
+        name="+editstatus-page"
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
@@ -320,7 +320,7 @@
     </browser:editform>
 
     <browser:schemadisplay
-        name="+viewstatus"
+        name="+viewstatus-page"
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         fields="maintainer_displayname milestone status priority severity
@@ -354,7 +354,7 @@
     </browser:addform>
 
     <browser:editform
-        name="+editstatus"
+        name="+editstatus-page"
         for="canonical.launchpad.interfaces.IDistroBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
@@ -374,7 +374,7 @@
     </browser:editform>
 
     <browser:schemadisplay
-        name="+viewstatus"
+        name="+viewstatus-page"
         for="canonical.launchpad.interfaces.IDistroBugTask"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename
@@ -398,7 +398,7 @@
         name="+index" />
 
     <browser:editform
-        name="+editstatus"
+        name="+editstatus-page"
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
@@ -418,7 +418,7 @@
     </browser:editform>
 
     <browser:schemadisplay
-        name="+viewstatus"
+        name="+viewstatus-page"
         for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename status priority severity

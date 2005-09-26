@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'IBugTask',
+    'INullBugTask',
     'IBugTaskSearch',
     'IUpstreamBugTaskSearch',
     'IDistroBugTaskSearch',
@@ -118,6 +119,17 @@ class IBugTask(IHasDateCreated):
         the Malone severity values, and returns the relevant Malone
         severity.
         """
+
+
+class INullBugTask(IBugTask):
+    """A marker interface for an IBugTask that doesn't exist in a context.
+
+    An INullBugTask is useful when wanting to view a bug in a context
+    where that bug hasn't yet been reported. This might happen, for
+    example, when searching to see if a bug you want to report has
+    already been filed and finding matching reports that don't yet
+    have tasks reported in your context.
+    """
 
 
 class IBugTaskSearch(Interface):
