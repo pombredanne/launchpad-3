@@ -372,22 +372,11 @@ Editing Bug Tasks
 Upstream Bug Tasks
 ^^^^^^^^^^^^^^^^^^
 
-Only the maintainer and the assignee (if there is one) may edit
-upstream bug tasks. Launchpad admins may edit public upstream bugtasks
-as well.
+To edit an upstream task, you must be logged in. Anonymous users
+cannot edit upstream tasks.
 
     >>> login(ANONYMOUS)
     >>> upstream_task.status = STATUS_ACCEPTED
-    Traceback (most recent call last):
-      ...
-    Unauthorized: ('status', 'launchpad.Edit')
-
-As you can see an anonymous user was not able to edit the task. Also
-the task is not editable by an authenticated user who is not the
-maintainer (nor an admin.)
-
-    >>> login('scott.james.remnant@ubuntulinux.com')
-    >>> upstream_task.status = STATUS_FIXED
     Traceback (most recent call last):
       ...
     Unauthorized: ('status', 'launchpad.Edit')
@@ -397,85 +386,9 @@ Now let's login as a maintainer and try again.
     >>> login('test@canonical.com')
     >>> upstream_task.status = STATUS_FIXED
 
-Same thing again, this time with a user who can edit this bugtask by
-right of being a Launchpad Admin:
+Again, this time as someone other than the maintainer:
 
-    >>> login('andrew.bennetts@ubuntulinux.com')
-    >>> upstream_task.status = STATUS_ACCEPTED
-    >>> upstream_task.status = STATUS_FIXED
-
-The maintainer could be a team as well. In that case, all members of
-that team, or members of teams which are themselves members of that
-team, are able to edit the task.
-
-Let's create a new team, a product which the team owns, and
-associate the same bug with this product:
-
-    >>> from canonical.lp.dbschema import TeamSubscriptionPolicy
-    >>> policy = TeamSubscriptionPolicy.OPEN
-    >>> foobar = personset.get(16)
-    >>> foo_team = personset.newTeam(
-    ...     foobar, 'foo', "The Foo Team", subscriptionpolicy=policy)
-    >>> foo_product = productset.createProduct(
-    ...     owner=foo_team.id, name='foo-product',
-    ...     displayname='foo product', title='Foo',
-    ...     summary='a great product', description='no long desc')
-    >>> upstream_task = bugtaskset.createTask(
-    ...     bug=bug_one, product=foo_product, owner=sabdfl,
-    ...     status=STATUS_NEW, priority=PRIORITY_MEDIUM,
-    ...     severity=SEVERITY_NORMAL)
-    >>> upstream_task.maintainer == foo_team
-    True
-    >>> upstream_task.maintainer_displayname
-    u'The Foo Team'
-
-Then let's login again as Sample Person:
-
-    >>> login('test@canonical.com')
-
-Note that Sample Person is not a member of the Foo team:
-
-    >>> sample_person.inTeam(foo_team)
-    False
-
-Thus, he can't edit the task (note: Sample Person is also not an
-admin):
-
-    >>> upstream_task.status = STATUS_ACCEPTED
-    Traceback (most recent call last):
-      ...
-    Unauthorized: ('status', 'launchpad.Edit')
-
-If he joins the maintainer team, though, he's allowed to edit the task.
-Let's add him to the maintainer team:
-
-    >>> sample_person = personset.get(12)
-    >>> sample_person.join(foo_team)
-    True
-
-Now he's allowed to edit the task:
-
-    >>> upstream_task.status = STATUS_ACCEPTED
-
-Next, we demonstrate how the assignee can edit the task.  Let's remove
-the logged in person from the maintainer team, so that he can't edit the
-task anymore:
-
-    >>> sample_person.leave(foo_team)
-    >>> upstream_task.status = STATUS_FIXED
-    Traceback (most recent call last):
-      ...
-    Unauthorized: ('status', 'launchpad.Edit')
-
-Then let's login as one member of the maintainer team (in this case the
-team owner) and assign Sample Person to the task:
-
-    >>> login('foo.bar@canonical.com')
-    >>> upstream_task.assignee = sample_person.id
-
-Now Sample Person is allowed to edit the bug task again:
-
-    >>> login('test@canonical.com')
+    >>> login('jeff.waugh@ubuntulinux.com')
     >>> upstream_task.status = STATUS_FIXED
 
 Distro and Distro Release Bug Tasks
@@ -572,7 +485,7 @@ like these, use the NullBugTask object.
     >>> null_bugtask.statusdisplayhtml
     u'Not reported in upstream netapplet'
     >>> null_bugtask.statuselsewhere
-    'Fixed in 3 of 8 places'
+    'Fixed in 2 of 7 places'
 
 The astute reader will have noticed that NullBugTask automatically
 "marked" itself as providing the correct IBugTask interface. Let's see
@@ -766,7 +679,6 @@ Let's just make sure that the tasks on bug_one sort correctly.
     ...     print task.targetname
     upstream evolution
     upstream firefox
-    upstream foo-product
     upstream ubuntu
     ubuntu
     ubuntu mozilla-firefox

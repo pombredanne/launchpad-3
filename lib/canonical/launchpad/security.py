@@ -9,15 +9,13 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IAuthorization, IHasOwner, IPerson, ITeam, ITeamMembershipSubset,
-    IDistribution,
-    ITeamMembership, IProductSeriesSource, IProductSeriesSourceAdmin,
-    IMilestone, IBug, IBugTask, IUpstreamBugTask, IDistroBugTask,
-    IDistroReleaseBugTask, ITranslator, IProduct, IProductSeries,
-    IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
-    ILaunchpadCelebrities, IDistroRelease, IBugTracker, IBugAttachment,
-    IPoll, IPollSubset, IPollOption, IProductRelease, IShippingRequest,
-    IShippingRequestSet, IRequestedCDs, IStandardShipItRequestSet,
-    IStandardShipItRequest)
+    IDistribution, ITeamMembership, IProductSeriesSource,
+    IProductSeriesSourceAdmin, IMilestone, IBug, IBugTask, ITranslator,
+    IProduct, IProductSeries, IPOTemplate, IPOFile, IPOTemplateName,
+    IPOTemplateNameSet, ISourcePackage, ILaunchpadCelebrities, IDistroRelease,
+    IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
+    IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
+    IStandardShipItRequestSet, IStandardShipItRequest)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -284,81 +282,22 @@ class EditDistroRelease(AdminByAdminsTeam):
 #                user.inTeam(admins))
 
 
-class EditUpstreamBugTask(AuthorizationBase):
+class EditBugTask(AuthorizationBase):
+    """Permission checker for IBugTask editing.
+
+    Allow any logged-in user to edit public bugtasks. Allow only
+    explicit subscribers to edit private bugtasks.
+    """
     permission = 'launchpad.Edit'
-    usedfor = IUpstreamBugTask
+    usedfor = IBugTask
 
     def checkAuthenticated(self, user):
-        """Allow the maintainer,  assignee, and LP admins to edit the task.
-
-        If the maintainer or assignee is a team, everyone belonging to the team
-        is allowed to edit the task.
-        """
-        bugtask = self.obj
-        user_is_maintainer = user.inTeam(bugtask.maintainer)
-        user_is_assignee = (
-            bugtask.assignee is not None and user.inTeam(bugtask.assignee))
-        user_is_admin = user.inTeam(getUtility(ILaunchpadCelebrities).admin)
-
-        if bugtask.bug.private:
-            # This is a private bug so, in addition to the standard
-            # checks we do here, we must also verify that the person
-            # is subscribed to the bug.
-            #
-            # LP admins are given no special privileges WRT private
-            # bugs. If they wouldn't have otherwise been able to edit
-            # the bugtask, they won't be able to edit it when it's set
-            # private (whereas they *would* be able to edit it if it
-            # were public.)
-            user_is_subscribed_to_bug = bugtask.bug.isSubscribed(user)
-
-            if user_is_maintainer and user_is_subscribed_to_bug:
-                return True
-            elif user_is_assignee and user_is_subscribed_to_bug:
-                return True
-            else:
-                return False
-        else:
+        """Allow all authenticated users to edit the task."""
+        if not self.obj.bug.private:
             # This is a public bug.
-            if user_is_maintainer:
-                return True
-            elif user_is_assignee:
-                return True
-            elif user_is_admin:
-                return True
-            else:
-                return False
-
-
-class EditDistroBugTask(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IDistroBugTask
-
-    def checkAuthenticated(self, user):
-        """Allow all authenticated users to edit the task."""
-        if not self.obj.bug.private:
-            # public bug
             return True
         else:
-            # private bug
-            for subscription in self.obj.bug.subscriptions:
-                if user.inTeam(subscription.person):
-                    return True
-
-            return False
-
-
-class EditDistroReleaseBugTask(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IDistroReleaseBugTask
-
-    def checkAuthenticated(self, user):
-        """Allow all authenticated users to edit the task."""
-        if not self.obj.bug.private:
-            # public bug
-            return True
-        else:
-            # private bug
+            # This is a private bug.
             for subscription in self.obj.bug.subscriptions:
                 if user.inTeam(subscription.person):
                     return True
