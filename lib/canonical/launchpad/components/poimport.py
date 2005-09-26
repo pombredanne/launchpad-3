@@ -106,7 +106,7 @@ def import_po(pofile_or_potemplate, file, published=True):
             potemplate.header = parser.header.msgstr
     else:
         raise TypeError(
-            'Bad argument %s, an IPOTemplate or IPOFile was expected.' % 
+            'Bad argument %s, an IPOTemplate or IPOFile was expected.' %
                 repr(pofile_or_potemplate))
 
     count = 0
