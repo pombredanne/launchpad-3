@@ -83,7 +83,7 @@
             <td tal:content="job/buildstart/fmt:datetime">STARTED</td>
             <td>
               <img alt="[progress]" src="/++resource++progress" />
-              <span XXXtal:replace="job/buildduration/fmt:age" />&hellip;
+              <span tal:replace="job/buildduration/fmt:approximateduration" />&hellip;
             </td>
             <td style="text-align: right;">
               <input alt="(Cancel)" type="image" src="/++resource++stop" />
@@ -134,7 +134,7 @@
                  <span tal:replace="build/title">NAME</span>
               </a>
             </td>
-            <td> tal:define="archrelease build/distroarchrelease">
+            <td tal:define="archrelease build/distroarchrelease">
 	     <a tal:content="archrelease/distrorelease/distribution/title"
                 tal:attributes="href 
                     archrelease/distrorelease/distribution/fmt:url"

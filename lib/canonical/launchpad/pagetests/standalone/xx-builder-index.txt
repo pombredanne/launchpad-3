@@ -70,7 +70,7 @@
               <td></td>
               <td>
                 <img alt="[progress]" src="/++resource++progress" />
-                <span xxxtal:replace="job/buildduration/fmt:age" />&hellip;
+                &hellip;
               </td>
               <td style="text-align: right;">
                 <input alt="(Cancel)" type="image" src="/++resource++stop" />
