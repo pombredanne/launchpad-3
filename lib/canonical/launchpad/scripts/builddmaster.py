@@ -404,15 +404,17 @@ class BuilderGroup:
         method = getattr(self, 'buildStatus_' + buildstatus, None)
 
         if method is None:
-            self.logger.critical("Unknow BuildStatus '%s' for builder '%s'"
+            self.logger.critical("Unknown BuildStatus '%s' for builder '%s'"
                                  % (buildstatus, queueItem.builder.url))
             return
 
         method(queueItem, slave, librarian, buildid, filemap)
 
-    def buildStatus_OK(self, queueItem, slave, librarian, buildid,
-                       filemap=None):
-        """Builder has built package entirely, get all the content back"""
+    def storeBuildInfo(self, queueItem, slave, librarian, buildid):
+        """Store available information for build jobs.
+
+        Store Buildlog, datebuilt, duration and builder signature.
+        """
         queueItem.build.buildlog = self.getLogFromSlave(slave, buildid,
                                                         librarian)
         queueItem.build.datebuilt = UTC_NOW
@@ -421,16 +423,22 @@ class BuilderGroup:
         RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))
         queueItem.build.buildduration = RIGHT_NOW - queueItem.buildstart
         queueItem.build.builder = queueItem.builder
+        
+
+    def buildStatus_OK(self, queueItem, slave, librarian, buildid,
+                       filemap=None):
+        """Builder has built package entirely, get all the content back"""
+        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         queueItem.build.buildstate = dbschema.BuildStatus.FULLYBUILT
-    
         for result in filemap:
             aliasid = self.getFileFromSlave(slave, result, filemap[result],
                                             librarian)
             if result.endswith(".deb"):
                 # Process a binary package
                 self.processBinaryPackage(queueItem.build, aliasid, result)
-                self.logger.debug("Gathered build of %s completely"
-                                  % queueItem.name)
+
+        self.logger.debug("Gathered build of %s completely"
+                          % queueItem.name)
 
         # release the builder
         slave.clean()
@@ -438,35 +446,52 @@ class BuilderGroup:
         
     def buildStatus_PACKAGEFAIL(self, queueItem, slave, librarian, buildid,
                                 filemap=None):
-        """Build has failed when trying the work with the target package,
-        set the job status as FAILEDTOBUILD and remove Buildqueue entry.
+        """Handle a package that had failed to build.
+
+        Build has failed when trying the work with the target package,
+        set the job status as FAILEDTOBUILD, store available info and
+        remove Buildqueue entry.
         """
+        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         queueItem.build.buildstate = dbschema.BuildStatus.FAILEDTOBUILD
-        # release the builder
         slave.clean()
         queueItem.destroySelf()
         
     def buildStatus_DEPFAIL(self, queueItem, slave, librarian, buildid,
                             filemap=None):
-        """Build has failed by missing dependencies, set the job status as
-        MANUALDEPWAIT, requires human interaction to free the builder slave.
+        """Handle a package that had missed dependencies.
+
+        Build has failed by missing dependencies, set the job status as
+        MANUALDEPWAIT, store availble information, remove BuildQueue
+        entry and release builder slave for another job.
         """
+        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         queueItem.build.buildstate = dbschema.BuildStatus.MANUALDEPWAIT
-        self.logger.critical("***** %s needs manual intervention due "
-                             "MANUALDEPWAIT *****" % queueItem.builder.name)
+        self.logger.critical("***** %s is MANUALDEPWAIT *****"
+                             % queueItem.builder.name)
+        slave.clean()
+        queueItem.destroySelf()
         
     def buildStatus_CHROOTFAIL(self, queueItem, slave, librarian, buildid,
                                filemap=None):
-        """Build has failed when installing the current CHROOT, mark the
-        job as CHROOTFAIL and leave builder slave blocked.
+        """Handle a package that had failed when unpacking the CHROOT.
+
+        Build has failed when installing the current CHROOT, mark the
+        job as CHROOTFAIL, store available information, remove BuildQueue
+        and release the builder.
         """
+        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         queueItem.build.buildstate = dbschema.BuildStatus.CHROOTWAIT
-        self.logger.critical("***** %s needs manual intervention due "
-                             "CHROOTWAIT *****" % queueItem.builder.name)
+        self.logger.critical("***** %s is CHROOTWAIT *****" %
+                             queueItem.builder.name)
+        slave.clean()
+        queueItem.destroySelf()
                 
     def buildStatus_BUILDERFAIL(self, queueItem, slave, librarian, buildid,
                                 filemap=None):
-        """Build has been failed when trying to build the target package,
+        """Handle builder failures.
+
+        Build has been failed when trying to build the target package,
         The environment is working well, so mark the job as NEEDSBUILD again
         and 'clean' the builder to do another jobs. 
         """
