@@ -333,12 +333,12 @@ an arbitrary constant that seemed appropriate).
     ...    ) AS BugMatches
     ...   GROUP BY title
     ...   HAVING max(ranking) > 0.2
-    ...   ORDER BY max(ranking) DESC
+    ...   ORDER BY max(ranking) DESC, title
     ...   """)
-    Firefox does not suppo... 0.72
-    Reflow problems with c... 0.72
     Firefox crashes when S... 0.72
+    Firefox does not suppo... 0.72
     Firefox install instru... 0.72
+    Reflow problems with c... 0.72
     Blackhole Trash folder    0.70
     Bug Title Test            0.70
 
