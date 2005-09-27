@@ -25,7 +25,7 @@
 
          <ul style="text-align: right">
           <li class="add"><a href="#" tal:attributes="href
-          string:$url/watches/+new">Add</a></li>
+          string:$url/+addwatch">Add</a></li>
         </ul>
     </div>
   </div>

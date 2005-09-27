@@ -1,4 +1,5 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0613,E0201,R0911
 #
 """Implementation of the lp: htmlform: fmt: namespaces in TALES.
 
@@ -9,7 +10,6 @@ import bisect
 import cgi
 import re
 import os.path
-import warnings
 
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter, getDefaultViewName

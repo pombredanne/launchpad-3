@@ -5,6 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'CveContextMenu',
+    'CveSetContextMenu',
     'CveView',
     'CveLinkView',
     'CveUnlinkView',
@@ -15,8 +17,34 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import ICve, ICveSet, ILaunchBag, IBug
 from canonical.launchpad.validators.cve import valid_cve
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, ContextMenu, Link
 from canonical.launchpad.browser.form import FormView
+
+
+class CveContextMenu(ContextMenu):
+
+    usedfor = ICve
+    links = ['linkbug', 'unlinkbug']
+
+    def linkbug(self):
+        text = 'Link to Bug'
+        return Link('+linkbug', text, icon='edit')
+
+    def unlinkbug(self):
+        enabled = bool(self.context.bugs)
+        text = 'Remove Bug Link'
+        return Link('+unlinkbug', text, icon='edit', enabled=enabled)
+
+
+class CveSetContextMenu(ContextMenu):
+
+    usedfor = ICveSet
+    links = ['allcve']
+
+    def allcve(self):
+        text = 'All Registered CVE'
+        return Link('+all', text)
+
 
 class CveView:
 

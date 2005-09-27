@@ -53,7 +53,7 @@ class TestUtilities(unittest.TestCase):
            reading changes files
         """
         from canonical.archivepublisher.utils import build_file_list
-        from canonical.archivepublisher.TagFiles import parse_tagfile
+        from canonical.archivepublisher.tagfiles import parse_tagfile
 
         ch = parse_tagfile(datadir("good-signed-changes"))
         fl = build_file_list(ch)

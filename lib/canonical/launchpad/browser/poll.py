@@ -232,7 +232,7 @@ class PollVoteView(BasePollView):
                 # and ask him to fix it. -- Guilherme Salgado 2005-09-14
                 preference = None
             newvotes[option] = preference
-        
+
         if self.userVoted():
             # This is a vote change.
             # For now it's not possible to have votes in an inactive option,

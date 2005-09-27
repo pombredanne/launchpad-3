@@ -21,7 +21,6 @@ from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.lp import dbschema
 from canonical.launchpad.database.bugcve import BugCve
 from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.message import (

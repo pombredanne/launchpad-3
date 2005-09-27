@@ -162,5 +162,10 @@
         name="+portlet-details" />
     </browser:pages>
 
+    <browser:menus
+        module="canonical.launchpad.browser.bounty"
+        classes="BountiesAppMenu BountyContextMenu"
+        />
+
 </facet>
 </configure>

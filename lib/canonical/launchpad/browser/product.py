@@ -135,9 +135,9 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['new']
+    links = ['filebug']
 
-    def new(self):
+    def filebug(self):
         text = 'Report a bug'
         return Link('+filebug', text, icon='add')
 

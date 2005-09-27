@@ -20,40 +20,80 @@ from zope.app.form.browser.editview import EditView
 from canonical.launchpad.interfaces import (
     IBounty, IBountySet, ILaunchBag, IProduct, IProject, IDistribution)
 
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import (
+    canonical_url, LaunchpadView, ApplicationMenu, ContextMenu, Link,
+    enabled_with_permission)
 
 
-class BountyView:
+class BountiesAppMenu(ApplicationMenu):
+    usedfor = IBountySet
+    facet = 'bounties'
+    links = ['new']
+
+    def new(self):
+        text = "Register New Bounty"
+        return Link('+new', text, icon="add")
+
+
+class BountyContextMenu(ContextMenu):
+    usedfor = IBounty
+    links = ['edit', 'subscription', 'administer']
+
+    def edit(self):
+        text = 'Edit Bounty'
+        return Link('+edit', text, icon='edit')
+
+    def subscription(self):
+        user = getUtility(ILaunchBag).user
+        if (user is not None and
+            get_subscription_for_person(user, self.context) is None):
+            text = 'Unsubscribe from Bounty'
+            return Link('+unsubscribe', text, icon='edit')
+        else:
+            text = 'Subscribe to Bounty'
+            return Link('+subscribe', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+admin', text, icon='edit')
+
+
+def get_subscription_for_person(person, bounty):
+    """Return the subscription the person has on the bounty, or None if there
+    is not such subscription.
+    """
+    # XXX: refactor to method on IBounty.
+    #      SteveAlexander, 2005-09-23
+    for subscription in bounty.subscriptions:
+        if subscription.person.id == person.id:
+            return subscription
+    return None
+
+
+class BountyView(LaunchpadView):
+    """View class used for bounty pages."""
 
     __used_for__ = IBounty
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    def initialize(self):
         self.notices = []
-
-        # figure out who the user is for this transaction
-        self.user = getUtility(ILaunchBag).user
-
         # establish if a subscription form was posted
-        newsub = request.form.get('subscribe', None)
-        if newsub is not None and self.user and request.method == 'POST':
+        newsub = self.request.form.get('subscribe', None)
+        if newsub is not None and self.user and self.request.method == 'POST':
             if newsub == 'Subscribe':
                 self.context.subscribe(self.user)
             elif newsub == 'Unsubscribe':
                 self.context.unsubscribe(self.user)
-            self.notices.append("Your subscription to this bounty has been "
-                "updated.")
+            self.notices.append(
+                "Your subscription to this bounty has been updated.")
 
     @property
     def subscription(self):
         """establish if this user has a subscription"""
         if self.user is None:
             return None
-        for subscription in self.context.subscriptions:
-            if subscription.person.id == self.user.id:
-                return subscription
-        return None
+        return get_subscription_for_person(self.user, self.context)
 
 
 class BountyEditView(EditView):
@@ -119,11 +159,9 @@ class BountyAddView(AddView):
         return self._nextURL
 
 
-class BountySetView:
+class BountySetView(LaunchpadView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    def initialize(self):
         self.bounties = getUtility(IBountySet)
 
     def top_bounties(self):

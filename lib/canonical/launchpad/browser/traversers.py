@@ -17,24 +17,22 @@ __all__ = [
     'traverse_team',
     'traverse_bugtask',
     'traverse_bugs',
-    'traverse_poll',
+    'traverse_poll'
     ]
 
-from zope.component import getUtility, queryView
+from zope.component import getUtility, getView
 from zope.exceptions import NotFoundError
 
-from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
     IBugSet, IBugTaskSet, IDistributionSet, IProjectSet, IProductSet,
     IBugTrackerSet, ILaunchBag, ITeamMembershipSubset, ICalendarOwner,
     ILanguageSet, IBugAttachmentSet, IPublishedPackageSet, IPollSet,
     IPollOptionSet, BugTaskSearchParams, IDistroReleaseLanguageSet,
-    IBugExternalRefSet, ICveSet, IBugWatchSet, IProduct, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, IDistroSourcePackageSet,
-    ISourcePackageNameSet, IPOTemplateSet, IDistribution, IDistroRelease,
-    ISourcePackage, IDistroSourcePackage)
+    IBugExternalRefSet, ICveSet, IBugWatchSet, IProduct, INullBugTask,
+    IDistroSourcePackageSet, ISourcePackageNameSet, IPOTemplateSet,
+    IDistribution, IDistroRelease, ISourcePackage, IDistroSourcePackage)
 from canonical.launchpad.database import ProductSeriesSet, SourcePackageSet
-from canonical.launchpad.components.bugtask import NullBugTask, mark_task
+from canonical.launchpad.components.bugtask import NullBugTask
 
 def _consume_next_path_step(request):
     """Consume the next traversal step in the request.
@@ -233,12 +231,12 @@ def traverse_distribution(distribution, request, name):
         if not nextstep:
             return None
 
-        sourcepackagename = getUtility(ISourcePackageNameSet).queryByName(nextstep)
-        if not sourcepackagename:
+        srcpackagename = getUtility(ISourcePackageNameSet).queryByName(nextstep)
+        if not srcpackagename:
             return None
 
         return getUtility(IDistroSourcePackageSet).getPackage(
-            distribution=distribution, sourcepackagename=sourcepackagename)
+            distribution=distribution, sourcepackagename=srcpackagename)
     elif name == '+milestone':
         milestone_name = _consume_next_path_step(request)
         try:
@@ -343,6 +341,26 @@ def traverse_team(team, request, name):
 
 def traverse_bugtask(bugtask, request, name):
     """Traverse an IBugTask."""
+    # Are we traversing to the view or edit status page of the
+    # bugtask? If so, and the task actually exists, return the
+    # appropriate page. If the task doesn't yet exist (i.e. it's a
+    # NullBugTask), then return a 404. In other words, the URL:
+    #
+    #   /products/foo/+bug/1/+viewstatus
+    #
+    # will return the +viewstatus page if bug 1 has actually been
+    # reported in "foo". If bug 1 has not yet been reported in "foo",
+    # a 404 will be returned.
+    if name in ("+viewstatus", "+editstatus"):
+        if INullBugTask.providedBy(bugtask):
+            # The bug has not been reported in this context.
+            return None
+        else:
+            # The bug has been reported in this context.
+            return getView(bugtask, name + "-page", request)
+
+    # This was not a traversal to the view or edit status page, so
+    # let's try other alternatives.
     utility_interface = {
         'attachments': IBugAttachmentSet,
         'references': IBugExternalRefSet,
@@ -373,6 +391,8 @@ def traverse_bugtask(bugtask, request, name):
 def traverse_bugs(bugcontainer, request, name):
     """Traverse an IBugSet."""
     if name == 'assigned':
+        # XXX: this is obviously broken, because it's not even imported.
+        #   -- kiko, 2005-09-23
         return BugTasksReport()
     else:
         # If the bug is not found, we expect a NotFoundError. If the

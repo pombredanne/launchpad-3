@@ -8,8 +8,7 @@ __all__ = [
     'TicketTargetView',
     ]
 
-from canonical.lp.dbschema import TicketStatus, TicketPriority
-from canonical.launchpad.interfaces import ITicketTarget, IPerson
+from canonical.launchpad.interfaces import IPerson
 
 class TicketTargetView:
 

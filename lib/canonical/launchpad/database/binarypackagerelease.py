@@ -5,12 +5,10 @@ __all__ = ['BinaryPackageRelease', 'BinaryPackageReleaseSet']
 
 
 from zope.interface import implements
-from zope.component import getUtility
 from zope.exceptions import NotFoundError
 
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol
 
-from canonical.librarian.interfaces import ILibrarianClient
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
 
 from canonical.launchpad.interfaces import (
@@ -66,7 +64,10 @@ class BinaryPackageRelease(SQLBase):
     name = property(name)
 
     def maintainer(self):
-        return self.sourcepackagerelease.sourcepackage.maintainer
+        # XXX: this method is unused or untested; there was a trivial
+        # AttributeError here that I fixed. Please test.
+        #   -- kiko, 2005-09-23
+        return self.build.sourcepackagerelease.sourcepackage.maintainer
     maintainer = property(maintainer)
 
     def current(self, distroRelease):
@@ -93,11 +94,13 @@ class BinaryPackageRelease(SQLBase):
         # the launchbag.
 
         clauseTables = ['BinaryPackagePublishing', 'BinaryPackageName']
-        query = ('BinaryPackagePublishing.binarypackagerelease = BinaryPackageRelease.id '
-                 'AND BinaryPackageRelease.binarypackagename = BinaryPackageName.id '
-                 'AND BinaryPackageName.id = %s '
-                 'AND BinaryPackagePublishing.distroarchrelease = %s '
-                 'AND BinaryPackagePublishing.status = %s'
+        query = ('''BinaryPackagePublishing.binarypackagerelease =
+                        BinaryPackageRelease.id
+                    AND BinaryPackageRelease.binarypackagename =
+                    BinaryPackageName.id
+                    AND BinaryPackageName.id = %s
+                    AND BinaryPackagePublishing.distroarchrelease = %s
+                    AND BinaryPackagePublishing.status = %s'''
                  % sqlvalues(self.binarypackagename.id,
                              self.build.distroarchrelease.id,
                              dbschema.PackagePublishingStatus.SUPERSEDED)
@@ -119,7 +122,8 @@ class BinaryPackageRelease(SQLBase):
             binarypackagereleaseID=self.id,
             distroarchreleaseID=self.build.distroarchrelease.id)
         if packagepublishing is None:
-            raise NotFoundError('BinaryPackageRelease not found in PackagePublishing')
+            raise NotFoundError('BinaryPackageRelease not found in '
+                                'PackagePublishing')
         return packagepublishing.status.title
     
     def __getitem__(self, version):
@@ -151,13 +155,20 @@ class BinaryPackageReleaseSet:
         clauseTables = ['BinaryPackagePublishing', 'DistroArchRelease',
                         'BinaryPackageRelease', 'BinaryPackageName']
 
-        query = (
-            'BinaryPackagePublishing.binarypackagerelease = BinaryPackageRelease.id AND '
-            'BinaryPackagePublishing.distroarchrelease = DistroArchRelease.id AND '
-            'DistroArchRelease.distrorelease = %d AND '
-            'BinaryPackageRelease.binarypackagename = BinaryPackageName.id '
+        query = ('''BinaryPackagePublishing.binarypackagerelease =
+                        BinaryPackageRelease.id AND
+                    BinaryPackagePublishing.distroarchrelease =
+                        DistroArchRelease.id AND
+                    DistroArchRelease.distrorelease = %d AND
+                    BinaryPackageRelease.binarypackagename = 
+                        BinaryPackageName.id'''
             % distroreleaseID
             )
+
+        # XXX: Rewrite this code to use "AND".join(); I'm hacking on an
+        # extra space here to make this work.
+        #   -- kiko, 2005-09-23
+        query += " "
 
         if fti:
             query += """
@@ -186,13 +197,23 @@ class BinaryPackageReleaseSet:
         clauseTables = ['BinaryPackagePublishing', 'DistroArchRelease',
                         'BinaryPackageRelease', 'BinaryPackageName']
 
-        query = (
-            'BinaryPackagePublishing.binarypackagerelease = BinaryPackageRelease.id AND '
-            'BinaryPackagePublishing.distroarchrelease = DistroArchRelease.id AND '
-            'DistroArchRelease.distrorelease = %d AND '
-            'BinaryPackageRelease.binarypackagename = BinaryPackageName.id '
+        # XXX: identical query to findByNameInDistroRelease; merge or
+        # nuke one.
+        #   -- kiko, 2005-09-23
+        query = ('''BinaryPackagePublishing.binarypackagerelease =
+                        BinaryPackageRelease.id AND
+                    BinaryPackagePublishing.distroarchrelease =
+                        DistroArchRelease.id AND
+                    DistroArchRelease.distrorelease = %d AND
+                    BinaryPackageRelease.binarypackagename = 
+                        BinaryPackageName.id'''
             % distroreleaseID
             )
+
+        # XXX: Rewrite this code to use "AND".join(); I'm hacking on an
+        # extra space here to make this work.
+        #   -- kiko, 2005-09-23
+        query += " "
 
         if name:
             query += 'AND BinaryPackageName.name = %s '% sqlvalues(name)
@@ -221,15 +242,20 @@ class BinaryPackageReleaseSet:
         clauseTables = ['BinaryPackagePublishing', 'DistroArchRelease',
                         'BinaryPackageName']
 
-        query = ('BinaryPackagePublishing.binarypackagerelease = BinaryPackageRelease.id AND '
-                 'BinaryPackagePublishing.distroarchrelease = '
-                 'DistroArchRelease.id AND '
-                 'DistroArchRelease.distrorelease = %d AND '
-                 'BinaryPackageRelease.binarypackagename = BinaryPackageName.id'
+        # XXX: identical query to findByNameInDistroRelease; merge or
+        # nuke one.
+        #   -- kiko, 2005-09-23
+        query = ('''BinaryPackagePublishing.binarypackagerelease = 
+                        BinaryPackageRelease.id AND
+                    BinaryPackagePublishing.distroarchrelease = 
+                        DistroArchRelease.id AND
+                    DistroArchRelease.distrorelease = %d AND
+                    BinaryPackageRelease.binarypackagename = 
+                        BinaryPackageName.id'''
                  % distroreleaseID
                  )
 
-        return BinaryPackageRelease.select(query,clauseTables=clauseTables,
+        return BinaryPackageRelease.select(query, clauseTables=clauseTables,
                                            orderBy='BinaryPackageName.name')
 
     def getByNameVersion(self, distroreleaseID, name, version):
@@ -249,33 +275,33 @@ class BinaryPackageReleaseSet:
         SourcePackageRelease with an SourcePackageName inside a
         DistroRelease context.
         """
-        clauseTables = ['SourcePackageName', 'SourcePackageRelease',
-                        'SourcePackagePublishing', 'Build']
-
-        query = ('SourcePackageRelease.sourcepackagename = '
-                 'SourcePackageName.id AND '
-                 'SourcePackagePublishing.sourcepackagerelease = '
-                 'SourcePackageRelease.id AND '
-                 'Build.sourcepackagerelease = SourcePackageRelease.id AND '
-                 'BinaryPackageRelease.build = Build.id AND '
-                 'SourcePackageName.name = %s AND '
-                 'SourcePackagePublishing.distrorelease = %s AND '
-                 'SourcePackagePublishing.status = %s'
-                 % sqlvalues(sourcepackagename,
-                             DistroRelease.id,
-                             dbschema.PackagePublishingStatus.PUBLISHED
-                             )
-                 )
-        raise RuntimeError("Needs fixing by debonzi")
-        return BinaryPackageRelease.select(query, clauseTables=clauseTables)
+        # XXX: Needs fixing, will not work
+        raise AssertionError
+#         clauseTables = ['SourcePackageName', 'SourcePackageRelease',
+#                         'SourcePackagePublishing', 'Build']
+# 
+#         query = ('SourcePackageRelease.sourcepackagename = '
+#                  'SourcePackageName.id AND '
+#                  'SourcePackagePublishing.sourcepackagerelease = '
+#                  'SourcePackageRelease.id AND '
+#                  'Build.sourcepackagerelease = SourcePackageRelease.id AND '
+#                  'BinaryPackageRelease.build = Build.id AND '
+#                  'SourcePackageName.name = %s AND '
+#                  'SourcePackagePublishing.distrorelease = %s AND '
+#                  'SourcePackagePublishing.status = %s'
+#                  % sqlvalues(sourcepackagename,
+#                              DistroRelease.id,
+#                              dbschema.PackagePublishingStatus.PUBLISHED
+#                              )
+#                  )
+#         return BinaryPackageRelease.select(query, clauseTables=clauseTables)
 
     def query(self, name=None, distribution=None, distrorelease=None,
               distroarchrelease=None, text=None):
-        if (name is None and distribution is None and
-            distrorelease is None and text is None):
-            raise ValueError('must give something to the query.')
-        clauseTables = Set(['BinaryPackageRelease'])
         # XXX sabdfl this is not yet done 12/12/04
-        # XXX What is not yet done?  Raise a NotImplementedError.
-        raise NotImplementedError
+        raise AssertionError
+#         if (name is None and distribution is None and
+#             distrorelease is None and text is None):
+#             raise ValueError('must give something to the query.')
+#         clauseTables = Set(['BinaryPackageRelease'])
 

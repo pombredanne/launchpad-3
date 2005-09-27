@@ -11,12 +11,10 @@ __all__ = [
 
 from zope.schema import Choice, Int, TextLine
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
     IHasOwner, IBugTarget, ISpecificationTarget)
-from canonical.launchpad.validators.version import sane_version
 
 from canonical.launchpad import _
 
@@ -66,7 +64,7 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         title=_("Parent Release"),
         description=_("The Parente Distribution Release."), required=True,
         vocabulary='DistroRelease')
-    owner =Attribute("Owner")
+    owner = Attribute("Owner")
     state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")
     lucilleconfig = Attribute("Lucille Configuration Field")

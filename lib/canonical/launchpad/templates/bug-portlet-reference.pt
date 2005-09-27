@@ -19,7 +19,7 @@
 
       <ul style="text-align: right">
         <li class="add">
-          <a tal:attributes="href string:$url/references/+new">Add</a>
+          <a tal:attributes="href string:$url/+addurl">Add</a>
         </li>
       </ul>
     </div>

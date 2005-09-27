@@ -9,15 +9,13 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IAuthorization, IHasOwner, IPerson, ITeam, ITeamMembershipSubset,
-    IDistribution,
-    ITeamMembership, IProductSeriesSource, IProductSeriesSourceAdmin,
-    IMilestone, IBug, IBugTask, IUpstreamBugTask, IDistroBugTask,
-    IDistroReleaseBugTask, ITranslator, IProduct, IProductSeries,
-    IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
-    ILaunchpadCelebrities, IDistroRelease, IBugTracker, IBugAttachment,
-    IPoll, IPollSubset, IPollOption, IProductRelease, IShippingRequest,
-    IShippingRequestSet, IRequestedCDs, IStandardShipItRequestSet,
-    IStandardShipItRequest)
+    IDistribution, ITeamMembership, IProductSeriesSource,
+    IProductSeriesSourceAdmin, IMilestone, IBug, IBugTask, ITranslator,
+    IProduct, IProductSeries, IPOTemplate, IPOFile, IPOTemplateName,
+    IPOTemplateNameSet, ISourcePackage, ILaunchpadCelebrities, IDistroRelease,
+    IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
+    IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
+    IStandardShipItRequestSet, IStandardShipItRequest)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -284,53 +282,22 @@ class EditDistroRelease(AdminByAdminsTeam):
 #                user.inTeam(admins))
 
 
-class EditUpstreamBugTask(AuthorizationBase):
+class EditBugTask(AuthorizationBase):
+    """Permission checker for IBugTask editing.
+
+    Allow any logged-in user to edit public bugtasks. Allow only
+    explicit subscribers to edit private bugtasks.
+    """
     permission = 'launchpad.Edit'
-    usedfor = IUpstreamBugTask
-
-    def checkAuthenticated(self, user):
-        """Allow the maintainer and possible assignee to edit the task.
-
-        If the maintainer or assignee is a team, everyone belonging to the team
-        is allowed to edit the task.
-        """
-        if user.inTeam(self.obj.maintainer):
-            return True
-        elif self.obj.assignee is not None and user.inTeam(self.obj.assignee):
-            return True
-        else:
-            return False
-
-
-class EditDistroBugTask(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IDistroBugTask
+    usedfor = IBugTask
 
     def checkAuthenticated(self, user):
         """Allow all authenticated users to edit the task."""
         if not self.obj.bug.private:
-            # public bug
+            # This is a public bug.
             return True
         else:
-            # private bug
-            for subscription in self.obj.bug.subscriptions:
-                if user.inTeam(subscription.person):
-                    return True
-
-            return False
-
-
-class EditDistroReleaseBugTask(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IDistroReleaseBugTask
-
-    def checkAuthenticated(self, user):
-        """Allow all authenticated users to edit the task."""
-        if not self.obj.bug.private:
-            # public bug
-            return True
-        else:
-            # private bug
+            # This is a private bug.
             for subscription in self.obj.bug.subscriptions:
                 if user.inTeam(subscription.person):
                     return True

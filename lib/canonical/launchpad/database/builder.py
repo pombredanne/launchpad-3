@@ -24,6 +24,8 @@ from canonical.launchpad.interfaces import (
 
 from canonical.lp.dbschema import EnumCol, BuildStatus
 
+import pytz
+
 
 class Builder(SQLBase):
     implements(IBuilder)
@@ -134,12 +136,13 @@ class BuildQueue(SQLBase):
         return self.build.sourcepackagerelease.files
 
     @property
-    def partialDuration(self):
+    def buildduration(self):
         """See IBuildQueue"""
         if self.buildstart:
-            # XXX cprov 20050823
-            # How to be able to use the default formaters for this field ?
-            return UTC_NOW - self.buildstart
+            UTC = pytz.timezone('UTC')
+            now = datetime.now(UTC)
+            return now - self.buildstart
+        return None
 
         
 class BuildQueueSet(object):

@@ -1,7 +1,7 @@
 """
 Tests to make sure that initZopeless works as expected.
 """
-import unittest, warnings, sys, psycopg, time
+import unittest, warnings, sys, psycopg
 from canonical.lp import initZopeless
 from canonical.database.sqlbase import SQLBase, alreadyInstalledMsg
 from canonical.ftests.pgsql import PgTestCase, PgTestSetup
@@ -126,15 +126,11 @@ class TestZopeless(unittest.TestCase):
         t.start()
         t.join()
 
-        time.sleep(5)
-
         beer_name = 'Singa'
         beer_rating = 6
         t = Thread(target=doit)
         t.start()
         t.join()
-
-        time.sleep(5)
 
         # And make sure they are both seen
         beers = MoreBeer.select()

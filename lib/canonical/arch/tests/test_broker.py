@@ -27,23 +27,22 @@ from canonical.launchpad.interfaces import IArchiveCollection
 
 class NamespaceObject(unittest.TestCase):
 
-    # XXX: disable all tests from this class
-    # -- David Allouche 2005-04-05
-    tests = []
+    # XXX: These tests do not pass, code will be obsolete soon anyway
+    # -- David Allouche 2005-09-26
 
-    def test_None_is_not_equal(self):
+    def DISABLED_test_None_is_not_equal(self):
         """Test that any object is != None"""
         from canonical.arch.broker import Revision
         r = Revision("")
         self.failIf(r == None)
 
-    def test_identical_is_equal(self):
+    def DISABLED_test_identical_is_equal(self):
         """Test that an object is identical to itself"""
         from canonical.arch.broker import Revision
         r = Revision("")
         self.failUnless(r == r)
 
-    def test_blah(self):
+    def DISABLED_test_blah(self):
         """blah"""
         from canonical.arch.broker import Revision
         r1 = Revision("")
@@ -51,7 +50,7 @@ class NamespaceObject(unittest.TestCase):
         r2 = Revision("")
         self.assertEqual(r1, r2)
 
-    def test_everything_in_the_world(self):
+    def DISABLED_test_everything_in_the_world(self):
         """Test equality combinations"""
         results = [[True] * 10] * 10
         #           R      V      C      A
@@ -77,12 +76,11 @@ class NamespaceObject(unittest.TestCase):
 
 
 class Archives(DatabaseTestCase):
-    tests=[]
+
     def test_implements(self):
         """canonical.arch.broker.Archives implement IArchiveCollection"""
         from canonical.arch.broker import Archives
         self.failUnless(verifyClass(IArchiveCollection, Archives))
-    tests.append('test_implements')
 
     def _help_test_keys(self, names):
         from canonical.arch.broker import Archives
@@ -92,17 +90,14 @@ class Archives(DatabaseTestCase):
     def test_keys_zero(self):
         """Archives.keys() work with zero archive"""
         self._help_test_keys([])
-    tests.append('test_keys_zero')
 
     def test_keys_one(self):
         """Archives.keys() works with one archive"""
         self._help_test_keys(["foo@bar"])
-    tests.append('test_keys_one')
 
     def test_keys_two(self):
         """Archives.keys() works with two archives"""
         self._help_test_keys(["foo@bar", "gam@bar"])
-    tests.append('test_keys_two')
     
     def test_create(self):
         """Archives.create("foo@bar") works"""
@@ -114,7 +109,6 @@ class Archives(DatabaseTestCase):
         archive=Archives().create(name)
         self.failUnless(isinstance(archive, Archive))
         self.failUnless(mapper.findByName(name).exists())
-    tests.append('test_create')
 
     def test_create_invalid(self):
         """Archives.create raises NamespaceError on invalid archive name"""
@@ -122,9 +116,10 @@ class Archives(DatabaseTestCase):
         name="foo%ouch@bar"
         def thunk(): Archives().create(name)
         self.assertRaises(NamespaceError, thunk)
-    tests.append('test_create_invalid')
 
-    def test_create_one_location(self):
+    # XXX: test do not pass, code will be obsolete soon anyway
+    # -- David Allouche 2005-09-26
+    def DISABLED_test_create_one_location(self):
         """Archives.create also creates a single location."""
         from canonical.arch.broker import Archives, Archive
         from canonical.launchpad.database import ArchiveMapper
@@ -134,8 +129,6 @@ class Archives(DatabaseTestCase):
         archive=Archives().create(name, location)
         self.failUnless(isinstance(archive, Archive))
         self.failUnless(mapper.findByName(name).exists())
-    # FIXME
-    # tests.append('test_create_one_location')
 
     def test_setitem_raises(self):
         """Archives.__setitem__ raises a TypeError."""
@@ -144,7 +137,6 @@ class Archives(DatabaseTestCase):
         collection, archive = Archives(), Archive(name)
         def thunk(): collection[name] = archive
         self.assertRaises(TypeError, thunk)
-    tests.append('test_setitem_raises')
 
     def test_delitem_raises(self):
         """Archives.__delitem__ raises a TypeError."""
@@ -153,7 +145,6 @@ class Archives(DatabaseTestCase):
         collection, archive = Archives(), Archive(name)
         def thunk(): del collection[name]
         self.assertRaises(TypeError, thunk)
-    tests.append('test_delitem_raises')
 
     def test_getitem_invalid_raises(self):
         """Archives.__getitem__ raises NamespaceError on invalid name"""
@@ -161,7 +152,6 @@ class Archives(DatabaseTestCase):
         name="foo%ouch@bar"
         def thunk(): Archives()[name]
         self.assertRaises(NamespaceError, thunk)
-    tests.append('test_getitem_invalid_raises')
 
     def test_getitem(self):
         """Archives.__getitem__ works"""
@@ -174,17 +164,14 @@ class Archives(DatabaseTestCase):
         created_archive = archives[name]
         self.assert_(isinstance(created_archive, Archive))
         self.assertEqual(name, created_archive.name)
-    tests.append('test_getitem')
 
 
 class ArchiveLocation(DatabaseTestCase):
-    tests=[]
 
     def test_implements(self):
         """canonical.arch.broker.ArchiveLocation implement IArchiveLocation"""
         from canonical.arch.broker import ArchiveLocation
         self.failUnless(verifyClass(IArchiveLocation, ArchiveLocation))
-    tests.append('test_implements')
 
     def test_instantiate(self):
         """canonical.arch.broker.ArchiveLocation can be instantiated"""
@@ -192,9 +179,10 @@ class ArchiveLocation(DatabaseTestCase):
         archive = Archive("foo@bar")
         url = "http://blah/"
         location = ArchiveLocation(archive, url, 0)
-    tests.append('test_instantiate')
 
-    def test_equality(self):
+    # XXX: test do not pass, code will be obsolete soon anyway
+    # -- David Allouche 2005-09-26
+    def DISABLED_test_equality(self):
         from canonical.arch.broker import Archive, ArchiveLocation
         archive1 = Archive("foo@bar")
         archive2 = Archive("baz@boo")
@@ -372,25 +360,21 @@ class NamespaceTestCase(DatabaseTestCase):
         self.assertNotEqual(instance1, instance2)
 
 class Archive(NamespaceTestCase):
-    tests = []
                
     def test_imports(self):
         """canonical.launchpad.interfaces is importable."""
         from canonical.arch.broker import Archive
         import canonical.launchpad.interfaces
-    tests.append('test_imports')
 
     def test_construct(self):
         """canonical.arch.broker.Archive is constructable"""
         from canonical.arch.broker import Archive
         foo=Archive("test@example.com--cad")
-    tests.append('test_construct')
 
     def test_implements(self):
         """canonical.arch.broker.Archive implements Archive"""
         from canonical.arch.broker import Archive
         self.failUnless(verifyClass(IArchive, Archive))
-    tests.append('test_implements')
 
     def test_archive_exists_missing(self):
         """canonical.arch.broker.Archive.exists() on an absent archive works"""
@@ -398,7 +382,6 @@ class Archive(NamespaceTestCase):
         from canonical.arch.broker import Archives
         a = Archives()[archive_name]
         self.failIf(a.exists())
-    tests.append('test_archive_exists_missing')
 
     def test_MissingArchive(self):
         """MissingArchive has exists false, and the correct name"""
@@ -407,7 +390,6 @@ class Archive(NamespaceTestCase):
         archive=MissingArchive(name)
         self.failIf(archive.exists())
         self.assertEqual(archive.name, name)
-    tests.append('test_MissingArchive')
 
     def test_name_return(self):
         """Test that the name is returned correctly"""
@@ -416,7 +398,6 @@ class Archive(NamespaceTestCase):
         archive = Archive(name)
         self.assertEqual(name, archive.fullname)
         self.assertEqual(name, archive.name)
-    tests.append('test_name_return')
 
     def test_getitem_invalid_raises(self):
         """Archive.__getitem__ raises NamespaceError on invalid category"""
@@ -425,7 +406,6 @@ class Archive(NamespaceTestCase):
         archive = Archive(name)
         def thunk(): archive['break/me']
         self.assertRaises(NamespaceError, thunk)
-    tests.append('test_getitem_invalid_raises')
 
     def test_getitem(self):
         """Archive.__getitem__ works"""
@@ -436,7 +416,6 @@ class Archive(NamespaceTestCase):
         category = archive[category_name]
         self.assertEqual('%s/%s' % (archive_name, category_name),
                          category.fullname)
-    tests.append('test_getitem')
 
     def test_getitem_missing_raises(self):
         """MissingArchive.__getitem__ raises TypeError."""
@@ -446,7 +425,6 @@ class Archive(NamespaceTestCase):
         category_name = "cat3-gory"
         def thunk(): archive[category_name]
         self.assertRaises(TypeError, thunk)
-    tests.append('test_getitem_missing_raises')
 
     classname="Archive"
     fullname="foo@bar"
@@ -454,22 +432,18 @@ class Archive(NamespaceTestCase):
     def test_null_equality(self):
         """Test equality of an Archive against itself"""
         self._help_test_null_equality(self.classname, self.fullname)
-    tests.append('test_null_equality')
 
     def test_simple_equality(self):
         """Test equality of two identical Archives"""
         self._help_test_simple_equality(self.classname, self.fullname)
-    tests.append('test_simple_equality')
 
     def test_None_inequality(self):
         """Compare an Archive against None"""
         self._help_test_none_inequality(self.classname, self.fullname)
-    tests.append('test_None_inequality')
 
     def test_named_inequality(self):
         """Differing fullnames make Archive unequal"""
         self._help_test_named_inequality(self.classname, self.fullname, self.other_fullname)
-    tests.append('test_named_inequality')
 
     def test_unregistered(self):
         """Test we can tell we're unregistered"""
@@ -478,7 +452,6 @@ class Archive(NamespaceTestCase):
 
         archive = archives.create("foo@bar")
         self.failIf(archive.is_registered())
-    tests.append('test_unregistered')
 
     def test_registered(self):
         """Test we call tell when we're registered"""
@@ -489,7 +462,6 @@ class Archive(NamespaceTestCase):
         self.failIf(archive.is_registered())
         archive.location.createReadOnlyTargetLocation("http://foo/")
         self.failUnless(archive.is_registered())
-    tests.append('test_registered')
 
     def test_insert_category(self):
         """Test we can insert a category into the db"""
@@ -502,10 +474,9 @@ class Archive(NamespaceTestCase):
         self.failUnless(mapper.exists(category))
         read_back = archive[name]
         self.assertEqual(read_back, category)
-    tests.append('test_insert_category')
+
 
 class Category(NamespaceTestCase):
-    tests=[]
     interfacename = "ICategory"
     classname = "Category"
     fullname = "foo@bar/baz"
@@ -515,41 +486,36 @@ class Category(NamespaceTestCase):
     def klass(self):
         import canonical.arch.broker
         return canonical.arch.broker.Category
-    
-    def test_implements(self):
+
+    # XXX: test do not pass, code will be obsolete soon anyway
+    # -- David Allouche 2005-09-26
+    def DISABLED_test_implements(self):
         """instances of canonical.arch.broker.Category implements ICategory"""
         self._help_test_implements(self.classname, self.interfacename, self.fullname)
-#    tests.append('test_implements')
 
     def test_create(self):
         """Category can be instantiated with a fullname"""
         self._help_test_create_new(self.klass(), self.name, self.getTestArchive())
-    tests.append('test_create')
 
     def test_name(self):
         """Test it stores it's name correctly"""
         self._help_test_name_new(self.klass(), self.name, self.getTestArchive())
-    tests.append('test_name')
 
     def test_null_equality(self):
         """Test equality of a Category against itself"""
         self._help_test_null_equality_new(self.klass(), self.name, self.getTestArchive())
-    tests.append('test_null_equality')
 
     def test_simple_equality(self):
         """Test equality of two identical Category"""
         self._help_test_simple_equality_new(self.klass(), self.fullname, self.getTestArchive())
-    tests.append('test_simple_equality')
 
     def test_None_inequality(self):
         """Compare a Category against None"""
         self._help_test_none_inequality_new(self.klass(), self.fullname, self.getTestArchive())
-    tests.append('test_None_inequality')
 
     def test_named_inequality(self):
         """Differing fullnames make Category unequal"""
         self._help_test_named_inequality_new(self.klass(), self.fullname, self.other_fullname, self.getTestArchive())
-    tests.append('test_named_inequality')
 
     def test_getitem(self):
         """Category.__getitem__ works"""
@@ -559,7 +525,6 @@ class Category(NamespaceTestCase):
         branch = category["bork"]
         self.assertEqual(branch.fullname, archive.name + "/baz--bork")
         self.failUnless(isinstance(branch, Branch))
-    tests.append('test_getitem')
 
     def test_always_exists(self):
         """Categories always exist"""
@@ -567,7 +532,6 @@ class Category(NamespaceTestCase):
         archive = self.getTestArchive()
         category = Category("bang", archive)
         self.assertEqual(category.exists(), True)
-    tests.append('test_always_exists')
 
     def test_can_setup(self):
         """Test we can setup a Category"""
@@ -576,7 +540,6 @@ class Category(NamespaceTestCase):
         category = Category("bang", archive)
         category.setup()
         self.failUnless(category.exists())
-    tests.append('test_can_setup')
 
     def test_nonarch_name(self):
         """Test Category.nonarch returns the correct string"""
@@ -584,7 +547,6 @@ class Category(NamespaceTestCase):
         archive = self.getTestArchive()
         category = Category(self.name, archive)
         self.assertEqual(category.nonarch, self.name)
-    tests.append('test_nonarch_name')
 
     def test_get_archive(self):
         """Test we can get the archive out of a Category correctly"""
@@ -592,7 +554,6 @@ class Category(NamespaceTestCase):
         archive = self.getTestArchive()
         category = Category(self.name, archive)
         self.assertEqual(category.archive, archive)
-    tests.append('test_get_archive')
 
     def test_get_fullname(self):
         """Test Category sets it's .fullname correctly"""
@@ -601,10 +562,9 @@ class Category(NamespaceTestCase):
         name = "bah"
         category = Category(name, archive)
         self.assertEqual(category.fullname, archive.name + "/" + name)
-    tests.append('test_get_fullname')
+
 
 class Branch(NamespaceTestCase):
-    tests=[]
     interfacename = "IBranch"
     classname = "Branch"
     fullname = "foo@bar/baz--bork"
@@ -616,46 +576,40 @@ class Branch(NamespaceTestCase):
         import canonical.arch.broker
         return canonical.arch.broker.Branch
 
-    def test_implements(self):
+    # XXX: test do not pass, code will be obsolete soon anyway
+    # -- David Allouche 2005-09-26
+    def DISABLED_test_implements(self):
         """instances of canonical.arch.broker.Branch implements IBranch"""
-#        self._help_test_implements(self.classname, self.interfacename, self.fullname)
-    tests.append('test_implements')
+        self._help_test_implements(self.classname, self.interfacename, self.fullname)
 
     def test_create(self):
         """Branch can be instantiated with a fullname"""
         self._help_test_create_new(self.klass(), self.name, self.getTestCategory())
-    tests.append('test_create')
 
     def test_name(self):
         """Test it stores it's name correctly"""
         self._help_test_name_new(self.klass(), self.name, self.getTestCategory())
-    tests.append('test_name')
 
     def test_null_equality(self):
         """Test equality of a Branch against itself"""
         self._help_test_null_equality_new(self.klass(), self.name, self.getTestCategory())
-    tests.append('test_null_equality')
 
     def test_simple_equality(self):
         """Test equality of two identical Branches"""
         self._help_test_simple_equality_new(self.klass(), self.name, self.getTestCategory())
-    tests.append('test_simple_equality')
 
     def test_None_inequality(self):
         """Compare a Branch against None"""
         self._help_test_none_inequality_new(self.klass(), self.name, self.getTestCategory())
-    tests.append('test_None_inequality')
 
     def test_named_inequality(self):
         """Differing fullnames make Branches unequal"""
         self._help_test_named_inequality_new(self.klass(), self.name, self.other_name, self.getTestCategory())
-    tests.append('test_named_inequality')
 
     def test_get_category(self):
         """Test we can get our parent category"""
         from canonical.arch.broker import Branch
         self.assertEqual(self.getTestBranch().category, self.getTestCategory())
-    tests.append('test_get_category')
 
     def test_get_fullname(self):
         """Test Branch sets it's .fullname correctly"""
@@ -665,10 +619,9 @@ class Branch(NamespaceTestCase):
         name = "bah"
         branch = Branch(name, category)
         self.assertEqual(branch.fullname, category.fullname + "--" + name)
-    tests.append('test_get_fullname')
+
 
 class Version(NamespaceTestCase):
-    tests=[]
     interfacename = "IVersion"
     classname = "Version"
     fullname = "foo@bar/baz--bork--0"
@@ -680,41 +633,36 @@ class Version(NamespaceTestCase):
         import canonical.arch.broker
         return canonical.arch.broker.Version
 
-    def test_implements(self):
+    # XXX: test do not pass, code will be obsolete soon anyway
+    # -- David Allouche 2005-09-26
+    def DISABLED_test_implements(self):
         """instances of canonical.arch.broker.Version implements IVersion"""
-#        self._help_test_implements(
-#            self.classname, self.interfacename, self.fullname)
-    tests.append('test_implements')
+        self._help_test_implements(
+            self.classname, self.interfacename, self.fullname)
 
     def test_create(self):
         """Version can be instantiated with a fullname"""
         self._help_test_create_new(self.klass(), self.fullname, self.getTestBranch())
-    tests.append('test_create')
 
     def test_name(self):
         """Test it stores it's name correctly"""
         self._help_test_name_new(self.klass(), self.fullname, self.getTestBranch())
-    tests.append('test_name')
 
     def test_null_equality(self):
         """Test equality of a Version against itself"""
         self._help_test_null_equality_new(self.klass(), self.fullname, self.getTestBranch())
-    tests.append('test_null_equality')
 
     def test_simple_equality(self):
         """Test equality of two identical Versions"""
         self._help_test_simple_equality_new(self.klass(), self.fullname, self.getTestBranch())
-    tests.append('test_simple_equality')
 
     def test_None_inequality(self):
         """Compare Version against None"""
         self._help_test_none_inequality_new(self.klass(), self.fullname, self.getTestBranch())
-    tests.append('test_None_inequality')
 
     def test_named_inequality(self):
         """Differing fullnames make Versions unequal"""
         self._help_test_named_inequality_new(self.klass(), self.fullname, self.other_fullname, self.getTestBranch())
-    tests.append('test_named_inequality')
 
     def test_get_fullname(self):
         """Test Version sets it's .fullname correctly"""
@@ -724,10 +672,9 @@ class Version(NamespaceTestCase):
         name = "bah"
         version = Version(name, branch)
         self.assertEqual(version.fullname, branch.fullname + "--" + name)
-    tests.append('test_get_fullname')
+
 
 class Revision(NamespaceTestCase):
-    tests=[]
     interfacename = "IRevision"
     classname = "Revision"
     fullname = "foo@bar/baz--bork--0--patch-2"
@@ -739,41 +686,36 @@ class Revision(NamespaceTestCase):
         import canonical.arch.broker
         return canonical.arch.broker.Revision
 
-    def test_implements(self):
+    # XXX: test do not pass, code will be obsolete soon anyway
+    # -- David Allouche 2005-09-26
+    def DISABLED_test_implements(self):
         """instances of canonical.arch.broker.Revision implements IRevision"""
         self._help_test_implements(
             self.klass(), self.interfacename, self.fullname)
-#    tests.append('test_implements')
 
     def test_create(self):
         """Revision can be instantiated with a name"""
         self._help_test_create_new(self.klass(), self.name, self.getTestVersion())
-    tests.append('test_create')
 
     def test_name(self):
         """Tests that it stores it's name"""
         self._help_test_name_new(self.klass(), self.name, self.getTestVersion())
-    tests.append('test_name')
 
     def test_null_equality(self):
         """Test equality of a Revision against itself"""
         self._help_test_null_equality_new(self.klass(), self.name, self.getTestVersion())
-    tests.append('test_null_equality')
 
     def test_simple_equality(self):
         """Test equality of two identical Revisiones"""
         self._help_test_simple_equality_new(self.klass(), self.name, self.getTestVersion())
-    tests.append('test_simple_equality')
 
     def test_None_inequality(self):
         """Compare Revision against None"""
         self._help_test_none_inequality_new(self.klass(), self.name, self.getTestVersion())
-    tests.append('test_None_inequality')
 
     def test_named_inequality(self):
         """Differing fullnames make Revisions unequal"""
         self._help_test_named_inequality_new(self.klass(), self.name, self.other_name, self.getTestVersion())
-    tests.append('test_named_inequality')
 
     def test_parents(self):
         """Test we can access our parents correctly."""
@@ -783,9 +725,10 @@ class Revision(NamespaceTestCase):
         self.assertEqual(revision.version.branch, self.getTestBranch())
         self.assertEqual(revision.version.branch.category, self.getTestCategory())
         self.assertEqual(revision.version.branch.category.archive, self.getTestArchive())
-    tests.append('test_parents')
 
-    def test_previous(self):
+    # XXX: test do not pass, code will be obsolete soon anyway
+    # -- David Allouche 2005-09-26
+    def DISABLED_test_previous(self):
         """Test that the .previous method returns correct values"""
         from canonical.arch.broker import Revision
         current = Revision("foo@bar/baz--bar--0--base-0")
@@ -801,10 +744,9 @@ class Revision(NamespaceTestCase):
         current = Revision("foo@bar/baz--bar--0--versionfix-34")
         self.assertEquals(current.previous,
                           "foo@bar/baz--bar--0--versionfix-33")
-    # tests.append('test_previous')
+
 
 class RevisionImport(DatabaseAndArchiveTestCase):
-    tests=[]
 
     def test_clone_files(self):
         "c.a.b.Revision.clone_files integrates with arch.Revision.iter_files"
@@ -849,8 +791,6 @@ class RevisionImport(DatabaseAndArchiveTestCase):
                     if not db_hash.hash or not is_hexa(db_hash.hash):
                         self.fail("hash %d for %s is not hexa: %r" %
                                   (db_hash.hashalg, filename, db_hash.hash))
-            
-    tests.append('test_clone_files')
 
 
 import framework

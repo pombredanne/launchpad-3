@@ -6,6 +6,11 @@
 # 2005-07-15 added verbose mode, and fixed up warnings
 # 2005-07-20 added detection of conflict markers
 # 2005-07-21 nicer handling of verbose mode, tweaking of warnings
+# 2005-09-23 tweak more warnings on a dir-specific basis
+
+# Note that you can disable certain tests by placing in a comment, at
+# the top of the file, a disable-msg command:
+#   # pylint: disable-msg=W0401, E0202
 
 # Stuff I'd like to add:
 # XXX: E0201 (Access to undefined member) fails for classmethods and
@@ -23,10 +28,13 @@ else
     # R0913 (Too many arguments)
     # R0914 (Too many local variables)
     # R0915 (Too many statements)
+    PYLINTOFF="$PYLINTOFF,W0131,R0912,R0913,R0914,R0915"
     # W0511 (XXX and TODO listings)
     # W0302 (Too many lines in module)
     # R0902 (Too many instance attributes)
-    PYLINTOFF="$PYLINTOFF,W0131,R0912,R0913,R0914,R0915,W0511,W0302"
+    # R0904 (Too many public methods)
+    # W0622 (Redefining built-in)
+    PYLINTOFF="$PYLINTOFF,W0511,W0302,R0902,R0904,W0622"
 fi
 
 # hint: use --include-ids=y to find out the ids of messages you want to
@@ -40,12 +48,23 @@ PYLINTOPTS="--reports=n --enable-metrics=n --include-ids=y
 # W0613 (Unused argument)
 PYLINTOPTS_INT="$PYLINTOPTS,E0213,E0211,W0613"
 
+# Disables:
+# W0702 (No exception's type specified)
+# W0703 (Catch "Exception")
+PYLINTOPTS_SCRIPT="$PYLINTOPTS,W0702,W0703"
+
+# Disables:
+# W0613 (Unused argument)
+# R0911 (Too many return statements)
+PYLINTOPTS_TRAVERSERS="$PYLINTOPTS,W0613,R0911"
+
 export PYTHONPATH=lib:$PYTHONPATH
 
 if [ -z "$1" ]; then
     files=`baz status | grep '^ ' | cut -c5-`
 else
-    files=$*
+    # Add newlines so grep filters out pyfiles correctly later
+    files=`echo $* | tr " " "\n"`
 fi
 
 if [ -z "$files" ]; then
@@ -79,10 +98,37 @@ fi
 
 for file in $pyfiles; do
     OPTS=$PYLINTOPTS
+    if echo $file | grep -qs "scripts/"; then
+        OPTS=$PYLINTOPTS_SCRIPT
+    fi
     if echo $file | grep -qs "launchpad/interfaces/"; then
         OPTS=$PYLINTOPTS_INT
     fi
-    output=`pylint.python2.4 $file $OPTS 2>/dev/null | grep -v '^*'`
+    if echo $file | grep -qs "launchpad/browser/traversers.py"; then
+        OPTS=$PYLINTOPTS_TRAVERSERS
+    fi
+    if echo $file | grep -qs "launchpad/browser/"; then
+        output=`pylint.python2.4 $file $OPTS 2>/dev/null \
+                | grep -v "Access to undefined member 'request'" \
+                | grep -v "Access to undefined member 'context'" \
+                | grep -v "Access to undefined member '.*_widget'" \
+                | grep -v '^*'`
+    elif echo $file | grep -qs "launchpad/pagetitles.py"; then
+        output=`pylint.python2.4 $file $OPTS 2>/dev/null \
+                | grep -v "Unused argument 'view'" \
+                | grep -v "Unused argument 'context'" \
+                | grep -v '^*'`
+    elif echo $file | grep -qs "launchpad/pagetitles.py"; then
+        output=`pylint.python2.4 $file $OPTS 2>/dev/null \
+                | grep -v "Unused argument 'furtherPath'" \
+                | grep -v '^*'`
+    elif echo $file | grep -qs "launchpad/database/"; then
+        output=`pylint.python2.4 $file $OPTS 2>/dev/null \
+                | grep -v "Access to undefined member 'getByName'" \
+                | grep -v '^*'`
+    else
+        output=`pylint.python2.4 $file $OPTS 2>/dev/null | grep -v '^*'`
+    fi
     if [ ! -z "$output" ]; then
         echo "============================================================="
         echo "Pylint notices on $file"

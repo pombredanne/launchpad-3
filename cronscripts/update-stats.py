@@ -63,10 +63,10 @@ def main(argv):
         distroset = getUtility(IDistributionSet)
         for distro in distroset:
             for distrorelease in distro.releases:
-                distrorelease.updateStatistics()
+                distrorelease.updateStatistics(ztm)
         rosetta_app = getUtility(IRosettaApplication)
-        rosetta_app.updateStatistics()
-        ztm.commit()
+        rosetta_app.updateStatistics(ztm)
+        #ztm.commit() Content objects are responsible for committing.
         logger_object.debug('Finished the stats update')
         return 0
     finally:

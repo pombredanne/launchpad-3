@@ -779,8 +779,8 @@ soyuz_index = 'Soyuz: Linux Distribution Management'
 specification_add = 'Register a feature specification in Launchpad'
 
 specification_bug = ContextTitle(
-  'Link specification \N{left double quotation mark}%s\N{right double quotation mark} '
-  'to a bug report')
+  'Link specification \N{left double quotation mark}%s'
+  '\N{right double quotation mark} to a bug report')
 
 specification_removebug = 'Remove link to bug report'
 
@@ -792,7 +792,8 @@ specification_milestone = 'Target Feature to Milestone'
 
 specification_people = 'Change the Specification Assignee, Drafter and Reviewer'
 
-specification_distrorelease = 'Target Feature Specification at Distribution Release'
+specification_distrorelease = ('Target Feature Specification at '
+                               'Distribution Release')
 
 specification_productseries = 'Target Feature Specification at Series'
 
