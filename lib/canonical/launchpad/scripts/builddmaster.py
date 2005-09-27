@@ -28,12 +28,12 @@ from sqlobject.sqlbuilder import AND, IN
 from canonical.launchpad.database import (
     Builder, BuildQueue, Build, SourcePackagePublishing,
     LibraryFileAlias, BinaryPackageRelease, BinaryPackageFile,
-    BinaryPackageName, Processor
+    BinaryPackageName, Processor, SecureBinaryPackagePublishingHistory
     )
 
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket, 
-    BinaryPackageFormat, BinaryPackageFileType
+    PackagePublishingStatus, PackagePublishingPocket,
+    PackagePublishingPriority, BinaryPackageFormat, BinaryPackageFileType, 
     )
 
 from canonical.lp import dbschema
@@ -243,37 +243,53 @@ class BuilderGroup:
 
         # XXX cprov 20050628
         # Try to use BinaryPackageSet utility for this job 
-        binpkgid = BinaryPackageRelease(binarypackagename=binnameid,
-                                 version=version,
-                                 build=build,
-                                 binpackageformat=BinaryPackageFormat.DEB,
-                                 architecturespecific=archdep,
-                                 # storing  binary entry inside main component
-                                 # and section
-                                 component=1, 
-                                 section=1, 
-                                 # XXX cprov 20050628
-                                 # Those fields should be extracted form the
-                                 # dsc file somehow, maybe apt_pkg ? 
-                                 summary="",
-                                 description="",
-                                 priority=None,
-                                 shlibdeps=None,
-                                 depends=None,
-                                 recommends=None,
-                                 suggests=None,
-                                 conflicts=None,
-                                 replaces=None,
-                                 provides=None,
-                                 essential=False,
-                                 installedsize=None,
-                                 copyright=None,
-                                 licence=None)
+        binpkgid = BinaryPackageRelease(
+            binarypackagename=binnameid,
+            version=version,
+            build=build,
+            binpackageformat=BinaryPackageFormat.DEB,
+            architecturespecific=archdep,
+            component=build.sourcepackagerelease.component,
+            section=build.sourcepackagerelease.section,
+            # XXX cprov 20050628
+            # Those fields should be extracted form the
+            # dsc file somehow, maybe apt_pkg ? 
+            summary="",
+            description="",
+            priority=PackagePublishingPriority.STANDARD,
+            shlibdeps=None,
+            depends=None,
+            recommends=None,
+            suggests=None,
+            conflicts=None,
+            replaces=None,
+            provides=None,
+            essential=False,
+            installedsize=None,
+            copyright=None,
+            licence=None
+            )
         
-        binfile = BinaryPackageFile(binarypackagerelease=binpkgid,
-                                    libraryfile=alias,
-                                    filetype=BinaryPackageFileType.DEB)
+        binfile = BinaryPackageFile(
+            binarypackagerelease=binpkgid,
+            libraryfile=alias,
+            filetype=BinaryPackageFileType.DEB
+            )
         
+        # XXX cprov 20050926
+        # totaly bogus fields, ensure they work in review, since we can't
+        # test yet
+        pubhistory = SecureBinaryPackagePublishingHistory(
+            binarypackagerelease=binpkgid,
+            distroarchrelease=build.distroarchrelease.id,
+            component=build.sourcepackagerelease.component,
+            section=build.sourcepackagerelease.section,
+            priority=PackagePublishingPriority.STANDARD,
+            status=PackagePublishingStatus.PENDING,
+            pocket=PackagePublishingPocket.RELEASE,
+            embargo=False
+            )
+
         self.logger.debug("Absorbed binary package %s" % filename)
         
     def updateBuild(self, queueItem, librarian):
