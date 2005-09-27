@@ -10,7 +10,7 @@
     <content class="canonical.launchpad.database.POFile">
         <require
             permission="zope.Public"
-            interface="canonical.launchpad.interfaces.IEditPOFile"
+            interface="canonical.launchpad.interfaces.IPOFile"
             set_attributes="header pluralforms"
             />
         <require
