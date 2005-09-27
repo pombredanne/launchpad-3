@@ -115,8 +115,6 @@ class FunctionalTestSetup(object):
             if not config_file:
                 config_file = 'ftesting.zcml'
             self.log = StringIO()
-            # Make it silent but keep the log available for debugging
-            logging.root.addHandler(logging.StreamHandler(self.log))
             self.base_storage = DemoStorage("Memory Storage")
             self.db = DB(self.base_storage)
             self.app = Debugger(self.db, config_file)
@@ -141,6 +139,13 @@ class FunctionalTestSetup(object):
         storage = DemoStorage("Demo Storage", self.base_storage)
         self.db = self.app.db = DB(storage)
         self.connection = None
+
+        # Make it silent but keep the log available for debugging
+        for hdlr in logging.root.handlers[:]:
+            logging.root.removeHandler(hdlr)
+            hdlr.flush()
+            hdlr.close()
+        logging.root.addHandler(logging.StreamHandler(self.log))
 
     def tearDown(self):
         """Cleans up after a functional test case."""
