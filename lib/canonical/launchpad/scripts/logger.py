@@ -44,6 +44,13 @@ class LibrarianFormatter(logging.Formatter):
             librarian = getUtility(ILibrarianClient)
         except LookupError:
             return traceback
+
+        try:
+            exception_string = str(ei[1]).encode('ascii')
+        except:
+            # If the exceptions __str__ method raised an exception
+            # or it wasn't ascii
+            exception_string = '[Bad exception!]'
    
         try:
             filename = base(
@@ -53,7 +60,7 @@ class LibrarianFormatter(logging.Formatter):
                     filename, len(traceback), StringIO(traceback),
                     'text/plain;charset=%s' % sys.getdefaultencoding()
                     )
-            return ' -> %s' % url
+            return ' -> %s (%s)' % (url, exception_string)
         except UploadFailed:
             return traceback
         except:
