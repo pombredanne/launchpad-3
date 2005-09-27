@@ -20,12 +20,8 @@
 
     <div metal:use-macro="context/@@launchpad_editform/editform">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Edit the support request details using the form below.
     </div>
-
-  </div>
     
-</div>
-</body>
+  </div>
+  </body>
 </html>

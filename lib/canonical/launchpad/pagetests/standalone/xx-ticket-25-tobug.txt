@@ -8,7 +8,7 @@ The ticket page should show a link to make the ticket into a bug.
   ... GET /products/firefox/+ticket/2 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...Convert To Bug...
+  ...Create Bug Report...
 
 And the +makebug should be visible (note that it should only be visible when
 there are no linked bugs, but that is rather hard to test with the current
@@ -31,7 +31,7 @@ bugs.
   ... Content-Length: 18
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... makebug=Create+Bug""")
+  ... makebug=Create+Bug+Report""")
   HTTP/1.1 200 Ok
   ...Thank you! Bug...created...
 

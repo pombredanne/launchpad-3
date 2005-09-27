@@ -81,7 +81,7 @@
     <resource name="sprint" file="../images/backtalk.gif" />
     <resource name="statistic" file="../images/statistic.png" />
     <resource name="text" file="../images/discussionitem_icon.gif" />
-    <resource name="ticket" file="../images/phone_icon.gif" />
+    <resource name="ticket" file="../images/ticket.png" />
     <resource name="target" file="../images/target.png" />
     <resource name="topic_icon.gif" file="../images/topic_icon.gif" />
     <resource name="translations" file="../images/rosetta-icon.png" />

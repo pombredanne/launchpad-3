@@ -68,7 +68,7 @@
           </tr>
         </table>
 
-        <div class="form controls">
+        <div>
           <form name="cancelrequest" action="" method="POST">
             <input type="submit" value="Cancel Request" name="cancelrequest"
                    class="formControls"/>
