@@ -287,10 +287,10 @@ The rank of a result is calculated using the tsearch2 rank() function.
     ...         name, rank(fti, ftq('gnome')) AS rank
     ...     FROM product
     ...     WHERE fti @@ ftq('gnome')
-    ...     ORDER BY rank DESC
+    ...     ORDER BY rank DESC, name
     ...     """)
-    gnome-terminal            1.00
     applets                   1.00
+    gnome-terminal            1.00
     gnomebaker                0.57
     python-gnome2-dev         0.28
     evolution                 0.20
