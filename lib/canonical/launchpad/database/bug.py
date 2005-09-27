@@ -7,21 +7,20 @@ __all__ = ['Bug', 'BugSet']
 from sets import Set
 from email.Utils import make_msgid
 
+from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
 from zope.exceptions import NotFoundError
-from zope.event import notify
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
 
-from canonical.launchpad.interfaces import IBug, IBugSet
+from canonical.launchpad.interfaces import IBug, IBugSet, ICveSet
 from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.lp import dbschema
 from canonical.launchpad.database.bugcve import BugCve
 from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.message import (
@@ -179,7 +178,7 @@ class Bug(SQLBase):
         """Create a new Message and link it to this ticket."""
         msg = Message(parent=parent, owner=owner,
             rfc822msgid=make_msgid('malone'), subject=subject)
-        chunk = MessageChunk(messageID=msg.id, content=content, sequence=1)
+        MessageChunk(messageID=msg.id, content=content, sequence=1)
         bugmsg = BugMessage(bug=self, message=msg)
         notify(SQLObjectCreatedEvent(bugmsg, user=owner))
         return msg
@@ -239,11 +238,29 @@ class BugSet(BugSetBase):
             raise NotFoundError(
                 "Unable to locate bug with ID %s" % str(bugid))
 
-    def search(self, duplicateof=None, orderBy=None, limit=None):
+    def searchAsUser(self, user, duplicateof=None, orderBy=None, limit=None):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
-        where_clause = ''
+        where_clauses = []
         if duplicateof:
-            where_clause += "duplicateof = %d" % duplicateof.id
+            where_clauses.append("Bug.duplicateof = %d" % duplicateof.id)
+
+        if user:
+            # Enforce privacy-awareness, so that the user can only see
+            # the private bugs that they're allowed to see.
+            where_clauses.append("""
+                (Bug.private = FALSE OR
+                 Bug.private = TRUE AND
+                  Bug.id in (
+                    SELECT Bug.id
+                    FROM Bug, BugSubscription, TeamParticipation
+                    WHERE Bug.id = BugSubscription.bug AND
+                          TeamParticipation.person = %(personid)s AND
+                          BugSubscription.person = TeamParticipation.team))
+                          """ % sqlvalues(personid=user.id))
+        else:
+            # Anonymous user; filter to include only public bugs in
+            # the search results.
+            where_clauses.append("Bug.private = FALSE")
 
 
         other_params = {}
@@ -252,10 +269,8 @@ class BugSet(BugSetBase):
         if limit:
             other_params['limit'] = limit
 
-        if where_clause:
-            return Bug.select(where_clause, **other_params)
-        else:
-            return Bug.select(**other_params)
+        return Bug.select(
+            ' AND '.join(where_clauses), **other_params)
 
     def queryByRemoteBug(self, bugtracker, remotebug):
         """See IBugSet."""
@@ -307,8 +322,8 @@ class BugSet(BugSetBase):
             rfc822msgid = make_msgid('malonedeb')
             msg = Message(subject=title, distribution=distribution,
                 rfc822msgid=rfc822msgid, owner=owner)
-            chunk = MessageChunk(messageID=msg.id, sequence=1,
-                content=comment, blobID=None)
+            MessageChunk(
+                messageID=msg.id, sequence=1, content=comment, blobID=None)
 
         # extract the details needed to create the bug and optional msg
         if not description:
@@ -322,10 +337,10 @@ class BugSet(BugSetBase):
             description=description, private=private,
             owner=owner.id, datecreated=datecreated)
 
-        sub = BugSubscription(person=owner.id, bug=bug.id)
+        BugSubscription(person=owner.id, bug=bug.id)
 
         # link the bug to the message
-        bugmsg = BugMessage(bug=bug, message=msg)
+        BugMessage(bug=bug, message=msg)
 
         # create the task on a product if one was passed
         if product:
@@ -333,12 +348,12 @@ class BugSet(BugSetBase):
 
         # create the task on a source package name if one was passed
         if distribution:
-            task = BugTask(
-                    bug=bug,
-                    distribution=distribution,
-                    sourcepackagename=sourcepackagename,
-                    binarypackagename=binarypackagename,
-                    owner=owner)
+            BugTask(
+                bug=bug,
+                distribution=distribution,
+                sourcepackagename=sourcepackagename,
+                binarypackagename=binarypackagename,
+                owner=owner)
 
         return bug
 

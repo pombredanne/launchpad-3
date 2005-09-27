@@ -88,3 +88,11 @@ class IBugWatchSet(Interface):
         It returns a (possibly empty) list of watches created.
         """
 
+    def createBugWatch(bug, owner, bugtracker, remotebug):
+        """Create an IBugWatch.
+
+        :bug: The IBug to which the watch is linked.
+        :owner: The IPerson who created the IBugWatch.
+        :bugtracker: The external IBugTracker.
+        :remotebug: A string.
+        """

@@ -22,6 +22,7 @@ from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.scripts.cveimport import update_one_cve
+from canonical.config import config
 
 _default_lock_file = '/var/lock/launchpad-update-cve.lock'
 _cve_db_url = 'http://cve.mitre.org/cve/downloads/full-allitems.xml.gz'
@@ -48,7 +49,7 @@ def parse_options():
 def main(log, cvefile=None, cveurl=None):
     log.info('Initializing...')
     execute_zcml_for_scripts()
-    txn = initZopeless()
+    txn = initZopeless(dbuser=config.cveupdater.dbuser)
     if cvefile is not None:
         try:
             cve_db = open(cvefile, 'r').read()

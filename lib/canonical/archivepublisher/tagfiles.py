@@ -1,8 +1,9 @@
 # (c) Canonical Software Ltd. 2004, all rights reserved.
 #
-# arch-tag: 65403237-d8df-4ffa-a7e7-9d55cc4722fd
 
 import apt_pkg, re
+
+__all__ = ['TagFile', 'TagStanza', 'TagFileParseError', 'parse_tagfile']
 
 class TagFile(object):
     """Provide an iterable interface to the apt_pkg.TagFile object"""

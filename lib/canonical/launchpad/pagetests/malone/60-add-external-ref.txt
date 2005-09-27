@@ -3,11 +3,10 @@ bug. An external reference could link to a mailing list discussion
 about this problem, for example.
 
   >>> print http(r"""
-  ... POST /malone/bugs/2/references/+new HTTP/1.1
+  ... POST /distros/debian/+sources/mozilla-firefox/+bug/2/+addurl HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 0
   ... Content-Type: application/x-www-form-urlencoded
-  ... Referer: http://localhost:9000/malone/bugs/2
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -19,11 +18,10 @@ form of either a URL or a CVE reference number. As an example, here's
 how to add a URL external reference.
 
   >>> print http(r"""
-  ... POST /malone/bugs/2/references/+new HTTP/1.1
+  ... POST /distros/debian/+sources/mozilla-firefox/+bug/2/+addurl HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 527
   ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
-  ... Referer: http://localhost:9000/malone/bugs/2/references/+new
   ... 
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.bugreftype"
@@ -55,9 +53,8 @@ how to add a URL external reference.
 
 
   >>> print http(r"""
-  ... GET /malone/bugs/2/references/ HTTP/1.1
+  ... GET /distros/debian/+sources/mozilla-firefox/+bug/2/references/ HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Referer: http://localhost:9000/malone/bugs/2/references/+new
   ... """)
   HTTP/1.1 303 See Other
   ...
@@ -66,8 +63,7 @@ how to add a URL external reference.
 
 
   >>> print http(r"""
-  ... GET /malone/bugs/2/ HTTP/1.1
-  ... Referer: http://localhost:9000/malone/bugs/2/references/+new
+  ... GET /distros/debian/+sources/mozilla-firefox/+bug/2 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...Blackhole Trash folder...

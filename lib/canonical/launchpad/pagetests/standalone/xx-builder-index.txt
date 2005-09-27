@@ -1,7 +1,7 @@
 
 
   >>> print http(r"""
-  ... GET /buildfarm/bob HTTP/1.1
+  ... GET /+builds/bob HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -47,7 +47,7 @@
         <table class="listing">
           <tr class="thead">
             <th>Source Package</th>
-            <th>Distribution Release</th>
+            <th>Distribution / Distribution Release</th>
             <th>Created</th>
             <th>Started</th>
             <th colspan="2">Duration So Far</th>
@@ -61,6 +61,8 @@
                 </a>
               </td>
               <td>
+        <a title="To show the Distribution, click here."
+           href="http://localhost:9000/distros/ubuntu">Ubuntu Linux</a> /
         <a title="To show the Distribution Release, click here."
            href="http://localhost:9000/distros/ubuntu/warty">The Warty Warthog Release</a>
               </td>
@@ -68,7 +70,7 @@
               <td></td>
               <td>
                 <img alt="[progress]" src="/++resource++progress" />
-                <span xxxtal:replace="job/buildduration/fmt:age" />&hellip;
+                &hellip;
               </td>
               <td style="text-align: right;">
                 <input alt="(Cancel)" type="image" src="/++resource++stop" />
@@ -77,7 +79,7 @@
   <BLANKLINE>
   <BLANKLINE>
             <tr>
-              <td colspan="5">Dummy sampledata entry, not processing</td>
+              <td colspan="5"><pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;word-wrap: break-word;">Dummy sampledata entry, not processing</pre></td>
             </tr>
   <BLANKLINE>
   ...

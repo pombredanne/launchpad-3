@@ -3,8 +3,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'SourcePackageFacets',
-    'traverseSourcePackage',
     'traverseSourcePackageSet',
     'SourcePackageFacets',
     'SourcePackageReleasePublishingView',
@@ -35,7 +33,8 @@ from canonical.soyuz.generalapp import builddepsSet
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
 from canonical.launchpad.webapp import (
-    canonical_url, StandardLaunchpadFacets)
+    canonical_url, StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu,
+    enabled_with_permission, structured)
 
 from apt_pkg import ParseSrcDepends
 
@@ -60,15 +59,6 @@ def linkify_changelog(changelog, sourcepkgnametxt):
                        changelog)
     return changelog
 
-
-def traverseSourcePackage(sourcepackage, request, name):
-    if name == '+pots':
-        potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(
-                   distrorelease=sourcepackage.distrorelease,
-                   sourcepackagename=sourcepackage.sourcepackagename)
-    return None
-
 def traverseSourcePackageSet(sourcepackageset, request, name):
     try:
         return sourcepackageset[name]
@@ -90,13 +80,60 @@ def traverseSourcePackageSet(sourcepackageset, request, name):
 class SourcePackageFacets(StandardLaunchpadFacets):
 
     usedfor = ISourcePackage
+    enable_only = ['overview', 'bugs', 'support', 'translations']
 
-    enable_only = ['overview', 'bugs', 'tickets', 'translations']
-
-    def tickets(self):
-        link = StandardLaunchpadFacets.tickets(self)
+    def support(self):
+        link = StandardLaunchpadFacets.support(self)
         link.enabled = True
         return link
+
+
+class SourcePackageOverviewMenu(ApplicationMenu):
+
+    usedfor = ISourcePackage
+    facet = 'overview'
+    links = ['hct', 'changelog', 'buildlog']
+
+    def hct(self):
+        text = structured(
+            '<abbr title="Hypothetical Changeset Tool">HCT</abbr> status')
+        return Link('+hctstatus', text, icon='info')
+
+    def changelog(self):
+        return Link('+changelog', 'Change Log', icon='list')
+
+    def buildlog(self):
+        return Link('+buildlog', 'Build Log', icon='build-success')
+
+    def upstream(self):
+        return Link('+packaging', 'Edit Upstream Link', icon='edit')
+
+
+class SourcePackageSupportMenu(ApplicationMenu):
+
+    usedfor = ISourcePackage
+    facet = 'support'
+    links = ['gethelp', 'addticket']
+
+    def gethelp(self):
+        return Link('+gethelp', 'Help and Support Options', icon='info')
+
+    def addticket(self):
+        return Link('+addticket', 'Request Support', icon='add')
+
+
+class SourcePackageTranslationsMenu(ApplicationMenu):
+
+    usedfor = ISourcePackage
+    facet = 'translations'
+    links = ['help', 'templates']
+
+    def help(self):
+        return Link('+translate', 'How You Can Help', icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def templates(self):
+        return Link('+potemplatenames', 'Edit Template Names', icon='edit')
 
 
 class SourcePackageFilebugView(SQLObjectAddView):
@@ -111,8 +148,13 @@ class SourcePackageFilebugView(SQLObjectAddView):
         assert 'distribution' not in kw
         assert 'sourcepackagename' not in kw
 
-        kw['distribution'] = self.context.distrorelease.distribution
-        kw['sourcepackagename'] = self.context.sourcepackagename
+        sourcepackage = self.context
+        if sourcepackage.distribution:
+            kw['distribution'] = sourcepackage.distribution
+        else:
+            kw['distribution'] = sourcepackage.distrorelease.distribution
+
+        kw['sourcepackagename'] = sourcepackage.sourcepackagename
 
         # Store the added bug so that it can be accessed easily in any
         # other method on this class (e.g. nextURL)
@@ -121,8 +163,13 @@ class SourcePackageFilebugView(SQLObjectAddView):
         return self.addedBug
 
     def nextURL(self):
-        """Return the bug page URL of the bug that was just filed."""
-        return canonical_url(self.addedBug)
+        """Return the bug page URL of the bug that was just filed.
+
+        Effectively, this is the canonical URL of the first task that
+        has just been created.
+        """
+        bugtask = self.addedBug.bugtasks[0]
+        return canonical_url(bugtask)
 
 
 class SourcePackageReleasePublishingView:

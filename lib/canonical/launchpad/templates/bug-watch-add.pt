@@ -8,12 +8,12 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure view/bug/@@+portlet-details" />
+  <div tal:replace="structure context/bug/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure view/bug/@@+portlet-actions" />
-  <div tal:replace="structure view/bug/@@+portlet-watch" />
+  <div tal:replace="structure context/bug/@@+portlet-actions" />
+  <div tal:replace="structure context/bug/@@+portlet-watch" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">

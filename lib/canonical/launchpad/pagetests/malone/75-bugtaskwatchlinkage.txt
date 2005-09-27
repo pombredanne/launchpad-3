@@ -4,11 +4,10 @@ we render the bug page and show that we can see the bug watch:
 XXX: note the // between the hostname and the pagename; this is bug 1434
 
   >>> print http(r"""
-  ... GET /malone/bugs/1/+index HTTP/1.1
+  ... GET /products/firefox/+bug/1 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
+  ...
   <BLANKLINE>
   ...
   ...<a href="http://bugzilla.mozilla.org//show_bug.cgi?id=2000">...
@@ -16,7 +15,7 @@ XXX: note the // between the hostname and the pagename; this is bug 1434
   ...#2000...
   ...</a>...
   ...
-  ...<a href="/malone/bugs/1/watches/2">...
+  ...<a href="http://.../products/firefox/+bug/1/watches/2">...
   ...
 
 Now let's view the task page. Because we are the maintainer for the Ubuntu
@@ -24,7 +23,7 @@ product, and this bug task is on the ubuntu product, we will be able to edit
 the task (we get a form instead of a plain rendition of it).
 
   >>> print http(r"""
-  ... GET /products/ubuntu/+bugs/1/+edit HTTP/1.1
+  ... GET /products/ubuntu/+bug/1/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -39,7 +38,7 @@ Right, now let's link the bugwatch with the task, POSTING the results of the
 form.
 
   >>> print http(r"""
-  ... POST /products/ubuntu/+bugs/1/+edit HTTP/1.1
+  ... POST /products/ubuntu/+bug/1/+editstatus HTTP/1.1
   ... Content-Length: 1700
   ... Content-Type: multipart/form-data; boundary=---------------------------6732896103366711491579814469
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -101,7 +100,7 @@ form.
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  Location: http://.../malone/bugs/1
+  Location: http://.../products/ubuntu/+bug/1
   <BLANKLINE>
   ...
 
@@ -111,11 +110,10 @@ Finally, let's view the bug page again. We should seea link to the remote bug
 under the relevant task.
 
   >>> print http(r"""
-  ... GET /malone/bugs/1 HTTP/1.1
+  ... GET /products/firefox/+bug/1 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
+  ...
   <BLANKLINE>
   ...
   .../++resource++arrowRight.gif...

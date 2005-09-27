@@ -198,7 +198,7 @@ def report_other_warnings():
     global other_warnings
     if other_warnings:
         print
-        print "Other warnings."
+        print "General warnings."
         for warninginfo in other_warnings:
             print
             print warninginfo.message,

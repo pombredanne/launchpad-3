@@ -77,7 +77,7 @@ class SourcePackageFilePublishing(SQLBase):
                           notNull=True)
 
     sourcepackagepublishing = ForeignKey(dbName='sourcepackagepublishing',
-                                         foreignKey='SecureSourcePackagePublishingHistory')
+         foreignKey='SecureSourcePackagePublishingHistory')
 
     libraryfilealias = IntCol(dbName='libraryfilealias', unique=False,
                               default=None, notNull=True)
@@ -114,8 +114,7 @@ class BinaryPackageFilePublishing(SQLBase):
                           notNull=True, immutable=True)
 
     binarypackagepublishing = ForeignKey(dbName='binarypackagepublishing',
-                                   foreignKey='SecureBinaryPackagePublishingHistory',
-                                   immutable=True)
+        foreignKey='SecureBinaryPackagePublishingHistory', immutable=True)
 
     libraryfilealias = IntCol(dbName='libraryfilealias', unique=False,
                               default=None, notNull=True, immutable=True)
@@ -257,7 +256,7 @@ class SecureBinaryPackagePublishingHistory(SQLBase):
     datepublished = UtcDateTimeCol(default=None)
     datecreated = UtcDateTimeCol(default=None)
     datesuperseded = UtcDateTimeCol(default=None)
-    supersededby = ForeignKey(foreignKey='Build',dbName='supersededby',
+    supersededby = ForeignKey(foreignKey='Build', dbName='supersededby',
                               default=None)
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)
@@ -321,7 +320,7 @@ class BinaryPackagePublishingHistory(SQLBase):
     datepublished = UtcDateTimeCol(default=None)
     datecreated = UtcDateTimeCol(default=None)
     datesuperseded = UtcDateTimeCol(default=None)
-    supersededby = ForeignKey(foreignKey='Build',dbName='supersededby',
+    supersededby = ForeignKey(foreignKey='Build', dbName='supersededby',
                               default=None)
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)

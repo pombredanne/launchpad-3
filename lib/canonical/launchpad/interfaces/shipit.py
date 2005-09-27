@@ -68,6 +68,12 @@ class IShippingRequest(Interface):
         pending approval has self.approved == None.
         """
 
+    def highlightColour():
+        """Return the colour to highlight this request if it's high priority.
+
+        Return None otherwise.
+        """
+
     def isAwaitingApproval():
         """Return True if this request is still waiting for approval."""
 
@@ -133,6 +139,12 @@ class IShippingRequestSet(Interface):
         This method can't be used if recipient already has a
         currentShipItRequest. Refer to IPerson.currentShipItRequest() for more
         information about what is a current request.
+        """
+
+    def getOldestPending():
+        """Return the oldest request with status PENDING.
+        
+        Return None if there's no requests with status PENDING.
         """
 
     def get(id, default=None):

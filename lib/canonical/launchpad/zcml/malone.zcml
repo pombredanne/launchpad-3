@@ -11,6 +11,12 @@
         newlayer="canonical.launchpad.layers.MaloneLayer"
         name="malone" />
 
+    <browser:suburl
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        utility="canonical.launchpad.interfaces.IMaloneApplication"
+        newlayer="canonical.launchpad.layers.MaloneLayer"
+        name="bugs" />
+
     <browser:url
         for="canonical.launchpad.interfaces.IMaloneApplication"
         path_expression="string:malone"

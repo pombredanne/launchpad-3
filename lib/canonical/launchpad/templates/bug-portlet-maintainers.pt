@@ -1,8 +1,7 @@
 <div class="portlet">
     <h4>Related People:</h4>
 
-    <div class="portletBody"
-         tal:define="bug_url context/fmt:url">
+    <div class="portletBody">
         <div class="portletContent even"
              tal:define="bugtasks context/bugtasks">
 
@@ -17,13 +16,13 @@
 
             <b>Maintainers:</b><br />
 
-            <ul class="people" tal:repeat="task bugtasks">
-                <li tal:condition="task/maintainer">
-                <a href="."
+            <ul class="people" tal:repeat="maintainer view/maintainers">
+              <li>
+                <a href="#"
                    style="text-decoration: underline"
-                   tal:content="task/maintainer/browsername"
-                   tal:attributes="href task/maintainer/fmt:url" />
-                </li>
+                   tal:content="maintainer/browsername"
+                   tal:attributes="href maintainer/fmt:url" />
+              </li>
             </ul>
 
         </div>

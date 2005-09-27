@@ -55,7 +55,7 @@
       </table>
       <ul>
         <li class="add">
-          <a href="/buildfarm/+new">Add Machine&hellip;</a>
+          <a href="+new">Add Machine&hellip;</a>
         </li>
       </ul>
     </div>

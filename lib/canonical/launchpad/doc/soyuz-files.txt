@@ -1,0 +1,65 @@
+Soyuz Files
+===========
+
+
+This tests checks if the files stored in Librarian releated to Soyuz
+application (BinaryPackageFiles and SourcePackageFiles mostly) are
+sane.
+
+ >>> from zope.interface.verify import verifyObject 
+ >>> from zope.component import getUtility
+
+Importing related content classes and interfaces:
+
+ >>> from canonical.launchpad.database import (
+ ...     SourcePackageRelease, BinaryPackageRelease)
+
+ >>> from canonical.launchpad.interfaces import (
+ ...     ISourcePackageRelease, IBinaryPackageRelease,
+ ...     ISourcePackageReleaseFile, IBinaryPackageFile,
+ ...     IDownloadURL)
+
+
+First let's select a convenient sourcepackagerelease, Evolution-1.0,
+which has files in the sampledata. 
+
+XXX cprov 20050923:
+ selectBy(version) is easy, but might generate errors in future
+
+ >>> src = SourcePackageRelease.selectOneBy(version='1.0')
+ >>> src.name
+ u'evolution'
+
+Use the property 'files' to retrive a list of files related to this
+sourcepackagerelease.
+
+ >>> file = src.files[0]
+
+ Check if 'file.url' implements IDownloadURL:
+
+ >>> verifyObject(IDownloadURL, file.url)
+ True
+
+Check if IDownloadURL is returning sane data
+
+ >>> file.url.filename, file.url.fileurl
+ (u'evolution-1.0.tar.gz', 'http://localhost:58000/3/4/evolution-1.0.tar.gz')
+
+Perform the tests for BinaryPackageRelease:
+
+ >>> bin = BinaryPackageRelease.selectOneBy(version='0.9')
+
+XXX cprov 20050923:
+ selectBy(version) is easy, but might generate errors in future
+
+ >>> bin.name
+ u'mozilla-firefox'
+
+ Check if 'file.url' also implements IDownloadURL:
+
+ >>> file = bin.files[0]
+ >>> verifyObject(IDownloadURL, file.url)
+ True
+
+ >>> file.url.filename, file.url.fileurl
+ (u'firefox-0.9.2.tar.gz', 'http://localhost:58000/2/3/firefox-0.9.2.tar.gz')

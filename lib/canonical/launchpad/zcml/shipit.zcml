@@ -13,6 +13,14 @@
         layer="canonical.launchpad.layers.ShipItLayer" />
 
     <browser:page
+        for="*"
+        permission="zope.Public"
+        name="+maintenancemessage"
+        class="canonical.launchpad.browser.MaintenanceMessage"
+        template="../templates/shipit-maintenance.pt"
+        layer="canonical.launchpad.layers.ShipItLayer" />
+
+    <browser:page
         layer="canonical.launchpad.layers.ShipItLayer"
         for="zope.exceptions.IUnauthorized"
         name="index.html"

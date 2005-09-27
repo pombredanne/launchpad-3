@@ -43,7 +43,7 @@ class ExternalSystem(object):
         self.bugtrackertype = bugtracker.bugtrackertype
         self.remotesystem = None
         if self.bugtrackertype == BugTrackerType.BUGZILLA:
-            self.remotesystem = Bugzilla(self.bugtracker.baseurl,version)
+            self.remotesystem = Bugzilla(self.bugtracker.baseurl, version)
         if not self.remotesystem:
             raise UnknownBugTrackerTypeError(self.bugtrackertype.name,
                 self.bugtracker.name)

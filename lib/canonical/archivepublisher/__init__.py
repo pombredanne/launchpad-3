@@ -15,3 +15,5 @@ from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.config import Config
 # Librarian wrapper
 from canonical.archivepublisher.library import Librarian
+# Tag files
+from canonical.archivepublisher.tagfiles import *

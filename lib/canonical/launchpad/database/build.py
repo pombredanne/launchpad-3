@@ -3,17 +3,14 @@
 __metaclass__ = type
 __all__ = ['Build', 'BuildSet']
 
-from datetime import datetime
-import xmlrpclib
 from urllib2 import URLError
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 from zope.component import getUtility
 
 # SQLObject/SQLBase
 from sqlobject import (
-    StringCol, ForeignKey, BoolCol, IntCol, IntervalCol)
+    StringCol, ForeignKey, IntervalCol)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -31,8 +28,7 @@ class Build(SQLBase):
     implements(IBuild)
     _table = 'Build'
 
-    datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
-                                 default=UTC_NOW)
+    datecreated = UtcDateTimeCol(dbName='datecreated', default=UTC_NOW)
 
     processor = ForeignKey(dbName='processor', foreignKey='Processor', 
                            notNull=True)
@@ -47,21 +43,20 @@ class Build(SQLBase):
                                       foreignKey='SourcePackageRelease', 
                                       notNull=True)
 
-    datebuilt = UtcDateTimeCol(dbName='datebuilt', notNull=False, default=None)
+    datebuilt = UtcDateTimeCol(dbName='datebuilt', default=None)
 
-    buildduration = IntervalCol(dbName='buildduration', notNull=False,
-                                default=None)
+    buildduration = IntervalCol(dbName='buildduration', default=None)
 
     buildlog = ForeignKey(dbName='buildlog', foreignKey='LibraryFileAlias',
-                          notNull=False, default=None)
+                          default=None)
 
     builder = ForeignKey(dbName='builder', foreignKey='Builder',
-                         notNull=False, default=None)
+                         default=None)
 
     gpgsigningkey = ForeignKey(dbName='gpgsigningkey', foreignKey='GPGKey',
-                               notNull=False, default=None)
+                               default=None)
 
-    changes = StringCol(dbName='changes', notNull=False, default=None)
+    changes = StringCol(dbName='changes', default=None)
 
     @property
     def distrorelease(self):
@@ -100,9 +95,11 @@ class BuildSet:
 
     def getBuiltForDistroRelease(self, distrorelease, size=10):
         """See IBuilderSet"""
-        
+        # XXX: what is size useful for? Nothing, it appears!
+        #   -- kiko, 2005-09-23
+
         arch_ids = ''.join(['%d,' % arch.id for arch in
                             distrorelease.architectures])[:-1]
-        
+
         return Build.select("distroarchrelease IN (%s)" % arch_ids)
-    
+

@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BugWatch', 'BugWatchSet', 'BugWatchFactory']
+__all__ = ['BugWatch', 'BugWatchSet']
 
 import re
 
@@ -58,7 +58,7 @@ class BugWatch(SQLBase):
             # slashes -- should we instead ensure when it is entered?
             # Filed bug 1434.
             BugTrackerType.BUGZILLA: '%s/show_bug.cgi?id=%s',
-            BugTrackerType.TRAC:     '%s/tickets/%s',
+            BugTrackerType.TRAC:     '%s/ticket/%s',
             BugTrackerType.DEBBUGS:  '%s/cgi-bin/bugreport.cgi?bug=%s',
             BugTrackerType.ROUNDUP:  '%s/issue%s'
         }
@@ -152,10 +152,10 @@ class BugWatchSet(BugSetBase):
                 raise AssertionError('MessageChunk without content or blob.')
         return sorted(watches, key=lambda a: a.remotebug)
 
-
-def BugWatchFactory(context, **kw):
-    bug = context.context.bug
-    return BugWatch(
-        bug=bug, owner=context.request.principal.id, datecreated=UTC_NOW,
-        lastchanged=UTC_NOW, lastchecked=UTC_NOW, **kw)
+    def createBugWatch(self, bug, owner, bugtracker, remotebug):
+        """See canonical.launchpad.interfaces.IBugWatchSet."""
+        return BugWatch(
+            bug=bug, owner=owner, datecreated=UTC_NOW,
+            lastchanged=UTC_NOW, lastchecked=UTC_NOW,
+            bugtracker=bugtracker, remotebug=remotebug)
 

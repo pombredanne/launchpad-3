@@ -24,6 +24,7 @@ from zope.component import getUtility
 
 from canonical.base import base
 from canonical.librarian.interfaces import ILibrarianClient, UploadFailed
+from canonical.config import config
 
 class LibrarianFormatter(logging.Formatter):
     """A logging.Formatter that stores tracebacks in the Librarian and emits
@@ -43,6 +44,13 @@ class LibrarianFormatter(logging.Formatter):
             librarian = getUtility(ILibrarianClient)
         except LookupError:
             return traceback
+
+        try:
+            exception_string = str(ei[1]).encode('ascii')
+        except:
+            # If the exceptions __str__ method raised an exception
+            # or it wasn't ascii
+            exception_string = '[Bad exception!]'
    
         try:
             filename = base(
@@ -52,7 +60,7 @@ class LibrarianFormatter(logging.Formatter):
                     filename, len(traceback), StringIO(traceback),
                     'text/plain;charset=%s' % sys.getdefaultencoding()
                     )
-            return ' -> %s' % url
+            return ' -> %s (%s)' % (url, exception_string)
         except UploadFailed:
             return traceback
         except:
@@ -168,8 +176,13 @@ def _logger(level, name=None):
     # both command line tools and cron jobs (command line tools often end
     # up being run from inside cron, so this is a good thing).
     hdlr = logging.StreamHandler(strm=sys.stderr)
+    if config.default_section == 'testrunner':
+        # Don't output timestamps in the test environment
+        fmt = '%(levelname)-7s %(message)s'
+    else:
+        fmt='%(asctime)s %(levelname)-7s %(message)s'
     formatter = LibrarianFormatter(
-        fmt='%(asctime)s %(levelname)-7s %(message)s',
+        fmt=fmt,
         # Put date back if we need it, but I think just time is fine and
         # saves space.
         datefmt="%H:%M:%S",

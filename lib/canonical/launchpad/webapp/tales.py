@@ -1,4 +1,5 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0613,E0201,R0911
 #
 """Implementation of the lp: htmlform: fmt: namespaces in TALES.
 
@@ -9,7 +10,6 @@ import bisect
 import cgi
 import re
 import os.path
-import warnings
 
 from zope.interface import Interface, Attribute, implements
 from zope.component import getUtility, queryAdapter, getDefaultViewName
@@ -22,7 +22,8 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.launchpad.interfaces import (
-    IPerson, ILaunchBag, IFacetMenu, IApplicationMenu, NoCanonicalUrl, IBugSet)
+    IPerson, ILaunchBag, IFacetMenu, IApplicationMenu, IContextMenu,
+    NoCanonicalUrl, IBugSet)
 from canonical.lp import dbschema
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url, nearest_menu
@@ -96,6 +97,13 @@ class MenuAPI:
         menu = queryAdapter(self._context, IApplicationMenu, selectedfacetname)
         if menu is None:
             return []
+        else:
+            return list(menu.iterlinks(requesturl=self._requesturl()))
+
+    def context(self):
+        menu = IContextMenu(self._context, None)
+        if menu is None:
+            return  []
         else:
             return list(menu.iterlinks(requesturl=self._requesturl()))
 

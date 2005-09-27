@@ -118,29 +118,29 @@ We have five custom requests. Two of them are cancelled.
 
   >>> [r.recipient.name 
   ...      for r in requestset.searchCustomRequests(omit_cancelled=False)]
-  [u'no-priv', u'salgado', u'ddaa', u'cprov', u'name16']
+  [u'cprov', u'ddaa', u'salgado', u'no-priv', u'name16']
 
   >>> [r.recipient.name for r in requestset.searchCustomRequests()]
-  [u'no-priv', u'salgado', u'ddaa']
+  [u'ddaa', u'salgado', u'no-priv']
 
 From the three non-cancelled, two are approved.
 
   >>> approved = status=ShippingRequestStatus.APPROVED
   >>> [r.recipient.name 
   ...       for r in requestset.searchCustomRequests(status=approved)]
-  [u'no-priv', u'salgado']
+  [u'salgado', u'no-priv']
 
 We have also two non-cancelled standard requests:
 
   >>> [r.recipient.name for r in
   ...       requestset.searchStandardRequests(omit_cancelled=False)]
-  [u'stub', u'kreutzm']
+  [u'kreutzm', u'stub']
 
 And all standard requests are approved automatically.
 
   >>> [r.recipient.name for r in
   ...       requestset.searchStandardRequests(status=approved)]
-  [u'stub', u'kreutzm']
+  [u'kreutzm', u'stub']
 
 
 It's also possible to search for standard requests of a specific type.

@@ -29,7 +29,7 @@ class BinaryPackageFile(SQLBase):
                                       foreignKey='BinaryPackageRelease',
                                       notNull=True)
     libraryfile = ForeignKey(dbName='libraryfile',
-                             foreignKey='LibraryFile', notNull=True)
+                             foreignKey='LibraryFileAlias', notNull=True)
     filetype = EnumCol(dbName='filetype',
                        schema=BinaryPackageFileType)
 

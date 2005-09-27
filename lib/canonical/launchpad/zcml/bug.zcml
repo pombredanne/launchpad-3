@@ -21,215 +21,25 @@
         for="canonical.launchpad.interfaces.IBug"
         name="+index" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBug"
-        function="canonical.launchpad.browser.traversers.traverse_bug" />
-
     <browser:url
         for="canonical.launchpad.interfaces.IBug"
         path_expression="string:${id}"
         parent_utility="canonical.launchpad.interfaces.IBugSet"
         />
 
-    <browser:pages
+    <browser:page
         for="canonical.launchpad.interfaces.IBug"
+        name="+index"
+        class="canonical.launchpad.browser.BugWithoutContextView"
         permission="zope.Public"
-        class="canonical.launchpad.browser.BugView">
-        <browser:page
-            name="+index"
-            template="../templates/bug-index.pt" />
-        <browser:page
-            name="activity"
-            template="../templates/bug-activity.pt" />
-        <browser:page
-            name="+listing-detailed"
-            template="../templates/bug-listing-detailed.pt" />
-        <browser:page
-            name="+portlet-watch"
-            template="../templates/bug-portlet-watch.pt" />
-        <browser:page
-            name="+portlet-details"
-            template="../templates/bug-portlet-details.pt" />
-        <browser:page
-            name="+portlet-subscribers"
-            template="../templates/bug-portlet-subscribers.pt" />
-        <browser:page
-            name="+portlet-specs"
-            template="../templates/bug-portlet-specs.pt" />
-        <browser:page
-            name="+portlet-tickets"
-            template="../templates/bug-portlet-tickets.pt" />
-        <browser:page
-            name="+portlet-productinfestation"
-            template="../templates/bug-portlet-productinfestation.pt" />
-        <browser:page
-            name="+portlet-packageinfestation"
-            template="../templates/bug-portlet-packageinfestation.pt" />
-        <browser:page
-            name="+portlet-reference"
-            template="../templates/bug-portlet-reference.pt" />
-        <browser:page
-            name="+portlet-duplicates"
-            template="../templates/bug-portlet-duplicates.pt" />
-        <browser:page
-            name="+portlet-cve"
-            template="../templates/bug-portlet-cve.pt" />
-        <browser:page
-            name="+portlet-maintainers"
-            template="../templates/bug-portlet-maintainers.pt" />
-        <browser:page
-            name="+headline-tasks"
-            template="../templates/bug-headline-tasks.pt" />
-        <browser:page
-            name="+portlet-actions"
-            template="../templates/bug-portlet-actions.pt" />
-        <browser:page
-            name="+portlet-attachments"
-            template="../templates/bug-portlet-attachments.pt" />
-    </browser:pages>
+        lp:url="malone/bugs/$Bug.id"
+        attribute="redirectToNewBugPage" />
 
-    <browser:pages
+    <browser:page
         for="canonical.launchpad.interfaces.IBug"
-        class="canonical.launchpad.browser.BugView"
-        permission="launchpad.AnyPerson">
-        <browser:page
-            name="+subscribe"
-            template="../templates/bug-subscription.pt"
-            />
-    </browser:pages>
-
-    <browser:editform
-        name="+edit"
-        schema="canonical.launchpad.interfaces.IBug"
-        class="canonical.launchpad.browser.bug.BugEditView"
-        label="Edit Bug Description"
-        permission="launchpad.Edit"
-        template="../templates/bug-edit.pt"
-        fields="title description summary name"
-        >
-        <browser:widget
-           field="title"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="55" />
-    </browser:editform>
-
-    <browser:editform
-        name="+secrecy"
-        schema="canonical.launchpad.interfaces.IBug"
-        class="canonical.launchpad.browser.bug.BugEditView"
-        label="Set Bug Secrecy"
-        permission="launchpad.Edit"
-        template="../templates/bug-secrecy.pt"
-        fields="private"
-        lp:url="malone/bugs/$Bug.id/+secrecy">
-    </browser:editform>
-
-    <browser:editform
-        name="+duplicate"
-        schema="canonical.launchpad.interfaces.IBug"
-        class="canonical.launchpad.browser.bug.SQLObjectEditView"
-        label="Mark as Duplicate Bug Report"
-        permission="launchpad.AnyPerson"
-        template="../templates/bug-mark-as-duplicate.pt"
-        fields="duplicateof"
-        lp:url="malone/bugs/$Bug.id/+duplicate">
-        <browser:widget
-            field="duplicateof"
-            class="canonical.widgets.bug.BugWidget" />
-    </browser:editform>
-
-    <browser:addform
-        name="+addattachment"
-        schema="canonical.launchpad.interfaces.IBugAttachmentAddForm"
-        for="canonical.launchpad.interfaces.IBug"
-        class="canonical.launchpad.browser.BugAttachmentAddView"
-        label="Add an Attachment"
-        fields="filecontent patch title comment"
-        keyword_arguments="patch filecontent title comment"
-        permission="launchpad.AnyPerson"
-        template="../templates/bug-attachment-add.pt"
-        lp:url="malone/bugs/$Bug.id/+addattachment"
-        />
-
-  <browser:addform
-    name="+addsubscriber"
-    for="canonical.launchpad.interfaces.IBug"
-    schema="canonical.launchpad.interfaces.IBugSubscription"
-    class="canonical.launchpad.browser.BugSubscriptionAddView"
-    label="Subscribe Someone to Bug"
-    fields="person"
-    keyword_arguments="person"
-    permission="launchpad.AnyPerson"
-    template="../templates/bug-addsubscriber.pt"
-    />
-
-  <browser:addform
-    name="+addmessage"
-    for="canonical.launchpad.interfaces.IBug"
-    schema="canonical.launchpad.interfaces.IMessage"
-    class="canonical.launchpad.browser.MessageAddView"
-    label="Add Message or Comment"
-    fields="subject content owner"
-    keyword_arguments="subject content owner"
-    permission="launchpad.AnyPerson"
-    template="../templates/message-add.pt">
-    <browser:widget
-      field="owner"
-      class="canonical.widgets.HiddenUserWidget" />
-  </browser:addform>
-
-  <browser:addform
-    name="+distrotask"
-    for="canonical.launchpad.interfaces.IBug"
-    schema="canonical.launchpad.interfaces.IDistroBugTask"
-    class="canonical.launchpad.browser.bug.BugAddingView"
-    label="Request Fix in Additional Distribution"
-    fields="distribution sourcepackagename owner"
-    content_factory="canonical.launchpad.database.BugTaskFactory"
-    keyword_arguments="distribution sourcepackagename owner"
-    permission="launchpad.AnyPerson"
-    template="../templates/bug-distrotask.pt"
-    >
-    <browser:widget
-      field="owner"
-      class="canonical.widgets.HiddenUserWidget"
-      />
-  </browser:addform>
-
-  <browser:addform
-    name="+upstreamtask"
-    for="canonical.launchpad.interfaces.IBug"
-    schema="canonical.launchpad.interfaces.IUpstreamBugTask"
-    class="canonical.launchpad.browser.bug.BugAddingView"
-    label="Request Fix in Upstream App"
-    fields="product owner"
-    keyword_arguments="product owner"
-    content_factory="canonical.launchpad.database.BugTaskFactory"
-    arguments=""
-    permission="launchpad.AnyPerson"
-    template="../templates/bug-upstreamtask.pt"
-    >
-    <browser:widget
-        field="owner"
-        class="canonical.widgets.HiddenUserWidget" />
-  </browser:addform>
-
-  <browser:page
-    name="+linkcve"
-    for="canonical.launchpad.interfaces.IBug"
-    class="canonical.launchpad.browser.CveLinkView"
-    permission="launchpad.AnyPerson"
-    template="../templates/bug-cve.pt">
-  </browser:page>
-
-  <browser:page
-    name="+unlinkcve"
-    for="canonical.launchpad.interfaces.IBug"
-    class="canonical.launchpad.browser.CveUnlinkView"
-    permission="launchpad.AnyPerson"
-    template="../templates/bug-removecve.pt">
-  </browser:page>
-
+        name="+listing-detailed"
+        template="../templates/bug-listing-detailed.pt"
+        permission="zope.Public" />
 
     <!-- BugSet -->
     <content class="canonical.launchpad.database.BugSet">
@@ -253,9 +63,62 @@
         attribute="redirectToBug"
         permission="zope.Public" />
 
+    <browser:pages
+      for="canonical.launchpad.interfaces.IBug"
+      class="canonical.launchpad.browser.BugView"
+      permission="zope.Public">
+
+      <browser:page
+          name="+headline-tasks"
+          template="../templates/bug-headline-tasks.pt"
+          lp:url="malone/bugs/$Bug.id/+headline-tasks" />
+
+      <!-- Bug Portlets. Note: These are also registered in
+      bugtask.zcml so that the bug page doesn't break in several
+      places due to the fact that its context is now an IBugTask,
+      rather than an IBug. -->
+      <browser:page
+        name="+portlet-actions"
+        template="../templates/bug-portlet-actions.pt" />
+      <browser:page
+          name="+portlet-watch"
+          template="../templates/bug-portlet-watch.pt" />
+      <browser:page
+          name="+portlet-details"
+          template="../templates/bug-portlet-details.pt" />
+      <browser:page
+        name="+portlet-maintainers"
+        template="../templates/bug-portlet-maintainers.pt" />
+      <browser:page
+          name="+portlet-specs"
+          template="../templates/bug-portlet-specs.pt" />
+      <browser:page
+          name="+portlet-tickets"
+          template="../templates/bug-portlet-tickets.pt" />
+      <browser:page
+          name="+portlet-reference"
+          template="../templates/bug-portlet-reference.pt" />
+      <browser:page
+          name="+portlet-duplicates"
+          template="../templates/bug-portlet-duplicates.pt" />
+      <browser:page
+          name="+portlet-cve"
+          template="../templates/bug-portlet-cve.pt" />
+      <browser:page
+          name="+portlet-attachments"
+          template="../templates/bug-portlet-attachments.pt" />
+    </browser:pages>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IBug"
+        name="+portlet-subscribers"
+        template="../templates/bug-portlet-subscribers.pt"
+        permission="zope.Public" />
+
     <browser:traverse
         for="canonical.launchpad.interfaces.IBugSet"
         function="canonical.launchpad.browser.traversers.traverse_bugs" />
+
     <browser:url
         for="canonical.launchpad.interfaces.IBugSet"
         path_expression="string:bugs"

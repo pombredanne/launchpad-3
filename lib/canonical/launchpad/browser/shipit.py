@@ -528,6 +528,7 @@ class ShippingRequestAdminView:
         if 'DENY' in request:
             if not context.isDenied():
                 context.deny()
+                self._goToNextPending(previous_action='denied')
             else:
                 # XXX: Must give some kind of warning in this case.
                 # GuilhermeSalgado - 2005-09-02
@@ -540,11 +541,13 @@ class ShippingRequestAdminView:
             x86, amd64, ppc = self._getApprovedQuantities()
             context.setApprovedTotals(x86, amd64, ppc)
             context.highpriority = highpriority
+            self._goToNextPending(previous_action='changed')
         elif 'APPROVE' in request:
             if not context.approved:
                 x86, amd64, ppc = self._getApprovedQuantities()
                 context.approve(x86, amd64, ppc, whoapproved=user)
                 context.highpriority = highpriority
+                self._goToNextPending(previous_action='approved')
             else:
                 # XXX: Must give some kind of warning in this case.
                 # GuilhermeSalgado - 2005-09-02
@@ -553,5 +556,11 @@ class ShippingRequestAdminView:
             # User tried to poison the form. Let's simply ignore
             pass
 
-        flush_database_updates()
+    def _goToNextPending(self, previous_action):
+        """Redirect to the next pending request, if there's one."""
+        next_order = getUtility(IShippingRequestSet).getOldestPending()
+        if next_order:
+            url = '%s?previous=%d&%s=1' % (canonical_url(next_order),
+                                           self.context.id, previous_action)
+            self.request.response.redirect(url)
 

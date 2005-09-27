@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'DistroSourcesView',
     'DistrosReleaseBinariesSearchView',
+    'DistroSourcePackageBugsView',
     'SourcePackageBugsView',
     'BinaryPackageView',
     ]
@@ -15,7 +16,6 @@ from urllib import quote as urlquote
 
 from zope.component import getUtility
 
-from canonical.lp.dbschema import BugTaskSeverity, BugTaskStatus
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
@@ -60,6 +60,8 @@ class DistrosReleaseBinariesSearchView:
         if name:
             binary_packages = list(self.context.findPackagesByName(name))
             start = int(self.request.get('batch_start', 0))
+            # XXX: Why is end unused?
+            #   -- kiko, 2005-09-23
             end = int(self.request.get('batch_end', BATCH_SIZE))
             batch_size = BATCH_SIZE
             batch = Batch(list = binary_packages, start = start,
@@ -131,8 +133,6 @@ class SourcePackageBugsView:
     @property
     def general_unresolved_bugs(self):
         """Return a list of unresolved bugs that not targeted to a release."""
-        release_bugs = {}
-
         # Remember that the context is an ISourcePackage; let's figure
         # out which distribution is relevant.
         mydistribution = self.context.distrorelease.distribution
@@ -146,6 +146,38 @@ class SourcePackageBugsView:
         general_open_bugs = mydistribution.searchTasks(search_params)
 
         return general_open_bugs
+
+    @property
+    def listing_columns(self):
+        """Return the columns that should be displayed in the bug listing."""
+        return ["assignedto", "id", "priority", "severity", "status", "title"]
+
+
+class DistroSourcePackageBugsView:
+    """View class for the buglist for an IDistroSourcePackage."""
+    DEFAULT_ORDER = ['-priority', '-severity']
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def showTableView(self):
+        """Should the search results be displayed as a table?"""
+        return False
+
+    def showListView(self):
+        """Should the search results be displayed as a list?"""
+        return True
+
+    @property
+    def open_bugs(self):
+        """Return a list of unresolved bugs open on this package."""
+        # Query for open tasks for mydistribution
+        search_params = BugTaskSearchParams(
+            user=getUtility(ILaunchBag).user,
+            status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            orderby=self.DEFAULT_ORDER)
+        return self.context.searchTasks(search_params)
 
     @property
     def listing_columns(self):

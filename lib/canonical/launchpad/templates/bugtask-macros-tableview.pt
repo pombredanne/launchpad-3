@@ -202,7 +202,7 @@
            tal:attributes="value task/id" />
   </td>
   <td tal:condition="python:'id' in listing_columns">
-      <a tal:attributes="href task/bug/fmt:url"
+      <a tal:attributes="href task/fmt:url"
          tal:content="string:#${task/bug/id}"
          style="text-decoration: underline">42</a>
   </td>

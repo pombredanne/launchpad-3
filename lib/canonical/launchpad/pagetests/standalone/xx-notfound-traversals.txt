@@ -38,8 +38,15 @@ spider -- StuartBishop 20050822
 ...     if rc != 404:
 ...         return "%s returned status %s instead of 404" % (url, rc)
 
->>> def check_redirect(url):
-...     rc = http("GET %s HTTP/1.1\n" % url).getStatus()
+>>> def check_redirect(url, auth=False):
+...     if auth:
+...         get_cmd = """
+... GET %s HTTP/1.1
+... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+... """
+...     else:
+...         get_cmd = "GET %s HTTP/1.1\n"
+...     rc = http(get_cmd % url).getStatus()
 ...     if rc != 303:
 ...         return "%s returned status %s instead of 303" % (url, rc)
 
@@ -73,11 +80,6 @@ spider -- StuartBishop 20050822
 >>> check("/products/firefox/+series/1.0/+edit", auth=True)
 >>> check("/products/firefox/+series/1.0/+specs")
 >>> check("/products/firefox/+series/1.0/+addrelease", auth=True)
->>> check("/products/firefox/+bugs")
->>> check("/products/firefox/+bugs/1")
->>> check("/distros/ubuntu/+bugs/1")
->>> check("/distros/ubuntu/+bugs/1/+edit", auth=True)
->>> check("/distros/ubuntu/+bugs/1/+target", auth=True)
 
 >>> check_not_found("/products/firefox/+milestone")
 >>> check("/products/firefox/+milestone/1.0")
@@ -101,6 +103,7 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/+linkbounty", auth=True)
 >>> check("/distros/ubuntu/+addbounty", auth=True)
 >>> check("/distros/ubuntu/+addspec", auth=True)
+>>> check("/distros/ubuntu/+sources/evolution/+bugs")
 
 >>> check("/distros/ubuntu/hoary")
 >>> check("/distros/ubuntu/hoary/+sources")
@@ -130,8 +133,7 @@ spider -- StuartBishop 20050822
 >>> check("/malone")
 >>> check_redirect("/malone/assigned")
 >>> check_redirect("/malone/bugs")
->>> check("/malone/bugs/1")
->>> check("/malone/bugs/1/activity")
+>>> check_redirect("/malone/bugs/1")
 >>> check("/malone/distros")
 >>> check("/malone/distros/ubuntu")
 >>> check("/malone/projects")
@@ -140,7 +142,81 @@ spider -- StuartBishop 20050822
 >>> check("/malone/products/firefox")
 >>> check("/malone/bugtrackers")
 
-Test /people traversals. 
+Viewing a bug in the context of an upstream where the bug has already
+been reported (including checking the various pages that hang off that
+one.)
+
+>>> check("/products/firefox/+bug/1", auth=True)
+>>> check("/products/firefox/+bug/1/+edit", auth=True)
+>>> check("/products/firefox/+bug/1/+secrecy", auth=True)
+>>> check("/products/firefox/+bug/1/+duplicate", auth=True)
+>>> check("/products/firefox/+bug/1/+subscribe", auth=True)
+>>> check("/products/firefox/+bug/1/+addsubscriber", auth=True)
+>>> check("/products/firefox/+bug/1/+addattachment", auth=True)
+>>> check("/products/firefox/+bug/1/+addurl", auth=True)
+>>> check("/products/firefox/+bug/1/+addwatch", auth=True)
+>>> check("/products/firefox/+bug/1/+activity", auth=True)
+
+Viewing a bug in the context of an upstream where the bug has not yet
+been reported.
+
+>>> check("/products/netapplet/+bug/1")
+>>> check_not_found("/products/netapplet/+bug/1/+viewstatus")
+>>> check_not_found("/products/netapplet/+bug/1/+editstatus")
+
+Viewing a bug in the context of a distribution where the bug has not
+yet been reported.
+
+>>> check("/distros/ubuntu/+bug/3")
+>>> check_not_found("/distros/ubuntu/+bug/3/+viewstatus")
+>>> check_not_found("/distros/ubuntu/+bug/3/+editstatus")
+
+Viewing a bug in the context of a distorelease where the bug has not
+yet been reported.
+
+>>> check("/distros/ubuntu/warty/+bug/3")
+>>> check_not_found("/distros/ubuntu/warty/+bug/3/+viewstatus")
+>>> check_not_found("/distros/ubuntu/warty/+bug/3/+editstatus")
+
+Viewing a bug in the context of a distro source package in which it's
+already been reported.
+
+>>> check("/distros/ubuntu/+sources/mozilla-firefox/+bug/1")
+
+Viewing a bug in the context of a distro source package in which it's
+not yet been reported.
+
+>>> check("/distros/ubuntu/+sources/thunderbird/+bug/1")
+>>> check_not_found("/distros/ubuntu/+sources/thunderbird/+bug/1/+viewstatus")
+>>> check_not_found("/distros/ubuntu/+sources/thunderbird/+bug/1/+editstatus")
+
+Viewing the bug in the context of a distro release source package in
+which the bug has already been reported.
+
+>>> check("/distros/ubuntu/warty/+sources/mozilla-firefox/+bug/5")
+
+Viewing the bug in the context of a distro release source package in
+which the bug has not yet been reported.
+
+>>> check("/distros/ubuntu/warty/+sources/mozilla-firefox/+bug/1")
+>>> check_not_found("/distros/ubuntu/warty/+sources/mozilla-firefox/+bug/1/+viewstatus")
+>>> check_not_found("/distros/ubuntu/warty/+sources/mozilla-firefox/+bug/1/+editstatus")
+
+The bug filing pages.
+
+>>> check("/products/firefox/+filebug", auth=True)
+>>> check("/distros/ubuntu/+filebug", auth=True)
+>>> check("/distros/ubuntu/+sources/mozilla-firefox/+filebug", auth=True)
+>>> check("/distros/ubuntu/warty/+sources/mozilla-firefox/+filebug", auth=True)
+
+Note that you should not be able to directly file a bug on a
+distrorelease; an IBugTask whose distrorelease is not None is
+*targeted* to be fixed in that specific release. Instead, you get
+redirected to the appropriate distro filebug page.
+
+>>> check_redirect("/distros/ubuntu/warty/+filebug", auth=True)
+
+Test /people traversals.
 
 >>> check("/people/")
 >>> check("/people/+peoplelist")
@@ -151,7 +227,7 @@ Test /people traversals.
 >>> check("/people/+requestmerge-multiple", auth=True)
 >>> check("/people/+portlet-about")
 >>> check("/people/+portlet-actions")
- 
+
 This is for a team:
 
 >>> check("/people/name18/+teamhierarchy")

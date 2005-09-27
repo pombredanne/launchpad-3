@@ -4,13 +4,18 @@ that is to do with aspects such as security, menus, zcml, tales and so on.
 This module also has an API for use by the application.
 """
 
-__all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'nearest_menu',
-           'canonical_url', 'nearest', 'StandardLaunchpadFacets']
+__all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
+           'nearest_menu', 'canonical_url', 'nearest', 'structured',
+           'StandardLaunchpadFacets', 'enabled_with_permission',
+           'LaunchpadView']
+
+from zope.component import getUtility
 
 from canonical.launchpad.webapp.menu import (
-    Link, FacetMenu, ApplicationMenu, nearest_menu)
-
+    Link, FacetMenu, ApplicationMenu, ContextMenu, nearest_menu, structured,
+    enabled_with_permission)
 from canonical.launchpad.webapp.publisher import canonical_url, nearest
+from canonical.launchpad.interfaces import ILaunchBag
 
 
 class StandardLaunchpadFacets(FacetMenu):
@@ -19,7 +24,7 @@ class StandardLaunchpadFacets(FacetMenu):
     # provide your own 'usedfor' in subclasses.
     #   usedfor = IWhatever
 
-    links = ['overview', 'bugs', 'tickets', 'specifications', 'bounties',
+    links = ['overview', 'bugs', 'support', 'bounties', 'specifications',
              'translations', 'calendar']
 
     defaultlink = 'overview'
@@ -39,12 +44,12 @@ class StandardLaunchpadFacets(FacetMenu):
         text = 'Bugs'
         return Link(target, text)
 
-    def tickets(self):
-        # Note that 'tickets' are disabled by default.  You need to define
-        # a tickets facet with the Link enabled in order to get an enabled
-        # 'tickets' facet tab.
+    def support(self):
+        # This facet is visible but unavailable by default. You need to define
+        # a 'support' facet with the Link enabled in order to get an enabled
+        # 'Support' facet tab.
         target = '+tickets'
-        text = 'Tickets'
+        text = 'Support'
         summary = 'Technical Support Requests'
         return Link(target, text, summary, enabled=False)
 
@@ -65,3 +70,50 @@ class StandardLaunchpadFacets(FacetMenu):
         target = '+calendar'
         text = 'Calendar'
         return Link(target, text, enabled=False)
+
+
+class LaunchpadView:
+    """Base class for views in Launchpad.
+
+    Available attributes and methods are:
+
+    - context
+    - request
+    - initialize() <-- subclass this for specific initialization
+    - template     <-- the template set from zcml, otherwise not present
+    - user         <-- currently logged-in user
+    - render()     <-- used to render the page.  override this if you have many
+                       templates not set via zcml, or you want to do rendering
+                       from Python.
+    """
+
+    _no_user = object()
+    _user = _no_user
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def initialize(self):
+        """Override this in subclasses."""
+        pass
+
+    @property
+    def template(self):
+        """The page's template, if configured in zcml."""
+        return self.index
+
+    def render(self):
+        return self.template()
+
+    def __call__(self):
+        self.initialize()
+        return self.render()
+
+    @property
+    def user(self):
+        """The logged-in Person, or None if there is no one logged in."""
+        if self._user is self._no_user:
+            self._user = getUtility(ILaunchBag).user
+        return self._user
+

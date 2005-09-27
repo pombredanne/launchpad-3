@@ -53,14 +53,8 @@ class BugTaskPageTitle:
 
 class BugTaskTargetingTitle:
     def __call__(self, context, view):
-        task_target = context.target
-        if IDistribution.providedBy(task_target):
-            distribution_title = task_target.title
-        elif IDistroRelease.providedBy(task_target):
-            distribution_title = task_target.distribution.title 
-
         return "Bug #%d in %s - Target Fix to Releases" % (
-            context.bug.id, distribution_title)
+            context.bug.id, context.targetname)
 
 
 class SubstitutionHelper:
@@ -220,6 +214,8 @@ def bugsubscription_edit(context, view):
     return "Bug #%d - Edit Subscription (%s)" % (
         context.bug.id, context.person.browsername)
 
+bugtask_index = BugTaskPageTitle()
+
 bugtask_release_targeting = BugTaskTargetingTitle()
 
 bugtask_view = BugTaskPageTitle()
@@ -315,7 +311,7 @@ distribution_translators = 'Appoint Distribution Translation Group'
 
 distribution_search = 'Locate Distributions in Launchpad'
 
-distribution_index = ContextTitle('Launchpad Distribution Summary: %s')
+distribution_index = ContextTitle('%s in Launchpad')
 
 distro_add = 'Adding New Distribution'
 
@@ -366,6 +362,10 @@ distrorelease_builds = ContextTitle(
 distroreleaselanguage = ContextTitle('%s')
 
 distros_index = 'Overview of Distributions in Launchpad'
+
+def distrosourcepackage_bugs(context, view):
+    return 'Bugs in %s %s' % (
+        context.distribution.name, context.name)
 
 errorservice_config = 'Configure Error Log'
 
@@ -461,7 +461,7 @@ malone_to_do = 'Malone ToDo'
 
 # messages_index is a redirect
 
-message_add = ContextTitle('Add Message to %s')
+message_add = ContextId('Bug #%d - Add a Comment')
 
 milestone_add = ContextDisplayName('Add Milestone for %s')
 
@@ -568,6 +568,12 @@ def poll_new(context, view):
 
 def polloption_edit(context, view):
     return 'Edit option %s' % context.shortname
+
+poll_options = ContextTitle('Options of Poll %s')
+
+poll_vote_condorcet = ContextTitle('Vote in %s')
+
+poll_vote_simple = ContextTitle('Vote in %s')
 
 potemplate_add = 'Add a new template to Rosetta'
 
@@ -773,8 +779,8 @@ soyuz_index = 'Soyuz: Linux Distribution Management'
 specification_add = 'Register a feature specification in Launchpad'
 
 specification_bug = ContextTitle(
-  'Link specification \N{left double quotation mark}%s\N{right double quotation mark} '
-  'to a bug report')
+  'Link specification \N{left double quotation mark}%s'
+  '\N{right double quotation mark} to a bug report')
 
 specification_removebug = 'Remove link to bug report'
 
@@ -786,7 +792,8 @@ specification_milestone = 'Target Feature to Milestone'
 
 specification_people = 'Change the Specification Assignee, Drafter and Reviewer'
 
-specification_distrorelease = 'Target Feature Specification at Distribution Release'
+specification_distrorelease = ('Target Feature Specification at '
+                               'Distribution Release')
 
 specification_productseries = 'Target Feature Specification at Series'
 

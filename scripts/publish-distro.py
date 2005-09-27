@@ -14,8 +14,7 @@ import sys, os
 from canonical.launchpad.database import (
     Distribution, DistroRelease, SourcePackagePublishingView,
     BinaryPackagePublishingView, SourcePackageFilePublishing,
-    BinaryPackageFilePublishing, SourcePackagePublishing,
-    BinaryPackagePublishing)
+    BinaryPackageFilePublishing)
 
 from sqlobject import AND
 
@@ -28,6 +27,15 @@ from canonical.database.sqlbase import sqlvalues, SQLBase
 # We do this for more accurate exceptions. It doesn't slow us down very
 # much so it's not worth making it an option.
 SQLBase._lazyUpdate = False
+
+careful = False
+if sys.argv[1] == "--careful":
+    careful = True
+    # XXX: dsilvers: 20050921: Replace all this with an option parser
+    # but for now, and just for SteveA:
+    # "lookee here, altering sys.argv"
+    sys.argv.remove(1)
+    
 
 distroname = sys.argv[1]
 
@@ -73,7 +81,8 @@ debug("Preparing on-disk pool representation...")
 
 dp = DiskPool(Poolifier(POOL_DEBIAN),
               pubconf.poolroot, logging.getLogger("DiskPool"))
-
+# Set the diskpool's log level to INFO to suppress debug output
+dp.logger.setLevel(20)
 dp.scan()
 
 debug("Preparing publisher...")
@@ -83,12 +92,14 @@ pub = Publisher(logging.getLogger("Publisher"), pubconf, dp)
 try:
     # main publishing section
     debug("Attempting to publish pending sources...")
-    spps = SourcePackageFilePublishing.selectBy(
-        distribution = distro.id )
+    clause = "distribution = %s" % sqlvalues(distro.id)
+    if not careful:
+        clause = clause + (" AND publishingstatus = %s" %
+                           sqlvalues(PackagePublishingStatus.PENDING))
+    spps = SourcePackageFilePublishing.select(clause)
     pub.publish(spps, isSource=True)
     debug("Attempting to publish pending binaries...")
-    pps = BinaryPackageFilePublishing.selectBy(
-        distribution = distro.id )
+    pps = BinaryPackageFilePublishing.select(clause)
     pub.publish(pps, isSource=False)
         
 except:
@@ -102,7 +113,7 @@ try:
     debug("Attempting to perform domination...")
     for distrorelease in drs:
         for pocket in PackagePublishingPocket.items:
-            judgejudy.judgeAndDominate(distrorelease,pocket, pubconf)
+            judgejudy.judgeAndDominate(distrorelease, pocket, pubconf)
 except:
     logging.getLogger().exception("Bad muju while dominating")
     txn.abort()
@@ -113,10 +124,12 @@ try:
     debug("Generating overrides for the distro...")
     spps = SourcePackagePublishingView.select(
         AND(SourcePackagePublishingView.q.distribution == distro.id,
-        SourcePackagePublishingView.q.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL ))
+            SourcePackagePublishingView.q.publishingstatus == 
+                PackagePublishingStatus.PUBLISHED ))
     pps = BinaryPackagePublishingView.select(
         AND(BinaryPackagePublishingView.q.distribution == distro.id,
-        BinaryPackagePublishingView.q.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL ))
+            BinaryPackagePublishingView.q.publishingstatus == 
+                PackagePublishingStatus.PUBLISHED ))
 
     pub.publishOverrides(spps, pps)
 except:
@@ -129,12 +142,14 @@ try:
     debug("Generating file lists...")
     spps = SourcePackageFilePublishing.select(
         AND(SourcePackageFilePublishing.q.distribution == distro.id,
-        SourcePackageFilePublishing.q.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL ))
+            SourcePackageFilePublishing.q.publishingstatus ==
+            PackagePublishingStatus.PUBLISHED ))
     pps = BinaryPackageFilePublishing.select(
         AND(BinaryPackageFilePublishing.q.distribution == distro.id,
-        BinaryPackageFilePublishing.q.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL ))
+            BinaryPackageFilePublishing.q.publishingstatus ==
+                PackagePublishingStatus.PUBLISHED ))
 
-    pub.publishFileLists(spps,pps)
+    pub.publishFileLists(spps, pps)
 except:
     logging.getLogger().exception("Bad muju while generating file lists")
     txn.abort()
@@ -159,7 +174,7 @@ except:
 
 try:
     # Generate the Release files...
-    debug("Generating log files...")
+    debug("Generating Release files...")
     pub.writeReleaseFiles(distro)
     
 except:
@@ -188,9 +203,11 @@ try:
                             clauseTables=['binarypackagepublishing'])
 
     livesrc = SourcePackageFilePublishing.select(
-        SourcePackageFilePublishing.q.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL)
+        SourcePackageFilePublishing.q.publishingstatus != 
+            PackagePublishingStatus.PENDINGREMOVAL)
     livebin = BinaryPackageFilePublishing.select(
-        BinaryPackageFilePublishing.q.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL)
+        BinaryPackageFilePublishing.q.publishingstatus != 
+            PackagePublishingStatus.PENDINGREMOVAL)
     
     pub.unpublishDeathRow(consrc, conbin, livesrc, livebin)
 

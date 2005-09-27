@@ -32,7 +32,8 @@ class MaloneApplication:
 
     @property
     def bug_count(self):
-        return getUtility(IBugSet).search().count()
+        user = getUtility(ILaunchBag).user
+        return getUtility(IBugSet).searchAsUser(user=user).count()
 
     @property
     def bugwatch_count(self):
@@ -61,7 +62,9 @@ class MaloneApplication:
 
     @property
     def latest_bugs(self):
-        return getUtility(IBugSet).search(orderBy='-datecreated', limit=5)
+        user = getUtility(ILaunchBag).user
+        return getUtility(IBugSet).searchAsUser(
+            user=user, orderBy='-datecreated', limit=5)
 
 
 class BazaarApplication:

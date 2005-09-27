@@ -1,6 +1,6 @@
 
   >>> print http(r"""
-  ... GET /buildfarm/+index HTTP/1.1
+  ... GET /+builds/+index HTTP/1.1
   ... Referer: http://localhost:9000/buildfarm
   ... """)
   HTTP/1.1 200 Ok

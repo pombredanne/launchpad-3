@@ -44,6 +44,48 @@ If the package doesn't exist, queryByName returns None:
     >>> print foobar
     None
 
+Distribution Source Packages
+----------------------------
+
+In some cases it's useful to be able to refer to a source package at a
+distribution level, independent of any particular distrorelease. For
+example, with Malone, a bug is usually filed on a distribution
+sourcepackage (filing a bug on a specific distrorelease actually means
+something quite different, but is outside the scope of this document.)
+
+To retrieve a distribution source package, use the
+IDistroSourcePackageSet utility:
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistroSourcePackageSet, IDistributionSet, IDistroSourcePackage)
+    >>> ubuntu = getUtility(IDistributionSet).get(1)
+    >>> ubuntu_firefox = getUtility(IDistroSourcePackageSet).getPackage(
+    ...     distribution=ubuntu, sourcepackagename=firefox)
+    >>> IDistroSourcePackage.providedBy(ubuntu_firefox)
+    True
+    >>> print ubuntu_firefox.name
+    mozilla-firefox
+    >>> print ubuntu_firefox.title
+    ubuntu mozilla-firefox
+    >>> print ubuntu_firefox.displayname
+    ubuntu mozilla-firefox
+    >>> ubuntu_firefox.distribution == ubuntu
+    True
+    >>> ubuntu_firefox.sourcepackagename == firefox
+    True
+
+You can search for bugs in an IDistroSourcePackage using the
+.searchTasks method:
+
+    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
+    >>> from canonical.lp import dbschema
+    >>> params = BugTaskSearchParams(status=dbschema.BugTaskStatus.NEW, user=None)
+    >>> tasks = ubuntu_firefox.searchTasks(params)
+    >>> tasks.count()
+    1
+    >>> tasks[0].id
+    17
+
 Packaging
 ---------
 
@@ -104,7 +146,6 @@ Now verify we still get a product for that source package
     >>> sp = SourcePackage(sourcepackagename=a52dec, distrorelease=g2k5)
     >>> sp.productseries.product.name
     u'a52dec'
-
 
 Test the Changelog concatenation process:
 

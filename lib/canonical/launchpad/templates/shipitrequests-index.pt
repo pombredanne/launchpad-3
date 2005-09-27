@@ -78,6 +78,7 @@
       <table width="80%" class="listing sortable" id="results">
         <thead>
           <tr>
+            <th>id</th>
             <th>Recipient</th>
             <th>Date</th>
             <th>Country</th>
@@ -88,26 +89,30 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="shipitrequest view/results">
-            <td tal:content="shipitrequest/recipient/displayname" />
-            <td tal:content="shipitrequest/daterequested/fmt:date" />
-            <td tal:content="shipitrequest/recipient/country/name" />
-            <td style="text-align: right" 
-                tal:content="shipitrequest/totalCDs" />
-            <td style="text-align: right"
-                tal:content="shipitrequest/totalapprovedCDs" />
-            <td>
-              <tal:block condition="not: shipitrequest/cancelled">
-                <span tal:condition="shipitrequest/isApproved">approved</span>
-                <span tal:condition="shipitrequest/isDenied">denied</span>
-                <span tal:condition="shipitrequest/isAwaitingApproval">
-                  waiting for approval
-                </span>
-              </tal:block>
-              <span tal:condition="shipitrequest/cancelled">cancelled</span>
-            </td>
-            <td>[<a tal:attributes="href shipitrequest/fmt:url">edit</a>]</td>
-          </tr>
+          <tal:block repeat="shipitrequest view/results">
+            <tr tal:attributes="
+              style string:background-color: ${shipitrequest/highlightColour}">
+              <td tal:content="shipitrequest/id" />
+              <td tal:content="shipitrequest/recipient/displayname" />
+              <td tal:content="shipitrequest/daterequested/fmt:date" />
+              <td tal:content="shipitrequest/recipient/country/name" />
+              <td style="text-align: right" 
+                  tal:content="shipitrequest/totalCDs" />
+              <td style="text-align: right"
+                  tal:content="shipitrequest/totalapprovedCDs" />
+              <td>
+                <tal:block condition="not: shipitrequest/cancelled">
+                  <span tal:condition="shipitrequest/isApproved">approved</span>
+                  <span tal:condition="shipitrequest/isDenied">denied</span>
+                  <span tal:condition="shipitrequest/isAwaitingApproval">
+                    pending
+                  </span>
+                </tal:block>
+                <span tal:condition="shipitrequest/cancelled">cancelled</span>
+              </td>
+              <td>[<a tal:attributes="href shipitrequest/fmt:url">edit</a>]</td>
+            </tr>
+          </tal:block>
         </tbody>
       </table>
 

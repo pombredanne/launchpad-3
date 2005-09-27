@@ -17,7 +17,7 @@ from zope.schema import Choice, TextLine, Bool
 
 _ = MessageIDFactory('launchpad')
 
-from canonical.launchpad.fields import Title, Summary, Description
+from canonical.launchpad.fields import Title, Description
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad.validators.name import valid_name
 
@@ -69,10 +69,10 @@ class IBuilder(IHasOwner):
                                             'and details.')
                               )
 
-    trusted =Bool(title=_('Trusted'), required=True,
-                  description=_('Whether not the builder is trusted to '
+    trusted = Bool(title=_('Trusted'), required=True,
+                   description=_('Whether not the builder is trusted to '
                                 'build packages under security embargo.')
-                  )
+                   )
 
     builderok = Attribute("Whether or not the builder is ok")
     failnotes = Attribute("The reason for a builder not being ok")
@@ -128,9 +128,13 @@ class IBuildQueue(Interface):
     created = Attribute("The datetime that the queue entry waw created")
     buildstart = Attribute("The datetime of the last build attempt")
     logtail = Attribute("The current tail of the log of the build")
-    partialDuration = Attribute("Time elapsed since start, None is not "
-                                "started")
-    
+    urgency = Attribute("SourcePackageRelease Urgency")
+    component_name = Attribute("Component name where the job got published")
+    name = Attribute("SourcePackageRelease name")
+    version = Attribute("SourcePackageRelease version")
+    files = Attribute("SourcePackageRelease files")
+    buildduration = Attribute("The duration of the build in progress")
+
     def destroySelf():
         """Delete this entry from the database."""
 

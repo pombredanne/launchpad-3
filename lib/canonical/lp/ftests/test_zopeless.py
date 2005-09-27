@@ -34,14 +34,18 @@ class TestInitZopeless(PgTestCase):
         try:
             # Calling initZopeless with the same arguments twice should return
             # the exact same object twice, but also emit a warning.
-            tm1 = initZopeless(dbname=self.dbname, dbhost='')
-            tm2 = initZopeless(dbname=self.dbname, dbhost='')
-            self.failUnless(tm1 is tm2)
-            self.failUnless(self.warned)
+            try:
+                tm1 = initZopeless(dbname=self.dbname, dbhost='',
+                        dbuser='launchpad')
+                tm2 = initZopeless(dbname=self.dbname, dbhost='',
+                        dbuser='launchpad')
+                self.failUnless(tm1 is tm2)
+                self.failUnless(self.warned)
+            finally:
+                tm1.uninstall()
         finally:
             # Put the warnings module back the way we found it.
             warnings.warn_explicit = warn_explicit
-            tm1.uninstall()
             
     def expectedWarning(self, message, category, filename, lineno,
                         module=None, registry=None):
@@ -54,7 +58,7 @@ class TestZopeless(unittest.TestCase):
     def setUp(self):
         PgTestSetup().setUp()
         self.dbname = PgTestSetup().dbname
-        self.tm = initZopeless(dbname=self.dbname)
+        self.tm = initZopeless(dbname=self.dbname, dbuser='launchpad')
         MoreBeer.createTable()
         self.tm.commit()
 
@@ -182,7 +186,8 @@ def test_isZopeless():
     >>> isZopeless()
     False
 
-    >>> tm = initZopeless(dbname=PgTestSetup().dbname, dbhost='')
+    >>> tm = initZopeless(dbname=PgTestSetup().dbname,
+    ...     dbhost='', dbuser='launchpad')
     >>> isZopeless()
     True
 

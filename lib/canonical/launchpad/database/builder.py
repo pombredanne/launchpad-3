@@ -24,8 +24,10 @@ from canonical.launchpad.interfaces import (
 
 from canonical.lp.dbschema import EnumCol, BuildStatus
 
+import pytz
+
+
 class Builder(SQLBase):
-    """See IBuilder"""
     implements(IBuilder)
     _table = 'Builder'
 
@@ -36,9 +38,10 @@ class Builder(SQLBase):
     title = StringCol(dbName='title', notNull=True)
     description = StringCol(dbName='description', notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-    builderok = BoolCol(dbName='builderok', default=True, notNull=True)
-    failnotes = StringCol(dbName='failnotes')
-    trusted = BoolCol(dbName='trusted', notNull=True, default=False)
+    builderok = BoolCol(dbName='builderok', notNull=True)
+    failnotes = StringCol(dbName='failnotes', default=None)
+    trusted = BoolCol(dbName='trusted', default=False, notNull=True)
+    speedindex = IntCol(dbName='speedindex', default=0)
     
     @property
     def currentjob(self):
@@ -102,24 +105,44 @@ class BuilderSet(object):
 
 
 class BuildQueue(SQLBase):
-    """See IBuildQueue"""
     implements(IBuildQueue)
     _table = "BuildQueue"
 
     build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
-    builder = ForeignKey(dbName='builder', foreignKey='Builder', notNull=False)
-    created = UtcDateTimeCol(dbName='created', notNull=True)
-    buildstart = UtcDateTimeCol(dbName='buildstart', notNull=False)
-    logtail = StringCol(dbName='logtail', notNull=False)
-    lastscore = IntCol(dbName='lastscore', notNull=False)
+    builder = ForeignKey(dbName='builder', foreignKey='Builder', default=None)
+    created = UtcDateTimeCol(dbName='created', default=UTC_NOW)
+    buildstart = UtcDateTimeCol(dbName='buildstart', default= None)
+    logtail = StringCol(dbName='logtail', default=None)
+    lastscore = IntCol(dbName='lastscore', default=0)
 
     @property
-    def partialDuration(self):
+    def urgency(self):
+        return self.build.sourcepackagerelease.urgency
+    
+    @property
+    def component_name(self):
+        return self.build.sourcepackagerelease.component.name
+    
+    @property
+    def name(self):
+        return self.build.sourcepackagerelease.name
+
+    @property
+    def version(self):
+        return self.build.sourcepackagerelease.version
+
+    @property
+    def files(self):
+        return self.build.sourcepackagerelease.files
+
+    @property
+    def buildduration(self):
         """See IBuildQueue"""
         if self.buildstart:
-            # XXX cprov 20050823
-            # How to be able to use the default formaters for this field ?
-            return UTC_NOW - self.buildstart
+            UTC = pytz.timezone('UTC')
+            now = datetime.now(UTC)
+            return now - self.buildstart
+        return None
 
         
 class BuildQueueSet(object):

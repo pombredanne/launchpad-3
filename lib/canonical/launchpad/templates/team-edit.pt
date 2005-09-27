@@ -7,49 +7,23 @@
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
+      <div tal:replace="structure context/@@+portlet-details" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
       <div tal:replace="structure context/@@+portlet-actions" />
   </metal:rightportlets>
 
-<div metal:fill-slot="main">
+  <h1>
+    Edit &#8220;<span tal:replace="context/browsername">
+    Foo</span>&#8221; team
+  </h1>
 
-  <h1>Edit Details</h1>
+  <div metal:fill-slot="main">
 
-  <div metal:define-macro="editform">
+    <div metal:use-macro="context/@@launchpad_editform/editform" />
 
-      <form action="." tal:attributes="action request/URL" method="post"
-            enctype="multipart/form-data">
-
-        <div metal:define-macro="formbody">
-
-          <p class="portalMessage"
-             tal:define="status view/update"
-             tal:condition="status"
-             tal:content="status" />
-
-          <p tal:condition="view/errors"
-             class="portalMessage"
-             i18n:translate="">
-             There are <strong tal:content="view/errors/count:len"
-                              i18n:name="num_errors">6</strong> input errors.
-          </p>
-
-          <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
-        
-        </div>
-
-          <div class="form actions">
-            <input type="submit" name="UPDATE_SUBMIT"
-                   value="Save Changes"
-                   i18n:attributes="value submit-button"/>
-          </div>
-
-      </form>
-
-    </div>
   </div>
 
-  </body>
+</body>
 </html>

@@ -7,8 +7,8 @@ import errno, os, re, shutil, string, tempfile
 import apt_pkg
 from canonical.archivepublisher.GPGV import verify_signed_file
 from canonical.archivepublisher.GPGV import VerificationError
-from canonical.archivepublisher.TagFiles import parse_tagfile
-from canonical.archivepublisher.TagFiles import TagFileParseError
+from canonical.archivepublisher.tagfiles import parse_tagfile
+from canonical.archivepublisher.tagfiles import TagFileParseError
 from canonical.archivepublisher.utils import build_file_list
 from canonical.archivepublisher.utils import fix_maintainer
 from canonical.archivepublisher.utils import ParseMaintError

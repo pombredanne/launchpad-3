@@ -12,6 +12,11 @@
              set_schema="canonical.launchpad.interfaces.ICve" />
   </content>
 
+  <browser:menus
+    module="canonical.launchpad.browser"
+    classes="CveContextMenu CveSetContextMenu"
+    />
+
   <browser:url
     for="canonical.launchpad.interfaces.ICve"
     path_expression="sequence"

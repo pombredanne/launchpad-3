@@ -15,10 +15,12 @@ import the bunch of required database classes:
   >>> from canonical.launchpad.database import (
   ...      SourcePackageRelease, SourcePackageName, DistroRelease,
   ...      SourcePackagePublishing, SecureSourcePackagePublishingHistory,
-  ...      PocketChroot, DistroArchRelease, Build, BuildQueue)
+  ...      PocketChroot, DistroArchRelease, Build, BuildQueue,
+  ...      SourcePackageReleaseFile)
 
   >>> from canonical.lp.dbschema import (
-  ...      PackagePublishingPocket, PackagePublishingStatus)
+  ...      PackagePublishingPocket, PackagePublishingStatus,
+  ...      SourcePackageFileType)
 
   >>> from canonical.database.constants import UTC_NOW
 
@@ -83,6 +85,13 @@ added by the current sample data and so on)
   ...                                  changelog=None, manifest=1,
   ...                                  dscsigningkey=None)
 
+  >>> tar = SourcePackageFileType.TARBALL
+  >>> srcfile = SourcePackageReleaseFile(sourcepackagerelease=srcpkgrel.id,
+  ...                                    libraryfile=1,
+  ...                                    filetype=tar)
+  >>> srcfile.libraryfile.filename, srcfile.sourcepackagerelease.name
+  (u'netapplet-1.0.0.tar.gz', u'test-buildd')
+
   >>> published = PackagePublishingStatus.PUBLISHED
   >>> release_pocket = PackagePublishingPocket.RELEASE
   >>> p = SecureSourcePackagePublishingHistory(
@@ -122,9 +131,38 @@ marked as NEEDSBUILD we can create BuildQueue entries for it
   >>> BuildQueue.select().count()
   2
 
-Since the BuildQueue table was filled above we can reorganise the
-job by the most interesting parameters, See buildd-scoring.txt
+A separate process is responsible for cleaning up the BuildQueue and
+scroring the jobs properly.
+
+The default score value is 0 (zero), attempt for the fact we already
+have a build queue entry added by the sampledata, that's why the 2nd 
+element of the result.
+
+  >>> job = BuildQueue.select(orderBy='id')[1]
+  >>> job.lastscore
+  0
+
+After sanitising the jobs, only the ones containing
+sourcepackagerelease files should remain:
 
   >>> new_jobs = bm.sanitiseAndScoreCandidates()
   >>> len(new_jobs)
-  0
+  1
+ 
+  >>> job = new_jobs[0]
+  >>> job.build.sourcepackagerelease.name
+  u'test-buildd'
+
+And we grant some score depending on: time pending on the buildqueue,
+component the package belongs to, and the urgency of the upload.
+There is still some work to do here, for further information see the
+launchpad/scripts/builddmaster.py code. The job presented should won
+exactly ** 5 ** points last turn (1 for the default urgency 'LOW' and 
+4 for the 'Main' component, further tests for scoring are in
+buildd-scoring.txt)
+
+  >>> job.lastscore
+  5
+   
+
+

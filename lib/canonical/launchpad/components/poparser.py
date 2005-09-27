@@ -14,9 +14,7 @@ import logging
 
 from canonical.launchpad.interfaces import IPOMessage, IPOHeader, IPOParser
 from zope.interface import implements
-from zope.app.datetimeutils import (
-        SyntaxError, DateError, DateTimeError, parseDatetimetz
-        )
+from zope.app import datetimeutils
 
 # Exceptions and warnings
 
@@ -481,8 +479,9 @@ class POHeader(dict, POMessage):
             date_string = 'Missing header'
         else:
             try:
-                date = parseDatetimetz(date_string)
-            except (SyntaxError, DateError, DateTimeError, ValueError):
+                date = datetimeutils.parseDatetimetz(date_string)
+            except (datetimeutils.SyntaxError, datetimeutils.DateError,
+                    datetimeutils.DateTimeError, ValueError):
                 # invalid date format
                 date = None
 
@@ -539,8 +538,9 @@ class POParser(object):
         if self._partial_transl:
             for message in self.messages:
                 if message.msgid == self._partial_transl['msgid']:
-                    raise POInvalidInputError('Po file: duplicate msgid ending on line %d'
-                                              % self._partial_transl['_lineno'])
+                    lineno = self._partial_transl['_lineno']
+                    raise POInvalidInputError('Po file: duplicate msgid '
+                                              'ending on line %d' % lineno)
             try:
                 transl = self.translation_factory(header=self.header,
                                                   **self._partial_transl)
@@ -553,7 +553,8 @@ class POParser(object):
 
     def _make_header(self):
         try:
-            self.header = self.header_factory(messages=self.messages, **self._partial_transl)
+            self.header = self.header_factory(messages=self.messages, 
+                                              **self._partial_transl)
             self.header.finish()
         except (POSyntaxError, POInvalidInputError), e:
             if e.lno is None:
@@ -581,18 +582,20 @@ class POParser(object):
         self._lineno += 1
         # Skip empty lines
         l = l.strip()
-        if not l:
-            return
 
         obsolete = False
         if l[:2] == '#~':
             obsolete = True
             l = l[2:].lstrip()
+
+        if not l:
+            return
         # If we get a comment line after a msgstr or a line starting with
         # msgid, this is a new entry
         # XXX: l.startswith('msgid') is needed because not all msgid/msgstr
         # pairs have a leading comment
-        if (l[0] == '#' or l.startswith('msgid')) and self._section == 'msgstr':
+        if ((l.startswith('#') or l.startswith('msgid')) and
+            self._section == 'msgstr'):
             if self._partial_transl is None:
                 # first entry - do nothing
                 pass
@@ -611,7 +614,8 @@ class POParser(object):
             l = self.to_unicode(l)
             # Record flags
             if l[:2] == '#,':
-                self._partial_transl['flags'].update([flag.strip() for flag in l[2:].split(',')])
+                new_flags = [flag.strip() for flag in l[2:].split(',')]
+                self._partial_transl['flags'].update(new_flags)
                 return
             # Record file references
             if l[:2] == '#:':

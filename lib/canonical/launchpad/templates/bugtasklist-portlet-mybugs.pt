@@ -1,12 +1,4 @@
-<ul>
-  <li class="add">
-    <a href="#"
-       tal:attributes="href string:${context/fmt:url}/+filebug">
-       Report a bug
-    </a>
-  </li>
-</ul>
-<h4>Bug lists</h4>
+<div class="portlet portletBody portletContent">
 <ul class="bugs">
   <li>
     <a href="#"
@@ -56,3 +48,4 @@
     (<span tal:replace="view/total_count">115</span>)
   </li>
 </ul>
+</div>

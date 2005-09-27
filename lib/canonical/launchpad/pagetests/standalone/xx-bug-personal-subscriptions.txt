@@ -1,14 +1,14 @@
+Personal Subscriptions
+======================
 
-Personal Subscription
-=====================
+The user should be able to subscribe and unsubscribe from bugs in
+Launchpad.
 
-The user should be able to subscribe and unsubscribe from bugs in Launchpad.
-
-When they are not subscribed, they should see the "Subscribe" link in the
-actions portlet.
+When they are not subscribed, they should see the "Subscribe" link in
+the actions portlet.
 
   >>> print http(r"""
-  ... GET /malone/bugs/1/ HTTP/1.1
+  ... GET /products/firefox/+bug/1 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -19,7 +19,7 @@ if they want to subscribe. The "Subscribe" button should be visible on the
 page.
 
   >>> print http(r"""
-  ... GET /malone/bugs/1/+subscribe HTTP/1.1
+  ... GET /products/firefox/+bug/1/+subscribe HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -32,23 +32,22 @@ Now, let's POST that back to the bug home page. It should show the user. It
 should also show a message, and the link should change to "Unsubscribe".
 
   >>> print http(r"""
-  ... POST /malone/bugs/1/ HTTP/1.1
+  ... POST /products/firefox/+bug/1 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 19
   ... Content-Type: application/x-www-form-urlencoded
   ... 
   ... subscribe=Subscribe""")
   HTTP/1.1 200 Ok
-  ...You have subscribed to this...
+  ...You have been subscribed to this...
   ...Unsubscribe...
   ...Foo Bar...
 
 Now, we want to view the +subscribe page again. It should say "Unsubscribe"
 because we are now a subscriber.
 
-
   >>> print http(r"""
-  ... GET /malone/bugs/1/+subscribe HTTP/1.1
+  ... GET /products/firefox/+bug/1/+subscribe HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -62,15 +61,12 @@ spectacular fashion.
 
 
   >>> print http(r"""
-  ... POST /malone/bugs/1/ HTTP/1.1
+  ... POST /products/firefox/+bug/1 HTTP/1.1
   ... Content-Length: 21
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... 
   ... subscribe=Unsubscribe""")
   HTTP/1.1 200 Ok
-  ...You have unsubscribed from this...
+  ...You have been unsubscribed from this...
   ...Subscribe...
-
-
-
