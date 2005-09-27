@@ -1,3 +1,9 @@
+launchpad-buildd (7) unstable; urgency=low
+
+  * Made sure the slave puts /dev/null on the subprocess stdin.
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Tue, 27 Sep 2005 01:52:50 +0100
+
 launchpad-buildd (6) unstable; urgency=low
 
   * Removed slavechroot.py from installed set.
