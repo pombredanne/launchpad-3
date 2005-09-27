@@ -20,7 +20,8 @@
     <em>Standard Request</em>. Only one of these should be the default option,
     and that is the one that will be initially selected for the user.</p>
 
-    <table class="listing sortable" id="standardrequests">
+    <table class="listing sortable" id="standardrequests" width="80%"
+           style="clear: both">
       <thead>
         <tr>
           <th>Description</th>
