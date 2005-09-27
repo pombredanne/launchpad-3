@@ -1,0 +1,62 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Create Bug from Ticket</h1>
+
+  <p class="documentDescription">
+    Use this page to create a bug report from this support request. Before
+    doing so, please make sure that you have edited the support request
+    title and description to reflect, exactly, the bug report you are
+    making.
+  </p>
+
+  <p>
+    <label>Proposed Bug Title:</label><br />
+    "<span tal:replace="context/title">bug title here</span>"
+  </p>
+
+  <p>
+    <label>Proposed Bug Description:</label><br />
+    <span tal:replace="context/description" />
+  </p>
+
+  <p>
+    Choose "Create Bug" to create the bug report, or "Cancel" to
+    return to the ticket page.
+  </p>
+
+  <form action="." method="POST">
+
+    <div>
+    </div>
+    <div class="actions">
+      <input type="submit"
+             name="makebug"
+             value="Cancel" />
+      <input tal:condition="not: context/bugs"
+             type="submit"
+             name="makebug"
+             value="Create Bug" />
+    </div>
+  </form>
+
+</div>
+
+</body>
+</html>

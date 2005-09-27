@@ -25,9 +25,9 @@
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
-        <h1 tal:condition="view/label"
-            tal:content="view/label"
-            metal:fill-slot="heading">Heading from ZCML label="xxx"</h1>
+    <h1 tal:condition="view/label"
+        tal:content="view/label"
+        metal:fill-slot="heading">Heading from ZCML label="xxx"</h1>
 
     <div metal:fill-slot="extra_info" class="documentDescription">
       Please the introductory paragraph here. It will be displayed in

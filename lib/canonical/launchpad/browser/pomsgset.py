@@ -192,7 +192,12 @@ class POMsgSetView:
         if self._wiki_submissions is not None:
             return self._wiki_submissions
         curr = self.getTranslation(index)
-        wiki = self.potmsgset.getWikiSubmissions(self.language, index)
+        if self.pomsgset is None:
+            # If we don't have a pomsgset for this potmsgset, we cannot have
+            # any "wiki" submission.
+            return []
+
+        wiki = self.pomsgset.getWikiSubmissions(index)
         suggested = self.getSuggestedSubmissions(index)
         suggested_texts = [s.potranslation.translation
                            for s in suggested]
@@ -211,7 +216,12 @@ class POMsgSetView:
         if self._current_submissions is not None:
             return self._current_submissions
         curr = self.getTranslation(index)
-        current = self.potmsgset.getCurrentSubmissions(self.language, index)
+        if self.pomsgset is None:
+            # If we don't have a pomsgset for this potmsgset, we cannot have
+            # any "current" submission.
+            return []
+
+        current = self.pomsgset.getCurrentSubmissions(index)
         suggested = self.getSuggestedSubmissions(index)
         suggested_texts = [s.potranslation.translation
                            for s in suggested]

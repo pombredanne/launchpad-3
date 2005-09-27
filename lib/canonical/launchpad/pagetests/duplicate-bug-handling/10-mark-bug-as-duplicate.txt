@@ -1,7 +1,7 @@
 First, visit the +duplicate page on the bug you're looking at:
 
   >>> print http(r"""
-  ... GET /malone/bugs/2/+duplicate HTTP/1.1
+  ... GET /distros/debian/+sources/mozilla-firefox/+bug/2/+duplicate HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
@@ -21,12 +21,10 @@ duplicate:
 Now, let's go ahead and mark bug 2 as a duplicate of bug 1.
 
   >>> print http(r"""
-  ... POST /malone/bugs/2/+duplicate HTTP/1.1
-  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... POST /distros/debian/+sources/mozilla-firefox/+bug/2/+duplicate HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 309
   ... Content-Type: multipart/form-data; boundary=---------------------------17976867087135254391306687757
-  ... Referer: http://localhost:9000/malone/bugs/2/+duplicate
   ...
   ... -----------------------------17976867087135254391306687757
   ... Content-Disposition: form-data; name="field.duplicateof"
@@ -38,11 +36,9 @@ Now, let's go ahead and mark bug 2 as a duplicate of bug 1.
   ... Change
   ... -----------------------------17976867087135254391306687757--
   ... """)
-  HTTP/1.1 200 Ok
+  HTTP/1.1 303 See Other
   ...
-            <h1>Mark as Duplicate Bug Report</h1>
-  <BLANKLINE>
-  ...Updated on ...
+  Location: http://.../distros/debian/+sources/mozilla-firefox/+bug/2
   ...
 
 When the bug is marked as a duplicate, each subscriber will receive,
@@ -80,7 +76,7 @@ notification:
     >>> from_addr, to_addrs, raw_message = sent_emails[-1]
 
     >>> print from_addr
-    Foo Bar via Malone <2@...>
+    Foo Bar <foo.bar@canonical.com>
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug 2] Blackhole Trash folder'
@@ -107,7 +103,7 @@ notification:
     >>> from_addr, to_addrs, raw_message = sent_emails[0]
 
     >>> print from_addr
-    Foo Bar via Malone <1@...>
+    Foo Bar <foo.bar@canonical.com>
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'

@@ -29,8 +29,9 @@ from zope.schema import (
 from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
-from canonical.launchpad.interfaces.launchpad import IHasDateCreated
 from canonical.launchpad.interfaces.bugattachment import IBugAttachment
+from canonical.launchpad.interfaces.launchpad import IHasDateCreated
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
 _ = MessageIDFactory('launchpad')
 
@@ -76,17 +77,32 @@ class IBugTask(IHasDateCreated):
         "(None). Linking the remote bug watch with the task in "
         "this way means that a change in the remote bug status will change "
         "the status of this bug task in Malone."))
-    dateassigned = Datetime()
-    datecreated  = Datetime()
+    dateassigned = Datetime(
+        title=_("Date Assigned"),
+        description=_("The date on which this task was assigned to someone."))
+    datecreated = Datetime(
+        title=_("Date Created"),
+        description=_("The date on which this task was created."))
+    age = Datetime(
+        title=_("Age"),
+        description=_(
+            "The age of this task, expressed as the length of time between "
+            "datecreated and now."))
     owner = Int()
     maintainer = TextLine(
         title=_("Maintainer"), required=True, readonly=True)
     maintainer_displayname = TextLine(
         title=_("Maintainer"), required=True, readonly=True)
-
     target = Attribute("The software in which this bug should be fixed")
     targetname = Attribute("The short, descriptive name of the target")
-    title = Attribute("The title used for a task's Web page.")
+    related_tasks = Attribute("IBugTasks related to this one, namely other "
+                              "IBugTasks on the same IBug.")
+    statusdisplayhtml = Attribute(
+        "A HTML representation of the status. This field produces"
+        "its value from the status, assignee and milestone values.")
+    statuselsewhere = Attribute(
+        "A human-readable representation of the status of this IBugTask's bug "
+        "in the other contexts in which it's reported.")
 
     def setStatusFromDebbugs(status):
         """Set the Malone BugTask status on the basis of a debbugs status.
@@ -267,7 +283,11 @@ class IUpstreamBugTask(IBugTask):
 class IDistroBugTask(IBugTask):
     """A description of a bug needing fixing in a particular package."""
     sourcepackagename = Choice(
-        title=_("Source Package Name"), required=True,
+        title=_("Source Package Name"), required=False,
+        description=_("The specific source package in which the bug "
+        "occurs, and which needs to be fixed. This is generally optional, "
+        "leave it blank if you are unsure, and the distro QA team will "
+        "attempt to figure it out."),
         vocabulary='SourcePackageName')
     binarypackagename = Choice(
         title=_('Binary PackageName'), required=False,
@@ -385,7 +405,12 @@ class BugTaskSearchParams:
     def setSourcePackage(self, sourcepackage):
         """Set the sourcepackage context on which to filter the search."""
         assert not self._has_context
-        self.distrorelease = sourcepackage.distrorelease
+        if ISourcePackage.providedBy(sourcepackage):
+            # This is a sourcepackage in a distro release.
+            self.distrorelease = sourcepackage.distrorelease
+        else:
+            # This is a sourcepackage in a distribution.
+            self.distribution = sourcepackage.distribution
         self.sourcepackagename = sourcepackage.sourcepackagename
         self._has_context = True
 

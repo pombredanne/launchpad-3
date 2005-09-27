@@ -26,6 +26,11 @@
     />
 
   <vocabulary
+    name="Bug"
+    factory="canonical.launchpad.vocabularies.BugVocabulary"
+    />
+
+  <vocabulary
     name="BugAttachmentType"
     factory="canonical.launchpad.vocabularies.BugAttachmentTypeVocabulary"
     />
@@ -66,8 +71,13 @@
     />
 
   <vocabulary
-    name="CVEState"
-    factory="canonical.launchpad.vocabularies.CVEStateVocabulary"
+      name="CountryName"
+      factory="canonical.launchpad.vocabularies.CountryNameVocabulary"
+      />
+
+  <vocabulary
+    name="CveStatus"
+    factory="canonical.launchpad.vocabularies.CveStatusVocabulary"
     />
 
   <vocabulary
@@ -196,13 +206,23 @@
     />
 
   <vocabulary
-    name="Subscription"
-    factory="canonical.launchpad.vocabularies.SubscriptionVocabulary"
+    name="Sprint"
+    factory="canonical.launchpad.vocabularies.SprintVocabulary"
     />
-  
+
   <vocabulary
     name="TeamSubscriptionPolicy"
     factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
+    />
+
+  <vocabulary
+    name="TicketPriority"
+    factory="canonical.launchpad.vocabularies.TicketPriorityVocabulary"
+    />
+
+  <vocabulary
+    name="TicketStatus"
+    factory="canonical.launchpad.vocabularies.TicketStatusVocabulary"
     />
 
   <vocabulary
@@ -248,6 +268,11 @@
   <vocabulary
     name="ValidTeamOwner"
     factory="canonical.launchpad.vocabularies.ValidTeamOwnerVocabulary"
+    />
+
+  <vocabulary
+    name="Processor"
+    factory="canonical.launchpad.vocabularies.ProcessorVocabulary"
     />
 
   <!-- Define the widget used by Choice fields that use huge vocabularies -->

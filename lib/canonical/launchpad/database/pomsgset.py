@@ -135,8 +135,7 @@ class POMsgSet(SQLBase):
 
         # Fix the trailing and leading whitespaces
         for index, value in new_translations.items():
-            new_translations[index] = helpers.normalize_whitespaces(
-                msgids_text[0], value)
+            new_translations[index] = self.potmsgset.apply_sanity_fixes(value)
 
         # Validate the translation we got from the translation form
         # to know if gettext is unhappy with the input.
@@ -389,8 +388,6 @@ class POMsgSet(SQLBase):
         object_before_modification = helpers.Snapshot(selection,
             providing=providedBy(selection))
 
-        # Update the latestsubmission field.
-        self.pofile.latestsubmission = submission
 
         # next, we need to update the existing active and possibly also
         # published selections
@@ -400,6 +397,9 @@ class POMsgSet(SQLBase):
             # activesubmission is updated only if the translation is valid and
             # it's an editor.
             selection.activesubmission = submission
+
+            # Same with the latestsubmission field.
+            self.pofile.latestsubmission = submission
 
         # List of fields that would be updated.
         fields = ['publishedsubmission', 'activesubmission']
@@ -473,7 +473,7 @@ class POMsgSet(SQLBase):
         """See IPOMsgSet."""
         selection = self.selection(pluralform)
         active = None
-        if selection is not None and selection.activesubmission:
+        if selection is not None and selection.activesubmission is not None:
             active = selection.activesubmission
         query = '''pomsgset = %s AND
                    pluralform = %s''' % sqlvalues(self.id, pluralform)

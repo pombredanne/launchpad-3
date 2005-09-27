@@ -3,15 +3,24 @@
 """IBugWatch-related browser views."""
 
 __metaclass__ = type
-
 __all__ = ['BugWatchAddView']
 
+from zope.app.form.utility import getWidgetsData
 from zope.component import getUtility
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces import (
+    IBugWatch, IBugWatchSet, ILaunchBag)
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
 class BugWatchAddView(SQLObjectAddView):
+    """View class for adding an IBugWatch to an IBug."""
 
-    def __init__(self, context, request):
-        SQLObjectAddView.__init__(self, context, request)
-        self.bug = getUtility(ILaunchBag).bug
+    def create(self, bugtracker, remotebug):
+        bugtask = self.context
+        user = getUtility(ILaunchBag).user
+        return getUtility(IBugWatchSet).createBugWatch(
+            bug=bugtask.bug, owner=user, bugtracker=bugtracker,
+            remotebug=remotebug)
+
+    def nextURL(self):
+        return canonical_url(self.context)

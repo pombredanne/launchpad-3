@@ -1,7 +1,7 @@
 Let's edit the content type.
 
   >>> print http(r"""
-  ... GET /malone/bugs/1/attachments/1/+edit HTTP/1.1
+  ... GET /products/firefox/+bug/1/attachments/1/+edit HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -10,7 +10,7 @@ Let's edit the content type.
 After we've edited it, we get redirected to the bug page.
 
   >>> print http(r"""
-  ... POST /malone/bugs/1/attachments/1/+edit HTTP/1.1
+  ... POST /products/firefox/+bug/1/attachments/1/+edit HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 451
   ... Content-Type: multipart/form-data; boundary=----------bq7K7HDJcmP4iO20V5sJxR
@@ -35,7 +35,7 @@ After we've edited it, we get redirected to the bug page.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/malone/bugs/1
+  Location: http://localhost:9000/products/firefox/+bug/1
   ...
   <input ...  name="field.contenttype" ... value="text/html" ...>
   ...
@@ -45,7 +45,7 @@ If change the attachment to be a patch, the content type will be
 changed to text/plain.
 
   >>> print http(r"""
-  ... POST /malone/bugs/1/attachments/1/+edit HTTP/1.1
+  ... POST /products/firefox/+bug/1/attachments/1/+edit HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 545
   ... Content-Type: multipart/form-data; boundary=----------FtZrnGK020WLeDwj8VTBw0
@@ -74,7 +74,7 @@ changed to text/plain.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/malone/bugs/1
+  Location: http://localhost:9000/products/firefox/+bug/1
   ...
   <input ...  name="field.contenttype" ... value="text/plain" ...>
   ...

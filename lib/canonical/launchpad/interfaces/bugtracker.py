@@ -83,6 +83,9 @@ class IBugTrackerSet(Interface):
         if not, then create one using the given attributes.
         """
 
+    def search():
+        """Search all the IBugTrackers in the system."""
+
     def normalise_baseurl(baseurl):
         """Turn https into http, so that we do not create multiple
         bugtrackers unnecessarily."""

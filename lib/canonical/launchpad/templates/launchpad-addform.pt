@@ -63,7 +63,6 @@
                  tabindex="1000"
                  value="Add"
                  name="UPDATE_SUBMIT"
-                 style="float: right;"
                  i18n:attributes="value add-button" />
         </div>
       </div>

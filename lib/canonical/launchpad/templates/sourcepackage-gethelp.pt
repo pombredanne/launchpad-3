@@ -15,10 +15,44 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Get Help!</h1>
+  <h1>Help and support options</h1>
 
-  <p class="portalMessage">
-    This is a placeholder page for LaunchpadIntegration
+  <p>
+    Soon, this page will contain support options specific to
+    <span tal:replace="context/title" />.
+    In the meantime, you can get help on Ubuntu in general from:
+  </p>
+  <ul class="support">
+    <li>
+      <a href="irc://irc.freenode.net/#ubuntu">the <code>#ubuntu</code>
+      IRC channel</a> on <code>irc.freenode.net</code>
+    </li>
+    <li>
+      <a href="http://ubuntuforums.org/">the Ubuntu Forums</a>.
+    </li>
+  </ul>
+  <p>
+    You can also get
+    <a href="http://ubuntu.com/community/support/supportoptions/local">support
+    in languages other than English</a>.
+  </p>
+
+  <tal:needupstream condition="not: context/productseries">
+  <h2>Help us help you</h2>
+  <p class="portalMessage" tal:condition="not: context/productseries">
+    Launchpad doesn&#8217;t know which product and series this package
+    belongs to.
+    If you can, please <a href="+packaging">let us know</a>,
+    so we can provide you and other people with relevant help sources.
+    Thanks!
+  </p>
+  </tal:needupstream>
+
+  <h2>Make a support request</h2>
+
+  <p>
+    You can <a href="+addticket">make a support request</a> in Launchpad,
+    and some community members might be able to help you free of charge.
   </p>
 
 </div>

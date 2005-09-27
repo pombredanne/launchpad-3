@@ -30,6 +30,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.ITeamMembershipSubset"
+        facet="overview"
         permission="zope.Public"
         class="canonical.launchpad.browser.TeamMembersView">
         <browser:page
@@ -41,6 +42,7 @@
     <browser:addform
         name="+add"
         for="canonical.launchpad.interfaces.ITeamMembershipSubset"
+        facet="overview"
         schema="canonical.launchpad.interfaces.ITeamMembershipSubset"
         fields="newmember"
         class="canonical.launchpad.browser.AddTeamMemberView"
@@ -51,6 +53,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.ITeamMembershipSubset"
+        facet="overview"
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.ProposedTeamMembersEditView">
         <browser:page
@@ -66,12 +69,18 @@
             set_schema="canonical.launchpad.interfaces.ITeamMembership" />
     </content>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.ITeamMembership"
+        path_expression="string:+members/${person/name}"
+        attribute_to_parent="team" />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITeamMembership"
         name="+index" />
 
     <browser:pages
         for="canonical.launchpad.interfaces.ITeamMembership"
+        facet="overview"
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.TeamMembershipEditView">
         <browser:page

@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database.sourcepackageindistro import (
     SourcePackageInDistro)
 from canonical.launchpad.database.publishing import (
-    PackagePublishing, SourcePackagePublishing)
+    BinaryPackagePublishing, SourcePackagePublishing)
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.language import Language
@@ -36,8 +36,8 @@ from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName, SourcePackageNameSet)
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.binarypackage import BinaryPackage
-from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.bugtask import BugTaskSet, BugTask
+from canonical.launchpad.database.binarypackagerelease import BinaryPackageRelease
 from canonical.launchpad.helpers import shortlist
 
 
@@ -135,12 +135,12 @@ class DistroRelease(SQLBase):
     def binarycount(self):
         """See IDistroRelease."""
         clauseTables = ['DistroArchRelease']
-        query = ('PackagePublishing.status = %s '
-                 'AND PackagePublishing.distroarchrelease = '
+        query = ('BinaryPackagePublishing.status = %s '
+                 'AND BinaryPackagePublishing.distroarchrelease = '
                  'DistroArchRelease.id '
                  'AND DistroArchRelease.distrorelease = %s'
                  % sqlvalues(PackagePublishingStatus.PUBLISHED, self.id))
-        return PackagePublishing.select(
+        return BinaryPackagePublishing.select(
             query, clauseTables=clauseTables).count()
 
     @property
@@ -185,6 +185,41 @@ class DistroRelease(SQLBase):
 
         return SourcePackageInDistro.select(
             query, clauseTables=["BugTask"], distinct=True)
+
+    @property
+    def open_cve_bugtasks(self):
+        """See IDistroRelease."""
+        result = BugTask.select("""
+            CVE.id = BugCve.cve AND
+            BugCve.bug = Bug.id AND
+            BugTask.bug = Bug.id AND
+            BugTask.distrorelease=%s AND
+            BugTask.status IN (%s, %s)
+            """ % sqlvalues(
+                self.id,
+                BugTaskStatus.NEW,
+                BugTaskStatus.ACCEPTED),
+            clauseTables=['Bug', 'Cve', 'BugCve'],
+            orderBy=['-severity', 'datecreated'])
+        return result
+
+    @property
+    def resolved_cve_bugtasks(self):
+        """See IDistroRelease."""
+        result = BugTask.select("""
+            CVE.id = BugCve.cve AND
+            BugCve.bug = Bug.id AND
+            BugTask.bug = Bug.id AND
+            BugTask.distrorelease=%s AND
+            BugTask.status IN (%s, %s, %s)
+            """ % sqlvalues(
+                self.id,
+                BugTaskStatus.REJECTED,
+                BugTaskStatus.FIXED,
+                BugTaskStatus.PENDINGUPLOAD),
+            clauseTables=['Bug', 'Cve', 'BugCve'],
+            orderBy=['-severity', 'datecreated'])
+        return result
 
     def getDistroReleaseLanguage(self, language):
         """See IDistroRelease."""
@@ -278,10 +313,11 @@ class DistroRelease(SQLBase):
     def publishedBinaryPackages(self, component=None):
         """See IDistroRelease."""
         # XXX sabdfl 04/07/05 this can become a utility when that works
-        # XXX kiko: this method is untested and possibly unused
+        # this is used by the debbugs import process, mkdebwatches
         pubpkgset = getUtility(IPublishedPackageSet)
         result = pubpkgset.query(distrorelease=self, component=component)
-        return [BinaryPackage.get(p.binarypackage) for p in result]
+        return [BinaryPackageRelease.get(pubrecord.binarypackagerelease)
+                for pubrecord in result]
 
 
 class DistroReleaseSet:
@@ -300,6 +336,11 @@ class DistroReleaseSet:
     def findByName(self, name):
         """See IDistroReleaseSet."""
         return DistroRelease.selectBy(name=name)
+
+    def queryByName(self, distribution, name):
+        """See IDistroReleaseSet."""
+        return DistroRelease.selectOneBy(
+            distributionID=distribution.id, name=name)
 
     def findByVersion(self, version):
         """See IDistroReleaseSet."""

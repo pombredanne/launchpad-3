@@ -68,6 +68,11 @@ Mock Builders objects
   ...     def clean(self):
   ...         pass
 
+  >>> class AbortingSlave:
+  ...     def status(self):
+  ...         return ('BuilderStatus.ABORTING', '1-1')
+
+
   >>> builder1 = MockBuilder('Broken Slave', BrokenSlave())
 
   >>> builder2 = MockBuilder('Idle Slave', OkSlave())
@@ -88,8 +93,13 @@ Mock Builders objects
 
   >>> builder8 = MockBuilder('I was aborted', AbortedSlave())
 
+  >>> builder9 = MockBuilder('I am trying to terminate the child process',
+  ...                        AbortingSlave())
+
+
   >>> buildergroup.builders = [builder1, builder2, builder3, builder4,
-  ...                          builder5, builder6, builder7, builder8]
+  ...                          builder5, builder6, builder7, builder8,
+  ...                          builder9]
 
   >>> assert buildergroup.firstAvailable() is builder2
 
@@ -157,7 +167,7 @@ Mock Builders objects
   >>> bqItem7.builder.name
   'I am busy'
   >>> bqItem7.logtail
-  'building something'
+  u'building something'
 
   ABORTED -> builder was aborted, release builder and reset job for
   the next build round:
@@ -167,6 +177,17 @@ Mock Builders objects
   'I was aborted'
   >>> buildergroup.updateBuild(bqItem8, None)
   >>> assert bqItem8.builder is None
+
+  ABORTING -> builder is trying to terminate its children process, the
+  only action master can perform is polling the slave status until it gets 
+  ABORTED
+
+  >>> bqItem9 = MockBuildQueue(1, builder9, MockBuild())
+  >>> bqItem9.builder.name
+  'I am trying to terminate the child process'
+  >>> buildergroup.updateBuild(bqItem9, None)
+  >>> bqItem9.logtail
+  'Waiting slave process to be terminated'
 
 Now, goes throught BuilddMaster class itself.
 

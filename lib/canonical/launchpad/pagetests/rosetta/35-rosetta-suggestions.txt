@@ -16,22 +16,33 @@ kinds of suggestions.
   ...
   <BLANKLINE>
                                 <pre><b>Suggestions:</b><br />
-  Srprise! (non-editor) (Valentina Commissari)
-  </pre>
+  Srprise! (non-editor) (Valentina Commissari)</pre>
   <BLANKLINE>
   <BLANKLINE>
   <BLANKLINE>
   <BLANKLINE>
                                 <pre><b>Currently Published Elsewhere:</b><br />
-   tarjetas (Carlos Perelló Marín)
-  </pre>
+   tarjetas (Carlos Perelló Marín)</pre>
   <BLANKLINE>
   <BLANKLINE>
   <BLANKLINE>
   <BLANKLINE>
                                 <pre><b>From the Global Translation Wiki:</b><br />
-   bang bang in evo hoary (Mark Shuttleworth)
-  </pre>
+   bang bang in evo hoary (Mark Shuttleworth)</pre>
   <BLANKLINE>
   ...
 
+And now, a multiline suggestion:
+
+  >>> print http(r"""
+  ... GET /products/evolution/+series/main/+pots/evolution-2.2/es/+translate?offset=13&count=1 HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  <BLANKLINE>
+                              <pre><b>Suggestion by No Privileges Person:</b><br />
+  This is a suggestion added by a non-editor for a multiline entry.
+  It should work! :-P</pre>
+  <BLANKLINE>
+  ...

@@ -6,13 +6,14 @@
 
     <!-- Content class configuration -->
     <include file="archuserid.zcml" />
-    <include file="binarypackage.zcml" />
+    <include file="binarypackagerelease.zcml" />
     <include file="binarypackagename.zcml" />
     <include file="bountysubscription.zcml" />
     <include file="bounty.zcml" />
     <include file="branch.zcml" />
     <include file="bugactivity.zcml" />
     <include file="bugattachment.zcml" />
+    <include file="bugcve.zcml" />
     <include file="bugextref.zcml" />
     <include file="buginfestation.zcml" />
     <include file="bugmessage.zcml" />
@@ -24,11 +25,14 @@
     <include file="bugwatch.zcml" />
     <include file="bug.zcml" />
     <include file="build.zcml" />
+    <include file="builder.zcml" />
     <include file="calendar.zcml" />
     <include file="codeofconduct.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
-    <include file="cveref.zcml" />
+    <include file="cve.zcml" />
+    <include file="cve-events.zcml" />
+    <include file="cvereference.zcml" />
     <include file="datetime.zcml" />
     <include file="distribution.zcml" />
     <include file="distrorelease.zcml" />
@@ -82,7 +86,13 @@
     <include file="specificationreview.zcml" />
     <include file="specificationsubscription.zcml" />
     <include file="specificationtarget.zcml" />
+    <include file="sprint.zcml" />
+    <include file="ticket.zcml" />
+    <include file="ticketreopening.zcml" />
+    <include file="ticketsubscription.zcml" />
+    <include file="tickettarget.zcml" />
     <include file="vsourcepackagereleasepublishing.zcml" />
+    <include file="shipit.zcml" />
     <include file="sshkey.zcml" />
     <include file="teammembership.zcml" />
     <include file="teamparticipation.zcml" />

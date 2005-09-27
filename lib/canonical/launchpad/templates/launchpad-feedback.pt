@@ -14,6 +14,14 @@
       <ul>
         <li>
           <p>
+            If you have general questions or suggestions,
+            <a href="irc://irc.freenode.net/#launchpad">join us on IRC</a> &#8212;
+            network <code>irc.freenode.net</code>,
+            channel <code>#launchpad</code>.
+          </p>
+        </li>
+        <li>
+          <p>
             Found a bug in Launchpad?
             Check that it&#8217;s reported in the Malone bug tracker.
             Report bugs about:
@@ -30,12 +38,14 @@
             </li>
           </ul>
         </li>
+        <!-- Need to confirm and test this
         <li>
           <p>
             If a problem in Launchpad prevents you from reporting bugs,
-            <a href="mailto:launchpad-error-reports@lists.canonical.com">tell us the problem by e-mail</a>.
+            <a href="mailto:system-error@launchpad.net">tell us the problem by e-mail</a>.
           </p>
         </li>
+        -->
         <li>
           <p>
             Got an idea for a new feature? Search
@@ -44,14 +54,6 @@
             If not,
             write a specification on the wiki,
             and discuss it with us on IRC.
-          </p>
-        </li>
-        <li>
-          <p>
-            If you have general questions or suggestions,
-            <a href="irc://irc.freenode.net/#launchpad">join us on IRC</a> &#8212;
-            network <code>irc.freenode.net</code>,
-            channel <code>#launchpad</code>.
           </p>
         </li>
       </ul>

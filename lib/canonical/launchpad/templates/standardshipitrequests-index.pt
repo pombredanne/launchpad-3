@@ -1,0 +1,73 @@
+<tal:do-this-first condition="view/processForm" />
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+<body>
+
+  <div metal:fill-slot="body" style="padding-left: 1em">
+
+  <h1>Standard Request Options</h1>
+
+  <div class="sidebar">
+    <div tal:replace="structure context/@@+portlet-actions" />
+  </div>
+
+  <tal:block define="alloptions context/getAll">
+
+  <tal:block condition="alloptions">
+    <p>These are the options the user can choose when placing a new
+    <em>Standard Request</em>. Only one of these should be the default option,
+    and that is the one that will be initially selected for the user.</p>
+
+    <table class="listing sortable" id="standardrequests">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>PC</th>
+          <th>64-bit PC</th>
+          <th>Mac</th>
+          <th>Default option?</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="shipitrequest context/getAll">
+          <td>
+            <img src="/++resource++edit.gif">
+            <a tal:attributes="href shipitrequest/fmt:url"
+               tal:content="shipitrequest/description">description</a>
+          </td>
+          <td tal:content="shipitrequest/quantityx86" />
+          <td tal:content="shipitrequest/quantityamd64" />
+          <td tal:content="shipitrequest/quantityppc" />
+          <td tal:condition="shipitrequest/isdefault">yes</td>
+          <td tal:condition="not: shipitrequest/isdefault">no</td>
+          <td class="formControls">
+            <form action="" method="POST" name="delete" style="display: inline">
+              <input type="submit" value="Delete" 
+                     tal:attributes="name shipitrequest/id" />
+            </form>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </tal:block>
+
+  <tal:block condition="not: alloptions">
+    <p>No standard options have been created yet. This means people won't be
+    able to place new shipit orders.</p>
+  </tal:block>
+
+  <br />
+  <ul>
+    <li class="add">
+      <a href="/standardoptions/+new">Create a new standard option</a>
+    </li>
+  </ul>
+  </tal:block>
+
+</div>
+
+</body>
+</html>

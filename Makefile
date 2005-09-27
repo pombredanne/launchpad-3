@@ -46,7 +46,15 @@ check: build
 	${PYTHON} -t ./test_on_merge.py
 
 lint:
-	sh ./utilities/lint.sh
+	@sh ./utilities/lint.sh
+
+lintmerge:
+	@# Thank Stuart, not me!
+	@baz diff -s rocketfuel@canonical.com/launchpad--devel--0 | \
+		grep -v "^*" | \
+		grep -v "{arch}" | \
+		cut -c4- | \
+		xargs sh ./utilities/lint.sh
 
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) ${PYTHON} test.py test_pages
@@ -96,7 +104,7 @@ start: inplace stop
 
 # Kill launchpad last - other services will probably shutdown with it,
 # so killing them after is a race condition.
-stop:
+stop: build
 	@ LPCONFIG=${LPCONFIG} ${PYTHON} \
 	    utilities/killservice.py librarian trebuchet launchpad
 
@@ -116,7 +124,7 @@ realclean: clean
 
 zcmldocs:
 	PYTHONPATH=`pwd`/src:$(PYTHONPATH) $(PYTHON) \
-	    ./src/zope/configuration/stxdocs.py \
+	    ./sourcecode/zope/configuration/stxdocs.py \
 	    -f ./src/zope/app/meta.zcml -o ./doc/zcml/namespaces.zope.org
 
 potemplates: launchpad.pot

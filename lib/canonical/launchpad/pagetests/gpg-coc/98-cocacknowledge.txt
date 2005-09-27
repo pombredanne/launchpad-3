@@ -1,7 +1,7 @@
 Perform Acknowledge process as Foo bar person:
 
   >>> print http(r"""
-  ... POST /codeofconduct/console/+acknowledge HTTP/1.1
+  ... POST /codeofconduct/console/+new HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Accept-Language: en-us,en;q=0.7,pt-br;q=0.3
   ... Content-Length: 308

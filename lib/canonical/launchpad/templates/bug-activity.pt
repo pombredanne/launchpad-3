@@ -6,10 +6,9 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-subscribers" />
     <div tal:replace="structure context/@@+portlet-maintainers" />
-    <div tal:replace="structure context/@@+portlet-productinfestation" />
-    <div tal:replace="structure context/@@+portlet-packageinfestation" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
@@ -20,9 +19,9 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
- 
+
     <h1>Bug Activity</h1>
-    
+
     <table class="listing">
     <thead>
     <tr>
@@ -40,7 +39,7 @@
         13 Sep 04 14:15
       </td>
       <td>
-        <a tal:content="log/person/displayname" 
+        <a tal:content="log/person/displayname"
            tal:attributes="href log/person/fmt:url">person</a></td>
       <td tal:content="log/whatchanged">description</td>
       <td tal:content="log/oldvalue">this</td>

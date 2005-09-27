@@ -3,7 +3,12 @@
 <body>
     <div metal:fill-slot="main"
         tal:define="entry python:context.getLogEntryById(request.get('id'))">
-    <pre tal:content="entry/tb_text">Traceback (text)</pre>
+        <tal:notfound condition="not: entry">
+          The specified log entry was not found.  It may have expired.
+        </tal:notfound>
+        <tal:found condition="entry">
+          <pre tal:content="entry/tb_text">Traceback (text)</pre>
+        </tal:found>
  </div>
 </body>
 

@@ -1,9 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BugExternalRef', 'BugExternalRefSet', 'BugExternalRefFactory']
-
-from datetime import datetime
+__all__ = ['BugExternalRef', 'BugExternalRefSet']
 
 from zope.interface import implements
 
@@ -46,11 +44,5 @@ class BugExternalRefSet(BugSetBase):
         return BugExternalRef(
             bug = bug, url = url, title = title, owner = owner)
 
-def BugExternalRefFactory(context, **kw):
-    bug = context.context.bug
-    datecreated = UTC_NOW
-    return BugExternalRef(
-        bug=bug,
-        owner=context.request.principal.id,
-        **kw)
-
+    def search(self):
+        return BugExternalRef.select()

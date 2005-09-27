@@ -8,9 +8,11 @@ __all__ = [
     'TeamListView',
     'UbuntiteListView',
     'FOAFSearchView',
+    'PersonEditView',
+    'PersonEmblemView',
+    'PersonHackergotchiView',
     'PersonRdfView',
     'PersonView',
-    'PersonAdminView',
     'TeamJoinView',
     'TeamLeaveView',
     'PersonEditEmailsView',
@@ -23,21 +25,25 @@ __all__ = [
 
 import cgi
 import sets
+from StringIO import StringIO
+from datetime import datetime
 
-from canonical.database.sqlbase import flush_database_updates
-
+from zope.schema import Text, Bytes
+from zope.interface import Interface, Attribute
 from zope.event import notify
 from zope.app.form.browser.add import AddView
-from zope.app.form.browser.editview import EditView
 from zope.app.form.utility import setUpWidgets
+from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
+from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.searchbuilder import any
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    KarmaActionCategory, TeamSubscriptionPolicy)
+    KarmaActionCategory, TeamSubscriptionPolicy, BugTaskStatus)
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
@@ -47,29 +53,33 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, IKarmaActionSet,
     IKarmaSet, UBUNTU_WIKI_URL, ITeamMembershipSet, IObjectReassignment,
     ITeamReassignment, IPollSubset, IPerson, ICalendarOwner,
-    BugTaskSearchParams)
+    BugTaskSearchParams, ITeam, valid_emblem, valid_hackergotchi,
+    ILibraryFileAliasSet)
 
+from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.form import FormView
 from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, DefaultLink, canonical_url)
+    StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
+    enabled_with_permission)
 
+from zope.i18nmessageid import MessageIDFactory
+_ = MessageIDFactory('launchpad')
 
 class PersonFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IPerson."""
 
     usedfor = IPerson
 
-    links = ['overview', 'bugs', 'specs', 'bounties', 'translations',
-             'calendar']
-
     def overview(self):
         target = ''
         text = 'Overview'
-        return DefaultLink(target, text)
+        summary = 'General information about %s' % self.context.browsername
+        return Link(target, text, summary)
 
     def bugs(self):
         # XXX: Soon the +assignedbugs and +reportedbugs pages of IPerson will
@@ -77,19 +87,36 @@ class PersonFacets(StandardLaunchpadFacets):
         # -- GuilhermeSalgado, 2005-07-29
         target = '+assignedbugs'
         text = 'Bugs'
-        return Link(target, text)
+        summary = (
+            'Bug reports that %s is involved with' % self.context.browsername
+        )
+        return Link(target, text, summary)
 
-    def specs(self):
-        target = '+specs'
-        text = 'Specs'
-        summary = 'Feature specifications related to %s' % \
+    def support(self):
+        target = '+tickets'
+        text = 'Support'
+        summary = (
+            'Support requests that %s is involved with' %
             self.context.browsername
+        )
+        return Link(target, text, summary)
+
+    def specifications(self):
+        target = '+specs'
+        text = 'Specifications'
+        summary = (
+            'Feature specifications that %s is involved with' %
+            self.context.browsername
+        )
         return Link(target, text, summary)
 
     def bounties(self):
         target = '+bounties'
         text = 'Bounties'
-        return Link(target, text)
+        summary = (
+            'Bounty offers that %s is involved with' % self.context.browsername
+        )
+        return Link(target, text, summary)
 
     def code(self):
         target = '+branches'
@@ -100,14 +127,227 @@ class PersonFacets(StandardLaunchpadFacets):
     def translations(self):
         target = '+translations'
         text = 'Translations'
-        return Link(target, text)
+        summary = (
+            'Software that %s is involved in translating' %
+            self.context.browsername
+        )
+        return Link(target, text, summary)
 
     def calendar(self):
         target = '+calendar'
         text = 'Calendar'
+        summary = (
+            u'%s\N{right single quotation mark}s scheduled events' %
+            self.context.browsername
+        )
         # only link to the calendar if it has been created
-        linked = ICalendarOwner(self.context).calendar is not None
-        return Link(target, text, linked=linked)
+        enabled = ICalendarOwner(self.context).calendar is not None
+        return Link(target, text, summary, enabled=enabled)
+
+
+class PersonBugsMenu(ApplicationMenu):
+
+    usedfor = IPerson
+
+    facet = 'bugs'
+
+    links = ['assigned', 'reported']
+
+    def assigned(self):
+        text = 'Bugs Reported'
+        return Link('+reportedbugs', text, icon='bugs')
+
+    def reported(self):
+        text = 'Bugs Assigned'
+        return Link('+assignedbugs', text, icon='bugs')
+
+
+class PersonSpecsMenu(ApplicationMenu):
+
+    usedfor = IPerson
+
+    facet = 'specifications'
+
+    links = ['created', 'assigned', 'drafted', 'review', 'subscribed']
+
+    def created(self):
+        text = 'Specifications Created'
+        return Link('+createdspecs', text, icon='spec')
+
+    def assigned(self):
+        text = 'Specifications Assigned'
+        return Link('+assignedspecs', text, icon='spec')
+
+    def drafted(self):
+        text = 'Specifications Drafted'
+        return Link('+draftedspecs', text, icon='spec')
+
+    def review(self):
+        text = 'Specifications To Review'
+        return Link('+reviewspecs', text, icon='spec')
+
+    def subscribed(self):
+        text = 'Subscribed Specifications'
+        return Link('+subscribedspecs', text, icon='spec')
+
+
+class PersonSupportMenu(ApplicationMenu):
+
+    usedfor = IPerson
+    facet = 'support'
+    links = ['created', 'assigned', 'answered', 'subscribed']
+
+    def created(self):
+        text = 'Tickets Created'
+        return Link('+createdtickets', text, icon='ticket')
+
+    def assigned(self):
+        text = 'Tickets Assigned'
+        return Link('+assignedtickets', text, icon='ticket')
+
+    def answered(self):
+        text = 'Tickets Answered'
+        return Link('+answeredtickets', text, icon='ticket')
+
+    def subscribed(self):
+        text = 'Tickets Subscribed'
+        return Link('+subscribedtickets', text, icon='ticket')
+
+
+class CommonMenuLinks:
+
+    def common_edit(self):
+        target = '+edit'
+        text = 'Edit Details'
+        return Link(target, text, icon='edit')
+
+    def common_edithomepage(self):
+        target = '+edithomepage'
+        text = 'Edit Home Page'
+        return Link(target, text, icon='edit')
+
+    def common_edithackergotchi(self):
+        target = '+edithackergotchi'
+        text = 'Edit Hackergotchi'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def common_editemblem(self):
+        target = '+editemblem'
+        text = 'Edit Emblem'
+        return Link(target, text, icon='edit')
+
+    def common_packages(self):
+        target = '+packages'
+        text = 'Packages'
+        summary = 'Packages assigned to %s' % self.context.browsername
+        return Link(target, text, summary, icon='packages')
+
+
+class PersonContextMenu(ContextMenu, CommonMenuLinks):
+
+    usedfor = IPerson
+
+    links = ['common_edit', 'common_edithomepage', 'common_edithackergotchi',
+             'common_editemblem', 'karma', 'editsshkeys', 'editgpgkeys',
+             'codesofconduct', 'administer', 'common_packages']
+
+    def karma(self):
+        target = '+karma'
+        text = 'Karma'
+        summary = (
+            u'%s\N{right single quotation mark}s activities '
+            u'in Launchpad' % self.context.browsername
+        )
+        return Link(target, text, summary, icon='info')
+
+    def editsshkeys(self):
+        target = '+editsshkeys'
+        text = 'Edit SSH Keys'
+        summary = (
+            'Used if %s stores code on the Supermirror' %
+            self.context.browsername
+        )
+        return Link(target, text, summary, icon='edit')
+
+    def editgpgkeys(self):
+        target = '+editgpgkeys'
+        text = 'Edit GPG Keys'
+        summary = 'Used for the Supermirror, and when maintaining packages'
+        return Link(target, text, summary, icon='edit')
+
+    def codesofconduct(self):
+        target = '+codesofconduct'
+        text = 'Codes of Conduct'
+        summary = (
+            'Agreements to abide by the rules of a distribution or project')
+        return Link(target, text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        target = '+review'
+        text = 'Administer'
+        return Link(target, text, icon='edit')
+
+
+class TeamContextMenu(ContextMenu, CommonMenuLinks):
+
+    usedfor = ITeam
+
+    links = ['common_edit', 'common_edithomepage', 'common_edithackergotchi',
+             'common_editemblem', 'members', 'editemail', 'polls',
+             'joinleave', 'reassign', 'common_packages']
+
+    @enabled_with_permission('launchpad.Admin')
+    def reassign(self):
+        target = '+reassign'
+        text = 'Change Owner'
+        summary = 'Change the owner'
+        # alt="(Change owner)"
+        return Link(target, text, summary, icon='edit')
+
+    def members(self):
+        target = '+members'
+        text = 'Edit Members'
+        return Link(target, text, icon='people')
+
+    def polls(self):
+        target = '+polls'
+        text = 'Show Polls'
+        return Link(target, text, icon='info')
+
+    def teamhierarchy(self):
+        # XXX: removed because of bug https://launchpad.net/malone/bugs/2435
+        #      that i cannot see at the moment.
+        #      SteveAlexander / Salgado, 2005-09-21
+        target = '+teamhierarchy'
+        text = 'Team Hierarchy'
+        summary = (
+            'Which teams are members of %s, and which teams %s is a member of'
+            % (self.context.browsername, self.context.browsername)
+        )
+        return Link(target, text, summary, icon='people')
+
+    @enabled_with_permission('launchpad.Edit')
+    def editemail(self):
+        target = '+editemail'
+        text = 'Edit Contact Address'
+        summary = (
+            'The address Launchpad uses to contact %s' %
+            self.context.browsername
+        )
+        return Link(target, text, summary, icon='mail')
+
+    def joinleave(self):
+        if userIsActiveTeamMember(self.context):
+            target = '+leave'
+            text = 'Leave the team' # &#8230;
+            icon = 'remove'
+        else:
+            target = '+join'
+            text = 'Join the team' # &#8230;
+            icon = 'add'
+        return Link(target, text, icon=icon)
 
 
 ##XXX: (batch_size+global) cprov 20041003
@@ -218,14 +458,21 @@ class PersonRdfView:
 
         As a side-effect, HTTP headers are set for the mime type
         and filename for download."""
-        self.request.response.setHeader('content-type', 
+        self.request.response.setHeader('content-type',
                                         'application/rdf+xml')
         self.request.response.setHeader('Content-Disposition',
-                                        'attachment; filename=%s.rdf' % 
+                                        'attachment; filename=%s.rdf' %
                                             self.context.name)
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
+
+def userIsActiveTeamMember(team):
+    """Return True if the user is an active member of this team."""
+    user = getUtility(ILaunchBag).user
+    if user is None:
+        return False
+    return user in team.activemembers
 
 
 class PersonView:
@@ -251,7 +498,7 @@ class PersonView:
         return bool(len(self.openpolls) or len(self.notyetopenedpolls))
 
     def no_bounties(self):
-        return not (self.context.ownedBounties or 
+        return not (self.context.ownedBounties or
             self.context.reviewerBounties or
             self.context.subscribedBounties or
             self.context.claimedBounties)
@@ -274,10 +521,7 @@ class PersonView:
 
     def userIsActiveMember(self):
         """Return True if the user is an active member of this team."""
-        user = getUtility(ILaunchBag).user
-        if user is None:
-            return False
-        return user in self.context.activemembers
+        return userIsActiveTeamMember(self.context)
 
     def membershipStatusDesc(self):
         tm = self._getMembershipForUser()
@@ -336,7 +580,7 @@ class PersonView:
         return KarmaActionCategory.items
 
     def actions(self, actionCategory):
-        """Return a list of actions of the given category performed by 
+        """Return a list of actions of the given category performed by
         this person."""
         kas = getUtility(IKarmaActionSet)
         return kas.selectByCategoryAndPerson(actionCategory, self.context)
@@ -346,41 +590,35 @@ class PersonView:
         karmaset = getUtility(IKarmaSet)
         return len(karmaset.selectByPersonAndAction(self.context, action))
 
-    def setUpAssignedBugTasksToShow(self):
-        """Setup the bugtasks we will always show."""
-        self.recentBugTasks = self.mostRecentMaintainedBugTasks()
-        self.assignedTasks = self.assignedBugTasks()
-        # XXX: Because of the following 2 lines, a warning is going to be 
-        # raised saying that we're getting a slice of an unordered set, and
-        # this means we probably have a bug hiding somewhere, because both
-        # sets are ordered here.
-        self.assignedBugsToShow = bool(
-            self.recentBugTasks or self.assignedTasks)
-
     def reportedBugTasks(self):
         """Return up to 30 bug tasks reported recently by this person."""
         search_params = BugTaskSearchParams(owner=self.context, user=self.user,
                                             orderby="-datecreated")
         return getUtility(IBugTaskSet).search(search_params)[:30]
 
-    def assignedBugTasks(self):
-        """Return up to 10 bug tasks recently assigned to this person."""
-        search_params = BugTaskSearchParams(assignee=self.context,
-                                            user=self.user,
-                                            orderby="-dateassigned")
-        return getUtility(IBugTaskSet).search(search_params)[:10]
+    def bugTasksAssignedToPerson(self):
+        """Return all the open IBugTasks assigned to this person."""
+        search_params = BugTaskSearchParams(
+            assignee=self.context, user=self.user,
+            status=any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
+            omit_dupes=True, orderby="-dateassigned")
 
-    def mostRecentMaintainedBugTasks(self):
-        """Return up to 10 bug tasks (ordered by date assigned) reported on
-        any package/product maintained by this person."""
-        bts = getUtility(IBugTaskSet)
+        return getUtility(IBugTaskSet).search(search_params)
+
+    def bugTasksOnMaintainedSoftware(self):
+        """Return all the open IBugTasks on software this person maintains.
+
+        This list does *not* include tasks that are assigned directly
+        to this person. For that, see PersonView.bugTasksAssignedToPerson.
+        """
         orderBy = ('-dateassigned', '-priority', '-severity')
-        results = bts.maintainedBugTasks(
+        results = getUtility(IBugTaskSet).maintainedBugTasks(
             self.context, orderBy=orderBy, user=self.user)
-        return results[:10]
+
+        return results
 
     def bugTasksWithSharedInterest(self):
-        """Return up to 10 bug tasks (ordered by date assigned) which this
+        """Return bug tasks (ordered by date assigned) which this
         person and the logged in user share some interest.
 
         We assume they share some interest if they're both members of the
@@ -388,15 +626,15 @@ class PersonView:
         assigned to the other.
         """
         assert self.user is not None, (
-                'This method should not be called without a logged in user')
+            'This method should not be called without a logged in user')
         if self.context.id == self.user.id:
             return []
 
-        bts = getUtility(IBugTaskSet)
         orderBy = ('-dateassigned', '-priority', '-severity')
-        results = bts.bugTasksWithSharedInterest(
+        results = getUtility(IBugTaskSet).bugTasksWithSharedInterest(
             self.context, self.user, user=self.user, orderBy=orderBy)
-        return results[:10]
+
+        return results
 
     def obfuscatedEmail(self):
         if self.context.preferredemail is not None:
@@ -414,7 +652,7 @@ class PersonView:
         self.request.response.setHeader('Content-Type', 'text/plain')
         return "\n".join(["%s %s %s" % (key.keykind, key.keytext, key.comment)
                           for key in self.context.sshkeys])
-    
+
     def sshkeysCount(self):
         return len(self.context.sshkeys)
 
@@ -477,7 +715,7 @@ class PersonView:
                 return "Neither Nickname nor Network can be empty."
 
         return ""
-            
+
     def processJabberForm(self):
         """Process the Jabber ID form."""
         if self.request.method != "POST":
@@ -497,7 +735,7 @@ class PersonView:
         jabberid = form.get('newjabberid')
         if jabberid:
             jabberset = getUtility(IJabberIDSet)
-            existingjabber = jabberset.getByJabberID(jabberid) 
+            existingjabber = jabberset.getByJabberID(jabberid)
             if existingjabber is None:
                 jabberset.new(self.context, jabberid)
             elif existingjabber.person != self.context:
@@ -533,7 +771,7 @@ class PersonView:
             return "Your Ubuntu WikiName cannot be empty."
         elif existingwiki is not None and existingwiki.person != context:
             return ('The Ubuntu WikiName %s is already registered by '
-                    '<a href="%s">%s</a>.' 
+                    '<a href="%s">%s</a>.'
                     % (ubuntuwikiname, canonical_url(existingwiki.person),
                        cgi.escape(existingwiki.person.browsername)))
         context.ubuntuwiki.wikiname = ubuntuwikiname
@@ -569,7 +807,7 @@ class PersonView:
                 existingwiki = wikinameset.getByWikiAndName(wiki, wikiname)
                 if existingwiki and existingwiki.person != context:
                     return ('The WikiName %s%s is already registered by '
-                            '<a href="%s">%s</a>.' 
+                            '<a href="%s">%s</a>.'
                             % (wiki, wikiname,
                                canonical_url(existingwiki.person),
                                cgi.escape(existingwiki.person.browsername)))
@@ -585,7 +823,7 @@ class PersonView:
                 return "Neither Wiki nor WikiName can be empty."
 
         return ""
-            
+
     # restricted set of methods to be proxied by form_action()
     permitted_actions = ['claim_gpg', 'deactivate_gpg', 'remove_gpgtoken',
                          'revalidate_gpg', 'add_ssh', 'remove_ssh']
@@ -594,15 +832,15 @@ class PersonView:
         if self.request.method != "POST":
             # Nothing to do
             return ''
-        
+
         action = self.request.form.get('action')
 
         # primary check on restrict set of 'form-like' methods.
         if action and (action not in self.permitted_actions):
             return 'Forbidden Form Method: %s' % action
-        
-        # do not mask anything 
-        return getattr(self, action)()       
+
+        # do not mask anything
+        return getattr(self, action)()
 
     # XXX cprov 20050401
     # As "Claim GPG key" takes a lot of time, we should process it
@@ -618,14 +856,14 @@ class PersonView:
         fingerprint = sanitisedfpr
 
         gpgkeyset = getUtility(IGPGKeySet)
-                
+
         if gpgkeyset.getByFingerprint(fingerprint):
             return 'GPG key <code>%s</code> already imported' % fingerprint
 
         # import the key to the local keyring
         gpghandler = getUtility(IGPGHandler)
         result, key = gpghandler.retrieveKey(fingerprint)
-        
+
         if not result:
             # use the content ok 'key' for debug proposes
             return (
@@ -640,16 +878,16 @@ class PersonView:
         self._validateGPG(key)
 
         return ('A message has been sent to <code>%s</code>, encrypted with '
-                'the key <code>%s<code>. To confirm the key is yours, decrypt '
-                'the message and follow the link inside.'
+                'the key <code>%s</code>. To confirm the key is yours, '
+                'decrypt the message and follow the link inside.'
                 % (self.context.preferredemail.email, key.displayname))
 
     def deactivate_gpg(self):
         key_ids = self.request.form.get('DEACTIVATE_GPGKEY')
-        
+
         if key_ids is not None:
             comment = 'Key(s):<code>'
-            
+
             # verify if we have multiple entries to deactive
             if not isinstance(key_ids, list):
                 key_ids = [key_ids]
@@ -662,14 +900,14 @@ class PersonView:
                 comment += ' %s' % gpgkey.displayname
 
             comment += '</code> deactivated'
-            flush_database_updates()            
+            flush_database_updates()
             return comment
 
         return 'No Key(s) selected for deactivation.'
 
     def remove_gpgtoken(self):
         tokenfprs = self.request.form.get('REMOVE_GPGTOKEN')
-        
+
         if tokenfprs is not None:
             comment = 'Token(s) for:<code>'
             logintokenset = getUtility(ILoginTokenSet)
@@ -683,7 +921,7 @@ class PersonView:
                 logintokenset.deleteByFingerprintAndRequester(tokenfpr,
                                                               self.user)
                 comment += ' %s' % tokenfpr
-                
+
             comment += '</code> key fingerprint(s) deleted.'
             return comment
 
@@ -698,20 +936,20 @@ class PersonView:
             # verify if we have multiple entries to deactive
             if not isinstance(key_ids, list):
                 key_ids = [key_ids]
-                
+
             gpghandler = getUtility(IGPGHandler)
             keyset = getUtility(IGPGKeySet)
-            
+
             for key_id in key_ids:
                 # retrieve key info from LP
                 gpgkey = keyset.get(key_id)
                 result, key = gpghandler.retrieveKey(gpgkey.fingerprint)
                 if not result:
-                    notfound.append(gpgkey.fingerprint) 
+                    notfound.append(gpgkey.fingerprint)
                     continue
                 self._validateGPG(key)
                 found.append(key.displayname)
-                
+
             comment = ''
             if len(found):
                 comment += ('Key(s):<code>%s</code> revalidation email sent '
@@ -733,14 +971,14 @@ class PersonView:
             kind, keytext, comment = sshkey.split(' ', 2)
         except ValueError:
             return 'Invalid public key'
-        
+
         if kind == 'ssh-rsa':
             keytype = SSHKeyType.RSA
         elif kind == 'ssh-dss':
             keytype = SSHKeyType.DSA
         else:
             return 'Invalid public key'
-        
+
         getUtility(ISSHKeySet).new(self.user.id, keytype, keytext, comment)
         return 'SSH public key added.'
 
@@ -779,7 +1017,7 @@ class PersonView:
     def processPasswordChangeForm(self):
         if self.request.method != 'POST':
             return
-        
+
         form = self.request.form
         currentpassword = form.get('currentpassword')
         encryptor = getUtility(IPasswordEncryptor)
@@ -797,6 +1035,61 @@ class PersonView:
         else:
             self.context.password = encryptor.encrypt(newpassword)
             self.message = "Password changed successfully"
+
+
+class PersonEditView(SQLObjectEditView):
+
+    def changed(self):
+        """Redirect to the person page.
+
+        We need this because people can now change their names, and this will
+        make their canonical_url to change too.
+        """
+        self.request.response.redirect(canonical_url(self.context))
+
+
+class PersonEmblemView(FormView):
+
+    schema = IPerson
+    fieldNames = ['emblem',]
+    _arguments = ['emblem',]
+
+    def process(self, emblem):
+        # XXX use Bjorn's nice file upload widget when he writes it
+        if emblem is not None:
+            filename = self.request.get('field.emblem').filename
+            content_type, encoding = guess_content_type(
+                name=filename, body=emblem)
+            self.context.emblem = getUtility(ILibraryFileAliasSet).create(
+                name=filename, size=len(emblem), file=StringIO(emblem),
+                contentType=content_type)
+        return 'Success'
+
+    def nextURL(self):
+        return canonical_url(self.context)
+
+
+class PersonHackergotchiView(FormView):
+
+    schema = IPerson
+    fieldNames = ['hackergotchi',]
+    _arguments = ['hackergotchi',]
+
+    def process(self, hackergotchi):
+        # XXX use Bjorn's nice file upload widget when he writes it
+        if hackergotchi is not None:
+            filename = self.request.get('field.hackergotchi').filename
+            content_type, encoding = guess_content_type(
+                name=filename, body=hackergotchi)
+            hkg = getUtility(ILibraryFileAliasSet).create(
+                name=filename, size=len(hackergotchi),
+                file=StringIO(hackergotchi),
+                contentType=content_type)
+            self.context.hackergotchi = hkg
+        return 'Success'
+
+    def nextURL(self):
+        return canonical_url(self.context)
 
 
 class TeamJoinView(PersonView):
@@ -888,7 +1181,7 @@ class PersonEditEmailsView:
 
     def _deleteUnvalidatedEmail(self):
         """Delete the selected email address, which is not validated.
-        
+
         This email address can be either on the EmailAddress table marked with
         status new, or in the LoginToken table.
         """
@@ -897,7 +1190,7 @@ class PersonEditEmailsView:
             self.message = (
                 "You must select the email address you want to remove.")
             return
-        
+
         emailset = getUtility(IEmailAddressSet)
         logintokenset = getUtility(ILoginTokenSet)
         if email in [e.email for e in self.context.guessedemails]:
@@ -963,7 +1256,7 @@ class PersonEditEmailsView:
             return
         elif email is not None:
             # self.message is rendered using 'structure' on the page template,
-            # so it's better escape browsername because people can put 
+            # so it's better to escape browsername because people can put
             # whatever they want in their name/displayname. On the other hand,
             # we don't need to escape email addresses because they are always
             # validated (which means they can't have html tags) before being
@@ -1057,7 +1350,7 @@ class RequestPeopleMergeView(AddView):
         email = emails[0]
         login = getUtility(ILaunchBag).login
         logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(user, login, email.email, 
+        token = logintokenset.new(user, login, email.email,
                                   LoginTokenType.ACCOUNTMERGE)
         dupename = dupeaccount.name
         sendMergeRequestEmail(token, dupename, self.request.getApplicationURL())
@@ -1081,17 +1374,21 @@ class RequestPeopleMergeMultipleEmailsView:
         self.context = context
         self.request = request
         self.formProcessed = False
+        self.dupe = None
 
+    def processForm(self):
         dupe = self.request.form.get('dupe')
         if dupe is None:
             # We just got redirected to this page and we don't have the dupe
             # hidden field in request.form.
             dupe = self.request.get('dupe')
+            if dupe is None:
+                return
+
         self.dupe = getUtility(IPersonSet).get(int(dupe))
         emailaddrset = getUtility(IEmailAddressSet)
         self.dupeemails = emailaddrset.getByPerson(self.dupe)
 
-    def processForm(self):
         if self.request.method != "POST":
             return
 
@@ -1102,7 +1399,7 @@ class RequestPeopleMergeMultipleEmailsView:
 
         ids = self.request.form.get("selected")
         if ids is not None:
-            # We can have multiple email adressess selected, and in this case 
+            # We can have multiple email adressess selected, and in this case
             # ids will be a list. Otherwise ids will be str or int and we need
             # to make a list with that value to use in the for loop.
             if not isinstance(ids, list):
@@ -1112,7 +1409,7 @@ class RequestPeopleMergeMultipleEmailsView:
             for id in ids:
                 email = emailset.get(id)
                 assert email in self.dupeemails
-                token = logintokenset.new(user, login, email.email, 
+                token = logintokenset.new(user, login, email.email,
                                           LoginTokenType.ACCOUNTMERGE)
                 dupename = self.dupe.name
                 url = self.request.getApplicationURL()
@@ -1142,7 +1439,7 @@ class ObjectReassignmentView:
     By default we assume that the owner attribute is IHasOwner.owner and the
     vocabulary for the owner widget is ValidPersonOrTeam (which is the one
     used in IObjectReassignment). If any object has special needs, it'll be
-    necessary to subclass ObjectReassignmentView and redefine the schema 
+    necessary to subclass ObjectReassignmentView and redefine the schema
     and/or ownerOrMaintainerAttr attributes.
 
     Subclasses can also specify a callback to be called after the reassignment
@@ -1187,7 +1484,7 @@ class ObjectReassignmentView:
 
     def _getNewOwner(self):
         """Return the new owner for self.context, as specified by the user.
-        
+
         If anything goes wrong, return None and assign an error message to
         self.errormessage to inform the user about what happened.
         """
@@ -1226,8 +1523,7 @@ class ObjectReassignmentView:
                 return None
 
             owner = personset.newTeam(
-                    teamownerID=self.user.id, name=owner_name,
-                    displayname=owner_name.capitalize())
+                self.user, owner_name, owner_name.capitalize())
 
         return owner
 
@@ -1247,23 +1543,24 @@ class TeamReassignmentView(ObjectReassignmentView):
 
         When a user creates a new team, he is added as an administrator of
         that team. To be consistent with this, we must make the new owner an
-        administrator of the team.
-        Also, the ObjectReassignment spec says that we must make the old owner
-        an administrator of the team, and so we do.
+        administrator of the team. This rule is ignored only if the new owner
+        is an inactive member of the team, as that means he's not interested
+        in being a member. The same applies to the old owner.
         """
-        team.addMember(newOwner)
-        team.addMember(oldOwner)
-        # Need to flush all database updates so the setMembershipStatus method
-        # will see both old and new owners as active members of the team.
-        # Otherwise it'll complain (with an AssertionError) because only 
-        # active members can be promoted to adminsitrators.
+        # Both new and old owners won't be added as administrators of the team
+        # only if they're inactive members. If they're either active or
+        # proposed members they'll be made administrators of the team.
+        if newOwner not in team.inactivemembers:
+            team.addMember(newOwner)
+        if oldOwner not in team.inactivemembers:
+            team.addMember(oldOwner)
+
+        # Need to flush all database updates, otherwise we won't see the
+        # updated membership statuses in the rest of this method.
         flush_database_updates()
-        team.setMembershipStatus(newOwner, TeamMembershipStatus.ADMIN)
-        team.setMembershipStatus(oldOwner, TeamMembershipStatus.ADMIN)
+        if newOwner not in team.inactivemembers:
+            team.setMembershipStatus(newOwner, TeamMembershipStatus.ADMIN)
 
-
-class PersonAdminView(EditView):
-
-    def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
+        if oldOwner not in team.inactivemembers:
+            team.setMembershipStatus(oldOwner, TeamMembershipStatus.ADMIN)
 

@@ -2,10 +2,8 @@ The submitter of a bug is automatically subscribed to the bug and will
 thus receive notifications of changes made to the bug report.
 
   >>> print http(r"""
-  ... GET /malone/bugs/7 HTTP/1.1
+  ... GET /distros/ubuntu/+sources/mozilla-firefox/+bug/7 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Cookie: __ac_name="admin"
-  ... Referer: http://localhost:9000/malone/bugs/
   ... """)
   HTTP/1.1 200 Ok
   ...Foo Bar...

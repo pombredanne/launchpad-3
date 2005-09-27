@@ -35,10 +35,10 @@ class BugMessageSet:
     def createMessage(self, subject, bug, owner, content=None):
         """See canonical.launchpad.interfaces.IBugMessageSet."""
         msg = Message(
-            parent=None, ownerID=owner.id, rfc822msgid=make_msgid('malone'),
-            subject=subject)
-        chunk = MessageChunk(messageID=msg.id, content=content, sequence=1)
-        bugmsg = BugMessage(bugID=bug.id, messageID=msg.id)
+            parent=bug.initial_message, owner=owner,
+            rfc822msgid=make_msgid('malone'), subject=subject)
+        chunk = MessageChunk(message=msg, content=content, sequence=1)
+        bugmsg = BugMessage(bug=bug, message=msg)
 
         return bugmsg
 

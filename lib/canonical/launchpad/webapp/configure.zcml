@@ -3,19 +3,44 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="canonical.launchpad">
 
+    <include file="servers.zcml" />
+    <include file="errorlog.zcml" />
+
     <!-- links -->
-    <content class="canonical.launchpad.webapp.menu.Link">
-      <allow interface="canonical.launchpad.interfaces.ILink" />
+    <content class="canonical.launchpad.webapp.menu.LinkData">
+      <allow interface="canonical.launchpad.interfaces.ILinkData" />
     </content>
 
-    <content class="canonical.launchpad.webapp.menu.DefaultLink">
-      <allow interface="canonical.launchpad.interfaces.IDefaultLink" />
+    <adapter
+      for="canonical.launchpad.interfaces.ILinkData"
+      provides="canonical.launchpad.interfaces.ILink"
+      factory="canonical.launchpad.webapp.menu.MenuLink"
+      />
+
+    <content class="canonical.launchpad.webapp.menu.MenuLink">
+      <require
+        permission="zope.Public"
+        interface="canonical.launchpad.interfaces.ILink"
+        />
     </content>
 
-    <!-- urls -->
+    <adapter
+      for="canonical.launchpad.interfaces.ILinkData"
+      provides="canonical.launchpad.interfaces.IFacetLink"
+      factory="canonical.launchpad.webapp.menu.FacetLink"
+      />
+
+    <content class="canonical.launchpad.webapp.menu.FacetLink">
+      <require
+        permission="zope.Public"
+        interface="canonical.launchpad.interfaces.IFacetLink"
+        />
+    </content>
+
+    <!-- Launchpad root object -->
     <utility
         provides="canonical.launchpad.interfaces.ILaunchpadRoot"
-        component="canonical.publication.rootObject"
+        component="canonical.launchpad.webapp.publisher.rootObject"
         />
 
     <adapter
@@ -52,11 +77,20 @@
 
     <!-- TALES namespaces. -->
 
+    <!-- TALES lp: namespace (should be deprecated) -->
     <adapter
         for="zope.publisher.interfaces.IApplicationRequest"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.RequestAPI"
         name="lp"
+        />
+
+    <!-- TALES enum-value: namespace -->
+    <adapter
+        for="canonical.lp.dbschema.Item"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.EnumValueAPI"
+        name="enumvalue"
         />
 
     <!-- TALES menu: namespace -->
@@ -149,6 +183,20 @@
         />
 
     <adapter
+        for="canonical.launchpad.interfaces.IBugTask"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugTaskFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IMilestone"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.MilestoneFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="*"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PermissionRequiredQuery"
@@ -163,7 +211,7 @@
         />
 
     <subscriber
-        for="canonical.publication.IAfterTraverseEvent"
+        for="canonical.launchpad.interfaces.IAfterTraverseEvent"
         factory="canonical.launchpad.webapp.authentication.handle"
         />
 
@@ -219,7 +267,7 @@
 
     <browser:page
         layer="canonical.launchpad.layers.DebugLayer"
-        for="canonical.publication.RootObject"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="changelog.html"
         template="../templates/debug-root-changelog.pt"
         class="canonical.launchpad.webapp.changelog.ChangeLog"
@@ -256,7 +304,7 @@
         /@@/favicon.png to access resource and resourceDirectory -->
     <browser:page
         name=""
-        for="canonical.publication.RootObject"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
         class="zope.app.publisher.browser.resources.Resources"
         permission="zope.Public"
         allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"

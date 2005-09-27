@@ -27,7 +27,13 @@
 
     <browser:menus
         module="canonical.launchpad.browser.product"
-        classes="ProductFacets" />
+        classes="
+            ProductFacets ProductOverviewMenu ProductBountiesMenu
+            ProductSupportMenu ProductSpecificationsMenu 
+            ProductTranslationsMenu
+        "
+    />
+    <!-- XXX ProductBugsMenu undeclared until layout bug is fixed -->
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IProduct"
@@ -45,63 +51,82 @@
         class="canonical.launchpad.browser.ProductView" >
         <browser:page
             name="+index"
+            facet="overview"
             template="../templates/product-index.pt"
             lp:url="/products/$Product.name/" />
         <browser:page
             name="+translations"
+            facet="translations"
             template="../templates/product-translations.pt"
             lp:url="/products/evolution/+translations" />
         <browser:page
             name="+branches"
+            facet="overview"
             template="../templates/product-branches.pt"
             />
         <browser:page
             name="+packages"
+            facet="overview"
             template="../templates/product-packages.pt"
             />
         <browser:page
             name="+distributions"
+            facet="overview"
             template="../templates/product-distros.pt"
+            />
+        <browser:page
+            name="+listing-detailed"
+            template="../templates/product-listing-detailed.pt"
             />
 	<!-- Products Portlets -->
         <browser:page
             name="+portlet-details"
+            facet="overview"
             template="../templates/product-portlet-details.pt"
             lp:url="/products/evolution/+portlet-details" />
         <browser:page
             name="+portlet-series"
+            facet="overview"
             template="../templates/product-portlet-series.pt"
             lp:url="/products/evolution/+portlet-series" />
         <browser:page
             name="+portlet-translations"
+            facet="translations"
             template="../templates/product-portlet-translations.pt"
             lp:url="/products/evolution/+portlet-translations" />
         <browser:page
             name="+portlet-milestones"
+            facet="overview"
             template="../templates/object-portlet-milestones.pt"
             lp:url="/products/evolution/+portlet-milestones" />
         <browser:page
             name="+portlet-actions"
+            facet="overview"
             template="../templates/product-portlet-actions.pt"
             lp:url="/products/evolution/+portlet-actions" />
         <browser:page
             name="+portlet-bounties"
+            facet="bounties"
             template="../templates/object-portlet-bounties.pt"
             lp:url="/products/evolution/+portlet-bounties" />
         <browser:page
             name="+portlet-packages"
+            facet="overview"
             template="../templates/product-portlet-packages.pt"
             lp:url="/products/evolution/+portlet-packages" />
         <browser:page
             name="+portlet-releases"
+            facet="overview"
             template="../templates/product-portlet-releases.pt"
             lp:url="/products/evolution/+portlet-releases" />
         <browser:page
             name="+portlet-summary"
+            facet="overview"
             template="../templates/object-portlet-summary.pt"
             lp:url="/products/evolution/+portlet-summary" />
         <browser:page
             name="+portlet-translatables"
+            facet="translations"
             template="../templates/product-portlet-translatables.pt"
             lp:url="/products/evolution/+portlet-translatables" />
     </browser:pages>
@@ -118,10 +143,11 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
         class="canonical.launchpad.browser.BugTaskSearchListingView"
+        facet="bugs"
         permission="zope.Public">
         <browser:page
-            name="+bugs-only"
-            lp:url="/products/$Product.name/+bugs-only"
+            name="+bugs"
+            lp:url="/products/$Product.name/+bugs"
             template="../templates/bugs-for-context.pt" />
         <browser:page
             name="+portlet-bugtasklist-actions"
@@ -132,6 +158,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
         permission="launchpad.Edit"
+        facet="overview"
         class="canonical.launchpad.browser.ObjectReassignmentView">
         <browser:page
             name="+reassign"
@@ -145,6 +172,7 @@
         class="canonical.launchpad.browser.ProductView" >
         <browser:page
             name="+potemplatenames"
+            facet="translations"
             template="../templates/object-potemplatenames.pt"
             lp:url="/products/$Product.name/+potemplatenames" />
     </browser:pages>
@@ -154,6 +182,7 @@
         permission="zope.Public" >
         <browser:page
             name="+bounties"
+            facet="bounties"
             template="../templates/related-bounties.pt"
             lp:url="/products/$Product.name/+bounties/" />
     </browser:pages>
@@ -161,12 +190,13 @@
     <browser:editform
         name="+edit"
         for="canonical.launchpad.interfaces.IProduct"
+        facet="overview"
         schema="canonical.launchpad.interfaces.IProduct"
+        class="canonical.launchpad.browser.ProductEditView"
         label="Edit Upstream Product Details:"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
                 downloadurl programminglang"
-        class="canonical.launchpad.browser.ProductEditView"
         permission="launchpad.Edit"
         template="../templates/product-edit.pt"
         lp:url="/products/$Product.name/+edit">
@@ -191,12 +221,11 @@
     <browser:editform
         name="+review"
         for="canonical.launchpad.interfaces.IProduct"
+        facet="overview"
         schema="canonical.launchpad.interfaces.IProduct"
-        label="Review Upstream Product Details:"
-        fields="name displayname title summary description homepageurl
-                screenshotsurl wikiurl programminglang downloadurl
-                sourceforgeproject freshmeatproject project owner active
-                autoupdate reviewed "
+        class="canonical.launchpad.browser.ProductEditView"
+        label="Administer upstream product details"
+        fields="name project owner active autoupdate reviewed "
         permission="launchpad.Admin"
         template="../templates/launchpad-editform.pt"
         lp:url="/products/$Product.name/+review">
@@ -206,25 +235,40 @@
         name="+changetranslators"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IProduct"
+        facet="translations"
+        class="canonical.launchpad.browser.ProductEditView"
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
         label="Select A New Translation Group"
         template="../templates/launchpad-editform.pt"
         lp:url="/products/$Product.name/+changetranslators" />
 
+    <browser:editform
+        name="+launchpad"
+        for="canonical.launchpad.interfaces.IProduct"
+        schema="canonical.launchpad.interfaces.IProduct"
+        class="canonical.launchpad.browser.ProductEditView"
+        fields="official_rosetta official_malone"
+        permission="launchpad.Edit"
+        label="Describe Launchpad Usage"
+        template="../templates/product-edit.pt"
+        />
+
     <browser:addform
         name="+filebug"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBugAddForm"
-        label="Report Bug on Upstream Product"
         fields="title comment private owner"
         class="canonical.launchpad.browser.ProductFileBugView"
+        facet="bugs"
         arguments=""
         keyword_arguments="title comment private owner"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="/products/$Product.name/+filebug">
-        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
+        <browser:widget
+            field="owner"
+            class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
@@ -246,6 +290,7 @@
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IMilestone"
         class="canonical.launchpad.browser.milestone.MilestoneAddView"
+        facet="overview"
         label="Add a Milestone"
         fields="name dateexpected"
         keyword_arguments="name dateexpected"
@@ -259,6 +304,7 @@
       for="canonical.launchpad.interfaces.IProduct"
       schema="canonical.launchpad.interfaces.IProductBounty"
       class="canonical.launchpad.browser.bounty.BountyLinkView"
+      facet="bounties"
       label="Link Existing Bounty"
       fields="product bounty"
       keyword_arguments="product bounty"
@@ -277,6 +323,7 @@
       label="Register A New Bounty"
       fields="name title summary usdvalue difficulty description"
       class="canonical.launchpad.browser.BountyAddView"
+      facet="bounties"
       permission="launchpad.AnyPerson"
       template="../templates/bounty-add.pt"
       />
@@ -287,6 +334,7 @@
         schema="canonical.launchpad.interfaces.IProductSeries"
         fields="name displayname summary"
         class="canonical.launchpad.browser.ProductSeriesAddView"
+        facet="overview"
         keyword_arguments="name displayname summary"
         permission="launchpad.AnyPerson"
         template="../templates/productseries-new.pt"
@@ -335,24 +383,26 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSet"
         permission="zope.Public"
+        facet="overview"
         class="canonical.launchpad.browser.ProductSetView" >
         <browser:page
             name="+index"
-            template="../templates/products-index.pt"
-            lp:url="/products/+index" />
+            template="../templates/products-index.pt" />
         <browser:page
             name="+all"
-            template="../templates/registry-listall.pt"
-            lp:url="/products/+all" />
+            template="../templates/registry-listall.pt" />
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/productset-portlet-actions.pt" />
         <browser:page
             name="+portlet-details"
-            template="../templates/productset-portlet-details.pt"
-            lp:url="/products/+portlet-details" />
+            template="../templates/productset-portlet-details.pt" />
     </browser:pages>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSet"
         class="canonical.launchpad.browser.ProductSetView"
+        facet="overview"
         permission="launchpad.AnyPerson">
         <browser:page
             name="+review"
@@ -364,16 +414,19 @@
         name="+new"
         for="canonical.launchpad.interfaces.IProductSet"
         schema="canonical.launchpad.interfaces.IProduct"
-        label="Register an Open Source (Upstream) Product"
+        label="Register an upstream open source product"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
                 downloadurl programminglang"
         content_factory="canonical.launchpad.database.Product"
-        class="canonical.launchpad.browser.ProductSetAddView"
+        facet="overview"
+        class="canonical.launchpad.browser.ProductAddView"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="products/+new">
-        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
+        >
+        <browser:widget
+           field="owner"
+           class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="name"
            class="zope.app.form.browser.TextWidget"

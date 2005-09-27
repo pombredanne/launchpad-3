@@ -35,19 +35,12 @@
                 include the <abbr>URL</abbr> of the page you were
                 on, and what you tried to do.
               </p>
-              <tal:block condition="view/show_tracebacks">
-                <p>
-                  Also include this debugging information:
-                </p>
-                <div tal:content="structure view/htmltext | default">
-                    HTML rendering of error should go here.
-                </div>
-              </tal:block>
             </li>
           </ul>
           <p>
             Thanks for helping improve Launchpad, and sorry for the inconvenience.
           </p>
+        <tal:replace tal:replace="structure view/maybeShowTraceback" />
         </div>
     </body>
 </html>

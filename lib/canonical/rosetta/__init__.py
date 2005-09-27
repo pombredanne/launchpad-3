@@ -17,14 +17,11 @@ from canonical.launchpad.interfaces import (
     ITranslationGroupSet, ILaunchpadStatisticSet)
 from canonical.launchpad.database import (
     POTemplate, POFile, Language, POMsgID, Person)
-from canonical.publication import rootObject
 from canonical.database.constants import UTC_NOW
 
 
 class RosettaApplication:
     implements(IRosettaApplication)
-
-    __parent__ = rootObject
 
     def __init__(self):
         self.title = 'Rosetta: Translations in the Launchpad'

@@ -17,7 +17,7 @@ __all__ = [
     'BugTaskSeverityVocabulary',
     'BugTaskStatusVocabulary',
     'BugTrackerTypeVocabulary',
-    'CVEStateVocabulary',
+    'CveStatusVocabulary',
     'GPGKeyAlgorithmVocabulary',
     'InfestationStatusVocabulary',
     'KarmaActionCategoryVocabulary',
@@ -26,8 +26,9 @@ __all__ = [
     'PollSecrecyVocabulary',
     'SpecificationStatusVocabulary',
     'SpecificationPriorityVocabulary',
-    'SubscriptionVocabulary',
     'TeamSubscriptionPolicyVocabulary',
+    'TicketPriorityVocabulary',
+    'TicketStatusVocabulary',
     'TranslationPermissionVocabulary',
     ]
 
@@ -66,7 +67,7 @@ BugTaskSeverityVocabulary = vocab_factory(dbschema.BugTaskSeverity)
 BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
 BugTrackerTypeVocabulary = vocab_factory(dbschema.BugTrackerType,
     noshow=[dbschema.BugTrackerType.DEBBUGS])
-CVEStateVocabulary = vocab_factory(dbschema.CVEState)
+CveStatusVocabulary = vocab_factory(dbschema.CveStatus)
 GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
 KarmaActionCategoryVocabulary = vocab_factory(dbschema.KarmaActionCategory)
@@ -75,8 +76,9 @@ PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
 PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
 SpecificationStatusVocabulary =  vocab_factory(dbschema.SpecificationStatus)
 SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
-SubscriptionVocabulary = vocab_factory(dbschema.BugSubscription)
 TeamSubscriptionPolicyVocabulary = vocab_factory(
         dbschema.TeamSubscriptionPolicy)
+TicketStatusVocabulary =  vocab_factory(dbschema.TicketStatus)
+TicketPriorityVocabulary = vocab_factory(dbschema.TicketPriority)
 TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
 

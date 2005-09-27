@@ -8,20 +8,21 @@
 <metal:leftportlets fill-slot="portlets_one">
   <div class="portlet">
     <div class="portletBody portletContent">
-      
+
       <img src="/++resource++info_icon.gif" />
-      This page documents the HCT (Hypothetical Changeset Tool) status of
-      the package <span tal:replace="context/displayname">foobar in
-      hoary</span>.  Use the links and information below to ensure that HCT
-      correctly understands how this source package is connected to
-      upstream.
+
+      This page documents the HCT (Hypothetical Changeset Tool) status
+      of the <span tal:replace="context/displayname">hoary
+      foobar</span> package.  Use the links and information below to
+      ensure that HCT correctly understands how this source package is
+      connected to upstream.
 
     </div>
   </div>
 
   <div class="portlet">
     <div class="portletBody portletContent">
-      
+
       <img src="/++resource++info_icon.gif" />
       In order for HCT to function effectively, we need to have the
       upstream branch published in the <a
@@ -29,7 +30,7 @@
       format.
     </div>
   </div>
-    
+
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
@@ -50,7 +51,7 @@
     Unable to determine the upstream productseries for this package. Please
     add packaging information for this package!
   </p>
-  
+
   <table class="listing"
          tal:condition="context/sourcepackagename/packagings">
     <caption>Packaging data for all source packages called
@@ -103,6 +104,6 @@
 
   </tal:block>
 
-</div> 
+</div>
 </body>
 </html>

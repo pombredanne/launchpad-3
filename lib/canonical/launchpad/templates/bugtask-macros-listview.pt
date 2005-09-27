@@ -1,0 +1,45 @@
+<metal:item define-macro="item">
+  <tal:comment replace="nothing">
+  This macro expects the following variables defined:
+      :task: An IBugTask to be rendered.
+  </tal:comment>
+
+  <td style="width: 20px">
+    <tal:taskicon content="structure task/fmt:icon" />&nbsp;
+  </td>
+  <th>
+    <a tal:attributes="href task/fmt:url">
+      <tal:id replace="task/bug/id">42</tal:id>.&nbsp;
+    </a>
+  </th>
+  <td>
+    <div>
+      <a
+        tal:attributes="href task/fmt:url"
+        tal:content="task/bug/title"
+      >A Test Title</a>
+      <small
+        class="discreet"
+        tal:content="string:(${task/age/fmt:approximateduration} old)"
+      >(2 weeks old)</small>
+    </div>
+    <div
+      tal:content="task/bug/description/fmt:shorten/80"
+      class="lesser"
+    >It doesn't work.</div>
+    <div class="lesser">
+      <tal:status content="structure task/statusdisplayhtml">
+        assigned to Foo Bar
+      </tal:status>
+      <tal:milestone condition="task/milestone">
+        for <tal:icon content="structure task/milestone/fmt:icon" />
+        <a tal:attributes="href task/milestone/fmt:url"
+           tal:content="task/milestone/name">1.0</a>
+      </tal:milestone>
+    </div>
+    <div
+      tal:content="task/statuselsewhere"
+      class="discreet"
+    >Not wanted elsewhere</div>
+  </td>
+</metal:item>

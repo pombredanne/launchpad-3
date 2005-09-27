@@ -5,14 +5,13 @@
   <body>
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/bug/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-status-details" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
+    <div tal:replace="structure context/@@+portlet-status-actions" />
     <div tal:replace="structure context/@@+portlet-alsoreportedin" />
-    <div tal:condition="context/product"
-         tal:replace="structure context/product/@@+portlet-latest-bugs" />
+    <div tal:replace="structure context/target/@@+portlet-latestbugs" />
   </metal:rightportlets>
 
     <div metal:fill-slot="main">

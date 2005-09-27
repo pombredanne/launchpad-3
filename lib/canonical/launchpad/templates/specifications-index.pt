@@ -11,11 +11,35 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-actions" />
+  <div tal:replace="structure context/@@+portlet-sprints" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-  <h1>Feature Tracking in Launchpad</h1>
+  <h1>Feature tracking in Launchpad</h1>
+
+  <p class="documentDescription">
+    Launchpad includes a feature tracker for applications and distributions.
+    Use this to plan your development roadmap.
+  </p>
+
+  <p>
+    The 10 most recently registered specifications in Launchpad:
+  </p>
+
+  <tal:block repeat="spec context/latest_specs">
+    <b><span tal:replace="spec/target/title">Spec Target Title</span>:</b>
+    <br />
+    <div tal:replace="structure spec/@@+listing-detailed" />
+  </tal:block>
+
+  <p>
+    Features are tracked per distribution, and per product registered in the
+    Launchpad. Go to a specific product or distribution to see all the
+    planned features for that group, or to register new feature
+    specifications.
+  </p>
+
 
 </div>
 </body>

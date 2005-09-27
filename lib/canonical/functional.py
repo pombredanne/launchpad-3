@@ -48,9 +48,11 @@ from zope.app.tests import ztapi
 from zope.component import getUtility
 import zope.security.management
 
-from canonical.publication import BrowserPublication
+from canonical.publication import LaunchpadBrowserPublication
 from canonical.chunkydiff import elided_source
 from canonical.config import config
+import canonical.launchpad.layers
+
 
 # XXX: When we've upgraded Zope 3 to a newer version, we'll just import
 #      IHeaderOutput from zope.publisher.interfaces.http.
@@ -494,12 +496,14 @@ def http(request_string, port=9000, handle_errors=True, debug=False):
         raise RuntimeError("Request method was not GET, POST or HEAD.")
 
     request_cls = BrowserRequest
-    publication_cls = BrowserPublication
+    publication_cls = LaunchpadBrowserPublication
 
     request = app._request(path, instream, outstream,
                            environment=environment,
                            request=request_cls, publication=publication_cls)
     request.response.setHeaderOutput(header_output)
+    canonical.launchpad.layers.setFirstLayer(
+        request, canonical.launchpad.layers.PageTestLayer)
     response = DocResponseWrapper(request.response, outstream, path,
                                   header_output)
     if debug:

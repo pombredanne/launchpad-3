@@ -6,12 +6,15 @@ XXX: Much stuff from canonical.publication needs to move here.
 
 __metaclass__ = type
 __all__ = ['canonical_url', 'nearest', 'get_current_browser_request',
-           'canonical_url_iterator']
+           'canonical_url_iterator', 'rootObject']
 
 from zope.interface import implements
 import zope.security.management
+from zope.security.checker import ProxyFactory, NamesChecker
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
-from canonical.launchpad.interfaces import ICanonicalUrlData, NoCanonicalUrl
+from canonical.launchpad.interfaces import (
+    ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication)
+
 # Import the launchpad.conf configuration object.
 from canonical.config import config
 
@@ -119,3 +122,8 @@ def nearest(obj, *interfaces):
                 return current_obj
     return None
 
+
+class RootObject:
+    implements(ILaunchpadApplication, ILaunchpadRoot)
+
+rootObject = ProxyFactory(RootObject(), NamesChecker(["__class__"]))

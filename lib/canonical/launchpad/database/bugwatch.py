@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BugWatch', 'BugWatchSet', 'BugWatchFactory']
+__all__ = ['BugWatch', 'BugWatchSet']
 
 import re
 
@@ -89,6 +89,9 @@ class BugWatchSet(BugSetBase):
         except SQLObjectNotFound:
             raise NotFoundError, watch_id
 
+    def search(self):
+        return BugWatch.select()
+
     def _find_watches(self, pattern, trackertype, text, bug, owner):
         """Find the watches in a piece of text, based on a given pattern and
         tracker type."""
@@ -149,10 +152,10 @@ class BugWatchSet(BugSetBase):
                 raise AssertionError('MessageChunk without content or blob.')
         return sorted(watches, key=lambda a: a.remotebug)
 
-
-def BugWatchFactory(context, **kw):
-    bug = context.context.bug
-    return BugWatch(
-        bug=bug, owner=context.request.principal.id, datecreated=UTC_NOW,
-        lastchanged=UTC_NOW, lastchecked=UTC_NOW, **kw)
+    def createBugWatch(self, bug, owner, bugtracker, remotebug):
+        """See canonical.launchpad.interfaces.IBugWatchSet."""
+        return BugWatch(
+            bug=bug, owner=owner, datecreated=UTC_NOW,
+            lastchanged=UTC_NOW, lastchecked=UTC_NOW,
+            bugtracker=bugtracker, remotebug=remotebug)
 

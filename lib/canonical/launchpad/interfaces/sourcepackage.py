@@ -7,16 +7,18 @@ __metaclass__ = type
 __all__ = [
     'ISourcePackage',
     'ISourcePackageSet',
+    'IDistroSourcePackage',
+    'IDistroSourcePackageSet'
     ]
 
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
-from canonical.launchpad.interfaces import IBugTarget
+from canonical.launchpad.interfaces import IBugTarget, ITicketTarget
 
 _ = MessageIDFactory('launchpad')
 
-class ISourcePackage(IBugTarget):
+class ISourcePackage(IBugTarget, ITicketTarget):
     """A SourcePackage. See the MagicSourcePackage specification. This
     interface preserves as much as possible of the old SourcePackage
     interface from the SourcePackage table, with the new table-less
@@ -38,8 +40,9 @@ class ISourcePackage(IBugTarget):
                 "distribution or distrorelease. Calling this when there is "
                 "no current sourcepackagerelease will raise an exception.")
 
-    changelog = Attribute("The changelog of the currentrelease for this "
-                "source package published in this distrorelease.")
+    changelog = Attribute("Returns the concatenated full changelog for each "
+                          "published sourcepackagerelease versions ordered "
+                          "by crescent version.")
 
     manifest = Attribute("The Manifest of the current SourcePackageRelease "
                     "published in this distribution / distrorelease.")
@@ -141,6 +144,26 @@ class ISourcePackage(IBugTarget):
         The attribute is True or False.""")
 
 
+class IDistroSourcePackage(IBugTarget):
+    """A distribution sourcepackage.
+
+    This object knows nothing about a specific distrorelease. This
+    object is particularly useful for, say, Malone, where most
+    distribution bugs are filed on the distribution as a whole, and
+    not a specific release.
+    """
+
+    name = Attribute("The name of the source package.")
+    displayname = Attribute("A displayname for this package")
+    title = Attribute("A title for this package")
+    distribution = Attribute("The IDistribution for this package")
+    sourcepackagename = Attribute("The ISourcePackageName of this package")
+    currentrelease = Attribute("""The latest published SourcePackageRelease
+        of a source package with this name in the distribution or
+        distrorelease, or None if no source package with that name is
+        published in this distrorelease.""")
+
+
 class ISourcePackageSet(Interface):
     """A set for ISourcePackage objects."""
 
@@ -190,3 +213,12 @@ class ISourcePackageSet(Interface):
         packages.
         """
 
+class IDistroSourcePackageSet(Interface):
+    """The set of all IDistroSourcePackages in Launchpad."""
+
+    def getPackage(distribution, sourcepackagename):
+        """Return the appropriate IDistroSourcePackage.
+
+        :distribution: The IDistribution of the package.
+        :sourcepackagename: The ISourcePackageName of the package.
+        """

@@ -49,7 +49,7 @@ from canonical.launchpad.interfaces import (
      ICalendarEventSet, ICalendarSubscriptionSubset, ICalendarRange,
      ILaunchBag)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, DefaultLink, Link, canonical_url)
+    ApplicationMenu, Link, canonical_url)
 
 from schoolbell.interfaces import ICalendar
 from schoolbell.utils import (
@@ -223,7 +223,7 @@ class CalendarMonth:
         user_timezone = getUtility(ILaunchBag).timezone
         self.start = datetime(day.year, day.month, 1,
                               0, 0, 0, 0, user_timezone).astimezone(UTC)
-        next = next_month(self.start)
+        next = next_month(day)
         self.end = datetime(next.year, next.month, 1,
                             0, 0, 0, 0, user_timezone).astimezone(UTC)
 

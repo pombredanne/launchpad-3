@@ -1,0 +1,50 @@
+Person Pages
+------------
+
+There are several person pages in Launchpad. Many of them are driven
+by the PersonView view class.
+
++assignedbugs
+-------------
+
+The +assignedbugs shows bugs relevant to the currently logged in
+user. There are various view methods used to render this page. To
+demonstrate this, let's start by grabbing the +assignedbugs view
+object on a person:
+
+  >>> from zope.component import getUtility, getView
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> from canonical.launchpad.ftests import login
+  >>> from zope.publisher.browser import TestRequest
+
+  >>> login("test@canonical.com")
+
+  >>> sample_person = getUtility(IPersonSet).get(12)
+  >>> assignedbugs_view = getView(sample_person, "+assignedbugs", TestRequest())
+
+The assigned bugs report shows bug tasks directly assigned to this
+person:
+
+  >>> tasks = assignedbugs_view.bugTasksAssignedToPerson()
+  >>> task_ids = sorted([task.id for task in tasks])
+  >>> task_ids
+  [5, 14]
+
+Additionally, it shows bug tasks assigned to this person by way of
+team participation:
+
+  >>> tasks = list(assignedbugs_view.bugTasksOnMaintainedSoftware())
+  >>> task_ids = sorted([task.id for task in tasks])
+  >>> task_ids
+  [2, 13, 14]
+
+Finally, when a user views the +assignedbugs page of another user, the
+bugs for which the current user and the displayed user share a common
+interest are also shown. "Common interest" is defined as when both
+users are members of the maintainer team or when one user is the
+maintainer and the other is directly assigned to fix the task.
+
+XXX: Brad Bollenbach, 2005-09-06: This method
+(.bugTasksWithSharedInterest) needs tests but it's non-trivial to
+write them and I have a critical bug to fix in the meantime. I've got
+kiko's blessing to leave this method untested for now.

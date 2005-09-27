@@ -27,11 +27,16 @@ from canonical.launchpad.components.poparser import POHeader
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.pomsgset import POMsgSetView
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ApplicationMenu, DefaultLink, Link, canonical_url)
+    StandardLaunchpadFacets, ApplicationMenu, Link, canonical_url)
 
 
 class POFileFacets(StandardLaunchpadFacets):
+
     usedfor = IPOFile
+
+    defaultlink = 'translations'
+
+    enable_only = ['overview', 'translations']
 
     def _parent_url(self):
         """Return the URL of the thing the PO template of this PO file is
@@ -55,16 +60,8 @@ class POFileFacets(StandardLaunchpadFacets):
     def translations(self):
         target = ''
         text = 'Translations'
-        return DefaultLink(target, text)
+        return Link(target, text)
 
-    # Bugs and calendar don't make sense for pofiles
-    # XXX: how does one disable links unconditionally?
-    #       -- kiko, 2005-08-23
-    def bugs(self):
-        return Link("", "Bugs", linked=False)
-
-    def calendar(self):
-        return Link("", "Calendar", linked=False)
 
 class POFileAppMenus(ApplicationMenu):
     usedfor = IPOFile
@@ -74,7 +71,7 @@ class POFileAppMenus(ApplicationMenu):
     def overview(self):
         target = ''
         text = 'Overview'
-        return DefaultLink(target, text)
+        return Link(target, text)
 
     def translate(self):
         target = '+translate'
@@ -151,17 +148,17 @@ class POFileView:
                 self.second_lang_code = second_lang.code
         self.second_lang_pofile = None
         if self.second_lang_code is not None:
-            self.second_lang_pofile = potemplate.queryPOFileByLang(self.second_lang_code)
+            self.second_lang_pofile = \
+                potemplate.queryPOFileByLang(self.second_lang_code)
         self.submitted = False
         self.errorcount = 0
 
         # Get pagination information.
-        self.offset = 0
         try:
             self.offset = int(self.form.get('offset', 0))
         except (TypeError, ValueError):
             # The value is not an integer, stick with 0
-            pass
+            self.offset = 0
 
         # Get message display settings.
         self.show = self.form.get('show')
@@ -186,12 +183,11 @@ class POFileView:
             self.shown_count = self.context.fuzzy_count
 
         # figure out how many messages the user wants to display
-        self.count = self.DEFAULT_COUNT
         try:
             self.count = int(self.form.get('count', self.DEFAULT_COUNT))
         except (TypeError, ValueError):
             # It's not an integer, stick with DEFAULT_COUNT
-            pass
+            self.count = self.DEFAULT_COUNT
 
         # Never show more than self.MAX_COUNT items in a form.
         if self.count > self.MAX_COUNT:
@@ -206,7 +202,8 @@ class POFileView:
     def lang_selector(self):
         second_lang_code = self.second_lang_code
         langset = getUtility(ILanguageSet)
-        html = '<select name="alt" title="Make suggestions from...">\n<option value=""'
+        html = ('<select name="alt" title="Make suggestions from...">\n'
+                '<option value=""')
         if self.second_lang_pofile is None:
             html += ' selected="yes"'
         html += '></option>\n'
@@ -230,16 +227,16 @@ class POFileView:
         else:
             return length - (length % self.count)
 
-    def pluralFormExpression(self):
-        plural = self.header['Plural-Forms']
-        return plural.split(';', 1)[1].split('=',1)[1].split(';', 1)[0].strip()
-
     def untranslated(self):
         return self.context.untranslatedCount()
 
     def has_translators(self):
         """We need to have this to tell us if there are any translators."""
-        for translator in self.context.translators:
+        # XXX: what's the context here? If it's just POFile, then
+        # translators is already a list, and this method can be nuked
+        # because the template can deal with this by itself.
+        #   -- kiko, 2005-09-23
+        if list(self.context.translators):
             return True
         return False
 
@@ -300,6 +297,10 @@ class POFileView:
                 'There was a problem uploading the file: %s.' % error)
 
     def edit(self):
+        # XXX: See bug 2358; the plural-forms here should be validated
+        # before assignment. For instance, expression and pluralforms
+        # can /not/ contain semi-colons!
+        #   -- kiko, 2005-09-16
         self.header['Plural-Forms'] = 'nplurals=%s; plural=%s;' % (
             self.request.form['pluralforms'],
             self.request.form['expression'])
@@ -320,8 +321,6 @@ class POFileView:
         #  lacksPluralFormInformation:
         #    If the translation form needs plural form information.
         assert self.user is not None, 'This view is for logged-in users only.'
-
-        form = self.request.form
 
         # Submit any translations.
         submitted = self.submitTranslations()
@@ -521,8 +520,6 @@ class POFileView:
             return {}
 
         messageSets = helpers.parse_translation_form(self.request.form)
-        bad_translations = []
-
         pofile = self.context
         potemplate = pofile.potemplate
 

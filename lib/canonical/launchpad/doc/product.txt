@@ -48,7 +48,7 @@ Since we have some POTemplates for evolution, we should have a primary
 translatable for that product:
 
 >>> evo.primary_translatable.displayname
-u' the evolution source package in hoary'
+u'hoary evolution'
 
 But for a52dec, where we have no translatable release or Ubuntu package, the
 primary_translatable is nonexistent:

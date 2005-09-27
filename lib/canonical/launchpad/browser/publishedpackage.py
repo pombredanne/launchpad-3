@@ -69,11 +69,11 @@ class PublishedPackageSetView:
         if not self.searchtext:
             return []
         if self.launchbag.distribution:
-            distribution = self.launchbag.distribution.id
+            distribution = self.launchbag.distribution
         else:
             distribution = None
         if self.launchbag.distrorelease:
-            distrorelease = self.launchbag.distrorelease.id
+            distrorelease = self.launchbag.distrorelease
         else:
             distrorelease = None
         pkgset = self.context
@@ -92,7 +92,7 @@ class PublishedPackageSetView:
             version = drversions.versions.get( \
                 package.binarypackageversion,
                 PkgVersion(package.binarypackageversion) )
-            version.builds.append(PkgBuild(package.binarypackage,
+            version.builds.append(PkgBuild(package.binarypackagerelease,
                                            package.processorfamilyname,
                                            package.build.distroarchrelease))
             drversions.versions[package.binarypackageversion] = version

@@ -3,8 +3,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'IMessagesView',
     'IMessage',
+    'IMessageOnTicket',
     'IMessageSet',
     'IMessageChunk',
     'IAddMessage',
@@ -17,13 +17,9 @@ __all__ = [
 from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.exceptions import NotFoundError
-from zope.schema import Datetime, Int, Text, TextLine
-from zope.app.form.browser.interfaces import IAddFormCustomization
+from zope.schema import Datetime, Int, Text, TextLine, Bool
 
 _ = MessageIDFactory('launchpad')
-
-class IMessagesView(IAddFormCustomization):
-    """Message views"""
 
 
 class IMessage(Interface):
@@ -39,6 +35,7 @@ class IMessage(Interface):
     subject = TextLine(
             title=_('Subject'), required=True, readonly=True,
             )
+    content = Text(title=_("Message"), required=True, readonly=True)
     owner = Int(
             title=_('Person'), required=False, readonly=True,
             )
@@ -67,6 +64,16 @@ class IMessage(Interface):
         """Iterate over all the message chunks."""
 
 
+class IMessageOnTicket(IMessage):
+    """A specific extension to the basic Message, used for ITickets."""
+
+    resolved = Bool(title=_("Resolved"), required=False,
+        description=_("Check this box to indicate that you think this "
+        "problem is resolved. Note: only the person who made the technical "
+        "support request can actually close the ticket, other people can "
+        "only indicate that they believe it has been answered."))
+
+
 class IMessageSet(Interface):
     """Set of IMessage"""
 
@@ -76,11 +83,11 @@ class IMessageSet(Interface):
         If no such messages exist, raise NotFoundError.
         """
 
-    def fromText(title, content, owner=None):
+    def fromText(subject, content, owner=None):
         """Construct a Message from a text string and return it."""
 
     def fromEmail(email_message, owner=None, filealias=None,
-            parsed_message=None):
+            parsed_message=None, fallback_parent=None):
         """Construct a Message from an email message and return it.
 
         `email_message` should be the original email as a string.
@@ -99,6 +106,9 @@ class IMessageSet(Interface):
         email_message. This is purely an optimization step, significant
         in many places because the emails we are handling may contain huge
         attachments and we should avoid reparsing them if possible.
+
+        'fallback_parent' can be specified if you want a parent to be
+        set, if no parent could be identified.
 
         Callers may want to explicitly handle the following exceptions:
             * UnknownSender

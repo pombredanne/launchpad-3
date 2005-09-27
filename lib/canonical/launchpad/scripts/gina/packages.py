@@ -27,6 +27,8 @@ GPGALGOS = {}
 for item in GPGKeyAlgorithm.items:
     GPGALGOS[item.value] = item.name
 
+source_version_re = re.compile(r'([^ ]+) +\(([^\)]+)\)')
+
 def get_person_by_key(self, keyrings, key):
     if key and key not in ("NOSIG", "None", "none"):
         command = ("gpg --no-options --no-default-keyring "
@@ -280,10 +282,19 @@ class BinaryPackageData(AbstractPackageData):
             self.source_version = self.version
         else:
             # handle cases like "Source: myspell (1:3.0+pre3.1-6)"
-            src_bits = self.source.split(" ", 2)
-            self.source = src_bits[0]
-            if len(src_bits) > 1:
-                self.source_version = src_bits[1][1:-1]
+            # Which apt-pkg kindly splits for us already
+            if hasattr(self, 'sversion'):
+                self.source_version = self.sversion
+            # handle the cases which apt-pkg kindly leaves behind for us
+            # because it's too lazy or delicate or something else.
+            # XXX: dsilvers: 20050922: Work out why this happens and
+            # file an upstream bug against python-apt once we've worked
+            # it out.
+            match = source_version_re.match(self.source)
+            if match:
+                self.source = match.group(1)
+                self.source_version = match.group(2)
+                
         if not hasattr(self, 'section'):
             log.info("Binary package %s lacks a section... assuming misc" %
                      self.package)

@@ -1,26 +1,36 @@
-Foo Bar can't edit the bug:
+Foo Bar can edit the bugtask, because he's one of the LP admins:
 
   >>> print http(r"""
-  ... GET /products/firefox/+bugs/4/+edit HTTP/1.1
+  ... GET /products/firefox/+bug/4/+editstatus HTTP/1.1
   ... Accept-Language: en-us,en;q=0.5
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
-  HTTP/1.1 403 Forbidden
+  HTTP/1.1 200 Ok
   ...
 
-Sample Person may edit the bug task:
+Sample Person may also, because he is the firefox maintainer:
 
   >>> print http(r"""
-  ... GET /products/firefox/+bugs/4/+edit HTTP/1.1
+  ... GET /products/firefox/+bug/4/+editstatus HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...in upstream firefox...
 
+jdub cannot edit the bugtask:
+
+  >>> print http(r"""
+  ... GET /products/firefox/+bug/4/+editstatus HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 403 Forbidden
+  ...
+
 Edit the target:
 
   >>> print http(r"""
-  ... POST /products/firefox/+bugs/4/+edit HTTP/1.1
+  ... POST /products/firefox/+bug/4/+editstatus HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1442
   ... Content-Type: multipart/form-data; boundary=---------------------------9725916581164147154144110168
@@ -71,10 +81,10 @@ Edit the target:
   ...
 
 
-Assign the task to the Ubuntu Team, of which Foo Bar is a member:
+Assign the task to the Ubuntu Team, of which jdub is a member:
 
   >>> print http(r"""
-  ... POST /products/firefox/+bugs/4/+edit HTTP/1.1
+  ... POST /products/firefox/+bug/4/+editstatus HTTP/1.1
   ... Accept-Language: en-us,en;q=0.5
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1445
@@ -129,23 +139,23 @@ Assign the task to the Ubuntu Team, of which Foo Bar is a member:
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  Location: http://.../malone/bugs/4
+  Location: http://.../products/firefox/+bug/4
   <BLANKLINE>
   ...
 
-Now Foo Bar may edit the bug, since he's part of the maintainer team:
+Now jdub may edit the bug, since he's part of the maintainer team:
 
   >>> print http(r"""
-  ... GET /products/firefox/+bugs/4/+edit HTTP/1.1
+  ... GET /products/firefox/+bug/4/+editstatus HTTP/1.1
   ... Accept-Language: en-us,en;q=0.5
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic amVmZi53YXVnaEB1YnVudHVsaW51eC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
   ...in upstream firefox...
 
 
   >>> print http(r"""
-  ... POST /products/firefox/+bugs/4/+edit HTTP/1.1
+  ... POST /products/firefox/+bug/4/+editstatus HTTP/1.1
   ... Accept-Language: en-us,en;q=0.5
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1459
@@ -198,16 +208,14 @@ Now Foo Bar may edit the bug, since he's part of the maintainer team:
   ... -----------------------------19501511362039229377247635061--
   ... """)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: http://.../malone/bugs/4
-  <BLANKLINE>
+  ...
+  Location: http://.../products/firefox/+bug/4
   ...
 
 Un-assign the bug task:
 
   >>> print http(r"""
-  ... POST /products/firefox/+bugs/4/+edit HTTP/1.1
+  ... POST /products/firefox/+bug/4/+editstatus HTTP/1.1
   ... Accept-Language: en-us,en;q=0.5
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1439
@@ -258,7 +266,6 @@ Un-assign the bug task:
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  Location: http://.../malone/bugs/4
+  Location: http://.../products/firefox/+bug/4
   <BLANKLINE>
   ...
-

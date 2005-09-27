@@ -95,7 +95,7 @@ def guess(s):
     # that will bite you eventually -- StuartBishop 20050709
     if isinstance(s, unicode):
         warn('encoding.guess called with Unicode string',
-                DeprecationWarning, stacklevel=1)
+                DeprecationWarning, stacklevel=2)
         return s
 
     # Attempt to use an objects default Unicode conversion, for objects

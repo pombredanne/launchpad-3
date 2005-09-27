@@ -6,8 +6,7 @@ __metaclass__ = type
 
 __all__ = ['IBugMessage', 'IBugMessageSet']
 
-from zope.interface import Interface
-from zope.schema import Int
+from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 _ = MessageIDFactory('launchpad')
@@ -15,8 +14,9 @@ _ = MessageIDFactory('launchpad')
 class IBugMessage(Interface):
     """A link between a bug and a message."""
 
-    bug = Int(title=_('Bug ID'), required=True, readonly=True)
-    message = Int(title=_('Message ID'), required=True, readonly=True)
+    bug = Attribute("The bug.")
+    message = Attribute("The message.")
+
 
 class IBugMessageSet(Interface):
     """The set of all IBugMessages."""
@@ -29,6 +29,9 @@ class IBugMessageSet(Interface):
         owner -- an IPerson
         content -- a string
 
+        The created message will have the bug's initial message as its
+        parent.
+
         Returns the created IBugMessage.
         """
 
@@ -40,3 +43,4 @@ class IBugMessageSet(Interface):
 
         Return None if no such IBugMesssage exists.
         """
+

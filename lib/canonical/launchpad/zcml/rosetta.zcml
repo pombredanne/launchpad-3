@@ -11,7 +11,7 @@
     </securedutility>
 
     <browser:suburl
-        for="canonical.publication.RootObject"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
         utility="canonical.launchpad.interfaces.IRosettaApplication"
         name="rosetta"
         newlayer="canonical.launchpad.layers.RosettaLayer"
@@ -44,6 +44,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IRosettaApplication"
+        facet="translations"
         permission="zope.Public"
         class="canonical.launchpad.browser.RosettaApplicationView"
         lp:url="Rosetta">
@@ -70,6 +71,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IRosettaApplication"
+        facet="translations"
         permission="launchpad.AnyPerson"
         class="canonical.launchpad.browser.RosettaPreferencesView" >
         <browser:page
@@ -81,15 +83,18 @@
   <!-- Rosetta Stats Views -->
   <browser:pages
     for="canonical.launchpad.interfaces.IRosettaStats"
+    class="canonical.launchpad.browser.RosettaStatsView"
+    facet="translations"
     permission="zope.Public">
     <browser:page
       name="+barchart"
-      template="../templates/pofile-barchart.pt" />
+      template="../templates/rosettastats-barchart.pt" />
   </browser:pages>
 
   <!-- portlets to show language prefs -->
   <browser:pages
     for="*"
+    facet="translations"
     class="canonical.launchpad.browser.RosettaApplicationView"
     permission="zope.Public">
     <browser:page

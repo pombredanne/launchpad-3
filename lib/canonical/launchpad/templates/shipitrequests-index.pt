@@ -1,0 +1,134 @@
+<tal:do-this-first condition="view/processForm" />
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+<body>
+
+  <div metal:fill-slot="body" style="padding-left: 1em">
+
+  <h1>ShipIt Requests</h1>
+
+  <table>
+  <tbody>
+  <tr>
+  <td width="80%">
+
+  <form name="search" action="" method="POST">
+  <table>
+    <tbody>
+    <tr>
+      <td align="right">
+        <label>Show:</label>
+      </td>
+      <td>
+        <select name="statusfilter">
+          <option value="pending" 
+                  tal:attributes="selected python: view.selectedStatus == 'pending'">
+            Pending</option>
+          <option value="approved"
+                  tal:attributes="selected python: view.selectedStatus == 'approved'">
+            Approved</option>
+          <option value="denied"
+                  tal:attributes="selected python: view.selectedStatus == 'denied'">
+            Denied</option>
+          <option value="all"
+                  tal:attributes="selected python: view.selectedStatus == 'all'">
+            All</option>
+        </select>
+        requests
+      </td>
+    </tr>
+    <tr>
+      <td align="right">
+        <label>for:</label>
+      </td>
+      <td>
+        <select name="typefilter">
+          <option value="custom" 
+                  tal:attributes="selected python: view.selectedType == 'custom'">
+            Custom quantities</option>
+          <option value="standard"
+                  tal:attributes="selected python: view.selectedType == 'standard'">
+            All standard quantities</option>
+          <option tal:repeat="request view/standardShipItRequests"
+                  tal:attributes="value request/id;
+                                  selected python: view.selectedType == request.id">
+            <span tal:replace="request/description" /></option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>
+        <input type="submit" value="Show" name="CHANGE" />
+      </td>
+    </tr>
+  </table>
+  </form>
+
+  <br />
+  <tal:block condition="view/submitted">
+    <p tal:condition="not: view/results">
+      No results were found
+    </p>
+    <tal:block condition="view/results">
+      <div>Found <span tal:replace="view/results/count:len" /> results</div>
+
+      <table width="80%" class="listing sortable" id="results">
+        <thead>
+          <tr>
+            <th>id</th>
+            <th>Recipient</th>
+            <th>Date</th>
+            <th>Country</th>
+            <th style="text-align: right">requested</th>
+            <th style="text-align: right">approved</th>
+            <th>status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tal:block repeat="shipitrequest view/results">
+            <tr tal:attributes="
+              style string:background-color: ${shipitrequest/highlightColour}">
+              <td tal:content="shipitrequest/id" />
+              <td tal:content="shipitrequest/recipient/displayname" />
+              <td tal:content="shipitrequest/daterequested/fmt:date" />
+              <td tal:content="shipitrequest/recipient/country/name" />
+              <td style="text-align: right" 
+                  tal:content="shipitrequest/totalCDs" />
+              <td style="text-align: right"
+                  tal:content="shipitrequest/totalapprovedCDs" />
+              <td>
+                <tal:block condition="not: shipitrequest/cancelled">
+                  <span tal:condition="shipitrequest/isApproved">approved</span>
+                  <span tal:condition="shipitrequest/isDenied">denied</span>
+                  <span tal:condition="shipitrequest/isAwaitingApproval">
+                    pending
+                  </span>
+                </tal:block>
+                <span tal:condition="shipitrequest/cancelled">cancelled</span>
+              </td>
+              <td>[<a tal:attributes="href shipitrequest/fmt:url">edit</a>]</td>
+            </tr>
+          </tal:block>
+        </tbody>
+      </table>
+
+    </tal:block>
+  </tal:block>
+
+  </td>
+  <td
+    width="20%"
+    style="vertical-align: top;"
+    tal:content="structure context/@@+portlet-actions"
+  />
+  </tr>
+  </table>  
+  
+</div>
+
+</body>
+</html>

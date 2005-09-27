@@ -115,8 +115,11 @@ class DebianBuildManager(BuildManager):
         self._slave.waitingfiles = filemap
 
     def iterate(self, success):
-        print ("Iterating with success flag %d against stage %s"
-               % (int(success), self._state))
+        # When a Twisted ProcessControl class is killed by SIGTERM, 
+        # which we call 'build process aborted', 'None' is returned as
+        # exit_code.
+        print ("Iterating with success flag %s against stage %s"
+               % (success, self._state))
         func = getattr(self, "iterate_" + self._state, None)
         if func is None:
             raise ValueError, "Unknown internal state " + self._state
@@ -125,10 +128,11 @@ class DebianBuildManager(BuildManager):
     def iterate_UNPACK(self, success):
         """Just finished unpacking the tarball."""
         if success != 0:
-            # The unpack failed for some reason...
-            self._slave.builderFail()
+            if not self.alreadyfailed:
+                # The unpack failed for some reason...
+                self._slave.builderFail()
+                self.alreadyfailed = True
             self._state = DebianBuildState.CLEANUP
-            self.alreadyfailed = True
             self.doCleanup()
         else:
             self._state = DebianBuildState.MOUNT
@@ -137,9 +141,10 @@ class DebianBuildManager(BuildManager):
     def iterate_MOUNT(self, success):
         """Just finished doing the mounts."""
         if success != 0:
-            self._slave.builderFail()
+            if not self.alreadyfailed:
+                self._slave.builderFail()
+                self.alreadyfailed = True
             self._state = DebianBuildState.UMOUNT
-            self.alreadyfailed = True
             self.doUnmounting()
         else:
             self._state = DebianBuildState.UPDATE
@@ -148,9 +153,10 @@ class DebianBuildManager(BuildManager):
     def iterate_UPDATE(self, success):
         """Just finished updating the chroot."""
         if success != 0:
-            self._slave.chrootFail()
+            if not self.alreadyfailed:
+                self._slave.chrootFail()
+                self.alreadyfailed = True
             self._state = DebianBuildState.UMOUNT
-            self.alreadyfailed = True
             self.doUnmounting()
         else:
             self._state = DebianBuildState.SBUILD
@@ -165,9 +171,10 @@ class DebianBuildManager(BuildManager):
                 self._slave.builderFail()
             else:
                 # anything else is a buildfail
-                self._slave.buildFail()
-            self._state = DebianBuildState.UMOUNT
+                if not self.alreadyfailed:
+                    self._slave.buildFail()
             self.alreadyfailed = True
+            self._state = DebianBuildState.UMOUNT
             self.doUnmounting()
         else:
             self.gatherResults()

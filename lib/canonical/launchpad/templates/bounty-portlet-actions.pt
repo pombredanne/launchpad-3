@@ -1,8 +1,4 @@
-<div class="portlet">
-  <h4>Actions:</h4>
-
-  <div class="portletBody portletContent">
-
+<div class="portlet portletBody portletContent">
     <ul>
       <li class="edit">
         <a href="+edit">Edit Bounty</a>
@@ -17,7 +13,5 @@
         <a href="+admin">Administer</a>
       </li>
     </ul>
-
-  </div>
 </div>
 

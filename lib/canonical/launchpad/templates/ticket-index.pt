@@ -1,0 +1,119 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:condition="context/reopenings"
+       tal:replace="structure context/@@+portlet-reopenings" />
+  <div tal:replace="structure context/@@+portlet-bugs" />
+  <div tal:replace="structure context/target/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-actions" />
+  <div tal:replace="structure context/@@+portlet-subscribers" />
+  <div tal:replace="structure context/target/@@+portlet-latesttickets" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <p tal:repeat="notice view/notices" tal:content="notice"
+     class="portalMessage">
+    notice goes here
+  </p>
+
+  <table tal:condition="context/whiteboard" class="listing">
+    <tbody>
+      <tr>
+        <td><b>Whiteboard:</b></td>
+        <td tal:content="context/whiteboard">
+          whiteboard contents
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="highlighted">
+    <tal:desc replace="structure context/description/fmt:text-to-html">
+      $Ticket.description
+    </tal:desc>
+  </div>
+
+  <tal:block repeat="message context/messages">
+    <div class="boardComment"
+         tal:condition="python:context.description != message.contents">
+
+      <div class="boardCommentDetails">
+        <strong tal:content="message/title">$Message.title</strong>
+
+        Posted by <a href="#" tal:attributes="href message/owner/fmt:url" 
+                              tal:content="message/owner/browsername|string:(none)">
+          $Person.browsername</a>
+        at <span tal:replace="message/datecreated/fmt:datetime">Thursday 
+        13:21</span>
+      </div>
+
+      <div class="boardCommentBody">
+        <tal:comment
+          content="structure message/contents/fmt:text-to-html"
+        >
+          Comment text.
+        </tal:comment>
+      </div>
+
+    </div>
+  </tal:block> <!-- repeating over message -->
+
+  <tal:logged-in condition="request/lp:person">
+    <fieldset class="collapsible collapsed">
+      <legend>Add comment to this ticket</legend>
+        <form action="+addmessage" method="post">
+          <b>Subject:</b>
+          <input name="field.subject" type="text" size="50" 
+                 tal:attributes="value context/followup_subject" /><br />
+          <b>Comment:</b> <textarea name="field.content" rows="10"></textarea>
+          <br />
+          <tal:can_close_ticket condition="not: context/is_resolved">
+            <tal:is_not_owner condition="not: view/is_owner">
+              <label>
+                <input type="checkbox" name="field.resolved"
+                       value="answers">
+                Answered
+              </label>
+              <div class="discreet">
+                Check this box if you believe that this comment fully answers
+                the support request.
+              </div>
+            </tal:is_not_owner>
+            <tal:is_owner condition="view/is_owner">
+              <label>
+                <input type="checkbox" name="field.resolved"
+                       value="answers">
+                Closed
+              </label>
+              <div class="discreet">
+                Check this box if the problem has been resolved. This will
+                confirm the resolution, and take the ticket off the list of
+                active support requests for
+                <span tal:replace="context/target/displayname">Ubuntu</span>.
+              </div>
+            </tal:is_owner>
+          </tal:can_close_ticket>
+        <input type="submit" name="UPDATE_SUBMIT" value="Post Comment" />
+        </form>
+    </fieldset>
+  </tal:logged-in>
+  <tal:not-logged-in condition="not: request/lp:person">
+    <div align="center">
+      To post a comment you must <a href="+login">log in</a>.
+    </div>
+  </tal:not-logged-in>
+
+</div>
+</body>
+</html>
+

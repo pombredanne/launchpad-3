@@ -11,13 +11,8 @@ Some of the tests for this file are elsewhere. See:
 __metaclass__ = type
 
 import doctest
-import logging
 import os
-import sys
-import tarfile
 import urllib2
-from datetime import datetime
-from StringIO import StringIO
 
 from zope.component import getUtility
 
@@ -613,7 +608,8 @@ class AttachTranslationCatalog:
                 except:
                     # If an exception is raised, we log it before aborting the
                     # attachment.
-                    self.logger.error('We got an unexpected exception', exc_info=1)
+                    self.logger.error('We got an unexpected exception', 
+                                      exc_info=1)
                     self.ztm.abort()
 
     def run(self):

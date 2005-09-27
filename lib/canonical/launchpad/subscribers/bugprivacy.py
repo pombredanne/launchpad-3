@@ -5,7 +5,6 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IMaintainershipSet
-from canonical.lp.dbschema import BugSubscription
 
 def make_subscriptions_explicit_on_private_bug(bug, event):
     """Convert implicit subscriptions to explicit subscriptions
@@ -15,16 +14,16 @@ def make_subscriptions_explicit_on_private_bug(bug, event):
     if not bug.private and setting_bug_private:
         # First, add the bug submitter.
         if not bug.isSubscribed(bug.owner):
-            bug.subscribe(bug.owner, BugSubscription.CC)
+            bug.subscribe(bug.owner)
 
         # Then add the task assignees and maintainers.
         for task in bug.bugtasks:
             if task.assignee:
                 if not bug.isSubscribed(task.assignee):
-                    bug.subscribe(task.assignee, BugSubscription.CC)
+                    bug.subscribe(task.assignee)
             if task.product:
                 if not bug.isSubscribed(task.product.owner):
-                    bug.subscribe(task.product.owner, BugSubscription.CC)
+                    bug.subscribe(task.product.owner)
             else:
                 if task.sourcepackagename:
                     if task.distribution:
@@ -36,5 +35,4 @@ def make_subscriptions_explicit_on_private_bug(bug, event):
                                                task.sourcepackagename)
                     if maintainer:
                         if not bug.isSubscribed(maintainer):
-                            bug.subscribe(
-                                maintainer, BugSubscription.CC)
+                            bug.subscribe(maintainer)

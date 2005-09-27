@@ -3,14 +3,16 @@
 """External bug reference views."""
 
 __metaclass__ = type
-
 __all__ = [
     'BugExternalRefsView',
-    'BugExternalRefAddView']
+    'BugExtRefAddView']
 
+from zope.app.form.utility import getWidgetsData
 from zope.component import getUtility
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces import (
+    IBugExternalRef, IBugExternalRefSet, ILaunchBag)
 from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.webapp import canonical_url
 
 class BugExternalRefsView:
 
@@ -25,8 +27,15 @@ class BugExternalRefsView:
         return '..'
 
 
-class BugExternalRefAddView(SQLObjectAddView):
+class BugExtRefAddView(SQLObjectAddView):
+    """Add view for adding a URL to a bug."""
 
-    def __init__(self, context, request):
-        SQLObjectAddView.__init__(self, context, request)
-        self.bug = getUtility(ILaunchBag).bug
+    def create(self, url, title):
+        bugtask = self.context
+        user = getUtility(ILaunchBag).user
+
+        return getUtility(IBugExternalRefSet).createBugExternalRef(
+            bug=bugtask.bug, url=url, title=title, owner=user)
+
+    def nextURL(self):
+        return canonical_url(self.context)

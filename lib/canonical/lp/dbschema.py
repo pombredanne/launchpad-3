@@ -27,11 +27,8 @@ __all__ = (
 'DBSchema',
 # DBSchema types follow.
 'ArchArchiveType',
-'PollAlgorithm',
-'PollSecrecy',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
-'BinaryPackagePriority',
 'BountyDifficulty',
 'BountyStatus',
 'BranchRelationships',
@@ -43,12 +40,12 @@ __all__ = (
 'BugTaskPriority',
 'BugRelationship',
 'BugTaskSeverity',
-'BugSubscription',
 'BuildStatus',
 'CodereleaseRelationships',
-'CVEState',
+'CveStatus',
 'DistributionReleaseStatus',
 'EmailAddressStatus',
+'GPGKeyAlgorithm',
 'HashAlgorithm',
 'ImportTestStatus',
 'ImportStatus',
@@ -56,25 +53,32 @@ __all__ = (
 'KarmaActionName',
 'LoginTokenType',
 'ManifestEntryType',
+'ManifestEntryHint',
 'MirrorFreshness',
 'PackagePublishingPriority',
 'PackagePublishingStatus',
 'PackagePublishingPocket',
 'PackagingType',
-'GPGKeyAlgorithm',
+'PollAlgorithm',
+'PollSecrecy',
 'ProjectRelationship',
 'ProjectStatus',
 'RevisionControlSystems',
 'RosettaFileFormat',
 'RosettaImportStatus',
 'RosettaTranslationOrigin',
+'ShipItArchitecture',
+'ShipItDistroRelease',
+'ShipItFlavour',
 'SourcePackageFileType',
 'SourcePackageFormat',
 'SourcePackageRelationships',
 'SourcePackageUrgency',
-'SpecificationStatus',
 'SpecificationPriority',
+'SpecificationStatus',
 'SSHKeyType',
+'TicketPriority',
+'TicketStatus',
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
 'TranslationPriority',
@@ -332,6 +336,80 @@ class DBSchema:
     items = ItemsDescriptor()
 
 
+class ArchArchiveType(DBSchema):
+    """Arch Archive Type
+
+    An arch archive can be read only, or it might be an archive
+    into which we can push new changes, or it might be a mirror
+    into which we can only push changes from the upstream. This schema
+    documents those states.
+    """
+
+    READWRITE = Item(0, """
+        ReadWrite Archive
+
+        This archive can be written to with new changesets, it
+        is an archive which we "own" and therefor are free to
+        write changesets into. Note that an archive which has
+        been created for upstream CVS mirroring, for example, would
+        be "readwrite" because we need to be able to create new
+        changesets in it as we mirror the changes in the CVS
+        repository.
+        """)
+
+    READONLY = Item(1, """
+        Read Only Archive
+
+        An archive in the "readonly" state can only be published
+        and read from, it cannot be written to.
+        """)
+
+    MIRRORTARGET = Item(2, """
+        Mirror Target
+
+        We can write into this archive, but we can only write
+        changesets which have actually come from the upstream
+        arch archive of which this is a mirror.
+        """)
+
+
+class BinaryPackageFormat(DBSchema):
+    """Binary Package Format
+
+    Launchpad tracks a variety of binary package formats. This schema
+    documents the list of binary package formats that are supported
+    in Launchpad.
+    """
+
+    DEB = Item(1, """
+        Ubuntu Package
+
+        This is the binary package format used by Ubuntu and all similar
+        distributions. It includes dependency information to allow the
+        system to ensure it always has all the software installed to make
+        any new package work correctly.  """)
+
+    UDEB = Item(2, """
+        Ubuntu Installer Package
+
+        This is the binary package format use by the installer in Ubuntu and
+        similar distributions.  """)
+
+    EBUILD = Item(3, """
+        Gentoo Ebuild Package
+
+        This is the Gentoo binary package format. While Gentoo is primarily
+        known for being a build-it-from-source-yourself kind of
+        distribution, it is possible to exchange binary packages between
+        Gentoo systems.  """)
+
+    RPM = Item(4, """
+        RPM Package
+
+        This is the format used by Mandrake and other similar distributions.
+        It does not include dependency tracking information.  """)
+
+
 class ImportTestStatus(DBSchema):
     """An Arch Import Autotest Result
 
@@ -394,7 +472,7 @@ class BugTrackerType(DBSchema):
         """)
 
 
-class CVEState(DBSchema):
+class CveStatus(DBSchema):
     """The Status of this item in the CVE Database
 
     When a potential problem is reported to the CVE authorities they assign
@@ -426,6 +504,7 @@ class CVEState(DBSchema):
         defines the problem, or the original candidate was never promoted to
         "Entry" status.
         """)
+
 
 class ProjectStatus(DBSchema):
     """A Project Status
@@ -512,6 +591,42 @@ class ManifestEntryType(DBSchema):
         against another branch. Usually, the patch is stored in the
         "patches" directory, then applied at build time by the source
         package build scripts.
+        """)
+
+
+class ManifestEntryHint(DBSchema):
+    """Hint as to purpose of a ManifestEntry.
+
+    Manifests, used by both HCT and Sourcerer, are made up of a collection
+    of Manifest Entries.  Each entry refers to a particular component of
+    the source package built by the manifest, usually each having a different
+    branch or changeset.  A Manifest Entry Hint can be assigned to suggest
+    what the purpose of the entry is.
+    """
+
+    ORIGINAL_SOURCE = Item(1, """
+        Original Source
+
+        This is the original source code of the source package, and in the
+        absence of any Patch Base, the parent of any new patch branches
+        created.
+        """)
+
+    PATCH_BASE = Item(2, """
+        Patch Base
+
+        This is an entry intended to serve as the base for any new patches
+        created and added to the source package.  It is often a patch itself,
+        or a virtual branch.  If not present, the Original Source is used
+        instead.
+        """)
+
+    PACKAGING = Item(3, """
+        Packaging
+
+        This is the packaging meta-data for the source package, usually
+        the entry that becomes the debian/ directory in the case of Debian
+        source packages or the spec file in the case of RPMs.
         """)
 
 
@@ -1017,7 +1132,7 @@ class SourcePackageUrgency(DBSchema):
 
 
 class SpecificationPriority(DBSchema):
-    """The Priority with with a Specification must be implemented.
+    """The Priority with a Specification must be implemented.
 
     This enum is used to prioritise work.
     """
@@ -1124,6 +1239,95 @@ class SpecificationStatus(DBSchema):
         This specification has been obsoleted. Probably, we decided not to
         implement it for some reason. It should not be displayed, and people
         should not put any effort into implementing it.
+        """)
+
+
+class TicketPriority(DBSchema):
+    """The Priority with a Support Request must be handled.
+
+    This enum is used to prioritise work done in the Launchpad support
+    request management system.
+    """
+
+    WISHLIST = Item(0, """
+        Wishlist
+
+        This support ticket is really a request for a new feature. We will
+        not take it further as a support ticket, it should be closed, and a
+        specification created and managed in the Launchpad Specification
+        Tracker.
+        """)
+
+    NORMAL = Item(10, """
+        Normal
+
+        This support ticket is of normal priority. We should respond to it
+        in due course.
+        """)
+
+    HIGH = Item(70, """
+        High
+
+        This support ticket has been flagged as being of higher than normal
+        priority. It should always be prioritised over a "normal" support
+        request.
+        """)
+
+    EMERGENCY = Item(90, """
+        Emergency
+
+        This support ticket is classed as an emergency. No more than 5% of
+        requests should fall into this category. Support engineers should
+        ensure that there is somebody on this problem full time until it is
+        resolved, or escalate it to the core technical and management team.
+        """)
+
+
+class TicketStatus(DBSchema):
+    """The current status of a Support Request
+
+    This enum tells us the current status of the support ticket. The
+    request has a simple lifecycle, from new to closed.
+    """
+
+    NEW = Item(10, """
+        New
+
+        This support ticket is new to the system and has not yet been
+        reviewed by any support engineer.
+        """)
+
+    OPEN = Item(20, """
+        Open
+
+        This support ticket has been reviewed by a support engineer, and is
+        considered to be a valid issue. There may have been some
+        correspondence on the issue, but we do not think it has yet been
+        answered properly.
+        """)
+
+    ANSWERED = Item(30, """
+        Answered
+
+        We believe that the last correspondence from the support engineer
+        was sufficient to resolve the problem. At this stage, the customer
+        will receive email notifications asking them to confirm the
+        resolution of the problem by marking the request "closed".
+        Alternatively, they can re-open the request, marking it "open".
+        """)
+
+    CLOSED = Item(40, """
+        Closed
+
+        This request has been verified as "closed" by the customer.
+        """)
+
+    REJECTED = Item(50, """
+        Rejected
+
+        This request has been marked as "rejected" by the support engineer,
+        likely it represents sample data or a mistaken entry. This request
+        will not show on most lists or reports.
         """)
 
 
@@ -1434,7 +1638,7 @@ class PackagePublishingPriority(DBSchema):
     range from required to optional and various others are available.
     """
 
-    REQUIRED = Item( 50, """
+    REQUIRED = Item(50, """
         Required
 
         This priority indicates that the package is required. This priority
@@ -1442,33 +1646,37 @@ class PackagePublishingPriority(DBSchema):
         the packages at this priority it may become impossible to use dpkg.
         """)
 
-    IMPORTANT = Item( 40, """
+    IMPORTANT = Item(40, """
         Important
 
         If foo is in a package; and "What is going on?! Where on earth is
         foo?!?!" would be the reaction of an experienced UNIX hacker were
-        the package not installed, then the package is important.  """)
+        the package not installed, then the package is important.
+        """)
 
-    STANDARD = Item( 30, """
+    STANDARD = Item(30, """
         Standard
 
         Packages at this priority are standard ones you can rely on to be in
         a distribution. They will be installed by default and provide a
-        basic character-interface userland.  """)
+        basic character-interface userland.
+        """)
 
-    OPTIONAL = Item( 20, """
+    OPTIONAL = Item(20, """
         Optional
 
         This is the software you might reasonably want to install if you did
         not know what it was or what your requiredments were. Systems such
-        as X or TeX will live here.  """)
+        as X or TeX will live here.
+        """)
 
-    EXTRA = Item( 10, """
+    EXTRA = Item(10, """
         Extra
 
         This contains all the packages which conflict with those at the
         other priority levels; or packages which are only useful to people
-        who have very specialised needs.  """)
+        who have very specialised needs.
+        """)
 
 class PackagePublishingPocket(DBSchema):
     """Package Publishing Pocket
@@ -1562,43 +1770,6 @@ class SourcePackageRelationships(DBSchema):
         Hat.  """)
 
 
-class BinaryPackageFormat(DBSchema):
-    """Binary Package Format
-
-    Launchpad tracks a variety of binary package formats. This schema
-    documents the list of binary package formats that are supported
-    in Launchpad.
-    """
-
-    DEB = Item(1, """
-        Ubuntu Package
-
-        This is the binary package format used by Ubuntu and all similar
-        distributions. It includes dependency information to allow the
-        system to ensure it always has all the software installed to make
-        any new package work correctly.  """)
-
-    UDEB = Item(2, """
-        Ubuntu Installer Package
-
-        This is the binary package format use by the installer in Ubuntu and
-        similar distributions.  """)
-
-    EBUILD = Item(3, """
-        Gentoo Ebuild Package
-
-        This is the Gentoo binary package format. While Gentoo is primarily
-        known for being a build-it-from-source-yourself kind of
-        distribution, it is possible to exchange binary packages between
-        Gentoo systems.  """)
-
-    RPM = Item(4, """
-        RPM Package
-
-        This is the format used by Mandrake and other similar distributions.
-        It does not include dependency tracking information.  """)
-
-
 class BountyDifficulty(DBSchema):
     """Bounty Difficulty
 
@@ -1685,47 +1856,6 @@ class BountyStatus(DBSchema):
         Closed
 
         This bounty is closed. No further submissions will be considered.
-        """)
-
-
-class BinaryPackagePriority(DBSchema):
-    """Binary Package Priority
-
-    When a binary package is installed in an archive it can be assigned a
-    specific priority. This schema documents the priorities that Launchpad
-    knows about.  """
-
-    REQUIRED = Item(10, """
-        Required Package
-
-        This package is required for the distribution to operate normally.
-        Usually these are critical core packages that are essential for the
-        correct operation of the operating system.  """)
-
-    IMPORTANT = Item(20, """
-        Important
-
-        This package is important, and should be installed under normal
-        circumstances.  """)
-
-    STANDARD = Item(30, """
-        Standard
-
-        The typical install of this distribution should include this
-        package.  """)
-
-    OPTIONAL = Item(40, """
-        Optional
-
-        This is an optional package in this distribution.
-        """)
-
-    EXTRA = Item(50, """
-        Extra
-
-        This is an extra package in this distribution. An "extra" package
-        might conflict with one of the standard or optional packages so
-        it should be treated with some caution.
         """)
 
 
@@ -2092,72 +2222,6 @@ class RevisionControlSystems(DBSchema):
         """)
 
 
-class ArchArchiveType(DBSchema):
-    """Arch Archive Type
-
-    An arch archive can be read only, or it might be an archive
-    into which we can push new changes, or it might be a mirror
-    into which we can only push changes from the upstream. This schema
-    documents those states.
-    """
-
-    READWRITE = Item(0, """
-        ReadWrite Archive
-
-        This archive can be written to with new changesets, it
-        is an archive which we "own" and therefor are free to
-        write changesets into. Note that an archive which has
-        been created for upstream CVS mirroring, for example, would
-        be "readwrite" because we need to be able to create new
-        changesets in it as we mirror the changes in the CVS
-        repository.
-        """)
-
-    READONLY = Item(1, """
-        Read Only Archive
-
-        An archive in the "readonly" state can only be published
-        and read from, it cannot be written to.
-        """)
-
-    MIRRORTARGET = Item(2, """
-        Mirror Target
-
-        We can write into this archive, but we can only write
-        changesets which have actually come from the upstream
-        arch archive of which this is a mirror.
-        """)
-
-
-class BugSubscription(DBSchema):
-    """A Bug Subscription type.
-
-    This is a list of the type of relationships a person can have with a bug.
-    """
-
-    WATCH = Item(1, """
-        Watch
-
-        The person wishes to watch this bug through a web interface. Emails
-        are not required.
-        """)
-
-    CC = Item(2, """
-        CC
-
-        The person wishes to watch this bug through a web interface and in
-        addition wishes to be notified by email whenever there is activity
-        relating to this bug.
-        """)
-
-    IGNORE = Item(3, """
-        Ignore
-
-        The person has taken an active decision to ignore this bug. They do
-        not wish to receive any communications about it.
-        """)
-
-
 class RosettaTranslationOrigin(DBSchema):
     """Rosetta Translation Origin
 
@@ -2224,55 +2288,46 @@ class KarmaActionName(DBSchema):
     BUGCREATED = Item(1, """
         New Bug Created
 
-        New Bug Created.
         """)
 
     BUGCOMMENTADDED = Item(2, """
         New Comment
 
-        New Comment
         """)
 
     BUGTITLECHANGED = Item(3, """
         Bug Title Changed
 
-        Bug Title Changed
         """)
 
     BUGSUMMARYCHANGED = Item(4, """
         Bug Summary Changed
 
-        Bug Summary Changed
         """)
 
     BUGDESCRIPTIONCHANGED = Item(5, """
         Bug Description Changed
 
-        Bug Description Changed
         """)
 
-    BUGEXTREFCHANGED = Item(6, """
-        Bug External Reference Changed
+    BUGEXTREFADDED = Item(6, """
+        Bug External Reference Added
 
-        Bug External Reference Changed
         """)
 
-    BUGCVEREFCHANGED = Item(7, """
-        Bug CVE Reference Changed
+    BUGCVEREFADDED = Item(7, """
+        Bug CVE Reference Added
 
-        Bug CVE Reference Changed
         """)
 
     BUGFIXED = Item(8, """
         Bug Status Changed to FIXED
 
-        Bug Status Changed to FIXED
         """)
 
     BUGTASKCREATED = Item(9, """
         New Bug Task Created
 
-        New Bug Task Created
         """)
 
     TRANSLATIONTEMPLATEIMPORT = Item(10, """
@@ -2302,6 +2357,36 @@ class KarmaActionName(DBSchema):
 
     TRANSLATIONREVIEW = Item(15, """
         Translation Review
+
+        """)
+
+    BUGREJECTED = Item(16, """
+        Bug Status Changed to REJECTED
+
+        """)
+
+    BUGACCEPTED = Item(17, """
+        Bug Status Changed to ACCEPTED
+
+        """)
+
+    BUGTASKSEVERITYCHANGED = Item(18, """
+        Change the Severity of a Bug Task
+
+        """)
+
+    BUGTASKPRIORITYCHANGED = Item(19, """
+        Change the Priority of a Bug Task
+
+        """)
+
+    BUGMARKEDASDUPLICATE = Item(20, """
+        Mark a Bug as a Duplicate
+
+        """)
+
+    BUGWATCHADDED = Item(21, """
+        New Bug Watch Added
 
         """)
 
@@ -2594,5 +2679,47 @@ class TranslationValidationStatus(DBSchema):
         Unknown Error
 
         This translation has an unknown error.
+        """)
+
+
+class ShipItFlavour(DBSchema):
+    """The Distro Flavour, used only to link with ShippingRequest."""
+
+    UBUNTU = Item(1, """
+        Ubuntu
+
+        The Ubuntu flavour.
+        """)
+
+
+class ShipItArchitecture(DBSchema):
+    """The Distro Architecture, used only to link with ShippingRequest."""
+
+    X86 = Item(1, """
+        Intel/X86
+
+        x86 processors.
+        """)
+
+    AMD64 = Item(2, """
+        AMD64
+
+        AMD64 or EM64T based processors.
+        """)
+
+    PPC = Item(3, """
+        PowerPC
+
+        PowerPC processors.
+        """)
+
+
+class ShipItDistroRelease(DBSchema):
+    """The Distro Release, used only to link with ShippingRequest."""
+
+    BREEZY = Item(1, """
+        Breezy Badger
+
+        The Breezy Badger release.
         """)
 

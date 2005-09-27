@@ -6,6 +6,8 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
+<facet facet="translations">
+
     <content class="canonical.launchpad.database.POTemplateName">
         <require
             permission="zope.Public"
@@ -83,5 +85,7 @@
            class="zope.app.form.browser.TextWidget"
            displayWidth="55" />
     </browser:addform>
+
+</facet>
 
 </configure>

@@ -96,7 +96,8 @@ def main(options, target_section):
 
     # Create the ImporterHandler Object
     importer_handler = ImporterHandler(distro, pocket_distrorelease,
-                                       dry_run)
+                                       dry_run, kdb, package_root, keyrings,
+                                       pocket)
     
 
     import_sourcepackages(packages_map, kdb, package_root,
@@ -230,7 +231,7 @@ def import_binarypackages(pocket, packages_map, kdb, package_root,
                             binary_data.package, binary_data.version,
                             )
 
-                    log.warn(msg)
+                    log.info(msg)
                     messages.append(msg)
                     nosource += 1
             except (AttributeError, ValueError, TypeError):
@@ -273,7 +274,7 @@ if __name__ == "__main__":
         target.getSectionName() for target in config.gina.target
         ]
 
-    if options.all:
+    if options.all: 
         targets = possible_targets[:]
     else:
         if not targets:

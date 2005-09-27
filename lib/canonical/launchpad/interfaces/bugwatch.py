@@ -72,6 +72,9 @@ class IBugWatchSet(Interface):
         matching the given id.
         """
 
+    def search():
+        """Search through all the IBugWatches in the system."""
+
     def fromText(text, bug, owner):
         """Create one or more BugWatch's by analysing the given text. This
         will look for reference to known or new bug tracking instances and
@@ -85,3 +88,11 @@ class IBugWatchSet(Interface):
         It returns a (possibly empty) list of watches created.
         """
 
+    def createBugWatch(bug, owner, bugtracker, remotebug):
+        """Create an IBugWatch.
+
+        :bug: The IBug to which the watch is linked.
+        :owner: The IPerson who created the IBugWatch.
+        :bugtracker: The external IBugTracker.
+        :remotebug: A string.
+        """

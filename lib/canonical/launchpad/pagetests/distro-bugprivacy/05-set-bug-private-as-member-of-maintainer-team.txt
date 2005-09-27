@@ -2,11 +2,10 @@ Foo Bar is about to edit bug #2. Foo Bar is a member of the Ubuntu
 Team, which is one of the maintainers on this bug.
 
   >>> print http(r"""
-  ... GET /malone/bugs/2/+secrecy HTTP/1.1
+  ... GET /distros/debian/+sources/mozilla-firefox/+bug/2/+secrecy HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...Cc:...
   ...Steve Alexander...
   ...
 
@@ -15,7 +14,7 @@ made explicit including, of course, the Ubuntu Team of which Foo Bar
 is a member.
 
   >>> print http(r"""
-  ... POST /malone/bugs/2/+secrecy HTTP/1.1
+  ... POST /distros/debian/+sources/mozilla-firefox/+bug/2/+secrecy HTTP/1.1
   ... Content-Length: 429
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------13742286991948179883664699067
@@ -34,11 +33,18 @@ is a member.
   ... Change
   ... -----------------------------13742286991948179883664699067--
   ... """)
-  HTTP/1.1 200 Ok
+  HTTP/1.1 303 See Other
   ...
-  ...Cc:...
+  Location: ...
+
+And now the maintainers should be subscribed.
+
+  >>> print http(r"""
+  ... GET /distros/debian/+sources/mozilla-firefox/+bug/2 HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
   ...Steve Alexander...
   ...Sample Person...
   ...Ubuntu Team...
   ...Mark Shuttleworth...
-  ...

@@ -30,12 +30,13 @@
     <browser:editform
         schema="canonical.launchpad.interfaces.IBugAttachmentEditForm"
         for="canonical.launchpad.interfaces.IBugAttachment"
-        class="canonical.launchpad.browser.BugAttachmentEditView"
+        class="canonical.launchpad.browser.BugRelatedObjectEditView"
+        facet="bugs"
         label="Change Bug Attachment Information"
         name="+edit"
         permission="launchpad.AnyPerson"
         fields="title patch contenttype"
-        template="../templates/default-editform.pt"
+        template="../templates/bug-attachment-edit.pt"
         lp:url="malone/bugs/$Bug.id/attachments/$BugAttachment.id/+edit"
         />
 

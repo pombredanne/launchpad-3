@@ -22,6 +22,12 @@
 
 /* Launchpad classes */
 
+.highlighted {
+  background-color: #f7f9fa;
+  border: 1px dotted #8cacbb;
+  padding: 0.5em;
+}
+
 .rosettaTile {
   display: block;
   width: 40%;
@@ -66,8 +72,9 @@ fieldset.two-column {
 }
 
 /* Classes for error indication in forms */
+.portalErrorMessage,
 .portalError {
-    background-color: #ffc9c9;
+    background-color: #ff9070;
     border: 1px solid #ddb0b0;
     color: Black;
     margin: 0em 0em 0em 0em;
@@ -79,6 +86,13 @@ fieldset.two-column {
     border: none;
     padding: 0;
     font-size: 85%;
+}
+
+.portalErrorMessage {
+    background-image: url(/++resource++alert_icon.gif);
+    background-repeat: no-repeat;
+    background-position: 5px 50%;
+    padding: 0.5em 1em 0.5em 3em;
 }
 
 
@@ -390,7 +404,7 @@ ul.alert>li, li.alert {
   list-style-image: url(/++resource++alert_icon.gif);
 }
 ul.architecture>li, li.architecture {
-  list-style-image: url(/++resource++architecture);
+  list-style-image: url(/@@/architecture);
 }
 ul.bounty>li, li.bounty {
   list-style-image: url(/++resource++bounty);
@@ -413,8 +427,11 @@ ul.bug.remote>li, li.bug.remote {
 ul.bugs>li, li.bugs {
   list-style-image: url(/++resource++bugs);
 }
-ul.cveref>li, li.cveref {
-    list-style-image: url(/++resource++cve.ico);
+ul.build-success>li, li.build-success {
+  list-style-image: url(/@@/build-success);
+}
+ul.cve>li, li.cve, {
+  list-style-image: url(/++resource++cve);
 }
 ul.document>li, li.document {
   list-style-image: url(/++resource++document_icon.gif);
@@ -431,6 +448,9 @@ ul.info>li, li.info {
 ul.languages>li, li.languages {
   list-style-image: url(/++resource++languages.gif);
 }
+ul.list>li, li.list {
+  list-style-image: url(/++resource++list);
+}
 ul.locked>li, li.locked {
   list-style-image: url(/++resource++lock_icon.gif);
 }
@@ -443,6 +463,9 @@ ul.menu>li, li.menu {
 ul.milestone>li, li.milestone {
   list-style-image: url(/++resource++target);
 }
+ul.news>li, li.news {
+  list-style-image: url(/++resource++news);
+}
 ul.packages>li, li.packages, ul.products>li, li.products {
   list-style-image: url(/++resource++product_icon.gif);
 }
@@ -451,6 +474,18 @@ ul.person>li, li.person, ul.people>li, li.people {
 }
 ul.spec>li, li.spec {
     list-style-image: url(/++resource++spec);
+}
+ul.sprint>li, li.sprint {
+    list-style-image: url(/++resource++sprint);
+}
+ul.statistic>li, ul.statistics, li.statistic {
+    list-style-image: url(/++resource++statistic);
+}
+ul.ticket>li, li.ticket {
+    list-style-image: url(/++resource++ticket);
+}
+ul.up>li, li.up {
+    list-style-image: url(/++resource++up);
 }
 ul.webref>li, li.webref {
     list-style-image: url(/++resource++link_icon.gif);
@@ -500,19 +535,18 @@ ul.search>li, li.search {
 /* === Undo bugs in plone.css === */
 
 /* -- Stop accessing resources on plone.org: -- */
-/* XXX mpt 20050407 change http://plone.org/ to /@@/ eventually */
+
+.portalMessage {font-weight: normal;}
 
 ul {
+  margin-left: 24px;
   list-style-image: none;
-}
-#portal-logo {
-  background-image: url(http://plone.org/logo.jpg);
 }
 #portal-personaltools .portalUser, .link-user {
   background-image: url(/@@/user.gif);
 }
 #portal-personaltools li {
-  background-image: url(http://plone.org/linkOpaque.gif);
+  background-image: url(/@@/linkOpaque.gif);
 }
 .contentActions li {
   background-image: url(/@@/arrowDownAlternative.gif);
@@ -521,7 +555,7 @@ ul {
   background-image: url(/@@/info_icon.gif);
 }
 .standalone, .documentEditable * .standalone {
-  background-image: url(http://plone.org/linkOpaque.gif);
+  background-image: url(/@@/linkOpaque.gif);
 }
 .context, .documentEditable * .context, .destructive,
 .documentEditable * .destructive {
@@ -544,22 +578,22 @@ input.searchButton {
   background-image: url(/@@/lock_icon.gif);
 }
 .link-mailto {
-  background-image: url(http://plone.org/mail_icon.gif);
+  background-image: url(/@@/mail_icon.gif);
 }
 .link-news {
-  background-image: url(http://plone.org/topic_icon.gif);
+  background-image: url(/@@/news);
 }
 .link-ftp {
-  background-image: url(http://plone.org/file_icon.gif);
+  background-image: url(/@@/link_icon.gif);
 }
 .link-irc, .link-comment {
-  background-image: url(http://plone.org/discussionitem_icon.gif);
+  background-image: url(/@@/info.png);
 }
 .link-document {
-  background-image: url(http://plone.org/document_icon.gif);
+  background-image: url(/@@/document_icon.gif);
 }
 .link-callto {
-  background-image: url(http://plone.org/phone_icon.gif);
+  background-image: url(/@@/phone_icon.gif);
 }
 
 /* -- "Links must look like links." -- SteveA */
@@ -567,15 +601,11 @@ input.searchButton {
 a, #portal-footer a {
   text-decoration: underline;
 }
-/* -- ... except in portlets for now -- */
-a[name], .portlet :link, .portlet :visited,
-.sidebar :link, .sidebar :visited {
-  text-decoration: none;
-}
 
-/* -- Don't stomp on people's preferred font sizes: -- */
+/* -- Don't stomp on people's preferred fonts (much): -- */
 
 body {
+  font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
   font-size: 100%;
 }
 code {
@@ -613,6 +643,7 @@ h1 {
 
 table.listing {
   border: none;
+  width: 100%;
 }
 table.listing, table.listing tbody {
   border-bottom: 1px solid #8cacbb;
@@ -625,13 +656,39 @@ table.listing th {
 }
 table.listing>tr>td, table.listing>tbody>tr>td {
   border: 1px #8cacbb;
-  border-style: dotted none;
+  border-style: dotted none none none;
+}
+table.listing>tr.note>td, table.listing>tbody>tr.note>td {
+  border-style: none;
+}
+table.listing>tr.note, table.listing>tbody>tr.note {
+  font-size: smaller;
 }
 table.listing>thead, table.listing>thead>tr>th {
   border: 1px solid #8cacbb;
 }
 table.listing>thead>tr>td {
   border: none;
+}
+
+/* Alternating "even" and "odd" colors are bong */
+
+.portlet {
+  background-color: #f7f9fa;
+}
+
+/* Abbreviations should only be marked if they actually have explanations */
+
+abbr, acronym, .explain {
+  border-bottom: none;
+  color: inherit;
+  cursor: inherit;
+}
+abbr[title], acronym[title], .explain[title] {
+  border-bottom: 1px dotted Black;
+  color: Black;
+  background-color: transparent;
+  cursor: help;
 }
 
 /* Not all of a <dt> should be bold: -- */
@@ -650,6 +707,14 @@ q {
   font-family: inherit;
   font-style: inherit;
   font-size: inherit;
+}
+
+/* -- Temporarily make *all* buttons look plone-y. Ugh. -- */
+
+button {
+  border: 1px solid #8cacbb;  
+  color: Black;
+  background-color: white;
 }
 
 /* -- Other bugs: -- */
@@ -672,7 +737,7 @@ legend {
   background: none;
 }
 li {
-  margin-bottom: 0 !important;
+  margin-bottom: 0;
 }
 
 #portal-personaltools .portalUser {
@@ -680,11 +745,11 @@ li {
 }
 
 .portlet {
-  background-color: #f7f9fa;
+  background-color: #f4f5f8;
 }
 
-.portlet li a {
-  text-decoration: none
+.portlet li {
+  margin-bottom: 0.5em;
 }
 
 /* === New design === */
@@ -704,7 +769,6 @@ kbd {
 }
 
 label, .field label {
-  font-family: sans-serif;
   white-space: nowrap;
 }
 
@@ -720,9 +784,10 @@ legend {
 }
 
 th {
+  font-weight: bold;
   text-align: right;
 }
-thead th {
+thead th, tr.thead th {
   text-align: center;
 }
 thead {
@@ -747,7 +812,7 @@ body {
 }
 
 .header, .footer {
-  font-family: "Lucida Grande", "Charcoal", sans-serif;
+  font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
 }
 .header {
   font-size: 0.875em;
@@ -780,7 +845,15 @@ ul.app {
   padding: 0;
   margin: 1em 0 1em;
   border-bottom: 1px solid #8cacbb;
-  font: bold 1em sans-serif;
+  font-weight: bold;
+  font-size: 1em;
+  font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
+  /* Why? We're undoing the nonsense plone.css does; essentially, it
+   * sets a line-height to ul, and that breaks layout for tabs. IE
+   * doesn't support inherit, so we need the max-height hack. When we
+   * nuke plone.css, this can go away. Can that be tomorrow? -- kiko */
+  line-height: inherit;
+  max-height: 1.3em;
 }
 ul.app>li
 {
@@ -788,9 +861,7 @@ ul.app>li
   border-bottom: none;
   display: inline;
   list-style: none;
-  margin: 0 0 0 0.75em;
-}
-ul.app>li>a, ul.app>li>strong {
+  margin: 0 0 0 0.5em;
   padding: 0 0.5em;
 }
 ul.app a {
@@ -813,6 +884,9 @@ ul.app>li.current {
   margin-left: 2%;
   width: 48%;
 }
+.lesser {
+  font-size: smaller;
+}
 
 .sidebar {
   background-color: #f7f9fa;
@@ -828,7 +902,7 @@ ul.app>li.current {
   max-width: 50%;
 }
 
-.sidebar > h4 { /* plone.css .portlet h4 paste-o */
+.sidebar h4 { /* plone.css .portlet h4 paste-o */
     background-color: #dee7ec;
     border-top: 1px solid #8cacbb;
     border-bottom: 1px solid #8cacbb;
@@ -839,8 +913,12 @@ ul.app>li.current {
     font-weight: normal;
 }
 
-.sidebar > ul {
+.sidebar ul {
     margin-left: 2.5em;
+}
+
+input[type="image"] {
+  border: none;
 }
 
 .debug {
@@ -878,7 +956,7 @@ h1, h2, h3, h4, h5, h6 {
   background: none;
   clear: left;
 	color: #708a96;
-	font-family: "Lucida Grande", sans-serif;
+	font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
 	font-weight: normal;
 	margin-top: 0;
 	text-align: left;
@@ -891,14 +969,16 @@ h3, h4, h5, h6 {
 	font-size: 1em;
   margin-bottom: 0;
 }
-ul {
-  margin-left: 24px;
-}
 table {
-	border-collapse: collapse;
+  margin-left: auto;
+  margin-right: auto;
+  border-collapse: collapse;
 }
 table table {
   width: 100%;
+}
+table table th, table table td {
+  padding: 0.25em;
 }
 table.data, table.data>thead, table.data>tfoot {
 	border: solid #999;
@@ -912,6 +992,15 @@ table.data>tr>th, table.data>tr>td,
 table.data>thead>tr>th, table.data>thead>tr>td,
 table.data>tbody>tr>th, table.data>tbody>tr>td, table.data>tfoot>tr>th,table.data>tfoot>tr>td {
   padding: 0.25em 0.125em 0.25em;
+}
+th.icon, td.icon {
+  width: 1px;
+}
+th.icon.left, td.icon.left {
+  padding-right: 0;
+}
+th.icon.right, td.icon.right {
+  padding-left: 0;
 }
 td p:first-child, td ol:first-child, td blockquote:first-child {
 	margin-top: 0;
@@ -928,7 +1017,6 @@ tr {
 
 .results {
   background-color: #dee7ec;
-  font-family: sans-serif;
   font-size: small;
   padding: 0.25em;
   margin: 1em 0em;

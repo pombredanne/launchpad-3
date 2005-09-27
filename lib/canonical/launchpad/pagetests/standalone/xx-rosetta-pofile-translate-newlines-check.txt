@@ -6,16 +6,8 @@ First, we check that the textarea is empty by default.
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
-  ...
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-                          <textarea rows="5"
-      name="set_149_translation_es_0" tabindex="1"></textarea>
-  <BLANKLINE>
-  <BLANKLINE>
+  ...<textarea rows="5"
+      name="set_149_translation_es_0" tabindex="1"></textarea>...
   ...
 
 Now, we submit some text with new lines before and after the text, the
@@ -30,15 +22,7 @@ answer should have exactly those strings.
   ... 
   ... set_149_msgid=&set_149_translation_es_0=%0D%0Afoo%0D%0A%0D%0A&offset=20&show=all&SUBMIT=Save+%26+Continue""")
   HTTP/1.1 200 Ok
-  ...
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-                          <textarea rows="5"
+  ...<textarea rows="5"
       name="set_149_translation_es_0" tabindex="1">
   <BLANKLINE>
   foo
@@ -59,21 +43,9 @@ And finally, a line that does not start with a new line so we are sure we don't 
   HTTP/1.1 200 Ok
   ...
                           </div>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-                          <textarea rows="5"
+  ...<textarea rows="5"
       name="set_149_translation_es_0" tabindex="1">
-  foo</textarea>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
+  foo</textarea>...
                           <div>
   ...
 

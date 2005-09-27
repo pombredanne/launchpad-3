@@ -5,6 +5,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+<facet facet="overview">
+
     <!-- Poll -->
     <content class="canonical.launchpad.database.Poll">
         <allow interface="canonical.launchpad.interfaces.IPoll" />
@@ -38,12 +40,34 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IPoll"
-        permission="launchpad.Edit"
-        class="canonical.launchpad.browser.PollView">
+        permission="zope.Public"
+        class="canonical.launchpad.browser.BasePollView">
         <browser:page
             name="+options"
             template="../templates/poll-options.pt"
             lp:url="/people/$team.name/+poll/$poll/+options" />
+        <browser:page
+            name="+portlet-details"
+            template="../templates/poll-portlet-details.pt"
+            lp:url="/people/$team.name/+poll/$poll.name/+portlet-details" />
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/poll-portlet-actions.pt"
+            lp:url="/people/$team.name/+poll/$poll.name/+portlet-actions" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IPoll"
+        permission="launchpad.AnyPerson"
+        class="canonical.launchpad.browser.PollVoteView">
+        <browser:page
+            name="+vote-simple"
+            template="../templates/poll-vote-simple.pt"
+            lp:url="/people/$team.name/+poll/$poll/+vote-simple" />
+        <browser:page
+            name="+vote-condorcet"
+            template="../templates/poll-vote-condorcet.pt"
+            lp:url="/people/$team.name/+poll/$poll/+vote-condorcet" />
     </browser:pages>
 
     <browser:editform
@@ -51,7 +75,7 @@
         for="canonical.launchpad.interfaces.IPoll"
         class="canonical.launchpad.browser.editview.SQLObjectEditView"
         schema="canonical.launchpad.interfaces.IPoll"
-        fields="name title proposition type secrecy allowspoilt
+        fields="name title proposition secrecy allowspoilt
                 dateopens datecloses"
         label="Edit Poll Details"
         permission="launchpad.Edit"
@@ -94,12 +118,30 @@
         for="canonical.launchpad.interfaces.IPollOption"
         class="canonical.launchpad.browser.editview.SQLObjectEditView"
         schema="canonical.launchpad.interfaces.IPollOption"
-        fields="name shortname active"
+        fields="name shortname"
         label="Edit Poll Details"
         permission="launchpad.Edit"
         template="../templates/polloption-edit.pt"
         lp:url="/people/$team.id/+poll/$poll/$option/+edit">
     </browser:editform>
+
+
+    <!-- Vote -->
+    <!-- Can't require launchpad.Edit to set_attributes because in most cases
+    the vote won't be associated with a person, and thus we can't check it
+    against the logged in user. -->
+    <content class="canonical.launchpad.database.Vote">
+        <allow interface="canonical.launchpad.interfaces.IVote" />
+        <require 
+            permission="zope.Public"
+            set_attributes="option preference" />
+    </content>
+
+
+    <!-- VoteCast -->
+    <content class="canonical.launchpad.database.VoteCast">
+        <allow interface="canonical.launchpad.interfaces.IVoteCast" />
+    </content>
 
 
     <!-- PollSet -->
@@ -133,12 +175,18 @@
         <allow interface="canonical.launchpad.interfaces.IPollOptionSet" />
     </securedutility>
 
+    <securedutility
+        class="canonical.launchpad.database.VoteSet"
+        provides="canonical.launchpad.interfaces.IVoteSet">
+        <allow interface="canonical.launchpad.interfaces.IVoteSet" />
+    </securedutility>
 
-    <!-- PollOptionSubset -->
-    <adapter
-        for="canonical.launchpad.interfaces.IPoll"
-        provides="canonical.launchpad.interfaces.IPollOptionSubset"
-        factory="canonical.launchpad.components.poll.PollOptionSubset"
-        permission="zope.Public" />
+    <securedutility
+        class="canonical.launchpad.database.VoteCastSet"
+        provides="canonical.launchpad.interfaces.IVoteCastSet">
+        <allow interface="canonical.launchpad.interfaces.IVoteCastSet" />
+    </securedutility>
+
+</facet>
 
 </configure>

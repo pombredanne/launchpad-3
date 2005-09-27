@@ -3,7 +3,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'traverseSourcePackage',
+    'traverseSourcePackageSet',
+    'SourcePackageFacets',
     'SourcePackageReleasePublishingView',
     'SourcePackageInDistroSetView',
     'SourcePackageView',
@@ -16,7 +17,7 @@ import cgi
 import re
 import sets
 
-from zope.component import getUtility
+from zope.component import getUtility, queryView
 from zope.app.form.interfaces import IInputWidget
 from zope.app import zapi
 
@@ -25,15 +26,20 @@ from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IPOTemplateSet, IPackaging, ILaunchBag, ICountry, IBugTaskSet)
+    IPOTemplateSet, IPackaging, ILaunchBag, ICountry, IBugTaskSet,
+    ISourcePackage, IBugSet)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.soyuz.generalapp import builddepsSet
 from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.webapp import canonical_url
+
+from canonical.launchpad.webapp import (
+    canonical_url, StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu,
+    enabled_with_permission, structured)
 
 from apt_pkg import ParseSrcDepends
 
 BATCH_SIZE = 40
+
 
 def linkify_changelog(changelog, sourcepkgnametxt):
     # XXX: salgado: No bugtracker URL should be hardcoded.
@@ -53,20 +59,88 @@ def linkify_changelog(changelog, sourcepkgnametxt):
                        changelog)
     return changelog
 
+def traverseSourcePackageSet(sourcepackageset, request, name):
+    try:
+        return sourcepackageset[name]
+    except KeyError:
+        traversalstack = request.getTraversalStack()
+        if traversalstack:
+            nextstep = traversalstack[-1]
+            # If the page is one of those from ubuntu-launchpad integration,
+            # eat the rest of traversal, but make it traverse +comingsoon.
+            # This gives users of launchpad integration meus a nicer experience
+            # than getting 404 errors.
+            if nextstep == '+gethelp' or nextstep == '+translate':
+                request._traversed_names.append('+comingsoon')
+                request.setTraversalStack([])
+                return queryView(sourcepackageset, "+comingsoon", request)
+        return None
 
-def traverseSourcePackage(sourcepackage, request, name):
-    if name == '+pots':
-        potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(
-                   distrorelease=sourcepackage.distrorelease,
-                   sourcepackagename=sourcepackage.sourcepackagename)
-    return None
+
+class SourcePackageFacets(StandardLaunchpadFacets):
+
+    usedfor = ISourcePackage
+    enable_only = ['overview', 'bugs', 'support', 'translations']
+
+    def support(self):
+        link = StandardLaunchpadFacets.support(self)
+        link.enabled = True
+        return link
+
+
+class SourcePackageOverviewMenu(ApplicationMenu):
+
+    usedfor = ISourcePackage
+    facet = 'overview'
+    links = ['hct', 'changelog', 'buildlog']
+
+    def hct(self):
+        text = structured(
+            '<abbr title="Hypothetical Changeset Tool">HCT</abbr> status')
+        return Link('+hctstatus', text, icon='info')
+
+    def changelog(self):
+        return Link('+changelog', 'Change Log', icon='list')
+
+    def buildlog(self):
+        return Link('+buildlog', 'Build Log', icon='build-success')
+
+    def upstream(self):
+        return Link('+packaging', 'Edit Upstream Link', icon='edit')
+
+
+class SourcePackageSupportMenu(ApplicationMenu):
+
+    usedfor = ISourcePackage
+    facet = 'support'
+    links = ['gethelp', 'addticket']
+
+    def gethelp(self):
+        return Link('+gethelp', 'Help and Support Options', icon='info')
+
+    def addticket(self):
+        return Link('+addticket', 'Request Support', icon='add')
+
+
+class SourcePackageTranslationsMenu(ApplicationMenu):
+
+    usedfor = ISourcePackage
+    facet = 'translations'
+    links = ['help', 'templates']
+
+    def help(self):
+        return Link('+translate', 'How You Can Help', icon='info')
+
+    @enabled_with_permission('launchpad.Edit')
+    def templates(self):
+        return Link('+potemplatenames', 'Edit Template Names', icon='edit')
 
 
 class SourcePackageFilebugView(SQLObjectAddView):
     """View for filing a bug on a source package."""
-    def create(self, *args, **kw):
-        """Create an IDistroBugTask."""
+
+    def create(self, **kw):
+        """Create a new bug on the source package."""
         # Because distribution and sourcepackagename are things
         # inferred from the context rather than data entered on the
         # filebug form, we have to manually add these values to the
@@ -74,18 +148,28 @@ class SourcePackageFilebugView(SQLObjectAddView):
         assert 'distribution' not in kw
         assert 'sourcepackagename' not in kw
 
-        kw['distribution'] = self.context.distrorelease.distribution
-        kw['sourcepackagename'] = self.context.sourcepackagename
+        sourcepackage = self.context
+        if sourcepackage.distribution:
+            kw['distribution'] = sourcepackage.distribution
+        else:
+            kw['distribution'] = sourcepackage.distrorelease.distribution
+
+        kw['sourcepackagename'] = sourcepackage.sourcepackagename
 
         # Store the added bug so that it can be accessed easily in any
         # other method on this class (e.g. nextURL)
-        self.addedBug = SQLObjectAddView.create(self, *args, **kw)
+        self.addedBug = getUtility(IBugSet).createBug(**kw)
 
         return self.addedBug
 
     def nextURL(self):
-        """Return the bug page URL of the bug that was just filed."""
-        return canonical_url(self.addedBug)
+        """Return the bug page URL of the bug that was just filed.
+
+        Effectively, this is the canonical URL of the first task that
+        has just been created.
+        """
+        bugtask = self.addedBug.bugtasks[0]
+        return canonical_url(bugtask)
 
 
 class SourcePackageReleasePublishingView:
@@ -130,7 +214,7 @@ class SourcePackageReleasePublishingView:
         return self.context.sourcepackage.currentrelease.version
 
     def binaries(self):
-        """Format binary packeges into binarypackagename and archtags"""
+        """Format binary packages into binarypackagename and archtags"""
 
         all_arch = [] # all archtag in this distrorelease
         for arch in self.context.distrorelease.architectures:

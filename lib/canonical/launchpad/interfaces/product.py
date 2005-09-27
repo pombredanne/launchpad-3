@@ -15,15 +15,15 @@ from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
-    IHasOwner, IBugTarget, ISpecificationTarget)
+    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget)
 from canonical.launchpad.validators.name import name_validator
 
 _ = MessageIDFactory('launchpad')
 
-class IProduct(IHasOwner, IBugTarget, ISpecificationTarget):
+class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
     """A Hatchery Product.
 
-    TheHatchery describes the open source world as Projects and
+    The Launchpad Registry describes the open source world as Projects and
     Products. Each Project may be responsible for several Products.
     For example, the Mozilla Project has Firefox, Thunderbird and The
     Mozilla App Suite as Products, among others.
@@ -148,6 +148,18 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget):
     reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
         this product has been reviewed."""))
 
+    official_malone = Bool(title=_('Uses Malone Officially'),
+        required=True, description=_('Check this box to indicate that '
+        'this application officially uses Malone for bug tracking '
+        'upstream. This will remove the caution from the product page.'
+        ))
+
+    official_rosetta = Bool(title=_('Uses Rosetta Officially'),
+        required=True, description=_('Check this box to indicate that '
+        'this application officially uses Rosetta for upstream '
+        'translation. This will remove the caution from the '
+        'pages for this product in Launchpad.'))
+
     sourcepackages = Attribute(_("List of distribution packages for this \
         product"))
 
@@ -267,6 +279,9 @@ class IProductSet(Interface):
         hints as to whether the search should be limited to products
         that are active in those Launchpad applications."""
 
+    def latest(quantity=5):
+        """Return the latest products registered in the Launchpad."""
+
     def translatables():
         """Return an iterator over products that have resources translatables.
         """
@@ -290,3 +305,4 @@ class IProductSet(Interface):
     def count_reviewed(self):
         """return a count of the number of products in the Launchpad that
         are both active and reviewed."""
+

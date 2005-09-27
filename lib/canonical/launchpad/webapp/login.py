@@ -25,11 +25,17 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 class UnauthorizedView(SystemErrorView):
 
+    response_code = None
+
     forbidden_page = ViewPageTemplateFile(
         '../templates/launchpad-forbidden.pt')
 
     def __call__(self):
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
+            if 'loggingout' in self.request.form:
+                target = '%s?loggingout=1' % self.request.URL[-2]
+                self.request.response.redirect(target)
+                return ''
             if self.request.method == 'POST':
                 # If we got a POST then that's a problem.  We can only
                 # redirect with a GET, so when we redirect after a successful
@@ -197,23 +203,21 @@ class LoginOrRegister:
         Also, take into account the preserved query from the URL.
         """
         target = self.request.URL[-1]
-
-        # Collect up the form inputs that don't start with self.form_prefix.
-        # If there are any, then make a query string out of them and add
-        # this to the redirect URL.
-        query_string = self.request.get('QUERY_STRING', '')
+        query_string = urllib.urlencode(
+            list(self.iter_form_items()), doseq=True)
         if query_string:
             target = '%s?%s' % (target, query_string)
         self.request.response.redirect(target)
 
-    def preserve_query(self):
-        """Returns zero or more hidden inputs that preserve the URL's query."""
-        # XXX: Exclude '-C' because this is left in from sys.argv in Zope3
-        #      using python's cgi.FieldStorage to process requests.
-        # -- SteveAlexander, 2005-04-11
-        L = []
+    def iter_form_items(self):
+        """Iterate over keys and single values, excluding stuff we don't
+        want such as '-C' and things starting with self.form_prefix.
+        """
         for name, value in self.request.form.items():
-            if name == '-C':
+            # XXX: Exclude '-C' because this is left in from sys.argv in Zope3
+            #      using python's cgi.FieldStorage to process requests.
+            # -- SteveAlexander, 2005-04-11
+            if name == '-C' or name == 'loggingout':
                 continue
             if name.startswith(self.form_prefix):
                 continue
@@ -221,11 +225,16 @@ class LoginOrRegister:
                 value_list = value
             else:
                 value_list = [value]
-            for item in value_list:
-                L.append('<input type="hidden" name="%s" value="%s" />' %
-                    (name, cgi.escape(item, quote=True)))
-        return '\n'.join(L)
+            for value_list_item in value_list:
+                yield (name, value_list_item)
 
+    def preserve_query(self):
+        """Returns zero or more hidden inputs that preserve the URL's query."""
+        L = []
+        for name, value in self.iter_form_items():
+            L.append('<input type="hidden" name="%s" value="%s" />' %
+                    (name, cgi.escape(value, quote=True)))
+        return '\n'.join(L)
 
 def logInPerson(request, principal, email):
     """Log the person in. Password validation must be done in callsites."""
@@ -244,9 +253,16 @@ class CookieLogoutPage:
         session = ISession(self.request)
         authdata = session['launchpad.authenticateduser']
         previous_login = authdata.get('personid')
-        authdata['personid'] = None
-        authdata['logintime'] = datetime.utcnow()
-        notify(LoggedOutEvent(self.request))
+        if previous_login is not None:
+            authdata['personid'] = None
+            authdata['logintime'] = datetime.utcnow()
+            notify(LoggedOutEvent(self.request))
+        else:
+            # There is no cookie-based login currently.
+            # So, don't attempt to log out.  Just redirect
+            pass
+        target = '%s/?loggingout=1' % self.request.URL[-1]
+        self.request.response.redirect(target)
         return ''
 
 

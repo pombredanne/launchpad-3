@@ -5,5 +5,8 @@ __metaclass__ = type
 from zope.testing import doctest
 
 def test_suite():
-    return doctest.DocTestSuite('canonical.librarian.ftests.harness')
+    return doctest.DocTestSuite(
+            'canonical.librarian.ftests.harness',
+            optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS
+            )
 

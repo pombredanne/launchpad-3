@@ -57,4 +57,12 @@
       schema="canonical.launchpad.webapp.metazcml.IAuthorizationsDirective"
       handler="canonical.launchpad.webapp.metazcml.authorizations"
       />
+
+  <groupingDirective
+     namespace="http://namespaces.zope.org/zope"
+     name="facet"
+     schema="canonical.launchpad.webapp.metazcml.IGroupingFacet"
+     handler="canonical.launchpad.webapp.metazcml.GroupingFacet"
+     />
+
 </configure>

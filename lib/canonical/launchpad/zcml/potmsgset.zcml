@@ -6,7 +6,7 @@
     i18n_domain="launchpad">
 
     <content class="canonical.launchpad.database.POTMsgSet">
-      <allow interface="canonical.launchpad.interfaces.IEditPOTMsgSet"/>
+      <allow interface="canonical.launchpad.interfaces.IPOTMsgSet"/>
     </content>
 
 </configure>

@@ -1,4 +1,5 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0613,E0201,R0911
 #
 """Implementation of the lp: htmlform: fmt: namespaces in TALES.
 
@@ -8,24 +9,25 @@ __metaclass__ = type
 import bisect
 import cgi
 import re
-import sets
 import os.path
-import warnings
+
 from zope.interface import Interface, Attribute, implements
-from zope.component import getUtility, queryAdapter
+from zope.component import getUtility, queryAdapter, getDefaultViewName
 
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.app.traversing.interfaces import ITraversable
 from zope.exceptions import NotFoundError
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import isinstance as zope_isinstance
+
 from canonical.launchpad.interfaces import (
-    IPerson, ILaunchBag, IFacetMenu, IExtraFacetMenu,
-    IApplicationMenu, IExtraApplicationMenu, NoCanonicalUrl,
-    IBugSet)
-import canonical.lp.dbschema
+    IPerson, ILaunchBag, IFacetMenu, IApplicationMenu, IContextMenu,
+    NoCanonicalUrl, IBugSet)
+from canonical.lp import dbschema
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url, nearest_menu
+from canonical.launchpad.webapp.menu import Url
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.helpers import check_permission
 
@@ -38,17 +40,27 @@ class TraversalError(NotFoundError):
 class MenuAPI:
     """Namespace to give access to the facet menus.
 
-       thing/menu:facet       gives the facet menu of the nearest object
-                              along the canonical url chain that has an
-                              IFacetMenu adapter.
+       CONTEXTS/menu:facet       gives the facet menu of the nearest object
+                                 along the canonical url chain that has an
+                                 IFacetMenu adapter.
 
-       thing/menu:extrafacet  gives the facet menu of the nearest object
-                              along the canonical url chain that has an
-                              IFacetMenu adapter.
     """
 
     def __init__(self, context):
-        self._context = context
+        if zope_isinstance(context, dict):
+            # We have what is probably a CONTEXTS dict.
+            # We get the context out of here, and use that for self.context.
+            # We also want to see if the view has a __launchpad_facetname__
+            # attribute.
+            self._context = context['context']
+            view = context['view']
+            self._request = context['request']
+            self._selectedfacetname = getattr(
+                view, '__launchpad_facetname__', None)
+        else:
+            self._context = context
+            self._request = get_current_browser_request()
+            self._selectedfacetname = None
 
     def _nearest_menu(self, menutype):
         try:
@@ -56,34 +68,29 @@ class MenuAPI:
         except NoCanonicalUrl:
             return None
 
+    def _requesturl(self):
+        request = self._request
+        if request is None:
+            return None
+        requesturlobj = Url(request.getURL(), request.get('QUERY_STRING'))
+        # If the default view name is being used, we will want the url
+        # without the default view name.
+        defaultviewname = getDefaultViewName(self._context, request)
+        if requesturlobj.pathnoslash.endswith(defaultviewname):
+            requesturlobj = Url(request.getURL(1), request.get('QUERY_STRING'))
+        return requesturlobj
+
     def facet(self):
         menu = self._nearest_menu(IFacetMenu)
         if menu is None:
             return []
         else:
-            menu.request = get_current_browser_request()
-            return list(menu)
-
-    def extrafacet(self):
-        menu = self._nearest_menu(IExtraFacetMenu)
-        if menu is None:
-            return []
-        else:
-            menu.request = get_current_browser_request()
-            return list(menu)
-
-    def _get_selected_facetname(self):
-        """Returns the name of the selected facet, or None if there is no
-        selected facet.
-        """
-        facetmenu = self.facet()
-        for link in facetmenu:
-            if link.selected:
-                return link.name
-        return None
+            return list(menu.iterlinks(
+                requesturl=self._requesturl(),
+                selectedfacetname=self._selectedfacetname))
 
     def application(self):
-        selectedfacetname = self._get_selected_facetname()
+        selectedfacetname = self._selectedfacetname
         if selectedfacetname is None:
             # No facet menu is selected.  So, return empty list.
             return []
@@ -91,21 +98,14 @@ class MenuAPI:
         if menu is None:
             return []
         else:
-            menu.request = get_current_browser_request()
-            return list(menu)
+            return list(menu.iterlinks(requesturl=self._requesturl()))
 
-    def extraapplication(self):
-        selectedfacetname = self._get_selected_facetname()
-        if selectedfacetname is None:
-            # No facet menu is selected.  So, return empty list.
-            return []
-        menu = queryAdapter(
-            self._context, IExtraApplicationMenu, selectedfacetname)
+    def context(self):
+        menu = IContextMenu(self._context, None)
         if menu is None:
-            return []
+            return  []
         else:
-            menu.request = get_current_browser_request()
-            return list(menu)
+            return list(menu.iterlinks(requesturl=self._requesturl()))
 
 
 class CountAPI:
@@ -120,6 +120,35 @@ class CountAPI:
     def len(self):
         """somelist/count:len  gives you an int that is len(somelist)."""
         return len(self._context)
+
+
+class EnumValueAPI:
+    """Namespace to test whether a DBSchema Item has a particular value.
+
+    The value is given in the next path step.
+
+        tal:condition="somevalue/enumvalue:BISCUITS"
+
+    Registered for canonical.lp.dbschema.Item.
+    """
+    implements(ITraversable)
+
+    def __init__(self, item):
+        self.item = item
+
+    def traverse(self, name, furtherPath):
+        if self.item.name == name:
+            return True
+        else:
+            # Check whether this was an allowed value for this dbschema.
+            schema = self.item.schema
+            try:
+                schema.items[name]
+            except KeyError:
+                raise TraversalError(
+                    'The %s dbschema does not have a value %s.' %
+                    (schema.__name__, name))
+            return False
 
 
 class HTMLFormAPI:
@@ -202,10 +231,10 @@ class DBSchemaAPI:
     implements(ITraversable)
 
     _all = {}
-    for name in canonical.lp.dbschema.__all__:
-        schema = getattr(canonical.lp.dbschema, name)
-        if (schema is not canonical.lp.dbschema.DBSchema and
-            issubclass(schema, canonical.lp.dbschema.DBSchema)):
+    for name in dbschema.__all__:
+        schema = getattr(dbschema, name)
+        if (schema is not dbschema.DBSchema and
+            issubclass(schema, dbschema.DBSchema)):
             _all[name] = schema
 
     def __init__(self, number):
@@ -227,7 +256,7 @@ class NoneFormatter:
     """
     implements(ITraversable)
 
-    allowed_names = sets.Set([
+    allowed_names = set([
         'nl_to_br',
         'nice_pre',
         'breadcrumbs',
@@ -239,6 +268,7 @@ class NoneFormatter:
         'pagetitle',
         'text-to-html',
         'url',
+        'icon'
         ])
 
     def __init__(self, context):
@@ -260,7 +290,10 @@ class NoneFormatter:
 
 
 class ObjectFormatterAPI:
-    """Adapter from any object to a formatted string.  Used for fmt:url."""
+    """Adapter from any object to a formatted string.
+
+    Used for fmt:url.
+    """
 
     def __init__(self, context):
         self._context = context
@@ -268,6 +301,40 @@ class ObjectFormatterAPI:
     def url(self):
         request = get_current_browser_request()
         return canonical_url(self._context, request)
+
+
+class BugTaskFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IBugTask objects to a formatted string.
+
+    Used for fmt:icon.
+    """
+
+    def icon(self):
+        """Return the appropriate <img> tag for the bugtask icon.
+
+        The icon displayed is calculated based on the IBugTask.priority.
+        """
+        priority_title = self._context.priority.title.lower()
+        if priority_title == 'wontfix':
+            # Special-case Wontfix by returning the "generic" bug icon
+            # because we actually hope to eliminate Wontfix
+            # entirely. See
+            # https://wiki.launchpad.canonical.com/SimplifyingMalone
+            return '<img alt="(wontfix priority)" src="/++resource++bug" />'
+        else:
+            return '<img alt="(%s priority)" src="/++resource++bug-%s" />' % (
+                priority_title, priority_title)
+
+
+class MilestoneFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IMilestone objects to a formatted string.
+
+    Used for fmt:icon.
+    """
+
+    def icon(self):
+        """Return the appropriate <img> tag for the milestone icon."""
+        return '<img alt="" src="/++resource++target" />'
 
 
 class DateTimeFormatterAPI:
@@ -604,12 +671,28 @@ class FormattersAPI:
             # and put it outside the url text.
             trail = ''
             gt = ''
-            if url[-1] in (",", ".", "?"):
+            if url[-1] in (",", ".", "?") or url[-2:] == ";;":
+                # These common punctuation symbols often trail URLs; we
+                # deviate from the specification slightly here but end
+                # up with less chance of corrupting a URL because
+                # somebody added punctuation after it in the comment.
+                #
+                # The special test for ";;" is done to catch the case
+                # where the URL is wrapped in greater/less-than and
+                # then followed with a semicolon. We can't just knock
+                # off a trailing semi-colon because it might have been
+                # part of an entity -- and that's what the next clauses
+                # handle.
                 trail = url[-1]
                 url = url[:-1]
             if url.lower().endswith('&gt;'):
                 gt = url[-4:]
                 url = url[:-4]
+            elif url.endswith(";"):
+                # This is where a single semi-colon is consumed, for
+                # the case where the URL didn't end in an entity.
+                trail = url[-1]
+                url = url[:-1]
             return '<a rel="nofollow" href="%s">%s</a>%s%s' % (
                 url.replace('"', '&quot;'), url, gt, trail)
         else:

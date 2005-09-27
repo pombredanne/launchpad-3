@@ -9,39 +9,45 @@ from zope.interface import Interface, Attribute, implements
 from zope.interface.interfaces import IInterface
 from zope.component import queryView, queryMultiView, getDefaultViewName
 from zope.component import getUtility
+import zope.component.servicenames
 from zope.component.interfaces import IDefaultViewName
 from zope.schema import TextLine, Id
 from zope.configuration.fields import (
-    GlobalObject, PythonIdentifier, Path, Tokens
-    )
+    GlobalObject, PythonIdentifier, Path, Tokens)
+
 from zope.security.checker import CheckerPublic, Checker
 from zope.security.proxy import ProxyFactory
-from zope.publisher.interfaces.browser import IBrowserPublisher
+from zope.publisher.interfaces.browser import (
+    IBrowserPublisher, IBrowserRequest)
 from zope.publisher.interfaces import NotFound
-from zope.app import zapi
 from zope.app.component.metaconfigure import (
-    handler, adapter, utility, view, PublicPermission
-    )
+    handler, adapter, utility, view, PublicPermission)
+
 from zope.app.component.contentdirective import ContentDirective
 from zope.app.component.interface import provideInterface
 from zope.app.security.fields import Permission
 from zope.app.pagetemplate.engine import Engine
 from zope.app.component.fields import LayerField
 from zope.app.file.image import Image
-from zope.app.publisher.browser.viewmeta import page
 import zope.app.publisher.browser.metadirectives
+import zope.app.form.browser.metaconfigure
+import zope.app.form.browser.metadirectives
+from zope.app.publisher.browser.viewmeta import (
+    pages as original_pages,
+    page as original_page)
 
-from canonical.launchpad.layers import setAdditionalLayer
+from zope.app.publisher.browser.metaconfigure import (
+    defaultView as original_defaultView)
+
+from canonical.launchpad.layers import setAdditionalLayer, setFirstLayer
 from canonical.launchpad.interfaces import (
     IAuthorization, IOpenLaunchBag, ICanonicalUrlData,
-    IFacetMenu, IExtraFacetMenu, IApplicationMenu, IExtraApplicationMenu
-    )
+    IFacetMenu, IApplicationMenu, IContextMenu)
 
 try:
     from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 except ImportError:
     # This code can go once we've upgraded Zope.
-    from zope.publisher.interfaces.browser import IBrowserRequest
     IDefaultBrowserLayer = IBrowserRequest
 
 
@@ -164,6 +170,7 @@ class SubURLTraverser:
         view_name = getDefaultViewName(self.context, request)
         return self.context, (view_name,)
 
+
 class IDefaultViewDirective(
     zope.app.publisher.browser.metadirectives.IDefaultViewDirective):
 
@@ -171,6 +178,7 @@ class IDefaultViewDirective(
         title=u"The layer to declare this default view for",
         required=False
         )
+
 
 class ISubURLDirective(Interface):
 
@@ -351,7 +359,10 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
                 if adaptwith is not None:
                     val = adaptwith(val)
                 if newlayer is not None:
-                    setAdditionalLayer(self.request, newlayer)
+                    # Steve told me to comment this and add the setFirstLayer
+                    # line to get shipit to work.
+                    #setAdditionalLayer(self.request, newlayer)
+                    setFirstLayer(self.request, newlayer)
                 #getUtility(IOpenLaunchBag).add(val)
                 return val
 
@@ -364,7 +375,10 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
                 if adaptwith is not None:
                     val = adaptwith(val)
                 if newlayer is not None:
-                    setAdditionalLayer(self.request, newlayer)
+                    # Steve told me to comment this and add the setFirstLayer
+                    # line to get shipit to work.
+                    #setAdditionalLayer(self.request, newlayer)
+                    setFirstLayer(self.request, newlayer)
                 #getUtility(IOpenLaunchBag).add(val)
                 return val
 
@@ -373,6 +387,7 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
         permission = CheckerPublic
 
     view(_context, factory, type, name, [for_], permission=permission)
+
 
 class URLTraverse:
     """Use the operation named by _getter to traverse an app component."""
@@ -440,15 +455,13 @@ class URLTraverseByFunction:
         view_name = getDefaultViewName(self.context, request)
         return self.context, (view_name,)
 
-
 def menus(_context, module, classes):
     """Handler for the IMenusDirective."""
     if not inspect.ismodule(module):
         raise TypeError("module attribute must be a module: %s, %s" %
                         module, type(module))
-    menutypes = [IFacetMenu, IExtraFacetMenu, IApplicationMenu,
-                 IExtraApplicationMenu]
-    applicationmenutypes = [IApplicationMenu, IExtraApplicationMenu]
+    menutypes = [IFacetMenu, IApplicationMenu, IContextMenu]
+    applicationmenutypes = [IApplicationMenu]
     for menuname in classes:
         menuclass = getattr(module, menuname)
         implemented = None
@@ -587,6 +600,7 @@ def url(_context, for_, path_expression=None, urldata=None,
     provides = ICanonicalUrlData
     adapter(_context, factory, provides, [for_])
 
+
 class FaviconRendererBase:
 
     # subclasses must provide a 'fileobj' member that has 'contentType'
@@ -597,7 +611,6 @@ class FaviconRendererBase:
                                         self.file.contentType)
         return self.file.data
 
-
 def favicon(_context, for_, file):
     fileobj = Image(open(file, 'rb').read())
     class Favicon(FaviconRendererBase):
@@ -605,19 +618,21 @@ def favicon(_context, for_, file):
 
     name = "favicon.ico"
     permission = CheckerPublic
-    page(_context, name, permission, for_, class_=Favicon)
+    original_page(_context, name, permission, for_, class_=Favicon)
 
-# This is pretty much copied from the browser publisher's metaconfigure
-# module, but with the `layer` as an argument rather than hard-coded.
-# When zope has the same change, we can remove this code, and the related
-# override-include.
+
+# The original defaultView directive is defined in the browser publisher code.
+# In it, the `layer` is hard-coded rather than available as an argument.
+# See zope/app/publisher/browser/metaconfigure.py.
+# `layer` here is called `type` there, but is not available as an argument.
+
 def defaultView(_context, name, for_=None, layer=IDefaultBrowserLayer):
-
+    type = layer
     _context.action(
-        discriminator = ('defaultViewName', for_, layer, name),
+        discriminator = ('defaultViewName', for_, type, name),
         callable = handler,
-        args = (zapi.servicenames.Adapters, 'register',
-                (for_, layer), IDefaultViewName, '', name, _context.info)
+        args = (zope.component.servicenames.Adapters, 'register',
+                (for_, type), IDefaultViewName, '', name, _context.info)
         )
 
     if for_ is not None:
@@ -626,3 +641,164 @@ def defaultView(_context, name, for_=None, layer=IDefaultBrowserLayer):
             callable = provideInterface,
             args = ('', for_)
             )
+
+
+class IAssociatedWithAFacet(Interface):
+    """A zcml schema for something that can be associated with a facet."""
+
+    facet = TextLine(
+        title=u"The name of the facet this page is associated with.",
+        required=False)
+
+
+class IPageDirective(
+    zope.app.publisher.browser.metadirectives.IPageDirective,
+    IAssociatedWithAFacet):
+    """Extended browser:page directive to have an extra 'facet' attribute."""
+
+
+def page(_context, name, permission, for_,
+         layer=IBrowserRequest, template=None, class_=None,
+         allowed_interface=None, allowed_attributes=None,
+         attribute='__call__', menu=None, title=None,
+         facet=None
+         ):
+    """Like the standard 'page' directive, but with an added 'facet' optional
+    argument.
+
+    If a facet is specified, then it will be available from the view class
+    as __launchpad_facetname__.
+    """
+    facet = facet or getattr(_context, 'facet', None)
+    if facet is None:
+        new_class = class_
+    else:
+        cdict = {'__launchpad_facetname__': facet}
+        if class_ is None:
+            new_class = type('SimpleLaunchpadViewClass', (), cdict)
+        else:
+            new_class = type(class_.__name__, (class_, object), cdict)
+
+    original_page(_context, name, permission, for_,
+        layer=layer, template=template, class_=new_class,
+        allowed_interface=allowed_interface,
+        allowed_attributes=allowed_attributes,
+        attribute=attribute, menu=menu, title=title)
+
+
+class IPagesPageSubdirective(
+    zope.app.publisher.browser.metadirectives.IPagesPageSubdirective,
+    IAssociatedWithAFacet):
+    """Extended complex browser:pages directive to have an extra 'facet'
+    attribute on the inner <browser:page> element."""
+
+
+class IPagesDirective(
+    zope.app.publisher.browser.metadirectives.IPagesDirective,
+    IAssociatedWithAFacet):
+    """Extend the complex browser:pages directive to have an extra 'facet'
+    attribute on the outer <browser:pages> element."""
+
+
+class pages(original_pages):
+
+    def __init__(self, _context, for_, permission,
+        layer=IBrowserRequest, class_=None,
+        allowed_interface=None, allowed_attributes=None,
+        facet=None):
+        original_pages.__init__(self, _context, for_, permission,
+            layer=layer, class_=class_,
+            allowed_interface=allowed_interface,
+            allowed_attributes=allowed_attributes)
+        self.facet = facet
+
+    def page(self, _context, name, attribute='__call__', template=None,
+             menu=None, title=None, facet=None):
+        if facet is None and self.facet is not None:
+            facet = self.facet
+        page(_context, name=name, attribute=attribute, template=template,
+             menu=menu, title=title, facet=facet, **(self.opts))
+
+
+class IEditFormDirective(
+    zope.app.form.browser.metadirectives.IEditFormDirective,
+    IAssociatedWithAFacet):
+    """Edit form browser:editform directive, extended to have an extra
+    'facet' attribute."""
+
+
+class EditFormDirective(
+    zope.app.form.browser.metaconfigure.EditFormDirective):
+
+    # This makes 'facet' a valid attribute for the directive.
+    facet = None
+
+    def __call__(self):
+        # self.bases will be a tuple of base classes for this view.
+        # So, insert a new base-class containing the facet name attribute.
+        facet = self.facet or getattr(self._context, 'facet', None)
+        if facet is not None:
+            cdict = {'__launchpad_facetname__': facet}
+            new_class = type('SimpleLaunchpadViewClass', (), cdict)
+            self.bases += (new_class, )
+
+        zope.app.form.browser.metaconfigure.EditFormDirective.__call__(self)
+
+
+class IAddFormDirective(
+    zope.app.form.browser.metadirectives.IAddFormDirective,
+    IAssociatedWithAFacet):
+    """Edit form browser:addform directive, extended to have an extra
+    'facet' attribute."""
+
+
+class AddFormDirective(
+    zope.app.form.browser.metaconfigure.AddFormDirective):
+
+    # This makes 'facet' a valid attribute for the directive.
+    facet = None
+
+    def __call__(self):
+        # self.bases will be a tuple of base classes for this view.
+        # So, insert a new base-class containing the facet name attribute.
+        facet = self.facet or getattr(self._context, 'facet', None)
+        if facet is not None:
+            cdict = {'__launchpad_facetname__': facet}
+            new_class = type('SimpleLaunchpadViewClass', (), cdict)
+            self.bases += (new_class, )
+
+        zope.app.form.browser.metaconfigure.AddFormDirective.__call__(self)
+
+
+class IGroupingFacet(IAssociatedWithAFacet):
+    """Grouping directive that just has a facet attribute."""
+
+
+class GroupingFacet(zope.configuration.config.GroupingContextDecorator):
+    """Grouping facet directive."""
+
+
+class ISchemaDisplayDirective(
+    zope.app.form.browser.metadirectives.ISchemaDisplayDirective,
+    IAssociatedWithAFacet):
+    """Schema display directive with added 'facet' attribute."""
+
+
+class SchemaDisplayDirective(
+    zope.app.form.browser.metaconfigure.SchemaDisplayDirective):
+
+    # This makes 'facet' a valid attribute for the directive.
+    facet = None
+
+    def __call__(self):
+        # self.bases will be a tuple of base classes for this view.
+        # So, insert a new base-class containing the facet name attribute.
+        facet = self.facet or getattr(self._context, 'facet', None)
+        if facet is not None:
+            cdict = {'__launchpad_facetname__': facet}
+            new_class = type('SimpleLaunchpadViewClass', (), cdict)
+            self.bases += (new_class, )
+
+        zope.app.form.browser.metaconfigure.SchemaDisplayDirective.__call__(
+            self)
+

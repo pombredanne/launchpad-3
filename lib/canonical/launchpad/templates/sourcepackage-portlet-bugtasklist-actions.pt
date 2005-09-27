@@ -1,13 +1,10 @@
-<div class="portlet">
-  <h4>Actions:</h4>
-  <div class="portletBody portletContent">
+<div class="portlet portletBody portletContent">
     <ul>
       <li class="add">
         <a href="#"
            tal:attributes="href string:${context/fmt:url}/+filebug">
-           Report a bug
+           Report a Bug
         </a>
       </li>
     </ul>
-  </div>
 </div>

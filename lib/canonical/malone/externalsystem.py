@@ -5,6 +5,7 @@ import urllib2
 from xml.dom import minidom
 
 from canonical.lp.dbschema import BugTrackerType
+from canonical.launchpad.scripts import log
 
 class UnknownBugTrackerTypeError(Exception):
     """
@@ -42,7 +43,7 @@ class ExternalSystem(object):
         self.bugtrackertype = bugtracker.bugtrackertype
         self.remotesystem = None
         if self.bugtrackertype == BugTrackerType.BUGZILLA:
-            self.remotesystem = Bugzilla(self.bugtracker.baseurl,version)
+            self.remotesystem = Bugzilla(self.bugtracker.baseurl, version)
         if not self.remotesystem:
             raise UnknownBugTrackerTypeError(self.bugtrackertype.name,
                 self.bugtracker.name)
@@ -109,8 +110,10 @@ class Bugzilla(ExternalSystem):
                 }
         if self.version < '2.17.1':
             data.update({'format' : 'rdf'})
+            status_tag = "bz:status"
         else:
             data.update({'ctype'  : 'rdf'})
+            status_tag = "bz:bug_status"
         # Eventually attach authentication information here if we need it
         #data.update({'Bugzilla_login'    : login,
         #             'Bugzilla_password' : password,
@@ -122,16 +125,18 @@ class Bugzilla(ExternalSystem):
         result = None
         if len(document.getElementsByTagName("bz:id")) > 0:
             try:
-                status_node = document.getElementsByTagName("bz:bug_status")[0]
+                status_node = document.getElementsByTagName(status_tag)[0]
             except IndexError:
-                log.warn('No bz:bug_status found for bug_id %s', bug_id)
+                log.warn('No status found for %s bug %s' 
+                         (self.baseurl, bug_id))
                 return None
             result = status_node.childNodes[0].data
             try:
                 resolution_node = document.getElementsByTagName(
                         "bz:resolution")[0]
             except IndexError:
-                log.warn('No bz:resolution found for bug_id %s', bug_id)
+                log.warn('No resolution found for %s bug %s',
+                         (self.baseurl, bug_id))
                 return None
             if len(resolution_node.childNodes) > 0:
                 result = "%s %s" % (result, resolution_node.childNodes[0].data)

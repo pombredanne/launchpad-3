@@ -23,7 +23,7 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
     SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND
+from sqlobject.sqlbuilder import AND, OR
 from canonical.database.sqlbase import SQLBase, quote, cursor, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -36,13 +36,14 @@ from canonical.launchpad.interfaces import (
     IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IMaintainershipSet,
     IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
     ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
-    ILoginTokenSet, KEYSERVER_QUERY_URL)
+    ILoginTokenSet, KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.karma import KarmaCache, KarmaAction, Karma
+from canonical.launchpad.database.shipit import ShippingRequest
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
@@ -65,6 +66,20 @@ class Person(SQLBase):
     familyname = StringCol(dbName='familyname', default=None)
     displayname = StringCol(dbName='displayname', notNull=True)
     teamdescription = StringCol(dbName='teamdescription', default=None)
+    homepage_content = StringCol(default=None)
+    emblem = ForeignKey(dbName='emblem',
+        foreignKey='LibraryFileAlias', default=None)
+    hackergotchi = ForeignKey(dbName='hackergotchi',
+        foreignKey='LibraryFileAlias', default=None)
+
+    city = StringCol(default=None)
+    phone = StringCol(default=None)
+    country = ForeignKey(dbName='country', foreignKey='Country', default=None)
+    province = StringCol(default=None)
+    postcode = StringCol(default=None)
+    addressline1 = StringCol(default=None)
+    addressline2 = StringCol(default=None)
+    organization = StringCol(default=None)
 
     teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
                            default=None)
@@ -90,8 +105,6 @@ class Person(SQLBase):
 
     # relevant joins
     branches = MultipleJoin('Branch', joinColumn='owner')
-    members = MultipleJoin('TeamMembership', joinColumn='team',
-        orderBy='status')
     ownedBounties = MultipleJoin('Bounty', joinColumn='owner',
         orderBy='id')
     reviewerBounties = MultipleJoin('Bounty', joinColumn='reviewer',
@@ -123,6 +136,17 @@ class Person(SQLBase):
         intermediateTable='SpecificationSubscription',
         orderBy=['-datecreated'])
 
+    # ticket related joins
+    answered_tickets = MultipleJoin('Ticket', joinColumn='answerer',
+        orderBy='-datecreated')
+    assigned_tickets = MultipleJoin('Ticket', joinColumn='assignee',
+        orderBy='-datecreated')
+    created_tickets = MultipleJoin('Ticket', joinColumn='owner',
+        orderBy='-datecreated')
+    subscribed_tickets = RelatedJoin('Ticket', joinColumn='person',
+        otherColumn='ticket', intermediateTable='TicketSubscription',
+        orderBy='-datecreated')
+    
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
 
@@ -231,6 +255,15 @@ class Person(SQLBase):
         ret = ret.union(self.drafted_specs)
         ret = ret.union(self.review_specs)
         ret = ret.union(self.subscribed_specs)
+        ret = sorted(ret, reverse=True, key=lambda a: a.datecreated)
+        return ret
+
+    @property
+    def tickets(self):
+        ret = set(self.created_tickets)
+        ret = ret.union(self.answered_tickets)
+        ret = ret.union(self.assigned_tickets)
+        ret = ret.union(self.subscribed_tickets)
         ret = sorted(ret, key=lambda a: a.datecreated)
         ret.reverse()
         return ret
@@ -238,6 +271,16 @@ class Person(SQLBase):
     def isTeam(self):
         """See IPerson."""
         return self.teamowner is not None
+
+    def currentShipItRequest(self):
+        """See IPerson."""
+        notdenied = OR(ShippingRequest.q.approved==True,
+                       ShippingRequest.q.approved==None)
+        query = AND(ShippingRequest.q.recipientID==self.id,
+                    ShippingRequest.q.shipmentID==None,
+                    notdenied,
+                    ShippingRequest.q.cancelled==False)
+        return ShippingRequest.selectOne(query)
 
     def assignKarma(self, action_name):
         """See IPerson."""
@@ -268,12 +311,13 @@ class Person(SQLBase):
 
     def hasMembershipEntryFor(self, team):
         """See IPerson."""
-        results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
-        return bool(results.count())
+        return bool(TeamMembership.selectOneBy(personID=self.id,
+                                               teamID=team.id))
 
     def hasParticipationEntryFor(self, team):
-        results = TeamParticipation.selectBy(personID=self.id, teamID=team.id)
-        return bool(results.count())
+        """See IPerson."""
+        return bool(TeamParticipation.selectOneBy(personID=self.id,
+                                                  teamID=team.id))
 
     def leave(self, team):
         """See IPerson."""
@@ -352,10 +396,11 @@ class Person(SQLBase):
                 "be added as a member of '%s'" 
                 % (self.name, person.name, person.name, self.name))
 
-        if person.hasMembershipEntryFor(self):
-            # <person> is already a member.
-            return 
+        if person in self.activemembers:
+            # Make it a no-op if this person is already a member.
+            return
 
+        assert not person.hasMembershipEntryFor(self)
         assert status in [TeamMembershipStatus.APPROVED,
                           TeamMembershipStatus.PROPOSED]
 
@@ -494,20 +539,26 @@ class Person(SQLBase):
         return self.expiredmembers.union(self.deactivatedmembers)
 
     @property
-    def memberships(self):
+    def myactivememberships(self):
         """See IPerson."""
-        return TeamMembership.selectBy(personID=self.id)
+        return TeamMembership.select("""
+            TeamMembership.person = %s AND status in (%s, %s) AND 
+            Person.id = TeamMembership.team
+            """ % sqlvalues(self.id, TeamMembershipStatus.APPROVED,
+                            TeamMembershipStatus.ADMIN),
+            clauseTables=['Person'],
+            orderBy=['Person.displayname'])
 
     @property
     def activememberships(self):
         """See IPerson."""
         return TeamMembership.select('''
-            team = %s AND
-            status in (%s, %s)
+            TeamMembership.team = %s AND status in (%s, %s) AND
+            Person.id = TeamMembership.person
             ''' % sqlvalues(self.id, TeamMembershipStatus.APPROVED,
                 TeamMembershipStatus.ADMIN),
-            orderBy=['datejoined'],
-            distinct=True)
+            clauseTables=['Person'],
+            orderBy=['Person.displayname'])
 
     @property
     def defaultexpirationdate(self):
@@ -698,14 +749,18 @@ class PersonSet:
         """See IPersonSet."""
         return Person.select('password IS NOT NULL', orderBy='-karma')[:5]
 
-    def newTeam(self, **kw):
+    def newTeam(self, teamowner, name, displayname, teamdescription=None,
+                subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
+                defaultmembershipperiod=None, defaultrenewalperiod=None):
         """See IPersonSet."""
-        ownerID = kw.get('teamownerID')
-        assert ownerID
-        owner = Person.get(ownerID)
-        team = Person(**kw)
-        team.addMember(owner)
-        team.setMembershipStatus(owner, TeamMembershipStatus.ADMIN)
+        assert teamowner
+        team = Person(teamowner=teamowner, name=name, displayname=displayname,
+                teamdescription=teamdescription,
+                defaultmembershipperiod=defaultmembershipperiod,
+                defaultrenewalperiod=defaultrenewalperiod,
+                subscriptionpolicy=subscriptionpolicy)
+        team.addMember(teamowner)
+        team.setMembershipStatus(teamowner, TeamMembershipStatus.ADMIN)
         return team
 
     def createPersonAndEmail(self, email, name=None, displayname=None,
@@ -857,11 +912,10 @@ class PersonSet:
 
     def getByEmail(self, email, default=None):
         """See IPersonSet."""
-        result = EmailAddress.selectOne(
-            "lower(email) = %s" % quote(email.strip().lower()))
-        if result is None:
+        emailaddress = getUtility(IEmailAddressSet).getByEmail(email)
+        if emailaddress is None:
             return default
-        return result.person
+        return emailaddress.person
 
     def getUbuntites(self, orderBy=None):
         """See IPersonSet."""
@@ -981,7 +1035,28 @@ class PersonSet:
                 WHERE person = %(to_id)d
                 )
             ''' % vars())
+        # and delete those left over
+        cur.execute('''
+            DELETE FROM BountySubscription WHERE person=%(from_id)d
+            ''' % vars())
         skip.append(('bountysubscription', 'person'))
+
+        # Update only the TicketSubscriptions that will not conflict
+        cur.execute('''
+            UPDATE TicketSubscription
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND ticket NOT IN
+                (
+                SELECT ticket
+                FROM TicketSubscription 
+                WHERE person = %(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over
+        cur.execute('''
+            DELETE FROM TicketSubscription WHERE person=%(from_id)d
+            ''' % vars())
+        skip.append(('ticketsubscription', 'person'))
 
         # Update the SpecificationReview entries that will not conflict
         # and trash the rest
@@ -1016,6 +1091,23 @@ class PersonSet:
             DELETE FROM SpecificationSubscription WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('specificationsubscription', 'person'))
+
+        # Update only the SprintAttendances that will not conflict
+        cur.execute('''
+            UPDATE SprintAttendance
+            SET attendee=%(to_id)d
+            WHERE attendee=%(from_id)d AND sprint NOT IN
+                (
+                SELECT sprint
+                FROM SprintAttendance 
+                WHERE attendee = %(to_id)d
+                )
+            ''' % vars())
+        # and delete those left over
+        cur.execute('''
+            DELETE FROM SprintAttendance WHERE attendee=%(from_id)d
+            ''' % vars())
+        skip.append(('sprintattendance', 'attendee'))
 
         # Update only the POSubscriptions that will not conflict
         # XXX: Add sampledata and test to confirm this case
@@ -1080,10 +1172,76 @@ class PersonSet:
                 src_tab, src_col, to_person.id, src_col, from_person.id
                 ))
 
+        # Transfer active team memberships
+        approved = TeamMembershipStatus.APPROVED
+        admin = TeamMembershipStatus.ADMIN
+        cur.execute('SELECT team, status FROM TeamMembership WHERE person = %s '
+                    'AND status IN (%s,%s)' 
+                    % sqlvalues(from_person.id, approved, admin))
+        for team_id, status in cur.fetchall():
+            cur.execute('SELECT status FROM TeamMembership WHERE person = %s '
+                        'AND team = %s'
+                        % sqlvalues(to_person.id, team_id))
+            result = cur.fetchone()
+            if result:
+                current_status = result[0]
+                # Now we can safely delete from_person's membership record,
+                # because we know to_person has a membership entry for this
+                # team, so may only need to change its status.
+                cur.execute(
+                    'DELETE FROM TeamMembership WHERE person = %s AND team = %s'
+                    % sqlvalues(from_person.id, team_id))
+
+                if current_status == admin.value:
+                    # to_person is already an administrator of this team, no
+                    # need to do anything else.
+                    continue
+                # to_person is either an approved or an inactive member,
+                # while from_person is either admin or approved. That means we
+                # can safely set from_person's membership status on
+                # to_person's membership.
+                assert status in (approved.value, admin.value)
+                cur.execute(
+                    'UPDATE TeamMembership SET status = %s WHERE person = %s '
+                    'AND team = %s' % sqlvalues(status, to_person.id, team_id))
+            else:
+                # to_person is not a member of this team. just change
+                # from_person with to_person in the membership record.
+                cur.execute(
+                    'UPDATE TeamMembership SET person = %s WHERE person = %s '
+                    'AND team = %s'
+                    % sqlvalues(to_person.id, from_person.id, team_id))
+
+        cur.execute('SELECT team FROM TeamParticipation WHERE person = %s '
+                    'AND person != team' % sqlvalues(from_person.id))
+        for team_id in cur.fetchall():
+            cur.execute('SELECT team FROM TeamParticipation WHERE person = %s '
+                        'AND team = %s' % sqlvalues(to_person.id, team_id))
+            if not cur.fetchone():
+                cur.execute(
+                    'UPDATE TeamParticipation SET person = %s WHERE '
+                    'person = %s AND team = %s'
+                    % sqlvalues(to_person.id, from_person.id, team_id))
+            else:
+                cur.execute(
+                    'DELETE FROM TeamParticipation WHERE person = %s AND '
+                    'team = %s' % sqlvalues(from_person.id, team_id))
+
         # Flag the account as merged
         cur.execute('''
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
             ''' % vars())
+        
+        # Append a -merged suffix to the account's name.
+        name = "%s-merged" % from_person.name
+        cur.execute("SELECT id FROM Person WHERE name = '%s'" % name)
+        i = 1
+        while cur.fetchone():
+            name = "%s%d" % (name, i)
+            cur.execute("SELECT id FROM Person WHERE name = '%s'" % name)
+            i += 1
+        cur.execute("UPDATE Person SET name = '%s' WHERE id = %d"
+                    % (name, from_person.id))
 
 
 class EmailAddress(SQLBase):
@@ -1092,7 +1250,7 @@ class EmailAddress(SQLBase):
     _table = 'EmailAddress'
     _defaultOrder = ['email']
 
-    email = StringCol(dbName='email', notNull=True, alternateID=True)
+    email = StringCol(dbName='email', notNull=True, unique=True)
     status = EnumCol(dbName='status', schema=EmailAddressStatus, notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
@@ -1120,16 +1278,20 @@ class EmailAddressSet:
             return email
 
     def getByPerson(self, person):
-        return EmailAddress.selectBy(personID=person.id)
+        return EmailAddress.selectBy(personID=person.id, orderBy='email')
 
     def getByEmail(self, email, default=None):
-        try:
-            return EmailAddress.byEmail(email)
-        except SQLObjectNotFound:
+        result = EmailAddress.selectOne(
+            "lower(email) = %s" % quote(email.strip().lower()))
+        if result is None:
             return default
+        return result
 
     def new(self, email, personID, status=EmailAddressStatus.NEW):
         email = email.strip()
+        if self.getByEmail(email):
+            raise EmailAddressAlreadyTaken(
+                "The email address %s is already registered." % email)
         assert status in EmailAddressStatus.items
         return EmailAddress(email=email, status=status, person=personID)
 
@@ -1212,16 +1374,16 @@ class GPGKeySet:
     def getGPGKeys(self, ownerid=None, active=True):
         """See IGPGKeySet"""
         if active is False:
-            query =('active=false AND fingerprint NOT IN '
-                    '(SELECT fingerprint from LoginToken WHERE fingerprint '
-                    'IS NOT NULL AND requester = %s)' % sqlvalues(ownerid))
+            query = ('active=false AND fingerprint NOT IN '
+                     '(SELECT fingerprint from LoginToken WHERE fingerprint '
+                     'IS NOT NULL AND requester = %s)' % sqlvalues(ownerid))
         else:
             query = 'active=true'
 
         if ownerid:
             query += ' AND owner=%s' % sqlvalues(ownerid)
         
-        return GPGKey.select(query)
+        return GPGKey.select(query, orderBy='id')
 
 
 class SSHKey(SQLBase):

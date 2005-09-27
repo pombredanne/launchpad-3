@@ -1,8 +1,7 @@
-
 Sample Person views a bug, which they're about to set private:
 
   >>> print http(r"""
-  ... GET /malone/bugs/4/+edit HTTP/1.1
+  ... GET /products/firefox/+bug/4/+edit HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -16,7 +15,7 @@ Sample Person views a bug, which they're about to set private:
 Sample Person sets the bug private and is made an explicit subscriber
 in the process.
 
-  ... POST /malone/bugs/4/+secrecy HTTP/1.1
+  ... POST /products/firefox/+bug/4/+secrecy HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 429
   ... Content-Type: multipart/form-data; boundary=---------------------------10389799518848978361196772104

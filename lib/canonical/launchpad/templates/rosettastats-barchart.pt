@@ -1,0 +1,44 @@
+<span style="display: none" tal:content="view/sortable_untranslated" />
+<img
+  tal:condition="not: context/messageCount"
+  src="/++resource++red-bar.png"
+  width="100"
+  style="height: 1em;"
+  >
+<img
+  tal:condition="context/nonUpdatesCount"
+  tal:attributes="
+    alt string: ${context/nonUpdatesPercentage} percent published, ;
+    title string:Unchanged: ${context/nonUpdatesPercentage} %;
+    width context/nonUpdatesPercentage;
+  "
+  src="/++resource++green-bar.png"
+  style="height: 1em;"
+/><img
+  tal:condition="context/updatesCount"
+  tal:attributes="
+    alt string: ${context/updatesPercentage} percent changed, ;
+    width context/updatesPercentage;
+    title string: Changed: ${context/updatesPercentage} %
+  "
+  src="/++resource++blue-bar.png"
+  style="height: 1em;"
+/><img
+  tal:condition="context/rosettaCount"
+  tal:attributes="
+    alt string: ${context/rosettaPercentage} percent new, ;
+    width context/rosettaPercentage;
+    title string: New: ${context/rosettaPercentage} %
+  "
+  src="/++resource++purple-bar.png"
+  style="height: 1em;"
+/><img
+  tal:condition="context/untranslatedCount"
+  tal:attributes="
+    alt string: ${context/untranslatedPercentage} percent untranslated;
+    width context/untranslatedPercentage;
+    title string: Untranslated: ${context/untranslatedPercentage} %
+  "
+  src="/++resource++red-bar.png"
+  style="height: 1em;"
+/>

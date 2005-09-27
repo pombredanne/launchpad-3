@@ -38,6 +38,7 @@
       permission="launchpad.Edit"
       name="+edit"
       schema="canonical.launchpad.interfaces.IDistroRelease"
+      facet="overview"
       fields="displayname title summary description version"
       template="../templates/launchpad-editform.pt"
       lp:url="/distros/$Distribution.name/$DistroRelease.name/+edit"/>
@@ -45,10 +46,11 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IDistroRelease"
         class="canonical.launchpad.browser.BugTaskSearchListingView"
+        facet="bugs"
         permission="zope.Public">
         <browser:page
-            name="+bugs-only"
-            lp:url="/distros/$DistroRelease.name/+bugs-only"
+            name="+bugs"
+            lp:url="/distros/$DistroRelease.name/+bugs"
             template="../templates/bugs-for-context.pt" />
         <browser:page
             name="+portlet-bugtasklist-actions"
@@ -58,6 +60,10 @@
             name="+portlet-bugtasklist-releasebugs"
             template="../templates/bugtask-portlet-releasebugs.pt"
             lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-releasebugs" />
+        <browser:page
+            name="+portlet-aboutcve"
+            template="../templates/distribution-portlet-aboutcve.pt"
+            lp:url="/distros/$DistroRelease.name/+portlet-aboutcve" />
     </browser:pages>
 
     <browser:pages
@@ -66,39 +72,61 @@
         permission="zope.Public">
         <browser:page
             name="+filebug"
+            facet="bugs"
             attribute="redirectToDistroFileBug" />
         <browser:page
+            name="+cve"
+            template="../templates/distrorelease-cvereport.pt" />
+        <browser:page
             name="+index"
+            facet="overview"
             template="../templates/distrorelease-index.pt" />
         <browser:page
             name="+translations"
+            facet="translations"
             template="../templates/distrorelease-translations.pt" />
         <browser:page
+            name="+langchart"
+            template="../templates/distrorelease-langchart.pt" />
+        <browser:page
             name="+packaging"
+            facet="overview"
             template="../templates/distrorelease-packaging.pt" />
         <browser:page
             name="+potlist"
+            facet="translations"
             template="../templates/object-pots.pt" />
         <browser:page
+            name="+builds"
+            template="../templates/distrorelease-builds.pt"
+            lp:url="/distros/$distribution/$distrorelease/+builds"
+            />
+        <browser:page
             name="+portlet-details"
+            facet="overview"
             template="../templates/distrorelease-portlet-details.pt" />
         <browser:page
             name="+portlet-actions"
+            facet="overview"
             template="../templates/distrorelease-portlet-actions.pt" />
         <browser:page
             name="+portlet-translations"
+            facet="translations"
             template="../templates/distrorelease-portlet-translations.pt" />
         <browser:page
             name="+portlet-langstats"
+            facet="translations"
             template="../templates/distrorelease-portlet-langstats.pt" />
         <browser:page
             name="+portlet-aboutlangs"
+            facet="translations"
             template="../templates/distrorelease-portlet-aboutlangs.pt" />
     </browser:pages>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistroRelease"
         permission="launchpad.Edit"
+        facet="overview"
         class="canonical.launchpad.browser.ObjectReassignmentView">
     <browser:page
         name="+reassign"
@@ -106,9 +134,9 @@
         lp:url="/distros/$distro.id/$release.id/+reassign" />
     </browser:pages>
 
-   <browser:menus
+    <browser:menus
         module="canonical.launchpad.browser.distrorelease"
-        classes="DistroReleaseFacets"
+        classes="DistroReleaseFacets DistroReleaseOverviewMenu"
         />
 
 </configure>

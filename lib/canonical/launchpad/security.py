@@ -15,7 +15,9 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseBugTask, ITranslator, IProduct, IProductSeries,
     IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
     ILaunchpadCelebrities, IDistroRelease, IBugTracker, IBugAttachment,
-    IPoll, IPollSubset, IPollOption, IPollOptionSubset, IProductRelease)
+    IPoll, IPollSubset, IPollOption, IProductRelease, IShippingRequest,
+    IShippingRequestSet, IRequestedCDs, IStandardShipItRequestSet,
+    IStandardShipItRequest)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -53,6 +55,7 @@ class EditByOwnersOrAdmins(AuthorizationBase):
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
+
 class AdminSeriesSourceByButtSource(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = IProductSeriesSourceAdmin
@@ -60,6 +63,48 @@ class AdminSeriesSourceByButtSource(AuthorizationBase):
     def checkAuthenticated(self, user):
         buttsource = getUtility(ILaunchpadCelebrities).buttsource
         return user.inTeam(buttsource)
+
+
+class EditRequestedCDsByRecipientOrShipItAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IRequestedCDs
+
+    def checkAuthenticated(self, user):
+        shipitadmins = getUtility(ILaunchpadCelebrities).shipit_admin
+        return user == self.obj.request.recipient or user.inTeam(shipitadmins)
+
+
+class EditShippingRequestByRecipientOrShipItAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IShippingRequest
+
+    def checkAuthenticated(self, user):
+        shipitadmins = getUtility(ILaunchpadCelebrities).shipit_admin
+        return user == self.obj.recipient or user.inTeam(shipitadmins)
+
+
+class AdminShippingRequestByShipItAdmins(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = IShippingRequest
+
+    def checkAuthenticated(self, user):
+        shipitadmins = getUtility(ILaunchpadCelebrities).shipit_admin
+        return user.inTeam(shipitadmins)
+
+
+class AdminStandardShipItOrderSetByShipItAdmins(
+        AdminShippingRequestByShipItAdmins):
+    usedfor = IStandardShipItRequestSet
+
+
+class AdminStandardShipItOrderByShipItAdmins(
+        AdminShippingRequestByShipItAdmins):
+    usedfor = IStandardShipItRequest
+
+
+class AdminShippingRequestSetByShipItAdmins(AdminShippingRequestByShipItAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = IShippingRequestSet
 
 
 class EditSeriesSourceByButtSource(AuthorizationBase):
@@ -87,14 +132,26 @@ class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
         return user.inTeam(self.obj.target.owner)
 
 
+class AdminTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = ITeam
+
+    def checkAuthenticated(self, user):
+        """Only the team owner and Launchpad admins have launchpad.Admin on a
+        team.
+        """
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(self.obj.teamowner) or user.inTeam(admins)
+
+
 class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = ITeam
 
     def checkAuthenticated(self, user):
-        """A user who is a team's owner has launchpad.Edit on that team.
+        """The team owner and all team admins have launchpad.Edit on that team.
 
-        The admin team also has launchpad.Edit on all teams.
+        The Launchpad admins also have launchpad.Edit on all teams.
         """
         admins = getUtility(ILaunchpadCelebrities).admin
         if user.inTeam(self.obj.teamowner) or user.inTeam(admins):
@@ -179,12 +236,6 @@ class EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
         return False
 
 
-class EditPollOptionSubsetByTeamOwnerOrTeamAdminsOrAdmins(
-        EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins):
-    permission = 'launchpad.Edit'
-    usedfor = IPollOptionSubset
-
-
 class AdminDistribution(AdminByAdminsTeam):
     """Soyuz involves huge chunks of data in the archive and librarian,
     so for the moment we are locking down admin and edit on distributions
@@ -238,17 +289,45 @@ class EditUpstreamBugTask(AuthorizationBase):
     usedfor = IUpstreamBugTask
 
     def checkAuthenticated(self, user):
-        """Allow the maintainer and possible assignee to edit the task.
+        """Allow the maintainer,  assignee, and LP admins to edit the task.
 
         If the maintainer or assignee is a team, everyone belonging to the team
         is allowed to edit the task.
         """
-        if user.inTeam(self.obj.maintainer):
-            return True
-        elif self.obj.assignee is not None and user.inTeam(self.obj.assignee):
-            return True
+        bugtask = self.obj
+        user_is_maintainer = user.inTeam(bugtask.maintainer)
+        user_is_assignee = (
+            bugtask.assignee is not None and user.inTeam(bugtask.assignee))
+        user_is_admin = user.inTeam(getUtility(ILaunchpadCelebrities).admin)
+
+        if bugtask.bug.private:
+            # This is a private bug so, in addition to the standard
+            # checks we do here, we must also verify that the person
+            # is subscribed to the bug.
+            #
+            # LP admins are given no special privileges WRT private
+            # bugs. If they wouldn't have otherwise been able to edit
+            # the bugtask, they won't be able to edit it when it's set
+            # private (whereas they *would* be able to edit it if it
+            # were public.)
+            user_is_subscribed_to_bug = bugtask.bug.isSubscribed(user)
+
+            if user_is_maintainer and user_is_subscribed_to_bug:
+                return True
+            elif user_is_assignee and user_is_subscribed_to_bug:
+                return True
+            else:
+                return False
         else:
-            return False
+            # This is a public bug.
+            if user_is_maintainer:
+                return True
+            elif user_is_assignee:
+                return True
+            elif user_is_admin:
+                return True
+            else:
+                return False
 
 
 class EditDistroBugTask(AuthorizationBase):

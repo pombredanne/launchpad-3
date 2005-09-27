@@ -1,7 +1,7 @@
 Any logged-in user can edit public bugs.
 
   >>> print http(r"""
-  ... POST /malone/bugs/3/+edit HTTP/1.1
+  ... POST /distros/debian/+sources/mozilla-firefox/+bug/3/+edit HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1738
   ... Content-Type: multipart/form-data; boundary=---------------------------9007557518154646371082635117
@@ -32,9 +32,8 @@ Any logged-in user can edit public bugs.
   ... Change
   ... -----------------------------9007557518154646371082635117--
   ... """)
-  HTTP/1.1 200 Ok
+  HTTP/1.1 303 See Other
   ...
-  Content-Type: text/html;charset=utf-8
+  Location: http://.../distros/debian/+sources/mozilla-firefox/+bug/3
   ...
-  <h...>...</h...>
-  ...
+

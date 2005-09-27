@@ -15,7 +15,16 @@ from canonical.launchpad.scripts import logger, logger_options, db_options
 
 # Defines parser and locale to use.
 DEFAULT_CONFIG = 'default'
-TSEARCH2_SQL = '/usr/share/postgresql/contrib/tsearch2.sql'
+TSEARCH2_SQL = '/usr/share/postgresql'
+if os.path.isdir('/usr/share/postgresql/7.4'):
+    TSEARCH2_SQL = TSEARCH2_SQL + '/7.4'
+elif os.path.isdir('/usr/share/postgresql/8.0'):
+    TSEARCH2_SQL = TSEARCH2_SQL + '/8.0'
+TSEARCH2_SQL = TSEARCH2_SQL + '/contrib/tsearch2.sql'
+if not os.path.exists(TSEARCH2_SQL):
+    # Can't log because logger not yet setup
+    raise RuntimeError('Unable to find tsearch2.sql')
+# This will no longer be required with PostgreSQL 8.0+
 PATCH_SQL = os.path.join(
         os.path.dirname(__file__), 'regprocedure_update.sql'
         )
@@ -35,6 +44,16 @@ ALL_FTI = [
 
     ('bugtask', [
             ('statusexplanation', C),
+            ]),
+
+    ('binarypackagerelease', [
+            ('summary', C),
+            ('description', D),
+            ]),
+
+    ('cve', [
+            ('sequence', A),
+            ('description', B),
             ]),
 
     ('message', [
@@ -67,6 +86,12 @@ ALL_FTI = [
             ('summary', C),
             ('description', D),
             ]),
+
+    ('ticket', [
+            ('title', A),
+            ('description', B),
+            ('whiteboard', B),
+            ])
     ]
 
 
@@ -191,43 +216,77 @@ def setup(con, configuration=DEFAULT_CONFIG):
     # ftq(text) returns a tsquery, suitable for use querying the full text
     # indexes. _ftq(text) returns the string that would be parsed by
     # to_tsquery and is used to debug the query we generate.
-    shared_func = r"""
+    shared_func = r'''
         import re
 
         # Convert to Unicode and lowercase everything
         query = args[0].decode('utf8').lower()
+        ## plpy.debug('1 query is %s' % repr(query))
 
-        # Convert &, | and ! symbols to whitespace since they have
+        # Convert &, |, ! and : symbols to whitespace since they have
         # special meaning to tsearch2
-        query = re.sub(r"[\&\|\!]+", " ", query)
+        query = re.sub(r"[\&\|\!\:]+", " ", query)
+        ## plpy.debug('2 query is %s' % repr(query))
 
         # Convert AND, OR and NOT to tsearch2 punctuation
         query = re.sub(r"\band\b", "&", query)
         query = re.sub(r"\bor\b", "|", query)
         query = re.sub(r"\bnot\b", "!", query)
+        ## plpy.debug('3 query is %s' % repr(query))
 
         # Insert & between tokens without an existing boolean operator
         # Whitespace not proceded by (|&! not followed by &|
         query = re.sub(r"(?<![\(\|\&\!\s])\s+(?![\&\|\s])", "&", query)
+        ## plpy.debug('4 query is %s' % repr(query))
 
         # Detect and repair syntax errors - we are lenient because
         # this input is generally from users.
 
-        # An &,| or ! followed by another boolean.
-        query = re.sub(r"\s*([\&\|\!])\s*[\&\|]+", r"\1", query)
+        # Fix unbalanced brackets
+        openings = query.count("(")
+        closings = query.count(")")
+        if openings > closings:
+            query = query + " ) "*(openings-closings)
+        elif closings > openings:
+            query = " ( "*(closings-openings) + query
+        ## plpy.debug('5 query is %s' % repr(query))
+
+        # Brackets containing nothing but whitespace and booleans, recursive
+        last = ""
+        while last != query:
+            last = query
+            query = re.sub(r"\([\s\&\|\!]*\)", "", query)
+        ## plpy.debug('6 query is %s' % repr(query))
 
         # An & or | following a (
         query = re.sub(r"(?<=\()[\&\|\s]+", "", query)
+        ## plpy.debug('7 query is %s' % repr(query))
+
+        # An &, | or ! immediatly before a )
+        query = re.sub(r"[\&\|\!\s]*[\&\|\!]+(?=\))", "", query)
+        ## plpy.debug('8 query is %s' % repr(query))
+
+        # An &,| or ! followed by another boolean.
+        query = re.sub(r"\s*([\&\|\!])\s*[\&\|]+", r"\1", query)
+        ## plpy.debug('9 query is %s' % repr(query))
 
         # Leading & or |
         query = re.sub(r"^[\s\&\|]+", "", query)
+        ## plpy.debug('10 query is %s' % repr(query))
 
         # Trailing &, | or !
         query = re.sub(r"[\&\|\!\s]+$", "", query)
+        ## plpy.debug('11 query is %s' % repr(query))
+
+        # If we have nothing but whitespace and tsearch2 operators,
+        # return NULL.
+        if re.search(r"^[\&\|\!\s\(\)]*$", query) is not None:
+            return None
 
         # Convert back to UTF-8
         query = query.encode('utf8')
-        """
+        ## plpy.debug('12 query is %s' % repr(query))
+        '''
     text_func = shared_func + """
         return query or None
         """

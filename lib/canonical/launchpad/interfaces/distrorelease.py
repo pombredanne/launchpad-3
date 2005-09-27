@@ -11,12 +11,10 @@ __all__ = [
 
 from zope.schema import Choice, Int, TextLine
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
     IHasOwner, IBugTarget, ISpecificationTarget)
-from canonical.launchpad.validators.version import sane_version
 
 from canonical.launchpad import _
 
@@ -34,7 +32,7 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         description=_("The release's full name, e.g. Ubuntu Warty"))
     title = Title(
         title=_("Title"), required=True,
-        description=_("""The title of this release. It should be distinctive 
+        description=_("""The title of this release. It should be distinctive
                       and designed to look good at the top of a page."""))
     summary = Summary(title=_("Summary"), required=True,
         description=_("A brief summary of the highlights of this release. "
@@ -66,7 +64,7 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         title=_("Parent Release"),
         description=_("The Parente Distribution Release."), required=True,
         vocabulary='DistroRelease')
-    owner =Attribute("Owner")
+    owner = Attribute("Owner")
     state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")
     lucilleconfig = Attribute("Lucille Configuration Field")
@@ -97,6 +95,14 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
     # other properties
     previous_releases = Attribute("Previous distroreleases from the same "
         "distribution.")
+
+    open_cve_bugtasks = Attribute(
+        "Any bugtasks on this distrorelease that are for bugs with "
+        "CVE references, and are still open.")
+
+    resolved_cve_bugtasks = Attribute(
+        "Any bugtasks on this distrorelease that are for bugs with "
+        "CVE references, and are resolved.")
 
     def getBugSourcePackages():
         """Get SourcePackages in a DistroRelease with BugTask"""
@@ -164,6 +170,15 @@ class IDistroReleaseSet(Interface):
         """Find a DistroRelease by name.
 
         Returns a list of matching distributions, which may be empty.
+        """
+
+    def queryByName(distribution, name):
+        """Query a DistroRelease by name.
+
+        :distribution: An IDistribution.
+        :name: A string.
+
+        Returns the matching DistroRelease, or None if not found.
         """
 
     def findByVersion(version):

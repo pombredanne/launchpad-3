@@ -1,0 +1,134 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+
+    <!-- BuilderSet -->
+    <securedutility
+        class="canonical.launchpad.database.BuilderSet"
+        provides="canonical.launchpad.interfaces.IBuilderSet">
+        <allow interface="canonical.launchpad.interfaces.IBuilderSet" />
+    </securedutility>
+
+    <!-- BuildFarm -->
+    <browser:suburl
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        utility="canonical.launchpad.interfaces.IBuilderSet"
+        name="+builds" />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IBuilderSet"
+        path_expression="string:+builds"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBuilderSet"
+        name="+index" />
+
+    <browser:menus
+        module="canonical.launchpad.browser.builder"
+        classes="BuildFarmFacets" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IBuilderSet"
+        getter="__getitem__" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBuilderSet"
+        permission="zope.Public">
+        <browser:page
+            template="../templates/builders.pt"
+            name="+index"
+            lp:url="+builds/+index" />
+        <browser:page
+            template="../templates/portlet-builders-action.pt"
+            name="+portlet-action"
+            lp:url="+builds/$name/+portlet-action" />
+    </browser:pages>
+
+    <browser:addform
+        name="+new"
+        for="canonical.launchpad.interfaces.IBuilderSet"
+        schema="canonical.launchpad.interfaces.IBuilder"
+        label="Register a new Builder Slave"
+        fields="name title description processor url owner"
+        content_factory="canonical.launchpad.database.Builder"
+        class="canonical.launchpad.browser.BuilderSetAddView"
+        permission="launchpad.AnyPerson"
+        template="../templates/launchpad-addform.pt"
+        lp:url="+builds/+new">
+        <browser:widget 
+            field="owner" 
+            class="canonical.widgets.HiddenUserWidget" />
+    </browser:addform>
+
+    <!-- Builder -->
+    <content class="canonical.launchpad.database.Builder">
+       <allow interface="canonical.launchpad.interfaces.IBuilder"/>
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IBuilder"
+        />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBuilder"
+        name="+index" />
+
+    <browser:menus
+        module="canonical.launchpad.browser.builder"
+        classes="BuilderFacets" />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IBuilder"
+        path_expression="name"
+        parent_utility="canonical.launchpad.interfaces.IBuilderSet"
+        />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBuilder"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.BuilderView">
+        <browser:page
+            template="../templates/builder-index.pt"
+            name="+index"
+            lp:url="+builds/$name/+index" />
+        <browser:page
+            template="../templates/builder-abort.pt"
+            name="+abort"
+            lp:url="+builds/$name/+abort" />
+        <browser:page
+            template="../templates/builder-stop.pt"
+            name="+stop"
+            lp:url="+builds/$name/+stop" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBuilder"
+        permission="zope.Public">
+        <browser:page
+            template="../templates/portlet-builder-action.pt"
+            name="+portlet-action"
+            lp:url="+builds/$name/+portlet-action" />
+        <browser:page
+            template="../templates/portlet-builder-details.pt"
+            name="+portlet-details"
+            lp:url="+builds/$name/+portlet-details" />
+    </browser:pages>
+
+    <browser:editform
+        name="+edit"
+        for="canonical.launchpad.interfaces.IBuilder"
+        schema="canonical.launchpad.interfaces.IBuilder"
+        label="Edit Builder Details:"
+        fields="name title description processor url trusted owner"
+        permission="launchpad.Edit"
+        template="../templates/builder-edit.pt"
+	lp:url="+builds/$name/+edit">
+    </browser:editform>
+
+</configure>

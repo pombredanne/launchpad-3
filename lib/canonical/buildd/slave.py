@@ -3,6 +3,10 @@
 
 # Buildd Slave implementation
 
+from os.path import isdir, exists
+from os import mkdir, symlink, kill, environ, remove
+from signal import SIGKILL
+import xmlrpclib
 __metaclass__ = type
 
 import os
@@ -12,6 +16,7 @@ import urllib2
 
 from twisted.internet import protocol
 from twisted.internet import reactor
+from twisted.internet import process
 from twisted.web import xmlrpc
 
 
@@ -27,11 +32,31 @@ class RunCapture(protocol.ProcessProtocol):
     def __init__(self, slave, callback):
         self.slave = slave
         self.notify = callback
+        self.killCall = None
 
     def outReceived(self, data):
         self.slave.log(data)
 
     def processEnded(self, statusobject):
+        """This method is called when a child process got terminated.
+
+        Three actions are required at this point: identify if we are within an
+        "aborting" process, eliminate pending calls to "kill" and invoke the
+        programmed notification callback. We only really care about invoking
+        the notification callback last thing in this method. The order
+        of the rest of the method is not critical.
+        """
+        # finishing the ABORTING workflow
+        if self.slave.builderstatus == BuilderStatus.ABORTING:
+            self.slave.builderstatus = BuilderStatus.ABORTED
+
+        # check if there is a pending request for kill the process,
+        # in afirmative case simply cancel this request since it
+        # already died.
+        if self.killCall and self.killCall.active():
+            self.killCall.cancel()
+            
+        # notify the slave, it'll perform the required actions     
         self.notify(statusobject.value.exitCode)
 
 class BuildManager(object):
@@ -97,10 +122,31 @@ class BuildManager(object):
         """Abort the build by killing the subprocess."""
         if not self.alreadyfailed:
             self.alreadyfailed = True
-        # We could try SIGTERM before SIGKILL, but since the directory
-        # where the build was precessed will be purged entirely there
-        # is no need, be effective ! 
-        self._subprocess.transport.signalProcess('KILL')
+        # Either SIGKILL and SIGTERM presents the same behavior,
+        # the process is just killed some time after the signal was sent
+        # 10 s ~ 40 s, and returns None as exit_code, instead of the normal
+        # interger. See further info on DebianBuildermanager.iterate in
+        # debian.py
+        # XXX cprov 20050902:
+        # we may want to follow the canonical.tachandler kill process style,
+        # which sends SIGTERM to the process wait a given timeout and if was
+        # not killed sends a SIGKILL. IMO it only would be worth if we found
+        # different behaviour than the previous described.
+        self._subprocess.transport.signalProcess('TERM')
+        # alternativelly to simply send SIGTERM, we can pend a request to
+        # send SIGKILL to the process if nothing happened in 10 seconds
+        # see base class process
+        self._subprocess.killCall = reactor.callLater(10, self.kill) 
+
+    def kill(self):
+        """Send SIGKILL to child process
+
+        Mask exception generated when the child process has already exited.
+        """
+        try:
+            self._subprocess.transport.signalProcess('KILL')
+        except process.ProcessExitedAlready:
+            self._slave.log("ABORTING: Process Exited Already\n")            
 
 class BuilderStatus:
     """Status values for the builder."""
@@ -108,10 +154,11 @@ class BuilderStatus:
     IDLE = "BuilderStatus.IDLE"
     BUILDING = "BuilderStatus.BUILDING"
     WAITING = "BuilderStatus.WAITING"
+    ABORTING = "BuilderStatus.ABORTING"
     ABORTED = "BuilderStatus.ABORTED"
 
-    UNKNOWNSUM = "BuilderStatus.UNKNOWN-SUM"
-    UNKNOWNBUILDER = "BuilderStatus.UNKNOWN-BUILDER"
+    UNKNOWNSUM = "BuilderStatus.UNKNOWNSUM"
+    UNKNOWNBUILDER = "BuilderStatus.UNKNOWNBUILDER"
     
 
 class BuildStatus:
@@ -200,12 +247,14 @@ class BuildDSlave(object):
         if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError("Slave is not BUILDING when asked to abort")
         self.manager.abort()
-        self.builderstatus = BuilderStatus.ABORTED
+        self.builderstatus = BuilderStatus.ABORTING
 
     def clean(self):
         """Clean up pending files and reset the internal build state."""
-        if self.builderstatus != BuilderStatus.WAITING:
-            raise ValueError("Slave is not WAITING when asked to clean")
+        if self.builderstatus not in [BuilderStatus.WAITING,
+                                      BuilderStatus.ABORTED]:
+            raise ValueError('Slave is not WAITING|ABORTED when asked'
+                             'to clean')
         for f in self.waitingfiles:
             os.remove(self.cachePath(self.waitingfiles[f]))
         self.builderstatus = BuilderStatus.IDLE
@@ -230,11 +279,14 @@ class BuildDSlave(object):
         """Get the last 'amount' bytes of the log.        
 
         This will only return whole lines, so it may return less than
-        'amount'  bytes, so amount needs to be an integer or if is None or
-        not specified, this will return the entire log.
+        'amount' bytes. 'amount' is originally an string provided by
+        xmlrpc interface and needs cast to an integer or None or not
+        specified), when 'amount' isn't specified or is None it will
+        return the entire log.
         """
         if amount is None:
             return self._log
+        amount = int(amount)
         ret = self._log[-amount:]
         return ret[ret.find("\n")+1:]
     
@@ -324,7 +376,7 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         func = getattr(self, "status_" + statusname, None)
         if func is None:
             raise ValueError("Unknown status '%s'" % status)
-        return (status,) + (func())
+        return (status, ) + func()
 
     def status_IDLE(self):
         """Handler for xmlrpc_status IDLE.
@@ -333,18 +385,18 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         to report.
         """
         # keep the result code sane
-        return ('',)
+        return ('', )
     
     def status_BUILDING(self):
         """Handler for xmlrpc_status BUILDING.
         
         Returns the build id and up to one kilobyte of log tail
         """
-        return self.buildid, self.slave.fetchLogTail(1024)
+        return (self.buildid, self.slave.fetchLogTail(1024))
 
     def status_WAITING(self):
         """Handler for xmlrpc_status WAITING.
-
+        
         Returns the build id and the set of files waiting to be returned
         unless the builder failed in which case we return the buildstatus
         and the build id but no file set.
@@ -353,14 +405,24 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
                                       BuildStatus.DEPFAIL):
             return (self.slave.buildstatus, self.buildid,
                     self.slave.waitingfiles)
-        return self.slave.buildstatus, self.buildid
+        return (self.slave.buildstatus, self.buildid)
 
     def status_ABORTED(self):
         """Handler for xmlrpc_status ABORTED.
 
-        Returns the build id only.
+        The only action the master can take is clean, other than ask status,
+        of course, it returns the build id only.
         """
-        return self.buildid
+        return (self.buildid, )
+
+    def status_ABORTING(self):
+        """Handler for xmlrpc_status ABORTING.
+
+        This state means the builder performing the ABORT command and is
+        not able to do anything else than answer its status, returns the
+        build id only.
+        """
+        return (self.buildid, )
 
     def xmlrpc_fetchlogtail(self, amount=None):
         """Return the requested amount of log information."""
@@ -381,7 +443,7 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
     def xmlrpc_abort(self):
         """Abort the current build."""
         self.slave.abort()
-        return BuilderStatus.ABORTED
+        return BuilderStatus.ABORTING
 
     def xmlrpc_clean(self):
         """Clean up the waiting files and reset the slave's internal state."""

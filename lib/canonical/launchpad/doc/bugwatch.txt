@@ -23,3 +23,20 @@ Bug watches are accessed via a utility that provides IBugWatchSet.
     >>> bugwatch = getUtility(IBugWatchSet).get(2)
     >>> bugwatch.remotebug
     u'2000'
+
+Creating Bug Watches
+--------------------
+
+To create a bugwatch, use IBugWatchSet.createBugWatch:
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, IBugSet, IBugTrackerSet)
+
+    >>> sample_person = getUtility(IPersonSet).get(12)
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> bmo = getUtility(IBugTrackerSet)['mozilla.org']
+    >>> bugwatch = getUtility(IBugWatchSet).createBugWatch(
+    ...     bug=bug_one, owner=sample_person, bugtracker=bmo,
+    ...     remotebug='1234')
+    >>> bugwatch.remotebug
+    u'1234'

@@ -1,0 +1,157 @@
+ShipIt
+======
+
+ShipIt is our application to ship Ubuntu CDs to our users. Any user can
+make an request with any number of CDs, and as soon as the request is approved,
+these CDs are sent to the user.
+
+  >>> from zope.component import getUtility
+  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.database.sqlbase import flush_database_updates
+  >>> from canonical.launchpad.ftests import login
+  >>> from canonical.launchpad.interfaces import (
+  ...    IStandardShipItRequestSet, IShippingRequestSet, IPersonSet,
+  ...    IShippingRequest, ILaunchBag, ShippingRequestStatus)
+  >>> requestset = getUtility(IShippingRequestSet)
+  >>> foobar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+
+Let's create a new request for foo.bar@canonical.com.
+
+  >>> recipient = foobar
+  >>> quantityx86 = 30
+  >>> quantityamd64 = 5
+  >>> quantityppc = 2
+  >>> reason = ("I'm going to give away some CDs in the next meeting of my "
+  ...           "city's LUG.")
+  >>> request = requestset.new(recipient, quantityx86, quantityamd64,
+  ...                          quantityppc, reason=reason)
+
+We're not allowed to add a second request for the same recipient, while the
+existing one is not yet exported.
+
+  >>> request = requestset.new(recipient, quantityx86, quantityamd64,
+  ...                          quantityppc, reason=reason)
+  Traceback (most recent call last):
+  ...
+  AssertionError
+
+XXX: This check depends on the implementation of the remaining database
+classes, which are linked from the request table.
+  >>> #verifyObject(IShippingRequest, request)
+  True
+
+  >>> request.totalCDs
+  37
+  >>> recipient.currentShipItRequest() == request
+  True
+  
+If a request is not approved yet, it'll have approved == None. If it was
+approved, then approved will be True.
+
+  >>> request.approved is None
+  True
+
+The number of CDs can be altered by the user, if he wants.
+
+  >>> login('foo.bar@canonical.com')
+  >>> request.quantityx86 = 10
+  >>> request.quantityppc = 1
+  >>> request.quantityamd64 = 3
+  >>> request.totalCDs
+  14
+
+When a request is approved, you must specify the approved quantities.
+
+  >>> login('marilize@hbd.com')
+  >>> request.approve(request.quantityx86, request.quantityamd64,
+  ...                 request.quantityppc,
+  ...                 whoapproved=getUtility(ILaunchBag).user)
+  >>> request.approved
+  True
+  >>> request.whoapproved.displayname
+  u'Marilize Coetzee'
+  >>> request.quantityx86approved
+  10
+  >>> request.quantityamd64approved
+  3
+  >>> request.quantityppcapproved
+  1
+
+The approved quantities can be changed only if the request is approved.
+
+  >>> request.setApprovedTotals(quantityx86approved=5, quantityamd64approved=3,
+  ...                           quantityppcapproved=2)
+  >>> request.quantityx86approved
+  5
+  >>> request.quantityamd64approved
+  3
+  >>> request.quantityppcapproved
+  2
+
+If a request is approved but hasn't been exported yet, it can still be denied.
+
+  >>> request.deny()
+  >>> request.approved
+  False
+
+A request can also be cancelled, and this means the approved and
+quantity*approved will be set back to None.
+
+  >>> request.cancel(getUtility(ILaunchBag).user)
+  >>> request.cancelled
+  True
+  >>> request.whocancelled.displayname
+  u'Marilize Coetzee'
+  >>> request.quantityx86approved is None
+  True
+  >>> request.quantityamd64approved is None
+  True
+  >>> request.quantityppcapproved is None
+  True
+  >>> flush_database_updates()
+
+
+Searching for requests
+----------------------
+
+We have five custom requests. Two of them are cancelled.
+
+  >>> [r.recipient.name 
+  ...      for r in requestset.searchCustomRequests(omit_cancelled=False)]
+  [u'cprov', u'ddaa', u'salgado', u'no-priv', u'name16']
+
+  >>> [r.recipient.name for r in requestset.searchCustomRequests()]
+  [u'ddaa', u'salgado', u'no-priv']
+
+From the three non-cancelled, two are approved.
+
+  >>> approved = status=ShippingRequestStatus.APPROVED
+  >>> [r.recipient.name 
+  ...       for r in requestset.searchCustomRequests(status=approved)]
+  [u'salgado', u'no-priv']
+
+We have also two non-cancelled standard requests:
+
+  >>> [r.recipient.name for r in
+  ...       requestset.searchStandardRequests(omit_cancelled=False)]
+  [u'kreutzm', u'stub']
+
+And all standard requests are approved automatically.
+
+  >>> [r.recipient.name for r in
+  ...       requestset.searchStandardRequests(status=approved)]
+  [u'kreutzm', u'stub']
+
+
+It's also possible to search for standard requests of a specific type.
+
+  >>> standardrequest = getUtility(IStandardShipItRequestSet).get(3)
+  >>> requests = requestset.searchStandardRequests(standard_type=standardrequest)
+  >>> requests.count()
+  1
+  >>> requests[0].quantityx86 == standardrequest.quantityx86
+  True
+  >>> requests[0].quantityamd64 == standardrequest.quantityamd64
+  True
+  >>> requests[0].quantityppc == standardrequest.quantityppc
+  True

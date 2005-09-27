@@ -1,0 +1,22 @@
+<div class="portlet">
+  <h4>actions:</h4>
+  
+  <div class="portletBody portletContent"
+       tal:define="poll_url context/fmt:url">
+	
+    <ul>
+      <li class="info">
+        <a tal:attributes="href string:${poll_url}/+options">
+          Show All Options
+        </a>
+      </li>
+      <li class="add">
+        <a tal:attributes="href string:${poll_url}/+newoption">
+          Add New Option
+        </a>
+      </li>
+    </ul>
+
+  </div>
+
+</div>

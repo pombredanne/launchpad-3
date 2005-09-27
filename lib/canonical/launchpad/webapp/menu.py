@@ -2,20 +2,47 @@
 """Menus and facets."""
 
 __metaclass__ = type
-__all__ = ['nearest_menu', 'FacetMenu', 'ExtraFacetMenu',
-           'ApplicationMenu', 'ExtraApplicationMenu',
-           'Link', 'DefaultLink']
+__all__ = ['nearest_menu', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
+           'Link', 'LinkData', 'FacetLink', 'MenuLink', 'Url', 'structured',
+           'enabled_with_permission']
 
 import urlparse
+import cgi
 from zope.interface import implements
-from zope.component import getDefaultViewName
+from canonical.lp import decorates
+from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
-    IMenuBase, IFacetMenu, IExtraFacetMenu, IApplicationMenu,
-    IExtraApplicationMenu, ILink, IDefaultLink
+    IMenuBase, IFacetMenu, IApplicationMenu, IContextMenu,
+    IFacetLink, ILink, ILinkData, IStructuredString
     )
 from canonical.launchpad.webapp.publisher import (
     canonical_url, canonical_url_iterator
     )
+
+
+class structured:
+
+    implements(IStructuredString)
+
+    def __init__(self, text, *replacements, **kwreplacements):
+        self.text = text
+        if replacements and kwreplacements:
+            raise TypeError(
+                "You must provide either positional arguments or keyword "
+                "arguments to structured(), not both.")
+        if replacements:
+            self.escapedtext = text % tuple(
+                cgi.escape(replacement) for replacement in replacements)
+        elif kwreplacements:
+            self.escapedtext = text % dict(
+                (key, cgi.escape(value))
+                for key, value in kwreplacements.iteritems())
+        else:
+            self.escapedtext = self.text
+
+    def __repr__(self):
+        return "<structured-string '%s'>" % self.text
+
 
 def nearest_menu(obj, menuinterface):
     """Return the menu adapter of the nearest object up the canonical url chain
@@ -25,7 +52,7 @@ def nearest_menu(obj, menuinterface):
 
     Return None if there is no object that has such a menu in the url chain.
 
-    menuinterface will typically be one of IFacetMenu and IExtraFacetMenu.
+    menuinterface will typically be IFacetMenu.
     """
     for current_obj in canonical_url_iterator(obj):
         facetmenu = menuinterface(current_obj, None)
@@ -34,31 +61,84 @@ def nearest_menu(obj, menuinterface):
     return None
 
 
-class Link:
-    """General links that aren't default links."""
-    implements(ILink)
+class LinkData:
+    """General links that aren't default links.
 
-    def __init__(self, target, text, summary=None, linked=True):
+    Instances of this class just provide link data.  The class is also known
+    as 'Link' to make it nice to use when defining menus.
+    """
+    implements(ILinkData)
+
+    def __init__(self, target, text, summary=None, icon=None, enabled=True):
         """Create a new link to 'target' with 'text' as the link text.
 
-        If the 'linked' argument is set to False, then the link will
-        be disabled.
+        'target' is a relative path, an absolute path, or an absolute url.
 
-        If the 'linked' argument is set to True, then the link will be
-        enabled, provided that it does not point to the current page.
+        'text' is the link text of this link.
+
+        'summary' is the summary text of this link.
+
+        The 'enabled' argument is boolean for whether this link is enabled.
+
+        The 'icon' is the name of the icon to use, or None if there is no
+        icon.
         """
         self.target = target
         self.text = text
         self.summary = summary
-        self.name = None
-        self.selected = False
-        self.linked = linked
-        self.url = None
+        self.icon = icon
+        self.enabled = enabled
+
+Link = LinkData
 
 
-class DefaultLink(Link):
-    """Link that is selected when no other links are."""
-    implements(IDefaultLink)
+class MenuLink:
+    """Adapter from ILinkData to ILink."""
+    implements(ILink)
+    decorates(ILinkData, context='_linkdata')
+
+    # These attributes are set by the menus infrastructure.
+    name = None
+    url = None
+    linked = True
+
+    # This attribute is used to override self.enabled when it is
+    # set, without writing to the object being adapted.
+    _enabled_override = None
+
+    def __init__(self, linkdata):
+        # Take a copy of the linkdata attributes.
+        self._linkdata = linkdata
+
+    def set_enabled(self, value):
+        self._enabled_override = value
+
+    def get_enabled(self):
+        if self._enabled_override is None:
+            return self._linkdata.enabled
+        return self._enabled_override
+
+    enabled = property(get_enabled, set_enabled)
+
+    @property
+    def escapedtext(self):
+        text = self._linkdata.text
+        if IStructuredString.providedBy(text):
+            return text.escapedtext
+        else:
+            return cgi.escape(text)
+
+
+class FacetLink(MenuLink):
+    """Adapter from ILinkData to IFacetLink."""
+    implements(IFacetLink)
+
+    # This attribute is set by the menus infrastructure.
+    selected = False
+
+
+# Marker object that means 'all links are to be enabled'.
+ALL_LINKS = object()
 
 
 class MenuBase:
@@ -67,39 +147,48 @@ class MenuBase:
     implements(IMenuBase)
 
     links = None
+    enable_only = ALL_LINKS
     _baseclassname = 'MenuBase'
 
-    def __init__(self, context, request=None):
-        # The attributes self.context and self.request are defined in
-        # IFacetMenu.
+    def __init__(self, context):
+        # The attribute self.context is defined in IMenuBase.
         self.context = context
-        self.request = request
 
-    def __iter__(self):
-        """See IFacetMenu."""
+    def _get_link(self, name):
+        method = getattr(self, name)
+        linkdata = method()
+        # The link need only provide ILinkData.  We need an ILink so that
+        # we can set attributes on it like 'name' and 'url' and 'linked'.
+        return ILink(linkdata)
+
+    def iterlinks(self, requesturl=None):
+        """See IMenu."""
         assert self.links is not None, (
             'Subclasses of %s must provide self.links' % self._baseclassname)
-        contexturlobj = Url(canonical_url(self.context, self.request))
-        if self.request is None:
-            requesturlobj = None
-        else:
-            requesturlobj = Url(self.request.getURL(),
-                                self.request.get('QUERY_STRING'))
-            # If the default view name is being used, we will want the url
-            # without the default view name.
-            defaultviewname = getDefaultViewName(self.context, self.request)
-            if requesturlobj.pathnoslash.endswith(defaultviewname):
-                requesturlobj = Url(self.request.getURL(1),
-                                    self.request.get('QUERY_STRING'))
+        contexturlobj = Url(canonical_url(self.context))
 
-        output_links = []
-        default_link = None
-        selected_links = set()
+        if self.enable_only is ALL_LINKS:
+            enable_only = set(self.links)
+        else:
+            enable_only = set(self.enable_only)
+
+        if enable_only - set(self.links):
+            # There are links named in enable_only that do not exist in
+            # self.links.
+            raise AssertionError(
+                "Links in 'enable_only' not found in 'links': %s" %
+                (', '.join([name for name in enable_only - set(self.links)])))
 
         for linkname in self.links:
-            method = getattr(self, linkname)
-            link = method()
+            link = self._get_link(linkname)
             link.name = linkname
+
+            # Set the .enabled attribute of the link to False if it is not
+            # in enable_only.
+            if linkname not in enable_only:
+                link.enabled = False
+
+            # Set the .url attribute of the link, using the menu's context.
             targeturlobj = Url(link.target)
             if targeturlobj.addressingscheme:
                 link.url = link.target
@@ -108,32 +197,13 @@ class MenuBase:
             else:
                 link.url = '%s%s%s' % (
                     contexturlobj.host, contexturlobj.pathslash, link.target)
-            isdefaultlink = IDefaultLink.providedBy(link)
-            if requesturlobj is not None:
+
+            # Make the link unlinked if it is a link to the current page.
+            if requesturl is not None:
                 linkurlobj = Url(link.url)
-                if requesturlobj.is_inside(linkurlobj):
-                    selected_links.add(link)
-                if requesturlobj == linkurlobj:
+                if requesturl == linkurlobj:
                     link.linked = False
-            if isdefaultlink:
-                assert default_link is None, (
-                    'There can be only one DefaultLink')
-                default_link = link
-            output_links.append(link)
-        # If we have many selected_links, make selected_link the one that
-        # is inside the rest.  If we have just one selected link, that's easy:
-        # that link is selected.  If we have no selected links, then use the
-        # default link.
-        L = sorted(selected_links, key=lambda link: link.url, reverse=True)
-        L = L[:1]
-        if L:
-            selected_link = L[0]
-            selected_link.selected = True
-        elif (default_link is not None and
-              requesturlobj is not None and
-              requesturlobj.is_inside(contexturlobj)):
-            default_link.selected = True
-        return iter(output_links)
+            yield link
 
 
 class FacetMenu(MenuBase):
@@ -143,13 +213,21 @@ class FacetMenu(MenuBase):
 
     _baseclassname = 'FacetMenu'
 
+    # See IFacetMenu.
+    defaultlink = None
 
-class ExtraFacetMenu(MenuBase):
-    """Base class for extra facet menus."""
+    def _get_link(self, name):
+        return IFacetLink(MenuBase._get_link(self, name))
 
-    implements(IExtraFacetMenu)
-
-    _baseclassname = 'ExtraFacetMenu'
+    def iterlinks(self, requesturl=None, selectedfacetname=None):
+        """See IFacetMenu."""
+        if selectedfacetname is None:
+            selectedfacetname = self.defaultlink
+        for link in MenuBase.iterlinks(self, requesturl=requesturl):
+            if (selectedfacetname is not None and
+                selectedfacetname == link.name):
+                link.selected = True
+            yield link
 
 
 class ApplicationMenu(MenuBase):
@@ -160,12 +238,12 @@ class ApplicationMenu(MenuBase):
     _baseclassname = 'ApplicationMenu'
 
 
-class ExtraApplicationMenu(MenuBase):
-    """Base class for extra application menus."""
+class ContextMenu(MenuBase):
+    """Base class for context menus."""
 
-    implements(IExtraApplicationMenu)
+    implements(IContextMenu)
 
-    _baseclassname = 'ExtraApplicationMenu'
+    _baseclassname = 'ContextMenu'
 
 
 class Url:
@@ -208,3 +286,42 @@ class Url:
 
     def __ne__(self, otherurl):
         return not self.__eq__(self, otherurl)
+
+
+class enabled_with_permission:
+    """Function decorator that disables the output link unless the current
+    user has the given permission on the context.
+
+    This class is instantiated by programmers who want to apply this decorator.
+
+    Use it like:
+
+        @enabled_with_permission('launchpad.Admin')
+        def somemenuitem(self):
+            return Link('+target', 'link text')
+
+    """
+
+    def __init__(self, permission):
+        """Make a new enabled_with_permission function decorator.
+
+        `permission` is the string permission name, like 'launchpad.Admin'.
+        """
+        self.permission = permission
+
+    def __call__(self, func):
+        """Called by the decorator machinery to return a decorated function.
+
+        Returns a new function that calls the original function, gets the
+        link that it returns, and depending on the permissions granted to
+        the logged-in user, disables the link, before returning it to the
+        called.
+        """
+        permission = self.permission
+        def enable_if_allowed(self):
+            link = func(self)
+            if not check_permission(permission, self.context):
+                link.enabled = False
+            return link
+        return enable_if_allowed
+

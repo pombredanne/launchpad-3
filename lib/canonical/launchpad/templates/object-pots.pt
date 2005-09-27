@@ -58,12 +58,6 @@
         </ul>
       </div>
 
-      <p tal:condition="view/languages" i18n:translate="">Note: to choose
-      the languages that are displayed by default in the listings below you
-      need to be logged in to The Launchpad, and have chosen a set of
-      preferred languages. <a href="/rosetta/prefs/">Click here</a> to
-      select languages now.</p>
-
       <div tal:condition="view/languages"
            tal:repeat="potview view/templateviews"
            tal:omit-tag=""> <!-- PO Template Details -->
@@ -84,6 +78,10 @@
       </div>
 
       <div tal:replace="structure context/@@+rosetta-status-legend" />
+
+      <p tal:condition="view/languages" i18n:translate="">Note: you can
+      ensure that languages important to you are included in the list above.
+      <a href="/rosetta/prefs/">Click here</a> to select languages now.</p>
 
     </tal:block> <!-- the detailed template+language listing -->
 

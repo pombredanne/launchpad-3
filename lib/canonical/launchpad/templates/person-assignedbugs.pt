@@ -12,46 +12,38 @@
 
   <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-actions" />
-    <div tal:replace="structure context/@@+portlet-calendar" />
   </metal:rightportlets>
 
   <div metal:fill-slot="main">
 
-    <tal:block condition="view/setUpAssignedBugTasksToShow" />
+    <tal:block define="tasks_assigned view/bugTasksAssignedToPerson;
+                       tasks_on_maintained_software view/bugTasksOnMaintainedSoftware">
 
       <h1>Latest Bugs Assigned to <span tal:replace="context/browsername" /></h1>
 
-      <p tal:condition="not: view/assignedBugsToShow">No bugs have been 
-      assigned to <span tal:replace="context/browsername" /> or to any 
+      <p tal:condition="not: tasks_assigned">No bugs have been
+      assigned to <span tal:replace="context/browsername" /> or to any
       package/product (s)he maintains.</p>
 
-      <tal:block tal:condition="view/assignedBugsToShow">
+      <tal:block tal:condition="tasks_assigned">
 
       <div style="margin-bottom: 1em"
-           tal:condition="view/assignedTasks"
-           tal:define="tasks view/assignedTasks;">
+           tal:define="tasks tasks_assigned;">
 
-        <h2 style="margin-bottom: 0;">Directly assigned</h2>
+        <h2 style="margin-bottom: 0;">Bugs assigned to you</h2>
 
-      <tal:assignedbugs 
+      <tal:assignedbugs
           metal:use-macro="context/@@+bugtask-macros-tableview/table" />
-
-        <span class="discreet">
-        You can also see the
-        <a tal:attributes="href string:/malone/assigned/?name=${context/name}">
-          whole list</a> of bugs assigned to him(her) if you want
-          to.</span>
 
       </div>
 
       <div style="margin-bottom: 1em"
-           tal:condition="view/recentBugTasks"
-           tal:define="tasks view/recentBugTasks">
+           tal:condition="tasks_on_maintained_software"
+           tal:define="tasks tasks_on_maintained_software">
 
-        <h2 style="margin-bottom: 0;">Assigned to maintained packages
-        and products</h2>
+        <h2 style="margin-bottom: 0;">Bugs reported on software you maintain</h2>
 
-      <tal:assignedbugs 
+      <tal:assignedbugs
           metal:use-macro="context/@@+bugtask-macros-tableview/table" />
 
       </div>
@@ -63,7 +55,7 @@
 
           <h2 style="margin-bottom: 0;">Bugs relevant to you</h2>
 
-          <tal:assignedbugs 
+          <tal:assignedbugs
               metal:use-macro="context/@@+bugtask-macros-tableview/table" />
 
           <span class="discreet">These are bugs that you and <span
@@ -73,6 +65,7 @@
 
       </tal:block>
 
+    </tal:block>
     </tal:block>
 
   </div>

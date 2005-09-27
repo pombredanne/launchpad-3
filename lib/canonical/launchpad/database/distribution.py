@@ -16,9 +16,11 @@ from canonical.launchpad.database.distributionbounty import \
     DistributionBounty
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.ticket import Ticket
 from canonical.lp.dbschema import (EnumCol, BugTaskStatus,
     DistributionReleaseStatus, TranslationPermission)
 from canonical.launchpad.interfaces import (IDistribution, IDistributionSet,
@@ -46,13 +48,15 @@ class Distribution(SQLBase):
         default=TranslationPermission.OPEN)
     lucilleconfig = StringCol(notNull=False, default=None)
     releases = MultipleJoin('DistroRelease', joinColumn='distribution',
-                            orderBy=['version', 'datecreated', '-id'])
+                            orderBy=['version', '-id'])
     bounties = RelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistroBounty')
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
     milestones = MultipleJoin('Milestone', joinColumn='distribution')
     specifications = MultipleJoin('Specification', joinColumn='distribution',
+        orderBy=['-datecreated', 'id'])
+    tickets = MultipleJoin('Ticket', joinColumn='distribution',
         orderBy=['-datecreated', 'id'])
 
 
@@ -65,7 +69,8 @@ class Distribution(SQLBase):
     def open_cve_bugtasks(self):
         """See IDistribution."""
         result = BugTask.select("""
-           CVERef.bug = Bug.id AND
+            CVE.id = BugCve.cve AND
+            BugCve.bug = Bug.id AND
             BugTask.bug = Bug.id AND
             BugTask.distribution=%s AND
             BugTask.status IN (%s, %s)
@@ -73,7 +78,7 @@ class Distribution(SQLBase):
                 self.id,
                 BugTaskStatus.NEW,
                 BugTaskStatus.ACCEPTED),
-            clauseTables=['Bug', 'CVERef'],
+            clauseTables=['Bug', 'Cve', 'BugCve'],
             orderBy=['-severity', 'datecreated'])
         return result
 
@@ -81,7 +86,8 @@ class Distribution(SQLBase):
     def resolved_cve_bugtasks(self):
         """See IDistribution."""
         result = BugTask.select("""
-            CVERef.bug = Bug.id AND
+            CVE.id = BugCve.cve AND
+            BugCve.bug = Bug.id AND
             BugTask.bug = Bug.id AND
             BugTask.distribution=%s AND
             BugTask.status IN (%s, %s, %s)
@@ -90,7 +96,7 @@ class Distribution(SQLBase):
                 BugTaskStatus.REJECTED,
                 BugTaskStatus.FIXED,
                 BugTaskStatus.PENDINGUPLOAD),
-            clauseTables=['Bug', 'CVERef'],
+            clauseTables=['Bug', 'Cve', 'BugCve'],
             orderBy=['-severity', 'datecreated'])
         return result
 
@@ -175,6 +181,23 @@ class Distribution(SQLBase):
         """See ISpecificationTarget."""
         return Specification.selectOneBy(distributionID=self.id, name=name)
 
+    def newTicket(self, owner, title, description):
+        """See ITicketTarget."""
+        return Ticket(title=title, description=description, owner=owner,
+            distribution=self)
+
+    def getTicket(self, ticket_num):
+        """See ITicketTarget."""
+        # first see if there is a ticket with that number
+        try:
+            ticket = Ticket.get(ticket_num)
+        except SQLObjectNotFound:
+            return None
+        # now verify that that ticket is actually for this target
+        if ticket.target != self:
+            return None
+        return ticket
+
     def ensureRelatedBounty(self, bounty):
         """See IDistribution."""
         for curr_bounty in self.bounties:
@@ -183,6 +206,27 @@ class Distribution(SQLBase):
         linker = DistributionBounty(distribution=self, bounty=bounty)
         return None
 
+    def getDistroReleaseAndPocket(self, distrorelease_name):
+        """See IDistribution."""
+        from canonical.archivepublisher.publishing import (
+            pocketsuffix, suffixpocket)
+
+        # Get the list of suffixes
+        suffixes = [suffix for suffix, ignored in suffixpocket.items()]
+        # Sort it longest string first
+        suffixes.sort(key=len, reverse=True)
+        
+        for suffix in suffixes:
+            if distrorelease_name.endswith(suffix):
+                try:
+                    left_size = len(distrorelease_name) - len(suffix)
+                    return (self[distrorelease_name[:left_size]],
+                            suffixpocket[suffix])
+                except KeyError:
+                    # Swallow KeyError to continue round the loop
+                    pass
+
+        raise KeyError(distrorelease_name)
 
 class DistributionSet:
     """This class is to deal with Distribution related stuff"""

@@ -1,8 +1,8 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
 __all__ = ['IPoll', 'IPollSet', 'IPollSubset', 'IPollOption',
-           'IPollOptionSet', 'IPollOptionSubset', 'IVote', 'IVoteCast',
-           'PollStatus']
+           'IPollOptionSet', 'IVote', 'IVoteCast', 'PollStatus', 'IVoteSet',
+           'IVoteCastSet', 'OptionIsNotFromSimplePoll']
 
 # Imports from zope
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
@@ -73,11 +73,97 @@ class IPoll(Interface):
         poll is/was/will be closed at a specific date.
         """
 
+    def isNotYetOpened(when=None):
+        """Return True if this Poll is not yet opened.
+
+        The optional :when argument is used only by our tests, to test if the
+        poll is/was/will be not-yet-opened at a specific date.
+        """
+
+    def closesIn():
+        """Return a timedelta object of the interval between now and the date
+        when this poll closes."""
+
+    def opensIn(self):
+        """Return a timedelta object of the interval between now and the date
+        when this poll opens."""
+
+    def newOption(name, shortname=None, active=True):
+        """Create a new PollOption for this poll.
+        
+        If shortname is None it'll be the same as name.
+        """
+
+    def getActiveOptions():
+        """Return all PollOptions of this poll that are active."""
+
     def getAllOptions(self):
         """Return all Options of this poll."""
 
     def personVoted(person):
         """Return True if :person has already voted in this poll."""
+
+    def getVotesByPerson(person):
+        """Return the votes of the given person in this poll.
+
+        The return value will always be a list of Vote objects. That's for
+        consistency because on simple polls there'll be always a single vote,
+        but for condorcet poll, there'll always be a list.
+        """
+
+    def getTotalVotes():
+        """Return the total number of votes this poll had.
+
+        This must be used only on closed polls.
+        """
+
+    def getWinners():
+        """Return the options which won this poll.
+
+        This should be used only on closed polls.
+        """
+
+    def removeOption(option, when=None):
+        """Remove the given option from this poll.
+
+        A ValueError is raised if the given option doesn't belong to this poll.
+        This method can be used only on polls that are not yet opened.
+        The optional :when argument is used only by our tests, to test if the
+        poll is/was/will be not-yet-opened at a specific date.
+        """
+
+    def storeSimpleVote(person, option, when=None):
+        """Store and return the vote of a given person in a this poll.
+
+        This method can be used only if this poll is still open and if this is
+        a Simple-style poll.
+
+        :option: The choosen option.
+
+        :when: Optional argument used only by our tests, to test if the poll
+               is/was/will be open at a specific date.
+        """
+
+    def storeCondorcetVote(person, options, when=None):
+        """Store and return the votes of a given person in this poll.
+
+        This method can be used only if this poll is still open and if this is
+        a Condorcet-style poll.
+
+        :options: A dictionary, where the options are the keys and the
+                  preferences of each option are the values.
+
+        :when: Optional argument used only by our tests, to test if the poll
+               is/was/will be open at a specific date.
+        """
+
+    def getPairwiseMatrix():
+        """Return the pairwise matrix for this poll.
+
+        This method is only available for condorcet-style polls.
+        See http://www.electionmethods.org/CondorcetEx.htm for an example of a
+        pairwise matrix.
+        """
 
 
 class PollStatus:
@@ -93,7 +179,7 @@ class IPollSet(Interface):
     """The set of Poll objects."""
 
     def new(team, name, title, proposition, dateopens, datecloses,
-            type, secrecy, allowspoilt):
+            secrecy, allowspoilt, poll_type=PollAlgorithm.SIMPLE):
         """Create a new Poll for the given team."""
 
     def selectByTeam(team, status=PollStatus.ALL, orderBy=None, when=None):
@@ -125,8 +211,8 @@ class IPollSubset(Interface):
 
     title = Attribute('Polls Page Title')
 
-    def new(name, title, proposition, dateopens, datecloses, type, secrecy,
-            allowspoilt):
+    def new(name, title, proposition, dateopens, datecloses, secrecy,
+            allowspoilt, poll_type=PollAlgorithm.SIMPLE):
         """Create a new Poll for this team."""
 
     def getAll():
@@ -156,7 +242,7 @@ class IPollSubset(Interface):
         poll is/was/will be open at a specific date.
         """
 
-    def getByName(name, default=None):
+    def getOptionByName(name, default=None):
         """Return the Poll of this team with the given name.
 
         Return :default if there's no Poll with this name.
@@ -186,6 +272,9 @@ class IPollOption(Interface):
 
     title = Attribute('Poll Option Page Title')
 
+    def destroySelf():
+        """Remove this option from the database."""
+
 
 class IPollOptionSet(Interface):
     """The set of PollOption objects."""
@@ -207,29 +296,6 @@ class IPollOptionSet(Interface):
         """
 
 
-class IPollOptionSubset(Interface):
-    """The set of PollOption objects within a given poll."""
-
-    poll = Attribute(_("The poll to which all PollOptions refer to."))
-
-    title = Attribute('Poll Options Page Title')
-
-    def new(name, shortname=None, active=True):
-        """Create a new PollOption for this poll."""
-
-    def getAll():
-        """Return all PollOptions of this poll."""
-
-    def get_default(id, default=None):
-        """Return the PollOption of this poll with the given id.
-
-        Return :default if there's no PollOption with this id in this poll.
-        """
-
-    def getActive():
-        """Return all PollOptions of this poll that are active."""
-
-
 class IVoteCast(Interface):
     """Here we store who voted in a Poll, but not their votes."""
 
@@ -241,6 +307,13 @@ class IVoteCast(Interface):
     poll = Int(
         title=_('The Poll in which the person voted.'), required=True,
         readonly=True)
+
+
+class IVoteCastSet(Interface):
+    """The set of all VoteCast objects."""
+
+    def new(poll, person):
+        """Create a new VoteCast."""
 
 
 class IVote(Interface):
@@ -269,4 +342,33 @@ class IVote(Interface):
 
     token = Text(
         title=_('The token we give to the user.'), required=True, readonly=True)
+
+
+class OptionIsNotFromSimplePoll(Exception):
+    """Someone tried use an option from a non-SIMPLE poll as if it was from a
+    SIMPLE one."""
+
+
+class IVoteSet(Interface):
+    """The set of all Vote objects."""
+
+    def newToken():
+        """Return a token that was never used in the Vote table."""
+
+    def new(poll, option, preference, token, person):
+        """Create a new Vote."""
+
+    def getByToken(token):
+        """Return the list of votes with the given token.
+
+        For polls whose type is SIMPLE, this list will contain a single vote,
+        because in SIMPLE poll only one option can be choosen.
+        """
+
+    def getVotesByOption(option):
+        """Return the number of votes the given option received.
+
+        Raises a TypeError if the given option doesn't belong to a
+        simple-style poll.
+        """
 

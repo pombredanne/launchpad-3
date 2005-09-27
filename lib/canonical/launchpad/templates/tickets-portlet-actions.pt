@@ -1,0 +1,8 @@
+<div class="portlet portletBody portletContent">
+
+    <ul>
+      <li class="search"><a href="/products">Find Upstream Product</a></li>
+      <li class="search"><a href="/distros">Find Distribution</a></li>
+    </ul>
+	
+</div>

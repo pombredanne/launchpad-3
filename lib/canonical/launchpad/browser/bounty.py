@@ -20,7 +20,6 @@ from zope.app.form.browser.editview import EditView
 from canonical.launchpad.interfaces import (
     IBounty, IBountySet, ILaunchBag, IProduct, IProject, IDistribution)
 
-from zope.app.form.browser.editview import EditView
 from canonical.launchpad.webapp import canonical_url
 
 
@@ -31,7 +30,6 @@ class BountyView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.subscription = None
         self.notices = []
 
         # figure out who the user is for this transaction
@@ -47,12 +45,15 @@ class BountyView:
             self.notices.append("Your subscription to this bounty has been "
                 "updated.")
 
-        # establish if this user has a subscription to the bounty
-        if self.user is not None:
-            for subscription in self.context.subscriptions:
-                if subscription.person.id == self.user.id:
-                    self.subscription = subscription
-                    break
+    @property
+    def subscription(self):
+        """establish if this user has a subscription"""
+        if self.user is None:
+            return None
+        for subscription in self.context.subscriptions:
+            if subscription.person.id == self.user.id:
+                return subscription
+        return None
 
 
 class BountyEditView(EditView):

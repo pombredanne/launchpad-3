@@ -16,11 +16,11 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Project Plan</h1>
+  <h1>Roadmap of Spec Implementation</h1>
 
   <p class="documentDescription">
     Based on the current specifications, their dependencies, priorities and
-    statuses, Launchpad recommends the following project plan.
+    statuses, Launchpad recommends the following implementation plan.
   </p>
 
   <p class="portalMessage" tal:condition="not: view/specPlan">

@@ -5,6 +5,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+<facet facet="bugs">
+
     <!-- BugExternalRef -->
     <content class="canonical.launchpad.database.BugExternalRef">
         <allow interface="canonical.launchpad.interfaces.IBugExternalRef" />
@@ -30,32 +32,13 @@
             lp:url="malone/bugs/$Bug.id/reference/$Reference.id" />
     </browser:pages>
 
-    <browser:addform
-        name="+new"
-        schema="canonical.launchpad.interfaces.IBugExternalRef"
-        for="canonical.launchpad.interfaces.IBugExternalRefSet"
-        class="canonical.launchpad.browser.bugextref.BugExternalRefAddView"
-        label="Add External Reference"
-        fields="url title"
-        content_factory="canonical.launchpad.database.BugExternalRefFactory"
-        arguments=""
-        keyword_arguments="url title"
-        permission="launchpad.AnyPerson"
-        template="../templates/bug-extref-add.pt"
-        lp:url="malone/bugs/$Bugs.id/references/+new">
-        <browser:widget
-            field="url"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="60" />
-    </browser:addform>
-
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IBugExternalRef"
-        class="canonical.launchpad.browser.editview.SQLObjectEditView"
+        class="canonical.launchpad.browser.BugRelatedObjectEditView"
         label="Modify Web Reference"
         permission="launchpad.AnyPerson"
-        template="../templates/default-editform.pt"
+        template="../templates/bug-extref-edit.pt"
         fields="url title"
         lp:url="malone/bugs/$Bug.id/references/$Reference.id/+edit" />
 
@@ -87,5 +70,5 @@
             template="../templates/references-index.pt"
             lp:url="malone/bugs/$Bug.id/references" />
     </browser:pages>
-
+</facet>
 </configure>

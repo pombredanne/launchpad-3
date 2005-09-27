@@ -13,7 +13,7 @@ from twisted.enterprise import adbapi
 
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.interfaces import UBUNTU_WIKI_URL
-from canonical.database.sqlbase import quote
+from canonical.database.sqlbase import sqlvalues
 from canonical.lp import dbschema
 
 from canonical.authserver.interfaces import IUserDetailsStorage
@@ -22,8 +22,10 @@ from canonical.authserver.interfaces import IUserDetailsStorageV2
 from canonical.foaf import nickname
 
 
-def utf8quote(string):
-    return quote(string).encode('utf-8')
+def utf8(x):
+    if isinstance(x, unicode):
+        x = x.encode('utf-8')
+    return x
 
 
 class UserDetailsStorageMixin(object):
@@ -32,11 +34,14 @@ class UserDetailsStorageMixin(object):
 
     def _getEmailAddresses(self, transaction, personID):
         """Get the email addresses for a person"""
-        transaction.execute(
-            'SELECT EmailAddress.email FROM EmailAddress '
-            'WHERE EmailAddress.person = %d '
-            'ORDER BY EmailAddress.email'
-            % (personID,)
+        transaction.execute(utf8('''
+            SELECT EmailAddress.email FROM EmailAddress
+            WHERE EmailAddress.person = %s
+            AND EmailAddress.status IN (%s, %s)
+            ORDER BY (EmailAddress.status = %s) DESC, EmailAddress.email'''
+            % sqlvalues(personID, dbschema.EmailAddressStatus.PREFERRED,
+                        dbschema.EmailAddressStatus.VALIDATED,
+                        dbschema.EmailAddressStatus.PREFERRED))
         )
         return [row[0] for row in transaction.fetchall()]
 
@@ -45,19 +50,18 @@ class UserDetailsStorageMixin(object):
        
         First email address is PREFERRED, others are VALIDATED
         """
-        transaction.execute(
-            "INSERT INTO EmailAddress (person, email, status) "
-            "VALUES (%d, %s, %d)" % (
-                personID, utf8quote(emailAddresses[0]),
-                dbschema.EmailAddressStatus.PREFERRED.value
-                )
+        transaction.execute(utf8('''
+            INSERT INTO EmailAddress (person, email, status)
+            VALUES (%s, %s, %s)'''
+            % sqlvalues(personID, emailAddresses[0].encode('utf-8'),
+                        dbschema.EmailAddressStatus.PREFERRED))
             )
         for emailAddress in emailAddresses[1:]:
-            transaction.execute(
-                "INSERT INTO EmailAddress (person, email, status) "
-                "VALUES (%d, %s, %d)"
-                % (personID, utf8quote(emailAddress),
-                   dbschema.EmailAddressStatus.VALIDATED.value)
+            transaction.execute(utf8('''
+                INSERT INTO EmailAddress (person, email, status)
+                VALUES (%s, %s, %s)'''
+                % sqlvalues(personID, emailAddress.encode('utf-8'),
+                            dbschema.EmailAddressStatus.VALIDATED))
             )
 
     def getSSHKeys(self, archiveName):
@@ -67,12 +71,12 @@ class UserDetailsStorageMixin(object):
     def _getSSHKeysInteraction(self, transaction, archiveName):
         # The PushMirrorAccess table explicitly says that a person may access a
         # particular push mirror.
-        transaction.execute(
-            "SELECT keytype, keytext "
-            "FROM SSHKey "
-            "JOIN PushMirrorAccess ON SSHKey.person = PushMirrorAccess.person "
-            "WHERE PushMirrorAccess.name = %s"
-            % (utf8quote(archiveName),)
+        transaction.execute(utf8('''
+            SELECT keytype, keytext
+            FROM SSHKey
+            JOIN PushMirrorAccess ON SSHKey.person = PushMirrorAccess.person
+            WHERE PushMirrorAccess.name = %s'''
+            % sqlvalues(archiveName))
         )
         authorisedKeys = transaction.fetchall()
         
@@ -83,14 +87,14 @@ class UserDetailsStorageMixin(object):
         else:
             email = archiveName
 
-        transaction.execute(
-            "SELECT keytype, keytext "
-            "FROM SSHKey "
-            "JOIN EmailAddress ON SSHKey.person = EmailAddress.person "
-            "WHERE EmailAddress.email = %s "
-            "AND EmailAddress.status in (%d, %d)"
-            % (utf8quote(email), dbschema.EmailAddressStatus.VALIDATED.value,
-                dbschema.EmailAddressStatus.PREFERRED.value)
+        transaction.execute(utf8('''
+            SELECT keytype, keytext
+            FROM SSHKey
+            JOIN EmailAddress ON SSHKey.person = EmailAddress.person
+            WHERE EmailAddress.email = %s
+            AND EmailAddress.status in (%s, %s)'''
+            % sqlvalues(email, dbschema.EmailAddressStatus.VALIDATED,
+                        dbschema.EmailAddressStatus.PREFERRED))
         )
         authorisedKeys.extend(transaction.fetchall())
         # Replace keytype with correct DBSchema items.
@@ -100,9 +104,9 @@ class UserDetailsStorageMixin(object):
 
     def _wikinameExists(self, transaction, wikiname):
         """Is a wikiname already taken?"""
-        transaction.execute(
+        transaction.execute(utf8(
             "SELECT count(*) FROM Wikiname WHERE wikiname = %s"
-            % (utf8quote(wikiname),)
+            % sqlvalues(wikiname))
         )
         return bool(transaction.fetchone()[0])
 
@@ -111,17 +115,17 @@ class UserDetailsStorageMixin(object):
         # the OUTER JOIN happens after the INNER JOIN.  This should allow
         # postgres to optimise the query as much as possible (approx 10x faster
         # according to my tests with EXPLAIN on the production database).
-        select = (
-            "SELECT Person.id, Person.displayname, Person.password, "
-            "    Wikiname.wikiname "
-            "FROM Person ")
+        select = '''
+            SELECT Person.id, Person.displayname, Person.password,
+                   Wikiname.wikiname
+            FROM Person '''
 
-        wikiJoin = (
-            "LEFT OUTER JOIN Wikiname ON Wikiname.person = Person.id "
-            "AND Wikiname.wiki = %s"
-            % (utf8quote(UBUNTU_WIKI_URL),))
+        wikiJoin = ('''
+            LEFT OUTER JOIN Wikiname ON Wikiname.person = Person.id
+            AND Wikiname.wiki = %s '''
+            % sqlvalues(UBUNTU_WIKI_URL))
 
-        # First, try to look the person up by using loginID as an email 
+        # First, try to look the person up by using loginID as an email
         # address
         try:
             if not isinstance(loginID, unicode):
@@ -130,12 +134,15 @@ class UserDetailsStorageMixin(object):
         except UnicodeDecodeError:
             row = None
         else:
-            transaction.execute(
-                select + 
+            transaction.execute(utf8(
+                select +
                 "INNER JOIN EmailAddress ON EmailAddress.person = Person.id " +
                 wikiJoin +
-                "WHERE lower(EmailAddress.email) = %s "
-                % (utf8quote(loginID.lower()),)
+                ("WHERE lower(EmailAddress.email) = %s "
+                 "AND EmailAddress.status IN (%s, %s) "
+                % sqlvalues(loginID.lower(),
+                            dbschema.EmailAddressStatus.PREFERRED,
+                            dbschema.EmailAddressStatus.VALIDATED)))
             )
 
             row = transaction.fetchone()
@@ -147,17 +154,16 @@ class UserDetailsStorageMixin(object):
             except ValueError:
                 pass
             else:
-                transaction.execute(
+                transaction.execute(utf8(
                     select + wikiJoin +
-                    "WHERE Person.id = %d " % (personID,)
+                    ("WHERE Person.id = %s " % sqlvalues(personID)))
                 )
                 row = transaction.fetchone()
         if row is None:
             # Fallback #2: try treating loginID as a nickname
-            transaction.execute(
+            transaction.execute(utf8(
                 select + wikiJoin +
-                "WHERE Person.name = %s " 
-                % (utf8quote(loginID),)
+                ("WHERE Person.name = %s " % sqlvalues(loginID)))
             )
             row = transaction.fetchone()
         if row is None:
@@ -300,22 +306,21 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
         # Create the Person
         name = nickname.generate_nick(emailAddresses[0], lambda nick:
                 self._getPerson(transaction, nick))
-        transaction.execute(
-            "INSERT INTO Person (id, name, displayname, password) "
-            "VALUES (%d, %s, %s, %s)"
-            % (personID, utf8quote(name), utf8quote(displayname),
-               utf8quote(sshaDigestedPassword))
+        transaction.execute(utf8('''
+            INSERT INTO Person (id, name, displayname, password)
+            VALUES (%s, %s, %s, %s)'''
+            % sqlvalues(personID, name, displayname, sshaDigestedPassword))
         )
         
         # Create a wikiname
         wikiname = nickname.generate_wikiname(
-                displayname, 
+                displayname,
                 registered=lambda x: self._wikinameExists(transaction, x)
         )
-        transaction.execute(
-            "INSERT INTO Wikiname (person, wiki, wikiname) "
-            "VALUES (%d, %s, %s)"
-            % (personID, utf8quote(UBUNTU_WIKI_URL), utf8quote(wikiname))
+        transaction.execute(utf8('''
+            INSERT INTO Wikiname (person, wiki, wikiname)
+            VALUES (%s, %s, %s)'''
+            % sqlvalues(personID, UBUNTU_WIKI_URL, wikiname))
         )
 
         self._addEmailAddresses(transaction, emailAddresses, personID)
@@ -345,24 +350,16 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
 
         personID = userDict['id']
         
-        transaction.execute(
-            "UPDATE Person "
-            "SET password = %s "
-            "WHERE Person.id = %d "
-            % (utf8quote(str(newSshaDigestedPassword)), personID)
+        transaction.execute(utf8('''
+            UPDATE Person
+            SET password = %s
+            WHERE Person.id = %s'''
+            % sqlvalues(newSshaDigestedPassword, personID))
         )
         
         userDict['salt'] = saltFromDigest(newSshaDigestedPassword)
         return userDict
 
-    def _getEmailAddresses(self, transaction, personID):
-        transaction.execute(
-            'SELECT EmailAddress.email FROM EmailAddress '
-            'WHERE EmailAddress.person = %d '
-            'ORDER BY EmailAddress.email'
-            % (personID,)
-        )
-        return [row[0] for row in transaction.fetchall()]
 
 def saltFromDigest(digest):
     """Extract the salt from a SSHA digest.
@@ -394,13 +391,13 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
         Returns a list of team dicts (see IUserDetailsStorageV2).
         """
-        transaction.execute('''
+        transaction.execute(utf8('''
             SELECT TeamParticipation.team, Person.name, Person.displayname
-            FROM TeamParticipation 
-            INNER JOIN Person ON TeamParticipation.team = Person.id 
-            WHERE TeamParticipation.person = %d
+            FROM TeamParticipation
+            INNER JOIN Person ON TeamParticipation.team = Person.id
+            WHERE TeamParticipation.person = %s
             '''
-            % (personID,)
+            % sqlvalues(personID))
         )
         return [{'id': row[0], 'name': row[1], 'displayname': row[2]}
                 for row in transaction.fetchall()]
@@ -515,22 +512,21 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         name = nickname.generate_nick(emailAddresses[0], lambda nick:
                 self._getPerson(transaction, nick))
         passwordDigest = self.encryptor.encrypt(password)
-        transaction.execute(
-            "INSERT INTO Person (id, name, displayname, password) "
-            "VALUES (%d, %s, %s, %s)"
-            % (personID, utf8quote(name), utf8quote(displayname),
-               utf8quote(passwordDigest))
+        transaction.execute(utf8('''
+            INSERT INTO Person (id, name, displayname, password)
+            VALUES (%s, %s, %s, %s)'''
+            % sqlvalues(personID, name, displayname, passwordDigest))
         )
         
         # Create a wikiname
         wikiname = nickname.generate_wikiname(
-                displayname, 
+                displayname,
                 registered=lambda x: self._wikinameExists(transaction, x)
         )
-        transaction.execute(
-            "INSERT INTO Wikiname (person, wiki, wikiname) "
-            "VALUES (%d, %s, %s)"
-            % (personID, utf8quote(UBUNTU_WIKI_URL), utf8quote(wikiname))
+        transaction.execute(utf8('''
+            INSERT INTO Wikiname (person, wiki, wikiname)
+            VALUES (%s, %s, %s)'''
+            % sqlvalues(personID, UBUNTU_WIKI_URL, wikiname))
         )
 
         self._addEmailAddresses(transaction, emailAddresses, personID)
@@ -558,11 +554,11 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         personID = userDict['id']
         newPasswordDigest = self.encryptor.encrypt(newPassword)
         
-        transaction.execute(
-            "UPDATE Person "
-            "SET password = '%s' "
-            "WHERE Person.id = %d "
-            % (newPasswordDigest, personID)
+        transaction.execute(utf8('''
+            UPDATE Person
+            SET password = '%s'
+            WHERE Person.id = %s'''
+            % sqlvalues(newPasswordDigest, personID))
         )
         
         return userDict
