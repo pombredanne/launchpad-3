@@ -19,6 +19,8 @@ from twisted.internet import reactor
 from twisted.internet import process
 from twisted.web import xmlrpc
 
+devnull = open("/dev/null", "r")
+
 
 # XXX 20050628 cprov
 # RunCapture can be replaced with a call to
@@ -83,7 +85,7 @@ class BuildManager(object):
         """Run a sub process capturing the results in the log."""
         self._subprocess = RunCapture(self._slave, self.iterate)
         self._slave.log("RUN: %s %r\n" % (command,args))
-        childfds = {0: open("/dev/null", "r"), 1: "r", 2: "r"}
+        childfds = {0: devnull.fileno(), 1: "r", 2: "r"}
         reactor.spawnProcess(
             self._subprocess, command, args, env=os.environ, 
             path=os.environ["HOME"], childFDs=childfds)
