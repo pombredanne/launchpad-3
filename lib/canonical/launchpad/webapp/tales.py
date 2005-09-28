@@ -743,7 +743,7 @@ class FormattersAPI:
         (?P<urlchars>[a-zA-Z0-9/:;@_%~#=&\.\-\?\+\$,]*)
       ) |
       (?P<bug>
-        bug\s+(?:\#|number\.?|num\.?|no\.?)?\s*
+        bug\s*(?:\#|number\.?|num\.?|no\.?)?\s*
         0*(?P<bugnum>\d+)
       )
     ''', re.IGNORECASE | re.VERBOSE)
