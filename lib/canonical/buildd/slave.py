@@ -357,7 +357,9 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
 
     def __init__(self, config):
         xmlrpc.XMLRPC.__init__(self)
-        self.protocolversion = 1
+        # protocol 2 is the same as protocol 1 except that it
+        # implies that the /filecache/ namespace is available
+        self.protocolversion = 2
         self.slave = BuildDSlave(config)
         self._builders = {}    
         print "Initialised"
