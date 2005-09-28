@@ -106,8 +106,19 @@ def _get_task_for_context(bugid, context):
         return null_bugtask
 
 
+def _traverse_plus_bug(request, target):
+    """Traverses +bug portions of URLs"""
+    nextstep = _consume_next_path_step(request)
+    if nextstep is None:
+        return None
+    elif nextstep.isdigit():
+        return _get_task_for_context(nextstep, target)
+    else:
+        return None
+
 def traverse_malone_application(malone_application, request, name):
     """Traverse the Malone application object."""
+    assert name is not None
     if name == "bugs":
         return getUtility(IBugSet)
     elif name == "cve":
@@ -158,23 +169,13 @@ def traverse_sourcepackage(sourcepackage, request, name):
                    distrorelease=sourcepackage.distrorelease,
                    sourcepackagename=sourcepackage.sourcepackagename)
     elif name == '+bug':
-        nextstep = _consume_next_path_step(request)
-        if nextstep.isdigit():
-            return _get_task_for_context(nextstep, sourcepackage)
-        else:
-            return None
-
+        return _traverse_plus_bug(request, sourcepackage)
     return None
 
 
 def traverse_distro_sourcepackage(distro_sourcepackage, request, name):
     if name == '+bug':
-        nextstep = _consume_next_path_step(request)
-        if nextstep.isdigit():
-            return _get_task_for_context(nextstep, distro_sourcepackage)
-        else:
-            return None
-
+        return _traverse_plus_bug(request, distro_sourcepackage)
     return None
 
 
@@ -189,9 +190,7 @@ def traverse_product(product, request, name):
         milestone_name = _consume_next_path_step(request)
         return product.getMilestone(milestone_name)
     elif name == '+bug':
-        nextstep = _consume_next_path_step(request)
-        if nextstep.isdigit():
-            return _get_task_for_context(nextstep, product)
+        return _traverse_plus_bug(request, product)
     elif name == '+ticket':
         ticket_num = _consume_next_path_step(request)
         # tickets should be int's
@@ -255,13 +254,7 @@ def traverse_distribution(distribution, request, name):
             return None
         return distribution.getTicket(ticket_num)
     elif name == '+bug':
-        nextstep = _consume_next_path_step(request)
-        if nextstep is None:
-            return None
-        elif nextstep.isdigit():
-            return _get_task_for_context(nextstep, distribution)
-        else:
-            return None
+        return _traverse_plus_bug(request, distribution)
     else:
         bag = getUtility(ILaunchBag)
         try:
@@ -297,19 +290,12 @@ def traverse_distrorelease(distrorelease, request, name):
             drlangset = getUtility(IDistroReleaseLanguageSet)
             return drlangset.getDummy(distrorelease, lang)
     elif name == '+bug':
-        nextstep = _consume_next_path_step(request)
-        if nextstep is None:
-            return None
-        elif nextstep.isdigit():
-            return _get_task_for_context(nextstep, distrorelease)
-        else:
-            return None
+        return _traverse_plus_bug(request, distrorelease)
     else:
         try:
             return distrorelease[name]
         except KeyError:
             return None
-
 
 def traverse_person(person, request, name):
     """Traverse an IPerson."""
