@@ -116,11 +116,14 @@
               <td>[<a tal:attributes="href shipitrequest/fmt:url">edit</a>]</td>
             </tr>
           </tal:block>
+        </tbody>
+      </table>
+      <table width="80%" class="listing sortable">
+        <tbody>
           <tr class="results" style="background: #f7ebd6" tal:define="batch bn/batch">
-            <td colspan="8"
-              tal:define="startno batch/startNumber;
-                          endno batch/endNumber;
-                          total batch/total">
+            <td tal:define="startno batch/startNumber;
+                            endno batch/endNumber;
+                            total batch/total">
               <div
                 class="navigation"
                 tal:define="prev_page_url bn/prevBatchURL;
