@@ -156,6 +156,7 @@ First, we check with the same date.
 
     >>> header = POHeader(msgstr=u'PO-Revision-Date: 2005-08-18 13:22+0000')
     >>> header.finish()
+    WARNING:root:PO file header entry has no content-type field
     >>> pofile.isPORevisionDateOlder(header)
     False
 
@@ -163,6 +164,7 @@ Now, we check with a date that is in the past.
 
     >>> header = POHeader(msgstr=u'PO-Revision-Date: 2005-08-18 13:21+0000')
     >>> header.finish()
+    WARNING:root:PO file header entry has no content-type field
     >>> pofile.isPORevisionDateOlder(header)
     True
 
