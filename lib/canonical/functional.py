@@ -611,11 +611,11 @@ def FunctionalDocFileSuite(*paths, **kw):
     def setUp(test):
         FunctionalTestSetup().setUp()
 
-##         # for doctests, direct log messages to stdout, so that they
-##         # must be processed along with other command output.
-##         logging.root.handlers[0].close()
-##         logging.root.removeHandler(logging.root.handlers[0])
-##         logging.basicConfig(stream=StdoutWrapper(), level=logging.WARNING)
+        # for doctests, direct log messages to stdout, so that they
+        # must be processed along with other command output.
+        logging.root.handlers[0].close()
+        logging.root.removeHandler(logging.root.handlers[0])
+        logging.basicConfig(stream=StdoutWrapper(), level=logging.WARNING)
 
         if kwsetUp is not None:
             kwsetUp(test)

@@ -60,6 +60,7 @@ build jobs will be created.
   ...     distroreleases.add(dar.distrorelease)
   ...     bm.addDistroArchRelease(dar)
   ...
+  WARNING:root:Disabling: No CHROOT found for pocket 'Release'
 
 Only Ubuntu/Warty/i386 has an available CHROOT, it's the only one supported. 
 

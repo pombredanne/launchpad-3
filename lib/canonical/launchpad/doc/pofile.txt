@@ -126,6 +126,7 @@ trying to parse the number and type of plural forms it has.
 ... Plural-Forms: n != 1'''
 >>> new_header = POHeader(msgstr=msgstr)
 >>> new_header.finish()
+WARNING:root:The plural form header has an unknown error. Using the default value...
 >>> new_header.getPluralFormExpression() == None
 True
 

@@ -129,6 +129,7 @@ Mock Builders objects
 
   >>> bqItem3 = MockBuildQueue(1, builder3, MockBuild())
   >>> buildergroup.updateBuild(bqItem3, None)
+  CRITICAL:root:Received wrong number of args in response.
   >>> assert bqItem3.build.builder is None
   >>> bqItem3.build.buildstate.title
   'Failed to build'
@@ -138,6 +139,7 @@ Mock Builders objects
 
   >>> bqItem4 = MockBuildQueue(1, builder4, MockBuild())
   >>> buildergroup.updateBuild(bqItem4, None)
+  CRITICAL:root:***** Missed Dependency build needs manual intervention due MANUALDEPWAIT *****
   >>> assert bqItem4.build.builder is None
   >>> bqItem4.build.buildstate.title
   'Manual dependency wait'
@@ -147,6 +149,7 @@ Mock Builders objects
 
   >>> bqItem5 = MockBuildQueue(1, builder5, MockBuild())
   >>> buildergroup.updateBuild(bqItem5, None)
+  CRITICAL:root:***** Bad CHROOT needs manual intervention due CHROOTWAIT *****
   >>> assert bqItem5.build.builder is None
   >>> bqItem5.build.buildstate.title
   'Chroot wait'
@@ -156,6 +159,7 @@ Mock Builders objects
 
   >>> bqItem6 = MockBuildQueue(1, builder6, MockBuild())
   >>> buildergroup.updateBuild(bqItem6, None)
+  WARNING:root:***** I am out of order has failed *****
   >>> assert bqItem6.builder is None
   >>> bqItem6.build.buildstate.title
   'Needs building'
@@ -206,7 +210,9 @@ is able to build stuff properly for that one
   ...		     % (dar.distrorelease.distribution.name,
   ...                   dar.distrorelease.name,
   ...                   dar.architecturetag))
+  WARNING:root:Disabling: No CHROOT found for pocket 'Release'
   Unable to setup builder for ubuntu/warty/i386.
+  WARNING:root:Disabling: No CHROOT found for pocket 'Release'
   Unable to setup builder for ubuntu/hoary/i386.
                 
 Since we don't have any builder available yet and the ETA to have

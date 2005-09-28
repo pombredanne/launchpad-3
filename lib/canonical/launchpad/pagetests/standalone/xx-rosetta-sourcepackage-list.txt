@@ -6,6 +6,10 @@ translation overview for Evolution in Hoary.
   >>> print http(r"""
   ... GET /distros/ubuntu/hoary/+sources/evolution/+translations HTTP/1.1
   ... """)
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
   HTTP/1.1 200 Ok
   ...evolution in ubuntu hoary...
   ...Translation Templates...
