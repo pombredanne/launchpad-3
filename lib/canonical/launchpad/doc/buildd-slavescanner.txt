@@ -174,6 +174,7 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
 
   >>> bqItem3 = MockBuildQueue(1, builder3, MockBuild())
   >>> buildergroup.updateBuild(bqItem3, librarian)
+  CRITICAL:root:Received wrong number of args in response.
   >>> assert bqItem3.build.builder is not None
   >>> assert bqItem3.build.datebuilt is not None
   >>> assert bqItem3.build.buildduration is not None
@@ -186,6 +187,8 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
 
   >>> bqItem4 = MockBuildQueue(1, builder4, MockBuild())
   >>> buildergroup.updateBuild(bqItem4, librarian)
+  CRITICAL:root:***** Missed Dependency build is MANUALDEPWAIT *****
+  CRITICAL:root:Received wrong number of args in response.
   >>> assert bqItem4.build.builder is not None
   >>> assert bqItem4.build.datebuilt is not None
   >>> assert bqItem4.build.buildduration is not None
@@ -198,6 +201,8 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
 
   >>> bqItem5 = MockBuildQueue(1, builder5, MockBuild())
   >>> buildergroup.updateBuild(bqItem5, librarian)
+  CRITICAL:root:***** Bad CHROOT is CHROOTWAIT *****
+  CRITICAL:root:Received wrong number of args in response.
   >>> assert bqItem5.build.builder is not None
   >>> assert bqItem5.build.datebuilt is not None
   >>> assert bqItem5.build.buildduration is not None
@@ -210,6 +215,7 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
 
   >>> bqItem6 = MockBuildQueue(1, builder6, MockBuild())
   >>> buildergroup.updateBuild(bqItem6, librarian)
+  WARNING:root:***** I am out of order has failed *****
   >>> assert bqItem6.builder is None
   >>> bqItem6.build.buildstate.title
   'Needs building'
@@ -248,6 +254,7 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
 
   >>> bqItem10 = MockBuildQueue(1, builder10, MockBuild())
   >>> buildergroup.updateBuild(bqItem10, librarian)
+  CRITICAL:root:Received wrong number of args in response.
   >>> assert bqItem10.build.builder is not None
   >>> assert bqItem10.build.datebuilt is not None
   >>> assert bqItem10.build.buildduration is not None
@@ -272,7 +279,9 @@ is able to build stuff properly for that one
   ...		     % (dar.distrorelease.distribution.name,
   ...                   dar.distrorelease.name,
   ...                   dar.architecturetag))
+  WARNING:root:Disabling: No CHROOT found for pocket 'Release'
   Unable to setup builder for ubuntu/warty/i386.
+  WARNING:root:Disabling: No CHROOT found for pocket 'Release'
   Unable to setup builder for ubuntu/hoary/i386.
                 
 Since we don't have any builder available yet and the ETA to have

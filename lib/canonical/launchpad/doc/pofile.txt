@@ -126,6 +126,7 @@ trying to parse the number and type of plural forms it has.
 ... Plural-Forms: n != 1'''
 >>> new_header = POHeader(msgstr=msgstr)
 >>> new_header.finish()
+WARNING:root:The plural form header has an unknown error. Using the default value...
 >>> new_header.getPluralFormExpression() == None
 True
 
@@ -155,6 +156,7 @@ First, we check with the same date.
 
     >>> header = POHeader(msgstr=u'PO-Revision-Date: 2005-08-18 13:22+0000')
     >>> header.finish()
+    WARNING:root:PO file header entry has no content-type field
     >>> pofile.isPORevisionDateOlder(header)
     False
 
@@ -162,6 +164,7 @@ Now, we check with a date that is in the past.
 
     >>> header = POHeader(msgstr=u'PO-Revision-Date: 2005-08-18 13:21+0000')
     >>> header.finish()
+    WARNING:root:PO file header entry has no content-type field
     >>> pofile.isPORevisionDateOlder(header)
     True
 
