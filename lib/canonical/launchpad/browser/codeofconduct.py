@@ -228,18 +228,16 @@ class SignedCodeOfConductAdminView(object):
         name = self.request.form.get('name')
         searchfor = self.request.form.get('searchfor')
 
-        if name:
-            # use utility to query on SignedCoCs
-            sCoC_util = getUtility(ISignedCodeOfConductSet)
-            self.results = sCoC_util.searchByDisplayname(name,
-                                                         searchfor=searchfor)
-            # XXX: cprov 20050226
-            # force None when no row was found
-            # is it an SQLObject bug ?
-            if self.results.count() == 0:
-                self.results = None
+        if (self.request.method != "POST" or
+            self.request.form.get("search") != "Search"):
+            return
 
-            return True
+        # use utility to query on SignedCoCs
+        sCoC_util = getUtility(ISignedCodeOfConductSet)
+        self.results = sCoC_util.searchByDisplayname(name,
+                                                     searchfor=searchfor)
+            
+        return True
 
 
 class SignedCodeOfConductActiveView(EditView):

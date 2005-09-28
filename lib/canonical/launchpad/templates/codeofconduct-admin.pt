@@ -63,7 +63,7 @@
           <tr>
             <th></th>
             <td>
-              <input type="submit" value="Search"/>
+              <input name="search" type="submit" value="Search"/>
             </td>
           </tr>
         </table>
