@@ -114,7 +114,11 @@ class FunctionalTestSetup(object):
 
             if not config_file:
                 config_file = 'ftesting.zcml'
+
             self.log = StringIO()
+            # silence most SiteError log messages (e.g. NotFound exceptions)
+            logging.getLogger('SiteError').setLevel(logging.CRITICAL)
+
             self.base_storage = DemoStorage("Memory Storage")
             self.db = DB(self.base_storage)
             self.app = Debugger(self.db, config_file)
@@ -145,13 +149,17 @@ class FunctionalTestSetup(object):
             logging.root.removeHandler(hdlr)
             hdlr.flush()
             hdlr.close()
-        logging.root.addHandler(logging.StreamHandler(self.log))
+        logging.basicConfig(stream=self.log, level=logging.WARNING)
 
     def tearDown(self):
         """Cleans up after a functional test case."""
         abort()
         self.db.removeVersionPool('')
         self.db.close()
+        for hdlr in logging.root.handlers[:]:
+            logging.root.removeHandler(hdlr)
+            hdlr.flush()
+            hdlr.close()
 
     def getRootFolder(self):
         """Returns the Zope root folder."""
@@ -576,6 +584,21 @@ class SpecialOutputChecker(doctest.OutputChecker):
         return doctest.OutputChecker.output_difference(
             self, example, newgot, optionflags)
 
+
+class StdoutWrapper:
+    """A wrapper for sys.stdout.  Writes to this file like object will
+    write to whatever sys.stdout is pointing to at the time.
+
+    The purpose of this class is to allow doctest to capture log
+    messages.  Since doctest replaces sys.stdout, configuring the
+    logging module to send messages to sys.stdout before running the
+    tests will not result in the output being captured.  Using an
+    instance of this class solves the problem.
+    """
+    def __getattr__(self, attr):
+        return getattr(sys.stdout, attr)
+
+
 def FunctionalDocFileSuite(*paths, **kw):
     globs = kw.setdefault('globs', {})
     globs['http'] = http
@@ -587,6 +610,13 @@ def FunctionalDocFileSuite(*paths, **kw):
     kwsetUp = kw.get('setUp')
     def setUp(test):
         FunctionalTestSetup().setUp()
+
+##         # for doctests, direct log messages to stdout, so that they
+##         # must be processed along with other command output.
+##         logging.root.handlers[0].close()
+##         logging.root.removeHandler(logging.root.handlers[0])
+##         logging.basicConfig(stream=StdoutWrapper(), level=logging.WARNING)
+
         if kwsetUp is not None:
             kwsetUp(test)
     kw['setUp'] = setUp
