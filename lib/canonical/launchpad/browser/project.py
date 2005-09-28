@@ -60,7 +60,7 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'overview'
-    links = ['edit', 'reassign', 'rdf']
+    links = ['edit', 'reassign', 'rdf', 'changetranslators']
 
     def edit(self):
         text = 'Edit Project Details'
@@ -75,6 +75,10 @@ class ProjectOverviewMenu(ApplicationMenu):
             'Download <abbr title="Resource Description Framework">'
             'RDF</abbr> Metadata')
         return Link('+rdf', text, icon='download')
+
+    def changetranslators(self):
+        text = 'Change Translators'
+        return Link('+changetranslators', text, icon='edit')
 
 
 class ProjectBountiesMenu(ApplicationMenu):

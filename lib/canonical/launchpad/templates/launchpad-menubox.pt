@@ -2,8 +2,7 @@
   <ul>
     <tal:block repeat="link view/contextmenuitems">
       <li metal:define-macro="renderlink"
-          tal:attributes="class link/icon"
-          tal:condition="link/enabled">
+          tal:attributes="class link/icon">
         <a
           tal:attributes="href link/url; title link/summary"
           tal:content="structure link/escapedtext"

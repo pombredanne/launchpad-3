@@ -43,7 +43,7 @@ class ISignedCodeOfConduct(Interface):
         description=_(
             """The person who signed the code of conduct by mail or fax."""
         )
-    )
+        )
 
     signedcode = Text(title=_("Signed Code"),
                       description=_("""GPG Signed Code of Conduct.

@@ -58,7 +58,8 @@ The Bazaar homepage.
 
 == Persons and Teams ==
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, ICodeOfConductSet, ISignedCodeOfConductSet)
 
 The IPersonSet.
 
@@ -74,6 +75,28 @@ An ITeam.
 
     >>> canonical_url(celebs.rosetta_expert)
     u'http://localhost:8086/people/rosetta-admins'
+
+An ICodeOfConductSet
+
+    >>> cocset = getUtility(ICodeOfConductSet)
+    >>> canonical_url(cocset)
+    u'http://localhost:8086/codeofconduct'
+
+An ISignedCodeOfConductSet
+
+    >>> signedcocset = getUtility(ISignedCodeOfConductSet)
+    >>> canonical_url(signedcocset)
+    u'http://localhost:8086/codeofconduct/console'
+
+An ISignedCodeOfConduct
+
+    >>> canonical_url(signedcocset['1'])
+    u'http://localhost:8086/codeofconduct/console/1'
+
+An ICodeOfConduct
+
+    >>> canonical_url(cocset['1.0'])
+    u'http://localhost:8086/codeofconduct/1.0'
 
 
 == Distributions, distroreleases and so on ==

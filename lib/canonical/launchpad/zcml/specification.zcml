@@ -15,6 +15,11 @@
       set_schema="canonical.launchpad.interfaces.ISpecification" />
   </content>
 
+  <browser:menus
+    module="canonical.launchpad.browser"
+    classes="SpecificationContextMenu"
+    />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISpecification"
     name="+index" />

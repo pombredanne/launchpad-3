@@ -3,6 +3,13 @@
 __metaclass__ = type
 
 __all__ = [
+    'PeopleContextMenu',
+    'PersonFacets',
+    'PersonBugsMenu',
+    'PersonSpecsMenu',
+    'PersonSupportMenu',
+    'PersonContextMenu',
+    'TeamContextMenu',
     'BaseListView',
     'PeopleListView',
     'TeamListView',
@@ -69,6 +76,30 @@ from canonical.launchpad.webapp import (
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
+
+
+class PeopleContextMenu(ContextMenu):
+
+    usedfor = IPersonSet
+
+    links = ['peoplelist', 'teamlist', 'ubuntitelist', 'newteam']
+
+    def peoplelist(self):
+        text = 'All People'
+        return Link('+peoplelist', text, icon='people')
+
+    def teamlist(self):
+        text = 'All Teams'
+        return Link('+teamlist', text, icon='people')
+
+    def ubuntitelist(self):
+        text = 'All Ubuntites'
+        return Link('+ubuntitelist', text, icon='people')
+
+    def newteam(self):
+        text = 'Create New Team'
+        return Link('+newteam', text, icon='add')
+
 
 class PersonFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IPerson."""
