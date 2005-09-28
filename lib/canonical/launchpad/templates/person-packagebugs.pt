@@ -16,17 +16,17 @@
 
   <div metal:fill-slot="main">
 
-    <tal:block define="tasks_assigned view/bugTasksAssignedToPerson">
+    <tal:block define="packagebugs view/bugTasksOnMaintainedSoftware">
 
-      <h1>Bugs Assigned to <span tal:replace="context/browsername" /></h1>
+      <h1>Bugs on Software Maintained by <span tal:replace="context/browsername" /></h1>
 
-      <p tal:condition="not: tasks_assigned">No bugs have been
-      assigned to <span tal:replace="context/browsername" />.</p>
+      <p tal:condition="not: packagebugs">There are no open bugs on
+      packages maintained by <span tal:replace="context/browsername" />.</p>
 
-      <tal:block tal:condition="tasks_assigned">
+      <tal:block tal:condition="packagebugs">
 
       <div style="margin-bottom: 1em"
-           tal:define="tasks tasks_assigned;">
+           tal:define="tasks packagebugs;">
 
       <tal:assignedbugs
           metal:use-macro="context/@@+bugtask-macros-tableview/table" />

@@ -530,6 +530,8 @@ person_karma = ContextDisplayName('Karma for %s')
 
 person_packages = ContextDisplayName('Packages Maintained By %s')
 
+person_packagebugs = ContextDisplayName('Bugs on Software Maintained by %s')
+
 person_reportedbugs = ContextDisplayName('Bugs Reported By %s')
 
 person_review = ContextDisplayName("Review %s' Information")
