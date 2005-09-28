@@ -252,7 +252,7 @@ class BugTaskSet:
         """See canonical.launchpad.interfaces.IBugTaskSet."""
         assert isinstance(params, BugTaskSearchParams)
 
-        extra_clauses = []
+        extra_clauses = ['Bug.id = BugTask.bug']
         clauseTables = ['BugTask', 'Bug']
 
         # These arguments can be processed in a loop without any other
@@ -341,19 +341,17 @@ class BugTaskSet:
             # other half of this condition (see code above) does not
             # use TeamParticipation at all.
             clause = ("""
-                      ((BugTask.bug = Bug.id AND Bug.private = FALSE) OR
-                       (BugTask.bug = Bug.id AND Bug.private = TRUE AND
-                        Bug.id in (
+                     (Bug.private = FALSE OR Bug.id in (
                           SELECT Bug.id
                           FROM Bug, BugSubscription, TeamParticipation
                           WHERE Bug.id = BugSubscription.bug AND
                                 TeamParticipation.person = %(personid)s AND
                                 BugSubscription.person =
-                                  TeamParticipation.team)))
+                                  TeamParticipation.team))
                                   """ %
                       sqlvalues(personid=params.user.id))
         else:
-            clause = "BugTask.bug = Bug.id AND Bug.private = FALSE"
+            clause = "Bug.private = FALSE"
         extra_clauses.append(clause)
 
         orderby = params.orderby
