@@ -14,6 +14,7 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from canonical.database.sqlbase import SQLBase
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import ( IBinaryPackagePublishing,
@@ -254,7 +255,7 @@ class SecureBinaryPackagePublishingHistory(SQLBase):
     status = EnumCol(dbName='status', schema=PackagePublishingStatus)
     scheduleddeletiondate = UtcDateTimeCol(default=None)
     datepublished = UtcDateTimeCol(default=None)
-    datecreated = UtcDateTimeCol(default=None)
+    datecreated = UtcDateTimeCol(default=UTC_NOW)
     datesuperseded = UtcDateTimeCol(default=None)
     supersededby = ForeignKey(foreignKey='Build', dbName='supersededby',
                               default=None)

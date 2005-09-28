@@ -15,7 +15,8 @@ from zope.interface import implements, directlyProvides, directlyProvidedBy
 
 from canonical.launchpad.interfaces import (
     IBugTaskDelta, IBugTask, IMaintainershipSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, IDistroSourcePackageSet)
+    IDistroBugTask, IDistroReleaseBugTask, IDistroSourcePackageSet,
+    INullBugTask)
 from canonical.lp.dbschema import BugTaskStatus
 
 class BugTaskDelta:
@@ -164,7 +165,7 @@ class NullBugTask(BugTaskMixin):
 
     when bug #5 isn't yet reported in evolution.
     """
-    implements(IBugTask)
+    implements(INullBugTask)
 
     def __init__(self, bug, product=None, sourcepackagename=None,
                  distribution=None, distrorelease=None):

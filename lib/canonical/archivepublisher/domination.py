@@ -5,7 +5,8 @@
 # related to the domination of old source and binary releases inside
 # the publishing tables.
 
-from canonical.sourcerer.deb.version import Version as DebianVersion
+from canonical.sourcerer.deb.version import (
+    Version as DebianVersion, BadUpstreamError)
 
 from canonical.lp.dbschema import PackagePublishingStatus
 
@@ -26,17 +27,33 @@ PENDINGREMOVAL = PackagePublishingStatus.PENDINGREMOVAL
 from datetime import timedelta
 
 def _compare_source_packages_by_version(p1, p2):
-    """Compare packages p1 and p2 by their version; using Debian rules"""
-    v1 = DebianVersion(p1.sourcepackagerelease.version)
-    v2 = DebianVersion(p2.sourcepackagerelease.version)
-    return cmp(v1, v2)
+    """Compare packages p1 and p2 by their version; using Debian rules.
+    
+    If we're unable to parse the version number as a debian version (E.g.
+    if it does not comply with policy but we had to import it anyway,
+    then we compare it directly as strings.
+    """
+    try:
+        v1 = DebianVersion(p1.sourcepackagerelease.version)
+        v2 = DebianVersion(p2.sourcepackagerelease.version)
+        return cmp(v1, v2)
+    except BadUpstreamError:
+        return cmp(p1, p2)
     
 def _compare_binary_packages_by_version(p1, p2):
-    """Compare packages p1 and p2 by their version; using Debian rules"""
-    v1 = DebianVersion(p1.binarypackagerelease.version)
-    v2 = DebianVersion(p2.binarypackagerelease.version)
-    return cmp(v1, v2)
+    """Compare packages p1 and p2 by their version; using Debian rules
     
+    If we're unable to parse the version number as a debian version (E.g.
+    if it does not comply with policy but we had to import it anyway,
+    then we compare it directly as strings.
+    """
+    try:
+        v1 = DebianVersion(p1.binarypackagerelease.version)
+        v2 = DebianVersion(p2.binarypackagerelease.version)
+        return cmp(v1, v2)
+    except BadUpstreamError:
+        return cmp(p1, p2)
+
 
 class Dominator(object):
     """
@@ -200,7 +217,7 @@ class Dominator(object):
         # if the binaries as a group (in that definition) are all superseded
         # then we can consider them eligible for removal.
         for pub_record in binary_records:
-            binpkg_release = pub_record.binarypackage
+            binpkg_release = pub_record.binarypackagerelease
             if pub_record.status == SUPERSEDED:
                 self.debug("%s/%s (%s) has been judged eligible for removal" %
                            (binpkg_release.binarypackagename.name,

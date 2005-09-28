@@ -20,19 +20,12 @@
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Please use the form below to describe the problem you are
-      experiencing. This will create a "trouble ticket", it will alert the
-      support community to your request, and allow people to help you
-      resolve the problem.
-    </div>
+    <p metal:fill-slot="extra_info">
+      Entering the details of your problem will alert the
+      <span tal:replace="context/displayname">Firefox</span> support community,
+      so they can help you resolve the issue.
+    </p>
 
-  </div>
-
-  <div>
-    Thank you for registering this support ticket. The
-    <span tal:replace="context/displayname">Firefox</span> support community
-    will be alerted to your request.
   </div>
 
 </div>

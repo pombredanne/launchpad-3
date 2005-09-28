@@ -58,7 +58,7 @@ class BugWatch(SQLBase):
             # slashes -- should we instead ensure when it is entered?
             # Filed bug 1434.
             BugTrackerType.BUGZILLA: '%s/show_bug.cgi?id=%s',
-            BugTrackerType.TRAC:     '%s/tickets/%s',
+            BugTrackerType.TRAC:     '%s/ticket/%s',
             BugTrackerType.DEBBUGS:  '%s/cgi-bin/bugreport.cgi?bug=%s',
             BugTrackerType.ROUNDUP:  '%s/issue%s'
         }

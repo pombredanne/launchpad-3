@@ -4,6 +4,24 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'ProductFacets',
+    'ProductOverviewMenu',
+    'ProductBugsMenu',
+    'ProductSupportMenu',
+    'ProductSpecificationsMenu',
+    'ProductBountiesMenu',
+    'ProductTranslationsMenu',
+    'ProductSetContextMenu',
+    'ProductView',
+    'ProductEditView',
+    'ProductSeriesAddView',
+    'ProductFileBugView',
+    'ProductRdfView',
+    'ProductSetView',
+    'ProductAddView'
+    ]
+
 from warnings import warn
 from urllib import quote as urlquote
 
@@ -26,10 +44,6 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, structured)
-
-__all__ = ['ProductFacets', 'ProductView', 'ProductEditView',
-           'ProductFileBugView', 'ProductRdfView', 'ProductSetView',
-           'ProductAddView', 'ProductSeriesAddView']
 
 
 class ProductFacets(StandardLaunchpadFacets):
@@ -135,9 +149,9 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['new']
+    links = ['filebug']
 
-    def new(self):
+    def filebug(self):
         text = 'Report a bug'
         return Link('+filebug', text, icon='add')
 
@@ -203,6 +217,20 @@ def _sort_distros(a, b):
     if a['name'] == 'ubuntu':
         return -1
     return cmp(a['name'], b['name'])
+
+
+class ProductSetContextMenu(ContextMenu):
+
+    usedfor = IProductSet
+    links = ['register', 'listall']
+
+    def register(self):
+        text = 'Register a New Product'
+        return Link('+new', text, icon='add')
+
+    def listall(self):
+        text = 'List All Products'
+        return Link('+all', text, icon='list')
 
 
 class ProductView:

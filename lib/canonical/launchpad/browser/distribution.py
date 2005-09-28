@@ -29,6 +29,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission)
 
+
 class DistributionFacets(StandardLaunchpadFacets):
 
     usedfor = IDistribution
@@ -70,12 +71,21 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Add Milestone'
         return Link('+addmilestone', text, icon='add')
 
+    def searchpackages(self):
+        text = 'Search Packages'
+        return Link('+packages', text, icon='search')
+
+    @enabled_with_permission('launchpad.Admin')
+    def addrelease(self):
+        text = 'Add New Distribution Release'
+        return Link('+add', text, icon='add')
+
 
 class DistributionBugsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
-    links = ['cve_list', 'new']
+    links = ['new', 'cve_list']
 
     def cve_list(self):
         text = 'CVE List'
@@ -105,7 +115,7 @@ class DistributionSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'specifications'
-    links = ['roadmap', 'new']
+    links = ['new', 'roadmap']
 
     def roadmap(self):
         text = 'Roadmap'

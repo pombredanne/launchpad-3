@@ -15,13 +15,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Support Tickets</h1>
-
-  <p class="documentDescription">
-    This page shows the support tickets that are related
-    to <span tal:replace="context/displayname">Ubuntu 5.04</span>.
-    Please help to resolve end-user issues!
-  </p>
+  <h1>Support requests for <tal:thing replace="context/displayname" /></h1>
 
   <p tal:replace="nothing">
     <!-- ABOUT THIS PAGE
@@ -37,23 +31,24 @@
   </p>
 
   <p tal:condition="not:context/tickets">
-    <i>There are no tickets currently registered for
-    <span tal:replace="context/displayname">Ubuntu 5.04</span> at
-    present.</i>
+    There are no support requests currently registered for
+    <span tal:replace="context/displayname">Ubuntu 5.04</span>.
   </p>
 
-  <tal:block repeat="category view/categories">
+  <tal:block condition="context/tickets" repeat="category view/categories">
 
     <h2 tal:content="category/status/title">Approved</h2>
 
-    <div tal:repeat="ticket category/tickets"
+    <table>
+      <tbody>
+      
+        <tr tal:repeat="ticket category/tickets"
          tal:replace="structure ticket/@@+listing-detailed" />
 
-  </tal:block>
+      </tbody>
+    </table>
 
-  <p>
-    Each ticket describes a request for technical support.
-  </p>
+  </tal:block>
 
 </div>
 </body>

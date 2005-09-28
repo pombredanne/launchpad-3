@@ -76,6 +76,10 @@ mail will get filed in there:
     >>> LibrarianTestSetup().setUp()
 
     >>> handleMail()
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
 
 Now we can see that each handler handled that mails sent to its domain:
 
@@ -96,6 +100,7 @@ errors_address.
     >>> len(error_handler.handledMails)
     0
     >>> handleMail()
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
     >>> len(error_handler.handledMails)
     1
 
@@ -142,6 +147,7 @@ address the email was sent to:
     ...     msg['From'], ['123@bar.com'], msg.as_string())
     >>> transaction.commit()
     >>> handleMail()
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
     >>> msgid in bar_handler.handledMails
     True
 

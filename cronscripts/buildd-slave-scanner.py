@@ -18,7 +18,7 @@ from canonical.launchpad.scripts.builddmaster import BuilddMaster
 from canonical.launchpad.scripts.lockfile import LockFile
 
 
-_default_lockfile = '/var/lock/buildd-slave-scanner.lock'
+_default_lockfile = '/var/lock/buildd-master.lock'
 _default_logfilename = '/var/tmp/buildd-slave-scanner.log'
 
 

@@ -26,13 +26,15 @@
         name="+bugs" />
 
     <browser:menus
-        module="canonical.launchpad.browser.product"
+        module="canonical.launchpad.browser"
         classes="
             ProductFacets ProductOverviewMenu ProductBountiesMenu
-            ProductSupportMenu ProductSpecificationsMenu 
-            ProductTranslationsMenu
-        "
-    />
+            ProductSupportMenu ProductSpecificationsMenu
+            ProductTranslationsMenu ProductBugsMenu
+            ProductSetContextMenu
+            "
+            />
+
     <!-- XXX ProductBugsMenu undeclared until layout bug is fixed -->
 
     <browser:traverse
@@ -150,9 +152,9 @@
             lp:url="/products/$Product.name/+bugs"
             template="../templates/bugs-for-context.pt" />
         <browser:page
-            name="+portlet-bugtasklist-actions"
-            template="../templates/bugtasklist-portlet-actions.pt"
-            lp:url="/products/$Product.name/+portlet-bugtasklist-actions" />
+            name="+portlet-bugtasklist-mybugs"
+            template="../templates/bugtasklist-portlet-mybugs.pt"
+            lp:url="/products/$Product.name/+portlet-bugtasklist-mybugs" />
     </browser:pages>
 
     <browser:pages

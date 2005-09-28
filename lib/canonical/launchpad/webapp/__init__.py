@@ -6,13 +6,17 @@ This module also has an API for use by the application.
 
 __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'nearest_menu', 'canonical_url', 'nearest', 'structured',
-           'StandardLaunchpadFacets', 'enabled_with_permission']
+           'StandardLaunchpadFacets', 'enabled_with_permission',
+           'LaunchpadView']
+
+from zope.component import getUtility
 
 from canonical.launchpad.webapp.menu import (
     Link, FacetMenu, ApplicationMenu, ContextMenu, nearest_menu, structured,
     enabled_with_permission)
-
-from canonical.launchpad.webapp.publisher import canonical_url, nearest
+from canonical.launchpad.webapp.publisher import (
+    canonical_url, nearest, LaunchpadView)
+from canonical.launchpad.interfaces import ILaunchBag
 
 
 class StandardLaunchpadFacets(FacetMenu):
@@ -67,3 +71,4 @@ class StandardLaunchpadFacets(FacetMenu):
         target = '+calendar'
         text = 'Calendar'
         return Link(target, text, enabled=False)
+

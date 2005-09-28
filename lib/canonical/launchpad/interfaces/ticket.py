@@ -30,33 +30,27 @@ class ITicket(IHasOwner, IMessageTarget):
         description=_("The ticket or tracking number for this support "
         "request."))
     title = TextLine(
-        title=_('Title'), required=True, description=_("Please provide "
-        "a one-line summary of the issue or problem you are experiencing, "
-        "this will be used as the title of the page and in all listings "
-        "of support requests."))
+        title=_('Summary'), required=True, description=_(
+        "A one-line summary of the issue or problem."))
     description = Text(
-        title=_('Description'), required=True, description=_("A "
-        "detailed description of the problem you are experiencing. Please "
-        "provide as much detail as possible. You should say exactly what "
-        "you are trying to do, how you are trying to do it, what is "
-        "happening, and what you think should be happening instead."))
+        title=_('Description'), required=True, description=_(
+        "Include as much detail as possible: what "
+        u"you\N{right single quotation mark}re trying to achieve, what steps "
+        "you take, what happens, and what you think should happen instead."))
     status = Choice(
-        title=_('Status'), vocabulary='TicketStatus',
-        default=TicketStatus.NEW, description=_("The current "
-        "status of this support request."))
+        title=_('Status'), vocabulary='TicketStatus', default=TicketStatus.NEW)
     priority = Choice(
         title=_('Priority'), vocabulary='TicketPriority',
-        default=TicketPriority.NORMAL, description=_("The priority "
-        "of this support request."))
+        default=TicketPriority.NORMAL)
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
     assignee = Choice(title=_('Assignee'), required=False,
-        description=_("The person who is responsible for helping to "
-        "resolve this support request."),
+        description=_("The person responsible for helping to resolve the "
+        "support request."),
         vocabulary='ValidPersonOrTeam')
     answerer = Choice(title=_('Answered By'), required=False,
-        description=_("The person who last provided a response that they "
-        "belive should resolve this support request."),
+        description=_("The person who last provided a response intended to "
+        "resolve the support request."),
         vocabulary='ValidPersonOrTeam')
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
@@ -73,7 +67,7 @@ class ITicket(IHasOwner, IMessageTarget):
         required=False,
         description=_("The date on which we last communicated "
         "with the customer. The combination of datelastquery and "
-        "datelastresponse tells us in who's court the ball is."))
+        "datelastresponse tells us in whose court the ball is."))
     dateanswered = Datetime(title=_("Date Answered"), required=False,
         description=_("The date on which we submitted a message that "
         "we believe answers the support problem. The customer will need to "
@@ -92,18 +86,14 @@ class ITicket(IHasOwner, IMessageTarget):
         'in the distribution which contains the software with which you '
         'are experiencing difficulties.'))
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
-        description=_('Any notes on the status of this ticket you would '
-        'like to make. This field is a general whiteboard, your changes '
-        'will override the previous version. The whiteboard is displayed '
-        'at the top of the ticket page.'))
+        description=_('Up-to-date notes on the status of the request.'))
     # other attributes
     target = Attribute('The product or distribution to which this ticket '
         'belongs.')
-    can_be_reopened = Attribute('Whether or not this ticket is in a state '
+    can_be_reopened = Attribute('Whether the ticket is in a state '
         'that can be "re-opened".')
-    can_be_rejected = Attribute('An indicator as to whether this ticket '
-        'can be rejected.')
-    is_resolved = Attribute("Whether or not this ticket is resolved.")
+    can_be_rejected = Attribute('Whether the ticket can be rejected.')
+    is_resolved = Attribute("Whether the ticket is resolved.")
     # joins
     subscriptions = Attribute('The set of subscriptions to this ticket.')
     bugs = Attribute('Bugs related to this ticket')

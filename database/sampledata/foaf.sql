@@ -376,3 +376,21 @@ INSERT INTO TeamParticipation (team, person) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Ubuntu Gnome Team'),
 	(SELECT id FROM Person WHERE displayname = 'Hoary Gnome Team')
 	);
+
+
+-- GPG and Signed CoC
+
+INSERT INTO GPGKey (owner, keyid, fingerprint, active, algorithm, keysize) 
+       VALUES ((SELECT id FROM person WHERE name = 'name16'), 
+               '12345678', 
+               'ABCDEF0123456789ABCDDCBA0000111112345678', 
+               true, 17, 1024);
+
+
+INSERT INTO SignedCodeOfConduct (owner, signingkey, datecreated, signedcode, 
+                                 active) VALUES 
+            ((SELECT id FROM person WHERE name = 'name16'), 
+             (SELECT id FROM gpgkey WHERE keyid = '12345678'), 
+             '2005-09-27 10:01:13', 
+             'Sampledata signedcode',
+             true); 

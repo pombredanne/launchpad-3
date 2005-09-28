@@ -32,7 +32,7 @@
    <browser:menus
         module="canonical.launchpad.browser.sourcepackage"
         classes="
-            SourcePackageFacets SourcePackageOverviewMenu
+            SourcePackageFacets SourcePackageOverviewMenu SourcePackageBugsMenu
             SourcePackageSupportMenu SourcePackageTranslationsMenu"
         />
 
@@ -104,7 +104,8 @@
             name="+portlet-details"
             facet="overview"
             template="../templates/sourcepackage-portlet-details.pt"
-            lp:url="/distros/ubuntu/hoary/+sources/evolution/+portlet-details" />
+            lp:url="/distros/ubuntu/hoary/+sources/evolution/+portlet-details"
+            />
         <browser:page
             name="+portlet-actions"
             facet="overview"
@@ -112,7 +113,8 @@
         <browser:page
             name="+portlet-bugtasklist-actions"
             facet="bugs"
-            template="../templates/sourcepackage-portlet-bugtasklist-actions.pt" />
+            template="../templates/sourcepackage-portlet-bugtasklist-actions.pt"
+            />
         <browser:page
             name="+portlet-translations"
             facet="translations"

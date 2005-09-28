@@ -3,6 +3,10 @@ Check that we can get a potlist for a source pacakge that has potemplates:
   >>> print http(r"""
   ... GET /distros/ubuntu/hoary/+sources/evolution/+potlist HTTP/1.1
   ... """)
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
@@ -19,6 +23,18 @@ Check that we can get a potlist for a product release:
   >>> print http(r"""
   ... GET /products/evolution/+series/main/+potlist HTTP/1.1
   ... """)
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
@@ -34,6 +50,18 @@ Check that we can get a potlist for a distrorelease:
   >>> print http(r"""
   ... GET /distros/ubuntu/hoary/+potlist HTTP/1.1
   ... """)
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8

@@ -1,3 +1,29 @@
+launchpad-buildd (10) unstable; urgency=low
+
+  * Make sure /etc/source-dependencies is present in the postinst.
+    (just need to be touched)
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Wed, 28 Sep 2005 22:02:26 +0100
+
+launchpad-buildd (9) unstable; urgency=low
+
+  * Implement /filecache/XXX urls in the slave to permit larger file transfer
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Tue, 27 Sep 2005 13:16:52 +0100
+
+launchpad-buildd (8) unstable; urgency=low
+
+  * spiv's crappy spawnFDs implementation needs an int not a file handle
+    and can't cope with converting one to the other :-(
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Tue, 27 Sep 2005 02:18:05 +0100
+
+launchpad-buildd (7) unstable; urgency=low
+
+  * Made sure the slave puts /dev/null on the subprocess stdin.
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Tue, 27 Sep 2005 01:52:50 +0100
+
 launchpad-buildd (6) unstable; urgency=low
 
   * Removed slavechroot.py from installed set.

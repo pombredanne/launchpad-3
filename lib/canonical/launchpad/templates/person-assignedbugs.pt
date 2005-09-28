@@ -16,54 +16,22 @@
 
   <div metal:fill-slot="main">
 
-    <tal:block define="tasks_assigned view/bugTasksAssignedToPerson;
-                       tasks_on_maintained_software view/bugTasksOnMaintainedSoftware">
+    <tal:block define="tasks_assigned view/bugTasksAssignedToPerson">
 
-      <h1>Latest Bugs Assigned to <span tal:replace="context/browsername" /></h1>
+      <h1>Bugs Assigned to <span tal:replace="context/browsername" /></h1>
 
       <p tal:condition="not: tasks_assigned">No bugs have been
-      assigned to <span tal:replace="context/browsername" /> or to any
-      package/product (s)he maintains.</p>
+      assigned to <span tal:replace="context/browsername" />.</p>
 
       <tal:block tal:condition="tasks_assigned">
 
       <div style="margin-bottom: 1em"
            tal:define="tasks tasks_assigned;">
 
-        <h2 style="margin-bottom: 0;">Bugs assigned to you</h2>
-
       <tal:assignedbugs
           metal:use-macro="context/@@+bugtask-macros-tableview/table" />
 
       </div>
-
-      <div style="margin-bottom: 1em"
-           tal:condition="tasks_on_maintained_software"
-           tal:define="tasks tasks_on_maintained_software">
-
-        <h2 style="margin-bottom: 0;">Bugs reported on software you maintain</h2>
-
-      <tal:assignedbugs
-          metal:use-macro="context/@@+bugtask-macros-tableview/table" />
-
-      </div>
-
-      <tal:block tal:condition="request/lp:person">
-
-        <tal:block tal:define="tasks view/bugTasksWithSharedInterest"
-                   tal:condition="tasks">
-
-          <h2 style="margin-bottom: 0;">Bugs relevant to you</h2>
-
-          <tal:assignedbugs
-              metal:use-macro="context/@@+bugtask-macros-tableview/table" />
-
-          <span class="discreet">These are bugs that you and <span
-          tal:replace="context/browsername" /> share interest in.</span>
-
-        </tal:block>
-
-      </tal:block>
 
     </tal:block>
     </tal:block>

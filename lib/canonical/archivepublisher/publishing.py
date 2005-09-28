@@ -11,7 +11,7 @@ from canonical.lp.dbschema import PackagePublishingStatus, \
 from StringIO import StringIO
 
 from canonical.librarian.client import LibrarianClient
-from canonical.archivepublisher.pool import AlreadyInPool
+from canonical.archivepublisher.pool import AlreadyInPool, NotInPool
 from canonical.database.constants import nowUTC
 
 from md5 import md5
@@ -505,11 +505,15 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                 self._diskpool.removeFile(details[f][0],
                                           details[f][1],
                                           details[f][2])
+            except NotInPool:
+                # It's safe for us to let this slide because it means that
+                # the file is already gone.
+                pass
             except:
                 # XXX dsilvers 2004-11-16: This depends on a logging
                 # infrastructure. I need to decide on one...
                 # Do something to log the failure to remove
-                self.logger.logexception("Removing file generated exception")
+                self._logger.exception("Removing file generated exception")
                 pass
 
     def _writeSumLine(self, distrorelease_name, out_file, file_name, sum_form):

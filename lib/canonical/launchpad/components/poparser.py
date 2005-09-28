@@ -582,18 +582,20 @@ class POParser(object):
         self._lineno += 1
         # Skip empty lines
         l = l.strip()
-        if not l:
-            return
 
         obsolete = False
         if l[:2] == '#~':
             obsolete = True
             l = l[2:].lstrip()
+
+        if not l:
+            return
         # If we get a comment line after a msgstr or a line starting with
         # msgid, this is a new entry
         # XXX: l.startswith('msgid') is needed because not all msgid/msgstr
         # pairs have a leading comment
-        if (l[0] == '#' or l.startswith('msgid')) and self._section == 'msgstr':
+        if ((l.startswith('#') or l.startswith('msgid')) and
+            self._section == 'msgstr'):
             if self._partial_transl is None:
                 # first entry - do nothing
                 pass

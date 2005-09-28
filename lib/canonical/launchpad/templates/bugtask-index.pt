@@ -40,11 +40,13 @@
      style="margin-bottom: 1em">
     This bug is a duplicate of
     <a href="#"
-       tal:attributes="href context/bug/duplicateof/fmt:url"
+       tal:attributes="href context/bug/duplicateof/fmt:url;
+                       title context/bug/duplicateof/title"
        tal:content="string:bug #${context/bug/duplicateof/id}">bug 42</a>
   </p>
 
-  <div class="portalMessage" tal:condition="not:view/isReportedInContext">
+  <div class="portalMessage" tal:condition="not:view/isReportedInContext" 
+       style="margin-bottom: 1em">
     This bug has <b>not yet been reported</b> in
     <a tal:attributes="href string:${context/target/fmt:url}/+bugs"
        tal:content="context/targetname">upstream firefox</a>.

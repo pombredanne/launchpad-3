@@ -57,7 +57,7 @@
       <table class="listing">
         <tr class="thead">
           <th>Source Package</th>
-          <th>Distribution Release</th>
+          <th>Distribution / Distribution Release</th>
           <th>Created</th>
           <th>Started</th>
           <th colspan="2">Duration So Far</th>
@@ -70,17 +70,20 @@
                  <span tal:replace="job/build/title">NAME</span>
               </a>
             </td>
-            <td>
-	     <a tal:content="job/build/distroarchrelease/distrorelease/title"
+            <td tal:define="archrelease job/build/distroarchrelease">
+	     <a tal:content="archrelease/distrorelease/distribution/title"
                 tal:attributes="href 
-                           job/build/distroarchrelease/distrorelease/fmt:url"
+                    archrelease/distrorelease/distribution/fmt:url"
+                title="To show the Distribution, click here."/> /
+	     <a tal:content="archrelease/distrorelease/title"
+                tal:attributes="href archrelease/distrorelease/fmt:url"
                 title="To show the Distribution Release, click here."/>
             </td>
             <td></td>
             <td tal:content="job/buildstart/fmt:datetime">STARTED</td>
             <td>
               <img alt="[progress]" src="/++resource++progress" />
-              <span XXXtal:replace="job/buildduration/fmt:age" />&hellip;
+              <span tal:replace="job/buildduration/fmt:approximateduration" />&hellip;
             </td>
             <td style="text-align: right;">
               <input alt="(Cancel)" type="image" src="/++resource++stop" />
@@ -94,13 +97,13 @@
             <td>&#8212;</td>
             <td>
               <img alt="/++resource++idle" />
-              idle
+	      <span tal:replace="context/status">STATUS</span>
             </td>
           </tr>
           <tal:block condition="job">
           <tr tal:condition="job/logtail">
             <td
-              tal:content="job/logtail/fmt:nice_pre"
+              tal:content="structure job/logtail/fmt:nice_pre"
               colspan="5"
             >Things are crashing and burning all over the place.</td>
           </tr>
@@ -119,7 +122,7 @@
         </tr>
         <tr class="thead">
             <th>Source Package</th>
-            <th>Distribution Release</th>
+            <th>Distribution / Distribution Release</th>
             <th>Created</th>
             <th>Started</th>
             <th colspan="2">Result</th>
@@ -131,10 +134,13 @@
                  <span tal:replace="build/title">NAME</span>
               </a>
             </td>
-            <td>
-	     <a tal:content="build/distroarchrelease/distrorelease/title"
+            <td tal:define="archrelease build/distroarchrelease">
+	     <a tal:content="archrelease/distrorelease/distribution/title"
                 tal:attributes="href 
-                           build/distroarchrelease/distrorelease/fmt:url"
+                    archrelease/distrorelease/distribution/fmt:url"
+                title="To show the Distribution, click here."/> /
+	     <a tal:content="archrelease/distrorelease/title"
+                tal:attributes="href archrelease/distrorelease/fmt:url"
                 title="To show the Distribution Release, click here."/>
             </td>
             <td tal:content="build/datecreated/fmt:datetime">CREATED</td>

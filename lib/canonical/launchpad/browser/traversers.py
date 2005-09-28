@@ -17,10 +17,10 @@ __all__ = [
     'traverse_team',
     'traverse_bugtask',
     'traverse_bugs',
-    'traverse_poll',
+    'traverse_poll'
     ]
 
-from zope.component import getUtility
+from zope.component import getUtility, getView
 from zope.exceptions import NotFoundError
 
 from canonical.launchpad.interfaces import (
@@ -28,7 +28,7 @@ from canonical.launchpad.interfaces import (
     IBugTrackerSet, ILaunchBag, ITeamMembershipSubset, ICalendarOwner,
     ILanguageSet, IBugAttachmentSet, IPublishedPackageSet, IPollSet,
     IPollOptionSet, BugTaskSearchParams, IDistroReleaseLanguageSet,
-    IBugExternalRefSet, ICveSet, IBugWatchSet, IProduct,
+    IBugExternalRefSet, ICveSet, IBugWatchSet, IProduct, INullBugTask,
     IDistroSourcePackageSet, ISourcePackageNameSet, IPOTemplateSet,
     IDistribution, IDistroRelease, ISourcePackage, IDistroSourcePackage)
 from canonical.launchpad.database import ProductSeriesSet, SourcePackageSet
@@ -106,8 +106,19 @@ def _get_task_for_context(bugid, context):
         return null_bugtask
 
 
+def _traverse_plus_bug(request, target):
+    """Traverses +bug portions of URLs"""
+    nextstep = _consume_next_path_step(request)
+    if nextstep is None:
+        return None
+    elif nextstep.isdigit():
+        return _get_task_for_context(nextstep, target)
+    else:
+        return None
+
 def traverse_malone_application(malone_application, request, name):
     """Traverse the Malone application object."""
+    assert name is not None
     if name == "bugs":
         return getUtility(IBugSet)
     elif name == "cve":
@@ -158,23 +169,13 @@ def traverse_sourcepackage(sourcepackage, request, name):
                    distrorelease=sourcepackage.distrorelease,
                    sourcepackagename=sourcepackage.sourcepackagename)
     elif name == '+bug':
-        nextstep = _consume_next_path_step(request)
-        if nextstep.isdigit():
-            return _get_task_for_context(nextstep, sourcepackage)
-        else:
-            return None
-
+        return _traverse_plus_bug(request, sourcepackage)
     return None
 
 
 def traverse_distro_sourcepackage(distro_sourcepackage, request, name):
     if name == '+bug':
-        nextstep = _consume_next_path_step(request)
-        if nextstep.isdigit():
-            return _get_task_for_context(nextstep, distro_sourcepackage)
-        else:
-            return None
-
+        return _traverse_plus_bug(request, distro_sourcepackage)
     return None
 
 
@@ -189,9 +190,7 @@ def traverse_product(product, request, name):
         milestone_name = _consume_next_path_step(request)
         return product.getMilestone(milestone_name)
     elif name == '+bug':
-        nextstep = _consume_next_path_step(request)
-        if nextstep.isdigit():
-            return _get_task_for_context(nextstep, product)
+        return _traverse_plus_bug(request, product)
     elif name == '+ticket':
         ticket_num = _consume_next_path_step(request)
         # tickets should be int's
@@ -255,13 +254,7 @@ def traverse_distribution(distribution, request, name):
             return None
         return distribution.getTicket(ticket_num)
     elif name == '+bug':
-        nextstep = _consume_next_path_step(request)
-        if nextstep is None:
-            return None
-        elif nextstep.isdigit():
-            return _get_task_for_context(nextstep, distribution)
-        else:
-            return None
+        return _traverse_plus_bug(request, distribution)
     else:
         bag = getUtility(ILaunchBag)
         try:
@@ -297,19 +290,12 @@ def traverse_distrorelease(distrorelease, request, name):
             drlangset = getUtility(IDistroReleaseLanguageSet)
             return drlangset.getDummy(distrorelease, lang)
     elif name == '+bug':
-        nextstep = _consume_next_path_step(request)
-        if nextstep is None:
-            return None
-        elif nextstep.isdigit():
-            return _get_task_for_context(nextstep, distrorelease)
-        else:
-            return None
+        return _traverse_plus_bug(request, distrorelease)
     else:
         try:
             return distrorelease[name]
         except KeyError:
             return None
-
 
 def traverse_person(person, request, name):
     """Traverse an IPerson."""
@@ -341,6 +327,26 @@ def traverse_team(team, request, name):
 
 def traverse_bugtask(bugtask, request, name):
     """Traverse an IBugTask."""
+    # Are we traversing to the view or edit status page of the
+    # bugtask? If so, and the task actually exists, return the
+    # appropriate page. If the task doesn't yet exist (i.e. it's a
+    # NullBugTask), then return a 404. In other words, the URL:
+    #
+    #   /products/foo/+bug/1/+viewstatus
+    #
+    # will return the +viewstatus page if bug 1 has actually been
+    # reported in "foo". If bug 1 has not yet been reported in "foo",
+    # a 404 will be returned.
+    if name in ("+viewstatus", "+editstatus"):
+        if INullBugTask.providedBy(bugtask):
+            # The bug has not been reported in this context.
+            return None
+        else:
+            # The bug has been reported in this context.
+            return getView(bugtask, name + "-page", request)
+
+    # This was not a traversal to the view or edit status page, so
+    # let's try other alternatives.
     utility_interface = {
         'attachments': IBugAttachmentSet,
         'references': IBugExternalRefSet,

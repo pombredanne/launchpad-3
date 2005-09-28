@@ -8,7 +8,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import IPersonSet
 from canonical.launchpad.mailnotification import get_bug_delta, get_task_delta
 from canonical.lp.dbschema import (BugTaskStatus, KarmaActionName,
-     RosettaImportStatus)
+     RosettaImportStatus, RosettaTranslationOrigin)
 
 
 def bug_created(bug, event):
@@ -111,8 +111,11 @@ def pofile_modified(pofile, event):
             KarmaActionName.TRANSLATIONIMPORTUPSTREAM)
 
 def posubmission_created(submission, event):
-    """Assign karma to the user which created <submission>."""
-    if submission.person is not None:
+    """Assign karma to the user which created <submission> if it comes from
+    the web.
+    """
+    if (submission.person is not None and
+        submission.origin == RosettaTranslationOrigin.ROSETTAWEB):
         submission.person.assignKarma(
             KarmaActionName.TRANSLATIONSUGGESTIONADDED)
 
@@ -121,6 +124,12 @@ def poselection_created(selection, event):
     """Assign karma to the submission author and the reviewer."""
     reviewer = event.user
     active = selection.activesubmission
+    published = selection.publishedsubmission
+
+    if (active is not None and published is not None and
+        active.id == published.id):
+        # The translation came from a published file so we don't add karma.
+        return
 
     if (active is not None and
         active.person is not None and

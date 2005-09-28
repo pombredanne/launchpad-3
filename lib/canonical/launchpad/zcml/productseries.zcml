@@ -29,6 +29,11 @@
             />
     </content>
 
+    <browser:menus
+        module="canonical.launchpad.browser"
+        classes="ProductSeriesContextMenu"
+        />
+
     <browser:traverse
         for="canonical.launchpad.interfaces.IProductSeries"
         function="canonical.launchpad.browser.traverseProductSeries" />

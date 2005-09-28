@@ -31,19 +31,24 @@ class RosettaApplication:
         stats = getUtility(ILaunchpadStatisticSet)
         return stats.dateupdated('potemplate_count')
 
-    def updateStatistics(self):
+    def updateStatistics(self, ztm):
         stats = getUtility(ILaunchpadStatisticSet)
         stats.update('potemplate_count', POTemplate.select().count())
+        ztm.commit()
         stats.update('pofile_count', POFile.select().count())
+        ztm.commit()
         stats.update('pomsgid_count', POMsgID.select().count())
+        ztm.commit()
         stats.update('translator_count', Person.select(
             "POSubmission.person=Person.id",
             clauseTables=['POSubmission'],
             distinct=True).count())
+        ztm.commit()
         stats.update('language_count', Language.select(
             "POFile.language=Language.id",
             clauseTables=['POFile'],
             distinct=True).count())
+        ztm.commit()
 
     def translatable_products(self):
         """See IRosettaApplication."""

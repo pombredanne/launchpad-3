@@ -353,6 +353,6 @@ Finally, let's test the goldilocks message, where the date is just right:
 ...
 ... Moo
 ... ''')
->>> msg.datecreated
-datetime.datetime(2005, 6, 17, 9, 45, 13, tzinfo=<StaticTzInfo 'UTC'>)
+>>> print msg.datecreated
+2005-06-17 09:45:13+00:00
 

@@ -18,17 +18,14 @@
 
 <div metal:fill-slot="main">
 
-  <h1 tal:condition="not: view/subscription">Subscribe to Ticket</h1>
-  <h1 tal:condition="view/subscription">Unsubscribe From Ticket</h1>
+  <h1 tal:condition="not: view/subscription">Subscribe to request</h1>
+  <h1 tal:condition="view/subscription">Unsubscribe from request</h1>
 
-  <p class="documentDescription">
-    If you subscribe to a ticket it will show up on your
-    personal pages.
-  </p>
 
   <p>
-    Choose "Subscribe" to become a subscriber to this ticket, or "Cancel" to
-    return to the ticket page.
+    Subscribing to a request makes it show up on
+    <a tal:attributes="href string:/people/${request/lp:person/name}/+tickets"
+    >your Support page</a>.
   </p>
 
   <form action="." method="POST">

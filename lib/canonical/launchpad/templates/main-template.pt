@@ -122,22 +122,10 @@
             metal:define-slot="column_two"
             rowspan="2"
           >
-            <div
-              tal:define="appmenu CONTEXTS/menu:application"
-              tal:condition="appmenu"
-              class="portlet portletBody portletContent"
-            >
-              <ul>
-                <tal:block repeat="link appmenu">
-                  <li tal:attributes="class link/icon">
-                    <a
-                      tal:attributes="href link/url"
-                      tal:content="structure link/escapedtext"
-                    >link text</a>
-                  </li>
-                </tal:block>
-              </ul>
-            </div>
+            <tal:menu
+              condition="not:exists:body"
+              replace="structure CONTEXTS/@@+menubox"
+            />
             <metal:portlets define-slot="portlets_two">
             </metal:portlets>
           </td>

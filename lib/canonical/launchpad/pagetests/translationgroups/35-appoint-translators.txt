@@ -23,8 +23,7 @@ appointments page.
   ...The PolyGlot Translation Group...
   <select name="field.language" size="1" >
   ...
-  <input type="text" name="field.translator" value=""
-         cssclass="" id="field.translator" size="20" />
+  <input type="text" name="field.translator"
   ...
 
 Now let's make an appointment. Hoary Gnome Team will translate into

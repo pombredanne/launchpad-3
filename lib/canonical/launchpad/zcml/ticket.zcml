@@ -15,6 +15,11 @@
       set_schema="canonical.launchpad.interfaces.ITicket" />
   </content>
 
+  <browser:menus
+      module="canonical.launchpad.browser"
+      classes="TicketContextMenu TicketSetContextMenu"
+      />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.ITicket"
     name="+index" />
@@ -76,8 +81,8 @@
     name="+edit"
     schema="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketEditView"
-    label="Edit Ticket"
-    fields="title description"
+    label="Change support request details"
+    fields="description title"
     permission="launchpad.Edit"
     template="../templates/ticket-edit.pt">
   </browser:editform>
@@ -96,7 +101,7 @@
     name="+priority"
     schema="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketEditView"
-    label="Edit Priority and Assignee"
+    label="Change priority and assignee"
     fields="priority assignee whiteboard"
     permission="launchpad.Edit"
     template="../templates/ticket-edit.pt">
@@ -110,7 +115,7 @@
     name="+admin"
     schema="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketEditView"
-    label="Administration Interface"
+    label="Administer request"
     fields="status priority whiteboard"
     permission="launchpad.Edit"
     template="../templates/ticket-edit.pt">
@@ -140,7 +145,7 @@
     for="canonical.launchpad.interfaces.ITicket"
     schema="canonical.launchpad.interfaces.ITicketBug"
     class="canonical.launchpad.browser.TicketBugAddView"
-    label="Link Ticket and Bug"
+    label="Link request to a bug report"
     fields="bug"
     keyword_arguments="bug"
     permission="launchpad.AnyPerson"

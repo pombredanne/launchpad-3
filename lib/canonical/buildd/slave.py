@@ -19,6 +19,8 @@ from twisted.internet import reactor
 from twisted.internet import process
 from twisted.web import xmlrpc
 
+devnull = open("/dev/null", "r")
+
 
 # XXX 20050628 cprov
 # RunCapture can be replaced with a call to
@@ -35,6 +37,13 @@ class RunCapture(protocol.ProcessProtocol):
         self.killCall = None
 
     def outReceived(self, data):
+        """Pass on stdout data to the log."""
+        self.slave.log(data)
+
+    def errReceived(self, data):
+        """Pass on stderr data to the log.
+
+        With a bit of luck we won't interleave horribly."""
         self.slave.log(data)
 
     def processEnded(self, statusobject):
@@ -59,6 +68,7 @@ class RunCapture(protocol.ProcessProtocol):
         # notify the slave, it'll perform the required actions     
         self.notify(statusobject.value.exitCode)
 
+
 class BuildManager(object):
     """Build Daemon slave build manager abstract parent"""
     
@@ -75,8 +85,10 @@ class BuildManager(object):
         """Run a sub process capturing the results in the log."""
         self._subprocess = RunCapture(self._slave, self.iterate)
         self._slave.log("RUN: %s %r\n" % (command,args))
-        reactor.spawnProcess(self._subprocess, command, args,
-                             env=os.environ, path=os.environ["HOME"])
+        childfds = {0: devnull.fileno(), 1: "r", 2: "r"}
+        reactor.spawnProcess(
+            self._subprocess, command, args, env=os.environ, 
+            path=os.environ["HOME"], childFDs=childfds)
 
     def _unpackChroot(self, chroottarfile):
         """Unpack the buld chroot."""
@@ -345,7 +357,9 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
 
     def __init__(self, config):
         xmlrpc.XMLRPC.__init__(self)
-        self.protocolversion = 1
+        # protocol 2 is the same as protocol 1 except that it
+        # implies that the /filecache/ namespace is available
+        self.protocolversion = 2
         self.slave = BuildDSlave(config)
         self._builders = {}    
         print "Initialised"

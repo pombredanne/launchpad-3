@@ -133,9 +133,8 @@ class IBuildQueue(Interface):
     name = Attribute("SourcePackageRelease name")
     version = Attribute("SourcePackageRelease version")
     files = Attribute("SourcePackageRelease files")
-    partialDuration = Attribute("Time elapsed since start, None is not "
-                                "started")
-    
+    buildduration = Attribute("The duration of the build in progress")
+
     def destroySelf():
         """Delete this entry from the database."""
 

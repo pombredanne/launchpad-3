@@ -15,6 +15,14 @@
             set_schema="canonical.launchpad.interfaces.ICodeOfConduct" />
     </content>
 
+    <browser:menus
+        module="canonical.launchpad.browser"
+        classes="CodeOfConductContextMenu
+                 CodeOfConductSetContextMenu
+                 SignedCodeOfConductContextMenu
+                 SignedCodeOfConductSetContextMenu"
+        />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.ICodeOfConduct"
         name="+index" />
@@ -83,6 +91,11 @@
     <browser:traverse
         for="canonical.launchpad.interfaces.ICodeOfConductSet"
         getter="__getitem__" />
+    <browser:url
+        for="canonical.launchpad.interfaces.ICodeOfConduct"
+        parent_utility="canonical.launchpad.interfaces.ICodeOfConductSet"
+        path_expression="version"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ICodeOfConductSet"
@@ -163,6 +176,19 @@
         provides="canonical.launchpad.interfaces.ISignedCodeOfConductSet" >
         <allow interface="canonical.launchpad.interfaces.ISignedCodeOfConductSet" />
     </securedutility>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.ISignedCodeOfConductSet"
+        path_expression="string:console"
+        parent_utility="canonical.launchpad.interfaces.ICodeOfConductSet"
+        />
+
+    <!-- string:${id} because id is an int -->
+    <browser:url
+        for="canonical.launchpad.interfaces.ISignedCodeOfConduct"
+        path_expression="string:${id}"
+        parent_utility="canonical.launchpad.interfaces.ISignedCodeOfConductSet"
+        />
 
     <browser:traverse
         for="canonical.launchpad.interfaces.ISignedCodeOfConductSet"

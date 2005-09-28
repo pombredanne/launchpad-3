@@ -35,8 +35,7 @@ class BugView:
     def currentBugTask(self):
         """Return the current IBugTask.
 
-        'current' is determined by simply looking in the ILaunchBag
-        utility.
+        'current' is determined by simply looking in the ILaunchBag utility.
         """
         return getUtility(ILaunchBag).bugtask
 
@@ -56,18 +55,11 @@ class BugView:
 
     @property
     def subscription(self):
-        """Return the current user's IBugSubscription.
-
-        If the user is not subscribed to this bug, return None.
-        """
+        """Return whether the current user is subscribed."""
         user = getUtility(ILaunchBag).user
         if user is None:
-            return None
-        for subscription in self.context.subscriptions:
-            if subscription.person.id == user.id:
-                return subscription
-
-        return None
+            return False
+        return self.context.isSubscribed(user)
 
     @property
     def maintainers(self):
