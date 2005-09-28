@@ -256,6 +256,7 @@ And this is for a person:
 >>> check("/people/name16/+karma")
 >>> check("/people/name16/+reportedbugs")
 >>> check("/people/name16/+assignedbugs")
+>>> check("/people/name16/+packagebugs")
 >>> check("/people/name16/+editsshkeys", auth=True)
 >>> check("/people/name16/+editgpgkeys", auth=True)
 >>> check("/people/name16/+editwikinames", auth=True)

@@ -19,12 +19,22 @@ Get an instance of Builder from the current sampledata:
 
  >>> builder = Builder.get(1) 
 
-test some attributes:
+Test some attributes:
 
- >>> builder.id, builder.name, builder.status
- (1, u'bob', 'NOT OK : None')
+ >>> builder.id, builder.name
+ (1, u'bob')
 
-Check if the instace coreesponds to the declared interface:
+Test 'status' property:
+
+ >>> builder.failnotes = 'Could not open Socket'
+ >>> builder.status
+ u'NOT OK : Could not open Socket'
+
+ >>> builder.builderok = True
+ >>> builder.status
+ u'BUILDING mozilla-firefox-0.9'
+ 
+Check if the instace corresponds to the declared interface:
 
  >>> verifyObject(IBuilder, builder)
  True

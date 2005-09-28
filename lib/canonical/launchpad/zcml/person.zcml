@@ -124,6 +124,11 @@
           template="../templates/person-assignedbugs.pt"
           lp:url="/people/$Person.name/+assignedbugs" />
       <browser:page
+          name="+packagebugs"
+          facet="bugs"
+          template="../templates/person-packagebugs.pt"
+          lp:url="/people/$Person.name/+packagebugs" />
+      <browser:page
           name="+reportedbugs"
           facet="bugs"
           template="../templates/person-reportedbugs.pt"

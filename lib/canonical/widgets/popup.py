@@ -13,7 +13,14 @@ import logging
 
 from canonical.launchpad import _
 
+
 class ISinglePopupWidget(ISimpleInputWidget):
+    # I chose to use onKeyPress because onChange only fires when focus
+    # leaves the element, and that's very inconvenient.
+    onKeyPress = Attribute('''Optional javascript code to be executed
+                              as text in input is changed''')
+    cssClass = Attribute('''CSS class to be assigned to the input widget''')
+    style = Attribute('''CSS style to be applied to the input widget''')
     def formToken():
         'The token representing the value to display, possibly invalid'
     def popupHref():
@@ -37,7 +44,10 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     default = ''
     displayWidth = 20
     displayMaxWidth = None
+
+    onKeyPress = ''
     style = None
+    cssClass = None
 
     def _old_getFormValue(self):
         # Check to see if there is only one possible match. If so, use it.
@@ -98,8 +108,15 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
             '''popup_window('@@popup-window?'''
             '''vocabulary=%s&field=%s','''
             ''''500','400')'''
-            )
-        return template % (self.context.vocabularyName, self.name)
+            ) % (self.context.vocabularyName, self.name)
+        if self.onKeyPress:
+            # XXX: I suspect onkeypress() here is non-standard, but it
+            # works for me, and enough researching for tonight. It may
+            # be better to use dispatchEvent or a compatibility function
+            # -- kiko, 2005-09-27
+            template += ("; document.getElementById('%s').onkeypress()" %
+                         self.name)
+        return template
 
 
 class ISinglePopupView(Interface):
@@ -112,6 +129,7 @@ class ISinglePopupView(Interface):
 
     def batch():
         'Return the BatchNavigator of the current results to display'
+
 
 class SinglePopupView(object):
     implements(ISinglePopupView)

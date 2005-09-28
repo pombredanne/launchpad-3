@@ -182,15 +182,20 @@ class PersonBugsMenu(ApplicationMenu):
 
     facet = 'bugs'
 
-    links = ['assigned', 'reported']
+    links = ['assignedbugs', 'softwarebugs', 'reportedbugs']
 
-    def assigned(self):
+    def assignedbugs(self):
+        text = 'Bugs Assigned'
+        return Link('+assignedbugs', text, icon='bugs')
+
+    def softwarebugs(self):
+        text = 'Bugs on Maintained Software'
+        return Link('+packagebugs', text, icon='bugs')
+
+    def reportedbugs(self):
         text = 'Bugs Reported'
         return Link('+reportedbugs', text, icon='bugs')
 
-    def reported(self):
-        text = 'Bugs Assigned'
-        return Link('+assignedbugs', text, icon='bugs')
 
 
 class PersonSpecsMenu(ApplicationMenu):
