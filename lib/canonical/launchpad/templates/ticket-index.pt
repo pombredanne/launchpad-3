@@ -70,7 +70,7 @@
 
   <tal:logged-in condition="request/lp:person">
     <fieldset class="collapsible collapsed">
-      <legend>Add comment to this ticket</legend>
+      <legend>Add comment</legend>
         <form action="+addmessage" method="post">
           <b>Subject:</b>
           <input name="field.subject" type="text" size="50" 

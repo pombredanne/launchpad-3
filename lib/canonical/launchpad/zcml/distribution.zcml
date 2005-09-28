@@ -333,10 +333,9 @@
     <browser:menus
         module="canonical.launchpad.browser.distribution"
         classes="
-            DistributionFacets DistributionOverviewMenu
+            DistributionFacets DistributionOverviewMenu DistributionBugsMenu
             DistributionSupportMenu DistributionBountiesMenu
             DistributionSpecificationsMenu DistributionTranslationsMenu
-            DistributionContextMenu
             "
             />
 

@@ -677,6 +677,8 @@ registry_to_do = 'Launchpad To-Do List'
 
 related_bounties = ContextDisplayName('Bounties for %s')
 
+requestexpired = 'Request Took Too Long'
+
 root_index = 'The Launchpad Home Page'
 
 rosetta_about = 'About Rosetta'
@@ -829,31 +831,34 @@ sprint_new = 'Register a new Meeting or Sprint in Launchpad'
 
 sprints_index = 'Launchpad Meeting or Sprint Registry'
 
-tickets_index = 'Launchpad Support Ticket Tracker'
+tickets_index = 'Launchpad tech support system'
 
-ticket_add = ContextDisplayName('Make Support Request for %s')
+ticket_add = ContextDisplayName('Request support with %s')
 
-ticket_bug = ContextId('Link Ticket #%s to Bug')
+ticket_bug = ContextId(u'Link support request #%s to a bug report')
 
-ticket_edit = ContextId('Edit Ticket #%s Details')
+ticket_edit = ContextId('Edit support request #%s details')
 
 def ticket_index(context, view):
-    return '%s Support Ticket #%d: %s' % (context.target.displayname,
-        context.id, context.title)
+    text = (
+        u'%s support request #%d: '
+        u'\N{left double quotation mark}%s\N{right double quotation mark}'
+        % (context.target.displayname, context.id, context.title))
+    return text
 
-ticket_history = ContextId('Ticket #%s History')
+ticket_history = ContextId('History of support request #%s')
 
-ticket_makebug = ContextId('File Bug Report Based on Ticket #%s')
+ticket_makebug = ContextId('Create bug report based on request #%s')
 
-ticket_reject = ContextId('Reject Ticket #%s as Invalid')
+ticket_reject = ContextId('Reject support request #%s')
 
-ticket_removebug = ContextId('Remove Bug Link from Ticket #%s')
+ticket_removebug = ContextId('Remove bug link from request #%s')
 
-ticket_reopen = ContextId('Reopen Ticket #%s')
+ticket_reopen = ContextId('Reopen request #%s')
 
-ticket_subscription = ContextId('Subscription to Ticket #%s')
+ticket_subscription = ContextId('Subscription to request #%s')
 
-tickettarget_tickets = ContextTitle('Support Requests for %s')
+tickettarget_tickets = ContextTitle('Support requests for %s')
 
 standardshipitrequests_index = 'Standard ShipIt Options'
 

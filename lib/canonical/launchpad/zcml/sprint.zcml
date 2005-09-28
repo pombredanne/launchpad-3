@@ -13,6 +13,11 @@
       set_schema="canonical.launchpad.interfaces.ISprint" />
   </content>
 
+  <browser:menus
+      module="canonical.launchpad.browser"
+      classes="SprintContextMenu SprintSetContextMenu"
+      />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISprint"
     name="+index" />

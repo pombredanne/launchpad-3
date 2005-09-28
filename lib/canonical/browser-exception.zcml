@@ -31,6 +31,15 @@
       class="canonical.launchpad.webapp.error.NotFoundView"
       />
 
+  <!-- RequestExpired -->
+  <page
+      for="canonical.database.interfaces.IRequestExpired"
+      name="index.html"
+      permission="zope.Public"
+      template="launchpad/templates/requestexpired.pt"
+      class="canonical.launchpad.webapp.error.SystemErrorView"
+      />
+
 <!-- debug port errors -->
 
   <!-- System Errors -->
@@ -63,4 +72,13 @@
       layer="canonical.launchpad.layers.DebugLayer"
       />
 
+  <!-- RequestExpired -->
+  <page
+      for="canonical.database.interfaces.IRequestExpired"
+      name="index.html"
+      permission="zope.Public"
+      template="launchpad/templates/requestexpired.pt"
+      class="canonical.launchpad.webapp.error.SystemErrorView"
+      layer="canonical.launchpad.layers.DebugLayer"
+      />
 </zope:configure>

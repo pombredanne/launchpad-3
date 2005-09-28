@@ -11,13 +11,35 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, ContextMenu, Link
 
 __all__ = [
+    'SprintContextMenu',
+    'SprintSetContextMenu',
     'SprintView',
     'SprintAddView',
     'SprintEditView',
     ]
+
+
+class SprintContextMenu(ContextMenu):
+
+    usedfor = ISprint
+    links = ['edit']
+
+    def edit(self):
+        text = 'Edit Details'
+        return Link('+edit', text, icon='edit')
+
+
+class SprintSetContextMenu(ContextMenu):
+
+    usedfor = ISprintSet
+    links = ['new']
+
+    def new(self):
+        text = 'Register New Meeting'
+        return Link('+new', text, icon='add')
 
 
 class SprintView:

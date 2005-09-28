@@ -27,10 +27,10 @@
   <div class="highlighted" style="font-size: 80%;">
     <img tal:condition="context/hackergotchi"
          tal:attributes="src context/hackergotchi/url"
-         style="float: left;" />
+         style="float: left; margin: 0 5px 5px 0" />
     <img tal:condition="not: context/hackergotchi"
          src="/++resource++hackergotchi"
-         style="float: left;" />
+         style="float: left; margin: 0 5px 5px 0" />
     <p tal:condition="not: context/homepage_content">
       <span tal:replace="context/browsername">Foo Bar</span> has not
       created a homepage. The home page is like a wiki page - you can use

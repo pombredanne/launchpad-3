@@ -6,7 +6,7 @@ from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 
 __metaclass__ = type
 
-__all__ = ('ZeroLengthPOExportError', 'IPOFileSet', 'IPOFile', 'IEditPOFile')
+__all__ = ('ZeroLengthPOExportError', 'IPOFileSet', 'IPOFile')
 
 
 class ZeroLengthPOExportError(Exception):
@@ -182,10 +182,6 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         to edit these translations.
         """
 
-
-class IEditPOFile(IPOFile):
-    """Edit interface for a PO File."""
-
     def expireAllMessages():
         """Mark our of our message sets as not current (sequence=0)"""
 
@@ -213,6 +209,11 @@ class IEditPOFile(IPOFile):
         """Update the header information.
 
         new_header is a POHeader object.
+        """
+
+    def isPORevisionDateOlder(header):
+        """Return if the given header has a less current field
+        'PORevisionDate' than IPOFile.header.
         """
 
 

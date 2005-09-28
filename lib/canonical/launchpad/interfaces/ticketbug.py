@@ -22,7 +22,5 @@ class ITicketBug(Interface):
     ticket = Int(title=_('Ticket Number'), required=True,
         readonly=True)
     bug = Int(title=_('Bug Number'), required=True, readonly=True,
-        description=_("Please enter the bug number which is related to "
-        "this support request ticket."), constraint=valid_bug_number)
-
-
+        description=_("The number of the Malone bug report."),
+        constraint=valid_bug_number)

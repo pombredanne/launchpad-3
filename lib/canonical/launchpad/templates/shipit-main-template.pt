@@ -51,6 +51,12 @@
           font-size: 1em;
           font-weight: normal;
         }
+        :link {
+          color: #660000;
+        }
+        :visited {
+          color: #993333;
+        }
       -->
     </style>
     <metal:block define-slot="head_epilogue"></metal:block>

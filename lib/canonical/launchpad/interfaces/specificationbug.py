@@ -20,7 +20,6 @@ class ISpecificationBug(Interface):
     specification = Int(title=_('Specification ID'), required=True,
         readonly=True)
     bug = Int(title=_('Bug Number'), required=True, readonly=True,
-        description=_("Please enter the bug number which is related to "
-        "this specification in the space provided."))
+        description=_("The number of the Malone bug report."))
 
 

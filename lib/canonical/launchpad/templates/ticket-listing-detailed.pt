@@ -1,20 +1,47 @@
-<img src="/++resource++ticket" />
-<span tal:replace="context/datecreated/fmt:date">2005-10-05</span>
-<a tal:attributes="href context/fmt:url"
-   tal:content="context/title">Ticket Title Here</a>
-  for <img src="/++resource++user.gif" />&nbsp;<a
-      tal:attributes="href context/owner/fmt:url"
-      tal:content="context/owner/browsername">Foo Bar</a>
-<tal:block condition="context/assignee">
-  (<img src="/++resource++user.gif" />&nbsp;<a
-      tal:attributes="href context/assignee/fmt:url"
-      tal:content="context/assignee/browsername">Foo Bar</a>)
-</tal:block>
-<tal:block condition="context/answerer">
-  (<img src="/++resource++user.gif" />&nbsp;<a
-      tal:attributes="href context/answerer/fmt:url"
-      tal:content="context/answerer/browsername">Foo Bar</a>)
-</tal:block>
-<span tal:replace="context/status/title">Approved</span>
-(<span tal:replace="context/priority/title">High</span>)
-<hr />
+<tr class="noted">
+  <td class="icon left" rowspan="2">
+    <img alt="" src="/@@/ticket" />
+  </td>
+  <td>
+    <a
+      tal:attributes="
+        href context/fmt:url;
+        class string:${context/status/title}
+      "
+      tal:content="context/title"
+      style="font-weight: bold;"
+    />
+    (<span tal:replace="context/status/title">Approved</span>)
+  </td>
+</tr>
+<tr class="note">
+  <td>
+    posted <span tal:replace="context/datecreated/fmt:date">2005-10-05</span> by
+    <img src="/@@/user.gif" />
+    <a
+      tal:attributes="href string:${context/owner/fmt:url}/+tickets"
+      tal:content="context/owner/browsername"
+    >Foo Bar
+    </a><tal:assignee condition="context/assignee">,
+    assigned to
+    <img src="/@@/user.gif" />
+    <a
+      tal:attributes="href string:${context/assignee/fmt:url}/+tickets"
+      tal:content="context/assignee/browsername"
+    >Foo Bar</a></tal:assignee><tal:answerer condition="context/answerer">,
+    answered by
+    <img src="/@@/user.gif" />
+    <a
+      tal:attributes="href string:${context/answerer/fmt:url}/+tickets"
+      tal:content="context/answerer/browsername">Foo Bar
+    </a>
+    </tal:answerer>
+    in
+    <span tal:replace="context/target/title">SmegConf</span>
+    (<span tal:replace="context/priority/title">High</span>)
+  </td>
+</tr>
+
+
+
+

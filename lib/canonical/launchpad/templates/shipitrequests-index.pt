@@ -14,7 +14,7 @@
   <tr>
   <td width="80%">
 
-  <form name="search" action="" method="POST">
+  <form name="search" action="" method="GET">
   <table>
     <tbody>
     <tr>
@@ -68,13 +68,16 @@
   </form>
 
   <br />
-  <tal:block condition="view/submitted">
-    <p tal:condition="not: view/results">
+  <tal:block condition="view/submitted"
+             define="bn view/batchNavigator;
+                     prev_url bn/prevBatchURL;
+                     next_url bn/nextBatchURL;
+                     currentBatch bn/currentBatch">
+
+    <p tal:condition="not: currentBatch">
       No results were found
     </p>
-    <tal:block condition="view/results">
-      <div>Found <span tal:replace="view/results/count:len" /> results</div>
-
+    <tal:block condition="currentBatch">
       <table width="80%" class="listing sortable" id="results">
         <thead>
           <tr>
@@ -89,7 +92,7 @@
           </tr>
         </thead>
         <tbody>
-          <tal:block repeat="shipitrequest view/results">
+          <tal:block repeat="shipitrequest currentBatch">
             <tr tal:attributes="
               style string:background-color: ${shipitrequest/highlightColour}">
               <td tal:content="shipitrequest/id" />
@@ -113,6 +116,46 @@
               <td>[<a tal:attributes="href shipitrequest/fmt:url">edit</a>]</td>
             </tr>
           </tal:block>
+          <tr class="results" style="background: #f7ebd6" tal:define="batch bn/batch">
+            <td colspan="8"
+              tal:define="startno batch/startNumber;
+                          endno batch/endNumber;
+                          total batch/total">
+              <div
+                class="navigation"
+                tal:define="prev_page_url bn/prevBatchURL;
+                            next_page_url bn/nextBatchURL">
+                <a tal:condition="prev_page_url"
+                   tal:attributes="href prev_page_url"
+                   rel="previous">
+                   &laquo; previous</a>&nbsp;
+                <span tal:repeat="page_url bn/batchPageURLs">
+                  <a href="."
+                     tal:content="python:page_url.keys()[0]"
+                     tal:condition="python:len(page_url) > 1"
+                     tal:attributes="href python:page_url.values()[0]">[1]</a>
+                </span>
+                &nbsp;<a tal:condition="next_page_url"
+                   tal:attributes="href next_page_url"
+                   rel="next">
+                   next &raquo;</a>
+                <span tal:condition="not: next_page_url" tal:omit-tag>
+                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+                </span>
+              </div>
+
+              <strong tal:content="startno">1</strong>
+              &rarr;
+              <strong tal:content="endno">10</strong>
+              of
+              <tal:comment replace="nothing">
+                XXX: The spacing in the following line is very tricky -- get it
+                wrong and tests will fail.
+              </tal:comment>
+              <span tal:replace="total">42</span> result<span
+                  tal:omit-tag="" tal:condition="python: total != 1">s</span>
+            </td>
+          </tr>
         </tbody>
       </table>
 

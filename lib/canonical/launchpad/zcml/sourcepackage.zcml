@@ -32,7 +32,7 @@
    <browser:menus
         module="canonical.launchpad.browser.sourcepackage"
         classes="
-            SourcePackageFacets SourcePackageOverviewMenu
+            SourcePackageFacets SourcePackageOverviewMenu SourcePackageBugsMenu
             SourcePackageSupportMenu SourcePackageTranslationsMenu"
         />
 

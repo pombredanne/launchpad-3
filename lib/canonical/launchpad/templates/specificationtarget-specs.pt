@@ -48,7 +48,8 @@
           />
         </tal:block>
       </tal:specifications>
-      <ul>
+      <ul tal:condition="nothing">
+      <!-- XXX mpt 20050926 Restore this once this page isn't 3-column -->
         <li class="add"><a href="+addspec">Add Specification&hellip;</a></li>
       </ul>
     </div>

@@ -26,13 +26,15 @@
         name="+bugs" />
 
     <browser:menus
-        module="canonical.launchpad.browser.product"
+        module="canonical.launchpad.browser"
         classes="
             ProductFacets ProductOverviewMenu ProductBountiesMenu
-            ProductSupportMenu ProductSpecificationsMenu 
+            ProductSupportMenu ProductSpecificationsMenu
             ProductTranslationsMenu ProductBugsMenu
+            ProductSetContextMenu
             "
-    />
+            />
+
     <!-- XXX ProductBugsMenu undeclared until layout bug is fixed -->
 
     <browser:traverse

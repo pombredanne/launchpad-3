@@ -109,11 +109,22 @@ class SourcePackageOverviewMenu(ApplicationMenu):
         return Link('+packaging', 'Edit Upstream Link', icon='edit')
 
 
+class SourcePackageBugsMenu(ApplicationMenu):
+
+    usedfor = ISourcePackage
+    facet = 'bugs'
+    links = ['reportbug']
+
+    def reportbug(self):
+        text = 'Report a Bug'
+        return Link('+filebug', text, icon='add')
+
+
 class SourcePackageSupportMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'support'
-    links = ['gethelp', 'addticket']
+    links = ['addticket', 'gethelp']
 
     def gethelp(self):
         return Link('+gethelp', 'Help and Support Options', icon='info')

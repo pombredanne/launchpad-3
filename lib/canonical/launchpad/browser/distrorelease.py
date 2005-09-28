@@ -39,7 +39,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     usedfor = IDistroRelease
     facet = 'overview'
-    links = ['edit', 'reassign', 'sources', 'cve', 'packaging', 'support']
+    links = ['edit', 'reassign', 'sources', 'packaging', 'support']
 
     def edit(self):
         text = 'Edit Details'
@@ -52,11 +52,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     def sources(self):
         text = 'Source Packages'
-        return Link('+sources', text, icon='product')
-
-    def cve(self):
-        text = 'CVE Report'
-        return Link('+cve', text, icon='info')
+        return Link('+sources', text, icon='packages')
 
     def packaging(self):
         text = 'Upstream Links'
@@ -66,6 +62,34 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
         text = 'Request Support'
         url = canonical_url(self.context.distribution) + '/+addticket'
         return Link(url, text, icon='add')
+
+
+class DistroReleaseBugsMenu(ApplicationMenu):
+
+    usedfor = IDistroRelease
+    facet = 'bugs'
+    links = ['new', 'cve']
+
+    def new(self):
+        return Link('+filebug', 'Report a Bug', icon='add')
+
+    def cve(self):
+        return Link('+cve', 'CVE List', icon='info')
+
+
+class DistroReleaseSpecificationsMenu(ApplicationMenu):
+
+    usedfor = IDistroRelease
+    facet = 'specifications'
+    links = ['new', 'roadmap']
+
+    def new(self):
+        text = 'Register a New Specification'
+        return Link('+addspec', text, icon='add')
+
+    def roadmap(self):
+        text = 'Roadmap'
+        return Link('+specplan', text, icon='info')
 
 
 class DistroReleaseView:

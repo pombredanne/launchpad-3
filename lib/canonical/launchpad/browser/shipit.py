@@ -16,6 +16,8 @@ from zope.app.form.interfaces import IInputWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from canonical.lp.z3batching import Batch
+from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
 from canonical.launchpad.webapp import canonical_url
@@ -208,11 +210,14 @@ Reason:
             self.quantityppc, self.reason)
 
         self.currentOrder = order
-        if self.isCustomOrder:
+        # Orders with a total of 80 CDs or less get approved automatically.
+        # XXX: Ideally it should be possible to tweak this number through
+        # a web interface. -- Guilherme Salgado 2005-09-27
+        if self.isCustomOrder and order.totalCDs > 80:
             self._notifyShipItAdmins(order)
         else:
             order.approve(
-                self.quantityx86, self.quantityamd64, self.quantityppc,)
+                self.quantityx86, self.quantityamd64, self.quantityppc)
 
         return order
 
@@ -244,20 +249,12 @@ Reason:
         order.quantityppc = self.quantityppc
         order.quantityamd64 = self.quantityamd64
         order.reason = self.reason
-        if order.isStandardRequest() and not wasStandard:
-            # Changing an existing custom order to a standard one has the same
-            # effect of creating a new standard one. In other words, it's
-            # marked approved.
+        if order.totalCDs <= 80 and order.isAwaitingApproval():
+            # Orders with 80 or less CDs get approved automatically.
             order.approve(
                 order.quantityx86, order.quantityamd64, order.quantityppc)
-        elif not order.isStandardRequest() and wasStandard:
-            # Changing an existing standard order into a custom one will mark
-            # it as pending approval, and sent an email notification to the
-            # shipit admins.
-            if order.isApproved():
-                # Even a standard request may have been denied by one of the
-                # shipit admins.
-                order.clearApproval()
+        elif order.totalCDs > 80 and order.isApproved():
+            order.clearApproval()
             self._notifyShipItAdmins(order)
 
     def _readAndValidateRequestDetails(self):
@@ -420,6 +417,8 @@ Reason:
                 "Your organization can't have more than 30 characters."))
 
 
+BATCH_SIZE = 50
+
 class ShippingRequestsView:
     """The view to list ShippingRequests that match a given criteria."""
 
@@ -434,12 +433,13 @@ class ShippingRequestsView:
 
     def processForm(self):
         """Process the form, if it was submitted."""
-        if self.request.method != 'POST':
+        request = self.request
+        status = request.get('statusfilter')
+        if not status:
+            self.batchNavigator = self._getBatchNavigator([])
             return
 
         self.submitted = True
-        form = self.request.form
-        status = form.get('statusfilter')
         self.selectedStatus = status
         if status == 'pending':
             status = ShippingRequestStatus.PENDING
@@ -451,7 +451,7 @@ class ShippingRequestsView:
             status = ShippingRequestStatus.ALL
 
         requestset = getUtility(IShippingRequestSet)
-        type = form.get('typefilter')
+        type = request.get('typefilter')
         self.selectedType = type
         if type == 'custom':
             results = requestset.searchCustomRequests(status=status)
@@ -466,7 +466,12 @@ class ShippingRequestsView:
             results = requestset.searchStandardRequests(
                 status=status, standard_type=type)
 
-        self.results = results
+        self.batchNavigator = self._getBatchNavigator(results)
+
+    def _getBatchNavigator(self, list):
+        start = int(self.request.get('batch_start', 0))
+        batch = Batch(list=list, start=start, size=BATCH_SIZE)
+        return BatchNavigator(batch=batch, request=self.request)
 
 
 class StandardShipItRequestsView:

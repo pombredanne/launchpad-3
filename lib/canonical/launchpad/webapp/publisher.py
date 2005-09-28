@@ -5,18 +5,72 @@ XXX: Much stuff from canonical.publication needs to move here.
 """
 
 __metaclass__ = type
-__all__ = ['canonical_url', 'nearest', 'get_current_browser_request',
-           'canonical_url_iterator', 'rootObject']
+__all__ = ['UserAttributeCache', 'LaunchpadView', 'canonical_url', 'nearest',
+           'get_current_browser_request', 'canonical_url_iterator',
+           'rootObject']
 
 from zope.interface import implements
+from zope.component import getUtility
 import zope.security.management
 from zope.security.checker import ProxyFactory, NamesChecker
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from canonical.launchpad.interfaces import (
-    ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication)
+    ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
+    ILaunchBag)
 
 # Import the launchpad.conf configuration object.
 from canonical.config import config
+
+
+class UserAttributeCache:
+    """Mix in to provide self.user, cached."""
+
+    _no_user = object()
+    _user = _no_user
+
+    @property
+    def user(self):
+        """The logged-in Person, or None if there is no one logged in."""
+        if self._user is self._no_user:
+            self._user = getUtility(ILaunchBag).user
+        return self._user
+
+
+class LaunchpadView(UserAttributeCache):
+    """Base class for views in Launchpad.
+
+    Available attributes and methods are:
+
+    - context
+    - request
+    - initialize() <-- subclass this for specific initialization
+    - template     <-- the template set from zcml, otherwise not present
+    - user         <-- currently logged-in user
+    - render()     <-- used to render the page.  override this if you have many
+                       templates not set via zcml, or you want to do rendering
+                       from Python.
+    """
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def initialize(self):
+        """Override this in subclasses."""
+        pass
+
+    @property
+    def template(self):
+        """The page's template, if configured in zcml."""
+        return self.index
+
+    def render(self):
+        return self.template()
+
+    def __call__(self):
+        self.initialize()
+        return self.render()
+
 
 class LaunchpadRootUrlData:
     """ICanonicalUrlData for the ILaunchpadRoot object."""

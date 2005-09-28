@@ -217,7 +217,7 @@ class Dominator(object):
         # if the binaries as a group (in that definition) are all superseded
         # then we can consider them eligible for removal.
         for pub_record in binary_records:
-            binpkg_release = pub_record.binarypackage
+            binpkg_release = pub_record.binarypackagerelease
             if pub_record.status == SUPERSEDED:
                 self.debug("%s/%s (%s) has been judged eligible for removal" %
                            (binpkg_release.binarypackagename.name,

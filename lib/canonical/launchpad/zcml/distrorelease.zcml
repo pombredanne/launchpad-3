@@ -137,7 +137,8 @@
 
     <browser:menus
         module="canonical.launchpad.browser.distrorelease"
-        classes="DistroReleaseFacets DistroReleaseOverviewMenu"
+        classes="DistroReleaseFacets DistroReleaseOverviewMenu
+            DistroReleaseBugsMenu DistroReleaseSpecificationsMenu"
         />
 
 </configure>
