@@ -37,6 +37,12 @@
 
       </div>
 
+<tal:comment tal:replace="nothing">
+  XXX: I'm disabling this for now since it's too slow. It should
+       move to its own page, and be batched.
+       -- Bjorn Tillenius, 2005-09-27
+</tal:comment>
+<tal:disabled tal:replace="nothing">
       <div style="margin-bottom: 1em"
            tal:condition="tasks_on_maintained_software"
            tal:define="tasks tasks_on_maintained_software">
@@ -47,7 +53,14 @@
           metal:use-macro="context/@@+bugtask-macros-tableview/table" />
 
       </div>
+</tal:disabled>
 
+<tal:comment tal:replace="nothing">
+  XXX: I'm disabling this for now since it's too slow. It should
+       move to its own page, and be batched.
+       -- Bjorn Tillenius, 2005-09-27
+</tal:comment>
+<tal:disabled tal:replace="nothing">
       <tal:block tal:condition="request/lp:person">
 
         <tal:block tal:define="tasks view/bugTasksWithSharedInterest"
@@ -64,6 +77,7 @@
         </tal:block>
 
       </tal:block>
+</tal:disabled>
 
     </tal:block>
     </tal:block>
