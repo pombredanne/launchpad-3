@@ -34,10 +34,9 @@ class BugTaskAssigneeWidget(Widget):
         # See zope.app.form.interfaces.IInputWidget.
         self.required = False
 
-        # Set the attribute that allows for choosing an assignee other
-        # than the currently logged-in user.
         self.assignee_chooser_widget = SinglePopupWidget(
             context, context.vocabulary, request)
+        self.assignee_chooser_widget.onKeyPress = "selectAssignTo(this, event)"
 
         # Set some values that will be used as values for the input
         # widgets.
@@ -189,3 +188,4 @@ class BugTaskAssigneeWidget(Widget):
                 return self.assign_to_me
             else:
                 return self.assigned_to
+
