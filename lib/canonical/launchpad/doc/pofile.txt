@@ -129,3 +129,39 @@ trying to parse the number and type of plural forms it has.
 >>> new_header.getPluralFormExpression() == None
 True
 
+
+isPORevisionDateOlder check
+---------------------------
+
+This method helps to compare two PO files header and decide if the given one
+is older than the one we have in the IPOFile object. We are using this
+method, for instance, to know if a new imported PO file should be ignored
+because we already have a newer one.
+
+This test is to be sure that the date comparation is working and that two
+headers with the same date will always be set as newer because lazy
+translators forget to update that field from time to time and sometimes we
+were losing translations because we were ignoring those imports too.
+
+    >>> from canonical.launchpad.components.poparser import POHeader
+
+    >>> print pofile.header.encode('utf-8')
+    Project-Id-Version: es
+    ...
+    PO-Revision-Date: 2005-08-18 13:22+0000
+    ...
+
+First, we check with the same date.
+
+    >>> header = POHeader(msgstr=u'PO-Revision-Date: 2005-08-18 13:22+0000')
+    >>> header.finish()
+    >>> pofile.isPORevisionDateOlder(header)
+    False
+
+Now, we check with a date that is in the past.
+
+    >>> header = POHeader(msgstr=u'PO-Revision-Date: 2005-08-18 13:21+0000')
+    >>> header.finish()
+    >>> pofile.isPORevisionDateOlder(header)
+    True
+

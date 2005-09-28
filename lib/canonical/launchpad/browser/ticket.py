@@ -40,22 +40,22 @@ class TicketView:
         if newsub is not None and self.user and request.method == 'POST':
             if newsub == 'Subscribe':
                 self.context.subscribe(self.user)
-                self.notices.append("You have subscribed to this ticket.")
+                self.notices.append("You have subscribed to this request.")
             elif newsub == 'Unsubscribe':
                 self.context.unsubscribe(self.user)
-                self.notices.append("You have unsubscribed from this ticket.")
+                self.notices.append("You have unsubscribed from this request.")
 
         # establish if the user is trying to reject the ticket
         reject = request.form.get('reject', None)
         if reject is not None and self.user and request.method == 'POST':
             if self.context.reject(self.user):
-                self.notices.append("You have rejected this ticket.")
+                self.notices.append("You have rejected this request.")
 
         # establish if the user is trying to reopen the ticket
         reopen = request.form.get('reopen', None)
         if reopen is not None and self.user and request.method == 'POST':
             if self.context.reopen(self.user):
-                self.notices.append("You have reopened this ticket.")
+                self.notices.append("You have reopened this request.")
 
         # see if this is the creator, or not
         if self.user == self.context.owner:

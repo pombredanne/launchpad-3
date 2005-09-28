@@ -18,16 +18,11 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Reopen Ticket</h1>
-
-  <p class="documentDescription">
-    Use this form to re-open the support request.
-  </p>
+  <h1>Reopen the support request</h1>
 
   <p>
-    If you believe that this ticket is not resolved, and needs to be opened
-    again for further discussion, choose "Reopen Ticket" below. Press
-    "Cancel" to return to the ticket page.
+    If you believe that this request is not resolved, and needs to be reopened
+    for further discussion, choose "Reopen".
   </p>
 
   <form action="." method="POST">
@@ -39,7 +34,7 @@
       <input tal:condition="context/can_be_reopened"
              type="submit"
              name="reopen"
-             value="Reopen Ticket" />
+             value="Reopen" />
     </div>
   </form>
 

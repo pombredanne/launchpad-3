@@ -80,7 +80,13 @@ def import_po(pofile_or_potemplate, file, published=True):
         pofile = pofile_or_potemplate
         potemplate = pofile.potemplate
         # Check if we are importing a new version.
-        if pofile.isPORevisionDateNewer(parser.header):
+        if pofile.isPORevisionDateOlder(parser.header):
+            # The new imported file is older than latest one imported, we
+            # don't import it, just ignore it as it could be a mistake and
+            # would make us lose translations.
+            raise OldPOImported(
+                'Previous imported file is newer than this one.')
+        else:
             # Expire old messages
             pofile.expireAllMessages()
             # Update the header
@@ -92,10 +98,6 @@ def import_po(pofile_or_potemplate, file, published=True):
                 # the importer as the last translator.
                 last_translator = pofile.rawimporter
             is_editor = pofile.canEditTranslations(pofile.rawimporter)
-        else:
-            # The import is not done
-            raise OldPOImported(
-                'Previous imported file is newer than this one.')
     elif IPOTemplate.providedBy(pofile_or_potemplate):
         pofile = None
         potemplate = pofile_or_potemplate

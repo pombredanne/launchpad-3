@@ -60,7 +60,7 @@
         <li>PPC: <span tal:replace="context/quantityppc" /></li>
     </ul>
 
-    <div class="form controls" tal:condition="not: context/isDenied">
+    <div style="text-align: right;" tal:condition="not: context/isDenied">
       <form name="denyrequest" action="" method="POST">
         <input type="submit" value="Deny" name="DENY" />
       </form>
@@ -125,7 +125,7 @@
     </table>
 
     <br />
-    <div class="form controls">
+    <div style="text-align: right;">
       <tal:block condition="not: context/cancelled">
         <tal:block condition="not: context/isApproved">
           <input type="submit" value="Approve" name="APPROVE" />

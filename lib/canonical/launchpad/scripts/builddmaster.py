@@ -28,12 +28,12 @@ from sqlobject.sqlbuilder import AND, IN
 from canonical.launchpad.database import (
     Builder, BuildQueue, Build, SourcePackagePublishing,
     LibraryFileAlias, BinaryPackageRelease, BinaryPackageFile,
-    BinaryPackageName, Processor
+    BinaryPackageName, Processor, SecureBinaryPackagePublishingHistory
     )
 
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket, 
-    BinaryPackageFormat, BinaryPackageFileType
+    PackagePublishingStatus, PackagePublishingPocket,
+    PackagePublishingPriority, BinaryPackageFormat, BinaryPackageFileType, 
     )
 
 from canonical.lp import dbschema
@@ -243,37 +243,53 @@ class BuilderGroup:
 
         # XXX cprov 20050628
         # Try to use BinaryPackageSet utility for this job 
-        binpkgid = BinaryPackageRelease(binarypackagename=binnameid,
-                                 version=version,
-                                 build=build,
-                                 binpackageformat=BinaryPackageFormat.DEB,
-                                 architecturespecific=archdep,
-                                 # storing  binary entry inside main component
-                                 # and section
-                                 component=1, 
-                                 section=1, 
-                                 # XXX cprov 20050628
-                                 # Those fields should be extracted form the
-                                 # dsc file somehow, maybe apt_pkg ? 
-                                 summary="",
-                                 description="",
-                                 priority=None,
-                                 shlibdeps=None,
-                                 depends=None,
-                                 recommends=None,
-                                 suggests=None,
-                                 conflicts=None,
-                                 replaces=None,
-                                 provides=None,
-                                 essential=False,
-                                 installedsize=None,
-                                 copyright=None,
-                                 licence=None)
+        binpkgid = BinaryPackageRelease(
+            binarypackagename=binnameid,
+            version=version,
+            build=build,
+            binpackageformat=BinaryPackageFormat.DEB,
+            architecturespecific=archdep,
+            component=build.sourcepackagerelease.component,
+            section=build.sourcepackagerelease.section,
+            # XXX cprov 20050628
+            # Those fields should be extracted form the
+            # dsc file somehow, maybe apt_pkg ? 
+            summary="",
+            description="",
+            priority=PackagePublishingPriority.STANDARD,
+            shlibdeps=None,
+            depends=None,
+            recommends=None,
+            suggests=None,
+            conflicts=None,
+            replaces=None,
+            provides=None,
+            essential=False,
+            installedsize=None,
+            copyright=None,
+            licence=None
+            )
         
-        binfile = BinaryPackageFile(binarypackagerelease=binpkgid,
-                                    libraryfile=alias,
-                                    filetype=BinaryPackageFileType.DEB)
+        binfile = BinaryPackageFile(
+            binarypackagerelease=binpkgid,
+            libraryfile=alias,
+            filetype=BinaryPackageFileType.DEB
+            )
         
+        # XXX cprov 20050926
+        # totaly bogus fields, ensure they work in review, since we can't
+        # test yet
+        pubhistory = SecureBinaryPackagePublishingHistory(
+            binarypackagerelease=binpkgid,
+            distroarchrelease=build.distroarchrelease.id,
+            component=build.sourcepackagerelease.component,
+            section=build.sourcepackagerelease.section,
+            priority=PackagePublishingPriority.STANDARD,
+            status=PackagePublishingStatus.PENDING,
+            pocket=PackagePublishingPocket.RELEASE,
+            embargo=False
+            )
+
         self.logger.debug("Absorbed binary package %s" % filename)
         
     def updateBuild(self, queueItem, librarian):
@@ -388,15 +404,17 @@ class BuilderGroup:
         method = getattr(self, 'buildStatus_' + buildstatus, None)
 
         if method is None:
-            self.logger.critical("Unknow BuildStatus '%s' for builder '%s'"
+            self.logger.critical("Unknown BuildStatus '%s' for builder '%s'"
                                  % (buildstatus, queueItem.builder.url))
             return
 
         method(queueItem, slave, librarian, buildid, filemap)
 
-    def buildStatus_OK(self, queueItem, slave, librarian, buildid,
-                       filemap=None):
-        """Builder has built package entirely, get all the content back"""
+    def storeBuildInfo(self, queueItem, slave, librarian, buildid):
+        """Store available information for build jobs.
+
+        Store Buildlog, datebuilt, duration and builder signature.
+        """
         queueItem.build.buildlog = self.getLogFromSlave(slave, buildid,
                                                         librarian)
         queueItem.build.datebuilt = UTC_NOW
@@ -405,16 +423,22 @@ class BuilderGroup:
         RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))
         queueItem.build.buildduration = RIGHT_NOW - queueItem.buildstart
         queueItem.build.builder = queueItem.builder
+        
+
+    def buildStatus_OK(self, queueItem, slave, librarian, buildid,
+                       filemap=None):
+        """Builder has built package entirely, get all the content back"""
+        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         queueItem.build.buildstate = dbschema.BuildStatus.FULLYBUILT
-    
         for result in filemap:
             aliasid = self.getFileFromSlave(slave, result, filemap[result],
                                             librarian)
             if result.endswith(".deb"):
                 # Process a binary package
                 self.processBinaryPackage(queueItem.build, aliasid, result)
-                self.logger.debug("Gathered build of %s completely"
-                                  % queueItem.name)
+
+        self.logger.debug("Gathered build of %s completely"
+                          % queueItem.name)
 
         # release the builder
         slave.clean()
@@ -422,35 +446,52 @@ class BuilderGroup:
         
     def buildStatus_PACKAGEFAIL(self, queueItem, slave, librarian, buildid,
                                 filemap=None):
-        """Build has failed when trying the work with the target package,
-        set the job status as FAILEDTOBUILD and remove Buildqueue entry.
+        """Handle a package that had failed to build.
+
+        Build has failed when trying the work with the target package,
+        set the job status as FAILEDTOBUILD, store available info and
+        remove Buildqueue entry.
         """
+        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         queueItem.build.buildstate = dbschema.BuildStatus.FAILEDTOBUILD
-        # release the builder
         slave.clean()
         queueItem.destroySelf()
         
     def buildStatus_DEPFAIL(self, queueItem, slave, librarian, buildid,
                             filemap=None):
-        """Build has failed by missing dependencies, set the job status as
-        MANUALDEPWAIT, requires human interaction to free the builder slave.
+        """Handle a package that had missed dependencies.
+
+        Build has failed by missing dependencies, set the job status as
+        MANUALDEPWAIT, store availble information, remove BuildQueue
+        entry and release builder slave for another job.
         """
+        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         queueItem.build.buildstate = dbschema.BuildStatus.MANUALDEPWAIT
-        self.logger.critical("***** %s needs manual intervention due "
-                             "MANUALDEPWAIT *****" % queueItem.builder.name)
+        self.logger.critical("***** %s is MANUALDEPWAIT *****"
+                             % queueItem.builder.name)
+        slave.clean()
+        queueItem.destroySelf()
         
     def buildStatus_CHROOTFAIL(self, queueItem, slave, librarian, buildid,
                                filemap=None):
-        """Build has failed when installing the current CHROOT, mark the
-        job as CHROOTFAIL and leave builder slave blocked.
+        """Handle a package that had failed when unpacking the CHROOT.
+
+        Build has failed when installing the current CHROOT, mark the
+        job as CHROOTFAIL, store available information, remove BuildQueue
+        and release the builder.
         """
+        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         queueItem.build.buildstate = dbschema.BuildStatus.CHROOTWAIT
-        self.logger.critical("***** %s needs manual intervention due "
-                             "CHROOTWAIT *****" % queueItem.builder.name)
+        self.logger.critical("***** %s is CHROOTWAIT *****" %
+                             queueItem.builder.name)
+        slave.clean()
+        queueItem.destroySelf()
                 
     def buildStatus_BUILDERFAIL(self, queueItem, slave, librarian, buildid,
                                 filemap=None):
-        """Build has been failed when trying to build the target package,
+        """Handle builder failures.
+
+        Build has been failed when trying to build the target package,
         The environment is working well, so mark the job as NEEDSBUILD again
         and 'clean' the builder to do another jobs. 
         """
