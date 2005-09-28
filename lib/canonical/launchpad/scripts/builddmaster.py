@@ -119,7 +119,7 @@ class BuilderGroup:
             except (ValueError, TypeError, xmlrpclib.Fault,
                     socket.error), reason:
                 builder.builderok = False
-                builder.failnote = reason
+                builder.failnotes = reason
                 self.logger.debug("Builder on %s marked as failed due to: %s",
                                   builder.url, reason, exc_info=True)
 
@@ -135,7 +135,7 @@ class BuilderGroup:
 
     def failBuilder(self, builder, reason):
         builder.builderok = False
-        builder.failnote = reason
+        builder.failnotes = reason
         self.updateOkSlaves()
 
     def giveToBuilder(self, builder, libraryfilealias, librarian):
@@ -816,21 +816,9 @@ class BuilddMaster:
         """Score Build Job according several fields
         
         Generate a Score index according some job properties:
-        * time already pending
         * distribution release component
         * sourcepackagerelease urgency
-        """
-        # Define a table we'll use to calculate the score based on the time
-        # in the build queue.  The table is a sorted list of (upper time
-        # limit in seconds, score) tuples. The table should be in descending
-        # order otherwise the algorithm won't work properly
-        score_queue_time = [
-            (3600, 4),
-            (1800, 3),             
-            (900, 2), 
-            (300, 1), 
-            ]
-        
+        """        
         score_componentname = {
             'multiverse': 1,
             'universe': 2,
@@ -855,13 +843,6 @@ class BuilddMaster:
         job.lastscore += score_componentname[job.component_name]
         msg += "C+%d " % score_componentname[job.component_name]
         
-        # Calculate the build queue time component of the score
-        eta = datetime.datetime.now(pytz.timezone('UTC')) - job.created
-        for limit, score in score_queue_time:
-            if eta.seconds > limit:
-                job.lastscore += score
-                msg += "%d " % score
-                break
         self._logger.debug(msg + " = %d" % job.lastscore)
 
     def sanitiseAndScoreCandidates(self):
@@ -886,8 +867,8 @@ class BuilddMaster:
                                    "to lack of source files"
                                    % (distro.name, distrorelease.name,
                                       archtag, job.name, job.version))
-        # commit here to ensure it won't be lost.
-        self.commit()                
+            # commit every cycle to ensure it won't be lost.
+            self.commit()                
             
         self._logger.debug("After paring out any builds for which we "
                            "lack source, %d NEEDSBUILD" % len(jobs))
