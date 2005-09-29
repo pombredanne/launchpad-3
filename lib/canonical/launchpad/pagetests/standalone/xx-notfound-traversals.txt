@@ -57,6 +57,7 @@ spider -- StuartBishop 20050822
 ...         print output
 
 >>> check("/")
+>>> check("/rdf")
 >>> check("/legal")
 >>> check("/feedback")
 
