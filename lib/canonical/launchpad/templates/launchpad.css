@@ -71,6 +71,14 @@ fieldset.two-column {
   margin-right: 1em;
 }
 
+/* Visually differentiate disabled and enabled form fields. */
+select[disabled],
+textarea[disabled],
+input[disabled] {
+    border-style: dotted;
+    color: #999;
+}
+
 /* Classes for error indication in forms */
 .portalErrorMessage,
 .portalError {
