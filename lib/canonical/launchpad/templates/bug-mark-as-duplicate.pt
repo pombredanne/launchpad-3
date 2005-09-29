@@ -13,10 +13,6 @@
   <div tal:replace="structure context/@@+portlet-duplicates" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
-</metal:rightportlets>
-
   <div metal:fill-slot="main">
 
     <div metal:use-macro="context/@@launchpad_editform/editform">

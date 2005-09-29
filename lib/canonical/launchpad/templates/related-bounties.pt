@@ -17,10 +17,6 @@ with all of these context objects.-->
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <h1>Related Bounties</h1>

@@ -9,7 +9,7 @@ XXX: This test may be better done using a tweaked LinkChecker or other
 spider -- StuartBishop 20050822
 
 
->>> def check(valid_url, auth=False):
+>>> def check_url(valid_url, auth=False):
 ...     if auth:
 ...         get_cmd = """
 ... GET %s HTTP/1.1
@@ -17,10 +17,11 @@ spider -- StuartBishop 20050822
 ... """
 ...     else:
 ...         get_cmd = "GET %s HTTP/1.1\n"
-...     valid_rc = http(get_cmd % valid_url).getStatus()
+...     valid_output_obj = http(get_cmd % valid_url)
+...     valid_rc = valid_output_obj.getStatus()
 ...     if valid_rc not in (200, 302):
-...         return "%s returned status %s instead of success" % (
-...             valid_url, valid_rc)
+...         return "%s returned status %s instead of success\n\n%s" % (
+...             valid_url, valid_rc, str(valid_output_obj))
 ...     invalid_url = valid_url + '/wobbly'
 ...     invalid_rc = http(get_cmd % invalid_url).getStatus()
 ...     if invalid_rc != 404:
@@ -50,6 +51,10 @@ spider -- StuartBishop 20050822
 ...     if rc != 303:
 ...         return "%s returned status %s instead of 303" % (url, rc)
 
+>>> def check(valid_url, auth=False):
+...     output = check_url(valid_url, auth)
+...     if output:
+...         print output
 
 >>> check("/")
 >>> check("/legal")
@@ -59,9 +64,7 @@ spider -- StuartBishop 20050822
 >>> check("/bounties/foomatic-widgets")
 
 >>> check("/codeofconduct")
->>> check("/codeofconduct/+portlet-actions")
 >>> check("/codeofconduct/1.0")
->>> check("/codeofconduct/1.0/+portlet-actions")
 >>> check("/codeofconduct/1.0/+sign", auth=True)
 
 >>> check("/projects")
@@ -229,7 +232,6 @@ Test /people traversals.
 >>> check("/people/+mergerequest-sent", auth=True)
 >>> check("/people/+requestmerge-multiple", auth=True)
 >>> check("/people/+portlet-about")
->>> check("/people/+portlet-actions")
 
 This is for a team:
 
@@ -264,7 +266,6 @@ And this is for a person:
 >>> check("/people/name16/+codesofconduct", auth=True)
 >>> check("/people/name16/+packages")
 >>> check("/people/name16/+review", auth=True)
->>> check("/people/name16/+portlet-actions")
 >>> check("/people/name16/+portlet-emails")
 >>> check("/people/name16/+portlet-details")
 >>> check("/people/name16/+portlet-editdetails")

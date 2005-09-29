@@ -107,10 +107,6 @@
             facet="overview"
             template="../templates/distrorelease-portlet-details.pt" />
         <browser:page
-            name="+portlet-actions"
-            facet="overview"
-            template="../templates/distrorelease-portlet-actions.pt" />
-        <browser:page
             name="+portlet-translations"
             facet="translations"
             template="../templates/distrorelease-portlet-translations.pt" />

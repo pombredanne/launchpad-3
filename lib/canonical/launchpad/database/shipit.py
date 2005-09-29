@@ -18,7 +18,8 @@ from canonical.lp.dbschema import (
         ShipItDistroRelease, ShipItArchitecture, ShipItFlavour, EnumCol)
 from canonical.launchpad.interfaces import (
         IStandardShipItRequest, IStandardShipItRequestSet, IShippingRequest,
-        IRequestedCDs, IShippingRequestSet, ShippingRequestStatus)
+        IRequestedCDs, IShippingRequestSet, ShippingRequestStatus,
+        ILaunchpadCelebrities)
 
 
 class RequestedCDsDescriptor:
@@ -70,6 +71,24 @@ class ShippingRequest(SQLBase):
 
     reason = StringCol(default=None)
     highpriority = BoolCol(notNull=True, default=False)
+
+    city = StringCol(default=None)
+    phone = StringCol(default=None)
+    country = ForeignKey(dbName='country', foreignKey='Country', default=None)
+    province = StringCol(default=None)
+    postcode = StringCol(default=None)
+    addressline1 = StringCol(default=None)
+    addressline2 = StringCol(default=None)
+    organization = StringCol(default=None)
+    recipientdisplayname = StringCol(default=None)
+
+    @property
+    def recipientname(self):
+        """See IShippingRequest"""
+        if self.recipientdisplayname:
+            return self.recipientdisplayname
+        else:
+            return self.recipient.displayname
 
     @property
     def totalCDs(self):
@@ -189,11 +208,17 @@ class ShippingRequestSet:
             return default
 
     def new(self, recipient, quantityx86, quantityamd64, quantityppc,
-            reason=None, shockandawe=None):
+            reason=None, shockandawe=None, recipientdisplayname=None):
         """See IShippingRequestSet"""
-        assert recipient.currentShipItRequest() is None
+        if not recipient.inTeam(getUtility(ILaunchpadCelebrities).shipit_admin):
+            # Non shipit-admins can't place more than one order at a time
+            # neither specify a name different than their own.
+            assert recipient.currentShipItRequest() is None
+            assert recipientdisplayname is None
+
         request = ShippingRequest(recipient=recipient, reason=reason,
-                                  shockandawe=shockandawe)
+                                  shockandawe=shockandawe,
+                                  recipientdisplayname=recipientdisplayname)
 
         RequestedCDs(request=request, quantity=quantityx86,
                      distrorelease=ShipItDistroRelease.BREEZY,

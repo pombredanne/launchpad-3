@@ -83,9 +83,6 @@
       places due to the fact that its context is now an IBugTask,
       rather than an IBug. -->
       <browser:page
-        name="+portlet-actions"
-        template="../templates/bug-portlet-actions.pt" />
-      <browser:page
           name="+portlet-watch"
           template="../templates/bug-portlet-watch.pt" />
       <browser:page

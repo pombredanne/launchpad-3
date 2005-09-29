@@ -1,0 +1,39 @@
+  First Marilize approves ddaa's order and set it as high priority
+
+
+  >>> print http(r"""
+  ... POST /shipit/++vh++http:shipit.async.com.br:80/++//requests/5 HTTP/1.1
+  ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
+  ... 
+  ... quantityx86=19&quantityamd64=3&quantityppc=9&highpriority=on&APPROVE=Approve+Request""")
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://shipit.async.com.br//requests/4?previous=5&approved=1
+  ...
+
+
+  But ddaa's being a naughty boy, so she decides to not mark his order high
+  priority.
+
+  >>> print http(r"""
+  ... POST /shipit/++vh++http:shipit.async.com.br:80/++//requests/5 HTTP/1.1
+  ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
+  ... 
+  ... quantityx86=9&quantityamd64=3&quantityppc=9&CHANGE=Change+Approved+Totals""")
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://shipit.async.com.br//requests/4?previous=5&changed=1
+  ...
+
+
+  And now she denies his order.
+
+  >>> print http(r"""
+  ... POST /shipit/++vh++http:shipit.async.com.br:80/++//requests/5 HTTP/1.1
+  ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
+  ... 
+  ... DENY=Deny+Request""")
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://shipit.async.com.br//requests/4?previous=5&denied=1
+  ...

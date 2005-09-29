@@ -40,9 +40,6 @@
         name="+index"
         template="../templates/milestone-index.pt" />
       <browser:page
-        name="+portlet-actions"
-        template="../templates/milestone-portlet-actions.pt" />
-      <browser:page
         name="+portlet-details"
         template="../templates/milestone-portlet-details.pt" />
     </browser:pages>

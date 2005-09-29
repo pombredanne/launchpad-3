@@ -482,13 +482,7 @@ class POTemplate(SQLBase, RosettaStats):
             pluralform=0)
 
     def createMessageSetFromMessageID(self, messageID):
-        """Creates in the database a new message set.
-
-        As a side-effect, creates a message ID sighting in the database for the
-        new set's prime message ID.
-
-        Returns that message set.
-        """
+        """See IPOTemplate."""
         messageSet = POTMsgSet(
             primemsgid_=messageID,
             sequence=0,
