@@ -1,0 +1,60 @@
+GPG Import
+==========
+
+The importKey method is exposed by IGPGHandler but it's only used
+internally by retrieveKey method.
+
+ >>> from zope.component import getUtility
+ >>> from zope.interface.verify import verifyObject 
+
+ >>> from canonical.launchpad.interfaces import (
+ ...      IGPGHandler, IPymeKey)
+
+
+Setup a IGPGHandler utility:
+
+ >>> gpghandler = getUtility(IGPGHandler)
+
+
+Return None if we try to import an empty content:
+
+ >>> key = gpghandler.importKey(None)
+ >>> assert key is None
+
+Also return None for bogus content:
+
+ >>> key = gpghandler.importKey('XXXXXXXXX')
+ >>> assert key is None
+
+Let's recover some coherent data and verify if it works as expected:
+
+ >>> import os
+ >>> from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
+ >>> pubkey = open(os.path.join(gpgkeysdir, 'test@canonical.com.pub')).read()
+ >>> key = gpghandler.importKey(pubkey)
+ >>> assert key is not None
+ >>> verifyObject(IPymeKey, key)
+ True
+ >>> key.fingerprint
+ 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+
+Return None if we try to import a public key with damaged preamble: 
+
+ >>> key = gpghandler.importKey(pubkey[1:])
+ >>> assert key is None
+
+Aparently GPGME is able to import an incomplete public key:
+
+ >>> key = gpghandler.importKey(pubkey[:-300])
+ >>> assert key is not None
+ >>> verifyObject(IPymeKey, key)
+ True
+ >>> key.fingerprint
+ 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
+ 
+But we get an error if the damage is big: 
+(what probably happened in bug # 2547)
+
+ >>> key = gpghandler.importKey(pubkey[:-400])
+ >>> assert key is None
+
