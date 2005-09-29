@@ -1,0 +1,76 @@
+In order to correctly display multilingual text and handle input, 
+the browser needs to know the language and text direction for sections
+of the document.
+
+This information is used for a number of things including:
+ * right or left justification of text blocks depending on the
+   dominant text direction.
+ * Selection of the correct glyphs for CJK text (a set of Unicode code
+   points are shared by these languages).
+
+
+The input boxes on the Rosetta translation form provide this
+information through the "lang" and "dir" HTML attributes.  Note that
+HTML uses a dash as the separator in language codes rather than an
+underscore.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/en_AU/+translate HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+  <input type="text" lang="en-AU"
+      dir="ltr" name="set_130_translation_en_AU_0"
+      tabindex="1" />
+  ...
+  <textarea lang="en-AU"
+      rows="3" name="set_139_translation_en_AU_0" dir="ltr"
+      tabindex="19"></textarea>
+  ...
+
+
+
+When entering Hebrew translations, the form controls are set to right
+to left:
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/he/+translate HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+  <input type="text" lang="he"
+      dir="rtl" name="set_130_translation_he_0" tabindex="1" />
+  ...
+  <textarea lang="he" rows="3"
+      name="set_139_translation_he_0" dir="rtl" tabindex="19"></textarea>
+  ...
+
+
+
+Suggestion text is also tagged with it's language code and text
+direction:
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/he/+translate?alt=es HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+  <input type="text" lang="he"
+      dir="rtl" name="set_130_translation_he_0" tabindex="1" />
+  ...
+  <pre><b>Spanish (Alternate Language):</b><br />
+  <span lang="es" dir="ltr">...</span> (...)</pre>
+  ...
+
