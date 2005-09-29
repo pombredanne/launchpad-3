@@ -888,7 +888,7 @@ def team_members(context, view):
     return '"%s" members' % context.team.browsername
 
 def teammembership_index(context, view):
-    return '%s: Member of %s' % (
+    return 'Membership status for %s in %s' % (
         context.person.browsername, context.team.browsername)
 
 team_newpoll = ContextTitle('Create a new Poll in team %s')

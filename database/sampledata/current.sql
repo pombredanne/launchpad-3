@@ -286,6 +286,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (44, 16, 53, 2, '2005-07-12 14:36:09.587753', NULL, 13, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (45, 55, 54, 2, '2005-07-12 14:36:09.587753', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (46, 12, 31, 4, '2005-07-12 14:36:09.587753', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (47, 12, 32, 6, '2005-09-28 20:08:08.248467', '2007-08-29 00:00:00', 16, '');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'teammembership'::pg_catalog.regclass;
@@ -824,21 +825,14 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'manifestentry'::pg_catalog.regclass;
 
 INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname, hint) VALUES (1, 1, 1, 10, 1, 4, 'firefox-0.9.2.tar.gz', NULL, 'firefox-0.9.2/', 1);
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname) VALUES (2, 2, 1, 11, 2, 4, 'firefox-0.9.1.tar.gz', NULL, 'firefox-0.9.1/');
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname) VALUES (3, 2, 2, NULL, NULL, 1, 'firefox-0.9.1.tar.gz/random/', NULL, NULL);
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname) VALUES (4, 3, 1, 12, 3, 5, 'firefox-0.9.zip', NULL, 'firefox-0.9/');
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname) VALUES (5, 3, 2, 12, NULL, 6, 'firefox-0.9_unix.patch', 1, 'firefox-0.9_unix/');
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname) VALUES (6, 4, 1, 13, NULL, 3, 'firefox-0.8.ar', NULL, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname, hint) VALUES (2, 2, 1, 11, 2, 4, 'firefox-0.9.1.tar.gz', NULL, 'firefox-0.9.1/', NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname, hint) VALUES (3, 2, 2, NULL, NULL, 1, 'firefox-0.9.1.tar.gz/random/', NULL, NULL, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname, hint) VALUES (4, 3, 1, 12, 3, 5, 'firefox-0.9.zip', NULL, 'firefox-0.9/', NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname, hint) VALUES (5, 3, 2, 12, NULL, 6, 'firefox-0.9_unix.patch', 1, 'firefox-0.9_unix/', NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname, hint) VALUES (6, 4, 1, 13, NULL, 3, 'firefox-0.8.ar', NULL, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'manifestentry'::pg_catalog.regclass;
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'manifestancestry'::pg_catalog.regclass;
-
-INSERT INTO manifestancestry (id, parent, child) VALUES (1, 2, 1);
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'manifestancestry'::pg_catalog.regclass;
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'archconfig'::pg_catalog.regclass;
@@ -849,6 +843,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'archconfigentry'::pg_catalog.regclass;
+
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'archconfigentry'::pg_catalog.regclass;
@@ -872,7 +867,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'builder'::pg_catalog.regclass;
 
-INSERT INTO Builder (id, processor, url, name, title, description, owner, builderok) VALUES (1, 1, 'http://localhost:8221/', 'bob', 'Bob The Builder', 'The default build-slave', 1, False);
+INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 1, NULL, false, NULL, false, 'http://localhost:8221/');
+
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'builder'::pg_catalog.regclass;
 
@@ -5945,7 +5941,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'buildqueue'::pg_catalog.regclass;
 
-INSERT INTO BuildQueue (id, build, builder, logtail, created, lastscore) VALUES (1, 2, 1,'Dummy sampledata entry, not processing', '2005-06-15 09:14:12.820778', 1);  
+INSERT INTO buildqueue (id, build, builder, logtail, created, buildstart, lastscore) VALUES (1, 2, 1, 'Dummy sampledata entry, not processing', '2005-06-15 09:14:12.820778', NULL, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'buildqueue'::pg_catalog.regclass;
@@ -7754,6 +7750,14 @@ INSERT INTO specificationreview (id, specification, reviewer, requestor, queuems
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'specificationreview'::pg_catalog.regclass;
 
 
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'manifestancestry'::pg_catalog.regclass;
+
+INSERT INTO manifestancestry (id, parent, child) VALUES (1, 2, 1);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'manifestancestry'::pg_catalog.regclass;
+
+
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'ticket'::pg_catalog.regclass;
 
 INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (1, 11, 'Firefox cannot render Bank Site', 'Hello, I''m trying to access http://www.citibank.com/ and the page is not rendering correctly. Is there a setting I can use to get it right? Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:46:07.392021', '2005-09-05 18:46:07.392021', NULL, NULL, NULL, NULL, NULL, NULL, '''m'':8B ''get'':28B ''set'':23B ''tri'':9B ''use'':26B ''bank'':4A ''page'':15B ''site'':5A ''hello'':6B ''right'':30B ''thank'':31B ''access'':11B ''cannot'':2A ''render'':3A,18B ''correct'':19B ''firefox'':1A ''www.citibank.com'':12B');
@@ -7943,33 +7947,6 @@ INSERT INTO cvereference (id, cve, source, content, url) VALUES (38, 10, 'XF', '
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'cvereference'::pg_catalog.regclass;
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'developmentmanifest'::pg_catalog.regclass;
 
 
@@ -8000,6 +7977,20 @@ INSERT INTO sprintspecification (id, sprint, specification) VALUES (3, 1, 4);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sprintspecification'::pg_catalog.regclass;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

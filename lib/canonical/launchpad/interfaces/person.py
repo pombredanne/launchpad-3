@@ -111,11 +111,11 @@ class IPerson(Interface):
         "so you cannot undo changes."))
     emblem = Bytes(
         title=_("Emblem"), required=False, description=_("A small image, "
-        "max 16x16, that can be used to refer to this team of person."),
+        "max 16x16 pixels, that can be used to refer to this team of person."),
         constraint=valid_emblem)
     hackergotchi = Bytes(
         title=_("Hackergotchi"), required=False, description=_("An image, "
-        "max size 96x96, that will be displayed on your home page. "
+        "max 96x96 pixels, that will be displayed on your home page. "
         "Traditionally this is a great big grinning image of your mug. "
         "Make the most of it."),
         constraint=valid_hackergotchi)

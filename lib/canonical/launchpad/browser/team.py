@@ -344,6 +344,9 @@ class TeamMembershipEditView:
     def isProposed(self):
         return self.context.status == TeamMembershipStatus.PROPOSED
 
+    def isDeclined(self):
+        return self.context.status == TeamMembershipStatus.DECLINED
+
     def isExpired(self):
         return self.context.status == TeamMembershipStatus.EXPIRED
 
