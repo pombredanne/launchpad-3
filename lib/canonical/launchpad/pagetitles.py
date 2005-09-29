@@ -206,8 +206,6 @@ def bugs_assigned(context, view):
 
 bugs_createdby_index = 'Malone Bug Report by Creator'
 
-bugs_for_context = ContextTitle('Bugs in %s')
-
 bugs_index = 'Malone Master Bug List'
 
 def bugsubscription_edit(context, view):
@@ -217,6 +215,8 @@ def bugsubscription_edit(context, view):
 bugtask_index = BugTaskPageTitle()
 
 bugtask_release_targeting = BugTaskTargetingTitle()
+
+bugtask_search_listing = ContextTitle('Bugs in %s')
 
 bugtask_view = BugTaskPageTitle()
 

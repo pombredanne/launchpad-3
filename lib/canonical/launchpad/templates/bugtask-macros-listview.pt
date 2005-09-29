@@ -4,15 +4,15 @@
       :task: An IBugTask to be rendered.
   </tal:comment>
 
-  <td style="width: 20px">
+  <td style="width: 20px" valign="baseline">
     <tal:taskicon content="structure task/fmt:icon" />&nbsp;
   </td>
-  <th>
+  <th valign="baseline">
     <a tal:attributes="href task/fmt:url">
       <tal:id replace="task/bug/id">42</tal:id>.&nbsp;
     </a>
   </th>
-  <td>
+  <td valign="baseline">
     <div>
       <a
         tal:attributes="href task/fmt:url"

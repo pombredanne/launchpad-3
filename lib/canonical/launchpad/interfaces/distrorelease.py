@@ -47,7 +47,6 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         description=_("The version string for this release."))
     distribution = Int(title=_("Distribution"), required=True,
         description=_("The distribution for which this is a release."))
-    bugtasks = Attribute("The bug tasks filed specifically on this release.")
     components = Choice(
         title=_("Components"),
         description=_("The release components."), required=True,

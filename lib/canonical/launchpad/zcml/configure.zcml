@@ -6,6 +6,7 @@
 
     <!-- Content class configuration -->
     <include file="archuserid.zcml" />
+    <include file="batchnavigator.zcml" />
     <include file="binarypackagerelease.zcml" />
     <include file="binarypackagename.zcml" />
     <include file="bountysubscription.zcml" />
