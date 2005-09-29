@@ -77,6 +77,7 @@ __all__ = (
 'SpecificationPriority',
 'SpecificationStatus',
 'SSHKeyType',
+'TextDirection',
 'TicketPriority',
 'TicketStatus',
 'TeamMembershipStatus',
@@ -2723,3 +2724,17 @@ class ShipItDistroRelease(DBSchema):
         The Breezy Badger release.
         """)
 
+class TextDirection(DBSchema):
+    """The base text direction for a language."""
+
+    ltr = Item(0, """
+        Left to Right
+
+        Text is normally written from left to right in this language.
+        """)
+
+    rtl = Item(1, """
+        Right to Left
+
+        Text is normally written from left to right in this language.
+        """)

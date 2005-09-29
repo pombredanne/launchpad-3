@@ -9,6 +9,7 @@ from zope.exceptions import NotFoundError
 from sqlobject import StringCol, IntCol, BoolCol
 from sqlobject import RelatedJoin, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase
+from canonical.lp.dbschema import EnumCol, TextDirection
 
 from canonical.launchpad.interfaces import ILanguageSet, ILanguage
 
@@ -25,6 +26,8 @@ class Language(SQLBase):
     pluralforms = IntCol(dbName='pluralforms')
     pluralexpression = StringCol(dbName='pluralexpression')
     visible = BoolCol(dbName='visible', notNull=True)
+    direction = EnumCol(dbName='direction', notNull=True,
+                        schema=TextDirection, default=TextDirection.ltr)
 
     translators = RelatedJoin('Person', joinColumn='language',
         otherColumn='person', intermediateTable='PersonLanguage')

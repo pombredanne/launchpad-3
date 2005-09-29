@@ -36,6 +36,8 @@ class ILanguage(Interface):
     visible = Attribute(
         """Whether this language should ususally be visible or not.""")
 
+    direction = Attribute("""The direction of text in this language.""")
+
     displayname = Attribute(
         "The displayname of the language (a constructed value)")
 
