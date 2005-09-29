@@ -139,7 +139,7 @@ links:
     <div><a href="/malone/bugs/123" title="No such bug">bug num. 123</a></div>
     <div><a href="/malone/bugs/123" title="No such bug">bug no 123</a></div>
     <div><a href="/malone/bugs/123" title="No such bug">bug no. 123</a></div>
-    <div>bug#123</div>
+    <div><a href="/malone/bugs/123" title="No such bug">bug#123</a></div>
 
     >>> text = (
     ...     'bug 123\n'
