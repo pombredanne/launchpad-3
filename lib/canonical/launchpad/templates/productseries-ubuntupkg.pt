@@ -12,7 +12,6 @@
 </metal:rightportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
     <div tal:replace="structure context/@@+portlet-source" />
 </metal:rightportlets>
 

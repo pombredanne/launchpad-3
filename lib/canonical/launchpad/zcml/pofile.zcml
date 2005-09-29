@@ -51,9 +51,6 @@
             name="+portlet-about"
             template="../templates/pofile-portlet-about.pt" />
         <browser:page
-            name="+portlet-actions"
-            template="../templates/pofile-portlet-actions.pt" />
-        <browser:page
             name="+portlet-contributors"
             template="../templates/pofile-portlet-contributors.pt" />
         <browser:page

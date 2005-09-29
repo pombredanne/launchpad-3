@@ -7,9 +7,6 @@
   <div tal:content="structure context/@@+portlet-details" />
   <div tal:content="structure context/distrorelease/@@+portlet-details" />
 </metal:leftportlets>
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:content="structure context/@@+portlet-bugtasklist-actions" />
-</metal:rightportlets>
 
 <body>
 

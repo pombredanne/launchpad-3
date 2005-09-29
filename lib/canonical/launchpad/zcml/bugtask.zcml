@@ -64,9 +64,6 @@
         class="canonical.launchpad.browser.BugTaskView"
         permission="zope.Public">
       <browser:page
-        name="+portlet-status-actions"
-        template="../templates/bugtask-status-portlet-actions.pt" />
-      <browser:page
         name="+index"
         template="../templates/bugtask-index.pt" />
       <browser:page
@@ -96,9 +93,6 @@
       <!-- BugTask Portlets (Note: These are Bug portlets. These
       registrations are duplicated in bug.zcml, so that they can work
       on pages where IBug is the context.) -->
-      <browser:page
-        name="+portlet-actions"
-        template="../templates/bug-portlet-actions.pt" />
       <browser:page
           name="+portlet-watch"
           template="../templates/bug-portlet-watch.pt" />

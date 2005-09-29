@@ -89,11 +89,6 @@
         for="canonical.launchpad.interfaces.IDistribution"
         permission="zope.Public" >
         <browser:page
-            name="+portlet-actions"
-            facet="overview"
-            template="../templates/distribution-portlet-actions.pt"
-            lp:url="/distros/$Distribution.name/+portlet-actions" />
-        <browser:page
             name="+portlet-details"
             facet="overview"
             template="../templates/distribution-portlet-details.pt"

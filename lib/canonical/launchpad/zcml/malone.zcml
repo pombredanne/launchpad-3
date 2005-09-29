@@ -73,9 +73,6 @@
             name="+portlet-about"
             template="../templates/malone-portlet-about.pt" />
         <browser:page
-            name="+portlet-actions"
-            template="../templates/malone-portlet-actions.pt" />
-        <browser:page
             name="+portlet-stats"
             template="../templates/malone-portlet-stats.pt" />
         <browser:page

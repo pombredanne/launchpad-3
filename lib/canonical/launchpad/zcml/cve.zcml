@@ -37,9 +37,6 @@
       name="+listing-detailed"
       template="../templates/cve-listing-detailed.pt" />
     <browser:page
-      name="+portlet-actions"
-      template="../templates/cve-portlet-actions.pt" />
-    <browser:page
       name="+portlet-bugs"
       template="../templates/cve-portlet-bugs.pt" />
     <browser:page
@@ -111,9 +108,6 @@
   <browser:pages
     for="canonical.launchpad.interfaces.ICveSet"
     permission="zope.Public">
-    <browser:page
-      name="+portlet-actions"
-      template="../templates/cveset-portlet-actions.pt" />
     <browser:page
       name="+portlet-details"
       template="../templates/cveset-portlet-details.pt" />

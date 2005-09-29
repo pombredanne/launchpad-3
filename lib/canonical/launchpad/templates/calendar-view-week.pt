@@ -9,10 +9,6 @@
       <div tal:replace="structure context/calendar/@@+portlet-subscriptions|nothing" />
     </metal:leftportlets>
 
-    <metal:rightportlets fill-slot="portlets_two">
-      <div tal:replace="structure context/calendar/@@+portlet-actions" />
-    </metal:rightportlets>
-
     <div metal:fill-slot="titleheader"
          tal:replace="context/calendar/title">Calendar Title</div>
 

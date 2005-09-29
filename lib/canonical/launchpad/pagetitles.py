@@ -297,8 +297,6 @@ default_addform = 'Default "Add" Page'
 
 default_editform = 'Default "Edit" Page'
 
-default_error = 'System Error'
-
 distribution_cvereport = ContextTitle('CVE Reports for %s')
 
 distribution_members = ContextTitle('%s distribution members')
@@ -435,6 +433,12 @@ launchpad_login = 'Log in or register with Launchpad'
 
 launchpad_logout = 'Launchpad Logout'
 
+launchpad_notfound = 'Launchpad Page Not Found'
+
+launchpad_oops = 'System Error'
+
+launchpad_requestexpired = 'Request Took Too Long'
+
 # launchpad_widget_macros doesn't need a title.
 
 logintoken_index = 'Launchpad: redirect to the logintoken page'
@@ -474,8 +478,6 @@ no_app_component_yet = 'Missing App Component'
 no_page_yet = 'Missing Page'
 
 no_url_yet = 'No url for this yet'
-
-notfound = 'Launchpad Page Not Found'
 
 # object_pots is a fragment.
 
@@ -678,8 +680,6 @@ registry_review = 'Launchpad Content Review'
 registry_to_do = 'Launchpad To-Do List'
 
 related_bounties = ContextDisplayName('Bounties for %s')
-
-requestexpired = 'Request Took Too Long'
 
 root_index = 'The Launchpad Home Page'
 

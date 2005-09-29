@@ -102,11 +102,6 @@
             template="../templates/object-portlet-milestones.pt"
             lp:url="/products/evolution/+portlet-milestones" />
         <browser:page
-            name="+portlet-actions"
-            facet="overview"
-            template="../templates/product-portlet-actions.pt"
-            lp:url="/products/evolution/+portlet-actions" />
-        <browser:page
             name="+portlet-bounties"
             facet="bounties"
             template="../templates/object-portlet-bounties.pt"
@@ -393,9 +388,6 @@
         <browser:page
             name="+all"
             template="../templates/registry-listall.pt" />
-        <browser:page
-            name="+portlet-actions"
-            template="../templates/productset-portlet-actions.pt" />
         <browser:page
             name="+portlet-details"
             template="../templates/productset-portlet-details.pt" />

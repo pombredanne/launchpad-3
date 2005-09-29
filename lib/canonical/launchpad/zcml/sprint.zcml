@@ -38,9 +38,6 @@
       name="+listing-detailed"
       template="../templates/sprint-listing-detailed.pt" />
     <browser:page
-      name="+portlet-actions"
-      template="../templates/sprint-portlet-actions.pt" />
-    <browser:page
       name="+portlet-details"
       template="../templates/sprint-portlet-details.pt" />
     <browser:page
@@ -102,9 +99,6 @@
     <browser:page
       name="+index"
       template="../templates/sprints-index.pt" />
-    <browser:page
-      name="+portlet-actions"
-      template="../templates/sprints-portlet-actions.pt" />
     <browser:page
       name="+portlet-details"
       template="../templates/sprints-portlet-details.pt" />
