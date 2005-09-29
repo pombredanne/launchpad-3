@@ -533,6 +533,7 @@ class ShippingRequestAdminView:
         if 'DENY' in request:
             if not context.isDenied():
                 context.deny()
+                flush_database_updates()
                 self._goToNextPending(previous_action='denied')
             else:
                 # XXX: Must give some kind of warning in this case.
@@ -546,12 +547,14 @@ class ShippingRequestAdminView:
             x86, amd64, ppc = self._getApprovedQuantities()
             context.setApprovedTotals(x86, amd64, ppc)
             context.highpriority = highpriority
+            flush_database_updates()
             self._goToNextPending(previous_action='changed')
         elif 'APPROVE' in request:
             if not context.approved:
                 x86, amd64, ppc = self._getApprovedQuantities()
                 context.approve(x86, amd64, ppc, whoapproved=user)
                 context.highpriority = highpriority
+                flush_database_updates()
                 self._goToNextPending(previous_action='approved')
             else:
                 # XXX: Must give some kind of warning in this case.
