@@ -2,7 +2,10 @@ set client_min_messages=ERROR;
 
 ALTER TABLE Language ADD COLUMN direction integer NOT NULL DEFAULT 0;
 
-/* Initial set of RTL languages */
+/* The following languages are listed as RTL in the GTK+ po files,
+ * so should cover the common languages.  Others language records
+ * can be updated later.
+ */
 UPDATE Language set direction = 1
   WHERE code in ('ar', 'az', 'fa', 'he', 'yi');
 UPDATE Language set direction = 1
