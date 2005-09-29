@@ -110,7 +110,7 @@ def get_bugmail_from_address(user):
     return u"%s <%s>" % (user.displayname, user.preferredemail.email)
 
 
-def get_bugmail_replyto_address(bug, user):
+def get_bugmail_replyto_address(bug):
     """Return an appropriate bugmail Reply-To address.
 
     :bug: the IBug.
@@ -119,8 +119,7 @@ def get_bugmail_replyto_address(bug, user):
 
         From: Foo Bar via Malone <123@bugs...>
     """
-    return u"%s via Malone <%s@%s>" % (
-        user.displayname, bug.id, config.launchpad.bugs_domain)
+    return u"Bug %d <%s@%s>" % (bug.id, bug.id, config.launchpad.bugs_domain)
 
 
 def get_bugmail_error_address():
@@ -497,7 +496,7 @@ def send_bug_notification(bug, user, subject, body,
         to_addrs = [to_addrs]
 
     if "Reply-To" not in headers:
-        headers["Reply-To"] = get_bugmail_replyto_address(bug, user)
+        headers["Reply-To"] = get_bugmail_replyto_address(bug)
     if "Sender" not in headers:
         headers["Sender"] = config.bounce_address
     from_addr = get_bugmail_from_address(user)
