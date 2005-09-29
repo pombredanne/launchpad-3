@@ -1064,6 +1064,37 @@ COMMENT ON TABLE VoteCast IS 'Here we store who has already voted in a poll, to 
 COMMENT ON COLUMN VoteCast.person IS 'The person who voted.';
 COMMENT ON COLUMN VoteCast.poll IS 'The poll in which this person voted.';
 
+-- ShippingRequest
+COMMENT ON TABLE ShippingRequest IS 'A shipping request made through ShipIt.';
+COMMENT ON COLUMN ShippingRequest.recipient IS 'The person who requested.';
+COMMENT ON COLUMN ShippingRequest.shipment IS 'A link to the Shipment table.';
+COMMENT ON COLUMN ShippingRequest.daterequested IS 'The date this request was made.';
+COMMENT ON COLUMN ShippingRequest.shockandawe IS 'The Shock and Awe program that generated this request, in case this is part of a SA program.';
+COMMENT ON COLUMN ShippingRequest.approved IS 'Is this request approved? A value of NULL means it\'s pending approval.';
+COMMENT ON COLUMN ShippingRequest.whoapproved IS 'The person who approved this.';
+COMMENT ON COLUMN ShippingRequest.cancelled IS 'Is this request cancelled?';
+COMMENT ON COLUMN ShippingRequest.whocancelled IS 'The person who cancelled this.';
+COMMENT ON COLUMN ShippingRequest.reason IS 'A comment from the requester explaining why he want the CDs.';
+COMMENT ON COLUMN ShippingRequest.highpriority IS 'Is this a high priority request?';
+COMMENT ON COLUMN ShippingRequest.city IS 'The city to which this request should be shipped.';
+COMMENT ON COLUMN ShippingRequest.phone IS 'The phone number of the requester.';
+COMMENT ON COLUMN ShippingRequest.country IS 'The country to which this request should be shipped.';
+COMMENT ON COLUMN ShippingRequest.province IS 'The province to which this request should be shipped.';
+COMMENT ON COLUMN ShippingRequest.postcode IS 'The postcode to which this request should be shipped.';
+COMMENT ON COLUMN ShippingRequest.addressline1 IS 'The address (first line) to which this request should be shipped.';
+COMMENT ON COLUMN ShippingRequest.addressline2 IS 'The address (second line) to which this request should be shipped.';
+COMMENT ON COLUMN ShippingRequest.organization IS 'The organization requesting the CDs.';
+COMMENT ON COLUMN ShippingRequest.recipientdisplayname IS 'Used as the recipient\'s name when a request is made by a ShipIt admin in behalf of someone else';
+
+-- RequestedCDs
+COMMENT ON TABLE RequestedCDs IS 'The requested CDs of a Shipping Request.';
+COMMENT ON COLUMN RequestedCDs.quantity IS 'The number of CDs.';
+COMMENT ON COLUMN RequestedCDs.quantityapproved IS 'The number of CDs that were approved for shipping, in case the request was approved.';
+COMMENT ON COLUMN RequestedCDs.request IS 'The request itself.';
+COMMENT ON COLUMN RequestedCDs.distrorelease IS 'The distrorelease of the CDs (e.g. Ubuntu Breezy).';
+COMMENT ON COLUMN RequestedCDs.architecture IS 'The architecture the CDs are meant to be installed on (e.g. x86).';
+COMMENT ON COLUMN RequestedCDs.flavour IS 'The flavour of the distrorelease (e.g. EdUbuntu).';
+
 -- StandardShipItRequest
 COMMENT ON TABLE StandardShipItRequest IS 'The Standard ShipIt Requests. This is what we want most of the people to choose, having only a few people placing custom requests.';
 COMMENT ON COLUMN StandardShipItRequest.quantityx86 IS 'The quantity of X86 CDs';

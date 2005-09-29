@@ -141,46 +141,52 @@
     <table>
       <tr>
         <td align="right"><strong>Recipient:</strong></td>
-        <td>
+        <td tal:condition="not: context/recipientdisplayname">
           <tal:XXX condition="nothing">
           Okay, so we hardcoded the URL. Blame canonical_url and bug 2119!
           </tal:XXX>
           <a tal:attributes="href string:https://launchpad.net/people/${context/recipient/name}">
             <span tal:replace="context/recipient/displayname" /></a>
-            (<span tal:replace="context/recipient/preferredemail/email" />)
+            (<a tal:attributes="href 
+              string:mailto:${context/recipient/preferredemail/email}"
+              ><span tal:replace="context/recipient/preferredemail/email" 
+              /></a>)
+        </td>
+        <td tal:condition="context/recipientdisplayname">
+          <span tal:replace="context/recipientname" />
         </td>
       </tr>
-      <tr tal:condition="context/recipient/organization">
+      <tr tal:condition="context/organization">
         <td align="right"><strong>Organization:</strong></td>
-        <td><span tal:replace="context/recipient/organization" /></td>
+        <td><span tal:replace="context/organization" /></td>
       </tr>
       <tr>
         <td align="right"><strong>Country:</strong></td>
-        <td><span tal:replace="context/recipient/country/name" /></td>
+        <td><span tal:replace="context/country/name" /></td>
       </tr>
       <tr>
         <td align="right"><strong>City:</strong></td>
-        <td><span tal:replace="context/recipient/city" /></td>
+        <td><span tal:replace="context/city" /></td>
       </tr>
-      <tr tal:condition="context/recipient/province">
+      <tr tal:condition="context/province">
         <td align="right"><strong>Province:</strong></td>
-        <td><span tal:replace="context/recipient/province" /></td>
+        <td><span tal:replace="context/province" /></td>
       </tr>
       <tr>
         <td align="right"><strong>Address:</strong></td>
-        <td><span tal:replace="context/recipient/addressline1" /></td>
+        <td><span tal:replace="context/addressline1" /></td>
       </tr>
-      <tr tal:condition="context/recipient/addressline2">
+      <tr tal:condition="context/addressline2">
         <td align="right"></td>
-        <td><span tal:replace="context/recipient/addressline2" /></td>
+        <td><span tal:replace="context/addressline2" /></td>
       </tr>
-      <tr tal:condition="context/recipient/postcode">
+      <tr tal:condition="context/postcode">
         <td align="right"><strong>Postcode:</strong></td>
-        <td><span tal:replace="context/recipient/postcode" /></td>
+        <td><span tal:replace="context/postcode" /></td>
       </tr>
-      <tr tal:condition="context/recipient/phone">
+      <tr tal:condition="context/phone">
         <td align="right"><strong>Phone:</strong></td>
-        <td><span tal:replace="context/recipient/phone" /></td>
+        <td><span tal:replace="context/phone" /></td>
       </tr>
       <tr>
         <td align="right"><strong>Date:</strong></td>
@@ -192,6 +198,16 @@
       </tr>
     </table>
 
+    <ul>
+      <li class="edit">
+        <a tal:attributes="href string:/myrequest?order=${context/id}">
+          <span tal:condition="context/recipientdisplayname">
+            Edit request details</span>
+          <span tal:condition="not: context/recipientdisplayname">
+            Edit shipping details</span>
+        </a>
+      </li>
+    </ul>
   </div>
 
 </body>

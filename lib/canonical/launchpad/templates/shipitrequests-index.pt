@@ -96,9 +96,9 @@
             <tr tal:attributes="
               style string:background-color: ${shipitrequest/highlightColour}">
               <td tal:content="shipitrequest/id" />
-              <td tal:content="shipitrequest/recipient/displayname" />
+              <td tal:content="shipitrequest/recipientname" />
               <td tal:content="shipitrequest/daterequested/fmt:date" />
-              <td tal:content="shipitrequest/recipient/country/name" />
+              <td tal:content="shipitrequest/country/name" />
               <td style="text-align: right" 
                   tal:content="shipitrequest/totalCDs" />
               <td style="text-align: right"

@@ -4,7 +4,7 @@ __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'IRequestedCDs', 'IShippingRequest', 'IShippingRequestSet',
            'ShippingRequestStatus']
 
-from zope.schema import Bool, Int, Datetime, Text, TextLine
+from zope.schema import Bool, Choice, Int, Datetime, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -48,6 +48,48 @@ class IShippingRequest(Interface):
         title=_('High Priority?'), required=False, readonly=False,
         description=_('Is this a high priority request?'))
 
+    recipientdisplayname = TextLine(
+            title=_('Name'), required=False, readonly=False,
+            description=_("The name of the person who's going to receive "
+                          "this order.")
+            )
+    addressline1 = TextLine(
+            title=_('Address'), required=True, readonly=False,
+            description=_('The address to where the CDs will be shipped '
+                          '(Line 1)')
+            )
+    addressline2 = TextLine(
+            title=_('Address'), required=False, readonly=False,
+            description=_('The address to where the CDs will be shipped '
+                          '(Line 2)')
+            )
+    city = TextLine(
+            title=_('City'), required=True, readonly=False,
+            description=_('The City/Town/Village/etc to where the CDs will be '
+                          'shipped.')
+            )
+    province = TextLine(
+            title=_('Province'), required=True, readonly=False,
+            description=_('The State/Province/etc to where the CDs will be '
+                          'shipped.')
+            )
+    country = Choice(
+            title=_('Country'), required=True, readonly=False,
+            vocabulary='CountryName',
+            description=_('The Country to where the CDs will be shipped.')
+            )
+    postcode = TextLine(
+            title=_('Postcode'), required=True, readonly=False,
+            description=_('The Postcode to where the CDs will be shipped.')
+            )
+    phone = TextLine(
+            title=_('Phone'), required=True, readonly=False,
+            description=_('[(+CountryCode) number] e.g. (+55) 16 33619445')
+            )
+    organization = TextLine(
+            title=_('Organization'), required=False, readonly=False,
+            description=_('The Organization requesting the CDs')
+            )
     totalCDs = Attribute(_('Total number of CDs in this request.'))
     totalapprovedCDs = Attribute(
         _('Total number of approved CDs in this request.'))
@@ -57,6 +99,7 @@ class IShippingRequest(Interface):
     quantityx86approved = Int(title=_('Approved X86 CDs'), readonly=False)
     quantityppcapproved = Int(title=_('Approved PowerPC CDs'), readonly=False)
     quantityamd64approved = Int(title=_('Approved AMD64 CDs'), readonly=False)
+    recipientname = Attribute(_("The recipient's name"))
 
     def isStandardRequest():
         """Return True if this is one of the Standard requests."""
