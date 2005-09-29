@@ -614,6 +614,8 @@ projects_request = 'Rosetta: Request a project'
 
 projects_search = 'Launchpad: Advanced Upstream Project Search'
 
+rdf_index = "Launchpad RDF"
+
 # redirect_up is a redirect
 
 def reference_index(context, view):
