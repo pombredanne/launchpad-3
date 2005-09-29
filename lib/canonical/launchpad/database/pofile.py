@@ -522,16 +522,16 @@ class POFile(SQLBase, RosettaStats):
         old_header.finish()
 
         # Get the old and new PO-Revision-Date entries as datetime objects.
-        # That's the second argument from the tuple that getPORevisionDate
+        # That's the second element from the tuple that getPORevisionDate
         # returns.
         (old_date_string, old_date) = old_header.getPORevisionDate()
         (new_date_string, new_date) = header.getPORevisionDate()
 
-        # Check whether or no the date is older.
+        # Check whether or not the date is older.
         if old_date is None or new_date is None or old_date <= new_date:
             # If one of the headers, or both headers, has a missing or wrong
-            # PO-Revision-Date, then they cannot be compared, so the new
-            # header is taken as beeing newer.
+            # PO-Revision-Date, then they cannot be compared, so we consider
+            # the new header to be the most recent.
             return False
         elif old_date > new_date:
             return True

@@ -2,7 +2,9 @@
   class="portlet"
   tal:define="release_bugcounts view/release_bug_counts"
 >
+
   <h4>Release Bugs:</h4>
+
   <div class="portletBody portletContent">
     <ul>
       <li class="bugs" tal:repeat="release_bugcount release_bugcounts">
@@ -13,4 +15,5 @@
       </li>
     </ul>
   </div>
+
 </div>

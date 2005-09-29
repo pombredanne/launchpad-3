@@ -1,10 +1,34 @@
-<metal:page define-macro="buglisting">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:content="structure context/@@+portlet-details" />
+  <div tal:content="structure context/distribution/@@+portlet-details|nothing" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <tal:block content="structure context/@@+portlet-bugtasklist-mybugs" />
+    <tal:releasebugs
+        tal:condition="context/@@+portlet-bugtasklist-releasebugs|nothing"
+        tal:content="structure context/@@+portlet-bugtasklist-releasebugs" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+<metal:page
+    define-macro="buglisting"
+    tal:define="listing_columns view/task_columns;
+                task_batch_navigator view/search">
+
   <tal:tag condition="view/assign_to_milestones|nothing"/>
-  <form name="bugtask_search" action="" method="GET"
-     tal:define="listing_columns view/task_columns;
-                 task_batch_navigator view/search;
-                 mass_edit_allowed python: 'select' in listing_columns and
-                                           view.is_maintainer">
+
+  <h1>Bugs in <span tal:replace="context/title">Title</span></h1>
+
+  <form name="bugtask_search" action="" method="GET">
 
     <p>
       <label tal:content="view/searchtext_widget/label">
@@ -12,24 +36,40 @@
       </label>
       <tal:searchtext content="structure view/searchtext_widget" />
       <input type="submit" name="search" value="Search" />
-      <input
-          tal:condition="not:view/advanced"
-          type="submit" name="advanced" value="Advanced" />
-      <input
-          tal:condition="view/advanced"
-          type="submit" name="simple_submit" value="Simple" />
       <input type="hidden"
           name="advanced" tal:attributes="value request/advanced|nothing" />
     </p>
 
-    <table metal:use-macro="context/@@+bugtask-macros-tableview/batched-table" />
+    <tal:table_view tal:condition="view/showTableView">
+      <table
+          metal:use-macro="context/@@+bugtask-macros-tableview/batched-table" />
+    </tal:table_view>
+    <tal:list_view tal:condition="view/showListView">
+      <tal:navigation
+          tal:replace="structure task_batch_navigator/@@+navigation-links" />
+      <table class="listing" width="67%">
+        <thead>
+          <tr metal:use-macro="context/@@+bugtask-macros-tableview/sortable-header">
+            ID
+          </tr>
+        </thead>
+      </table>
 
-    <tal:edit tal:condition="mass_edit_allowed">
-      <tal:milestone condition="context/context/milestones|nothing">
-        <tal:block content="structure view/milestone_assignment_widget" />
-        <input type="submit" name="assign_to_milestone"
-               value="Assign to Milestone" />
-      </tal:milestone>
+      <table>
+        <tr tal:condition="view/showListView"
+            tal:repeat="task task_batch_navigator/batch">
+          <td tal:condition="view/mass_edit_allowed">
+            <input type="checkbox" name="task" tal:attributes="value task/id" />
+          </td>
+          <metal:taskrow use-macro="task/@@+bugtask-macros-listview/item" />
+        </tr>
+      </table>
+    </tal:list_view>
+
+    <tal:edit tal:condition="view/mass_edit_allowed">
+      <tal:block content="structure view/milestone_assignment_widget" />
+      <input type="submit" name="assign_to_milestone"
+             value="Assign to Milestone" />
     </tal:edit>
 
     <tal:search-defaults condition="not:view/advanced">
@@ -126,6 +166,18 @@
         </div>
       </div>
     </tal:block>
-
   </form>
+  <script>
+  <!--
+  document.forms[0].elements['field.searchtext'].focus();
+  //-->
+  </script>
+
 </metal:page>
+
+</div>
+
+
+</body>
+
+</html>

@@ -359,10 +359,17 @@ class BugTaskSearchListingView:
 
     implements(IBugTaskSearchListingView)
 
+    def showTableView(self):
+        """Should the search results be displayed as a table?"""
+        return False
+
+    def showListView(self):
+        """Should the search results be displayed as a list?"""
+        return True
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.is_maintainer = helpers.is_maintainer(self.context)
         self.user = getUtility(ILaunchBag).user
 
         if self._upstreamContext():
@@ -479,6 +486,16 @@ class BugTaskSearchListingView:
                         #      removed. -- Bjorn Tillenius, 2005-05-04
                         task.milestone = milestone_assignment.id
 
+    def mass_edit_allowed(self):
+        """Indicates whether the user can edit bugtasks directly on the page.
+
+        At the moment the user can edit only product milestone
+        assignments, if the user is a maintainer of the product.
+        """
+        return (
+            self._upstreamContext() is not None and
+            helpers.is_maintainer(self.context))
+
     def task_columns(self):
         """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
         upstream_context = self._upstreamContext()
@@ -486,9 +503,13 @@ class BugTaskSearchListingView:
         distrorelease_context = self._distroReleaseContext()
 
         if upstream_context:
-            return [
-                "select", "id", "title", "milestone", "status", "severity",
-                "priority", "assignedto"]
+            upstream_columns = [
+                "id", "title", "milestone", "status", "severity", "priority",
+                "assignedto"]
+            if self.mass_edit_allowed():
+                return ["select"] + upstream_columns
+            else:
+                return upstream_columns
         elif distribution_context or distrorelease_context:
             return [
                 "id", "title", "package", "status", "severity", "priority",
@@ -631,6 +652,14 @@ class BugTaskSearchListingView:
         """
         # See search() for details on the any-status hack
         return str(self.request.URL) + "?any-status=1&search=Search"
+
+    @property
+    def advanced_url(self):
+        """Construct and return the URL that gets you to the advanced search.
+
+        The URL is context-aware.
+        """
+        return str(self.request.URL) + "?advanced=Advanced"
 
     @property
     def release_bug_counts(self):

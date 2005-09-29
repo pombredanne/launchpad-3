@@ -170,6 +170,7 @@ class IBugTarget(Interface):
         description and owner.
         """
 
+    bugtasks = Attribute("A list of BugTasks for this target.")
 
 
 class BugDistroReleaseTargetDetails:

@@ -42,14 +42,6 @@
         facet="bugs"
         permission="zope.Public">
         <browser:page
-            name="+bugs"
-            lp:url="/distros/$Distribution.name/+bugs"
-            template="../templates/bugs-for-context.pt" />
-        <browser:page
-            name="+portlet-bugtasklist-mybugs"
-            template="../templates/bugtasklist-portlet-mybugs.pt"
-            lp:url="/distros/$Distribution.name/+portlet-bugtasklist-mybugs" />
-        <browser:page
             name="+portlet-bugtasklist-releasebugs"
             template="../templates/bugtask-portlet-releasebugs.pt"
             lp:url="/distros/$Distribution.name/+portlet-bugtasklist-releasebugs" />
