@@ -27,7 +27,7 @@ class Language(SQLBase):
     pluralexpression = StringCol(dbName='pluralexpression')
     visible = BoolCol(dbName='visible', notNull=True)
     direction = EnumCol(dbName='direction', notNull=True,
-                        schema=TextDirection, default=TextDirection.ltr)
+                        schema=TextDirection, default=TextDirection.LTR)
 
     translators = RelatedJoin('Person', joinColumn='language',
         otherColumn='person', intermediateTable='PersonLanguage')
@@ -53,6 +53,11 @@ class Language(SQLBase):
         if len(codes) == 2:
             return Language.byCode(codes[0])
         return None
+
+    @property
+    def htmlcode(self):
+        """XML and HTML use a dash as the language/country separator"""
+        return self.code.replace('_', '-')
 
 class LanguageSet:
     implements(ILanguageSet)

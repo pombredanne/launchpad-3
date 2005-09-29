@@ -45,6 +45,9 @@ class ILanguage(Interface):
         "be expected to have good suggestions for translations in this "
         "language.")
 
+    htmlcode = Attribute( """The language code in a form suitable for use
+        in HTML and XML files""")
+
 class ILanguageSet(Interface):
     """The collection of languages."""
 

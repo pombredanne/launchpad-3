@@ -2727,14 +2727,14 @@ class ShipItDistroRelease(DBSchema):
 class TextDirection(DBSchema):
     """The base text direction for a language."""
 
-    ltr = Item(0, """
-        Left to Right
+    LTR = Item(0, """
+        ltr
 
         Text is normally written from left to right in this language.
         """)
 
-    rtl = Item(1, """
-        Right to Left
+    RTL = Item(1, """
+        rtl
 
         Text is normally written from left to right in this language.
         """)
