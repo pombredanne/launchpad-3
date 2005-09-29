@@ -3,6 +3,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistroArchReleaseContextMenu',
+    'DistroArchReleaseFacets',
     'DistroArchReleaseView',
     'DistroArchReleaseBinariesView',
     ]
@@ -10,7 +12,33 @@ __all__ = [
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
+from canonical.launchpad.webapp import (
+    canonical_url, StandardLaunchpadFacets, ContextMenu, Link)
+
+from canonical.launchpad.interfaces import IDistroArchRelease
+
 BATCH_SIZE = 40
+
+
+class DistroArchReleaseFacets(StandardLaunchpadFacets):
+
+    usedfor = IDistroArchRelease
+    enable_only = ['overview']
+
+
+class DistroArchReleaseContextMenu(ContextMenu):
+
+    usedfor = IDistroArchRelease
+    links = ['edit', 'packagesearch']
+
+    def edit(self):
+        text = 'Edit Architecture Release Details'
+        return Link('+edit', text, icon='edit')
+
+    def packagesearch(self):
+        text = 'Search Packages'
+        return Link('+pkgsearch', text, icon='search')
+
 
 class DistroArchReleaseView:
 

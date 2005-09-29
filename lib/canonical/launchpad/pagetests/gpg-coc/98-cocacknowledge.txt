@@ -1,7 +1,7 @@
 Perform Acknowledge process as Foo bar person:
 
   >>> print http(r"""
-  ... POST /codeofconduct/console/+acknowledge HTTP/1.1
+  ... POST /codeofconduct/console/+new HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Accept-Language: en-us,en;q=0.7,pt-br;q=0.3
   ... Content-Length: 308
@@ -37,11 +37,11 @@ Ensure the CoC was acknowledge by searching in the CoC Admin Console:
   ... POST /codeofconduct/console/ HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Accept-Language: en-us,en;q=0.7,pt-br;q=0.3
-  ... Content-Length: 23
+  ... Content-Length: 37
   ... Content-Type: application/x-www-form-urlencoded
   ... Referer: http://localhost:9000/codeofconduct/console/
   ... 
-  ... searchfor=all&name=mark""")
+  ... searchfor=all&name=mark&search=Search""")
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8

@@ -2,7 +2,7 @@ When a bug is marked as a duplicate of another bug, the main bug page
 will show such information in a prominent way.
 
   >>> print http(r"""
-  ... GET /malone/bugs/2 HTTP/1.1
+  ... GET /distros/debian/+sources/mozilla-firefox/+bug/2 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

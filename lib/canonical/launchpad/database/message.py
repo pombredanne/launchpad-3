@@ -13,6 +13,8 @@ from datetime import datetime
 
 from zope.interface import implements
 from zope.component import getUtility
+# XXX: do we really need this?
+#   -- kiko, 2005-09-23
 from zope.security.proxy import isinstance
 from zope.exceptions import NotFoundError
 
@@ -25,7 +27,7 @@ from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
 from canonical.launchpad.interfaces import (
     IMessage, IMessageSet, IMessageChunk, IPersonSet, ILibraryFileAliasSet, 
-    UnknownSender, DuplicateMessageId, InvalidEmailMessage)
+    UnknownSender, InvalidEmailMessage)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -88,33 +90,29 @@ class Message(SQLBase):
         return '\n\n'.join(bits)
 
 
-def get_parent_msgid(parsed_message):
-    """Returns the message id the mail was a reply to.
+def get_parent_msgids(parsed_message):
+    """Returns a list of message ids the mail was a reply to.
 
-    If it can't be identified, None is returned.
+        >>> get_parent_msgids({'In-Reply-To': '<msgid1>'})
+        ['<msgid1>']
 
-        >>> get_parent_msgid({'In-Reply-To': '<msgid1>'})
-        '<msgid1>'
+        >>> get_parent_msgids({'References': '<msgid1> <msgid2>'})
+        ['<msgid1>', '<msgid2>']
 
-        >>> get_parent_msgid({'References': '<msgid1> <msgid2>'})
-        '<msgid2>'
+        >>> get_parent_msgids({'In-Reply-To': '<msgid1> <msgid2>'})
+        ['<msgid1>', '<msgid2>']
 
-        >>> get_parent_msgid({'In-Reply-To': '<msgid1> <msgid2>'})
-        '<msgid2>'
+        >>> get_parent_msgids({'In-Reply-To': '', 'References': ''})
+        []
 
-        >>> get_parent_msgid({'In-Reply-To': '', 'References': ''}) is None
-        True
-
-        >>> get_parent_msgid({}) is None
-        True
+        >>> get_parent_msgids({})
+        []
     """
     for name in ['In-Reply-To', 'References']:
         if parsed_message.has_key(name):
-            msgids = parsed_message[name].split()
-            if len(msgids) > 0:
-                return parsed_message.get(name).split()[-1]
+            return parsed_message.get(name).split()
 
-    return None
+    return []
 
 
 class MessageSet:
@@ -129,8 +127,9 @@ class MessageSet:
     def fromText(self, subject, content, owner=None):
         """See IMessageSet."""
         rfc822msgid = make_msgid("launchpad")
-        message = Message(subject=subject, rfc822msgid=rfc822msgid, owner=owner)
-        chunk = MessageChunk(message=message, sequence=1, content=content)
+        message = Message(
+            subject=subject, rfc822msgid=rfc822msgid, owner=owner)
+        MessageChunk(message=message, sequence=1, content=content)
         return message
 
     def _decode_header(self, header):
@@ -140,7 +139,7 @@ class MessageSet:
 
     def fromEmail(self, email_message, owner=None, filealias=None,
             parsed_message=None, distribution=None,
-            create_missing_persons=False):
+            create_missing_persons=False, fallback_parent=None):
         """See IMessageSet.fromEmail."""
         # It does not make sense to handle Unicode strings, as email
         # messages may contain chunks encoded in differing character sets.
@@ -236,16 +235,19 @@ class MessageSet:
                 if owner is None:
                     raise UnknownSender(senderemail)
 
-        # get the parent email, if needed and available in the db
-        parent_msgid = get_parent_msgid(parsed_message)
-        if parent_msgid is None:
-            parent = None
-        else:
+        # Get the parent of the message, if available in the db. We'll
+        # go through all the message's parents until we find one that's
+        # in the db.
+        parent = None
+        for parent_msgid in reversed(get_parent_msgids(parsed_message)):
             try:
                 # we assume it's the first matching message
                 parent = self.get(parent_msgid)[0]
+                break
             except NotFoundError:
-                parent = None
+                pass
+        else:
+            parent = fallback_parent
 
         # figure out the date of the message
         try:
@@ -269,27 +271,34 @@ class MessageSet:
             rawID=raw_email_message.id, datecreated=datecreated,
             distribution=distribution)
 
+        sequence = 1
+
+        # Don't store the preamble or epilogue -- they are only there
+        # to give hints to non-MIME aware clients
+        #
         # Determine the encoding to use for non-multipart messages, and the
         # preamble and epilogue of multipart messages. We default to iso-8859-1
         # as it seems fairly harmless to cope with old, broken email clients
         # (The RFCs state US-ASCII as the default character set).
-        default_charset = parsed_message.get_content_charset() or 'iso-8859-1'
-
-        sequence = 1
-        if getattr(parsed_message, 'preamble', None):
-            # We strip a leading and trailing newline - the email parser
-            # seems to arbitrarily add them :-/
-            preamble = parsed_message.preamble.decode(
-                    default_charset, 'replace')
-            if preamble.strip():
-                if preamble[0] == '\n':
-                    preamble = preamble[1:]
-                if preamble[-1] == '\n':
-                    preamble = preamble[:-1]
-                MessageChunk(
-                    messageID=message.id, sequence=sequence, content=preamble
-                    )
-                sequence += 1
+        # default_charset = parsed_message.get_content_charset() or 'iso-8859-1'
+        #
+        # XXX: is default_charset only useful here?
+        #   -- kiko, 2005-09-23
+        #
+        # if getattr(parsed_message, 'preamble', None):
+        #     # We strip a leading and trailing newline - the email parser
+        #     # seems to arbitrarily add them :-/
+        #     preamble = parsed_message.preamble.decode(
+        #             default_charset, 'replace')
+        #     if preamble.strip():
+        #         if preamble[0] == '\n':
+        #             preamble = preamble[1:]
+        #         if preamble[-1] == '\n':
+        #             preamble = preamble[:-1]
+        #         MessageChunk(
+        #             messageID=message.id, sequence=sequence, content=preamble
+        #             )
+        #         sequence += 1
 
         for part in parsed_message.walk():
             mime_type = part.get_content_type()
@@ -331,17 +340,18 @@ class MessageSet:
                         )
                     sequence += 1
 
-        if getattr(parsed_message, 'epilogue', None):
-            epilogue = parsed_message.epilogue.decode(
-                    default_charset, 'replace')
-            if epilogue.strip():
-                if epilogue[0] == '\n':
-                    epilogue = epilogue[1:]
-                if epilogue[-1] == '\n':
-                    epilogue = epilogue[:-1]
-                MessageChunk(
-                    messageID=message.id, sequence=sequence, content=epilogue
-                    )
+        # Don't store the epilogue
+        # if getattr(parsed_message, 'epilogue', None):
+        #     epilogue = parsed_message.epilogue.decode(
+        #             default_charset, 'replace')
+        #     if epilogue.strip():
+        #         if epilogue[0] == '\n':
+        #             epilogue = epilogue[1:]
+        #         if epilogue[-1] == '\n':
+        #             epilogue = epilogue[:-1]
+        #         MessageChunk(
+        #             messageID=message.id, sequence=sequence, content=epilogue
+        #             )
         return message
 
 class MessageChunk(SQLBase):

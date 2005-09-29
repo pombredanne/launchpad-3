@@ -62,15 +62,19 @@
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    factory="canonical.launchpad.subscribers.karma.bug_comment_added" />
 
-<!-- XXX: Brad Bollenbach, 2005-04-12: Disabling infestation notifications for now
-          because realistically, nobody should be seriously counting on much useful
-          behaviour from these yet, because we haven't yet nailed down exactly what
-          the semantics behind these things are. I'd rather not maintain infestation
-          related code until we are clear on such semantics.
+<!-- XXX: Brad Bollenbach, 2005-04-12:
+
+    Disabling infestation notifications for now because realistically,
+    nobody should be seriously counting on much useful behaviour from these
+    yet, because we haven't yet nailed down exactly what the semantics
+    behind these things are. I'd rather not maintain infestation related
+    code until we are clear on such semantics.
+
 <subscriber
-   for="canonical.launchpad.interfaces.IBugProductInfestation
-        zope.app.event.interfaces.IObjectCreatedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bug_product_infestation_added" />
+    for="canonical.launchpad.interfaces.IBugProductInfestation
+    zope.app.event.interfaces.IObjectCreatedEvent"
+    factory="canonical.launchpad.mailnotification.notify_bug_product_infestation_added"
+    />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugProductInfestation
@@ -105,19 +109,19 @@
    factory="canonical.launchpad.mailnotification.notify_bug_external_ref_edited" />
 
 <subscriber
-   for="canonical.launchpad.interfaces.ICVERef
+   for="canonical.launchpad.interfaces.IBugCve
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bug_cveref_added" />
+   factory="canonical.launchpad.mailnotification.notify_bug_cve_added" />
 
 <subscriber
-   for="canonical.launchpad.interfaces.ICVERef
+   for="canonical.launchpad.interfaces.IBugCve
+        canonical.launchpad.event.interfaces.ISQLObjectDeletedEvent"
+   factory="canonical.launchpad.mailnotification.notify_bug_cve_deleted" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.IBugCve
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
    factory="canonical.launchpad.subscribers.karma.cve_added" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.ICVERef
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bug_cveref_edited" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugWatch

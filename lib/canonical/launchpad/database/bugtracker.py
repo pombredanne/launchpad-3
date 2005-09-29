@@ -85,6 +85,10 @@ class BugTrackerSet:
     def queryByBaseURL(self, baseurl):
         return BugTracker.selectOneBy(baseurl=baseurl)
 
+    def search(self):
+        """See canonical.launchpad.interfaces.IBugTrackerSet."""
+        return BugTracker.select()
+
     def ensureBugTracker(self, baseurl, owner, bugtrackertype,
         title=None, summary=None, contactdetails=None, name=None):
         # first try and find one without normalisation

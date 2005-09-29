@@ -237,7 +237,7 @@ class TicketSet:
 
     def __init__(self):
         """See ITicketSet."""
-        self.title = 'Launchpad Support Tickets'
+        self.title = 'Launchpad'
 
     @property
     def latest_tickets(self):

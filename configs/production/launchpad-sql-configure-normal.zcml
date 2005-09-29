@@ -5,7 +5,7 @@
 
   <rdb:provideConnection
       name="launchpad"
-      component="psycopgda.adapter.PsycopgAdapter"
+      component="canonical.database.adapter.LaunchpadDatabaseAdapter"
       dsn="dbi://launchpad:@emperor:5432/launchpad_prod" />
 
   <sqlos:connectionName name="launchpad" />

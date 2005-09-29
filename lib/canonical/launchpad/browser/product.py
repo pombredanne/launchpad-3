@@ -4,6 +4,24 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'ProductFacets',
+    'ProductOverviewMenu',
+    'ProductBugsMenu',
+    'ProductSupportMenu',
+    'ProductSpecificationsMenu',
+    'ProductBountiesMenu',
+    'ProductTranslationsMenu',
+    'ProductSetContextMenu',
+    'ProductView',
+    'ProductEditView',
+    'ProductSeriesAddView',
+    'ProductFileBugView',
+    'ProductRdfView',
+    'ProductSetView',
+    'ProductAddView'
+    ]
+
 from warnings import warn
 from urllib import quote as urlquote
 
@@ -24,16 +42,12 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url)
+    StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
+    enabled_with_permission, structured)
 
-__all__ = ['ProductFacets', 'ProductView', 'ProductEditView',
-           'ProductFileBugView', 'ProductRdfView', 'ProductSetView',
-           'ProductAddView', 'ProductSeriesAddView']
 
 class ProductFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for
-    an IProduct.
-    """
+    """The links that will appear in the facet menu for an IProduct."""
 
     usedfor = IProduct
 
@@ -49,9 +63,9 @@ class ProductFacets(StandardLaunchpadFacets):
         summary = 'Bugs reported about %s' % self.context.displayname
         return Link(target, text, summary)
 
-    def tickets(self):
+    def support(self):
         target = '+tickets'
-        text = 'Tickets'
+        text = 'Support'
         summary = (
             'Technical support requests for %s' % self.context.displayname)
         return Link(target, text, summary)
@@ -64,7 +78,7 @@ class ProductFacets(StandardLaunchpadFacets):
 
     def specifications(self):
         target = '+specs'
-        text = 'Specs'
+        text = 'Specifications'
         summary = 'Feature specifications for %s' % self.context.displayname
         return Link(target, text, summary)
 
@@ -82,12 +96,142 @@ class ProductFacets(StandardLaunchpadFacets):
         return Link(target, text, enabled=enabled)
 
 
+class ProductOverviewMenu(ApplicationMenu):
+
+    usedfor = IProduct
+    facet = 'overview'
+    links = [
+        'edit', 'reassign', 'distributions', 'packages', 'series_add',
+        'milestone_add', 'launchpad_usage', 'rdf', 'administer'
+        ]
+
+    def edit(self):
+        text = 'Edit Product Details'
+        return Link('+edit', text, icon='edit')
+
+    def reassign(self):
+        text = 'Change Maintainer'
+        return Link('+reassign', text, icon='edit')
+
+    def distributions(self):
+        text = 'Distributions'
+        return Link('+distributions', text, icon='info')
+
+    def packages(self):
+        text = 'Packages'
+        return Link('+packages', text, icon='info')
+
+    def series_add(self):
+        text = 'Add Release Series'
+        return Link('+addseries', text, icon='add')
+
+    def milestone_add(self):
+        text = 'Add Milestone'
+        return Link('+addmilestone', text, icon='add')
+
+    def launchpad_usage(self):
+        text = 'Define Launchpad Usage'
+        return Link('+launchpad', text, icon='edit')
+
+    def rdf(self):
+        text = structured(
+            'Download <abbr title="Resource Description Framework">'
+            'RDF</abbr> Metadata')
+        return Link('+rdf', text, icon='download')
+
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+review', text, icon='edit')
+
+
+class ProductBugsMenu(ApplicationMenu):
+
+    usedfor = IProduct
+    facet = 'bugs'
+    links = ['filebug']
+
+    def filebug(self):
+        text = 'Report a bug'
+        return Link('+filebug', text, icon='add')
+
+
+class ProductSupportMenu(ApplicationMenu):
+
+    usedfor = IProduct
+    facet = 'support'
+    links = ['new']
+
+    def new(self):
+        text = 'Request Support'
+        return Link('+addticket', text, icon='add')
+
+
+class ProductSpecificationsMenu(ApplicationMenu):
+
+    usedfor = IProduct
+    facet = 'specifications'
+    links = ['roadmap', 'new']
+
+    def roadmap(self):
+        text = 'Roadmap'
+        return Link('+specplan', text, icon='info')
+
+    def new(self):
+        text = 'Register New Specification'
+        return Link('+addspec', text, icon='add')
+
+
+class ProductBountiesMenu(ApplicationMenu):
+
+    usedfor = IProduct
+    facet = 'bounties'
+    links = ['new', 'link']
+
+    def new(self):
+        text = 'Register a New Bounty'
+        return Link('+addbounty', text, icon='add')
+
+    def link(self):
+        text = 'Link Existing Bounty'
+        return Link('+linkbounty', text, icon='edit')
+
+
+class ProductTranslationsMenu(ApplicationMenu):
+
+    usedfor = IProduct
+    facet = 'translations'
+    links = ['translators', 'edit']
+
+    def translators(self):
+        text = 'Change Translators'
+        return Link('+changetranslators', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def edit(self):
+        text = 'Edit Template Names'
+        return Link('+potemplatenames', text, icon='edit')
+
 def _sort_distros(a, b):
     """Put Ubuntu first, otherwise in alpha order."""
     if a['name'] == 'ubuntu':
         return -1
     return cmp(a['name'], b['name'])
-        
+
+
+class ProductSetContextMenu(ContextMenu):
+
+    usedfor = IProductSet
+    links = ['register', 'listall']
+
+    def register(self):
+        text = 'Register a New Product'
+        return Link('+new', text, icon='add')
+
+    def listall(self):
+        text = 'List All Products'
+        return Link('+all', text, icon='list')
+
 
 class ProductView:
 
@@ -199,7 +343,6 @@ class ProductView:
         result.sort(cmp=_sort_distros)
         return result
 
-
     def projproducts(self):
         """Return a list of other products from the same project as this
         product, excluding this product"""
@@ -257,7 +400,9 @@ class ProductEditView(ProductView, SQLObjectEditView):
 
 class ProductSeriesAddView(AddView):
     """Generates a form to add new product release series"""
+
     series = None
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -267,8 +412,8 @@ class ProductSeriesAddView(AddView):
     def createAndAdd(self, data):
         """Handle a request to create a new series for this product."""
         # Ensure series name is lowercase
-        self.series = self.context.newSeries(data["name"], data["displayname"],
-                                             data["summary"])
+        self.series = self.context.newSeries(
+            data["name"], data["displayname"], data["summary"])
 
     def nextURL(self):
         assert self.series
@@ -304,7 +449,8 @@ class ProductFileBugView(SQLObjectAddView):
         return bug
 
     def nextURL(self):
-        return canonical_url(self.addedBug, self.request)
+        bugtask = self.addedBug.bugtasks[0]
+        return canonical_url(bugtask)
 
 
 class ProductRdfView(object):
@@ -376,11 +522,12 @@ class ProductSetView:
         time the method is called, otherwise return previous results.
         """
         if self.results is None:
-            self.results = self.context.search(text=self.text,
-                                               bazaar=self.bazaar,
-                                               malone=self.malone,
-                                               rosetta=self.rosetta,
-                                               soyuz=self.soyuz)
+            self.results = self.context.search(
+                text=self.text,
+                bazaar=self.bazaar,
+                malone=self.malone,
+                rosetta=self.rosetta,
+                soyuz=self.soyuz)
         self.matches = self.results.count()
         return self.results
 
@@ -425,5 +572,4 @@ class ProductAddView(AddView):
 
     def nextURL(self):
         return self._nextURL
-
 

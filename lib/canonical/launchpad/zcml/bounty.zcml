@@ -114,7 +114,7 @@
     </securedutility>
 
     <browser:suburl
-        for="canonical.publication.RootObject"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
         utility="canonical.launchpad.interfaces.IBountySet"
         name="bounties" />
 
@@ -161,6 +161,11 @@
         template="../templates/bounties-portlet-details.pt"
         name="+portlet-details" />
     </browser:pages>
+
+    <browser:menus
+        module="canonical.launchpad.browser.bounty"
+        classes="BountiesAppMenu BountyContextMenu"
+        />
 
 </facet>
 </configure>

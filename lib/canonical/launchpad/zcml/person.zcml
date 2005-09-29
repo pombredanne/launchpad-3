@@ -27,7 +27,8 @@
 
   <browser:menus
       module="canonical.launchpad.browser.person"
-      classes="PersonFacets" />
+      classes="PersonFacets PersonBugsMenu PersonSpecsMenu PersonSupportMenu
+               PersonContextMenu TeamContextMenu PeopleContextMenu" />
 
   <browser:url
       for="canonical.launchpad.interfaces.IPerson"
@@ -66,6 +67,41 @@
           size="15" />
   </browser:editform>
 
+  <browser:editform
+      name="+edithomepage"
+      for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IPerson"
+      class="canonical.launchpad.browser.PersonEditView"
+      label="Edit Your Home Page"
+      fields="homepage_content"
+      permission="launchpad.Edit"
+      template="../templates/person-edithomepage.pt"
+      >
+      <browser:widget
+          field="homepage_content"
+          class="zope.app.form.browser.TextAreaWidget"
+          displayWidth="50"
+          height="30" />
+  </browser:editform>
+
+  <browser:page
+    name="+editemblem"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonEmblemView"
+    permission="launchpad.Edit"
+    template="../templates/person-images.pt"
+    >
+  </browser:page>
+
+  <browser:page
+    name="+edithackergotchi"
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.PersonHackergotchiView"
+    permission="launchpad.Admin"
+    template="../templates/person-images.pt"
+    >
+  </browser:page>
+
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"
       permission="zope.Public"
@@ -87,6 +123,11 @@
           facet="bugs"
           template="../templates/person-assignedbugs.pt"
           lp:url="/people/$Person.name/+assignedbugs" />
+      <browser:page
+          name="+packagebugs"
+          facet="bugs"
+          template="../templates/person-packagebugs.pt"
+          lp:url="/people/$Person.name/+packagebugs" />
       <browser:page
           name="+reportedbugs"
           facet="bugs"
@@ -233,6 +274,7 @@
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.TicketTargetView"
     permission="zope.Public"
+    facet="support"
     >
     <!-- there is trickery here, in the view class, which detects the view
     name and then gives the template a different set of tickets to work
@@ -336,7 +378,7 @@
       for="canonical.launchpad.interfaces.ITeam"
       class="canonical.launchpad.browser.PollAddView"
       schema="canonical.launchpad.interfaces.IPoll"
-      fields="name title proposition type secrecy allowspoilt
+      fields="name title proposition secrecy allowspoilt
               dateopens datecloses"
       label="Create a New Poll"
       permission="launchpad.Edit"

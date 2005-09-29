@@ -30,6 +30,11 @@
             set_schema="canonical.launchpad.interfaces.IProductRelease" />
     </content>
 
+    <browser:menus
+        module="canonical.launchpad.browser"
+        classes="ProductReleaseContextMenu"
+        />
+
     <browser:url
         for="canonical.launchpad.interfaces.IProductRelease"
         path_expression="version"

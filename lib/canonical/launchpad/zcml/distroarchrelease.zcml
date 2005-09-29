@@ -16,6 +16,11 @@
         for="canonical.launchpad.interfaces.IDistroArchRelease"
         name="+index" />
 
+   <browser:menus
+        module="canonical.launchpad.browser.distroarchrelease"
+        classes="DistroArchReleaseFacets DistroArchReleaseContextMenu"
+        />
+
     <browser:url
         for="canonical.launchpad.interfaces.IDistroArchRelease"
         path_expression="architecturetag"
@@ -41,6 +46,11 @@
       <browser:page
             name="+portlet-actions"
             template="../templates/distroarchrelease-portlet-actions.pt" />
+
+      <browser:page
+            name="+builds"
+            template="../templates/distroarchrelease-builds.pt" />
+
     </browser:pages>
 
     <browser:page

@@ -64,7 +64,7 @@ CREATE OR REPLACE FUNCTION valid_debian_version(text) RETURNS boolean AS '
     import re
     m = re.search("""^(?ix)
         ([0-9]+:)?
-        ([0-9][a-z0-9+:.~-]*?)
+        ([0-9a-z][a-z0-9+:.~-]*?)
         (-[a-z0-9+.~]+)?
         $""", args[0])
     if m is None:

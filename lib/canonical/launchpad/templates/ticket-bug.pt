@@ -20,15 +20,6 @@
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Use this form to link the support request ticket with a given bug
-      number.
-    </div>
-
-  </div>
-
-  <div>
-    Thank you!
   </div>
 
 </div>

@@ -1,0 +1,122 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:lp="http://launchpad.canonical.com"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
+
+  <!-- CVE -->
+  <content class="canonical.launchpad.database.Cve">
+    <allow interface="canonical.launchpad.interfaces.ICve" />
+    <require permission="launchpad.AnyPerson"
+             set_schema="canonical.launchpad.interfaces.ICve" />
+  </content>
+
+  <browser:menus
+    module="canonical.launchpad.browser"
+    classes="CveContextMenu CveSetContextMenu"
+    />
+
+  <browser:url
+    for="canonical.launchpad.interfaces.ICve"
+    path_expression="sequence"
+    parent_utility="canonical.launchpad.interfaces.ICveSet"
+    />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ICve"
+    name="+index" />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.ICve"
+    permission="zope.Public">
+    <browser:page
+      name="+index"
+      template="../templates/cve-index.pt" />
+    <browser:page
+      name="+listing-detailed"
+      template="../templates/cve-listing-detailed.pt" />
+    <browser:page
+      name="+portlet-actions"
+      template="../templates/cve-portlet-actions.pt" />
+    <browser:page
+      name="+portlet-bugs"
+      template="../templates/cve-portlet-bugs.pt" />
+    <browser:page
+      name="+portlet-details"
+      template="../templates/cve-portlet-details.pt" />
+    <browser:page
+      name="+portlet-references"
+      template="../templates/cve-portlet-references.pt" />
+  </browser:pages>
+
+  <browser:addform
+    name="+linkbug"
+    for="canonical.launchpad.interfaces.ICve"
+    schema="canonical.launchpad.interfaces.IBugCve"
+    class="canonical.launchpad.browser.BugLinkView"
+    label="Link CVE and Bug"
+    fields="bug"
+    keyword_arguments="bug"
+    permission="launchpad.AnyPerson"
+    template="../templates/cve-bug.pt">
+  </browser:addform>
+
+  <browser:page
+    name="+unlinkbug"
+    for="canonical.launchpad.interfaces.ICve"
+    class="canonical.launchpad.browser.BugUnlinkView"
+    permission="launchpad.AnyPerson"
+    template="../templates/cve-removebug.pt">
+  </browser:page>
+
+
+  <!-- CveSet -->
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ICveSet"
+    name="+index" />
+
+  <content class="canonical.launchpad.database.CveSet">
+    <allow interface="canonical.launchpad.interfaces.ICveSet" />
+  </content>
+
+  <securedutility
+    class="canonical.launchpad.database.CveSet"
+    provides="canonical.launchpad.interfaces.ICveSet">
+    <allow interface="canonical.launchpad.interfaces.ICveSet" />
+  </securedutility>
+
+  <browser:url
+    for="canonical.launchpad.interfaces.ICveSet"
+    path_expression="string:cve"
+    parent_utility="canonical.launchpad.interfaces.IMaloneApplication"
+    />
+
+  <browser:traverse
+    for="canonical.launchpad.interfaces.ICveSet"
+    getter="__getitem__" />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.ICveSet"
+    class="canonical.launchpad.browser.CveSetView"
+    permission="zope.Public">
+    <browser:page
+      name="+index"
+      template="../templates/cveset-index.pt" />
+    <browser:page
+      name="+all"
+      template="../templates/cveset-all.pt" />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.ICveSet"
+    permission="zope.Public">
+    <browser:page
+      name="+portlet-actions"
+      template="../templates/cveset-portlet-actions.pt" />
+    <browser:page
+      name="+portlet-details"
+      template="../templates/cveset-portlet-details.pt" />
+  </browser:pages>
+
+</configure>

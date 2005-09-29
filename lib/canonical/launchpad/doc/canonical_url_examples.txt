@@ -58,7 +58,8 @@ The Bazaar homepage.
 
 == Persons and Teams ==
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, ICodeOfConductSet, ISignedCodeOfConductSet)
 
 The IPersonSet.
 
@@ -74,6 +75,28 @@ An ITeam.
 
     >>> canonical_url(celebs.rosetta_expert)
     u'http://localhost:8086/people/rosetta-admins'
+
+An ICodeOfConductSet
+
+    >>> cocset = getUtility(ICodeOfConductSet)
+    >>> canonical_url(cocset)
+    u'http://localhost:8086/codeofconduct'
+
+An ISignedCodeOfConductSet
+
+    >>> signedcocset = getUtility(ISignedCodeOfConductSet)
+    >>> canonical_url(signedcocset)
+    u'http://localhost:8086/codeofconduct/console'
+
+An ISignedCodeOfConduct
+
+    >>> canonical_url(signedcocset['1'])
+    u'http://localhost:8086/codeofconduct/console/1'
+
+An ICodeOfConduct
+
+    >>> canonical_url(cocset['1.0'])
+    u'http://localhost:8086/codeofconduct/1.0'
 
 
 == Distributions, distroreleases and so on ==
@@ -112,6 +135,18 @@ An ISourcePackage.
     >>> canonical_url(hoary_sourcepackages['evolution'])
     u'http://localhost:8086/distros/ubuntu/hoary/+sources/evolution'
 
+An IDistroSourcePackage.
+
+    >>> from canonical.launchpad.interfaces.sourcepackage import (
+    ...     IDistroSourcePackageSet)
+    >>> from canonical.launchpad.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
+    >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
+    >>> ubuntu_firefox = getUtility(IDistroSourcePackageSet).getPackage(
+    ...     distribution=celebs.ubuntu,
+    ...     sourcepackagename=sourcepackagenameset['mozilla-firefox'])
+    >>> canonical_url(ubuntu_firefox)
+    u'http://localhost:8086/distros/ubuntu/+sources/mozilla-firefox'
 
 == Projects and products ==
 
@@ -154,10 +189,10 @@ An IProductRelease.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IBug, IBugSet, IBugTaskSet, IUpstreamBugTask, IDistroBugTask,
-    ...     IDistroReleaseBugTask, IBugWatchSet, 
-    ...     ICVERefSet, IBugExternalRefSet)
+    ...     IDistroReleaseBugTask, IBugWatchSet,
+    ...     IBugExternalRefSet)
     >>> from canonical.launchpad.database import (
-    ...     BugWatchSet, CVERefSet, BugExternalRefSet)
+    ...     BugWatchSet, BugExternalRefSet)
 
 The IBugSet.
 
@@ -172,30 +207,38 @@ An IBug.
 An IUpstreamBugTask.
 
     >>> canonical_url(getUtility(IBugTaskSet).get(2))
-    u'http://localhost:8086/products/firefox/+bugs/1'
+    u'http://localhost:8086/products/firefox/+bug/1'
 
 An IDistroBugTask.
 
-    >>> canonical_url(getUtility(IBugTaskSet).get(4))
-    u'http://localhost:8086/distros/debian/+bugs/1'
+    >>> distro_task = getUtility(IBugTaskSet).get(4)
+    >>> canonical_url(distro_task)
+    u'http://localhost:8086/distros/debian/+sources/mozilla-firefox/+bug/1'
+
+An IDistroBugTask without a sourcepackage.
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login("foo.bar@canonical.com")
+
+    >>> temp_spname = distro_task.sourcepackagename
+    >>> distro_task.sourcepackagename = None
+    >>> canonical_url(distro_task)
+    u'http://localhost:8086/distros/debian/+bug/1'
+    >>> distro_task.sourcepackagename = temp_spname
 
 An IDistroReleaseBugTask.
 
-    >>> canonical_url(getUtility(IBugTaskSet).get(16))
-    u'http://localhost:8086/distros/ubuntu/warty/+bugs/5'
+    >>> distro_release_task = getUtility(IBugTaskSet).get(16)
+    >>> canonical_url(distro_release_task)
+    u'http://localhost:8086/distros/ubuntu/warty/+sources/mozilla-firefox/+bug/5'
 
-An IBugSubset.
+An IDistroReleaseBugTask without a sourcepackage.
 
-    XXX: Brad Bollenbach, 2005-06-17: IBugSubset is currently just an
-    iface that a context is adapted to. There is no BugSubset content
-    object. Might need code changes to make a canonical URL for this
-    workable.
-
-    An IBugSubset lives at a URL like:
-
-        http://localhost:8086/products/firefox/+bugs OR
-        http://localhost:8086/distros/ubuntu/+bugs OR
-        http://localhost:8086/distros/ubuntu/hoary/+bugs
+    >>> temp_spname = distro_release_task.sourcepackagename
+    >>> distro_release_task.sourcepackagename = None
+    >>> canonical_url(distro_release_task)
+    u'http://localhost:8086/distros/ubuntu/warty/+bug/5'
+    >>> distro_release_task.sourcepackagename = temp_spname
 
 An IBugWatchSet.
 
@@ -204,14 +247,6 @@ An IBugWatchSet.
     xxx bug_one_watches = BugWatchSet(bug=1)
     xxx canonical_url(bug_one_watches)
     u'http://localhost:8086/malone/bugs/1/watches'
-
-An ICVERefSet.
-
-    This doesn't work, because CVERefSet.bug is an int, not an IBug object.
-
-    xxx bug_one_cverefs = CVERefSet(bug=1)
-    xxx canonical_url(bug_one_cverefs)
-    u'http://localhost:8086/malone/bugs/1/cverefs'
 
 An IBugExternalRefSet.
 
@@ -222,18 +257,16 @@ An IBugExternalRefSet.
     xxx canonical_url(bug_one_extrefs)
     u'http://localhost:8086/malone/bugs/1/references'
 
-
 == POTemplates and so on ==
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IPOTemplateSet, ISourcePackageNameSet, ITranslationGroupSet)
+    ...     IPOTemplateSet, ITranslationGroupSet)
 
 Most Rosetta pages hang off IPOTemplateSubset objects, of which there are two
 varieties: distribution and upstream.
 
 First, the distribution kind.  We'll need the source package name.
 
-    >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
     >>> sourcepackagename = sourcepackagenameset['evolution']
 
 And here's our subset.

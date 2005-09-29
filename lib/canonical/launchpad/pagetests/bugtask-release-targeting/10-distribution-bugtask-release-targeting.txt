@@ -3,7 +3,7 @@ screen to select specific releases to which a bugfix should be
 targeted.
 
   >>> print http(r"""
-  ... GET /distros/debian/+bugs/1/+target HTTP/1.1
+  ... GET /distros/debian/+sources/mozilla-firefox/+bug/1/+target HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -13,7 +13,7 @@ To target to a specific release, select the checkbox beside that
 release.
 
   >>> print http(r"""
-  ... POST /distros/debian/+bugs/1/+target HTTP/1.1
+  ... POST /distros/debian/+sources/mozilla-firefox/+bug/1/+target HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 72
@@ -27,11 +27,10 @@ You are brought back to the task page. The newly targeted bug task is
 shown in the "also reported in" portlet.
 
   >>> print http(r"""
-  ... GET /distros/debian/+bugs/1/+edit HTTP/1.1
+  ... GET /distros/debian/+sources/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Cookie: launchpad=2RlITCZlIZAagraDp8iQ-00xVfInmZ8u45u9mbE2n1S0ApJdWxVP.0
-  ... Referer: http://localhost:9000/distros/debian/+bugs/1/+target
   ... """)
   HTTP/1.1 200 Ok
   ...

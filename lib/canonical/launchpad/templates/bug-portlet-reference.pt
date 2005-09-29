@@ -1,6 +1,7 @@
 <div class="portlet"
      tal:condition="context/externalrefs"
-     tal:define="bug_url string:/malone/bugs/${context/id}">
+     tal:define="current_task view/currentBugTask;
+                 url current_task/fmt:url">
 
   <h4>Related Web Links</h4>
 
@@ -12,13 +13,13 @@
           <a tal:attributes="href ref/url"
              tal:content="ref/title">http://www.wizardzz.com/path/to/data.html
           </a>
-          <small>(<a tal:attributes="href string:$bug_url/references/${ref/id}/+edit">edit</a>)</small>
+          <small>(<a tal:attributes="href string:$url/references/${ref/id}/+edit">edit</a>)</small>
         </li>
       </ul>
 
       <ul style="text-align: right">
         <li class="add">
-          <a tal:attributes="href string:$bug_url/references/+new">Add</a>
+          <a tal:attributes="href string:$url/+addurl">Add</a>
         </li>
       </ul>
     </div>

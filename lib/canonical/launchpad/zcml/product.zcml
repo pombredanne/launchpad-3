@@ -26,8 +26,16 @@
         name="+bugs" />
 
     <browser:menus
-        module="canonical.launchpad.browser.product"
-        classes="ProductFacets" />
+        module="canonical.launchpad.browser"
+        classes="
+            ProductFacets ProductOverviewMenu ProductBountiesMenu
+            ProductSupportMenu ProductSpecificationsMenu
+            ProductTranslationsMenu ProductBugsMenu
+            ProductSetContextMenu
+            "
+            />
+
+    <!-- XXX ProductBugsMenu undeclared until layout bug is fixed -->
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IProduct"
@@ -67,6 +75,10 @@
             name="+distributions"
             facet="overview"
             template="../templates/product-distros.pt"
+            />
+        <browser:page
+            name="+listing-detailed"
+            template="../templates/product-listing-detailed.pt"
             />
 	<!-- Products Portlets -->
         <browser:page
@@ -136,13 +148,13 @@
         facet="bugs"
         permission="zope.Public">
         <browser:page
-            name="+bugs-only"
-            lp:url="/products/$Product.name/+bugs-only"
+            name="+bugs"
+            lp:url="/products/$Product.name/+bugs"
             template="../templates/bugs-for-context.pt" />
         <browser:page
-            name="+portlet-bugtasklist-actions"
-            template="../templates/bugtasklist-portlet-actions.pt"
-            lp:url="/products/$Product.name/+portlet-bugtasklist-actions" />
+            name="+portlet-bugtasklist-mybugs"
+            template="../templates/bugtasklist-portlet-mybugs.pt"
+            lp:url="/products/$Product.name/+portlet-bugtasklist-mybugs" />
     </browser:pages>
 
     <browser:pages
@@ -248,7 +260,6 @@
         name="+filebug"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBugAddForm"
-        label="Report Bug on Upstream Product"
         fields="title comment private owner"
         class="canonical.launchpad.browser.ProductFileBugView"
         facet="bugs"
@@ -378,16 +389,16 @@
         class="canonical.launchpad.browser.ProductSetView" >
         <browser:page
             name="+index"
-            template="../templates/products-index.pt"
-            lp:url="/products/+index" />
+            template="../templates/products-index.pt" />
         <browser:page
             name="+all"
-            template="../templates/registry-listall.pt"
-            lp:url="/products/+all" />
+            template="../templates/registry-listall.pt" />
+        <browser:page
+            name="+portlet-actions"
+            template="../templates/productset-portlet-actions.pt" />
         <browser:page
             name="+portlet-details"
-            template="../templates/productset-portlet-details.pt"
-            lp:url="/products/+portlet-details" />
+            template="../templates/productset-portlet-details.pt" />
     </browser:pages>
 
     <browser:pages

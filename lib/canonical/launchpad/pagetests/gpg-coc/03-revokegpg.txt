@@ -14,7 +14,7 @@
   >>> print http(r"""
   ... POST /people/name12/+editgpgkeys HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... action=deactivate_gpg&DEACTIVATE_GPGKEY=1""")
+  ... action=deactivate_gpg&DEACTIVATE_GPGKEY=2""")
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...

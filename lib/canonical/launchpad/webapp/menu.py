@@ -2,18 +2,47 @@
 """Menus and facets."""
 
 __metaclass__ = type
-__all__ = ['nearest_menu', 'FacetMenu', 'ApplicationMenu', 'Link', 'LinkData',
-           'FacetLink', 'MenuLink', 'Url']
+__all__ = ['nearest_menu', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
+           'Link', 'LinkData', 'FacetLink', 'MenuLink', 'Url', 'structured',
+           'enabled_with_permission']
 
 import urlparse
+import cgi
 from zope.interface import implements
 from canonical.lp import decorates
+from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.interfaces import (
-    IMenuBase, IFacetMenu, IApplicationMenu, IFacetLink, ILink, ILinkData
+    IMenuBase, IFacetMenu, IApplicationMenu, IContextMenu,
+    IFacetLink, ILink, ILinkData, IStructuredString
     )
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, canonical_url_iterator
+    canonical_url, canonical_url_iterator, UserAttributeCache
     )
+
+
+class structured:
+
+    implements(IStructuredString)
+
+    def __init__(self, text, *replacements, **kwreplacements):
+        self.text = text
+        if replacements and kwreplacements:
+            raise TypeError(
+                "You must provide either positional arguments or keyword "
+                "arguments to structured(), not both.")
+        if replacements:
+            self.escapedtext = text % tuple(
+                cgi.escape(replacement) for replacement in replacements)
+        elif kwreplacements:
+            self.escapedtext = text % dict(
+                (key, cgi.escape(value))
+                for key, value in kwreplacements.iteritems())
+        else:
+            self.escapedtext = self.text
+
+    def __repr__(self):
+        return "<structured-string '%s'>" % self.text
+
 
 def nearest_menu(obj, menuinterface):
     """Return the menu adapter of the nearest object up the canonical url chain
@@ -91,6 +120,14 @@ class MenuLink:
 
     enabled = property(get_enabled, set_enabled)
 
+    @property
+    def escapedtext(self):
+        text = self._linkdata.text
+        if IStructuredString.providedBy(text):
+            return text.escapedtext
+        else:
+            return cgi.escape(text)
+
 
 class FacetLink(MenuLink):
     """Adapter from ILinkData to IFacetLink."""
@@ -104,7 +141,7 @@ class FacetLink(MenuLink):
 ALL_LINKS = object()
 
 
-class MenuBase:
+class MenuBase(UserAttributeCache):
     """Base class for facets and menus."""
 
     implements(IMenuBase)
@@ -112,10 +149,17 @@ class MenuBase:
     links = None
     enable_only = ALL_LINKS
     _baseclassname = 'MenuBase'
+    _initialized = False
+    _forbiddenlinknames = set(
+        ['user', 'initialize', 'links', 'enable_only', 'iterlinks'])
 
     def __init__(self, context):
         # The attribute self.context is defined in IMenuBase.
         self.context = context
+
+    def initialize(self):
+        """Override this in subclasses to do initialization."""
+        pass
 
     def _get_link(self, name):
         method = getattr(self, name)
@@ -126,8 +170,17 @@ class MenuBase:
 
     def iterlinks(self, requesturl=None):
         """See IMenu."""
+        if not self._initialized:
+            self.initialize()
+            self._initialized = True
         assert self.links is not None, (
             'Subclasses of %s must provide self.links' % self._baseclassname)
+        assert isinstance(self.links, list), "self.links must be a list"
+        linksset = set(self.links)
+        assert not linksset.intersection(self._forbiddenlinknames), (
+            "The following names may not be links: %s" %
+            ', '.join(self._forbiddenlinknames))
+
         contexturlobj = Url(canonical_url(self.context))
 
         if self.enable_only is ALL_LINKS:
@@ -201,6 +254,14 @@ class ApplicationMenu(MenuBase):
     _baseclassname = 'ApplicationMenu'
 
 
+class ContextMenu(MenuBase):
+    """Base class for context menus."""
+
+    implements(IContextMenu)
+
+    _baseclassname = 'ContextMenu'
+
+
 class Url:
     """A class for url operations."""
 
@@ -241,3 +302,42 @@ class Url:
 
     def __ne__(self, otherurl):
         return not self.__eq__(self, otherurl)
+
+
+class enabled_with_permission:
+    """Function decorator that disables the output link unless the current
+    user has the given permission on the context.
+
+    This class is instantiated by programmers who want to apply this decorator.
+
+    Use it like:
+
+        @enabled_with_permission('launchpad.Admin')
+        def somemenuitem(self):
+            return Link('+target', 'link text')
+
+    """
+
+    def __init__(self, permission):
+        """Make a new enabled_with_permission function decorator.
+
+        `permission` is the string permission name, like 'launchpad.Admin'.
+        """
+        self.permission = permission
+
+    def __call__(self, func):
+        """Called by the decorator machinery to return a decorated function.
+
+        Returns a new function that calls the original function, gets the
+        link that it returns, and depending on the permissions granted to
+        the logged-in user, disables the link, before returning it to the
+        called.
+        """
+        permission = self.permission
+        def enable_if_allowed(self):
+            link = func(self)
+            if not check_permission(permission, self.context):
+                link.enabled = False
+            return link
+        return enable_if_allowed
+

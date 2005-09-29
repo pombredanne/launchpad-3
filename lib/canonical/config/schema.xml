@@ -22,14 +22,20 @@
         <key name="errors_address" datatype="string" required="yes" />
         <key name="bugs_domain" datatype="string" required="yes" />
         <key name="max_bug_attachment_size" datatype="integer" required="no"
-            default="0"
-            >
-          <description>
-            Maximum size of bug attachments in bytes. A value of 0 means
-            no limit.
-          </description>
+            default="0">
+            <description>
+                Maximum size of bug attachments in bytes. A value of 0 means
+                no limit.
+            </description>
         </key>
-        <key name="db_statement_timeout" datatype="integer" required="no" />
+        <key name="db_statement_timeout" datatype="integer" required="no">
+            <description>
+                SQL statement timeout in milliseconds. If a statement
+                takes longer than this to execute, then it will be aborted.
+                A value of 0 turns off the timeout. If this value is not set,
+                PostgreSQL's default setting is used.
+            </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="gina_target">
@@ -78,7 +84,9 @@
                 main,universe,restricted
             </example>
         </key>
-        <key name="keyrings" datatype="existing-directory"
+        <!-- datatype changed from existing-directory to allow config
+        to load without ubuntu-keyrings installed (such as on emperor) -->
+        <key name="keyrings" datatype="string"
             default="/usr/share/keyrings">
             <description>
                 A full path to where the keyrings files are
@@ -236,7 +244,30 @@
         <description>
             Malone-specific configuration options.
         </description>
-        <key name="bugmail_error_from_address" datatype="string" required="yes" />
+        <key name="bugmail_error_from_address" datatype="string"
+            required="yes" />
+    </sectiontype>
+
+    <sectiontype name="poimport">
+        <description>
+            Configuration for cronscripts/rosetta-poimport
+        </description>
+        <key name="dbuser" datatype="string" default="poimport" />
+    </sectiontype>
+
+    <sectiontype name="poattach">
+        <description>
+            Configuration for cronscripts/rosetta-package-po-attach
+        </description>
+        <key name="dbuser" datatype="string" default="poattach" />
+    </sectiontype>
+
+    <sectiontype name="rosetta">
+        <description>
+            Rosetta-specific configuration options
+        </description>
+        <section name="*" type="poimport" attribute="poimport" required="no" />
+        <section name="*" type="poattach" attribute="poattach" required="no" />
     </sectiontype>
 
     <sectiontype name="gpghandler">
@@ -299,6 +330,15 @@
         </key>
     </sectiontype>
 
+    <sectiontype name="cveupdater">
+        <key name="dbuser" datatype="string" default="karma">
+            <description>
+                The database user wich will be used to update the CVE
+                database.
+            </description>
+        </key>
+    </sectiontype>
+
     <sectiontype name="trebuchet_server">
         <!-- Not 'existing-directory' because the test runner needs to
         create it. Not 'existing-dirpath' because ZConfig will enforce it
@@ -337,6 +377,7 @@
             default="/tmp" />
         <section name="*" type="launchpad" attribute="launchpad" />
         <section name="*" type="malone" attribute="malone" />
+        <section name="*" type="rosetta" attribute="rosetta" />
         <section name="*" type="librarian" attribute="librarian" />
         <section name="*" type="zopeless" attribute="zopeless" />
         <section name="*" type="gpghandler" attribute="gpghandler" />
@@ -347,6 +388,7 @@
         <section name="*" type="trebuchet" attribute="trebuchet" />
         <section name="*" type="karmacacheupdater"
             attribute="karmacacheupdater" />
+        <section name="*" type="cveupdater" attribute="cveupdater" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file

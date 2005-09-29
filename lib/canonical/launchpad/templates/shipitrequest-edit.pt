@@ -5,16 +5,25 @@
       i18n:domain="launchpad">
 
 <metal:rightportlets fill-slot="portlets_two">
-  <br />
-  <br />
-  <div tal:replace="structure context/@@+portlet-actions" />
+  <div class="shipitPortlet"
+       tal:content="structure context/@@+portlet-actions" />
 </metal:rightportlets>
 
 <body>
 
   <div metal:fill-slot="main">
 
-    <h1 tal:condition="not: context/isStandardRequest">
+    <br />
+    <tal:block condition="request/previous|nothing">
+      <p class="portalMessage">
+        The request #<span tal:replace="request/previous" />
+        <span tal:condition="request/approved|nothing">was approved.</span>
+        <span tal:condition="request/denied|nothing">was denied.</span>
+        <span tal:condition="request/changed|nothing">was changed.</span>
+      </p>
+    </tal:block>
+
+    <h1>
       <span tal:condition="not: context/isStandardRequest">Custom</span>
       <span tal:condition="context/isStandardRequest">Standard</span>
       Request #<span tal:replace="context/id" />
@@ -28,15 +37,18 @@
 
     <tal:block condition="not: context/cancelled">
       <tal:block condition="context/isApproved">
+        <br />
         <p class="portalMessage">This request is currently approved. The
         approved quantities are shown below.</p>
       </tal:block>
       <tal:block condition="context/isAwaitingApproval">
+        <br />
         <p style="margin-bottom: 1em" class="portalMessage">This request is
         still waiting for approval.  It's possible to approve it and change the
         approved quantities later, if necessary.</p>
       </tal:block>
       <tal:block condition="context/isDenied">
+        <br />
         <p class="portalMessage">This request is currently denied.</p>
       </tal:block>
     </tal:block>
@@ -48,9 +60,9 @@
         <li>PPC: <span tal:replace="context/quantityppc" /></li>
     </ul>
 
-    <div class="form controls" tal:condition="not: context/isDenied">
+    <div style="text-align: right;" tal:condition="not: context/isDenied">
       <form name="denyrequest" action="" method="POST">
-        <input type="submit" value="Deny Request" name="DENY" />
+        <input type="submit" value="Deny" name="DENY" />
       </form>
     </div>
 
@@ -65,9 +77,11 @@
         <td align="right"><strong>X86 CDs:</strong></td>
         <td>
           <input type="text" name="quantityx86" align="right" size="5"
+                 maxlength="5"
                  tal:condition="context/isApproved"
                  tal:attributes="value context/quantityx86approved" />
           <input type="text" name="quantityx86" align="right" size="5"
+                 maxlength="5"
                  tal:condition="not: context/isApproved"
                  tal:attributes="value context/quantityx86" />
         </td>
@@ -76,9 +90,11 @@
         <td align="right"><strong>AMD64 CDs:</strong></td>
         <td>
           <input type="text" name="quantityamd64" align="right" size="5"
+                 maxlength="5"
                  tal:condition="context/isApproved"
                  tal:attributes="value context/quantityamd64approved" />
           <input type="text" name="quantityamd64" align="right" size="5"
+                 maxlength="5"
                  tal:condition="not: context/isApproved"
                  tal:attributes="value context/quantityamd64" />
         </td>
@@ -87,9 +103,11 @@
         <td align="right"><strong>PPC CDs:</strong></td>
         <td>
           <input type="text" name="quantityppc" align="right" size="5"
+                 maxlength="5"
                  tal:condition="context/isApproved"
                  tal:attributes="value context/quantityppcapproved" />
           <input type="text" name="quantityppc" align="right" size="5"
+                 maxlength="5"
                  tal:condition="not: context/isApproved"
                  tal:attributes="value context/quantityppc" />
         </td>
@@ -107,10 +125,10 @@
     </table>
 
     <br />
-    <div class="form controls">
+    <div style="text-align: right;">
       <tal:block condition="not: context/cancelled">
         <tal:block condition="not: context/isApproved">
-          <input type="submit" value="Approve Request" name="APPROVE" />
+          <input type="submit" value="Approve" name="APPROVE" />
         </tal:block>
         <tal:block condition="context/isApproved">
           <input type="submit" value="Change Approved Totals" name="CHANGE" />
@@ -123,46 +141,52 @@
     <table>
       <tr>
         <td align="right"><strong>Recipient:</strong></td>
-        <td>
+        <td tal:condition="not: context/recipientdisplayname">
           <tal:XXX condition="nothing">
           Okay, so we hardcoded the URL. Blame canonical_url and bug 2119!
           </tal:XXX>
           <a tal:attributes="href string:https://launchpad.net/people/${context/recipient/name}">
             <span tal:replace="context/recipient/displayname" /></a>
-            (<span tal:replace="context/recipient/preferredemail/email" />)
+            (<a tal:attributes="href 
+              string:mailto:${context/recipient/preferredemail/email}"
+              ><span tal:replace="context/recipient/preferredemail/email" 
+              /></a>)
+        </td>
+        <td tal:condition="context/recipientdisplayname">
+          <span tal:replace="context/recipientname" />
         </td>
       </tr>
-      <tr tal:condition="context/recipient/organization">
+      <tr tal:condition="context/organization">
         <td align="right"><strong>Organization:</strong></td>
-        <td><span tal:replace="context/recipient/organization" /></td>
+        <td><span tal:replace="context/organization" /></td>
       </tr>
       <tr>
         <td align="right"><strong>Country:</strong></td>
-        <td><span tal:replace="context/recipient/country/name" /></td>
+        <td><span tal:replace="context/country/name" /></td>
       </tr>
       <tr>
         <td align="right"><strong>City:</strong></td>
-        <td><span tal:replace="context/recipient/city" /></td>
+        <td><span tal:replace="context/city" /></td>
       </tr>
-      <tr tal:condition="context/recipient/province">
+      <tr tal:condition="context/province">
         <td align="right"><strong>Province:</strong></td>
-        <td><span tal:replace="context/recipient/province" /></td>
+        <td><span tal:replace="context/province" /></td>
       </tr>
       <tr>
         <td align="right"><strong>Address:</strong></td>
-        <td><span tal:replace="context/recipient/addressline1" /></td>
+        <td><span tal:replace="context/addressline1" /></td>
       </tr>
-      <tr tal:condition="context/recipient/addressline2">
+      <tr tal:condition="context/addressline2">
         <td align="right"></td>
-        <td><span tal:replace="context/recipient/addressline2" /></td>
+        <td><span tal:replace="context/addressline2" /></td>
       </tr>
-      <tr tal:condition="context/recipient/postcode">
+      <tr tal:condition="context/postcode">
         <td align="right"><strong>Postcode:</strong></td>
-        <td><span tal:replace="context/recipient/postcode" /></td>
+        <td><span tal:replace="context/postcode" /></td>
       </tr>
-      <tr tal:condition="context/recipient/phone">
+      <tr tal:condition="context/phone">
         <td align="right"><strong>Phone:</strong></td>
-        <td><span tal:replace="context/recipient/phone" /></td>
+        <td><span tal:replace="context/phone" /></td>
       </tr>
       <tr>
         <td align="right"><strong>Date:</strong></td>
@@ -174,6 +198,16 @@
       </tr>
     </table>
 
+    <ul>
+      <li class="edit">
+        <a tal:attributes="href string:/myrequest?order=${context/id}">
+          <span tal:condition="context/recipientdisplayname">
+            Edit request details</span>
+          <span tal:condition="not: context/recipientdisplayname">
+            Edit shipping details</span>
+        </a>
+      </li>
+    </ul>
   </div>
 
 </body>

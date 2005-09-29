@@ -80,8 +80,8 @@
             class="canonical.widgets.ContextWidget" />
     </browser:addform>
 
-    <!-- TranslationGroupSet -->
 
+    <!-- TranslationGroupSet -->
     <securedutility
       class="canonical.launchpad.database.TranslationGroupSet"
       provides="canonical.launchpad.interfaces.ITranslationGroupSet" >

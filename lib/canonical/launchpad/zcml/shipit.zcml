@@ -13,6 +13,14 @@
         layer="canonical.launchpad.layers.ShipItLayer" />
 
     <browser:page
+        for="*"
+        permission="zope.Public"
+        name="+maintenancemessage"
+        class="canonical.launchpad.browser.MaintenanceMessage"
+        template="../templates/shipit-maintenance.pt"
+        layer="canonical.launchpad.layers.ShipItLayer" />
+
+    <browser:page
         layer="canonical.launchpad.layers.ShipItLayer"
         for="zope.exceptions.IUnauthorized"
         name="index.html"
@@ -51,6 +59,14 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IShipItApplication"
         name="+index" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        permission="launchpad.Admin"
+        name="+portlet-actions"
+        template="../templates/shipit-portlet-actions.pt"
+        lp:url="/shipit/requests/+portlet-actions">
+    </browser:page>
 
     <browser:page
         layer="canonical.launchpad.layers.ShipItLayer"
@@ -147,9 +163,9 @@
     <browser:page
         for="canonical.launchpad.interfaces.IShippingRequestSet"
         permission="launchpad.Admin"
-        name="+sidebar-actions"
-        template="../templates/shipit-sidebar-actions.pt"
-        lp:url="/shipit/requests/+sidebar-actions">
+        name="+portlet-actions"
+        template="../templates/shipit-portlet-actions.pt"
+        lp:url="/shipit/requests/+portlet-actions">
     </browser:page>
 
 
@@ -222,9 +238,9 @@
     <browser:page
         for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
         permission="launchpad.Admin"
-        name="+sidebar-actions"
-        template="../templates/shipit-sidebar-actions.pt"
-        lp:url="/shipit/requests/+sidebar-actions">
+        name="+portlet-actions"
+        template="../templates/shipit-portlet-actions.pt"
+        lp:url="/shipit/requests/+portlet-actions">
     </browser:page>
 
     <browser:addform

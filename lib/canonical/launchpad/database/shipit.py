@@ -18,7 +18,8 @@ from canonical.lp.dbschema import (
         ShipItDistroRelease, ShipItArchitecture, ShipItFlavour, EnumCol)
 from canonical.launchpad.interfaces import (
         IStandardShipItRequest, IStandardShipItRequestSet, IShippingRequest,
-        IRequestedCDs, IShippingRequestSet, ShippingRequestStatus)
+        IRequestedCDs, IShippingRequestSet, ShippingRequestStatus,
+        ILaunchpadCelebrities)
 
 
 class RequestedCDsDescriptor:
@@ -46,7 +47,7 @@ class ShippingRequest(SQLBase):
     """See IShippingRequest"""
 
     implements(IShippingRequest)
-    _defaultOrder = 'id'
+    _defaultOrder = 'daterequested'
 
     recipient = ForeignKey(dbName='recipient', foreignKey='Person',
                            notNull=True)
@@ -70,6 +71,24 @@ class ShippingRequest(SQLBase):
 
     reason = StringCol(default=None)
     highpriority = BoolCol(notNull=True, default=False)
+
+    city = StringCol(default=None)
+    phone = StringCol(default=None)
+    country = ForeignKey(dbName='country', foreignKey='Country', default=None)
+    province = StringCol(default=None)
+    postcode = StringCol(default=None)
+    addressline1 = StringCol(default=None)
+    addressline2 = StringCol(default=None)
+    organization = StringCol(default=None)
+    recipientdisplayname = StringCol(default=None)
+
+    @property
+    def recipientname(self):
+        """See IShippingRequest"""
+        if self.recipientdisplayname:
+            return self.recipientdisplayname
+        else:
+            return self.recipient.displayname
 
     @property
     def totalCDs(self):
@@ -104,6 +123,13 @@ class ShippingRequest(SQLBase):
     quantityx86 = RequestedCDsDescriptor(ShipItArchitecture.X86, 'quantity')
     quantityamd64 = RequestedCDsDescriptor(ShipItArchitecture.AMD64, 'quantity')
     quantityppc = RequestedCDsDescriptor(ShipItArchitecture.PPC, 'quantity')
+
+    def highlightColour(self):
+        """See IShippingRequest"""
+        if self.highpriority:
+            return "#ff6666"
+        else:
+            return None
 
     def isStandardRequest(self):
         """See IShippingRequest"""
@@ -182,11 +208,17 @@ class ShippingRequestSet:
             return default
 
     def new(self, recipient, quantityx86, quantityamd64, quantityppc,
-            reason=None, shockandawe=None):
+            reason=None, shockandawe=None, recipientdisplayname=None):
         """See IShippingRequestSet"""
-        assert recipient.currentShipItRequest() is None
+        if not recipient.inTeam(getUtility(ILaunchpadCelebrities).shipit_admin):
+            # Non shipit-admins can't place more than one order at a time
+            # neither specify a name different than their own.
+            assert recipient.currentShipItRequest() is None
+            assert recipientdisplayname is None
+
         request = ShippingRequest(recipient=recipient, reason=reason,
-                                  shockandawe=shockandawe)
+                                  shockandawe=shockandawe,
+                                  recipientdisplayname=recipientdisplayname)
 
         RequestedCDs(request=request, quantity=quantityx86,
                      distrorelease=ShipItDistroRelease.BREEZY,
@@ -215,6 +247,15 @@ class ShippingRequestSet:
             query = ""
         return query
 
+    def getOldestPending(self):
+        """See IShippingRequestSet"""
+        q = AND(ShippingRequest.q.cancelled==False,
+                ShippingRequest.q.approved==None)
+        results = ShippingRequest.select(q, orderBy='daterequested', limit=1)
+        try:
+            return results[0]
+        except IndexError:
+            return None
 
     # XXX: Must come back here and refactor these two search methods. It's
     # probably possible to share more things between them. -- GuilhermeSalgado

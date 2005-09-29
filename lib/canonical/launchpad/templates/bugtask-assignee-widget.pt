@@ -1,4 +1,18 @@
 <tal:assigneewidget define="widget_name string:${view/name}.option">
+
+
+  <script type="text/javascript">
+  <!--
+  function selectAssignTo(widget, event) {
+    if (event && event.keyCode == 9)
+        // avoid firing if user is tabbing through
+        return;
+    document.getElementById('assign_to').checked = true;
+  }
+  //-->
+  </script>
+
+
   <label style="font-weight: normal"
          tal:attributes="for view/assign_to_nobody">
     <input type="radio"
@@ -49,3 +63,4 @@
   <tal:assignee_chooser content="structure view/assignee_chooser_widget" />
 
 </tal:assigneewidget>
+

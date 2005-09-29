@@ -8,52 +8,182 @@ __all__ = [
     'BugEditView',
     'BugAddView',
     'BugAddingView',
-    'BugRelatedObjectAddView',
+    'BugLinkView',
+    'BugUnlinkView',
     'BugRelatedObjectEditView',
+    'BugAlsoReportInView',
+    'BugContextMenu',
+    'BugWithoutContextView',
     'DeprecatedAssignedBugsView']
 
-import urllib
-
-from zope.interface import implements
 from zope.component import getUtility
 
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import (
+    canonical_url, ContextMenu, Link, structured)
 from canonical.launchpad.interfaces import (
-    IBugAddForm, IBug, ILaunchBag, IBugSet)
+    IBug, ILaunchBag, IBugSet, IBugLinkTarget, IBugCve,
+    IDistroBugTask, IDistroReleaseBugTask)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.form import FormView
+
+
+class BugContextMenu(ContextMenu):
+    usedfor = IBug
+    links = ['editdescription', 'secrecy', 'markduplicate', 'subscription',
+             'addsubscriber', 'addattachment', 'linktocve', 'addurl', 
+             'addwatch', 'filebug', 'searchbugs', 'activitylog',
+             'targetfix']
+
+    def __init__(self, context):
+        # Always force the context to be the current bugtask, so that we don't
+        # have to duplicate menu code.
+        ContextMenu.__init__(self, getUtility(ILaunchBag).bugtask)
+
+    def editdescription(self):
+        text = 'Edit Description'
+        return Link('+edit', text, icon='edit')
+
+    def secrecy(self):
+        text = 'Bug Secrecy'
+        return Link('+secrecy', text, icon='edit')
+
+    def markduplicate(self):
+        text = 'Mark as Duplicate'
+        return Link('+duplicate', text, icon='edit')
+
+    def subscription(self):
+        user = getUtility(ILaunchBag).user
+        
+        if user is not None and self.context.bug.isSubscribed(user):
+            text = 'Unsubscribe'
+        else:
+            text = 'Subscribe'
+        return Link('+subscribe', text, icon='add')
+
+    def addsubscriber(self):
+        text = 'Subscribe Someone Else'
+        return Link('+addsubscriber', text, icon='add')
+
+    def addattachment(self):
+        text = 'Add Attachment'
+        return Link('+addattachment', text, icon='add')
+
+    def linktocve(self):
+        text = structured(
+            'Link to '
+            '<abbr title="Common Vulnerabilities and Exposures Index">'
+            'CVE'
+            '</abbr>')
+        return Link('+linkcve', text, icon='add')
+
+    def unlinkcve(self):
+        enabled = bool(self.context.bug.cves)
+        text = 'Remove CVE link'
+        return Link('+unlinkcve', text, icon='edit', enabled=enabled)
+
+    def addurl(self):
+        text = 'Link to Web Page'
+        return Link('+addurl', text, icon='add')
+
+    def addwatch(self):
+        text = 'Link To Other Bugtracker'
+        return Link('+addwatch', text, icon='add')
+
+    def filebug(self):
+        bugtarget = self.context.target
+        linktarget = '%s/%s' % (canonical_url(bugtarget), '+filebug')
+        text = 'Report a Bug in %s' % bugtarget.displayname
+        return Link(linktarget, text, icon='add')
+
+    def searchbugs(self):
+        bugtarget = self.context.target
+        linktarget = '%s/%s' % (canonical_url(bugtarget), '+bugs')
+        text = 'Search %s Bugs' % bugtarget.displayname
+        return Link(linktarget, text, icon='bugs')
+
+    def activitylog(self):
+        text = 'Activity Log'
+        return Link('+activity', text, icon='list')
+
+    def targetfix(self):
+        enabled = (
+            IDistroBugTask.providedBy(self.context) or
+            IDistroReleaseBugTask.providedBy(self.context))
+        text = 'Target Fix to Releases'
+        return Link('+target', text, icon='milestone', enabled=enabled)
 
 
 class BugView:
-    """The view for the main bug page"""
+    """View class for presenting information about an IBug."""
 
     def __init__(self, context, request):
-        self.context = context
+        self.context = IBug(context)
         self.request = request
-        self.notices = []
 
-        # figure out who the user is for this transaction
-        self.user = getUtility(ILaunchBag).user
+    def currentBugTask(self):
+        """Return the current IBugTask.
 
-        # establish if a subscription form was posted
-        newsub = request.form.get('subscribe', None)
-        if newsub is not None and self.user and request.method == 'POST':
-            if newsub == 'Subscribe':
-                self.context.subscribe(self.user)
-                self.notices.append("You have subscribed to this bug.")
-            elif newsub == 'Unsubscribe':
-                self.context.unsubscribe(self.user)
-                self.notices.append("You have unsubscribed from this bug.")
+        'current' is determined by simply looking in the ILaunchBag utility.
+        """
+        return getUtility(ILaunchBag).bugtask
+
+    def getFixRequestRowCSSClassForBugTask(self, bugtask):
+        """Return the fix request row CSS class for the bugtask.
+
+        The class is used to style the bugtask's row in the "fix requested for"
+        table on the bug page.
+        """
+        if bugtask == self.currentBugTask():
+            # The "current" bugtask is highlighted.
+            return 'highlight'
+        else:
+            # Anything other than the "current" bugtask gets no
+            # special row styling.
+            return ''
 
     @property
     def subscription(self):
-        """establish if this user has a subscription"""
-        if self.user is None:
-            return None
-        for subscription in self.context.subscriptions:
-            if subscription.person.id == self.user.id:
-                return subscription
-        return None
+        """Return whether the current user is subscribed."""
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            return False
+        return self.context.isSubscribed(user)
+
+    @property
+    def maintainers(self):
+        """Return the set of maintainers associated with this IBug."""
+        maintainers = set()
+        for task in self.context.bugtasks:
+            if task.maintainer:
+                maintainers.add(task.maintainer)
+
+        return maintainers
+
+
+class BugWithoutContextView:
+    """View that redirects to the new bug page.
+
+    The user is redirected, to the oldest IBugTask ('oldest' being
+    defined as the IBugTask with the smallest ID.)
+    """
+    def redirectToNewBugPage(self):
+        """Redirect the user to the 'first' report of this bug."""
+        # An example of practicality beating purity.
+        bugtasks = sorted(self.context.bugtasks, key=lambda task: task.id)
+
+        self.request.response.redirect(canonical_url(bugtasks[0]))
+
+
+class BugAlsoReportInView(SQLObjectAddView):
+    """View class for reporting a bug in other contexts."""
+
+    def add(self, content):
+        self.taskadded = content
+
+    def nextURL(self):
+        """Return the user to the URL of the task they just added."""
+        return canonical_url(self.taskadded)
 
 
 class BugSetView:
@@ -62,6 +192,7 @@ class BugSetView:
     Essentially, this exists only to allow forms to post IDs here and be
     redirected to the right place.
     """
+
     def redirectToBug(self):
         bug_id = self.request.form.get("id")
         if bug_id:
@@ -70,13 +201,15 @@ class BugSetView:
 
 
 class BugEditView(BugView, SQLObjectEditView):
-    """The view for the edit bug page"""
+    """The view for the edit bug page."""
     def __init__(self, context, request):
+        self.current_bugtask = context
+        context = IBug(context)
         BugView.__init__(self, context, request)
         SQLObjectEditView.__init__(self, context, request)
 
     def changed(self):
-        self.request.response.redirect(canonical_url(self.context))
+        self.request.response.redirect(canonical_url(self.current_bugtask))
 
 
 class BugAddView(SQLObjectAddView):
@@ -91,7 +224,8 @@ class BugAddView(SQLObjectAddView):
         return getUtility(IBugSet).createBug(**kw)
 
     def nextURL(self):
-        return canonical_url(self.bugadded)
+        bugtask = self.bugadded.bugtasks[0]
+        return canonical_url(bugtask)
 
 
 class BugAddingView(SQLObjectAddView):
@@ -107,17 +241,6 @@ class BugAddingView(SQLObjectAddView):
         return "."
 
 
-class BugRelatedObjectAddView(SQLObjectAddView):
-    """View class for add views of bug-related objects.
-
-    Examples would include the add cve page, the add subscription
-    page, etc.
-    """
-    def __init__(self, context, request):
-        SQLObjectAddView.__init__(self, context, request)
-        self.bug = getUtility(ILaunchBag).bug
-
-
 class BugRelatedObjectEditView(SQLObjectEditView):
     """View class for edit views of bug-related object.
 
@@ -126,11 +249,52 @@ class BugRelatedObjectEditView(SQLObjectEditView):
     """
     def __init__(self, context, request):
         SQLObjectEditView.__init__(self, context, request)
+        # Store the current bug in an attribute of the view, so that
+        # ZPT rendering code can access it.
         self.bug = getUtility(ILaunchBag).bug
 
     def changed(self):
         """Redirect to the bug page."""
-        self.request.response.redirect(canonical_url(self.bug))
+        bugtask = getUtility(ILaunchBag).bugtask
+        self.request.response.redirect(canonical_url(bugtask))
+
+
+class BugLinkView(FormView):
+    """This view will be used for objects that support IBugLinkTarget, and
+    so can be linked and unlinked from bugs.
+    """
+
+    schema = IBugCve
+    fieldNames = ['bug']
+    _arguments = ['bug']
+
+    def process(self, bug):
+        # we are not creating, but we need to find the bug from the bug num
+        malone_bug = getUtility(IBugSet).get(bug)
+        user = getUtility(ILaunchBag).user
+        assert IBugLinkTarget.providedBy(self.context)
+        return self.context.linkBug(malone_bug, user)
+
+    def nextURL(self):
+        return canonical_url(self.context)
+
+
+class BugUnlinkView(FormView):
+    """This view will be used for objects that support IBugLinkTarget, and
+    thus can be unlinked from bugs.
+    """
+
+    schema = IBugCve
+    fieldNames = ['bug']
+    _arguments = ['bug']
+
+    def process(self, bug):
+        malone_bug = getUtility(IBugSet).get(bug)
+        user = getUtility(ILaunchBag).user
+        return self.context.unlinkBug(malone_bug, user)
+
+    def nextURL(self):
+        return canonical_url(self.context)
 
 
 class DeprecatedAssignedBugsView:
@@ -150,3 +314,5 @@ class DeprecatedAssignedBugsView:
         self.request.response.redirect(
             canonical_url(getUtility(ILaunchBag).user) +
             "/+assignedbugs")
+
+

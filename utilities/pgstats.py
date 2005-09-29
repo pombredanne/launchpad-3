@@ -127,6 +127,7 @@ def main(dbname):
                 idx_scan = 0
                 AND indexrelname NOT LIKE '%_pkey'
                 AND indexdef NOT LIKE 'CREATE UNIQUE %'
+            ORDER BY relname, indexrelname
         """)
 
     rows = cur.fetchall()

@@ -24,6 +24,9 @@ from canonical.launchpad.database.specificationreview import \
     SpecificationReview
 from canonical.launchpad.database.specificationsubscription import \
     SpecificationSubscription
+from canonical.launchpad.database.sprintspecification import \
+    SprintSpecification
+from canonical.launchpad.database.sprint import Sprint
 
 from canonical.lp.dbschema import (
     EnumCol, SpecificationStatus, SpecificationPriority)
@@ -73,6 +76,11 @@ class Specification(SQLBase):
         intermediateTable='SpecificationSubscription', orderBy='name')
     reviews = MultipleJoin('SpecificationReview',
         joinColumn='specification', orderBy='id')
+    sprint_links = MultipleJoin('SprintSpecification', orderBy='id',
+        joinColumn='specification')
+    sprints = RelatedJoin('Sprint', orderBy='name',
+        joinColumn='specification', otherColumn='sprint',
+        intermediateTable='SprintSpecification')
     buglinks = MultipleJoin('SpecificationBug', joinColumn='specification',
         orderBy='id')
     bugs = RelatedJoin('Bug',
@@ -153,6 +161,21 @@ class Specification(SQLBase):
                 SpecificationBug.delete(buglink.id)
                 return buglink
 
+    # sprint linking
+    def linkSprint(self, sprint):
+        """See ISpecification."""
+        for sprint_link in self.sprint_links:
+            if sprint_link.sprint.id == sprint.id:
+                return sprint_link
+        return SprintSpecification(specification=self, sprint=sprint)
+
+    def unlinkSprint(self, sprint):
+        """See ISpecification."""
+        for sprint_link in self.sprint_links:
+            if sprint_link.sprint.id == sprint.id:
+                SprintSpecification.delete(sprint_link.id)
+                return sprint_link
+
     # dependencies
     def createDependency(self, specification):
         """See ISpecification."""
@@ -207,6 +230,12 @@ class SpecificationSet:
     def latest_specs(self):
         """See ISpecificationSet."""
         return Specification.select(orderBy='-datecreated')[:10]
+
+    @property
+    def upcoming_sprints(self):
+        """See ISpecificationSet."""
+        return Sprint.select("time_starts > 'NOW'", orderBy='-time_starts',
+            limit=5)
 
     def new(self, name, title, specurl, summary, priority, status,
         owner, approver=None, product=None, distribution=None, assignee=None,

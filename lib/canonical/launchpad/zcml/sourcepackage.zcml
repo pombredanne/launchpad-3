@@ -21,7 +21,7 @@
 
     <browser:traverse
         for="canonical.launchpad.interfaces.ISourcePackage"
-        function="canonical.launchpad.browser.traverseSourcePackage" />
+        function="canonical.launchpad.browser.traverse_sourcepackage" />
 
     <browser:url
         for="canonical.launchpad.interfaces.ISourcePackage"
@@ -31,7 +31,9 @@
 
    <browser:menus
         module="canonical.launchpad.browser.sourcepackage"
-        classes="SourcePackageFacets"
+        classes="
+            SourcePackageFacets SourcePackageOverviewMenu SourcePackageBugsMenu
+            SourcePackageSupportMenu SourcePackageTranslationsMenu"
         />
 
     <browser:pages
@@ -88,6 +90,10 @@
             template="../templates/sourcepackage-buildlog.pt"
             lp:url="/distros/ubuntu/hoary/+sources/evolution/+buildlog" />
         <browser:page
+            name="+builds"
+            template="../templates/sourcepackage-builds.pt"
+            lp:url="/distros/$distribution/$distrorelease/+sources/$sourcepackagename/+buildlog" />
+        <browser:page
             name="+potlist"
             facet="translations"
             template="../templates/object-pots.pt"
@@ -98,7 +104,8 @@
             name="+portlet-details"
             facet="overview"
             template="../templates/sourcepackage-portlet-details.pt"
-            lp:url="/distros/ubuntu/hoary/+sources/evolution/+portlet-details" />
+            lp:url="/distros/ubuntu/hoary/+sources/evolution/+portlet-details"
+            />
         <browser:page
             name="+portlet-actions"
             facet="overview"
@@ -106,7 +113,8 @@
         <browser:page
             name="+portlet-bugtasklist-actions"
             facet="bugs"
-            template="../templates/sourcepackage-portlet-bugtasklist-actions.pt" />
+            template="../templates/sourcepackage-portlet-bugtasklist-actions.pt"
+            />
         <browser:page
             name="+portlet-translations"
             facet="translations"
@@ -131,16 +139,14 @@
             lp:url="/distros/ubuntu/hoary/+sources/mozilla-firefox/+potemplatenames" />
     </browser:pages>
 
-    <browser:pages
+    <browser:page
         for="canonical.launchpad.interfaces.ISourcePackage"
+        name="+bugs"
+        facet="bugs"
+        class="canonical.launchpad.browser.packages.SourcePackageBugsView"
+        template="../templates/sourcepackage-bugs.pt"
         permission="zope.Public"
-        class="canonical.launchpad.browser.packages.SourcePackageBugsView">
-        <browser:page
-            name="+bugs"
-            facet="bugs"
-            template="../templates/sourcepackage-bugs.pt"
-            lp:url="distros/$distro.name/$distrorelease.name/+sources/$SourcePackage.name/+bugs" />
-    </browser:pages>
+        lp:url="distros/$distro.name/$distrorelease.name/+sources/$SourcePackage.name/+bugs" />
 
     <browser:pages
         for="canonical.launchpad.interfaces.ISourcePackage"
@@ -158,13 +164,81 @@
         for="canonical.launchpad.interfaces.ISourcePackage"
         facet="bugs"
         schema="canonical.launchpad.interfaces.IBugAddForm"
-        label="Report a bug about a distribution source package"
         class="canonical.launchpad.browser.sourcepackage.SourcePackageFilebugView"
         permission="launchpad.AnyPerson"
         fields="title comment private owner"
         keyword_arguments="title comment private owner"
         template="../templates/sourcepackage-filebug.pt"
         lp:url="/distros/ubuntu/hoary/+sources/apache2/+filebug">
+        <browser:widget
+           field="owner"
+           class="canonical.widgets.HiddenUserWidget" />
+        <browser:widget
+           field="title"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="55" />
+        <browser:widget
+           field="comment"
+           class="zope.app.form.browser.TextAreaWidget"
+           width="62" />
+    </browser:addform>
+
+    <!-- DistroSourcePackage -->
+    <content class="canonical.launchpad.database.DistroSourcePackage">
+        <allow interface="canonical.launchpad.interfaces.IDistroSourcePackage" />
+    </content>
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IDistroSourcePackage"
+        function="canonical.launchpad.browser.traverse_distro_sourcepackage"
+        />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IDistroSourcePackage"
+        path_expression="string:+sources/${name}"
+        attribute_to_parent="distribution"
+        />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IDistroSourcePackage"
+        permission="zope.Public">
+        <!-- DistroSourcePackage Portlets -->
+        <browser:page
+            name="+portlet-details"
+            facet="overview"
+            template="../templates/sourcepackage-portlet-details.pt"
+            lp:url="/distros/ubuntu/+sources/evolution/+portlet-details" />
+        <browser:page
+            name="+portlet-actions"
+            facet="overview"
+            template="../templates/sourcepackage-portlet-actions.pt" />
+        <browser:page
+            name="+portlet-bugtasklist-actions"
+            facet="bugs"
+            template="../templates/sourcepackage-portlet-bugtasklist-actions.pt" />
+    </browser:pages>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistroSourcePackage"
+        name="+bugs"
+        facet="bugs"
+        class="canonical.launchpad.browser.packages.DistroSourcePackageBugsView"
+        template="../templates/distrosourcepackage-bugs.pt"
+        permission="zope.Public"
+        lp:url="distros/$distro.name/+sources/$SourcePackage.name/+bugs" />
+
+    <browser:addform
+        name="+filebug"
+        for="canonical.launchpad.interfaces.IDistroSourcePackage"
+        facet="bugs"
+        schema="canonical.launchpad.interfaces.IBugAddForm"
+        label="Report a bug about a distribution source package"
+        class="canonical.launchpad.browser.sourcepackage.SourcePackageFilebugView"
+        permission="launchpad.AnyPerson"
+        fields="title comment private owner"
+        keyword_arguments="title comment private owner"
+        template="../templates/sourcepackage-filebug.pt"
+        lp:url="/distros/ubuntu/+sources/apache2/+filebug">
         <browser:widget
            field="owner"
            class="canonical.widgets.HiddenUserWidget" />
@@ -206,11 +280,6 @@
         for="canonical.launchpad.interfaces.ISourcePackageSet"
         name="+index" />
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.ISourcePackageSet"
-        layer="canonical.launchpad.layers.MaloneLayer"
-        name="+malone-index" />
-
     <browser:pages
         for="canonical.launchpad.interfaces.ISourcePackageSet"
         class="canonical.launchpad.browser.sourcepackage.SourcePackageSetView"
@@ -230,5 +299,17 @@
             template="../templates/sourcepackages-comingsoon.pt"
             />
     </browser:pages>
+
+    <!-- IDistroSourcePackageSet -->
+    <content class="canonical.launchpad.database.DistroSourcePackageSet">
+        <allow
+            interface="canonical.launchpad.interfaces.IDistroSourcePackageSet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.DistroSourcePackageSet"
+        provides="canonical.launchpad.interfaces.IDistroSourcePackageSet">
+        <allow interface="canonical.launchpad.interfaces.IDistroSourcePackageSet" />
+    </securedutility>
 
 </configure>

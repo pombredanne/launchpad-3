@@ -1,0 +1,45 @@
+= LaunchpadView =
+
+This is the base-class we should use for all View classes in Launchpad.
+
+    >>> from canonical.launchpad.webapp import LaunchpadView
+    >>> class MyView(LaunchpadView):
+    ...
+    ...     def initialize(self):
+    ...         print "Initalizing..."
+    ...
+    ...     def render(self):
+    ...         return "rendered content"
+
+    >>> context = object()
+    >>> request = object()
+
+Note that constructing a view does not initialize().
+
+    >>> view = MyView(context, request)
+
+Anonymous logged in, so view.user is None.
+
+    >>> print view.user
+    None
+
+    >>> result = view()
+    Initalizing...
+
+    >>> print result
+    rendered content
+
+Now, we log in a user and see what happens to the 'user' attribute.  The
+existing view should have the same user, 'None', because it was cached.
+
+    >>> login('foo.bar@canonical.com')
+    >>> print view.user
+    None
+
+A new view should have the new user.
+
+    >>> print MyView(context, request).user
+    <...launchpad.database.person.Person instance ...>
+    >>> print MyView(context, request).user.name
+    name16
+

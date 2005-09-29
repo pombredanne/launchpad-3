@@ -279,6 +279,9 @@ class IProductSet(Interface):
         hints as to whether the search should be limited to products
         that are active in those Launchpad applications."""
 
+    def latest(quantity=5):
+        """Return the latest products registered in the Launchpad."""
+
     def translatables():
         """Return an iterator over products that have resources translatables.
         """
@@ -302,3 +305,4 @@ class IProductSet(Interface):
     def count_reviewed(self):
         """return a count of the number of products in the Launchpad that
         are both active and reviewed."""
+

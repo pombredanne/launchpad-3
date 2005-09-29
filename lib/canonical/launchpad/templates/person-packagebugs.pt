@@ -1,0 +1,42 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+  </metal:leftportlets>
+
+
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-actions" />
+  </metal:rightportlets>
+
+  <div metal:fill-slot="main">
+
+    <tal:block define="packagebugs view/bugTasksOnMaintainedSoftware">
+
+      <h1>Bugs on Software Maintained by <span tal:replace="context/browsername" /></h1>
+
+      <p tal:condition="not: packagebugs">There are no open bugs on
+      packages maintained by <span tal:replace="context/browsername" />.</p>
+
+      <tal:block tal:condition="packagebugs">
+
+      <div style="margin-bottom: 1em"
+           tal:define="tasks packagebugs;">
+
+      <tal:assignedbugs
+          metal:use-macro="context/@@+bugtask-macros-tableview/table" />
+
+      </div>
+
+    </tal:block>
+    </tal:block>
+
+  </div>
+
+</body>
+</html>

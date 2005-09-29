@@ -18,13 +18,16 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.interfaces import (
-    IBugAttachment, IBugAttachmentSet, ILibraryFileAlias,
-    ILibraryFileAliasSet, ILaunchBag, IMessageSet,
-    IBugAttachmentAddForm, IBugAttachmentEditForm)
-
+    IBugAttachment, IBugAttachmentSet, ILibraryFileAlias, IBug,
+    ILibraryFileAliasSet, ILaunchBag, IBugMessageSet, IBugAttachmentAddForm,
+    IBugAttachmentEditForm)
 
 class BugAttachmentAddView(SQLObjectAddView):
     """Add view for bug attachments."""
+    def __init__(self, context, request):
+        self.bugtask = context
+        SQLObjectAddView.__init__(self, IBug(context), request)
+
     def create(self, comment=None, filecontent=None,
                patch=IBugAttachmentAddForm['patch'].default, title=None):
         # XXX: Write proper FileUpload field and widget instead of this
@@ -50,18 +53,17 @@ class BugAttachmentAddView(SQLObjectAddView):
             file=StringIO(filecontent),
             contentType=content_type)
 
-        add_comment = getUtility(IMessageSet).fromText(
-            subject=title, owner=getUtility(ILaunchBag).user, content=comment)
-
-        self.context.linkMessage(add_comment)
+        add_comment = getUtility(IBugMessageSet).createMessage(
+            subject=title, bug=self.context, owner=getUtility(ILaunchBag).user,
+            content=comment)
 
         return getUtility(IBugAttachmentSet).create(
-            bug=self.context, filealias=filealias, attach_type=attach_type, title=title,
-            message=add_comment)
+            bug=self.context, filealias=filealias, attach_type=attach_type,
+            title=title, message=add_comment.message)
 
     def nextURL(self):
         """Return the user to the bug page."""
-        return canonical_url(self.context)
+        return canonical_url(self.bugtask)
 
 
 class BugAttachmentEdit:

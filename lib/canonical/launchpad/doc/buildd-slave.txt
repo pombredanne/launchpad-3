@@ -21,6 +21,28 @@ Use simple xmlrpclib client to certify the BuildSlave is running
   >>> s.echo('Hello World')
   ['Hello World']
 
+Pass a file to the slave and ensure it gives us the correct sha1sum back
+
+  >>> helloworld = "Hello World\n"
+  >>> sum = s.storefile(helloworld)
+  >>> sum
+  '648a6a6ffffdaa0badb23b8baf90b6168dd16b3a'
+
+Fetch the file back and verify that it is correct
+
+  >>> str(s.fetchfile(sum)) == helloworld
+  True
+
+As of slave protocol version two, /filecache/SHA1SUM is an alternative way
+to retrieve files from the slave. Verify it works...
+
+  >>> from urllib2 import urlopen
+  >>> f = urlopen("http://localhost:8221/filecache/"+sum)
+  >>> hw_str = f.read()
+  >>> f.close()
+  >>> hw_str == helloworld
+  True
+
 Tested, time to shutdown
 
   >>> BuilddSlaveTestSetup().tearDown()

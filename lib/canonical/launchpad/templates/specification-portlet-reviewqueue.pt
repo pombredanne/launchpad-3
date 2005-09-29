@@ -1,9 +1,9 @@
 <div class="portlet">
-  <h4>Review Requests:</h4>
+  <h4>Review requests:</h4>
 
   <div class="portletBody portletContent">
 
-    <ul class="people">
+    <ul tal:condition="context/reviews" class="people">
       <li tal:repeat="review context/reviews">
         <a href="#"
            tal:content="review/reviewer/browsername"
@@ -11,9 +11,9 @@
             <span tal:replace="review/queuemsg"> brief message.</span>
           </tal:block>
       </li>
-      <li class="info" tal:condition="not: context/reviews">
-        <i>No reviews queued.</i>
-      </li>
     </ul>
-
+    <p tal:condition="not: context/reviews">
+      No reviews queued.
+    </p>
+  </div>
 </div>

@@ -17,13 +17,12 @@ class Library:
         return [fc.id for fc in 
                 LibraryFileContent.selectBy(sha1=digest)]
 
-    def getAlias(self, fileid, filename):
+    def getAlias(self, aliasid):
         """Returns a LibraryFileAlias, or raises LookupError."""
-        alias = LibraryFileAlias.selectOneBy(
-            contentID=fileid, filename=filename)
-        if alias is None:
-            raise LookupError('Alias %s: %r' % (fileid, filename))
-        return alias
+        try:
+            return LibraryFileAlias.get(aliasid)
+        except SQLObjectNotFound:
+            raise LookupError(aliasid)
 
     def getAliases(self, fileid):
         results = LibraryFileAlias.selectBy(contentID=fileid)
@@ -52,13 +51,6 @@ class Library:
 
         If a matching alias already exists, it will return that ID instead.
         """
-        try:
-            existing = self.getAlias(fileid, filename)
-            if existing.mimetype == mimetype:
-                return existing.id
-        except LookupError:
-            pass
-
         return LibraryFileAlias(contentID=fileid, filename=filename,
                                 mimetype=mimetype).id
 

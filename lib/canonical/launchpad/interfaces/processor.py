@@ -16,6 +16,7 @@ _ = MessageIDFactory('launchpad')
 
 class IProcessor(Interface):
     """The SQLObject Processor Interface"""
+    id = Attribute("The Processor ID")
     family = Attribute("The Processor Family Reference")
     name = Attribute("The Processor Name")
     title = Attribute("The Processor Title")

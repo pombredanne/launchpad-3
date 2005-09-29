@@ -1,0 +1,2 @@
+<div class="highlighted">Launchpad will be going offline for maintenance
+  <em tal:content="view/timelefttext" />.</div>

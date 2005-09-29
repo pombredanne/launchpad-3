@@ -58,7 +58,7 @@
 
         </div>
 
-        <div class="form actions">
+        <div class="actions">
           <input
             type="submit"
             tabindex="1000"

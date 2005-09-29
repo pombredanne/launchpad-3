@@ -5,6 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugTrackerContextMenu',
+    'BugTrackerSetContextMenu',
     'BugTrackerAddView',
     'BugTrackerView',
     ]
@@ -13,9 +15,32 @@ from zope.component import getUtility
 
 from canonical.lp.dbschema import BugTrackerType
 from canonical.launchpad.interfaces import (
-    IProject, IProjectBugTrackerSet, IBugTrackerSet, ILaunchBag)
-from canonical.launchpad.webapp import canonical_url
+    IProject, IProjectBugTrackerSet, IBugTracker, IBugTrackerSet, ILaunchBag)
+from canonical.launchpad.webapp import canonical_url, ContextMenu, Link
 from zope.app.form.browser.editview import EditView
+
+
+class BugTrackerContextMenu(ContextMenu):
+
+    usedfor = IBugTracker
+
+    links = ['edit']
+
+    def edit(self):
+        text = 'Edit Bug Tracker Details'
+        return Link('+edit', text, icon='edit')
+
+
+class BugTrackerSetContextMenu(ContextMenu):
+
+    usedfor = IBugTrackerSet
+
+    links = ['newbugtracker']
+
+    def newbugtracker(self):
+        text = 'Register Bug Tracker'
+        return Link('+newbugtracker', text, icon='add')
+
 
 class BugTrackerAddView:
 

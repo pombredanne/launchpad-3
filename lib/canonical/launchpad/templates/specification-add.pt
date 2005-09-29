@@ -21,14 +21,10 @@
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
     <div metal:fill-slot="extra_info" class="documentDescription">
-      Describe the Feature Specification that you are registering using the
-      form below.
+      Once you&#8217;ve entered the details of a specification,
+      you can link it to bug reports and track its review process.
     </div>
 
-  </div>
-
-  <div>
-    Thank you for registering this feature specification!
   </div>
 
 </div>

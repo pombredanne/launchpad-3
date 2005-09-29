@@ -53,14 +53,8 @@ class BugTaskPageTitle:
 
 class BugTaskTargetingTitle:
     def __call__(self, context, view):
-        task_target = context.target
-        if IDistribution.providedBy(task_target):
-            distribution_title = task_target.title
-        elif IDistroRelease.providedBy(task_target):
-            distribution_title = task_target.distribution.title 
-
         return "Bug #%d in %s - Target Fix to Releases" % (
-            context.bug.id, distribution_title)
+            context.bug.id, context.targetname)
 
 
 class SubstitutionHelper:
@@ -151,7 +145,7 @@ def bug_add(context, view):
     distrorelease_context = IDistroRelease(context, None)
 
     if product_context or distro_context or distrorelease_context is not None:
-        context_title = ContextTitle('Report a bug in %s')
+        context_title = ContextTitle('Report a bug about %s')
         return context_title(context, view)
     else:
         return "Report a bug"
@@ -166,11 +160,9 @@ def bug_attachment_edit(context, view):
 
 bug_attachments = ContextId('Malone Bug Attachments for Bug #%s')
 
-bug_cveref_add = LaunchbagBugID("Bug #%d - Add CVE Reference")
+bug_cve = LaunchbagBugID("Bug #%d - Add CVE Reference")
 
-def bug_cveref_edit(context, view):
-    return "Bug #%d - Edit CVE Reference (%s)" % (
-        context.bug.id, context.cveref)
+bug_distrotask = ContextId('Request fix of bug #%s in additional distribution')
 
 bug_edit = BugPageTitle()
 
@@ -186,11 +178,15 @@ bug_mark_as_duplicate = ContextId('Bug #%d - Mark as Duplicate')
 
 bug_references = ContextId('External references for bug #%s')
 
+bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE Reference")
+
 bug_secrecy = ContextId('Set secrecy for bug #%s')
 
 bug_secrecy = ContextId('Bug #%d - Set Bug Secrecy')
 
 bug_subscription = ContextId('Subscribe or unsubscribe from Bug #%s')
+
+bug_upstreamtask = ContextId('Request fix of bug #%s in additional application')
 
 bug_watch_add = LaunchbagBugID('Bug #%d - Add an External Bug Watch')
 
@@ -218,6 +214,8 @@ def bugsubscription_edit(context, view):
     return "Bug #%d - Edit Subscription (%s)" % (
         context.bug.id, context.person.browsername)
 
+bugtask_index = BugTaskPageTitle()
+
 bugtask_release_targeting = BugTaskTargetingTitle()
 
 bugtask_view = BugTaskPageTitle()
@@ -234,6 +232,18 @@ bugtracker_index = ContextTitle('Malone Bugtracker: %s')
 bugtrackers_add = 'Register External Bugtracker in Malone'
 
 bugtrackers_index = 'Malone-Registered Bug Trackers'
+
+builders = 'Launchpad Build Farm Overview'
+
+builder_edit = ContextTitle('Editing %s details')
+
+builder_index = ContextTitle('%s Overview')
+
+builder_abort = ContextTitle('%s Abort')
+
+builder_stop = ContextTitle('%s Stop')
+
+calendar = ContextTitle('%s')
 
 calendar_index = ContextTitle('%s')
 
@@ -259,6 +269,16 @@ codeofconduct_admin = 'Administer codes of conduct in Launchpad'
 codeofconduct_index = ContextTitle('%s')
 
 codeofconduct_list = 'Codes of Conduct in Launchpad'
+
+cveset_all = 'All CVE Entries Registered in the Launchpad'
+
+cveset_index = 'Launchpad CVE Tracker'
+
+cve_index = ContextDisplayName('%s')
+
+cve_bug = ContextDisplayName('Link %s to a Malone  Bug')
+
+cve_removebug = ContextDisplayName('Remove Link between %s and Malone Bug')
 
 def cvereference_index(context, view):
     return 'Malone Bug #%s CVE Reference' % context.bug.id
@@ -291,7 +311,7 @@ distribution_translators = 'Appoint Distribution Translation Group'
 
 distribution_search = 'Locate Distributions in Launchpad'
 
-distribution_index = ContextTitle('Launchpad Distribution Summary: %s')
+distribution_index = ContextTitle('%s in Launchpad')
 
 distro_add = 'Adding New Distribution'
 
@@ -303,9 +323,13 @@ distro_edit = 'Create a new Distribution in Launchpad'
 
 distroarchrelease_index = ContextTitle('%s overview')
 
+distroarchrelease_builds = ContextTitle('Builds for %s')
+
 distroarchrelease_pkgsearch = 'Binary Package Search'
 
 distrorelease_bugs = ContextTitle('Release %s: Bugs')
+
+distrorelease_cvereport = ContextDisplayName('CVE Report for %s')
 
 def distrorelease_deliver(context, view):
     return 'Generate ISO image for %s' % context.release.title
@@ -330,12 +354,18 @@ def distrorelease_sources(context, view):
         context.release.title
         )
 
-distrorelease_translations = ContextTitle(
-    'Rosetta Translation Templates for %s')
+distrorelease_translations = ContextTitle('Translation of %s')
+
+distrorelease_builds = ContextTitle(
+    'Builds for %s')
 
 distroreleaselanguage = ContextTitle('%s')
 
 distros_index = 'Overview of Distributions in Launchpad'
+
+def distrosourcepackage_bugs(context, view):
+    return 'Bugs in %s %s' % (
+        context.distribution.name, context.name)
 
 errorservice_config = 'Configure Error Log'
 
@@ -391,6 +421,8 @@ launchpad_forbidden = 'Forbidden'
 
 launchpad_forgottenpassword = 'Forgot Your Launchpad Password?'
 
+template_form = 'XXX PLEASE DO NOT USE TEMPLATE XXX'
+
 launchpad_join = 'Join the Launchpad'
 
 # launchpad_css is a css file
@@ -429,7 +461,7 @@ malone_to_do = 'Malone ToDo'
 
 # messages_index is a redirect
 
-message_add = ContextTitle('Add Message to %s')
+message_add = ContextId('Bug #%d - Add a Comment')
 
 milestone_add = ContextDisplayName('Add Milestone for %s')
 
@@ -478,6 +510,8 @@ person_editemails = ContextDisplayName('Edit %s Email Addresses')
 
 person_editgpgkeys = ContextDisplayName('%s GPG Keys')
 
+person_edithomepage = ContextDisplayName('Edit %s Home Page')
+
 person_editircnicknames = ContextDisplayName('%s IRC Nicknames')
 
 person_editjabberids = ContextDisplayName('%s Jabber IDs')
@@ -488,11 +522,15 @@ person_editwikinames = ContextDisplayName('%s Wiki Names')
 
 # person_foaf is an rdf file
 
+person_images = ContextDisplayName('%s Hackergotchi and Emblem')
+
 person_index = ContextDisplayName('%s: Launchpad Overview')
 
 person_karma = ContextDisplayName('Karma for %s')
 
 person_packages = ContextDisplayName('Packages Maintained By %s')
+
+person_packagebugs = ContextDisplayName('Bugs on Software Maintained by %s')
 
 person_reportedbugs = ContextDisplayName('Bugs Reported By %s')
 
@@ -532,6 +570,12 @@ def poll_new(context, view):
 
 def polloption_edit(context, view):
     return 'Edit option %s' % context.shortname
+
+poll_options = ContextTitle('Options of Poll %s')
+
+poll_vote_condorcet = ContextTitle('Vote in %s')
+
+poll_vote_simple = ContextTitle('Vote in %s')
 
 potemplate_add = 'Add a new template to Rosetta'
 
@@ -584,7 +628,7 @@ productseries_translations = ContextTitle(
 
 productseries_ubuntupkg = 'Ubuntu Source Package'
 
-products_index = 'Launchpad product registry'
+products_index = 'Launchpad Product / Applications Registry'
 
 products_search = 'Launchpad: Advanced Upstream Product Search'
 
@@ -635,6 +679,8 @@ registry_to_do = 'Launchpad To-Do List'
 
 related_bounties = ContextDisplayName('Bounties for %s')
 
+requestexpired = 'Request Took Too Long'
+
 root_index = 'The Launchpad Home Page'
 
 rosetta_about = 'About Rosetta'
@@ -684,13 +730,15 @@ def sourcepackage_bugs(context, view):
         context.distrorelease.distribution.name,
         context.sourcepackagename)
 
-sourcepackage_buildlog = 'Source Package Build Log'
+sourcepackage_buildlog = ContextTitle('%s Build Logs')
+
+sourcepackage_builds = ContextTitle('%s Builds')
 
 sourcepackage_translate = ContextTitle('Help translate %s')
 
 sourcepackage_changelog = 'Source Package Changelog'
 
-sourcepackage_filebug = ContextTitle("Report a Bug in %s")
+sourcepackage_filebug = ContextTitle("Report a bug about %s")
 
 sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 
@@ -732,11 +780,13 @@ soyuz_about = 'About Soyuz'
 
 soyuz_index = 'Soyuz: Linux Distribution Management'
 
-specification_add = 'Register A New Feature Specification'
+specification_add = 'Register a feature specification in Launchpad'
 
-specification_bug = 'Link this Specification to Bug'
+specification_bug = ContextTitle(
+  'Link specification \N{left double quotation mark}%s'
+  '\N{right double quotation mark} to a bug report')
 
-specification_removebug = 'Remove Link to Bug'
+specification_removebug = 'Remove link to bug report'
 
 specification_dependency = 'Create a Specification Dependency'
 
@@ -746,7 +796,8 @@ specification_milestone = 'Target Feature to Milestone'
 
 specification_people = 'Change the Specification Assignee, Drafter and Reviewer'
 
-specification_distrorelease = 'Target Feature Specification at Distribution Release'
+specification_distrorelease = ('Target Feature Specification at '
+                               'Distribution Release')
 
 specification_productseries = 'Target Feature Specification at Series'
 
@@ -757,6 +808,8 @@ specification_doreview = 'Conduct Specification Review'
 specification_requestreview = 'Request a Review of This Specification'
 
 specification_edit = 'Edit Specification Details'
+
+specification_linksprint = 'Put Specification on Sprint Agenda'
 
 specification_status = 'Edit Specification Status'
 
@@ -772,31 +825,42 @@ specificationtarget_specs = ContextTitle('Specifications for %s')
 
 specificationtarget_specplan = ContextTitle('Project Plan for %s')
 
-tickets_index = 'Launchpad Support Ticket Tracker'
+sprint_index = ContextTitle('%s (Sprint or Meeting)')
 
-ticket_add = ContextDisplayName('Make Support Request for %s')
+sprint_edit = ContextTitle('Edit Meeting Details: %s')
 
-ticket_bug = ContextId('Link Ticket #%s to Bug')
+sprint_new = 'Register a new Meeting or Sprint in Launchpad'
 
-ticket_edit = ContextId('Edit Ticket #%s Details')
+sprints_index = 'Launchpad Meeting or Sprint Registry'
+
+tickets_index = 'Launchpad tech support system'
+
+ticket_add = ContextDisplayName('Request support with %s')
+
+ticket_bug = ContextId(u'Link support request #%s to a bug report')
+
+ticket_edit = ContextId('Edit support request #%s details')
 
 def ticket_index(context, view):
-    return '%s Support Ticket #%d: %s' % (context.target.displayname,
-        context.id, context.title)
+    text = (
+        u'%s support request #%d: '
+        u'\N{left double quotation mark}%s\N{right double quotation mark}'
+        % (context.target.displayname, context.id, context.title))
+    return text
 
-ticket_history = ContextId('Ticket #%s History')
+ticket_history = ContextId('History of support request #%s')
 
-ticket_makebug = ContextId('File Bug Report Based on Ticket #%s')
+ticket_makebug = ContextId('Create bug report based on request #%s')
 
-ticket_reject = ContextId('Reject Ticket #%s as Invalid')
+ticket_reject = ContextId('Reject support request #%s')
 
-ticket_removebug = ContextId('Remove Bug Link from Ticket #%s')
+ticket_removebug = ContextId('Remove bug link from request #%s')
 
-ticket_reopen = ContextId('Reopen Ticket #%s')
+ticket_reopen = ContextId('Reopen request #%s')
 
-ticket_subscription = ContextId('Subscription to Ticket #%s')
+ticket_subscription = ContextId('Subscription to request #%s')
 
-tickettarget_tickets = ContextTitle('Support Requests for %s')
+tickettarget_tickets = ContextTitle('Support requests for %s')
 
 standardshipitrequests_index = 'Standard ShipIt Options'
 

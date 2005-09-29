@@ -42,13 +42,13 @@
         facet="bugs"
         permission="zope.Public">
         <browser:page
-            name="+bugs-only"
-            lp:url="/distros/$Distribution.name/+bugs-only"
+            name="+bugs"
+            lp:url="/distros/$Distribution.name/+bugs"
             template="../templates/bugs-for-context.pt" />
         <browser:page
-            name="+portlet-bugtasklist-actions"
-            template="../templates/bugtasklist-portlet-actions.pt"
-            lp:url="/distros/$Distribution.name/+portlet-bugtasklist-actions" />
+            name="+portlet-bugtasklist-mybugs"
+            template="../templates/bugtasklist-portlet-mybugs.pt"
+            lp:url="/distros/$Distribution.name/+portlet-bugtasklist-mybugs" />
         <browser:page
             name="+portlet-bugtasklist-releasebugs"
             template="../templates/bugtask-portlet-releasebugs.pt"
@@ -81,6 +81,7 @@
             lp:url="/distros/$Distribution.name/+cve" />
         <browser:page
             name="+translations"
+            facet="translations"
             template="../templates/distribution-translations.pt" />
     </browser:pages>
     
@@ -331,7 +332,11 @@
 
     <browser:menus
         module="canonical.launchpad.browser.distribution"
-        classes="DistributionFacets"
-        />
+        classes="
+            DistributionFacets DistributionOverviewMenu DistributionBugsMenu
+            DistributionSupportMenu DistributionBountiesMenu
+            DistributionSpecificationsMenu DistributionTranslationsMenu
+            "
+            />
 
 </configure>

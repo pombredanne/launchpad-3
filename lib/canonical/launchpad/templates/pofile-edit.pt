@@ -24,7 +24,7 @@
             <br/>
             Pluralform Expression:
             <input type="text" name="expression"
-                   tal:attributes="value view/pluralFormExpression"/>
+                   tal:attributes="value view/header/getPluralFormExpression"/>
             <br/>
             <input type="submit" name="EDIT" value="Change" />
         </fieldset>

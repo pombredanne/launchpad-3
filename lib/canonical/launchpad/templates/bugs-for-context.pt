@@ -6,22 +6,33 @@
 <body>
 
 <div metal:fill-slot="body">
-  <h1>Bugs in <span tal:replace="context/title">Title</span></h1>
-
-  <div class="sidebar">
-    <tal:block content="structure context/@@+portlet-bugtasklist-actions" />
+      <table style="width: 100%">
+        <tbody>
+          <tr>
+            <td style="width: 75%; padding-right: 1em;">
+              <h1>Bugs in <span tal:replace="context/title">Title</span></h1>
+              <div metal:use-macro="context/@@+bugtask-search-listing/buglisting" />
+            </td>
+            <td style="width: 25%">
+              <tal:menu replace="structure CONTEXTS/@@+menubox" />
+    <tal:block content="structure context/@@+portlet-bugtasklist-mybugs" />
     <tal:releasebugs condition="context/@@+portlet-bugtasklist-releasebugs|nothing">
       <tal:block content="structure context/@@+portlet-bugtasklist-releasebugs" />
     </tal:releasebugs>
-  </div>
 
-  <div metal:use-macro="context/@@+bugtask-search-listing/buglisting" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
   <script>
   <!--
   document.forms[0].elements['field.searchtext'].focus();
   //-->
   </script>
+
 </div>
 
-</body>
+    <metal:nomenu fill-slot="column_two"></metal:nomenu>
+  </body>
 </html>

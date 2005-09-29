@@ -1,5 +1,6 @@
 
 import os
+import time
 import canonical.lp
 
 def getDBHost():
@@ -14,3 +15,26 @@ def getDBHost():
         dbhost = 'localhost'
 
     return dbhost
+
+def wait_until_proxy_is_ready():
+    start = time.time()
+    delay = 0.05
+    while time.time() - start < 5:  # loop for a maximum of 5 seconds
+        try:
+            if 'Starting factory' in open('twistd.log').read():
+                return
+        except IOError:
+            pass
+        time.sleep(delay)
+        delay = delay * 2
+    raise RuntimeError('Proxy not ready')
+
+def wait_until_proxy_is_stopped():
+    start = time.time()
+    delay = 0.05
+    while time.time() - start < 5:  # loop for a maximum of 5 seconds
+        if not os.path.exists('twistd.pid'):
+            return
+        time.sleep(delay)
+        delay = delay * 2
+    raise RuntimeError('Proxy would not stop')

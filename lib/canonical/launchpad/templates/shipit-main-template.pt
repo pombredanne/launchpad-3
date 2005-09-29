@@ -20,6 +20,45 @@
     <style type="text/css" media="screen"> @import url(http://www.ubuntu.com/ubuntu.css);</style>
     <style type="text/css" media="screen"> @import url(http://www.ubuntu.com/masthead.css);</style>
     <style type="text/css" media="screen"> @import url(http://www.ubuntu.com/discs.css);</style>
+    <style type="text/css">
+      <!-- 
+        /* Visually differentiate disabled and enabled form fields. */
+        select[disabled],
+        textarea[disabled],
+        input[disabled] {
+            border-style: dotted;
+            color: #999;
+        }
+        /* Undo Ubuntu's CSS treachery */
+        .shipitPortlet {
+            font-size: 80%;
+         }
+        .shipitPortlet .shipitPortletBody {
+            position: relative;
+            top: -1px;
+            background: transparent;
+            border: 1px solid #8cacbb;
+            padding: 1em;
+            margin: 0;
+        }
+        .shipitPortlet h4 {
+          margin: 0;
+          background-color: #dee7ec;
+          border: 1px solid #8cacbb;
+          padding: 0em 0.3em 0em 1em;
+          text-transform: lowercase;
+          display: block;
+          font-size: 1em;
+          font-weight: normal;
+        }
+        :link {
+          color: #660000;
+        }
+        :visited {
+          color: #993333;
+        }
+      -->
+    </style>
     <metal:block define-slot="head_epilogue"></metal:block>
 </head>
 
@@ -49,6 +88,7 @@
     </div>
 
     <div class="visualClear" id="body">
+      <tal:replace tal:replace="structure context/@@+maintenancemessage" />
       <metal:block define-slot="body">
       </metal:block>
     </div>

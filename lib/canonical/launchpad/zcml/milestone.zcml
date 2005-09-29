@@ -4,7 +4,7 @@
     xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
-    
+
     <!-- Milestone -->
     <content class="canonical.launchpad.database.Milestone">
         <allow interface="canonical.launchpad.interfaces.IMilestone" />
@@ -17,7 +17,7 @@
     <browser:traverse
         for="canonical.launchpad.interfaces.IMilestoneSet"
         getter="__getitem__" />
-    
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IMilestone"
         name="+index" />
@@ -30,7 +30,7 @@
 
     <browser:menus
         module="canonical.launchpad.browser.milestone"
-        classes="MilestoneFacets" />
+        classes="MilestoneFacets MilestoneContextMenu" />
 
     <browser:pages
       for="canonical.launchpad.interfaces.IMilestone"

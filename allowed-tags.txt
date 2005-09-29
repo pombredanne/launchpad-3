@@ -6,7 +6,6 @@ lib/canonical/arch/tests/test_broker.py a1262849-780c-4124-9a58-19256ca74c1b
 lib/canonical/arch/tests/test_database.py 794e491c-ce40-4a66-a325-72984e7dbbbd
 lib/canonical/arch/tests/test_interfaces.py d7be3bf8-9f05-401c-9ffc-06f4dd19af48
 lib/canonical/archivepublisher/GPGV.py f230218f-d4b6-42f6-ac6a-0f15373476da
-lib/canonical/archivepublisher/TagFiles.py 65403237-d8df-4ffa-a7e7-9d55cc4722fd
 lib/canonical/archivepublisher/__init__.py 103d33ec-b2f1-4406-94ed-291953a4bfb5
 lib/canonical/archivepublisher/pool.py d20d2ded-7987-4383-b5b8-4d8cd0c857ba
 lib/canonical/archivepublisher/publishing.py 9503b5c7-7f87-48ee-a617-2a23b567d7a9

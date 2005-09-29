@@ -2,6 +2,9 @@
    xmlns:zope="http://namespaces.zope.org/zope"
    xmlns="http://namespaces.zope.org/browser">
 
+<!-- production port error pages -->
+
+  <!-- System Errors -->
   <page
       for="zope.interface.common.interfaces.IException"
       name="index.html"
@@ -10,6 +13,7 @@
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
 
+  <!-- Unauthorized -->
   <page
       for="zope.exceptions.IUnauthorized"
       name="index.html"
@@ -18,64 +22,63 @@
       attribute="__call__"
       />
 
-  <page
-      for="zope.app.exception.interfaces.IUserError"
-      name="index.html"
-      permission="zope.Public"
-      template="launchpad/templates/user-error.pt"
-      class="zope.app.exception.browser.user.UserErrorView" 
-      />
-
+  <!-- NotFound -->
   <page
       for="zope.publisher.interfaces.NotFound"
       name="index.html"
       permission="zope.Public"
       template="launchpad/templates/notfound.pt"
-      class="zope.app.exception.browser.notfound.NotFound"
+      class="canonical.launchpad.webapp.error.NotFoundView"
       />
-<!--
-   Commenting out the the debug view on Unauthorized, as we want it to prompt
-   for basic auth.
 
-   Instead, using the normal view on Unauthorized, but in the debug layer.
-
+  <!-- RequestExpired -->
   <page
-      for="zope.exceptions.IUnauthorized"
+      for="canonical.database.interfaces.IRequestExpired"
       name="index.html"
       permission="zope.Public"
-      template="launchpad/templates/debug-unauthorized.pt"
-      class="zope.app.exception.browser.unauthorized.Unauthorized"
-      layer="canonical.launchpad.skins.DebugLayer"
+      template="launchpad/templates/requestexpired.pt"
+      class="canonical.launchpad.webapp.error.SystemErrorView"
       />
-  -->
-  <!--
-  <page
-      layer="canonical.launchpad.layers.DebugLayer"
-      for="zope.exceptions.IUnauthorized"
-      name="index.html"
-      permission="zope.Public"
-      template="launchpad/templates/unauthorized.pt"
-      class="zope.app.exception.browser.unauthorized.Unauthorized" 
-      />
-    -->
 
+<!-- debug port errors -->
+
+  <!-- System Errors -->
   <page
+      for="zope.interface.common.interfaces.IException"
+      name="index.html"
+      template="launchpad/templates/default-error.pt"
+      permission="zope.Public"
+      class="canonical.launchpad.webapp.error.SystemErrorView"
       layer="canonical.launchpad.layers.DebugLayer"
+      />
+
+  <!-- Unauthorized -->
+  <page
       for="zope.exceptions.IUnauthorized"
       name="index.html"
       permission="zope.Public"
       class="canonical.launchpad.webapp.login.UnauthorizedView"
       attribute="__call__"
-      />
-
-<!-- Note: debug view for exceptions. -->
-  <page
       layer="canonical.launchpad.layers.DebugLayer"
-      name="index.html"
-      template="launchpad/templates/debug-error.pt"
-      for="zope.interface.common.interfaces.IException"
-      class="canonical.publication.DebugView"
-      permission="zope.Public"
       />
 
+  <!-- NotFound -->
+  <page
+      for="zope.publisher.interfaces.NotFound"
+      name="index.html"
+      permission="zope.Public"
+      template="launchpad/templates/notfound.pt"
+      class="canonical.launchpad.webapp.error.NotFoundView"
+      layer="canonical.launchpad.layers.DebugLayer"
+      />
+
+  <!-- RequestExpired -->
+  <page
+      for="canonical.database.interfaces.IRequestExpired"
+      name="index.html"
+      permission="zope.Public"
+      template="launchpad/templates/requestexpired.pt"
+      class="canonical.launchpad.webapp.error.SystemErrorView"
+      layer="canonical.launchpad.layers.DebugLayer"
+      />
 </zope:configure>

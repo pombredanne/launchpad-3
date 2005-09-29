@@ -18,20 +18,6 @@
         for="canonical.launchpad.interfaces.IBugWatch"
         name="+edit" />
 
-    <browser:addform
-        name="+new"
-        schema="canonical.launchpad.interfaces.IBugWatch"
-        for="canonical.launchpad.interfaces.IBugWatchSet"
-        class="canonical.launchpad.browser.BugRelatedObjectAddView"
-        label="Add Watch"
-        fields="bugtracker remotebug"
-        content_factory="canonical.launchpad.database.BugWatchFactory"
-        arguments=""
-        keyword_arguments="bugtracker remotebug"
-        permission="launchpad.AnyPerson"
-        template="../templates/bug-watch-add.pt"
-        lp:url="malone/bugs/$Bugs.id/watches/+new" />
-
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IBugWatch"

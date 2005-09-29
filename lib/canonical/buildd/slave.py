@@ -3,6 +3,10 @@
 
 # Buildd Slave implementation
 
+from os.path import isdir, exists
+from os import mkdir, symlink, kill, environ, remove
+from signal import SIGKILL
+import xmlrpclib
 __metaclass__ = type
 
 import os
@@ -14,6 +18,8 @@ from twisted.internet import protocol
 from twisted.internet import reactor
 from twisted.internet import process
 from twisted.web import xmlrpc
+
+devnull = open("/dev/null", "r")
 
 
 # XXX 20050628 cprov
@@ -31,6 +37,13 @@ class RunCapture(protocol.ProcessProtocol):
         self.killCall = None
 
     def outReceived(self, data):
+        """Pass on stdout data to the log."""
+        self.slave.log(data)
+
+    def errReceived(self, data):
+        """Pass on stderr data to the log.
+
+        With a bit of luck we won't interleave horribly."""
         self.slave.log(data)
 
     def processEnded(self, statusobject):
@@ -55,6 +68,7 @@ class RunCapture(protocol.ProcessProtocol):
         # notify the slave, it'll perform the required actions     
         self.notify(statusobject.value.exitCode)
 
+
 class BuildManager(object):
     """Build Daemon slave build manager abstract parent"""
     
@@ -71,8 +85,10 @@ class BuildManager(object):
         """Run a sub process capturing the results in the log."""
         self._subprocess = RunCapture(self._slave, self.iterate)
         self._slave.log("RUN: %s %r\n" % (command,args))
-        reactor.spawnProcess(self._subprocess, command, args,
-                             env=os.environ, path=os.environ["HOME"])
+        childfds = {0: devnull.fileno(), 1: "r", 2: "r"}
+        reactor.spawnProcess(
+            self._subprocess, command, args, env=os.environ, 
+            path=os.environ["HOME"], childFDs=childfds)
 
     def _unpackChroot(self, chroottarfile):
         """Unpack the buld chroot."""
@@ -275,11 +291,14 @@ class BuildDSlave(object):
         """Get the last 'amount' bytes of the log.        
 
         This will only return whole lines, so it may return less than
-        'amount'  bytes, so amount needs to be an integer or if is None or
-        not specified, this will return the entire log.
+        'amount' bytes. 'amount' is originally an string provided by
+        xmlrpc interface and needs cast to an integer or None or not
+        specified), when 'amount' isn't specified or is None it will
+        return the entire log.
         """
         if amount is None:
             return self._log
+        amount = int(amount)
         ret = self._log[-amount:]
         return ret[ret.find("\n")+1:]
     
@@ -338,7 +357,9 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
 
     def __init__(self, config):
         xmlrpc.XMLRPC.__init__(self)
-        self.protocolversion = 1
+        # protocol 2 is the same as protocol 1 except that it
+        # implies that the /filecache/ namespace is available
+        self.protocolversion = 2
         self.slave = BuildDSlave(config)
         self._builders = {}    
         print "Initialised"
@@ -389,7 +410,7 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
 
     def status_WAITING(self):
         """Handler for xmlrpc_status WAITING.
-
+        
         Returns the build id and the set of files waiting to be returned
         unless the builder failed in which case we return the buildstatus
         and the build id but no file set.

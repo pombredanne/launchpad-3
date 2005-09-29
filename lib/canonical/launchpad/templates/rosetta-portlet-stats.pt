@@ -2,27 +2,24 @@
 
   <h4>Rosetta Statistics:</h4>
 
-  <div class="portletBody">
-    <div class="portletContent even">
+  <div class="portletBody portletContent">
 
-      <img src="/++resource++info_icon.gif">
-      <span tal:replace="context/potemplate_count">5</span> Templates<br />
-      <img src="/++resource++info_icon.gif">
-      <span tal:replace="context/pomsgid_count">5</span> Strings<br />
-      <img src="/++resource++info_icon.gif">
-      <span tal:replace="context/pofile_count">5</span> PO Files<br />
-      <img src="/++resource++info_icon.gif">
-      <span tal:replace="context/language_count">5</span> Languages<br />
-      <img src="/++resource++info_icon.gif">
-      <span tal:replace="context/translator_count">5</span> Translators<br />
+    <ul class="statistic">
+      <li><span tal:replace="context/potemplate_count">5</span>
+      Templates</li>
+      <li><span tal:replace="context/pomsgid_count">5</span> Strings</li>
+      <li><span tal:replace="context/pofile_count">5</span> PO Files</li>
+      <li><span tal:replace="context/language_count">5</span> Languages</li>
+      <li><span tal:replace="context/translator_count">5</span>
+      Translators</li>
+    </ul>
 
-      <p>
-        Statistics are updated daily, and may understate the scale of
-        Rosetta. They were last generated on
-        <span tal:replace="context/statsdate/fmt:date">23-4-65</span> at
-        <span tal:replace="context/statsdate/fmt:time">23-4-65</span>.
-      </p>
+    <p>
+      Statistics are updated daily, and may understate the scale of
+      Rosetta. They were last generated on
+      <span tal:replace="context/statsdate/fmt:date">23-4-65</span> at
+      <span tal:replace="context/statsdate/fmt:time">23-4-65</span>.
+    </p>
 
-    </div>
   </div>
 </div>

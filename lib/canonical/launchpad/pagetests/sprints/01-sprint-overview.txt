@@ -1,0 +1,28 @@
+
+Launchpad Sprint Tracker
+========================
+
+Launchpad lets us register a meeting, and then keep track of which specs are
+due to be discussed at that meeting. As a result we can schedule and
+prioritise BOF's at the meeting, using an as-yet-undeveloped
+schedul-o-matic.
+
+Let's start by viewing the list of sprints registered.
+
+  >>> print http(r"""
+  ... GET /sprints HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Meetings and Sprints...
+  ...Ubuntu Below Zero...
+
+Now lets have a look at one sprint in particular. We expect to have UBZ in
+the sample data:
+
+  >>> print http(r"""
+  ... GET /sprints/ubz HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+

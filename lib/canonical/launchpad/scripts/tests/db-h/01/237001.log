@@ -1,0 +1,707 @@
+
+<strong>Report forwarded</strong> to <code>debian-bugs-dist@lists.debian.org, Takuo KITAME &lt;kitame@debian.org&gt;</code>:<br>
+<code>Bug#237001</code>; Package <code>evolution</code>.
+
+
+debian-bugs-dist@lists.debian.orgTakuo KITAME <kitame@debian.org>
+
+X-Loop: owner@bugs.debian.org
+Subject: Bug#237001: evolution mail crashes on opening an email with a TIFF attachment
+Reply-To: Teun Vink <teun@tux.office.luna.net>, 237001@bugs.debian.org
+Resent-From: Teun Vink <teun@tux.office.luna.net>
+Resent-To: debian-bugs-dist@lists.debian.org
+Resent-CC: Takuo KITAME <kitame@debian.org>
+Resent-Date: Tue, 09 Mar 2004 08:18:04 UTC
+Resent-Message-ID: <handler.237001.B.10788200765412@bugs.debian.org>
+Resent-Sender: owner@bugs.debian.org
+X-Debian-PR-Message: report 237001
+X-Debian-PR-Package: evolution
+X-Debian-PR-Keywords: 
+Received: via spool by submit@bugs.debian.org id=B.10788200765412
+          (code B ref -1); Tue, 09 Mar 2004 08:18:04 UTC
+Received: (at submit) by bugs.debian.org; 9 Mar 2004 08:14:36 +0000
+Received: from smtp1.email.luna.net [217.77.129.33] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1B0cNn-0001P7-00; Tue, 09 Mar 2004 00:14:35 -0800
+Received: from tux (tux.office.luna.net [217.77.129.183])
+	by smtp1.email.luna.net (Luna.nl mail server) with ESMTP id D4166133A26
+	for <submit@bugs.debian.org>; Tue,  9 Mar 2004 09:14:30 +0100 (CET)
+Received: by tux (Postfix, from userid 1000)
+	id 98BF411EE67; Tue,  9 Mar 2004 09:14:30 +0100 (CET)
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+From: Teun Vink <teun@tux.office.luna.net>
+To: Debian Bug Tracking System <submit@bugs.debian.org>
+X-Mailer: reportbug 2.50
+Date: Tue, 09 Mar 2004 09:14:30 +0100
+Message-Id: <20040309081430.98BF411EE67@tux>
+Delivered-To: submit@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2004_03_08 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-5.0 required=4.0 tests=HAS_PACKAGE autolearn=no 
+	version=2.60-bugs.debian.org_2004_03_08
+X-Spam-Level: 
+
+Package: evolution
+Version: 1.4.5-3.2
+Severity: normal
+
+
+
+Evolution mail crashes on opening an email with a TIFF attachment.
+Other attachment types like GIF and JPG seem unnaffected.
+
+
+
+-- System Information:
+Debian Release: testing/unstable
+  APT prefers unstable
+  APT policy: (500, 'unstable')
+Architecture: i386 (i686)
+Kernel: Linux 2.6.0
+Locale: LANG=C, LC_CTYPE=C
+
+Versions of packages evolution depends on:
+ii  gconf2                      2.4.0.1-4    GNOME configuration database syste
+ii  gtkhtml3.0                  3.0.9-2.1    HTML rendering/editing library - b
+ii  libart-2.0-2                2.3.16-1     Library of functions for 2D graphi
+ii  libasn1-6-heimdal           0.6-7        Libraries for Heimdal Kerberos
+ii  libatk1.0-0                 1.4.1-1      The ATK accessibility toolkit
+ii  libaudiofile0               0.2.3-4      The Audiofile Library
+ii  libbonobo2-0                2.4.3-1      Bonobo CORBA interfaces library
+ii  libbonoboui2-0              2.4.3-2      The Bonobo UI library
+ii  libc6                       2.3.2.ds1-11 GNU C Library: Shared libraries an
+ii  libcomerr2                  1.35-2       The Common Error Description libra
+ii  libdb3                      3.2.9-19     Berkeley v3 Database Libraries [ru
+ii  libesd0                     0.2.29-1     Enlightened Sound Daemon - Shared 
+ii  libfontconfig1              2.2.1-16     generic font configuration library
+ii  libfreetype6                2.1.7-2      FreeType 2 font engine, shared lib
+ii  libgail-common              1.4.1-1      GNOME Accessibility Implementation
+ii  libgail17                   1.4.1-1      GNOME Accessibility Implementation
+ii  libgal2.0-5                 1.99.10-2.3  G App Libs (run time library)
+ii  libgal2.0-common            1.99.10-2.3  G App Libs (common files)
+ii  libgconf2-4                 2.4.0.1-4    GNOME configuration database syste
+ii  libgcrypt1                  1.1.12-4     LGPL Crypto library - runtime libr
+ii  libglade2-0                 2.0.1-6      Library to load .glade files at ru
+ii  libglib2.0-0                2.2.3-1      The GLib library of C routines
+ii  libgnome-pilot2             2.0.10-3     Support libraries for gnome-pilot
+ii  libgnome2-0                 2.4.0-4      The GNOME 2 library - runtime file
+ii  libgnomecanvas2-0           2.4.0-1      A powerful object-oriented display
+ii  libgnomeprint2.2-0          2.4.2-3      The GNOME 2.2 print architecture -
+ii  libgnomeprintui2.2-0        2.4.2-1      The GNOME 2.2 print architecture U
+ii  libgnomeui-0                2.4.0.1-6    The GNOME 2 libraries (User Interf
+ii  libgnomevfs2-0              2.4.1-5      The GNOME virtual file-system libr
+ii  libgnomevfs2-common         2.4.1-5      The GNOME virtual file-system libr
+ii  libgnutls7                  0.8.12-5     GNU TLS library - runtime library
+ii  libgssapi1-heimdal          0.6-7        Libraries for Heimdal Kerberos
+ii  libgtk2.0-0                 2.2.4-3      The GTK+ graphical user interface 
+ii  libgtkhtml3.0-2             3.0.9-2.1    HTML rendering/editing library - r
+ii  libice6                     4.3.0-5      Inter-Client Exchange library
+ii  libjpeg62                   6b-9         The Independent JPEG Group's JPEG 
+ii  libkrb-1-kerberos4kth       1.2.2-10     Kerberos Libraries for Kerberos4 F
+ii  libkrb5-17-heimdal          0.6-7        Libraries for Heimdal Kerberos
+ii  libldap2                    2.1.26-1     OpenLDAP libraries
+ii  libnspr4                    2:1.6-1      Netscape Portable Runtime Library
+ii  libnss3                     2:1.6-1      Network Security Service Libraries
+ii  liborbit2                   1:2.8.3-2    libraries for ORBit2 - a CORBA ORB
+ii  libpango1.0-0               1.2.5-2.1    Layout and rendering of internatio
+ii  libpisock8                  0.11.8-9     Library for communicating with a P
+ii  libpisync0                  0.11.8-9     Synchronization library for PalmOS
+ii  libpopt0                    1.7-4        lib for parsing cmdline parameters
+ii  libroken16-kerberos4kth     1.2.2-10     Roken Libraries for Kerberos4 From
+ii  libsm6                      4.3.0-5      X Window System Session Management
+ii  libsoup2.0-0                1.99.26-1    an HTTP library implementation in 
+ii  libssl0.9.7                 0.9.7c-5     SSL shared libraries
+ii  libtasn1-0                  0.1.2-1      Manage ASN.1 structures (runtime)
+ii  libx11-6                    4.3.0-5      X Window System protocol client li
+ii  libxml2                     2.6.6-1      GNOME XML library
+ii  scrollkeeper                0.3.14-5     A free electronic cataloging syste
+ii  xlibs                       4.3.0-5      X Window System client libraries m
+ii  zlib1g                      1:1.2.1-4    compression library - runtime
+
+-- debconf information:
+* evolution1.3/warning: 
+
+
+
+
+<strong>Acknowledgement sent</strong> to <code>Teun Vink &lt;teun@tux.office.luna.net&gt;</code>:<br>
+New Bug report received and forwarded.  Copy sent to <code>Takuo KITAME &lt;kitame@debian.org&gt;</code>.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: Teun Vink <teun@tux.office.luna.net>
+Subject: Bug#237001: Acknowledgement (evolution mail crashes on opening an email with a TIFF attachment)
+Message-ID: <handler.237001.B.10788200765412.ack@bugs.debian.org>
+In-Reply-To: <20040309081430.98BF411EE67@tux>
+References: <20040309081430.98BF411EE67@tux>
+Precedence: bulk
+X-Debian-PR-Message: ack 237001
+X-Debian-PR-Package: evolution
+X-Debian-PR-Keywords: 
+Reply-To: 237001@bugs.debian.org
+
+Thank you for the problem report you have sent regarding Debian.
+This is an automatically generated reply, to let you know your message has
+been received.  It is being forwarded to the package maintainers and other
+interested parties for their attention; they will reply in due course.
+
+Your message has been sent to the package maintainer(s):
+ Takuo KITAME <kitame@debian.org>
+
+If you wish to submit further information on your problem, please send
+it to 237001@bugs.debian.org (and *not* to
+submit@bugs.debian.org).
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the Bug-tracking system.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+
+
+Received: (at submit) by bugs.debian.org; 9 Mar 2004 08:14:36 +0000
+From teun@tux.office.luna.net Tue Mar 09 00:14:36 2004
+Return-path: <teun@tux.office.luna.net>
+Received: from smtp1.email.luna.net [217.77.129.33] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1B0cNn-0001P7-00; Tue, 09 Mar 2004 00:14:35 -0800
+Received: from tux (tux.office.luna.net [217.77.129.183])
+	by smtp1.email.luna.net (Luna.nl mail server) with ESMTP id D4166133A26
+	for <submit@bugs.debian.org>; Tue,  9 Mar 2004 09:14:30 +0100 (CET)
+Received: by tux (Postfix, from userid 1000)
+	id 98BF411EE67; Tue,  9 Mar 2004 09:14:30 +0100 (CET)
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+From: Teun Vink <teun@tux.office.luna.net>
+To: Debian Bug Tracking System <submit@bugs.debian.org>
+Subject: evolution mail crashes on opening an email with a TIFF attachment
+X-Mailer: reportbug 2.50
+Date: Tue, 09 Mar 2004 09:14:30 +0100
+Message-Id: <20040309081430.98BF411EE67@tux>
+Delivered-To: submit@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2004_03_08 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-5.0 required=4.0 tests=HAS_PACKAGE autolearn=no 
+	version=2.60-bugs.debian.org_2004_03_08
+X-Spam-Level: 
+
+Package: evolution
+Version: 1.4.5-3.2
+Severity: normal
+
+
+
+Evolution mail crashes on opening an email with a TIFF attachment.
+Other attachment types like GIF and JPG seem unnaffected.
+
+
+
+-- System Information:
+Debian Release: testing/unstable
+  APT prefers unstable
+  APT policy: (500, 'unstable')
+Architecture: i386 (i686)
+Kernel: Linux 2.6.0
+Locale: LANG=C, LC_CTYPE=C
+
+Versions of packages evolution depends on:
+ii  gconf2                      2.4.0.1-4    GNOME configuration database syste
+ii  gtkhtml3.0                  3.0.9-2.1    HTML rendering/editing library - b
+ii  libart-2.0-2                2.3.16-1     Library of functions for 2D graphi
+ii  libasn1-6-heimdal           0.6-7        Libraries for Heimdal Kerberos
+ii  libatk1.0-0                 1.4.1-1      The ATK accessibility toolkit
+ii  libaudiofile0               0.2.3-4      The Audiofile Library
+ii  libbonobo2-0                2.4.3-1      Bonobo CORBA interfaces library
+ii  libbonoboui2-0              2.4.3-2      The Bonobo UI library
+ii  libc6                       2.3.2.ds1-11 GNU C Library: Shared libraries an
+ii  libcomerr2                  1.35-2       The Common Error Description libra
+ii  libdb3                      3.2.9-19     Berkeley v3 Database Libraries [ru
+ii  libesd0                     0.2.29-1     Enlightened Sound Daemon - Shared 
+ii  libfontconfig1              2.2.1-16     generic font configuration library
+ii  libfreetype6                2.1.7-2      FreeType 2 font engine, shared lib
+ii  libgail-common              1.4.1-1      GNOME Accessibility Implementation
+ii  libgail17                   1.4.1-1      GNOME Accessibility Implementation
+ii  libgal2.0-5                 1.99.10-2.3  G App Libs (run time library)
+ii  libgal2.0-common            1.99.10-2.3  G App Libs (common files)
+ii  libgconf2-4                 2.4.0.1-4    GNOME configuration database syste
+ii  libgcrypt1                  1.1.12-4     LGPL Crypto library - runtime libr
+ii  libglade2-0                 2.0.1-6      Library to load .glade files at ru
+ii  libglib2.0-0                2.2.3-1      The GLib library of C routines
+ii  libgnome-pilot2             2.0.10-3     Support libraries for gnome-pilot
+ii  libgnome2-0                 2.4.0-4      The GNOME 2 library - runtime file
+ii  libgnomecanvas2-0           2.4.0-1      A powerful object-oriented display
+ii  libgnomeprint2.2-0          2.4.2-3      The GNOME 2.2 print architecture -
+ii  libgnomeprintui2.2-0        2.4.2-1      The GNOME 2.2 print architecture U
+ii  libgnomeui-0                2.4.0.1-6    The GNOME 2 libraries (User Interf
+ii  libgnomevfs2-0              2.4.1-5      The GNOME virtual file-system libr
+ii  libgnomevfs2-common         2.4.1-5      The GNOME virtual file-system libr
+ii  libgnutls7                  0.8.12-5     GNU TLS library - runtime library
+ii  libgssapi1-heimdal          0.6-7        Libraries for Heimdal Kerberos
+ii  libgtk2.0-0                 2.2.4-3      The GTK+ graphical user interface 
+ii  libgtkhtml3.0-2             3.0.9-2.1    HTML rendering/editing library - r
+ii  libice6                     4.3.0-5      Inter-Client Exchange library
+ii  libjpeg62                   6b-9         The Independent JPEG Group's JPEG 
+ii  libkrb-1-kerberos4kth       1.2.2-10     Kerberos Libraries for Kerberos4 F
+ii  libkrb5-17-heimdal          0.6-7        Libraries for Heimdal Kerberos
+ii  libldap2                    2.1.26-1     OpenLDAP libraries
+ii  libnspr4                    2:1.6-1      Netscape Portable Runtime Library
+ii  libnss3                     2:1.6-1      Network Security Service Libraries
+ii  liborbit2                   1:2.8.3-2    libraries for ORBit2 - a CORBA ORB
+ii  libpango1.0-0               1.2.5-2.1    Layout and rendering of internatio
+ii  libpisock8                  0.11.8-9     Library for communicating with a P
+ii  libpisync0                  0.11.8-9     Synchronization library for PalmOS
+ii  libpopt0                    1.7-4        lib for parsing cmdline parameters
+ii  libroken16-kerberos4kth     1.2.2-10     Roken Libraries for Kerberos4 From
+ii  libsm6                      4.3.0-5      X Window System Session Management
+ii  libsoup2.0-0                1.99.26-1    an HTTP library implementation in 
+ii  libssl0.9.7                 0.9.7c-5     SSL shared libraries
+ii  libtasn1-0                  0.1.2-1      Manage ASN.1 structures (runtime)
+ii  libx11-6                    4.3.0-5      X Window System protocol client li
+ii  libxml2                     2.6.6-1      GNOME XML library
+ii  scrollkeeper                0.3.14-5     A free electronic cataloging syste
+ii  xlibs                       4.3.0-5      X Window System client libraries m
+ii  zlib1g                      1:1.2.1-4    compression library - runtime
+
+-- debconf information:
+* evolution1.3/warning: 
+
+
+
+
+<strong>Information forwarded</strong> to <code>debian-bugs-dist@lists.debian.org, Takuo KITAME &lt;kitame@debian.org&gt;</code>:<br>
+<code>Bug#237001</code>; Package <code>evolution</code>.
+
+
+debian-bugs-dist@lists.debian.orgTakuo KITAME <kitame@debian.org>
+
+X-Loop: owner@bugs.debian.org
+Subject: Bug#237001: Evolution: bug still in evolution 1.4.6-2 / unstable
+Reply-To: Mathieu Petit-Clair <mathieu@orangeseeds.net>, 237001@bugs.debian.org
+Resent-From: Mathieu Petit-Clair <mathieu@orangeseeds.net>
+Resent-To: debian-bugs-dist@lists.debian.org
+Resent-CC: Takuo KITAME <kitame@debian.org>
+Resent-Date: Tue, 30 Mar 2004 21:48:03 UTC
+Resent-Message-ID: <handler.237001.B237001.10806826195509@bugs.debian.org>
+Resent-Sender: owner@bugs.debian.org
+X-Debian-PR-Message: report 237001
+X-Debian-PR-Package: evolution
+X-Debian-PR-Keywords: 
+Received: via spool by 237001-submit@bugs.debian.org id=B237001.10806826195509
+          (code B ref 237001); Tue, 30 Mar 2004 21:48:03 UTC
+Received: (at 237001) by bugs.debian.org; 30 Mar 2004 21:36:59 +0000
+Received: from (zalmah) [216.94.147.57] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1B8Qun-0001Om-00; Tue, 30 Mar 2004 13:36:57 -0800
+Received: by zalmah (Postfix, from userid 1003)
+	id D979B28307D; Tue, 30 Mar 2004 16:36:16 -0500 (EST)
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+From: Mathieu Petit-Clair <mathieu@orangeseeds.net>
+To: Debian Bug Tracking System <237001@bugs.debian.org>
+X-Mailer: reportbug 2.55
+Date: Tue, 30 Mar 2004 16:36:16 -0500
+Message-Id: <20040330213616.D979B28307D@zalmah>
+Delivered-To: 237001@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2004_03_25 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-7.0 required=4.0 tests=BAYES_00,HAS_PACKAGE 
+	autolearn=no version=2.60-bugs.debian.org_2004_03_25
+X-Spam-Level: 
+
+Package: Evolution
+Version: 1.4.6-2
+Severity: normal
+Followup-For: Bug #237001
+
+Bug marked as "notximian".  "Distro problem" in Ximian Bugzilla.
+http://bugzilla.ximian.com/show_bug.cgi?id=55062
+
+The problem still occurs in version 1.4.6-2.
+
+I'll try to find out a bit more about this..  
+
+-- System Information:
+Debian Release: testing/unstable
+  APT prefers unstable
+  APT policy: (500, 'unstable'), (1, 'experimental')
+Architecture: i386 (i686)
+Kernel: Linux 2.6.5-rc1-bk2
+Locale: LANG=fr_CA, LC_CTYPE=fr_CA
+
+Versions of packages Evolution depends on:
+hi  gconf2                      2.4.0.1-4    GNOME configuration database syste
+ii  gtkhtml3.0                  3.0.10-1     HTML rendering/editing library - b
+ii  libart-2.0-2                2.3.16-3     Library of functions for 2D graphi
+ii  libasn1-6-heimdal           0.6-8        Libraries for Heimdal Kerberos
+hi  libatk1.0-0                 1.4.1-1      The ATK accessibility toolkit
+ii  libaudiofile0               0.2.6-3      Open-source version of SGI's audio
+ii  libbonobo2-0                2.4.3-1      Bonobo CORBA interfaces library
+ii  libbonoboui2-0              2.4.3-2      The Bonobo UI library
+ii  libc6                       2.3.2.ds1-11 GNU C Library: Shared libraries an
+ii  libcomerr2                  1.35-4       The Common Error Description libra
+ii  libdb3                      3.2.9-19     Berkeley v3 Database Libraries [ru
+ii  libesd0                     0.2.29-1     Enlightened Sound Daemon - Shared 
+ii  libfontconfig1              2.2.2-1      generic font configuration library
+ii  libfreetype6                2.1.7-2      FreeType 2 font engine, shared lib
+ii  libgail-common              1.4.1-1      GNOME Accessibility Implementation
+ii  libgail17                   1.4.1-1      GNOME Accessibility Implementation
+ii  libgal2.0-6                 1.99.11-1    G App Libs (run time library)
+ii  libgal2.0-common            1.99.11-1    G App Libs (common files)
+ii  libgconf2-4                 2.4.0.1-4    GNOME configuration database syste
+ii  libgcrypt1                  1.1.12-4     LGPL Crypto library - runtime libr
+ii  libglade2-0                 2.0.1-11     Library to load .glade files at ru
+hi  libglib2.0-0                2.2.3-1      The GLib library of C routines
+ii  libgnome-pilot2             2.0.10-4     Support libraries for gnome-pilot
+ii  libgnome2-0                 2.4.0-9      The GNOME 2 library - runtime file
+ii  libgnomecanvas2-0           2.4.0-3      A powerful object-oriented display
+ii  libgnomeprint2.2-0          2.4.2-4      The GNOME 2.2 print architecture -
+ii  libgnomeprintui2.2-0        2.4.2-2      The GNOME 2.2 print architecture U
+ii  libgnomeui-0                2.4.0.1-10   The GNOME 2 libraries (User Interf
+ii  libgnomevfs2-0              2.4.1-5      The GNOME virtual file-system libr
+ii  libgnomevfs2-common         2.4.1-5      The GNOME virtual file-system libr
+ii  libgnutls7                  0.8.12-5     GNU TLS library - runtime library
+ii  libgssapi1-heimdal          0.6-8        Libraries for Heimdal Kerberos
+hi  libgtk2.0-0                 2.2.4-3      The GTK+ graphical user interface 
+ii  libgtkhtml3.0-4             3.0.10-1     HTML rendering/editing library - r
+ii  libice6                     4.3.0-7      Inter-Client Exchange library
+ii  libjpeg62                   6b-9         The Independent JPEG Group's JPEG 
+ii  libkrb-1-kerberos4kth       1.2.2-10     Kerberos Libraries for Kerberos4 F
+ii  libkrb5-17-heimdal          0.6-8        Libraries for Heimdal Kerberos
+ii  libldap2                    2.1.26-1     OpenLDAP libraries
+ii  libnspr4                    2:1.6-3      Netscape Portable Runtime Library
+ii  libnss3                     2:1.6-3      Network Security Service Libraries
+ii  liborbit2                   1:2.8.3-2    libraries for ORBit2 - a CORBA ORB
+hi  libpango1.0-0               1.2.5-2.1    Layout and rendering of internatio
+ii  libpisock8                  0.11.8-9     Library for communicating with a P
+ii  libpisync0                  0.11.8-9     Synchronization library for PalmOS
+ii  libpopt0                    1.7-4        lib for parsing cmdline parameters
+ii  libroken16-kerberos4kth     1.2.2-10     Roken Libraries for Kerberos4 From
+ii  libsm6                      4.3.0-7      X Window System Session Management
+ii  libsoup2.0-0                1.99.28-2    an HTTP library implementation in 
+ii  libssl0.9.7                 0.9.7d-1     SSL shared libraries
+ii  libtasn1-0                  0.1.2-1      Manage ASN.1 structures (runtime)
+ii  libx11-6                    4.3.0-7      X Window System protocol client li
+ii  libxml2                     2.6.7-1      GNOME XML library
+ii  scrollkeeper                0.3.14-7     A free electronic cataloging syste
+ii  xlibs                       4.3.0-7      X Window System client libraries m
+ii  zlib1g                      1:1.2.1-5    compression library - runtime
+
+-- no debconf information
+
+
+
+
+<strong>Acknowledgement sent</strong> to <code>Mathieu Petit-Clair &lt;mathieu@orangeseeds.net&gt;</code>:<br>
+Extra info received and forwarded to list.  Copy sent to <code>Takuo KITAME &lt;kitame@debian.org&gt;</code>.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: Mathieu Petit-Clair <mathieu@orangeseeds.net>
+Subject: Bug#237001: Info received (was Evolution: bug still in evolution 1.4.6-2 / unstable)
+Message-ID: <handler.237001.B237001.10806826195509.ackinfo@bugs.debian.org>
+In-Reply-To: <20040330213616.D979B28307D@zalmah>
+References: <20040330213616.D979B28307D@zalmah>
+Precedence: bulk
+X-Debian-PR-Message: ack-info 237001
+X-Debian-PR-Package: evolution
+X-Debian-PR-Keywords: 
+
+Thank you for the additional information you have supplied regarding
+this problem report.  It has been forwarded to the package maintainer(s)
+and to other interested parties to accompany the original report.
+
+Your message has been sent to the package maintainer(s):
+ Takuo KITAME <kitame@debian.org>
+
+If you wish to continue to submit further information on your problem,
+please send it to 237001@bugs.debian.org, as before.
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the Bug-tracking system.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+
+
+Received: (at 237001) by bugs.debian.org; 30 Mar 2004 21:36:59 +0000
+From mathieu@zalmah.ath.cx Tue Mar 30 13:36:59 2004
+Return-path: <mathieu@zalmah.ath.cx>
+Received: from (zalmah) [216.94.147.57] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1B8Qun-0001Om-00; Tue, 30 Mar 2004 13:36:57 -0800
+Received: by zalmah (Postfix, from userid 1003)
+	id D979B28307D; Tue, 30 Mar 2004 16:36:16 -0500 (EST)
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+From: Mathieu Petit-Clair <mathieu@orangeseeds.net>
+To: Debian Bug Tracking System <237001@bugs.debian.org>
+Subject: Evolution: bug still in evolution 1.4.6-2 / unstable
+X-Mailer: reportbug 2.55
+Date: Tue, 30 Mar 2004 16:36:16 -0500
+Message-Id: <20040330213616.D979B28307D@zalmah>
+Delivered-To: 237001@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2004_03_25 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-7.0 required=4.0 tests=BAYES_00,HAS_PACKAGE 
+	autolearn=no version=2.60-bugs.debian.org_2004_03_25
+X-Spam-Level: 
+
+Package: Evolution
+Version: 1.4.6-2
+Severity: normal
+Followup-For: Bug #237001
+
+Bug marked as "notximian".  "Distro problem" in Ximian Bugzilla.
+http://bugzilla.ximian.com/show_bug.cgi?id=55062
+
+The problem still occurs in version 1.4.6-2.
+
+I'll try to find out a bit more about this..  
+
+-- System Information:
+Debian Release: testing/unstable
+  APT prefers unstable
+  APT policy: (500, 'unstable'), (1, 'experimental')
+Architecture: i386 (i686)
+Kernel: Linux 2.6.5-rc1-bk2
+Locale: LANG=fr_CA, LC_CTYPE=fr_CA
+
+Versions of packages Evolution depends on:
+hi  gconf2                      2.4.0.1-4    GNOME configuration database syste
+ii  gtkhtml3.0                  3.0.10-1     HTML rendering/editing library - b
+ii  libart-2.0-2                2.3.16-3     Library of functions for 2D graphi
+ii  libasn1-6-heimdal           0.6-8        Libraries for Heimdal Kerberos
+hi  libatk1.0-0                 1.4.1-1      The ATK accessibility toolkit
+ii  libaudiofile0               0.2.6-3      Open-source version of SGI's audio
+ii  libbonobo2-0                2.4.3-1      Bonobo CORBA interfaces library
+ii  libbonoboui2-0              2.4.3-2      The Bonobo UI library
+ii  libc6                       2.3.2.ds1-11 GNU C Library: Shared libraries an
+ii  libcomerr2                  1.35-4       The Common Error Description libra
+ii  libdb3                      3.2.9-19     Berkeley v3 Database Libraries [ru
+ii  libesd0                     0.2.29-1     Enlightened Sound Daemon - Shared 
+ii  libfontconfig1              2.2.2-1      generic font configuration library
+ii  libfreetype6                2.1.7-2      FreeType 2 font engine, shared lib
+ii  libgail-common              1.4.1-1      GNOME Accessibility Implementation
+ii  libgail17                   1.4.1-1      GNOME Accessibility Implementation
+ii  libgal2.0-6                 1.99.11-1    G App Libs (run time library)
+ii  libgal2.0-common            1.99.11-1    G App Libs (common files)
+ii  libgconf2-4                 2.4.0.1-4    GNOME configuration database syste
+ii  libgcrypt1                  1.1.12-4     LGPL Crypto library - runtime libr
+ii  libglade2-0                 2.0.1-11     Library to load .glade files at ru
+hi  libglib2.0-0                2.2.3-1      The GLib library of C routines
+ii  libgnome-pilot2             2.0.10-4     Support libraries for gnome-pilot
+ii  libgnome2-0                 2.4.0-9      The GNOME 2 library - runtime file
+ii  libgnomecanvas2-0           2.4.0-3      A powerful object-oriented display
+ii  libgnomeprint2.2-0          2.4.2-4      The GNOME 2.2 print architecture -
+ii  libgnomeprintui2.2-0        2.4.2-2      The GNOME 2.2 print architecture U
+ii  libgnomeui-0                2.4.0.1-10   The GNOME 2 libraries (User Interf
+ii  libgnomevfs2-0              2.4.1-5      The GNOME virtual file-system libr
+ii  libgnomevfs2-common         2.4.1-5      The GNOME virtual file-system libr
+ii  libgnutls7                  0.8.12-5     GNU TLS library - runtime library
+ii  libgssapi1-heimdal          0.6-8        Libraries for Heimdal Kerberos
+hi  libgtk2.0-0                 2.2.4-3      The GTK+ graphical user interface 
+ii  libgtkhtml3.0-4             3.0.10-1     HTML rendering/editing library - r
+ii  libice6                     4.3.0-7      Inter-Client Exchange library
+ii  libjpeg62                   6b-9         The Independent JPEG Group's JPEG 
+ii  libkrb-1-kerberos4kth       1.2.2-10     Kerberos Libraries for Kerberos4 F
+ii  libkrb5-17-heimdal          0.6-8        Libraries for Heimdal Kerberos
+ii  libldap2                    2.1.26-1     OpenLDAP libraries
+ii  libnspr4                    2:1.6-3      Netscape Portable Runtime Library
+ii  libnss3                     2:1.6-3      Network Security Service Libraries
+ii  liborbit2                   1:2.8.3-2    libraries for ORBit2 - a CORBA ORB
+hi  libpango1.0-0               1.2.5-2.1    Layout and rendering of internatio
+ii  libpisock8                  0.11.8-9     Library for communicating with a P
+ii  libpisync0                  0.11.8-9     Synchronization library for PalmOS
+ii  libpopt0                    1.7-4        lib for parsing cmdline parameters
+ii  libroken16-kerberos4kth     1.2.2-10     Roken Libraries for Kerberos4 From
+ii  libsm6                      4.3.0-7      X Window System Session Management
+ii  libsoup2.0-0                1.99.28-2    an HTTP library implementation in 
+ii  libssl0.9.7                 0.9.7d-1     SSL shared libraries
+ii  libtasn1-0                  0.1.2-1      Manage ASN.1 structures (runtime)
+ii  libx11-6                    4.3.0-7      X Window System protocol client li
+ii  libxml2                     2.6.7-1      GNOME XML library
+ii  scrollkeeper                0.3.14-7     A free electronic cataloging syste
+ii  xlibs                       4.3.0-7      X Window System client libraries m
+ii  zlib1g                      1:1.2.1-5    compression library - runtime
+
+-- no debconf information
+
+
+
+
+<strong>Information forwarded</strong> to <code>debian-bugs-dist@lists.debian.org, Takuo KITAME &lt;kitame@debian.org&gt;</code>:<br>
+<code>Bug#237001</code>; Package <code>evolution</code>.
+
+
+debian-bugs-dist@lists.debian.orgTakuo KITAME <kitame@debian.org>
+
+X-Loop: owner@bugs.debian.org
+Subject: Bug#237001: workaround
+Reply-To: Mathieu Petit-Clair <mathieu@orangeseeds.net>, 237001@bugs.debian.org
+Resent-From: Mathieu Petit-Clair <mathieu@orangeseeds.net>
+Resent-To: debian-bugs-dist@lists.debian.org
+Resent-CC: Takuo KITAME <kitame@debian.org>
+Resent-Date: Tue, 30 Mar 2004 22:03:15 UTC
+Resent-Message-ID: <handler.237001.B237001.108068393616695@bugs.debian.org>
+Resent-Sender: owner@bugs.debian.org
+X-Debian-PR-Message: report 237001
+X-Debian-PR-Package: evolution
+X-Debian-PR-Keywords: 
+Received: via spool by 237001-submit@bugs.debian.org id=B237001.108068393616695
+          (code B ref 237001); Tue, 30 Mar 2004 22:03:15 UTC
+Received: (at 237001) by bugs.debian.org; 30 Mar 2004 21:58:56 +0000
+Received: from out2.smtp.messagingengine.com [66.111.4.26] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1B8RG4-0004L6-00; Tue, 30 Mar 2004 13:58:56 -0800
+X-Sasl-enc: vI7AOvQKbB7mW5cpGaGdog 1080683829
+Received: from [192.168.1.101] (unknown [216.94.147.57])
+	by mail.messagingengine.com (Postfix) with ESMTP id 3EA058D8601
+	for <237001@bugs.debian.org>; Tue, 30 Mar 2004 16:57:08 -0500 (EST)
+From: Mathieu Petit-Clair <mathieu@orangeseeds.net>
+To: 237001@bugs.debian.org
+Content-Type: text/plain
+Message-Id: <1080683828.12444.0.camel@zalmah>
+Mime-Version: 1.0
+X-Mailer: Ximian Evolution 1.4.6 
+Date: Tue, 30 Mar 2004 16:57:11 -0500
+Content-Transfer-Encoding: 7bit
+Delivered-To: 237001@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2004_03_25 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=0.0 required=4.0 tests=none autolearn=no 
+	version=2.60-bugs.debian.org_2004_03_25
+X-Spam-Level: 
+
+
+Downgrading libtiff3g from unstable to the version found in testing
+solves the problem.
+
+
+
+
+
+
+<strong>Acknowledgement sent</strong> to <code>Mathieu Petit-Clair &lt;mathieu@orangeseeds.net&gt;</code>:<br>
+Extra info received and forwarded to list.  Copy sent to <code>Takuo KITAME &lt;kitame@debian.org&gt;</code>.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: Mathieu Petit-Clair <mathieu@orangeseeds.net>
+Subject: Bug#237001: Info received (was workaround)
+Message-ID: <handler.237001.B237001.108068393616695.ackinfo@bugs.debian.org>
+In-Reply-To: <1080683828.12444.0.camel@zalmah>
+References: <1080683828.12444.0.camel@zalmah>
+Precedence: bulk
+X-Debian-PR-Message: ack-info 237001
+X-Debian-PR-Package: evolution
+X-Debian-PR-Keywords: 
+
+Thank you for the additional information you have supplied regarding
+this problem report.  It has been forwarded to the package maintainer(s)
+and to other interested parties to accompany the original report.
+
+Your message has been sent to the package maintainer(s):
+ Takuo KITAME <kitame@debian.org>
+
+If you wish to continue to submit further information on your problem,
+please send it to 237001@bugs.debian.org, as before.
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the Bug-tracking system.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+
+
+Received: (at 237001) by bugs.debian.org; 30 Mar 2004 21:58:56 +0000
+From mathieu@orangeseeds.net Tue Mar 30 13:58:56 2004
+Return-path: <mathieu@orangeseeds.net>
+Received: from out2.smtp.messagingengine.com [66.111.4.26] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1B8RG4-0004L6-00; Tue, 30 Mar 2004 13:58:56 -0800
+X-Sasl-enc: vI7AOvQKbB7mW5cpGaGdog 1080683829
+Received: from [192.168.1.101] (unknown [216.94.147.57])
+	by mail.messagingengine.com (Postfix) with ESMTP id 3EA058D8601
+	for <237001@bugs.debian.org>; Tue, 30 Mar 2004 16:57:08 -0500 (EST)
+Subject: workaround
+From: Mathieu Petit-Clair <mathieu@orangeseeds.net>
+To: 237001@bugs.debian.org
+Content-Type: text/plain
+Message-Id: <1080683828.12444.0.camel@zalmah>
+Mime-Version: 1.0
+X-Mailer: Ximian Evolution 1.4.6 
+Date: Tue, 30 Mar 2004 16:57:11 -0500
+Content-Transfer-Encoding: 7bit
+Delivered-To: 237001@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2004_03_25 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=0.0 required=4.0 tests=none autolearn=no 
+	version=2.60-bugs.debian.org_2004_03_25
+X-Spam-Level: 
+
+
+Downgrading libtiff3g from unstable to the version found in testing
+solves the problem.
+
+
+
+
+
+
+<strong>Merged 237001 241742.</strong>
+Request was from <code>Roland Stigge &lt;stigge@antcom.de&gt;</code>
+to <code>control@bugs.debian.org</code>. 
+
+
+Received: (at control) by bugs.debian.org; 1 May 2004 08:37:28 +0000
+From stigge@antcom.de Sat May 01 01:37:28 2004
+Return-path: <stigge@antcom.de>
+Received: from pd9e7eedb.dip.t-dialin.net (stigge.org) [217.231.238.219] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1BJq00-0001iF-00; Sat, 01 May 2004 01:37:28 -0700
+Received: (qmail 13623 invoked from network); 1 May 2004 08:37:25 -0000
+Received: from unknown (HELO atari.stigge.org) (192.168.1.99)
+  by sbo.stigge.org with SMTP; 1 May 2004 08:37:25 -0000
+Received: from localhost (localhost [127.0.0.1])
+	by atari.stigge.org (Postfix) with ESMTP id 8C0511003CC7C
+	for <control@bugs.debian.org>; Sat,  1 May 2004 10:37:25 +0200 (CEST)
+Subject: 
+From: Roland Stigge <stigge@antcom.de>
+To: control@bugs.debian.org
+Content-Type: text/plain
+Organization: Antcom
+Message-Id: <1083400645.4042.0.camel@atari.stigge.org>
+Mime-Version: 1.0
+X-Mailer: Ximian Evolution 1.4.6 
+Date: Sat, 01 May 2004 10:37:25 +0200
+Content-Transfer-Encoding: 7bit
+Delivered-To: control@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2004_03_25 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-4.0 required=4.0 tests=BAYES_00,VALID_BTS_CONTROL 
+	autolearn=no version=2.60-bugs.debian.org_2004_03_25
+X-Spam-Level: 
+X-CrossAssassin-Score: 1
+
+merge 241742 237001
+
+
+
+

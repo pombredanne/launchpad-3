@@ -101,13 +101,12 @@ def main():
                 POSubmission.id <> %d''' % (pofile.id, submission.id),
                 orderBy='-datecreated',
                 clauseTables=['POMsgSet'])
-            if len(results) > 2:
-                # Latest one is going to be removed, we pick previous
-                # submission.
-                pofile.latestsubmission = results[1]
-            elif len(results) == 1:
-                # There was only this submission, we don't have any
-                # translation for this pofile!.
+            results = list(results)
+            if results:
+                # We have another submission we can use
+                pofile.latestsubmission = results[0]
+            else:
+                # We have no more submissions
                 pofile.latestsubmission = None
         ztm.commit()
         submission.pomsgset.iscomplete = False

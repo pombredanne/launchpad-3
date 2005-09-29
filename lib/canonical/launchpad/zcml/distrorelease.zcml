@@ -49,17 +49,22 @@
         facet="bugs"
         permission="zope.Public">
         <browser:page
-            name="+bugs-only"
-            lp:url="/distros/$DistroRelease.name/+bugs-only"
+            name="+bugs"
+            lp:url="/distros/$DistroRelease.name/+bugs"
             template="../templates/bugs-for-context.pt" />
         <browser:page
-            name="+portlet-bugtasklist-actions"
-            template="../templates/bugtasklist-portlet-actions.pt"
-            lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-actions" />
+            name="+portlet-bugtasklist-mybugs"
+            template="../templates/bugtasklist-portlet-mybugs.pt"
+            lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-mybugs"
+            />
         <browser:page
             name="+portlet-bugtasklist-releasebugs"
             template="../templates/bugtask-portlet-releasebugs.pt"
             lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-releasebugs" />
+        <browser:page
+            name="+portlet-aboutcve"
+            template="../templates/distribution-portlet-aboutcve.pt"
+            lp:url="/distros/$DistroRelease.name/+portlet-aboutcve" />
     </browser:pages>
 
     <browser:pages
@@ -70,6 +75,9 @@
             name="+filebug"
             facet="bugs"
             attribute="redirectToDistroFileBug" />
+        <browser:page
+            name="+cve"
+            template="../templates/distrorelease-cvereport.pt" />
         <browser:page
             name="+index"
             facet="overview"
@@ -89,6 +97,11 @@
             name="+potlist"
             facet="translations"
             template="../templates/object-pots.pt" />
+        <browser:page
+            name="+builds"
+            template="../templates/distrorelease-builds.pt"
+            lp:url="/distros/$distribution/$distrorelease/+builds"
+            />
         <browser:page
             name="+portlet-details"
             facet="overview"
@@ -122,9 +135,10 @@
         lp:url="/distros/$distro.id/$release.id/+reassign" />
     </browser:pages>
 
-   <browser:menus
+    <browser:menus
         module="canonical.launchpad.browser.distrorelease"
-        classes="DistroReleaseFacets"
+        classes="DistroReleaseFacets DistroReleaseOverviewMenu
+            DistroReleaseBugsMenu DistroReleaseSpecificationsMenu"
         />
 
 </configure>

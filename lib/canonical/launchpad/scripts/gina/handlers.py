@@ -18,6 +18,7 @@ from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
 from canonical.launchpad.scripts.gina.library import getLibraryAlias
+from canonical.launchpad.scripts.gina.packages import SourcePackageData
 
 from canonical.lp import initZopeless
 from canonical.launchpad.database import (Distribution, DistroRelease,
@@ -33,13 +34,15 @@ from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
 from canonical.database.sqlbase import quote
 
 from canonical.lp.dbschema import (PackagePublishingStatus,
-    BinaryPackagePriority, SourcePackageUrgency, BuildStatus)
+    PackagePublishingPriority, SourcePackageUrgency, BuildStatus)
 
 from canonical.launchpad.scripts import log
 from canonical.database.constants import nowUTC
 from canonical.config import config
 from canonical import encoding
 from canonical.launchpad.validators.version import valid_debian_version
+
+from canonical.archivepublisher import Poolifier, parse_tagfile
 
 priomap = {
     "low": SourcePackageUrgency.LOW,
@@ -50,12 +53,12 @@ priomap = {
     }
 
 prioritymap = {
-"required": BinaryPackagePriority.REQUIRED,
-"important": BinaryPackagePriority.IMPORTANT,
-"standard": BinaryPackagePriority.STANDARD,
-"optional": BinaryPackagePriority.OPTIONAL,
-"extra": BinaryPackagePriority.EXTRA,
-"source": BinaryPackagePriority.EXTRA #Some binarypackages ended up
+"required": PackagePublishingPriority.REQUIRED,
+"important": PackagePublishingPriority.IMPORTANT,
+"standard": PackagePublishingPriority.STANDARD,
+"optional": PackagePublishingPriority.OPTIONAL,
+"extra": PackagePublishingPriority.EXTRA,
+"source": PackagePublishingPriority.EXTRA #Some binarypackages ended up
                                            #with priority source.
 }
 
@@ -70,7 +73,8 @@ class ImporterHandler:
     
     This class is used to handle the import process.
     """
-    def __init__(self, distro_name, distrorelease_name, dry_run):
+    def __init__(self, distro_name, distrorelease_name, dry_run,
+                 ktdb, poolroot, keyrings, pocket):
         self.ztm = initZopeless(dbuser=config.gina.dbuser)
 
         # Store basic import info.
@@ -85,10 +89,11 @@ class ImporterHandler:
         self.imported_bins ={}
 
         # Create a sourcepackagerelease handler
-        self.sphandler = SourcePackageReleaseHandler()
+        self.sphandler = SourcePackageReleaseHandler(ktdb, poolroot,
+                                                     keyrings, pocket)
 
         # Create a binarypackage handler
-        self.bphandler = BinaryPackageHandler()
+        self.bphandler = BinaryPackageHandler(self.sphandler)
         
 
 
@@ -165,7 +170,8 @@ class ImporterHandler:
 
     def preimport_sourcecheck(self, sourcepackagedata):
         """Check if SourcePackage already exists from a non-processed data"""
-        sourcepackagerelease = self.sphandler.checkSource(sourcepackagedata)
+        sourcepackagerelease = self.sphandler.checkSource(
+            sourcepackagedata, self.distrorelease)
         if not sourcepackagerelease:
             return None
 
@@ -181,7 +187,8 @@ class ImporterHandler:
         """Handler the sourcepackage import process"""
 
         # Check if the sourcepackagerelease already exists.
-        sourcepackagerelease = self.sphandler.checkSource(sourcepackagedata)
+        sourcepackagerelease = self.sphandler.checkSource(
+            sourcepackagedata, self.distrorelease)
         if sourcepackagerelease:
             log.debug('Sourcepackagerelease %s version %s already exists' %(
                 sourcepackagedata.package, sourcepackagedata.version
@@ -216,11 +223,21 @@ class ImporterHandler:
             return binarypackage
 
         # Find the sourcepackagerelease that generate this binarypackage.
-        sourcepackage = self.sphandler.getSourceToBinary(binarypackagedata)
+        sourcepackage = self.sphandler.getSourceToBinary(
+            binarypackagedata,
+            distroarchinfo['distroarchrelease'].distrorelease)
+        
+        if not sourcepackage:
+            # We couldn't find a sourcepackagerelease in the database.
+            # Perhaps we can opportunistically pick one out of the archive.
+            sourcepackage = self.sphandler.findAndImportUnlistedSourcePackage(
+                binarypackagedata,
+                distroarchinfo['distroarchrelease'].distrorelease)
+            
         if not sourcepackage:
             # If the sourcepackagerelease is not imported, not way to import
             # this binarypackage. Warn and giveup.
-            log.warn("FMO courtesy of TROUP & TROUT inc. on %s (%s)" % (
+            log.info("FMO courtesy of TROUP & TROUT inc. on %s (%s)" % (
                 binarypackagedata.source, binarypackagedata.source_version
                 ))
             return None
@@ -259,11 +276,11 @@ class ImporterHandler:
 
 class BinaryPackageHandler:
     """Handler to deal with binarypackages."""
-    def __init__(self):
+    def __init__(self, sphandler):
         # Create other needed object handlers.
         self.person_handler = PersonHandler()
         self.distro_handler = DistroHandler()
-        self.source_handler = SourcePackageReleaseHandler()
+        self.source_handler = sphandler
 
     def checkBin(self, binarypackagedata, archinfo):
         try:
@@ -279,25 +296,32 @@ class BinaryPackageHandler:
 
     def _getBinary(self, binaryname, version, architecture, distroarchinfo):
         """Returns a binarypackage if it exists."""
-        if architecture == "all":
-            binpkg = BinaryPackageRelease.selectOneBy(
-                binarypackagenameID=binaryname.id, version=version)
 
-            if binpkg:
-                return binpkg
-
-        clauseTables=("BinaryPackageRelease","Build",)
+        clauseTables=["BinaryPackageRelease","Build"]
         query = ("BinaryPackageRelease.binarypackagename=%s AND "
                  "BinaryPackageRelease.version=%s AND "
-                 "Build.Processor=%s AND "
-                 "Build.distroarchrelease=%s AND "
                  "Build.id = BinaryPackageRelease.build"
                  % (binaryname.id,
-                    quote(version),
-                    distroarchinfo['processor'].id,
-                    distroarchinfo['distroarchrelease'].id)
+                    quote(version)
+                    )
                  )
 
+        if architecture != "all":
+            query = ("Build.Processor=%s AND "
+                     "Build.distroarchrelease=%s AND "
+                     "%s" % (distroarchinfo['processor'].id,
+                             distroarchinfo['distroarchrelease'].id,
+                             query)
+                     )
+        else:
+            query = ("Build.distroarchrelease = distroarchrelease.id AND "
+                     "DistroArchRelease.id = %s AND "
+                     "%s" %
+                     (distroarchinfo['distroarchrelease'].distrorelease.id,
+                      query)
+                     )
+            clauseTables.append('DistroArchRelease')
+            
         return BinaryPackageRelease.selectOne(query, clauseTables=clauseTables)
             
         
@@ -499,11 +523,100 @@ class SourcePackageReleaseHandler:
     This class has methods to make the sourcepackagerelease access
     on the launchpad db a little easier.
     """
-    def __init__(self):
+    def __init__(self, KTDB, archiveroot, keyrings, pocket):
         self.person_handler = PersonHandler()
         self.distro_handler = DistroHandler()
+        self.ktdb = KTDB
+        self.archiveroot = archiveroot
+        self.poolify = Poolifier().poolify
+        self.keyrings = keyrings
+        self.pocket = pocket
 
-    def getSourceToBinary(self, binarypackagedata):
+    def findAndImportUnlistedSourcePackage(self, binarypackagedata,
+                                           distrorelease):
+        """Try to find a sourcepackagerelease in the archive for the
+        provided binarypackage data.
+
+        The binarypackage data refers to a source package which we
+        cannot find either in the database or in the input data.
+
+        This commonly happens when the source package is no longer part
+        of the distribution but a binary built from it is and thus the
+        source is not in Sources.gz but is on the disk.
+
+        If we fail to find it we return None and the binary importer
+        will handle this in the same way as if the package simply wasn't
+        in the database. I.E. the binary import will fail but the
+        process as a whole will continue okay.
+        """
+
+        sp_name = binarypackagedata.source
+        sp_version = binarypackagedata.source_version
+        sp_component = binarypackagedata.component
+
+        # strip the epoch because it's not wanted here.
+        if ":" in sp_version:
+            sp_version = sp_version[sp_version.find(":")+1:]
+
+        dsc_name = "%s_%s.dsc" % (sp_name, sp_version)
+
+        sp_path = os.path.join(self.archiveroot, "pool",
+                               self.poolify(sp_name, sp_component),
+                               dsc_name)
+        if not os.path.exists(sp_path):
+            # aah well, failed...
+            return None
+
+        dsc_contents = parse_tagfile(sp_path)
+
+        # Since the dsc doesn't know, we add in the sub-path, package,
+        # component etc.
+        dsc_contents['directory'] = self.poolify(sp_name, sp_component)
+        dsc_contents['package'] = sp_name
+        dsc_contents['component'] = sp_component
+
+        # Also, the dsc doesn't list itself so we'll add it ourselves
+        if not dsc_contents['files'].endswith("\n"):
+            dsc_contents['files'] += "\n"
+        dsc_contents['files'] += "xxx 000 %s" % dsc_name
+
+        # By capitalising the first letters of the keys we can create
+        # a new dict which SourcePackageData will accept...
+        capitalised_dsc = {}
+        for k,v in dsc_contents.items():
+            capitalised_dsc[k.capitalize()] = v
+
+        # Generate an sp_data object for the dsc
+        sp_data = SourcePackageData(self.ktdb, **capitalised_dsc)
+
+        # Process the package
+        sp_data.process_package(self.ktdb,
+                                os.path.join(self.archiveroot, "pool"),
+                                self.keyrings)
+        
+        # Attempt to construct a sourcepackagerelease against the
+        # provided dsc_contents...
+
+        spr = self.createSourcePackageRelease(sp_data, distrorelease)
+
+        if not spr:
+            return None
+
+        if self.pocket:
+            # Publish it because otherwise we'll have problems later.
+            # Essentially this routine is only ever called when a binary
+            # is encountered for which the source was not found.
+            # Now that we have found and imported the source, we need
+            # to be sure to publish it because the binary import code
+            # assumes that the sources have been imported properly before
+            # the binary import is started. Thusly since this source is
+            # being imported "late" in the process, we publish it immediately
+            # to make sure it doesn't get lost.
+            SourcePublisher(distrorelease).publish(spr, self.pocket)
+
+        return spr
+
+    def getSourceToBinary(self, binarypackagedata, distrorelease):
         """Get a SourcePackageRelease to a BinaryPackage"""
         try:
             spname = SourcePackageName.byName(binarypackagedata.source)
@@ -512,10 +625,12 @@ class SourcePackageReleaseHandler:
 
         # Check if this sourcepackagerelease already exists using name and
         # version
-        return self._getSource(spname, binarypackagedata.source_version)
+        return self._getSource(spname,
+                               binarypackagedata.source_version,
+                               distrorelease)
         
 
-    def checkSource(self, sourcepackagedata):
+    def checkSource(self, sourcepackagedata, distrorelease):
         """Check if a sourcepackagerelease is already on lp db.
 
         Returns the sourcepackagerelease if exists or none if not.
@@ -528,15 +643,17 @@ class SourcePackageReleaseHandler:
         # Check if this sourcepackagerelease already exists using name and
         # version
         return self._getSource(spname,
-                               sourcepackagedata.version)
+                               sourcepackagedata.version,
+                               distrorelease)
         
 
-    def _getSource(self, sourcepackagename, version):
+    def _getSource(self, sourcepackagename, version, distrorelease):
         """Returns a sourcepackagerelease by its name and version."""
 
-        return SourcePackageRelease.selectOneBy(\
+        return SourcePackageRelease.selectOneBy(
                             sourcepackagenameID=sourcepackagename.id,
-                            version=version)
+                            version=version,
+                            uploaddistroreleaseID=distrorelease.id)
 
 
     def createSourcePackageRelease(self, src, distrorelease):

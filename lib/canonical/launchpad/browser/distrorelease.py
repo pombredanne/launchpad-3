@@ -18,20 +18,78 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 
 from canonical.launchpad import helpers
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp import StandardLaunchpadFacets
+from canonical.launchpad.webapp import (
+    canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu,
+    enabled_with_permission)
 
-from canonical.launchpad.interfaces import (IDistroReleaseLanguageSet,
+from canonical.launchpad.interfaces import (
+    IDistroReleaseLanguageSet,
     IBugTaskSearchListingView, IDistroRelease, ICountry,
-    IDistroReleaseSet, ILaunchBag)
+    IDistroReleaseSet, ILaunchBag, IBuildSet)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 
 class DistroReleaseFacets(StandardLaunchpadFacets):
 
     usedfor = IDistroRelease
-
     enable_only = ['overview', 'bugs', 'specifications', 'translations']
+
+
+class DistroReleaseOverviewMenu(ApplicationMenu):
+
+    usedfor = IDistroRelease
+    facet = 'overview'
+    links = ['edit', 'reassign', 'sources', 'packaging', 'support']
+
+    def edit(self):
+        text = 'Edit Details'
+        return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def reassign(self):
+        text = 'Change Admin'
+        return Link('+reassign', text, icon='edit')
+
+    def sources(self):
+        text = 'Source Packages'
+        return Link('+sources', text, icon='packages')
+
+    def packaging(self):
+        text = 'Upstream Links'
+        return Link('+packaging', text, icon='info')
+
+    def support(self):
+        text = 'Request Support'
+        url = canonical_url(self.context.distribution) + '/+addticket'
+        return Link(url, text, icon='add')
+
+
+class DistroReleaseBugsMenu(ApplicationMenu):
+
+    usedfor = IDistroRelease
+    facet = 'bugs'
+    links = ['new', 'cve']
+
+    def new(self):
+        return Link('+filebug', 'Report a Bug', icon='add')
+
+    def cve(self):
+        return Link('+cve', 'CVE List', icon='info')
+
+
+class DistroReleaseSpecificationsMenu(ApplicationMenu):
+
+    usedfor = IDistroRelease
+    facet = 'specifications'
+    links = ['new', 'roadmap']
+
+    def new(self):
+        text = 'Register a New Specification'
+        return Link('+addspec', text, icon='add')
+
+    def roadmap(self):
+        text = 'Roadmap'
+        return Link('+specplan', text, icon='info')
 
 
 class DistroReleaseView:
@@ -50,7 +108,6 @@ class DistroReleaseView:
         language prefs indicate might be interesting.
         """
         drlangs = []
-        drlangset = getUtility(IDistroReleaseLanguageSet)
         for language in self.languages:
             drlang = self.context.getDistroReleaseLanguageOrDummy(language)
             drlangs.append(drlang)
@@ -108,6 +165,15 @@ class DistroReleaseView:
         """
         distro_url = canonical_url(self.context.distribution)
         return self.request.response.redirect(distro_url + "/+filebug")
+
+
+    def getBuilt(self):
+        """Return the last build records within the DistroRelease context.
+
+        The number of entries can also be determined in the future.
+        """
+        bset = getUtility(IBuildSet)
+        return bset.getBuiltForDistroRelease(self.context)
 
 
 class DistroReleaseBugsView(BugTaskSearchListingView):

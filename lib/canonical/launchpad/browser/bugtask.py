@@ -5,15 +5,14 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugTaskContextMenu',
     'BugTasksReportView',
-    'ViewWithBugTaskContext',
-    'BugTaskViewBase',
     'BugTaskEditView',
-    'BugTaskDisplayView',
     'BugTaskSearchListingView',
     'BugTargetView',
-    'BugTaskReleaseTargetingView'
-    ]
+    'BugTaskView',
+    'BugTaskReleaseTargetingView']
+
 
 import urllib
 
@@ -24,18 +23,19 @@ from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
 
 from canonical.lp import dbschema
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, Link
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
     IPersonSet, ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch,
     IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask, IBugTaskSet,
     IDistroReleaseSet, ISourcePackageNameSet, BugTaskSearchParams,
-    IDistroBugTask, IDistroReleaseBugTask)
+    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
 from canonical.launchpad.interfaces import IBugTaskSearchListingView
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
 
 # This shortcut constant indicates what we consider "open"
@@ -43,6 +43,11 @@ from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
 #       -- kiko, 2005-08-23
 STATUS_OPEN = any(dbschema.BugTaskStatus.NEW,
                   dbschema.BugTaskStatus.ACCEPTED)
+
+
+class BugTaskContextMenu(BugContextMenu):
+    usedfor = IBugTask
+
 
 class BugTasksReportView:
     """The view class for the assigned bugs report."""
@@ -152,8 +157,94 @@ class BugTasksReportView:
         return getUtility(IPersonSet).search(password=NULL)
 
 
+class BugTaskView:
+    """View class for presenting information about an IBugTask."""
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.notices = []
+
+    def handleSubscriptionRequest(self):
+        """Subscribe or unsubscribe the user from the bug, if requested."""
+        # figure out who the user is for this transaction
+        self.user = getUtility(ILaunchBag).user
+
+        # establish if a subscription form was posted
+        newsub = self.request.form.get('subscribe', None)
+        if newsub and self.user and self.request.method == 'POST':
+            if newsub == 'Subscribe':
+                self.context.bug.subscribe(self.user)
+                self.notices.append("You have been subscribed to this bug.")
+            elif newsub == 'Unsubscribe':
+                self.context.bug.unsubscribe(self.user)
+                self.notices.append("You have been unsubscribed from this bug.")
+
+    def reportBugInContext(self):
+        form = self.request.form
+        fake_task = self.context
+        if form.get("reportbug"):
+            # The user has requested that the bug be reported in this
+            # context.
+            if IUpstreamBugTask.providedBy(fake_task):
+                # Create a real upstream task in this context.
+                real_task = getUtility(IBugTaskSet).createTask(
+                    bug=fake_task.bug, owner=getUtility(ILaunchBag).user,
+                    product=fake_task.product)
+            elif IDistroBugTask.providedBy(fake_task):
+                # Create a real distro bug task in this context.
+                real_task = getUtility(IBugTaskSet).createTask(
+                    bug=fake_task.bug, owner=getUtility(ILaunchBag).user,
+                    distribution=fake_task.distribution,
+                    sourcepackagename=fake_task.sourcepackagename)
+            elif IDistroReleaseBugTask.providedBy(fake_task):
+                # Create a real distro release bug task in this context.
+                real_task = getUtility(IBugTaskSet).createTask(
+                    bug=fake_task.bug, owner=getUtility(ILaunchBag).user,
+                    distrorelease=fake_task.distrorelease,
+                    sourcepackagename=fake_task.sourcepackagename)
+            else:
+                raise TypeError(
+                    "Unknown bug task type: %s" % repr(fake_task))
+
+            self.context = real_task
+
+            # Add an appropriate feedback message
+            self.notices.append(
+                "Successfully opened bug #%d in %s" % (
+                real_task.bug.id, real_task.targetname))
+
+    def isReportedInContext(self):
+        """Is the bug reported in this context? Returns True or False.
+
+        This is particularly useful for views that may render a
+        NullBugTask.
+        """
+        return self.context.datecreated is not None
+
+    def alsoReportedIn(self):
+        """Return a list of IUpstreamBugTasks in which this bug is reported.
+
+        If self.context is an IUpstreamBugTasks, it will be excluded
+        from this list.
+        """
+        return [
+            task for task in self.context.bug.bugtasks
+            if task.id is not self.context.id]
+
+    def isReleaseTargetableContext(self):
+        """Is the context something that supports release targeting?
+
+        Returns True or False.
+        """
+        return (
+            IDistroBugTask.providedBy(self.context) or
+            IDistroReleaseBugTask.providedBy(self.context))
+
+
 class BugTaskReleaseTargetingView:
     """View class for targeting bugs to IDistroReleases."""
+
     @property
     def release_target_details(self):
         """Return a list of BugDistroReleaseTargetDetails objects.
@@ -252,53 +343,16 @@ class BugTaskReleaseTargetingView:
                     sourcepackagename=spname)
 
         # Redirect the user back to the task edit form.
-        self.request.response.redirect(canonical_url(bugtask) + "/+edit")
+        self.request.response.redirect(canonical_url(bugtask) + "/+editstatus")
 
 
-class ViewWithBugTaskContext:
-    def __init__(self, context, request):
-        self.request = request
-        self.context = context
-        setUpWidgets(self, IBugTask, IInputWidget)
-
-    def alsoReportedIn(self):
-        """Return a list of IUpstreamBugTasks in which this bug is reported.
-
-        If self.context is an IUpstreamBugTasks, it will be excluded
-        from this list.
-        """
-        return [
-            task for task in self.context.bug.bugtasks
-            if task.id is not self.context.id]
-
-    def isReleaseTargetableContext(self):
-        """Is the context something that supports release targeting?
-
-        Returns True or False.
-        """
-        bugtarget = self.context.target
-        if (IDistribution.providedBy(bugtarget) or
-            IDistroRelease.providedBy(bugtarget)):
-            return True
-        else:
-            return False
-
-
-class BugTaskViewBase:
-    """The base class for IBugTask view classes."""
-
-
-class BugTaskEditView(SQLObjectEditView, BugTaskViewBase):
+class BugTaskEditView(SQLObjectEditView):
     """The view class used for the task +edit page"""
 
     def changed(self):
         """Redirect the browser to the bug page when we successfully update
         the bug task."""
-        self.request.response.redirect(canonical_url(self.context.bug))
-
-
-class BugTaskDisplayView(BugTaskViewBase):
-    """The view class used for the default task information page."""
+        self.request.response.redirect(canonical_url(self.context))
 
 
 class BugTaskSearchListingView:

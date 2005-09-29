@@ -11,27 +11,139 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import (
+    canonical_url, ContextMenu, Link, enabled_with_permission, LaunchpadView)
 
 __all__ = [
+    'SpecificationContextMenu',
     'SpecificationView',
     'SpecificationAddView',
     'SpecificationEditView',
     ]
 
 
-class SpecificationView:
+class SpecificationContextMenu(ContextMenu):
+
+    usedfor = ISpecification
+    links = ['edit', 'people', 'status', 'setseries', 'setdistrorelease',
+             'milestone', 'requestreview', 'doreview', 'subscription',
+             'linkbug', 'unlinkbug', 'adddependency', 'removedependency',
+             'dependencytree', 'linksprint', 'administer']
+
+    def edit(self):
+        text = 'Edit Summary and Title'
+        return Link('+edit', text, icon='edit')
+
+    def people(self):
+        text = 'Change People'
+        return Link('+people', text, icon='edit')
+
+    def status(self):
+        text = 'Change Status'
+        return Link('+status', text, icon='edit')
+
+    def setseries(self):
+        text = 'Target to Series'
+        enabled = self.context.product is not None
+        return Link('+setseries', text, icon='edit', enabled=enabled)
+
+    def setdistrorelease(self):
+        text = 'Target to Release'
+        enabled = self.context.distribution is not None
+        return Link('+setdistrorelease', text, icon='edit', enabled=enabled)
+
+    def milestone(self):
+        text = 'Target to Milestone'
+        return Link('+milestone', text, icon='edit')
+
+    def requestreview(self):
+        text = 'Request Review'
+        return Link('+requestreview', text, icon='edit')
+
+    def doreview(self):
+        text = 'Conduct Review'
+        enabled = (self.user is not None and
+                   get_review_requested(self.user, self.context) is not None)
+        return Link('+doreview', text, icon='edit', enabled=enabled)
+
+    def subscription(self):
+        user = self.user
+        if user is not None and has_spec_subscription(user, self.context):
+            text = 'Unsubscribe from Spec'
+        else:
+            text = 'Subscribe to Spec'
+        return Link('+subscribe', text, icon='edit')
+
+    def linkbug(self):
+        text = 'Link to Bug'
+        return Link('+linkbug', text, icon='add')
+
+    def unlinkbug(self):
+        text = 'Remove Bug Link'
+        enabled = bool(self.context.bugs)
+        return Link('+unlinkbug', text, icon='add', enabled=enabled)
+
+    def adddependency(self):
+        text = 'Add Dependency'
+        return Link('+linkdependency', text, icon='add')
+
+    def removedependency(self):
+        text = 'Remove Dependency'
+        enabled = bool(self.context.dependencies)
+        return Link('+removedependency', text, icon='add', enabled=enabled)
+
+    def dependencytree(self):
+        text = 'Show Dependency Tree'
+        enabled = (
+            bool(self.context.dependencies) or bool(self.context.blocked_specs)
+            )
+        return Link('+deptree', text, icon='info', enabled=enabled)
+
+    def linksprint(self):
+        text = 'Add to Meeting'
+        return Link('+linksprint', text, icon='add')
+
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+admin', text, icon='edit')
+
+
+def has_spec_subscription(person, spec):
+    """Return whether the person has a subscription to the spec.
+
+    XXX: Refactor this to a method on ISpecification.
+         SteveAlexander, 2005-09-26
+    """
+    assert person is not None
+    for subscription in spec.subscriptions:
+        if subscription.person.id == person.id:
+            return True
+    return False
+
+
+def get_review_requested(person, spec):
+    """Return the review that this person requested, or None if there is not
+    one.
+
+    XXX: Refactor this to a method on ISpecification.
+         SteveAlexander, 2005-09-26
+    """
+    assert person is not None
+    for review in spec.reviews:
+        if review.reviewer.id == person.id:
+            return review
+
+
+class SpecificationView(LaunchpadView):
 
     __used_for__ = ISpecification
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    def initialize(self):
+        # The review that the user requested on this spec, if any.
         self.review = None
         self.notices = []
-
-        # figure out who the user is for this transaction
-        self.user = getUtility(ILaunchBag).user
+        request = self.request
 
         # establish if a subscription form was posted
         newsub = request.form.get('subscribe', None)
@@ -44,33 +156,28 @@ class SpecificationView:
                 self.notices.append("You have unsubscribed from this spec.")
 
         # see if we are clearing a review
-        review = request.form.get('review', None)
-        if review == 'Review Complete' and self.user and \
-           request.method == 'POST':
+        formreview = request.form.get('review', None)
+        if (formreview == 'Review Complete' and self.user and
+            request.method == 'POST'):
             self.context.unqueue(self.user)
             self.notices.append('Thank you for your review.')
 
         if self.user is not None:
             # establish if this user has a review queued on this spec
-            for review in self.context.reviews:
-                if review.reviewer.id == self.user.id:
-                    self.review = review
-                    msg = "Your review was requested by %s"
-                    msg %= review.requestor.browsername
-                    if review.queuemsg:
-                        msg = msg + ': ' + review.queuemsg
-                    self.notices.append(msg)
-                    break
+            self.review = get_review_requested(self.user, self.context)
+            if self.review is not None:
+                msg = "Your review was requested by %s"
+                msg %= self.review.requestor.browsername
+                if self.review.queuemsg:
+                    msg = msg + ': ' + self.review.queuemsg
+                self.notices.append(msg)
 
     @property
     def subscription(self):
-        """establish if this user has a subscription"""
+        """whether the current user has a subscription to the spec."""
         if self.user is None:
-            return None
-        for subscription in self.context.subscriptions:
-            if subscription.person.id == self.user.id:
-                return subscription
-        return None
+            return False
+        return has_spec_subscription(self.user, self.context)
 
 
 class SpecificationAddView(SQLObjectAddView):

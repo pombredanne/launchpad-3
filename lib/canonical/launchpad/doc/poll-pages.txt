@@ -1,0 +1,31 @@
+Poll Pages
+==========
+
+Test some poll-related pages.
+
+  >>> from zope.component import getUtility, getView
+  >>> from canonical.launchpad.interfaces import IPollSet, IPersonSet
+  >>> from canonical.launchpad.ftests import login
+  >>> from zope.publisher.browser import TestRequest
+
+  >>> login("test@canonical.com")
+
+  >>> ubuntu_team = getUtility(IPersonSet).get(17)
+  >>> poll = getUtility(IPollSet).getByTeamAndName(ubuntu_team, 'director-2004')
+  >>> poll.type.title
+  'Condorcet Voting'
+
+Although condorcet polls are disabled now, everything is implemented and we're
+using a pairwise matrix to display the results. It's very trick to create this
+matrix on page templates, so the view provides a method wich return this
+matrix as a python list, with the necessary headers (the option's names).
+
+  >>> poll_results = getView(poll, "+index", TestRequest())
+  >>> for row in poll_results.getPairwiseMatrixWithHeaders():
+  ...     print row
+  [None, u'A', u'B', u'C', u'D']
+  [u'A', None, 2L, 2L, 2L]
+  [u'B', 2L, None, 2L, 2L]
+  [u'C', 1L, 1L, None, 1L]
+  [u'D', 2L, 1L, 2L, None]
+

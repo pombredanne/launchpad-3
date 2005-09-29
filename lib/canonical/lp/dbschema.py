@@ -29,7 +29,6 @@ __all__ = (
 'ArchArchiveType',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
-'BinaryPackagePriority',
 'BountyDifficulty',
 'BountyStatus',
 'BranchRelationships',
@@ -43,7 +42,7 @@ __all__ = (
 'BugTaskSeverity',
 'BuildStatus',
 'CodereleaseRelationships',
-'CVEState',
+'CveStatus',
 'DistributionReleaseStatus',
 'EmailAddressStatus',
 'GPGKeyAlgorithm',
@@ -54,6 +53,7 @@ __all__ = (
 'KarmaActionName',
 'LoginTokenType',
 'ManifestEntryType',
+'ManifestEntryHint',
 'MirrorFreshness',
 'PackagePublishingPriority',
 'PackagePublishingStatus',
@@ -472,7 +472,7 @@ class BugTrackerType(DBSchema):
         """)
 
 
-class CVEState(DBSchema):
+class CveStatus(DBSchema):
     """The Status of this item in the CVE Database
 
     When a potential problem is reported to the CVE authorities they assign
@@ -504,6 +504,7 @@ class CVEState(DBSchema):
         defines the problem, or the original candidate was never promoted to
         "Entry" status.
         """)
+
 
 class ProjectStatus(DBSchema):
     """A Project Status
@@ -590,6 +591,42 @@ class ManifestEntryType(DBSchema):
         against another branch. Usually, the patch is stored in the
         "patches" directory, then applied at build time by the source
         package build scripts.
+        """)
+
+
+class ManifestEntryHint(DBSchema):
+    """Hint as to purpose of a ManifestEntry.
+
+    Manifests, used by both HCT and Sourcerer, are made up of a collection
+    of Manifest Entries.  Each entry refers to a particular component of
+    the source package built by the manifest, usually each having a different
+    branch or changeset.  A Manifest Entry Hint can be assigned to suggest
+    what the purpose of the entry is.
+    """
+
+    ORIGINAL_SOURCE = Item(1, """
+        Original Source
+
+        This is the original source code of the source package, and in the
+        absence of any Patch Base, the parent of any new patch branches
+        created.
+        """)
+
+    PATCH_BASE = Item(2, """
+        Patch Base
+
+        This is an entry intended to serve as the base for any new patches
+        created and added to the source package.  It is often a patch itself,
+        or a virtual branch.  If not present, the Original Source is used
+        instead.
+        """)
+
+    PACKAGING = Item(3, """
+        Packaging
+
+        This is the packaging meta-data for the source package, usually
+        the entry that becomes the debian/ directory in the case of Debian
+        source packages or the spec file in the case of RPMs.
         """)
 
 
@@ -1601,7 +1638,7 @@ class PackagePublishingPriority(DBSchema):
     range from required to optional and various others are available.
     """
 
-    REQUIRED = Item( 50, """
+    REQUIRED = Item(50, """
         Required
 
         This priority indicates that the package is required. This priority
@@ -1609,33 +1646,37 @@ class PackagePublishingPriority(DBSchema):
         the packages at this priority it may become impossible to use dpkg.
         """)
 
-    IMPORTANT = Item( 40, """
+    IMPORTANT = Item(40, """
         Important
 
         If foo is in a package; and "What is going on?! Where on earth is
         foo?!?!" would be the reaction of an experienced UNIX hacker were
-        the package not installed, then the package is important.  """)
+        the package not installed, then the package is important.
+        """)
 
-    STANDARD = Item( 30, """
+    STANDARD = Item(30, """
         Standard
 
         Packages at this priority are standard ones you can rely on to be in
         a distribution. They will be installed by default and provide a
-        basic character-interface userland.  """)
+        basic character-interface userland.
+        """)
 
-    OPTIONAL = Item( 20, """
+    OPTIONAL = Item(20, """
         Optional
 
         This is the software you might reasonably want to install if you did
         not know what it was or what your requiredments were. Systems such
-        as X or TeX will live here.  """)
+        as X or TeX will live here.
+        """)
 
-    EXTRA = Item( 10, """
+    EXTRA = Item(10, """
         Extra
 
         This contains all the packages which conflict with those at the
         other priority levels; or packages which are only useful to people
-        who have very specialised needs.  """)
+        who have very specialised needs.
+        """)
 
 class PackagePublishingPocket(DBSchema):
     """Package Publishing Pocket
@@ -1815,47 +1856,6 @@ class BountyStatus(DBSchema):
         Closed
 
         This bounty is closed. No further submissions will be considered.
-        """)
-
-
-class BinaryPackagePriority(DBSchema):
-    """Binary Package Priority
-
-    When a binary package is installed in an archive it can be assigned a
-    specific priority. This schema documents the priorities that Launchpad
-    knows about.  """
-
-    REQUIRED = Item(10, """
-        Required Package
-
-        This package is required for the distribution to operate normally.
-        Usually these are critical core packages that are essential for the
-        correct operation of the operating system.  """)
-
-    IMPORTANT = Item(20, """
-        Important
-
-        This package is important, and should be installed under normal
-        circumstances.  """)
-
-    STANDARD = Item(30, """
-        Standard
-
-        The typical install of this distribution should include this
-        package.  """)
-
-    OPTIONAL = Item(40, """
-        Optional
-
-        This is an optional package in this distribution.
-        """)
-
-    EXTRA = Item(50, """
-        Extra
-
-        This is an extra package in this distribution. An "extra" package
-        might conflict with one of the standard or optional packages so
-        it should be treated with some caution.
         """)
 
 

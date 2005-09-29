@@ -377,7 +377,7 @@ Finally, we need to test that the script is being executed without problems.
 We tested already that the functionality works. Now it's time to know if the
 cronscript has any problem.
 
-XXX: Disabled as it stalls the tests.
+    XXX CarlosPerelloMarin 2005/09/27: Disabled as it stalls the tests.
     import subprocess
     subprocess.call('cronscripts/rosetta-poimport.py -q', shell=True)
     0

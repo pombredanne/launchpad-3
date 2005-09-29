@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'IBugTask',
+    'INullBugTask',
     'IBugTaskSearch',
     'IUpstreamBugTaskSearch',
     'IDistroBugTaskSearch',
@@ -29,8 +30,9 @@ from zope.schema import (
 from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
-from canonical.launchpad.interfaces.launchpad import IHasDateCreated
 from canonical.launchpad.interfaces.bugattachment import IBugAttachment
+from canonical.launchpad.interfaces.launchpad import IHasDateCreated
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
 _ = MessageIDFactory('launchpad')
 
@@ -94,7 +96,7 @@ class IBugTask(IHasDateCreated):
         title=_("Maintainer"), required=True, readonly=True)
     target = Attribute("The software in which this bug should be fixed")
     targetname = Attribute("The short, descriptive name of the target")
-    title = Attribute("The title used for a task's Web page.")
+    title = Attribute("The title of the bug related to this bugtask")
     related_tasks = Attribute("IBugTasks related to this one, namely other "
                               "IBugTasks on the same IBug.")
     statusdisplayhtml = Attribute(
@@ -118,6 +120,17 @@ class IBugTask(IHasDateCreated):
         the Malone severity values, and returns the relevant Malone
         severity.
         """
+
+
+class INullBugTask(IBugTask):
+    """A marker interface for an IBugTask that doesn't exist in a context.
+
+    An INullBugTask is useful when wanting to view a bug in a context
+    where that bug hasn't yet been reported. This might happen, for
+    example, when searching to see if a bug you want to report has
+    already been filed and finding matching reports that don't yet
+    have tasks reported in your context.
+    """
 
 
 class IBugTaskSearch(Interface):
@@ -283,7 +296,11 @@ class IUpstreamBugTask(IBugTask):
 class IDistroBugTask(IBugTask):
     """A description of a bug needing fixing in a particular package."""
     sourcepackagename = Choice(
-        title=_("Source Package Name"), required=True,
+        title=_("Source Package Name"), required=False,
+        description=_("The specific source package in which the bug "
+        "occurs, and which needs to be fixed. This is generally optional, "
+        "leave it blank if you are unsure, and the distro QA team will "
+        "attempt to figure it out."),
         vocabulary='SourcePackageName')
     binarypackagename = Choice(
         title=_('Binary PackageName'), required=False,
@@ -401,7 +418,12 @@ class BugTaskSearchParams:
     def setSourcePackage(self, sourcepackage):
         """Set the sourcepackage context on which to filter the search."""
         assert not self._has_context
-        self.distrorelease = sourcepackage.distrorelease
+        if ISourcePackage.providedBy(sourcepackage):
+            # This is a sourcepackage in a distro release.
+            self.distrorelease = sourcepackage.distrorelease
+        else:
+            # This is a sourcepackage in a distribution.
+            self.distribution = sourcepackage.distribution
         self.sourcepackagename = sourcepackage.sourcepackagename
         self._has_context = True
 

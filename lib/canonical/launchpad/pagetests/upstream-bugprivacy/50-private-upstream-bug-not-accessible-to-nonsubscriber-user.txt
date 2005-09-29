@@ -13,7 +13,7 @@ View bugs on Mozilla Firefox as Foo Bar:
 Note that Foo Bar doesn't have the permissions to see bug #7.
 
   >>> print http(r"""
-  ... GET /malone/bugs/7 HTTP/1.1
+  ... GET /products/firefox/+bug/7 HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
