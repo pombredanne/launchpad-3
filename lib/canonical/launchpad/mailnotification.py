@@ -7,8 +7,7 @@ __metaclass__ = type
 import os.path
 import itertools
 import sets
-
-from contrib.docwrapper import DocWrapper
+import textwrap
 
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -24,6 +23,72 @@ from canonical.launchpad.webapp import canonical_url
 
 GLOBAL_NOTIFICATION_EMAIL_ADDRS = ("dilys@muse.19inch.net",)
 CC = "CC"
+
+
+class MailWrapper:
+    """Wraps text that should be included in an email.
+
+        :width: how long should the lines be
+        :indent: specifies how much indentation the lines should have
+        :indent_first_line: indicates whether the first line should be
+                            indented or not.
+
+    Note that MailWrapper doesn't guarantee that all lines will be less
+    than :width:, sometimes it's better not to break long lines in
+    emails. See textformatting.txt for more information.
+    """
+
+    def __init__(self, width=72, indent='', indent_first_line=True):
+        self.indent = indent
+        self.indent_first_line = indent_first_line
+        self._text_wrapper = textwrap.TextWrapper(
+            width=width, subsequent_indent=indent,
+            replace_whitespace=False, break_long_words=False)
+
+    def format(self, text):
+        """Format the text to be included in an email."""
+        wrapped_lines = []
+
+        if self.indent_first_line:
+            indentation = self.indent
+        else:
+            indentation = ''
+
+        # We don't care about trailing whitespace.
+        text = text.rstrip()
+
+        for paragraph in text.split('\n\n'):
+            lines = paragraph.split('\n')
+
+            if len(lines) == 1:
+                # We use TextWrapper only if the paragraph consists of a
+                # single line, like in the case where a person enters a
+                # comment via the web ui, without breaking the lines
+                # manually.
+                self._text_wrapper.initial_indent = indentation
+                wrapped_lines += self._text_wrapper.wrap(paragraph)
+            else:
+                # If the user has gone through the trouble of wrapping
+                # the lines, we shouldn't re-wrap them for him.
+                wrapped_lines += (
+                    [indentation + lines[0]] + 
+                    [self.indent + line for line in lines[1:]])
+
+            if not self.indent_first_line:
+                # 'indentation' was temporarily set to '' in order to
+                # prevent the first line from being indented. Set it
+                # back to self.indent so that the rest of the lines get
+                # indented.
+                indentation = self.indent
+
+            # Add an empty line so that the paragraphs get separated by
+            # a blank line when they are joined together again.
+            wrapped_lines.append('')
+
+        # We added one line too much, remove it.
+        wrapped_lines = wrapped_lines[:-1]
+        return '\n'.join(wrapped_lines)
+
 
 def get_email_template(filename):
     """Returns the email template with the given file name.
@@ -127,8 +192,8 @@ def generate_bug_add_email(bug):
         description = bug.messages[0].contents
 
     body += u"\n"
-    docwrapper = DocWrapper(width=80, replace_whitespace=False)
-    body += u"Description:\n%s" % docwrapper.fill(description)
+    mailwrapper = MailWrapper(width=72)
+    body += u"Description:\n%s" % mailwrapper.format(description)
 
     return (subject, body)
 
@@ -141,9 +206,7 @@ def generate_bug_edit_email(bug_delta):
     """
     subject = u"[Bug %d] %s" % (bug_delta.bug.id, bug_delta.bug.title)
 
-    docwrapper = DocWrapper(
-        width=80, initial_indent=u"    ", subsequent_indent=u"    ",
-        replace_whitespace=False)
+    mailwrapper = MailWrapper(width=72, indent=u"    ")
 
     if bug_delta.bug.private:
         visibility = u"Private"
@@ -167,12 +230,12 @@ def generate_bug_edit_email(bug_delta):
 
     if bug_delta.summary is not None:
         body += u"Summary changed to:\n"
-        body += docwrapper.fill(bug_delta.summary)
+        body += mailwrapper.format(bug_delta.summary)
         body += u"\n"
 
     if bug_delta.description is not None:
         body += u"Description changed to:\n"
-        body += docwrapper.fill(bug_delta.description)
+        body += mailwrapper.format(bug_delta.description)
         body += u"\n"
 
     if bug_delta.private is not None:
@@ -297,10 +360,9 @@ def generate_bug_edit_email(bug_delta):
             if bugtask_delta.statusexplanation is not None:
                 status_exp_line = u"%15s: %s" % (
                     u"Explanation", bugtask_delta.statusexplanation)
-                status_exp_wrapper = DocWrapper(
-                    width=80, subsequent_indent=u" " * 17,
-                    replace_whitespace=False)
-                body += status_exp_wrapper.fill(status_exp_line)
+                status_exp_wrapper = MailWrapper(
+                    width=72, indent=u" " * 17, indent_first_line=False)
+                body += status_exp_wrapper.format(status_exp_line)
                 body += u"\n"
 
     if bug_delta.added_bugtasks is not None:
@@ -381,14 +443,15 @@ def generate_bug_comment_email(bug_comment):
         # This is a public bug.
         visibility = u"Public"
 
-    comment_wrapper = DocWrapper(width=80, replace_whitespace=False)
+    comment_wrapper = MailWrapper(width=72)
 
     body = (u"%(visibility)s bug report changed:\n"
             u"%(bugurl)s\n\n"
             u"Comment:\n"
             u"%(comment)s"
             % {'visibility' : visibility, 'bugurl' : canonical_url(bug),
-               'comment' : comment_wrapper.fill(bug_comment.message.contents)})
+               'comment' : comment_wrapper.format(
+                    bug_comment.message.contents)})
 
     return (subject, body)
 
@@ -665,7 +728,6 @@ def notify_bugtask_edited(modified_bugtask, event):
     modified_bugtask must be an IBugTask. event must be an
     ISQLObjectModifiedEvent.
     """
-    task = event.object
     bugtask_delta = get_task_delta(
         event.object_before_modification, event.object)
     bug_delta = BugDelta(
