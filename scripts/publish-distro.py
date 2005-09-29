@@ -155,6 +155,13 @@ except:
     txn.abort()
     sys.exit(1)
 
+# In order to allow the build system, upload system etc all
+# to continue without being deadlocked on this transaction, we commit now.
+# This isn't the best thing to do because apt-ftparchive *could* fail
+# but if it does, we're screwwed anyway. We thusly commit so that
+# we unblock other transactions.
+txn.commit()
+
 try:
     # Generate apt-ftparchive config and run...
     debug("Doing apt-ftparchive work...")
