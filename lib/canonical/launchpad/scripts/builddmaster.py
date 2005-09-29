@@ -259,13 +259,13 @@ class BuilderGroup:
                     out_file.write(chunk)
                     bytes_written += len(chunk)
                 
-                    slave_file.close()
-                    out_file.seek(0)
+                slave_file.close()
+                out_file.seek(0)
 
-                    # upload it to the librarian...
-                    aliasid = librarian.addFile(filename, bytes_written,
-                                                out_file,
-                                                contentType=ftype)
+                # upload it to the librarian...
+                aliasid = librarian.addFile(filename, bytes_written,
+                                            out_file,
+                                            contentType=ftype)
             finally:
                 # Finally, remove the temporary file
                 out_file.close()

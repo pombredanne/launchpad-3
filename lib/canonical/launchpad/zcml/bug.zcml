@@ -7,6 +7,11 @@
 
   <facet facet="bugs">
 
+    <browser:menus
+        module="canonical.launchpad.browser"
+        classes="BugContextMenu"
+        />
+
     <!-- Bug -->
     <content class="canonical.launchpad.database.Bug">
         <require
