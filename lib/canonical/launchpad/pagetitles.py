@@ -268,8 +268,6 @@ debug_root_index = 'Launchpad Debug Home Page'
 
 debug_unauthorized = 'Launchpad - Not Permitted'
 
-default_addform = 'Default "Add" Page'
-
 default_editform = 'Default "Edit" Page'
 
 distribution_cvereport = ContextTitle('CVE Reports for %s')
@@ -906,4 +904,6 @@ user_error = 'Launchpad Error'
 # soyuz_index = 'Soyuz: Linux Distribution Management'
 # ubuntite_list = 'FOAF: Ubuntite List'
 # malone_distro_index = ContextTitle('Malone Distribution Manager: %s')
+# default_addform = 'Default "Add" Page'
+
 
