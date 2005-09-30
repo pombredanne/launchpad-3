@@ -743,12 +743,13 @@ class ImportProcess:
                 # There are no objects to import. Exit the script.
                 break
 
-            self.logger.info('Importing: %s' % object.title)
-
             # object could be a POTemplate or a POFile but both
             # objects implement the doRawImport method so we don't
             # need to care about it here.
+            title = '[Unknown Title]'
             try:
+                title = object.title
+                self.logger.info('Importing: %s' % title)
                 object.doRawImport(self.logger)
             except KeyboardInterrupt:
                 self.ztm.abort()
@@ -757,7 +758,7 @@ class ImportProcess:
                 # If we have any exception, we log it and abort the
                 # transaction.
                 self.logger.error('Got an unexpected exception while'
-                                  ' importing %s' % object.title, exc_info=1)
+                                  ' importing %s' % title, exc_info=1)
                 self.ztm.abort()
                 continue
 
