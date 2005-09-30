@@ -156,8 +156,8 @@ class DebianBuildManager(BuildManager):
             if not self.alreadyfailed:
                 self._slave.chrootFail()
                 self.alreadyfailed = True
-            self._state = DebianBuildState.UMOUNT
-            self.doUnmounting()
+            self._state = DebianBuildState.REAP
+            self.doReapProcesses()
         else:
             self._state = DebianBuildState.SBUILD
             self.doRunSbuild()
@@ -174,8 +174,8 @@ class DebianBuildManager(BuildManager):
                 if not self.alreadyfailed:
                     self._slave.buildFail()
             self.alreadyfailed = True
-            self._state = DebianBuildState.UMOUNT
-            self.doUnmounting()
+            self._state = DebianBuildState.REAP
+            self.doReapProcesses()
         else:
             self.gatherResults()
             self._state = DebianBuildState.REAP
