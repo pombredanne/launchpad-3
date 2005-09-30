@@ -671,7 +671,7 @@ class FormattersAPI:
             # and put it outside the url text.
             trail = ''
             gt = ''
-            if url[-1] in (",", ".", "?") or url[-2:] == ";;":
+            if url[-1] in (",", ".", "?", ":") or url[-2:] == ";;":
                 # These common punctuation symbols often trail URLs; we
                 # deviate from the specification slightly here but end
                 # up with less chance of corrupting a URL because
