@@ -56,14 +56,16 @@ class UtcDateTimeValidator(validators.Validator):
 
             >>> import datetime, pytz
             >>> validator = UtcDateTimeValidator()
-            >>> validator.fromPython(None, None)
-            >>> validator.fromPython(datetime.datetime(2004,1,1,12,0,0), None)
+            >>> print validator.fromPython(None, None)
+            None
+            >>> print validator.fromPython(datetime.datetime(2004,1,1,12,0,0),
+            ...                            None)
             Traceback (most recent call last):
             ...
             ValueError: astimezone() cannot be applied to a naive datetime
-            >>> validator.fromPython(datetime.datetime(2004,1,1,12,0,0,
+            >>> print validator.fromPython(datetime.datetime(2004,1,1,12,0,0,
             ...         tzinfo=pytz.timezone('Australia/Perth')), None)
-            datetime.datetime(2004, 1, 1, 4, 0, tzinfo=<StaticTzInfo 'UTC'>)
+            2004-01-01 04:00:00+00:00
             >>>
         """
         if isinstance(value, datetime.datetime):

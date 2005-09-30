@@ -15,6 +15,11 @@
       set_schema="canonical.launchpad.interfaces.ISpecification" />
   </content>
 
+  <browser:menus
+    module="canonical.launchpad.browser"
+    classes="SpecificationContextMenu"
+    />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISpecification"
     name="+index" />
@@ -37,9 +42,6 @@
     <browser:page
       name="+listing-detailed"
       template="../templates/specification-listing-detailed.pt" />
-    <browser:page
-      name="+portlet-actions"
-      template="../templates/specification-portlet-actions.pt" />
     <browser:page
       name="+portlet-details"
       template="../templates/specification-portlet-details.pt" />

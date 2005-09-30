@@ -304,10 +304,6 @@ class BugTaskSet:
                     clause = "BugTask.%s = %d" % (arg_name, int(arg_value.value))
             extra_clauses.append(clause)
 
-        #
-        # Handle special cases
-        #
-
         if params.omit_dupes:
             extra_clauses.append("Bug.duplicateof is NULL")
 
@@ -331,9 +327,7 @@ class BugTaskSet:
             extra_clauses.append("BugTask.fti @@ ftq(%s)" %
                                  sqlvalues(params.statusexplanation))
 
-        #
-        # Handle privacy
-        #
+        # Filter the search results for privacy-awareness.
         if params.user:
             # A subselect is used here because joining through
             # TeamParticipation is only relevant to the "user-aware"
@@ -420,15 +414,13 @@ class BugTaskSet:
         privatenessFilter = ' AND '
         if user is not None:
             privatenessFilter += ('''
-                ((BugTask.bug = Bug.id AND Bug.private = FALSE)
-                OR ((BugTask.bug = Bug.id AND Bug.private = TRUE) AND
-                    (Bug.id in (
-                        SELECT Bug.id FROM Bug, BugSubscription WHERE
-                           (Bug.id = BugSubscription.bug) AND
-                           (BugSubscription.person = TeamParticipation.team) AND
-                           (TeamParticipation.person = %(personid)s)
-                               ))))'''
-                % sqlvalues(personid=user.id))
+                (BugTask.bug = Bug.id AND
+                (Bug.private = FALSE OR
+                 Bug.id in (
+                   SELECT Bug.id FROM Bug, BugSubscription
+                   WHERE (Bug.id = BugSubscription.bug) AND
+                         (BugSubscription.person = TeamParticipation.team) AND
+                         (TeamParticipation.person = %d))))''' % user.id)
         else:
             privatenessFilter += 'BugTask.bug = Bug.id AND Bug.private = FALSE'
 

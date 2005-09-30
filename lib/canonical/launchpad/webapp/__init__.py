@@ -14,7 +14,8 @@ from zope.component import getUtility
 from canonical.launchpad.webapp.menu import (
     Link, FacetMenu, ApplicationMenu, ContextMenu, nearest_menu, structured,
     enabled_with_permission)
-from canonical.launchpad.webapp.publisher import canonical_url, nearest
+from canonical.launchpad.webapp.publisher import (
+    canonical_url, nearest, LaunchpadView)
 from canonical.launchpad.interfaces import ILaunchBag
 
 
@@ -70,50 +71,4 @@ class StandardLaunchpadFacets(FacetMenu):
         target = '+calendar'
         text = 'Calendar'
         return Link(target, text, enabled=False)
-
-
-class LaunchpadView:
-    """Base class for views in Launchpad.
-
-    Available attributes and methods are:
-
-    - context
-    - request
-    - initialize() <-- subclass this for specific initialization
-    - template     <-- the template set from zcml, otherwise not present
-    - user         <-- currently logged-in user
-    - render()     <-- used to render the page.  override this if you have many
-                       templates not set via zcml, or you want to do rendering
-                       from Python.
-    """
-
-    _no_user = object()
-    _user = _no_user
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def initialize(self):
-        """Override this in subclasses."""
-        pass
-
-    @property
-    def template(self):
-        """The page's template, if configured in zcml."""
-        return self.index
-
-    def render(self):
-        return self.template()
-
-    def __call__(self):
-        self.initialize()
-        return self.render()
-
-    @property
-    def user(self):
-        """The logged-in Person, or None if there is no one logged in."""
-        if self._user is self._no_user:
-            self._user = getUtility(ILaunchBag).user
-        return self._user
 

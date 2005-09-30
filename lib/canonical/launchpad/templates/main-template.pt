@@ -122,7 +122,10 @@
             metal:define-slot="column_two"
             rowspan="2"
           >
-            <div tal:replace="structure CONTEXTS/@@+menubox" />
+            <tal:menu
+              condition="not:exists:body"
+              replace="structure CONTEXTS/@@+menubox"
+            />
             <metal:portlets define-slot="portlets_two">
             </metal:portlets>
           </td>

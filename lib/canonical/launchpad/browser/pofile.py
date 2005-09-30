@@ -5,6 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'POFileFacets',
+    'POFileAppMenus',
     'POFileView',
     'BaseExportView',
     'ExportCompatibilityView',
@@ -66,32 +68,36 @@ class POFileFacets(StandardLaunchpadFacets):
 class POFileAppMenus(ApplicationMenu):
     usedfor = IPOFile
     facet = 'translations'
-    links = ['overview', 'translate', 'upload', 'download', 'edit']
+    links = ['overview', 'translate', 'switchlanguages', 'edit',
+             'upload', 'download', 'viewtemplate']
 
     def overview(self):
-        target = ''
         text = 'Overview'
-        return Link(target, text)
+        return Link('', text)
 
     def translate(self):
-        target = '+translate'
         text = 'Translate'
-        return Link(target, text)
+        return Link('+translate', text, icon='languages')
 
-    def upload(self):
-        target = '+upload'
-        text = 'Upload'
-        return Link(target, text)
-
-    def download(self):
-        target = '+export'
-        text = 'Download'
-        return Link(target, text)
+    def switchlanguages(self):
+        text = 'Switch Languages'
+        return Link('../', text, icon='languages')
 
     def edit(self):
-        target = '+edit'
-        text = 'Edit'
-        return Link(target, text)
+        text = 'Edit Details'
+        return Link('+edit', text, icon='edit')
+
+    def upload(self):
+        text = 'Upload a File'
+        return Link('+upload', text, icon='edit')
+
+    def download(self):
+        text = 'Download'
+        return Link('+export', text, icon='download')
+
+    def viewtemplate(self):
+        text = 'View Template'
+        return Link('../', text, icon='languages')
 
 
 class BaseExportView:

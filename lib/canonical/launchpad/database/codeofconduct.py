@@ -296,8 +296,9 @@ class SignedCodeOfConductSet:
         # entries. If it is it should be part of FTI queries,
         # isn't it ?
 
-        # if displayname was '%' return all SignedCoC entries
-        if displayname != '%':
+        # the name shoudl work like a filter, if you don't enter anything
+        # you get everything.
+        if displayname:
             query +=' AND Person.fti @@ ftq(%s)' % quote(displayname)
 
         # Attempt to search for directive

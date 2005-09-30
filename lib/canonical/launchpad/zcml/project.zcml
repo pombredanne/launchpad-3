@@ -89,11 +89,6 @@
             facet="overview"
             template="../templates/project-portlet-details.pt"
             lp:url="Rosetta/projects/$Project.name/+portlet-details" />
-       <browser:page
-            name="+portlet-actions"
-            facet="overview"
-            template="../templates/project-portlet-actions.pt"
-            lp:url="Rosetta/projects/$Project.name/+portlet-actions" />
     </browser:pages>
 
     <browser:page

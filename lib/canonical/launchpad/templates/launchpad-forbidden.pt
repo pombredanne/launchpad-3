@@ -3,8 +3,8 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<body>
-    <div metal:fill-slot="main">
+  <body>
+    <div metal:fill-slot="body">
         <h1>
         Sorry, you don't have permission to access this page.
         </h1>
@@ -15,7 +15,7 @@
           You are not logged in.
         </p>
 
-    <tal:replace tal:replace="structure view/maybeShowTraceback" />
+      <tal:replace tal:replace="structure view/maybeShowTraceback" />
     </div>
-</body>
+  </body>
 </html>

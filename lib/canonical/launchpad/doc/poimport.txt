@@ -377,10 +377,56 @@ Finally, we need to test that the script is being executed without problems.
 We tested already that the functionality works. Now it's time to know if the
 cronscript has any problem.
 
-    XXX CarlosPerelloMarin 2005/09/27: Disabled as it stalls the tests.
-    import subprocess
-    subprocess.call('cronscripts/rosetta-poimport.py -q', shell=True)
-    0
+First, remove the recently seen cache
+
+    >>> from canonical.launchpad.scripts.rosetta import ImportProcess
+    >>> import os, os.path
+    >>> if os.path.exists(ImportProcess.POIMPORT_RECENTLY_SEEN_PICKLE):
+    ...     os.unlink(ImportProcess.POIMPORT_RECENTLY_SEEN_PICKLE)
+
+    >>> potemplate.rawimportstatus = RosettaImportStatus.PENDING
+    >>> potemplate.sync()
+    >>> pofile.rawimportstatus = RosettaImportStatus.PENDING
+    >>> pofile.sync()
+    >>> transaction.commit()
+
+    >>> import subprocess, sys
+    >>> process = subprocess.Popen([
+    ...     sys.executable, 'cronscripts/rosetta-poimport.py',
+    ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.STDOUT
+    ...     )
+    >>> (output, empty) = process.communicate()
+    >>> print output
+    INFO    Importing: Template "firefox" in Mozilla Firefox Milestone Releases
+    WARNING No header found in this pofile
+    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox Milestone Releases
+    WARNING Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox Milestone Releases
+    <BLANKLINE>
+
+If we run it again, the files won't import because the importer has seen
+them too recently.
+
+    >>> potemplate.rawimportstatus = RosettaImportStatus.PENDING
+    >>> potemplate.sync()
+    >>> pofile.rawimportstatus = RosettaImportStatus.PENDING
+    >>> pofile.sync()
+    >>> transaction.commit()
+
+    >>> process = subprocess.Popen([
+    ...     sys.executable, 'cronscripts/rosetta-poimport.py',
+    ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.STDOUT
+    ...     )
+    >>> (output, empty) = process.communicate()
+    >>> print output
+    <BLANKLINE>
+
+Remove the cache so it doesn't confuse anything
+
+    >>> os.unlink(ImportProcess.POIMPORT_RECENTLY_SEEN_PICKLE)
 
     >>> LibrarianTestSetup().tearDown()
     >>> LaunchpadFunctionalTestSetup().tearDown()
+
+

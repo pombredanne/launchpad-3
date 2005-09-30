@@ -15,6 +15,11 @@
       set_schema="canonical.launchpad.interfaces.ITicket" />
   </content>
 
+  <browser:menus
+      module="canonical.launchpad.browser"
+      classes="TicketContextMenu TicketSetContextMenu"
+      />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.ITicket"
     name="+index" />
@@ -37,9 +42,6 @@
     <browser:page
       name="+listing-detailed"
       template="../templates/ticket-listing-detailed.pt" />
-    <browser:page
-      name="+portlet-actions"
-      template="../templates/ticket-portlet-actions.pt" />
     <browser:page
       name="+portlet-bugs"
       template="../templates/ticket-portlet-bugs.pt" />
@@ -196,9 +198,6 @@
     <browser:page
       name="+index"
       template="../templates/tickets-index.pt" />
-    <browser:page
-      name="+portlet-actions"
-      template="../templates/tickets-portlet-actions.pt" />
     <browser:page
       name="+portlet-details"
       template="../templates/tickets-portlet-details.pt" />

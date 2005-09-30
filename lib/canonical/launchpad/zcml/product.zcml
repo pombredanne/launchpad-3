@@ -26,13 +26,15 @@
         name="+bugs" />
 
     <browser:menus
-        module="canonical.launchpad.browser.product"
+        module="canonical.launchpad.browser"
         classes="
             ProductFacets ProductOverviewMenu ProductBountiesMenu
-            ProductSupportMenu ProductSpecificationsMenu 
+            ProductSupportMenu ProductSpecificationsMenu
             ProductTranslationsMenu ProductBugsMenu
+            ProductSetContextMenu
             "
-    />
+            />
+
     <!-- XXX ProductBugsMenu undeclared until layout bug is fixed -->
 
     <browser:traverse
@@ -100,11 +102,6 @@
             template="../templates/object-portlet-milestones.pt"
             lp:url="/products/evolution/+portlet-milestones" />
         <browser:page
-            name="+portlet-actions"
-            facet="overview"
-            template="../templates/product-portlet-actions.pt"
-            lp:url="/products/evolution/+portlet-actions" />
-        <browser:page
             name="+portlet-bounties"
             facet="bounties"
             template="../templates/object-portlet-bounties.pt"
@@ -139,21 +136,6 @@
         lp:url="/projects/$Product.name/+rdf"
         attribute="__call__"
         />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.launchpad.browser.BugTaskSearchListingView"
-        facet="bugs"
-        permission="zope.Public">
-        <browser:page
-            name="+bugs"
-            lp:url="/products/$Product.name/+bugs"
-            template="../templates/bugs-for-context.pt" />
-        <browser:page
-            name="+portlet-bugtasklist-mybugs"
-            template="../templates/bugtasklist-portlet-mybugs.pt"
-            lp:url="/products/$Product.name/+portlet-bugtasklist-mybugs" />
-    </browser:pages>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
@@ -391,9 +373,6 @@
         <browser:page
             name="+all"
             template="../templates/registry-listall.pt" />
-        <browser:page
-            name="+portlet-actions"
-            template="../templates/productset-portlet-actions.pt" />
         <browser:page
             name="+portlet-details"
             template="../templates/productset-portlet-details.pt" />

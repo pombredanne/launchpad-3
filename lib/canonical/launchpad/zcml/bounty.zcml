@@ -57,16 +57,6 @@
             lp:url="/bounties/$Bounty.name/+subscribe" />
     </browser:pages>
 
-    <browser:pages
-        for="canonical.launchpad.interfaces.IBounty"
-        class="canonical.launchpad.browser.BountyView"
-        permission="zope.Public">
-        <browser:page
-            name="+portlet-actions"
-            template="../templates/bounty-portlet-actions.pt"
-            />
-    </browser:pages>
-
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IBounty"
@@ -154,9 +144,6 @@
       <browser:page
         template="../templates/bounties-portlet-about.pt"
         name="+portlet-about" />
-      <browser:page
-        template="../templates/bounties-portlet-actions.pt"
-        name="+portlet-actions" />
       <browser:page
         template="../templates/bounties-portlet-details.pt"
         name="+portlet-details" />

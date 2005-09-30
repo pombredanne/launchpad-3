@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces import (
     IFacetLink, ILink, ILinkData, IStructuredString
     )
 from canonical.launchpad.webapp.publisher import (
-    canonical_url, canonical_url_iterator
+    canonical_url, canonical_url_iterator, UserAttributeCache
     )
 
 
@@ -141,7 +141,7 @@ class FacetLink(MenuLink):
 ALL_LINKS = object()
 
 
-class MenuBase:
+class MenuBase(UserAttributeCache):
     """Base class for facets and menus."""
 
     implements(IMenuBase)
@@ -149,10 +149,17 @@ class MenuBase:
     links = None
     enable_only = ALL_LINKS
     _baseclassname = 'MenuBase'
+    _initialized = False
+    _forbiddenlinknames = set(
+        ['user', 'initialize', 'links', 'enable_only', 'iterlinks'])
 
     def __init__(self, context):
         # The attribute self.context is defined in IMenuBase.
         self.context = context
+
+    def initialize(self):
+        """Override this in subclasses to do initialization."""
+        pass
 
     def _get_link(self, name):
         method = getattr(self, name)
@@ -163,8 +170,17 @@ class MenuBase:
 
     def iterlinks(self, requesturl=None):
         """See IMenu."""
+        if not self._initialized:
+            self.initialize()
+            self._initialized = True
         assert self.links is not None, (
             'Subclasses of %s must provide self.links' % self._baseclassname)
+        assert isinstance(self.links, list), "self.links must be a list"
+        linksset = set(self.links)
+        assert not linksset.intersection(self._forbiddenlinknames), (
+            "The following names may not be links: %s" %
+            ', '.join(self._forbiddenlinknames))
+
         contexturlobj = Url(canonical_url(self.context))
 
         if self.enable_only is ALL_LINKS:

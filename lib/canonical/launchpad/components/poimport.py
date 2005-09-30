@@ -131,7 +131,7 @@ def import_po(pofile_or_potemplate, file, published=True):
             # available in the file being imported.
             msgids = list(potmsgset.messageIDs())
             if len(msgids) >= 2:
-                potmsgsetsighting = potmsgset.getMessageIDSighting(
+                potmsgsetsighting = potmsgset.getPOMsgIDSighting(
                     TranslationConstants.PLURAL_FORM)
                 potmsgsetsighting.inPOFile = False
 

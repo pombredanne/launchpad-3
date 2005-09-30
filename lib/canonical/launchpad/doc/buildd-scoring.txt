@@ -29,26 +29,20 @@ Let's create a 'mock' class which emulate the real behaviour of
 BuildQueue entries. 
 
   >>> class MockBuildQueue:
-  ...     def __init__(self, name, urgency, component_name, created):
+  ...     def __init__(self, name, urgency, component_name):
   ...         self.name = name
   ...         self.urgency = urgency
   ...         self.component_name = component_name
-  ...         self.created = created
   ...         self.lastscore = 0
 
-Necessary import for constant and time handling
-
   >>> from canonical.lp.dbschema import SourcePackageUrgency
-  >>> import datetime, pytz
 
 Let's start the run-time tests:
 
-  >>> t0 = datetime.datetime.now(pytz.timezone('UTC'))
-  >>> bq0 = MockBuildQueue('Null', SourcePackageUrgency.HIGH, 'main', t0)
+  >>> bq0 = MockBuildQueue('Null', SourcePackageUrgency.HIGH, 'main')
 
 So we expect lastscore of 7 points, since the initial value was 0:
 
- * just inserted job (not queue_time points), 
  * 4 points for component 'main', 
  * and 3 points for urgency HIGH.
 
@@ -60,67 +54,57 @@ scoreBuildQueueEntry() method.
   ('Null', 7)
 
 
-We expect lastscore of 6 points, where :
+We expect lastscore of 5 points, where :
 
- * 1 point for more than 300 s pending
  * 4 points for main components
  * 1 point for priority LOW
 
-  >>> t1 = t0 - datetime.timedelta(seconds=301)
-  >>> bq1 = MockBuildQueue('Eins', SourcePackageUrgency.LOW, 'main', t1)
+  >>> bq1 = MockBuildQueue('Eins', SourcePackageUrgency.LOW, 'main')
   >>> bm.scoreBuildQueueEntry(bq1)
   >>> bq1.name, bq1.lastscore
-  ('Eins', 6)
+  ('Eins', 5)
 
 
-We expect lastscore of 7 points, where:
+We expect lastscore of 5 points, where:
 
-* 2 points for more than 900 s pending
 * 2 points for universe component
 * 3 points for priority HIGH
 
-  >>> t2 = t0 - datetime.timedelta(seconds=901)
-  >>> bq2 = MockBuildQueue('Zwei', SourcePackageUrgency.HIGH, 'universe', t2)
+  >>> bq2 = MockBuildQueue('Zwei', SourcePackageUrgency.HIGH, 'universe')
   >>> bm.scoreBuildQueueEntry(bq2)
   >>> bq2.name, bq2.lastscore
-  ('Zwei', 7)
+  ('Zwei', 5)
 
 
-We expect lastscore of 6 points, where:
+We expect lastscore of 3 points, where:
 
-* 3 points for more than 1800 s pending
 * 1 point for component multiverse
 * 2 points for MEDIUM priority
 
-  >>> t3 = t0 - datetime.timedelta(seconds=1801)
   >>> bq3 = MockBuildQueue('Drei', SourcePackageUrgency.MEDIUM, 
-  ...                      'multiverse', t3)
+  ...                      'multiverse')
   >>> bm.scoreBuildQueueEntry(bq3)
   >>> bq3.name, bq3.lastscore
-  ('Drei', 6)
+  ('Drei', 3)
 
 
-We expect lastscore of 12 points, where:
+We expect lastscore of 8 points, where:
 
-* 4 points for more than 3600 s pending
 * 4 points for main component
 * 4 points for EMERGENCY priority
 
-  >>> t4 = t0 - datetime.timedelta(seconds=3601)
-  >>> bq4 = MockBuildQueue('Vier', SourcePackageUrgency.EMERGENCY, 'main', t4)
+  >>> bq4 = MockBuildQueue('Vier', SourcePackageUrgency.EMERGENCY, 'main')
   >>> bm.scoreBuildQueueEntry(bq4)
   >>> bq4.name, bq4.lastscore
-  ('Vier', 12)
+  ('Vier', 8)
 
 
-We expect lastscore of 6 points, where:
+We expect lastscore of 4 points, where:
 
-* 2 points for more than 900 s pending
 * 3 point for restricted component
 * 1 point for LOW priority
 
-  >>> t5 = t0 - datetime.timedelta(seconds=1800)
-  >>> bq5 = MockBuildQueue('Funf', SourcePackageUrgency.LOW, 'restricted', t5)
+  >>> bq5 = MockBuildQueue('Funf', SourcePackageUrgency.LOW, 'restricted')
   >>> bm.scoreBuildQueueEntry(bq5)
   >>> bq5.name, bq5.lastscore
-  ('Funf', 6)
+  ('Funf', 4)

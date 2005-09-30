@@ -29,7 +29,7 @@ from canonical.launchpad.browser.pofile import (
     POFileView, BaseExportView, POFileAppMenus)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url)
+    StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission)
 
 
 class POTemplateFacets(StandardLaunchpadFacets):
@@ -68,7 +68,16 @@ class POTemplateFacets(StandardLaunchpadFacets):
 class POTemplateAppMenus(POFileAppMenus):
     usedfor = IPOTemplate
 
-    links = ['overview', 'upload', 'download', 'edit']
+    links = ['overview', 'upload', 'download', 'edit', 'administer']
+
+    def download(self):
+        text = 'Download Translations'
+        return Link('+export', text, icon='download')
+
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Admin Edit'
+        return Link('+admin', text, icon='edit')
 
 
 class POTemplateSubsetView:

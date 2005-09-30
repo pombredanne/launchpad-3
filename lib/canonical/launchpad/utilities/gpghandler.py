@@ -148,9 +148,14 @@ class GPGHandler:
         c.op_import(newkey)
         result = c.op_import_result()
 
-        # if not considered -> format wasn't recognized
-        # no key was imported
-        if result.considered == 0:
+        # XXX cprov 20050929:
+        # We don't know exactly why in some cases when 'considered'
+        # is different than zero, 'imports' is None. It might be related
+        # with public key integrity somehow. There is a bunch of tests in
+        # doc/gpg-import.txt
+
+        # if not considered -> format wasn't recognized no key was imported
+        if result.considered == 0 or result.imports is None:
             return None
 
         # if it's a secret key, simply returns

@@ -22,6 +22,10 @@ import socket
 from cStringIO import StringIO
 import datetime
 import pytz
+import urllib2
+import urlparse
+import tempfile
+import os
 
 from sqlobject.sqlbuilder import AND, IN
 
@@ -66,6 +70,8 @@ def extractNameAndVersion(filename):
 class BuildDaemonError(Exception):
     """The class of errors raised by the buildd classes"""
 
+class ProtocolVersionMismatch(BuildDaemonError):
+    """The build slave had a protocol version. This is a serious error."""
 
 class BuilderGroup:
     """Manage a set of builders based on a given architecture"""
@@ -102,24 +108,25 @@ class BuilderGroup:
             try:
                 # verify the echo method
                 if builder.slave.echo("Test")[0] != "Test":
-                    raise ValueError, "Failed to echo OK"
+                    raise BuildDaemonError("Failed to echo OK")
 
                 # ask builder information
                 vers, methods, arch, mechanisms = builder.slave.info()
 
                 # attempt to wrong builder version 
-                if vers != 1:
-                    raise ValueError, "Protocol version mismatch"
+                if vers != 1 and vers != 2:
+                    raise ProtocolVersionMismatch("Protocol version mismatch")
 
                 # attempt to wrong builder architecture
                 if arch != archTag:
-                    raise ValueError, ("Architecture tag mismatch: %s != %s"
-                                       % (arch, archTag))
-            # attemp only to known exceptions 
+                    raise BuildDaemonError(
+                        "Architecture tag mismatch: %s != %s" % (arch,
+                                                                 archTag))
+            # catch only known exceptions 
             except (ValueError, TypeError, xmlrpclib.Fault,
-                    socket.error), reason:
+                    socket.error, BuildDaemonError), reason:
                 builder.builderok = False
-                builder.failnote = reason
+                builder.failnotes = reason
                 self.logger.debug("Builder on %s marked as failed due to: %s",
                                   builder.url, reason, exc_info=True)
 
@@ -135,7 +142,7 @@ class BuilderGroup:
 
     def failBuilder(self, builder, reason):
         builder.builderok = False
-        builder.failnote = reason
+        builder.failnotes = reason
         self.updateOkSlaves()
 
     def giveToBuilder(self, builder, libraryfilealias, librarian):
@@ -207,9 +214,9 @@ class BuilderGroup:
         self.commit()
         return aliasid
 
-    def getFileFromSlave(self, slave, filename, sha1sum, librarian):
+    def getFileFromSlave(self, slave, filename, sha1sum, librarian, url):
         """Request a file from Slave by passing a digest and store it in
-        Librarian  with correspondent filename.
+        Librarian with correspondent filename.
         """
         # XXX cprov 20050701
         # What if the file wasn't available on Slave ?
@@ -217,20 +224,53 @@ class BuilderGroup:
         # files (digests) sent by Slave. but we should be aware of this
         # possibilty.
 
-        # receive an xmlrpc.Binary object containg the correspondent file
-        # for a given digest
-        filedata = slave.fetchfile(sha1sum)
-        # transform the data in a file object, because librarian requires it
-        # and attempt we need to cast the xmlrpc.Bynary object to a string
-        fileobj = StringIO(str(filedata))
+        # The [0] here is the version info out of the slave, see the
+        # xmlrpc_info method in canonical/buildd/slave.py
+        slaveversion = slave.info()[0]
+        aliasid = None
         # figure out the MIME content-type
         ftype = filenameToContentType(filename)
-        
-        aliasid = librarian.addFile(filename, len(str(filedata)), fileobj,
-                                    contentType=ftype)
+        if slaveversion == 1:
+            # receive an xmlrpc.Binary object containg the correspondent file
+            # for a given digest
+            filedata = slave.fetchfile(sha1sum)
 
-        # XXX: dsilvers: 20050302: Remove these when the library works
-        self.commit()
+            # transform the data into a file object, because the librarian
+            # requires it. In the process, we have to cast the xmlrpc.Binary
+            # object to a string which can end up costing a lot of ram.
+            fileobj = StringIO(str(filedata))
+        
+            aliasid = librarian.addFile(filename, len(str(filedata)), fileobj,
+                                        contentType=ftype)
+        else:
+            # Protocol version 2 or higher provides /filecache/
+            # which allows us to be slightly more clever in large file transfer
+            out_file_fd, out_file_name = tempfile.mkstemp()
+            out_file = os.fdopen(out_file_fd, "r+")
+            try:
+                slave_file_url = urlparse.urljoin(url, "/filecache/" + sha1sum)
+                slave_file = urllib2.urlopen(slave_file_url)
+
+                # Read back and save the file 256kb at a time, by using the
+                # two-arg form of iter, see
+                # /usr/share/doc/python2.4/html/lib/built-in-funcs.html#l2h-42
+                bytes_written = 0
+                for chunk in iter(lambda: slave_file.read(1024*256), ''):
+                    out_file.write(chunk)
+                    bytes_written += len(chunk)
+                
+                slave_file.close()
+                out_file.seek(0)
+
+                # upload it to the librarian...
+                aliasid = librarian.addFile(filename, bytes_written,
+                                            out_file,
+                                            contentType=ftype)
+            finally:
+                # Finally, remove the temporary file
+                out_file.close()
+                os.remove(out_file_name)
+            
         return aliasid
 
     def processBinaryPackage(self, build, aliasid, filename):
@@ -432,7 +472,7 @@ class BuilderGroup:
         queueItem.build.buildstate = dbschema.BuildStatus.FULLYBUILT
         for result in filemap:
             aliasid = self.getFileFromSlave(slave, result, filemap[result],
-                                            librarian)
+                                            librarian, queueItem.builder.url)
             if result.endswith(".deb"):
                 # Process a binary package
                 self.processBinaryPackage(queueItem.build, aliasid, result)
@@ -816,21 +856,9 @@ class BuilddMaster:
         """Score Build Job according several fields
         
         Generate a Score index according some job properties:
-        * time already pending
         * distribution release component
         * sourcepackagerelease urgency
-        """
-        # Define a table we'll use to calculate the score based on the time
-        # in the build queue.  The table is a sorted list of (upper time
-        # limit in seconds, score) tuples. The table should be in descending
-        # order otherwise the algorithm won't work properly
-        score_queue_time = [
-            (3600, 4),
-            (1800, 3),             
-            (900, 2), 
-            (300, 1), 
-            ]
-        
+        """        
         score_componentname = {
             'multiverse': 1,
             'universe': 2,
@@ -855,13 +883,6 @@ class BuilddMaster:
         job.lastscore += score_componentname[job.component_name]
         msg += "C+%d " % score_componentname[job.component_name]
         
-        # Calculate the build queue time component of the score
-        eta = datetime.datetime.now(pytz.timezone('UTC')) - job.created
-        for limit, score in score_queue_time:
-            if eta.seconds > limit:
-                job.lastscore += score
-                msg += "%d " % score
-                break
         self._logger.debug(msg + " = %d" % job.lastscore)
 
     def sanitiseAndScoreCandidates(self):
@@ -886,8 +907,8 @@ class BuilddMaster:
                                    "to lack of source files"
                                    % (distro.name, distrorelease.name,
                                       archtag, job.name, job.version))
-        # commit here to ensure it won't be lost.
-        self.commit()                
+            # commit every cycle to ensure it won't be lost.
+            self.commit()                
             
         self._logger.debug("After paring out any builds for which we "
                            "lack source, %d NEEDSBUILD" % len(jobs))

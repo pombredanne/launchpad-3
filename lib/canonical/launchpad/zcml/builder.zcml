@@ -44,10 +44,6 @@
             template="../templates/builders.pt"
             name="+index"
             lp:url="+builds/+index" />
-        <browser:page
-            template="../templates/portlet-builders-action.pt"
-            name="+portlet-action"
-            lp:url="+builds/$name/+portlet-action" />
     </browser:pages>
 
     <browser:addform
@@ -110,10 +106,6 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IBuilder"
         permission="zope.Public">
-        <browser:page
-            template="../templates/portlet-builder-action.pt"
-            name="+portlet-action"
-            lp:url="+builds/$name/+portlet-action" />
         <browser:page
             template="../templates/portlet-builder-details.pt"
             name="+portlet-details"

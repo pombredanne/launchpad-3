@@ -5,10 +5,6 @@
 <body>
 
 
-<metal:rightportlets fill-slot="portlets_two">
-        <div tal:replace="structure context/@@+portlet-actions" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
       <h1>Administer code of conduct signatures</h1>
@@ -63,7 +59,7 @@
           <tr>
             <th></th>
             <td>
-              <input type="submit" value="Search"/>
+              <input name="search" type="submit" value="Search"/>
             </td>
           </tr>
         </table>

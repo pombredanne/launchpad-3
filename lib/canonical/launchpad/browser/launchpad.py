@@ -39,8 +39,10 @@ class MenuBox(LaunchpadView):
 
     def initialize(self):
         menuapi = MenuAPI(self.context)
-        self.contextmenuitems = menuapi.context()
-        self.applicationmenuitems = menuapi.application()
+        self.contextmenuitems = [
+            link for link in menuapi.context() if link.enabled]
+        self.applicationmenuitems = [
+            link for link in menuapi.application() if link.enabled]
 
     def render(self):
         if not self.contextmenuitems and not self.applicationmenuitems:

@@ -29,6 +29,11 @@
             />
     </content>
 
+    <browser:menus
+        module="canonical.launchpad.browser"
+        classes="ProductSeriesContextMenu"
+        />
+
     <browser:traverse
         for="canonical.launchpad.interfaces.IProductSeries"
         function="canonical.launchpad.browser.traverseProductSeries" />
@@ -89,10 +94,6 @@
             facet="overview"
             template="../templates/productseries-hctstatus-core.pt"
             lp:url="/products/$Product.name/+series/$ProductSeries.name/+hctstatus-core" />
-        <browser:page
-            name="+portlet-actions"
-            facet="overview"
-            template="../templates/productseries-portlet-actions.pt" />
         <browser:page
             name="+portlet-details"
             facet="overview"

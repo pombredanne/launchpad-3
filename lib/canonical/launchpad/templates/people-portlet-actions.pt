@@ -1,8 +1,0 @@
-<div class="portlet portletBody portletContent">
-    <ul>
-      <li class="people"><a href="+peoplelist">All People</a></li>
-      <li class="people"><a href="+teamlist">All Teams</a></li>
-      <li class="people"><a href="+ubuntitelist">All Ubuntites</a></li>
-      <li class="add"><a href="+newteam">Create New Team</a></li>
-    </ul>
-</div>

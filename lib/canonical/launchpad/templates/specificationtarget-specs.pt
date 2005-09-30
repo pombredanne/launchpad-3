@@ -9,10 +9,6 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <h1>
@@ -48,7 +44,8 @@
           />
         </tal:block>
       </tal:specifications>
-      <ul>
+      <ul tal:condition="nothing">
+      <!-- XXX mpt 20050926 Restore this once this page isn't 3-column -->
         <li class="add"><a href="+addspec">Add Specification&hellip;</a></li>
       </ul>
     </div>

@@ -18,7 +18,7 @@ from canonical.launchpad.scripts.builddmaster import BuilddMaster
 from canonical.launchpad.scripts.lockfile import LockFile
 
 
-_default_lockfile = '/var/lock/queuebuilder.lock'
+_default_lockfile = '/var/lock/buildd-master.lock'
 _default_logfilename = '/var/tmp/queuebuilder.log'
 
 
@@ -69,7 +69,7 @@ if __name__ == '__main__':
     try:
         locker.acquire()
     except OSError:
-        logger.getLogger().info("Cannot Acquire Lock.")
+        logger.info("Cannot Acquire Lock.")
         sys.exit(1)
 
     try:

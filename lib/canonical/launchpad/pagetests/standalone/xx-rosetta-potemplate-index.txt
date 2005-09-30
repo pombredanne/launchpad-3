@@ -5,6 +5,10 @@ translations.
   >>> print http(r"""
   ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/ HTTP/1.1
   ... """)
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
   HTTP/1.1 200 Ok
   ...
           <title>Template "evolution-2.2" in ubuntu hoary package "evolution" in Rosetta</title>
@@ -22,6 +26,10 @@ same product.
   >>> print http(r"""
   ... GET /products/evolution/+series/main/+pots/evolution-2.2-test HTTP/1.1
   ... """)
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
   HTTP/1.1 200 Ok
   ...These templates came from the same source as this one:...
   ...<a href="http://localhost:9000/products/evolution/+series/main/+pots/evolution-2.2">evolution-2.2 in Evolution MAIN</a>

@@ -42,14 +42,6 @@
         facet="bugs"
         permission="zope.Public">
         <browser:page
-            name="+bugs"
-            lp:url="/distros/$Distribution.name/+bugs"
-            template="../templates/bugs-for-context.pt" />
-        <browser:page
-            name="+portlet-bugtasklist-mybugs"
-            template="../templates/bugtasklist-portlet-mybugs.pt"
-            lp:url="/distros/$Distribution.name/+portlet-bugtasklist-mybugs" />
-        <browser:page
             name="+portlet-bugtasklist-releasebugs"
             template="../templates/bugtask-portlet-releasebugs.pt"
             lp:url="/distros/$Distribution.name/+portlet-bugtasklist-releasebugs" />
@@ -88,11 +80,6 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
         permission="zope.Public" >
-        <browser:page
-            name="+portlet-actions"
-            facet="overview"
-            template="../templates/distribution-portlet-actions.pt"
-            lp:url="/distros/$Distribution.name/+portlet-actions" />
         <browser:page
             name="+portlet-details"
             facet="overview"
@@ -333,10 +320,9 @@
     <browser:menus
         module="canonical.launchpad.browser.distribution"
         classes="
-            DistributionFacets DistributionOverviewMenu
+            DistributionFacets DistributionOverviewMenu DistributionBugsMenu
             DistributionSupportMenu DistributionBountiesMenu
             DistributionSpecificationsMenu DistributionTranslationsMenu
-            DistributionContextMenu
             "
             />
 

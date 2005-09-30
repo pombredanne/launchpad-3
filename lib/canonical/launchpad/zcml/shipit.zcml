@@ -61,6 +61,14 @@
         name="+index" />
 
     <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        permission="launchpad.Admin"
+        name="+portlet-actions"
+        template="../templates/shipit-portlet-actions.pt"
+        lp:url="/shipit/requests/+portlet-actions">
+    </browser:page>
+
+    <browser:page
         layer="canonical.launchpad.layers.ShipItLayer"
         for="canonical.launchpad.interfaces.IShipItApplication"
         class="canonical.launchpad.browser.ShipItLoginView"

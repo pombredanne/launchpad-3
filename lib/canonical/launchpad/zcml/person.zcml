@@ -28,7 +28,7 @@
   <browser:menus
       module="canonical.launchpad.browser.person"
       classes="PersonFacets PersonBugsMenu PersonSpecsMenu PersonSupportMenu
-               PersonContextMenu TeamContextMenu" />
+               PersonContextMenu TeamContextMenu PeopleContextMenu" />
 
   <browser:url
       for="canonical.launchpad.interfaces.IPerson"
@@ -97,7 +97,7 @@
     name="+edithackergotchi"
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonHackergotchiView"
-    permission="launchpad.Admin"
+    permission="launchpad.Edit"
     template="../templates/person-images.pt"
     >
   </browser:page>
@@ -124,6 +124,11 @@
           template="../templates/person-assignedbugs.pt"
           lp:url="/people/$Person.name/+assignedbugs" />
       <browser:page
+          name="+packagebugs"
+          facet="bugs"
+          template="../templates/person-packagebugs.pt"
+          lp:url="/people/$Person.name/+packagebugs" />
+      <browser:page
           name="+reportedbugs"
           facet="bugs"
           template="../templates/person-reportedbugs.pt"
@@ -146,10 +151,6 @@
           facet="bounties"
           template="../templates/person-bounties.pt"
           lp:url="/people/$Person.name/+bounties" />
-      <browser:page
-          name="+portlet-actions"
-          template="../templates/person-portlet-actions.pt"
-          lp:url="/people/$Person.name/+portlet-actions" />
       <browser:page
           name="+portlet-emails"
           template="../templates/person-portlet-emails.pt"
@@ -498,9 +499,6 @@
       <browser:page
         name="+portlet-about"
         template="../templates/people-portlet-about.pt" />
-      <browser:page
-        name="+portlet-actions"
-        template="../templates/people-portlet-actions.pt" />
   </browser:pages>
 </facet>
 </configure>

@@ -4,6 +4,18 @@ series is working.
   >>> print http(r"""
   ... GET /products/evolution/+series/main/+translations HTTP/1.1
   ... """)
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
+  WARNING:root:PO file header entry has no content-type field
   HTTP/1.1 200 Ok
   ...
       <title>Rosetta Translation Templates for Evolution Series: MAIN</title>

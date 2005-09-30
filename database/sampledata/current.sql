@@ -124,6 +124,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'gpgkey'::pg_catalog.regclass;
 
+INSERT INTO gpgkey (id, owner, keyid, fingerprint, active, algorithm, keysize) VALUES (1, 16, '12345678', 'ABCDEF0123456789ABCDDCBA0000111112345678', true, 17, 1024);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'gpgkey'::pg_catalog.regclass;
@@ -148,57 +149,57 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'wikiname'::pg_catalog.regclass;
 
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (1, 1, 'http://www.ubuntulinux.com/wiki/', 'MarkShuttleworth');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (2, 11, 'http://www.ubuntulinux.com/wiki/', 'SteveAlexander');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (3, 10, 'http://www.ubuntulinux.com/wiki/', 'AlexanderLimi');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (4, 8, 'http://www.ubuntulinux.com/wiki/', 'JamesBlackwell');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (5, 9, 'http://www.ubuntulinux.com/wiki/', 'ChristianReis');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (6, 4, 'http://www.ubuntulinux.com/wiki/', 'ColinWatson');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (7, 5, 'http://www.ubuntulinux.com/wiki/', 'ScottJamesRemnant');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (8, 7, 'http://www.ubuntulinux.com/wiki/', 'AndrewBennetts');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (9, 3, 'http://www.ubuntulinux.com/wiki/', 'DaveMiller');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (10, 6, 'http://www.ubuntulinux.com/wiki/', 'JeffWaugh');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (11, 2, 'http://www.ubuntulinux.com/wiki/', 'RobertCollins');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (12, 12, 'http://www.ubuntulinux.com/wiki/', 'SamplePerson');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (13, 13, 'http://www.ubuntulinux.com/wiki/', 'CarlosPerellóMarín');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (14, 14, 'http://www.ubuntulinux.com/wiki/', 'DafyddHarries');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (15, 16, 'http://www.ubuntulinux.com/wiki/', 'FooBar');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (16, 17, 'http://www.ubuntulinux.com/wiki/', 'UbuntuTeam');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (17, 18, 'http://www.ubuntulinux.com/wiki/', 'UbuntuGnomeTeam');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (18, 19, 'http://www.ubuntulinux.com/wiki/', 'WartyGnomeTeam');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (19, 20, 'http://www.ubuntulinux.com/wiki/', 'WartySecurityTeam');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (20, 21, 'http://www.ubuntulinux.com/wiki/', 'HoaryGnomeTeam');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (21, 22, 'http://www.ubuntulinux.com/wiki/', 'StuartBishop');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (22, 23, 'http://www.ubuntulinux.com/wiki/', 'DavidAllouche');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (23, 24, 'http://www.ubuntulinux.com/wiki/', 'ButtressSourceAdministrators');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (24, 25, 'http://www.ubuntulinux.com/wiki/', 'LaunchpadAdministrators');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (25, 26, 'http://www.ubuntulinux.com/wiki/', 'DanielSilverstone');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (26, 27, 'http://www.ubuntulinux.com/wiki/', 'DanielHenriqueDebonzi');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (27, 28, 'http://www.ubuntulinux.com/wiki/', 'CelsoProvidelo');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (28, 29, 'http://www.ubuntulinux.com/wiki/', 'GuilhermeSalgado');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (29, 30, 'http://www.ubuntulinux.com/wiki/', 'RosettaAdministrators');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (30, 31, 'http://www.ubuntulinux.com/wiki/', 'UbuntuTranslators');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (31, 32, 'http://www.ubuntulinux.com/wiki/', 'Guadamen');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (32, 33, 'http://www.ubuntulinux.com/wiki/', 'EdgarBursic');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (33, 34, 'http://www.ubuntulinux.com/wiki/', 'JordiVilalta');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (34, 35, 'http://www.ubuntulinux.com/wiki/', 'SigurdGartmann');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (35, 36, 'http://www.ubuntulinux.com/wiki/', 'VlastimilSkacel');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (36, 37, 'http://www.ubuntulinux.com/wiki/', 'DanielAguayo');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (37, 38, 'http://www.ubuntulinux.com/wiki/', 'MartinPitt');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (38, 39, 'http://www.ubuntulinux.com/wiki/', 'NicolasVelin');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (39, 40, 'http://www.ubuntulinux.com/wiki/', 'FrancescoAccattapà');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (40, 41, 'http://www.ubuntulinux.com/wiki/', 'Aloriel');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (41, 42, 'http://www.ubuntulinux.com/wiki/', 'DenisBarbier');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (42, 43, 'http://www.ubuntulinux.com/wiki/', 'AndréLuísLopes');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (43, 44, 'http://www.ubuntulinux.com/wiki/', 'CarlosValdiviaYagüe');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (44, 45, 'http://www.ubuntulinux.com/wiki/', 'LukClaes');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (45, 46, 'http://www.ubuntulinux.com/wiki/', 'MiroslavKure');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (46, 47, 'http://www.ubuntulinux.com/wiki/', 'MortenBrixPedersen');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (47, 48, 'http://www.ubuntulinux.com/wiki/', 'MattiPöllä');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (48, 49, 'http://www.ubuntulinux.com/wiki/', 'KęstutisBiliūnas');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (49, 50, 'http://www.ubuntulinux.com/wiki/', 'ValentinaCommissari');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (50, 51, 'http://www.ubuntulinux.com/wiki/', 'HelgeKreutzmann');
-INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (51, 52, 'http://www.ubuntulinux.com/wiki/', 'NoPrivilegesPerson');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (1, 1, 'https://wiki.ubuntu.com/', 'MarkShuttleworth');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (2, 11, 'https://wiki.ubuntu.com/', 'SteveAlexander');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (3, 10, 'https://wiki.ubuntu.com/', 'AlexanderLimi');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (4, 8, 'https://wiki.ubuntu.com/', 'JamesBlackwell');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (5, 9, 'https://wiki.ubuntu.com/', 'ChristianReis');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (6, 4, 'https://wiki.ubuntu.com/', 'ColinWatson');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (7, 5, 'https://wiki.ubuntu.com/', 'ScottJamesRemnant');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (8, 7, 'https://wiki.ubuntu.com/', 'AndrewBennetts');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (9, 3, 'https://wiki.ubuntu.com/', 'DaveMiller');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (10, 6, 'https://wiki.ubuntu.com/', 'JeffWaugh');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (11, 2, 'https://wiki.ubuntu.com/', 'RobertCollins');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (12, 12, 'https://wiki.ubuntu.com/', 'SamplePerson');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (13, 13, 'https://wiki.ubuntu.com/', 'CarlosPerellóMarín');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (14, 14, 'https://wiki.ubuntu.com/', 'DafyddHarries');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (15, 16, 'https://wiki.ubuntu.com/', 'FooBar');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (16, 17, 'https://wiki.ubuntu.com/', 'UbuntuTeam');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (17, 18, 'https://wiki.ubuntu.com/', 'UbuntuGnomeTeam');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (18, 19, 'https://wiki.ubuntu.com/', 'WartyGnomeTeam');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (19, 20, 'https://wiki.ubuntu.com/', 'WartySecurityTeam');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (20, 21, 'https://wiki.ubuntu.com/', 'HoaryGnomeTeam');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (21, 22, 'https://wiki.ubuntu.com/', 'StuartBishop');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (22, 23, 'https://wiki.ubuntu.com/', 'DavidAllouche');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (23, 24, 'https://wiki.ubuntu.com/', 'ButtressSourceAdministrators');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (24, 25, 'https://wiki.ubuntu.com/', 'LaunchpadAdministrators');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (25, 26, 'https://wiki.ubuntu.com/', 'DanielSilverstone');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (26, 27, 'https://wiki.ubuntu.com/', 'DanielHenriqueDebonzi');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (27, 28, 'https://wiki.ubuntu.com/', 'CelsoProvidelo');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (28, 29, 'https://wiki.ubuntu.com/', 'GuilhermeSalgado');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (29, 30, 'https://wiki.ubuntu.com/', 'RosettaAdministrators');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (30, 31, 'https://wiki.ubuntu.com/', 'UbuntuTranslators');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (31, 32, 'https://wiki.ubuntu.com/', 'Guadamen');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (32, 33, 'https://wiki.ubuntu.com/', 'EdgarBursic');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (33, 34, 'https://wiki.ubuntu.com/', 'JordiVilalta');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (34, 35, 'https://wiki.ubuntu.com/', 'SigurdGartmann');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (35, 36, 'https://wiki.ubuntu.com/', 'VlastimilSkacel');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (36, 37, 'https://wiki.ubuntu.com/', 'DanielAguayo');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (37, 38, 'https://wiki.ubuntu.com/', 'MartinPitt');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (38, 39, 'https://wiki.ubuntu.com/', 'NicolasVelin');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (39, 40, 'https://wiki.ubuntu.com/', 'FrancescoAccattapà');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (40, 41, 'https://wiki.ubuntu.com/', 'Aloriel');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (41, 42, 'https://wiki.ubuntu.com/', 'DenisBarbier');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (42, 43, 'https://wiki.ubuntu.com/', 'AndréLuísLopes');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (43, 44, 'https://wiki.ubuntu.com/', 'CarlosValdiviaYagüe');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (44, 45, 'https://wiki.ubuntu.com/', 'LukClaes');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (45, 46, 'https://wiki.ubuntu.com/', 'MiroslavKure');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (46, 47, 'https://wiki.ubuntu.com/', 'MortenBrixPedersen');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (47, 48, 'https://wiki.ubuntu.com/', 'MattiPöllä');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (48, 49, 'https://wiki.ubuntu.com/', 'KęstutisBiliūnas');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (49, 50, 'https://wiki.ubuntu.com/', 'ValentinaCommissari');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (50, 51, 'https://wiki.ubuntu.com/', 'HelgeKreutzmann');
+INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (51, 52, 'https://wiki.ubuntu.com/', 'NoPrivilegesPerson');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'wikiname'::pg_catalog.regclass;
@@ -285,6 +286,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (44, 16, 53, 2, '2005-07-12 14:36:09.587753', NULL, 13, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (45, 55, 54, 2, '2005-07-12 14:36:09.587753', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (46, 12, 31, 4, '2005-07-12 14:36:09.587753', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (47, 12, 32, 6, '2005-09-28 20:08:08.248467', '2007-08-29 00:00:00', 16, '');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'teammembership'::pg_catalog.regclass;
@@ -823,21 +825,14 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'manifestentry'::pg_catalog.regclass;
 
 INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname, hint) VALUES (1, 1, 1, 10, 1, 4, 'firefox-0.9.2.tar.gz', NULL, 'firefox-0.9.2/', 1);
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname) VALUES (2, 2, 1, 11, 2, 4, 'firefox-0.9.1.tar.gz', NULL, 'firefox-0.9.1/');
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname) VALUES (3, 2, 2, NULL, NULL, 1, 'firefox-0.9.1.tar.gz/random/', NULL, NULL);
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname) VALUES (4, 3, 1, 12, 3, 5, 'firefox-0.9.zip', NULL, 'firefox-0.9/');
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname) VALUES (5, 3, 2, 12, NULL, 6, 'firefox-0.9_unix.patch', 1, 'firefox-0.9_unix/');
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname) VALUES (6, 4, 1, 13, NULL, 3, 'firefox-0.8.ar', NULL, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname, hint) VALUES (2, 2, 1, 11, 2, 4, 'firefox-0.9.1.tar.gz', NULL, 'firefox-0.9.1/', NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname, hint) VALUES (3, 2, 2, NULL, NULL, 1, 'firefox-0.9.1.tar.gz/random/', NULL, NULL, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname, hint) VALUES (4, 3, 1, 12, 3, 5, 'firefox-0.9.zip', NULL, 'firefox-0.9/', NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname, hint) VALUES (5, 3, 2, 12, NULL, 6, 'firefox-0.9_unix.patch', 1, 'firefox-0.9_unix/', NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname, hint) VALUES (6, 4, 1, 13, NULL, 3, 'firefox-0.8.ar', NULL, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'manifestentry'::pg_catalog.regclass;
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'manifestancestry'::pg_catalog.regclass;
-
-INSERT INTO manifestancestry (id, parent, child) VALUES (1, 2, 1);
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'manifestancestry'::pg_catalog.regclass;
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'archconfig'::pg_catalog.regclass;
@@ -848,6 +843,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'archconfigentry'::pg_catalog.regclass;
+
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'archconfigentry'::pg_catalog.regclass;
@@ -871,7 +867,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'builder'::pg_catalog.regclass;
 
-INSERT INTO Builder (id, processor, url, name, title, description, owner, builderok) VALUES (1, 1, 'http://localhost:8221/', 'bob', 'Bob The Builder', 'The default build-slave', 1, False);
+INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 1, NULL, false, NULL, false, 'http://localhost:8221/');
+
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'builder'::pg_catalog.regclass;
 
@@ -5944,7 +5941,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'buildqueue'::pg_catalog.regclass;
 
-INSERT INTO BuildQueue (id, build, builder, logtail, created, lastscore) VALUES (1, 2, 1,'Dummy sampledata entry, not processing', '2005-06-15 09:14:12.820778', 1);  
+INSERT INTO buildqueue (id, build, builder, logtail, created, buildstart, lastscore) VALUES (1, 2, 1, 'Dummy sampledata entry, not processing', '2005-06-15 09:14:12.820778', NULL, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'buildqueue'::pg_catalog.regclass;
@@ -5952,7 +5949,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'signedcodeofconduct'::pg_catalog.regclass;
 
-
+INSERT INTO signedcodeofconduct (id, owner, signingkey, datecreated, signedcode,recipient, active, admincomment) VALUES (1, 16, 1, '2005-09-27 10:01:13', 'Sampledata signedcode', NULL, true, NULL); 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'signedcodeofconduct'::pg_catalog.regclass;
 
@@ -7753,6 +7750,14 @@ INSERT INTO specificationreview (id, specification, reviewer, requestor, queuems
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'specificationreview'::pg_catalog.regclass;
 
 
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'manifestancestry'::pg_catalog.regclass;
+
+INSERT INTO manifestancestry (id, parent, child) VALUES (1, 2, 1);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'manifestancestry'::pg_catalog.regclass;
+
+
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'ticket'::pg_catalog.regclass;
 
 INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (1, 11, 'Firefox cannot render Bank Site', 'Hello, I''m trying to access http://www.citibank.com/ and the page is not rendering correctly. Is there a setting I can use to get it right? Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:46:07.392021', '2005-09-05 18:46:07.392021', NULL, NULL, NULL, NULL, NULL, NULL, '''m'':8B ''get'':28B ''set'':23B ''tri'':9B ''use'':26B ''bank'':4A ''page'':15B ''site'':5A ''hello'':6B ''right'':30B ''thank'':31B ''access'':11B ''cannot'':2A ''render'':3A,18B ''correct'':19B ''firefox'':1A ''www.citibank.com'':12B');
@@ -7822,12 +7827,12 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'shippingrequest'::pg_catalog.regclass;
 
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority) VALUES (1, 52, NULL, 55, false, NULL, '2005-08-01 18:38:24.526648', true, NULL, 'noreason', false);
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority) VALUES (2, 22, NULL, NULL, false, NULL, '2005-09-01 18:38:24.526648', true, NULL, NULL, false);
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority) VALUES (3, 51, NULL, NULL, false, NULL, '2005-07-01 18:38:24.526648', true, NULL, NULL, false);
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority) VALUES (4, 29, NULL, NULL, false, NULL, '2005-06-01 18:38:24.526648', true, NULL, NULL, false);
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority) VALUES (5, 23, NULL, NULL, false, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason', false);
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority) VALUES (6, 28, NULL, NULL, true, 55, '2005-04-01 18:38:24.526648', NULL, NULL, 'noreason', false);
+INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (1, 52, NULL, 55, false, NULL, '2005-08-01 18:38:24.526648', true, NULL, 'noreason', false, 'Somewhere', 'between heaven and hell', 'Something', 'whatever', 'not mandatory', 25, '999432423', '+55 16 3374-2027');
+INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (2, 22, NULL, NULL, false, NULL, '2005-09-01 18:38:24.526648', true, NULL, NULL, false, 'Somewhere', 'between heaven and hell', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027');
+INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (3, 51, NULL, NULL, false, NULL, '2005-07-01 18:38:24.526648', true, NULL, NULL, false, 'Somewhere', 'between heaven and hell', 'Something', 'whatever', 'not mandatory', 35, '999432423', '+55 16 3374-2027');
+INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (4, 2, NULL, NULL, false, NULL, '2005-04-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'between heaven and hell', 'Something', 'whatever', 'not mandatory', 45, '999432423', '+55 16 3374-2027');
+INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (5, 23, NULL, NULL, false, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'between heaven and hell', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
+INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (6, 28, NULL, NULL, true, 55, '2005-04-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'between heaven and hell', 'Something', 'whatever', 'not mandatory', 19, '999432423', '+55 16 3374-2027');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'shippingrequest'::pg_catalog.regclass;
@@ -7942,33 +7947,6 @@ INSERT INTO cvereference (id, cve, source, content, url) VALUES (38, 10, 'XF', '
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'cvereference'::pg_catalog.regclass;
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'developmentmanifest'::pg_catalog.regclass;
 
 
@@ -7999,6 +7977,20 @@ INSERT INTO sprintspecification (id, sprint, specification) VALUES (3, 1, 4);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sprintspecification'::pg_catalog.regclass;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

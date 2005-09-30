@@ -49,15 +49,6 @@
         facet="bugs"
         permission="zope.Public">
         <browser:page
-            name="+bugs"
-            lp:url="/distros/$DistroRelease.name/+bugs"
-            template="../templates/bugs-for-context.pt" />
-        <browser:page
-            name="+portlet-bugtasklist-mybugs"
-            template="../templates/bugtasklist-portlet-mybugs.pt"
-            lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-mybugs"
-            />
-        <browser:page
             name="+portlet-bugtasklist-releasebugs"
             template="../templates/bugtask-portlet-releasebugs.pt"
             lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-releasebugs" />
@@ -107,10 +98,6 @@
             facet="overview"
             template="../templates/distrorelease-portlet-details.pt" />
         <browser:page
-            name="+portlet-actions"
-            facet="overview"
-            template="../templates/distrorelease-portlet-actions.pt" />
-        <browser:page
             name="+portlet-translations"
             facet="translations"
             template="../templates/distrorelease-portlet-translations.pt" />
@@ -137,7 +124,8 @@
 
     <browser:menus
         module="canonical.launchpad.browser.distrorelease"
-        classes="DistroReleaseFacets DistroReleaseOverviewMenu"
+        classes="DistroReleaseFacets DistroReleaseOverviewMenu
+            DistroReleaseBugsMenu DistroReleaseSpecificationsMenu"
         />
 
 </configure>

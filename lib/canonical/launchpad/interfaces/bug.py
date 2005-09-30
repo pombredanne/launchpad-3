@@ -20,7 +20,7 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad.interfaces import (
     non_duplicate_bug, IMessageTarget)
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import Title, Summary
 
 _ = MessageIDFactory('launchpad')
@@ -45,7 +45,7 @@ class IBug(Interface, IMessageTarget):
         description=_("""A short and unique name for this bug.
         Add a nickname only if you often need to retype the URL
         but have trouble remembering the bug number."""),
-        constraint=valid_name)
+        constraint=name_validator)
     title = Title(
         title=_('Title'), required=True,
         description=_("""A one-line summary of the problem."""))
@@ -170,6 +170,7 @@ class IBugTarget(Interface):
         description and owner.
         """
 
+    bugtasks = Attribute("A list of BugTasks for this target.")
 
 
 class BugDistroReleaseTargetDetails:

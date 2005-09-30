@@ -23,8 +23,7 @@ from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
 
 from canonical.lp import dbschema
-from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, structured)
+from canonical.launchpad.webapp import canonical_url, Link
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
@@ -36,6 +35,7 @@ from canonical.launchpad.interfaces import IBugTaskSearchListingView
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
 
 # This shortcut constant indicates what we consider "open"
@@ -45,83 +45,8 @@ STATUS_OPEN = any(dbschema.BugTaskStatus.NEW,
                   dbschema.BugTaskStatus.ACCEPTED)
 
 
-class BugTaskContextMenu(ContextMenu):
+class BugTaskContextMenu(BugContextMenu):
     usedfor = IBugTask
-    links = ['editdescription', 'targetfix', 'secrecy', 'markduplicate',
-             'subscription', 'addsubscriber', 'addattachment', 'linktocve',
-             'addurl', 'addwatch', 'filebug', 'searchbugs', 'activitylog']
-
-    def editdescription(self):
-        text = 'Edit Description'
-        return Link('+edit', text, icon='edit')
-
-    def targetfix(self):
-        enabled = (
-            IDistroBugTask.providedBy(self.context) or
-            IDistroReleaseBugTask.providedBy(self.context))
-        text = 'Target Fix to Releases'
-        return Link('+target', text, icon='edit', enabled=enabled)
-
-    def secrecy(self):
-        text = 'Bug Secrecy'
-        return Link('+secrecy', text, icon='edit')
-
-    def markduplicate(self):
-        text = 'Mark as Duplicate'
-        return Link('+duplicate', text, icon='edit')
-
-    def subscription(self):
-        user = getUtility(ILaunchBag).user
-        if user is not None and self.context.bug.isSubscribed(user):
-            text = 'Unsubscribe'
-        else:
-            text = 'Subscribe'
-        return Link('+subscribe', text, icon='add')
-
-    def addsubscriber(self):
-        text = 'Subscribe Someone Else'
-        return Link('+addsubscriber', text, icon='add')
-
-    def addattachment(self):
-        text = 'Add Attachment'
-        return Link('+addattachment', text, icon='add')
-
-    def linktocve(self):
-        text = structured(
-            'Link to '
-            '<abbr title="Common Vulnerabilities and Exposures Index">'
-            'CVE'
-            '</abbr>')
-        return Link('+linkcve', text, icon='add')
-
-    def unlinkcve(self):
-        enabled = bool(self.context.bug.cves)
-        text = 'Remove CVE link'
-        return Link('+unlinkcve', text, icon='edit', enabled=enabled)
-
-    def addurl(self):
-        text = 'Link to Web Page'
-        return Link('+addurl', text, icon='add')
-
-    def addwatch(self):
-        text = 'Link To Other Bugtracker'
-        return Link('+addwatch', text, icon='add')
-
-    def filebug(self):
-        bugtarget = self.context.target
-        linktarget = '%s/%s' % (canonical_url(bugtarget), '+filebug')
-        text = 'Report a Bug in %s' % bugtarget.displayname
-        return Link(linktarget, text, icon='add')
-
-    def searchbugs(self):
-        bugtarget = self.context.target
-        linktarget = '%s/%s' % (canonical_url(bugtarget), '+bugs')
-        text = 'Search %s Bugs' % bugtarget.displayname
-        return Link(linktarget, text, icon='bugs')
-
-    def activitylog(self):
-        text = 'Activity Log'
-        return Link('+activity', text, icon='list')
 
 
 class BugTasksReportView:
@@ -434,10 +359,17 @@ class BugTaskSearchListingView:
 
     implements(IBugTaskSearchListingView)
 
+    def showTableView(self):
+        """Should the search results be displayed as a table?"""
+        return False
+
+    def showListView(self):
+        """Should the search results be displayed as a list?"""
+        return True
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.is_maintainer = helpers.is_maintainer(self.context)
         self.user = getUtility(ILaunchBag).user
 
         if self._upstreamContext():
@@ -554,6 +486,16 @@ class BugTaskSearchListingView:
                         #      removed. -- Bjorn Tillenius, 2005-05-04
                         task.milestone = milestone_assignment.id
 
+    def mass_edit_allowed(self):
+        """Indicates whether the user can edit bugtasks directly on the page.
+
+        At the moment the user can edit only product milestone
+        assignments, if the user is a maintainer of the product.
+        """
+        return (
+            self._upstreamContext() is not None and
+            helpers.is_maintainer(self.context))
+
     def task_columns(self):
         """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
         upstream_context = self._upstreamContext()
@@ -561,9 +503,13 @@ class BugTaskSearchListingView:
         distrorelease_context = self._distroReleaseContext()
 
         if upstream_context:
-            return [
-                "select", "id", "title", "milestone", "status", "severity",
-                "priority", "assignedto"]
+            upstream_columns = [
+                "id", "title", "milestone", "status", "severity", "priority",
+                "assignedto"]
+            if self.mass_edit_allowed():
+                return ["select"] + upstream_columns
+            else:
+                return upstream_columns
         elif distribution_context or distrorelease_context:
             return [
                 "id", "title", "package", "status", "severity", "priority",
@@ -706,6 +652,14 @@ class BugTaskSearchListingView:
         """
         # See search() for details on the any-status hack
         return str(self.request.URL) + "?any-status=1&search=Search"
+
+    @property
+    def advanced_url(self):
+        """Construct and return the URL that gets you to the advanced search.
+
+        The URL is context-aware.
+        """
+        return str(self.request.URL) + "?advanced=Advanced"
 
     @property
     def release_bug_counts(self):

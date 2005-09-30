@@ -30,6 +30,11 @@
             set_schema="canonical.launchpad.interfaces.IProductRelease" />
     </content>
 
+    <browser:menus
+        module="canonical.launchpad.browser"
+        classes="ProductReleaseContextMenu"
+        />
+
     <browser:url
         for="canonical.launchpad.interfaces.IProductRelease"
         path_expression="version"
@@ -48,11 +53,6 @@
             name="+index"
             template="../templates/productrelease.pt" />
         <!-- ProductReleases Portlets -->
-        <browser:page
-            name="+portlet-actions"
-            template="../templates/productrelease-portlet-actions.pt"
-            lp:url="/products/evolution/2.1.6/+portlet-actions"
-            />
         <browser:page
             name="+portlet-details"
             template="../templates/productrelease-portlet-details.pt"

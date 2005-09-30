@@ -97,7 +97,7 @@
             <td>&#8212;</td>
             <td>
               <img alt="/++resource++idle" />
-              idle
+	      <span tal:replace="context/status">STATUS</span>
             </td>
           </tr>
           <tal:block condition="job">

@@ -287,10 +287,10 @@ The rank of a result is calculated using the tsearch2 rank() function.
     ...         name, rank(fti, ftq('gnome')) AS rank
     ...     FROM product
     ...     WHERE fti @@ ftq('gnome')
-    ...     ORDER BY rank DESC
+    ...     ORDER BY rank DESC, name
     ...     """)
-    gnome-terminal            1.00
     applets                   1.00
+    gnome-terminal            1.00
     gnomebaker                0.57
     python-gnome2-dev         0.28
     evolution                 0.20
@@ -333,12 +333,12 @@ an arbitrary constant that seemed appropriate).
     ...    ) AS BugMatches
     ...   GROUP BY title
     ...   HAVING max(ranking) > 0.2
-    ...   ORDER BY max(ranking) DESC
+    ...   ORDER BY max(ranking) DESC, title
     ...   """)
-    Firefox does not suppo... 0.72
-    Reflow problems with c... 0.72
     Firefox crashes when S... 0.72
+    Firefox does not suppo... 0.72
     Firefox install instru... 0.72
+    Reflow problems with c... 0.72
     Blackhole Trash folder    0.70
     Bug Title Test            0.70
 
