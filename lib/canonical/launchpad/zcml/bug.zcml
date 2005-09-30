@@ -14,12 +14,26 @@
 
     <!-- Bug -->
     <content class="canonical.launchpad.database.Bug">
+        <implements interface="canonical.launchpad.interfaces.IBug" />
+        <allow attributes="id private bugtasks" />
         <require
             permission="launchpad.View"
-            interface="canonical.launchpad.interfaces.IBug" />
+            attributes="datecreated name title summary description ownerID
+                        owner duplicateof communityscore communitytimestamp
+                        hits hitstimestamp activityscore activitytimestamp
+                        displayname activity initial_message 
+                        productinfestations packageinfestations watches
+                        externalrefs cves cve_links subscriptions duplicates
+                        attachments tickets specifications followup_subject
+                        subscribe unsubscribe isSubscribed messages
+                        notificationRecipientAddresses addWatch linkCVE
+                        unlinkCVE findCvesInText newMessage linkMessage" />
         <require
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.IBug" />
+            set_attributes="datecreated name title summary description ownerID
+                            owner duplicateof communityscore communitytimestamp
+                            hits hitstimestamp activityscore activitytimestamp
+                            activity initial_message private" />
     </content>
 
     <browser:defaultView

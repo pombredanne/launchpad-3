@@ -33,7 +33,7 @@ class BugCreationConstraintsError(Exception):
     """
 
 
-class IBug(Interface, IMessageTarget):
+class IBug(IMessageTarget):
     """The core bug entry."""
 
     id = Int(

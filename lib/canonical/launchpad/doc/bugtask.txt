@@ -594,20 +594,20 @@ Trying to retrieve the bug directly will work fine:
 But attribute access on the IBugTask will raise an authorization
 exception:
 
-    >>> bug_firefox_no_svg_support.bug
+    >>> bug_firefox_no_svg_support.status
     Traceback (most recent call last):
       ...
-    Unauthorized: ('bug', 'launchpad.View')
+    Unauthorized: ('status', 'launchpad.View')
 
 Logging in as a member of the illustrious Launchpad admin team will
 still not allow viewing of this private bug:
 
     >>> login("carlos@canonical.com")
 
-    >>> bug_firefox_no_svg_support.bug
+    >>> bug_firefox_no_svg_support.status
     Traceback (most recent call last):
       ...
-    Unauthorized: ('bug', 'launchpad.View')
+    Unauthorized: ('status', 'launchpad.View')
 
 The same is true for carlos trying to edit an upstream task, e.g. the
 one we created earlier on:

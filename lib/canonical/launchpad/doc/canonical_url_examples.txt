@@ -240,6 +240,30 @@ An IDistroReleaseBugTask without a sourcepackage.
     u'http://localhost:8086/distros/ubuntu/warty/+bug/5'
     >>> distro_release_task.sourcepackagename = temp_spname
 
+A private bug, as an anonymous user! (We'll temporarily subscribe to the bug,
+to ensure that at least one person has the perms to edit it while it's set
+private.)
+
+    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> current_user = getUtility(ILaunchBag).user
+    >>> subscription = distro_release_task.bug.subscribe(current_user)
+
+    >>> distro_release_task.bug.private = True
+
+    >>> login(ANONYMOUS)
+
+    >>> canonical_url(distro_release_task.bug)
+    u'http://localhost:8086/malone/bugs/5'
+
+A private bugtask, as an anonymous user.
+
+    >>> canonical_url(distro_release_task)
+    u'http://localhost:8086/distros/ubuntu/warty/+sources/mozilla-firefox/+bug/5'
+
+    >>> login("foo.bar@canonical.com")
+    >>> distro_release_task.bug.private = False
+    >>> distro_release_task.bug.unsubscribe(current_user)
+
 An IBugWatchSet.
 
     This doesn't work, because BugWatchSet.bug is an int, not an IBug object.

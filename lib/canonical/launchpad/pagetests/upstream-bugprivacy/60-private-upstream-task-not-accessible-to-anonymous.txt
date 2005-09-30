@@ -10,5 +10,5 @@ URL. See https://launchpad.net/malone/bugs/2265.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/products/firefox/+bug/7/+login
+  Location: http://localhost:9000/products/firefox/+bug/7/+editstatus/+login
   <BLANKLINE>
