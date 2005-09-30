@@ -86,6 +86,10 @@
       field="whiteboard"
       class="zope.app.form.browser.TextAreaWidget"
       height="5" />
+    <browser:widget
+      field="specurl"
+      class="zope.app.form.browser.TextWidget"
+      displayWidth="60" />
   </browser:editform>
 
   <browser:editform

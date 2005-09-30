@@ -43,6 +43,10 @@
     <browser:widget
       field="owner"
       class="canonical.widgets.HiddenUserWidget" />
+    <browser:widget
+      field="specurl"
+      class="zope.app.form.browser.TextWidget"
+      displayWidth="60" />
   </browser:addform>
 
 </facet>
