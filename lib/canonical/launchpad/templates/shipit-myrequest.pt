@@ -235,7 +235,7 @@
               </tr>
               <tr>
                 <td colspan="6">
-                    <strong>Reason for custom request:</strong>
+                    <strong>Reason for custom request, in English:</strong>
                     <span class="formHelp">(required)</span>
                     <textarea name="reason" rows="4"
                               tal:content="view/reason|nothing" />
