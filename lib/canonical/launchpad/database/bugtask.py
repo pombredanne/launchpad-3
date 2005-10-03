@@ -138,15 +138,6 @@ class BugTask(SQLBase, BugTaskMixin):
 
         return now - self.datecreated
 
-    @property
-    def title(self):
-        """Generate the title for this bugtask based on the id of the bug
-        and the bugtask's targetname.  See IBugTask.
-        """
-        title = 'Bug #%s in %s: "%s"' % (
-            self.bug.id, self.targetname, self.bug.title)
-        return title
-
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
         SQLBase._init(self, *args, **kw)
