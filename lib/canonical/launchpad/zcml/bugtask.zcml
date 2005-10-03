@@ -313,7 +313,8 @@
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         fields="maintainer_displayname milestone status priority
-                severity assignee bugwatch statusexplanation"
+                severity assignee bugwatch statusexplanation
+                product"
         label="Edit Product Bug Task"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt"
