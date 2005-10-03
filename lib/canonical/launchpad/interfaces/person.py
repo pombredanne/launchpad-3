@@ -16,7 +16,6 @@ __all__ = [
     'ITeamParticipation',
     'IRequestPeopleMerge',
     'IObjectReassignment',
-    'IShipItCountry',
     'ITeamReassignment',
     'ITeamCreation',
     'NameAlreadyTaken',
@@ -836,11 +835,4 @@ class ITeamCreation(ITeam):
             "team creation, a new message will be sent to this address with "
             "instructions on how to finish its registration."),
         constraint=valid_email)
-
-
-class IShipItCountry(Interface):
-    """This schema is only to get the Country widget."""
-
-    country = Choice(title=_('Country'), required=True, 
-                     vocabulary='CountryName')
 

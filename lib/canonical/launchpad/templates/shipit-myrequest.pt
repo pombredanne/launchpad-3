@@ -336,13 +336,13 @@
             <input
               tal:attributes="value view/postcode|order/postcode|nothing"
               type="text" name="postcode" size="12" maxlength="12" />
-            <span id="postcode-required" class="formHelp">(required)</span>
           </td>
         </tr>
         <tr>
           <th>Country:</th>
           <td>
             <span tal:replace="structure view/country_widget" />
+            <span class="formHelp">(required)</span>
           </td>
         </tr>
         <tr>
