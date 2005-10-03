@@ -43,7 +43,7 @@ lastBuilds() method returns the build history, atm there is no data
 available in the database, we can just test if the call doesn't fail.
 
  >>> builder.lastBuilds().count()
- 0
+ 2
 
 Now perform the tests for the Builder ContentSet class, BuilderSet.
 

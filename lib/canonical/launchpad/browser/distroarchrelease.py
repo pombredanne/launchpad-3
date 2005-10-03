@@ -11,11 +11,13 @@ __all__ = [
 
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
+from zope.component import getUtility
 
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, ContextMenu, Link)
 
-from canonical.launchpad.interfaces import IDistroArchRelease
+from canonical.launchpad.interfaces import (
+    IDistroArchRelease, IBuildSet)
 
 BATCH_SIZE = 40
 
@@ -45,6 +47,14 @@ class DistroArchReleaseView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
+
+    def getBuilt(self):
+        """Return the last build records within the DistroArchRelease context.
+
+        The number of entries can also be determined in the future.
+        """
+        bset = getUtility(IBuildSet)
+        return bset.getBuiltForDistroArchRelease(self.context)
 
 
 class DistroArchReleaseBinariesView:

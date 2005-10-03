@@ -83,7 +83,7 @@ class BuildSet:
     implements(IBuildSet)
 
     def getBuildBySRAndArchtag(self, sourcepackagereleaseID, archtag):
-        """See IBuilderSet"""
+        """See IBuildSet"""
         clauseTables = ['DistroArchRelease']
         query = ('Build.sourcepackagerelease = %s '
                  'AND Build.distroarchrelease = DistroArchRelease.id '
@@ -93,13 +93,17 @@ class BuildSet:
 
         return Build.select(query, clauseTables=clauseTables)
 
-    def getBuiltForDistroRelease(self, distrorelease, size=10):
-        """See IBuilderSet"""
-        # XXX: what is size useful for? Nothing, it appears!
-        #   -- kiko, 2005-09-23
-
+    def getBuiltForDistroRelease(self, distrorelease, limit=10):
+        """See IBuildSet"""
         arch_ids = ''.join(['%d,' % arch.id for arch in
                             distrorelease.architectures])[:-1]
 
-        return Build.select("distroarchrelease IN (%s)" % arch_ids)
+        return Build.select("distroarchrelease IN (%s)" % arch_ids,
+                            limit=limit, orderBy="-datebuilt")
 
+    def getBuiltForDistroArchRelease(self, distroarchrelease, limit=10):
+        """See IBuildSet"""
+        return Build.select(
+            "distroarchrelease=%s" % sqlvalues(distroarchrelease.id),
+            limit=limit, orderBy="-datebuilt"
+            )
