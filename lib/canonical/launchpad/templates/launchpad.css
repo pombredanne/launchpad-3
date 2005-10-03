@@ -438,7 +438,7 @@ ul.bugs>li, li.bugs {
 ul.build-success>li, li.build-success {
   list-style-image: url(/@@/build-success);
 }
-ul.cve>li, li.cve, {
+ul.cve>li, li.cve {
   list-style-image: url(/++resource++cve);
 }
 ul.document>li, li.document {
