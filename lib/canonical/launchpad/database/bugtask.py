@@ -110,9 +110,7 @@ class BugTask(SQLBase, BugTaskMixin):
         default=BugTaskStatus.NEW)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
     priority = EnumCol(
-        dbName='priority', notNull=True,
-        schema=BugTaskPriority,
-        default=BugTaskPriority.MEDIUM)
+        dbName='priority', notNull=False, schema=BugTaskPriority, default=None)
     severity = EnumCol(
         dbName='severity', notNull=True,
         schema=BugTaskSeverity,

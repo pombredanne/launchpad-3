@@ -314,8 +314,12 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
 
         The icon displayed is calculated based on the IBugTask.priority.
         """
-        priority_title = self._context.priority.title.lower()
-        if priority_title == 'wontfix':
+        if self._context.priority:
+            priority_title = self._context.priority.title.lower()
+        else:
+            priority_title = None
+
+        if not priority_title or priority_title == 'wontfix':
             # Special-case Wontfix by returning the "generic" bug icon
             # because we actually hope to eliminate Wontfix
             # entirely. See
