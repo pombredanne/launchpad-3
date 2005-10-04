@@ -7,6 +7,7 @@ import time
 import warnings
 
 from zope.interface import implements
+from zope.app.rdb import ZopeConnection
 
 from psycopgda.adapter import PsycopgAdapter
 import psycopg
@@ -14,6 +15,7 @@ import psycopg
 from canonical.config import config
 from canonical.database.interfaces import IRequestExpired
 from canonical.database.sqlbase import connect
+from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 
 __all__ = [
     'LaunchpadDatabaseAdapter',
@@ -27,13 +29,33 @@ class LaunchpadDatabaseAdapter(PsycopgAdapter):
     """A subclass of PsycopgAdapter that performs some additional
     connection setup.
     """
+    implements(ILaunchpadDatabaseAdapter)
 
-    def _connection_factory(self):
+    def connect(self, _dbuser=None):
+        """See zope.app.rdb.interfaces.IZopeDatabaseAdapter
+
+        We pass the database user through to avoid having to keep state
+        using a thread local.
+        """
+        if not self.isConnected():
+            try:
+                self._v_connection = ZopeConnection(
+                    self._connection_factory(_dbuser=_dbuser), self)
+            # Note: I added the general Exception, since the DA can return
+            # implementation-specific errors. But we really want to catch all
+            # issues at this point, so that we can convert it to a
+            # DatabaseException.
+            except psycopg.Error, error:
+                raise DatabaseException, str(error)
+
+    def _connection_factory(self, _dbuser=None):
         """Override method provided by PsycopgAdapter to pull
         connection settings from the config file
         """
         self._registerTypes()
-        connection = connect(config.launchpad.dbuser, config.dbname)
+        if _dbuser is None:
+            _dbuser = config.launchpad.dbuser
+        connection = connect(_dbuser, config.dbname)
 
         if config.launchpad.db_statement_timeout is not None:
             cursor = connection.cursor()
@@ -42,6 +64,19 @@ class LaunchpadDatabaseAdapter(PsycopgAdapter):
             connection.commit()
 
         return ConnectionWrapper(connection)
+
+    def readonly(self):
+        """See ILaunchpadDatabaseAdapter"""
+        cursor = self._v_connection.cursor()
+        cursor.execute('SET TRANSACTION READ ONLY')
+
+    def switchUser(self, dbuser=None):
+        """See ILaunchpadDatabaseAdapter"""
+        # We have to disconnect and reconnect as we may not be running
+        # as a user with privileges to issue 'SET SESSION AUTHORIZATION'
+        # commands.
+        self.disconnect()
+        self.connect(_dbuser=dbuser)
 
 
 _local = threading.local()

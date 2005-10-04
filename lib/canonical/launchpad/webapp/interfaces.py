@@ -15,6 +15,7 @@ class IPrincipalIdentifiedEvent(Interface):
     principal = Attribute('The principal')
     request = Attribute('The request')
 
+
 class ILoggedInEvent(Interface):
     """An event that is sent after someone has logged in.
 
@@ -32,11 +33,13 @@ class CookieAuthLoggedInEvent:
         self.request = request
         self.login = login
 
+
 class CookieAuthPrincipalIdentifiedEvent:
     implements(IPrincipalIdentifiedEvent)
     def __init__(self, principal, request):
         self.principal = principal
         self.request = request
+
 
 class BasicAuthLoggedInEvent:
     implements(ILoggedInEvent, IPrincipalIdentifiedEvent)
@@ -48,8 +51,10 @@ class BasicAuthLoggedInEvent:
         # this one from ILoggedInEvent and IPrincipalIdentifiedEvent
         self.request = request
 
+
 class ILoggedOutEvent(Interface):
     """An event which gets sent after someone has logged out via a form."""
+
 
 class LoggedOutEvent:
     implements(ILoggedOutEvent)
@@ -84,9 +89,31 @@ class IPlacelessLoginSource(IPrincipalSource):
         See zope.app.pluggableauth.interfaces.IPrincipalSource
         """
 
+
 class ILaunchpadPrincipal(IPrincipal):
     """Marker interface for launchpad principals.
 
     This is used for the launchpad.AnyPerson permission.
     """
+
+
+class ILaunchpadDatabaseAdapter(Interface):
+    """The Launchpad customized database adapter"""
+    def readonly():
+        """Set the connection to read only.
+        
+        This should only be called at the start of the transaction to
+        avoid confusing code that defers making database changes until
+        transaction commit time.
+        """
+
+    def switchUser(self, dbuser=None):
+        """Change the PostgreSQL user we are connected as, defaulting to the
+        default Launchpad user.
+       
+        This involves closing the existing connection and reopening it;
+        uncommitted changes will be lost. The new connection will also open
+        in read/write mode so calls to readonly() will need to be made
+        after switchUser.
+        """
 
