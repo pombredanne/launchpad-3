@@ -13,6 +13,7 @@ import psycopg
 
 from canonical.config import config
 from canonical.database.interfaces import IRequestExpired
+from canonical.database.sqlbase import connect
 
 __all__ = [
     'LaunchpadDatabaseAdapter',
@@ -28,7 +29,11 @@ class LaunchpadDatabaseAdapter(PsycopgAdapter):
     """
 
     def _connection_factory(self):
-        connection = PsycopgAdapter._connection_factory(self)
+        """Override method provided by PsycopgAdapter to pull
+        connection settings from the config file
+        """
+        self._registerTypes()
+        connection = connect(config.launchpad.dbuser, config.dbname)
 
         if config.launchpad.db_statement_timeout is not None:
             cursor = connection.cursor()
