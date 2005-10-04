@@ -196,6 +196,7 @@ class Publisher(object):
                 #   -- kiko, 2005-09-23
                 f = open("%s/override.%s.%s" % (self._config.overrideroot,
                                                 distrorelease, component), "w")
+                overrides[distrorelease][component]['bin'].sort()
                 for tup in overrides[distrorelease][component]['bin']:
                     if tup[2].endswith("debian-installer"):
                         # Note in _di_release_components that this
@@ -221,6 +222,7 @@ class Publisher(object):
                     f = open("%s/override.%s.%s.debian-installer" % (
                         self._config.overrideroot, distrorelease, component),
                              "w")
+                    di_overrides.sort()
                     for tup in di_overrides:
                         f.write("\t".join(tup))
                         f.write("\n")
@@ -231,6 +233,7 @@ class Publisher(object):
                 f = open("%s/override.%s.%s.src" % (self._config.overrideroot,
                                                     distrorelease,
                                                     component), "w")
+                overrides[distrorelease][component]['src'].sort()
                 for tup in overrides[distrorelease][component]['src']:
                     f.write("\t".join(tup))
                     f.write("\n")

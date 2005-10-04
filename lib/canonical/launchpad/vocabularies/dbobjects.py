@@ -707,12 +707,12 @@ class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
                 yield self._toTerm(series)
 
 
-class MilestoneVocabulary(NamedSQLObjectVocabulary):
+class MilestoneVocabulary(SQLObjectVocabularyBase):
     _table = Milestone
     _orderBy = 'name'
 
     def _toTerm(self, obj):
-        return SimpleTerm(obj, obj.name, obj.name)
+        return SimpleTerm(obj, obj.id, obj.name)
 
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)
@@ -726,7 +726,7 @@ class MilestoneVocabulary(NamedSQLObjectVocabulary):
 
         if target is not None:
             for ms in target.milestones:
-                yield SimpleTerm(ms, ms.name, ms.name)
+                yield self._toTerm(ms)
 
 
 class SpecificationVocabulary(NamedSQLObjectVocabulary):

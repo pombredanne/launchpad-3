@@ -16,7 +16,6 @@ __all__ = [
     'ITeamParticipation',
     'IRequestPeopleMerge',
     'IObjectReassignment',
-    'IShipItCountry',
     'ITeamReassignment',
     'ITeamCreation',
     'NameAlreadyTaken',
@@ -24,15 +23,13 @@ __all__ = [
     ]
 
 from zope.schema import (
-    List, Tuple, Choice, Datetime, Int, Text, TextLine, Password, Object,
-    ValidationError, Bytes)
+    Choice, Datetime, Int, Text, TextLine, Password, ValidationError, Bytes)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 from zope.i18nmessageid import MessageIDFactory
 
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.validation import (
     valid_emblem, valid_hackergotchi)
 
@@ -40,6 +37,13 @@ from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, EmailAddressStatus)
 
 _ = MessageIDFactory('launchpad')
+
+
+class StrippingTextLine(TextLine):
+    """A TextLine field that is always stripped."""
+
+    def fromUnicode(self, str):
+        return TextLine.fromUnicode(self, str.strip())
 
 
 class NameAlreadyTaken(ValidationError):
@@ -63,7 +67,8 @@ class PersonNameField(TextLine):
 
         person = getUtility(IPersonSet).getByName(value, ignore_merged=False)
         if person is not None:
-            raise NameAlreadyTaken(value)
+            raise NameAlreadyTaken(_(
+                "The name %s is already in use." % value))
 
 
 class IPerson(Interface):
@@ -74,13 +79,13 @@ class IPerson(Interface):
             )
     name = PersonNameField(
             title=_('Name'), required=True, readonly=False,
-            constraint=valid_name,
+            constraint=name_validator,
             description=_(
                 "A short unique name, beginning with a lower-case "
                 "letter or number, and containing only letters, "
                 "numbers, dots, hyphens, or plus signs.")
             )
-    displayname = TextLine(
+    displayname = StrippingTextLine(
             title=_('Display Name'), required=True, readonly=False,
             description=_("Your name as you would like it displayed "
             "throughout Launchpad. Most people use their full name "
@@ -111,11 +116,11 @@ class IPerson(Interface):
         "so you cannot undo changes."))
     emblem = Bytes(
         title=_("Emblem"), required=False, description=_("A small image, "
-        "max 16x16, that can be used to refer to this team of person."),
+        "max 16x16 pixels, that can be used to refer to this team of person."),
         constraint=valid_emblem)
     hackergotchi = Bytes(
         title=_("Hackergotchi"), required=False, description=_("An image, "
-        "max size 96x96, that will be displayed on your home page. "
+        "max 96x96 pixels, that will be displayed on your home page. "
         "Traditionally this is a great big grinning image of your mug. "
         "Make the most of it."),
         constraint=valid_hackergotchi)
@@ -830,11 +835,4 @@ class ITeamCreation(ITeam):
             "team creation, a new message will be sent to this address with "
             "instructions on how to finish its registration."),
         constraint=valid_email)
-
-
-class IShipItCountry(Interface):
-    """This schema is only to get the Country widget."""
-
-    country = Choice(title=_('Country'), required=True, 
-                     vocabulary='CountryName')
 

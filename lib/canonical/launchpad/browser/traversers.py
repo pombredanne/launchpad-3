@@ -33,6 +33,7 @@ from canonical.launchpad.interfaces import (
     IDistribution, IDistroRelease, ISourcePackage, IDistroSourcePackage)
 from canonical.launchpad.database import ProductSeriesSet, SourcePackageSet
 from canonical.launchpad.components.bugtask import NullBugTask
+from canonical.launchpad.helpers import shortlist
 
 def _consume_next_path_step(request):
     """Consume the next traversal step in the request.
@@ -76,34 +77,39 @@ def _get_task_for_context(bugid, context):
         # No bug with that ID exists, so return None.
         return None
 
-    params = BugTaskSearchParams(
-        user=getUtility(ILaunchBag).user, bug=bug)
-    bugtasks = context.searchTasks(params)
-    if bugtasks.count():
-        return bugtasks[0]
-    else:
-        # Return a null bug task. This makes it possible to, for
-        # example, return a bug page for a context in which the bug
-        # hasn't yet been reported.
-        if IProduct.providedBy(context):
-            null_bugtask = NullBugTask(bug=bug, product=context)
-        elif IDistribution.providedBy(context):
-            null_bugtask = NullBugTask(bug=bug, distribution=context)
-        elif IDistroSourcePackage.providedBy(context):
-            null_bugtask = NullBugTask(
-                bug=bug, distribution=context.distribution,
-                sourcepackagename=context.sourcepackagename)
-        elif IDistroRelease.providedBy(context):
-            null_bugtask = NullBugTask(bug=bug, distrorelease=context)
-        elif ISourcePackage.providedBy(context):
-            null_bugtask = NullBugTask(
-                bug=bug, distrorelease=context.distrorelease,
-                sourcepackagename=context.sourcepackagename)
-        else:
-            raise TypeError(
-                "Unknown context type for bug task: %s" % repr(context))
+    # Loop through this bug's tasks to try and find the appropriate task for
+    # this context. We always want to return a task, whether or not the user
+    # has the permission to see it so that, for example, an anonymous user is
+    # presented with a login screen at the correct URL, rather than making it
+    # look as though this task was "not found", because it was filtered out by
+    # privacy-aware code.
+    for bugtask in shortlist(bug.bugtasks):
+        if bugtask.target == context:
+            return bugtask
 
-        return null_bugtask
+    # If we've come this far, it means that no actual task exists in this
+    # context, so we'll return a null bug task. This makes it possible to, for
+    # example, return a bug page for a context in which the bug hasn't yet been
+    # reported.
+    if IProduct.providedBy(context):
+        null_bugtask = NullBugTask(bug=bug, product=context)
+    elif IDistribution.providedBy(context):
+        null_bugtask = NullBugTask(bug=bug, distribution=context)
+    elif IDistroSourcePackage.providedBy(context):
+        null_bugtask = NullBugTask(
+            bug=bug, distribution=context.distribution,
+            sourcepackagename=context.sourcepackagename)
+    elif IDistroRelease.providedBy(context):
+        null_bugtask = NullBugTask(bug=bug, distrorelease=context)
+    elif ISourcePackage.providedBy(context):
+        null_bugtask = NullBugTask(
+            bug=bug, distrorelease=context.distrorelease,
+            sourcepackagename=context.sourcepackagename)
+    else:
+        raise TypeError(
+            "Unknown context type for bug task: %s" % repr(context))
+
+    return null_bugtask
 
 
 def _traverse_plus_bug(request, target):

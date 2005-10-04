@@ -16,7 +16,7 @@ Sample Person assigns some bugs to Firefox's 1.0 milestone:
 
 
   >>> print http(r"""
-  ... GET /products/firefox/+bugs?task=14&task=2&assign_to_milestone=Assign+to+Milestone&field.milestone_assignment=1.0&status=10&status=20&assignee=all HTTP/1.1
+  ... GET /products/firefox/+bugs?task=14&task=2&assign_to_milestone=Assign+to+Milestone&field.milestone_assignment=1&status=10&status=20&assignee=all HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

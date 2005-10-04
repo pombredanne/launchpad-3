@@ -166,7 +166,6 @@ class DistroReleaseView:
         distro_url = canonical_url(self.context.distribution)
         return self.request.response.redirect(distro_url + "/+filebug")
 
-
     def getBuilt(self):
         """Return the last build records within the DistroRelease context.
 

@@ -17,7 +17,7 @@ set -e
 
 exec 2>&1
 
-set -x
+echo "Updating debian chroot for build $BUILDID"
 
 $SUDO $CHAPTGET "$HOME/build-$BUILDID/chroot-autobuild" -uy update
 $SUDO $CHAPTGET "$HOME/build-$BUILDID/chroot-autobuild" -uy dist-upgrade 

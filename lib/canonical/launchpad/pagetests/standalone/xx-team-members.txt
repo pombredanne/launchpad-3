@@ -10,3 +10,17 @@
   ...
   ...Mark Shuttleworth...
   ...
+
+  Sample person had his membership declined to the guadamen group. Test
+  that the page works and that foo.bar@canonical can access it.
+
+  >>> print http(r"""
+  ... GET /people/guadamen/+members/name12/ HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Cookie: launchpad=lJ4KLTECqANEAvWaY-0Bg0M-KIkZGIWYD94FIo82ugNzWYw9PsBv30
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Declined Member...
+  ...
+

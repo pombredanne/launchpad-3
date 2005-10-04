@@ -12,7 +12,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
-from zope.app.form.interfaces import IInputWidget
+from zope.app.form.interfaces import IInputWidget, WidgetInputError
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
@@ -66,6 +66,9 @@ class ShipItUnauthorizedView(SystemErrorView):
 # 2005-09-09
 class ShipItLoginView(LoginOrRegister):
     """Process the login form and redirect the user to the request page."""
+
+    def get_application_url(self):
+        return 'https://launchpad.net'
 
     def process_form(self):
         if getUtility(ILaunchBag).user is not None:
@@ -360,7 +363,13 @@ Reason:
                       'phone': ("Phone", self._validatephone)}
         form = self.request.form
         msg = None
-        self.country = self.country_widget.getInputValue()
+        try:
+            self.country = self.country_widget.getInputValue()
+        except WidgetInputError:
+            self.country = None
+            self.addressFormMessages.append(_(
+                'You must choose your country from the list below.'))
+            
         for field, (field_title, validator) in validators.items():
             value = form.get(field, "")
             # Save all field values in the view so we can display them, if
@@ -407,7 +416,10 @@ Reason:
 
         Add an error message to self.addressFormMessages if it doesn't.
         """
-        code = self.country.iso3166code2
+        if self.country is not None:
+            code = self.country.iso3166code2
+        else:
+            code = None
         if (not value and
             code in ('US', 'GB', 'FR', 'IT', 'DE', 'NO', 'SE', 'ES')):
             self.addressFormMessages.append(_(

@@ -97,7 +97,7 @@
     name="+edithackergotchi"
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonHackergotchiView"
-    permission="launchpad.Admin"
+    permission="launchpad.Edit"
     template="../templates/person-images.pt"
     >
   </browser:page>

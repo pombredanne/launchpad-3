@@ -18,13 +18,13 @@
       <table class="cal-navigation">
         <tr>
           <td width="30%" align="left">
-            <a tal:attributes="href context/prevRange/fmt:url">&#8592; Previous</a>
+            <a tal:attributes="href context/prevRange/fmt:url">&#8592; Previous Year</a>
           </td>
           <td width="30%" align="center">
-            <a href="../this-year">Today</a>
+            <a href="../this-year">This Year</a>
           </td>
           <td width="30%" align="right">
-            <a tal:attributes="href context/nextRange/fmt:url">Next &#8594;</a>
+            <a tal:attributes="href context/nextRange/fmt:url">Next Year &#8594;</a>
           </td>
         </tr>
       </table>

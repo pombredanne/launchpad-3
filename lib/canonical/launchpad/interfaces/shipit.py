@@ -2,12 +2,45 @@
 
 __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'IRequestedCDs', 'IShippingRequest', 'IShippingRequestSet',
-           'ShippingRequestStatus']
+           'ShippingRequestStatus', 'IShipItCountry']
 
 from zope.schema import Bool, Choice, Int, Datetime, Text, TextLine
-from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+from zope.interface import Interface, Attribute, implements
+from zope.schema.interfaces import IChoice
+from zope.app.form.browser.itemswidgets import DropdownWidget
+
+from canonical.launchpad import _
+
+
+class IEmptyDefaultChoice(IChoice):
+    pass
+
+
+class EmptyDefaultChoice(Choice):
+    implements(IEmptyDefaultChoice)
+
+
+# XXX: This sould probably be moved somewhere else, but as I need to get this
+# in production ASAP I'm leaving it here for now. -- Guilherme Salgado
+# 2005-10-03
+class EmptyDefaultDropdownWidget(DropdownWidget):
+    """A dropdown widget in which the default option is one that is not part
+    of its vocabulary.
+    """
+    firstItem = True
+
+    def renderItems(self, value):
+        items = DropdownWidget.renderItems(self, value)
+        option = '<option value="">Choose one</option>'
+        items.insert(0, option)
+        return items
+
+
+class IShipItCountry(Interface):
+    """This schema is only to get the Country widget."""
+
+    country = EmptyDefaultChoice(title=_('Country'), required=True, 
+                     vocabulary='CountryName')
 
 
 class IShippingRequest(Interface):
@@ -73,7 +106,7 @@ class IShippingRequest(Interface):
             description=_('The State/Province/etc to where the CDs will be '
                           'shipped.')
             )
-    country = Choice(
+    country = EmptyDefaultChoice(
             title=_('Country'), required=True, readonly=False,
             vocabulary='CountryName',
             description=_('The Country to where the CDs will be shipped.')

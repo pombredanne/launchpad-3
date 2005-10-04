@@ -122,7 +122,7 @@
         </tr>
         <tr class="thead">
             <th>Source Package</th>
-            <th>Distribution / Distribution Release</th>
+            <th>Distribution / Distribution Release / Architecture</th>
             <th>Created</th>
             <th>Started</th>
             <th colspan="2">Result</th>
@@ -141,7 +141,10 @@
                 title="To show the Distribution, click here."/> /
 	     <a tal:content="archrelease/distrorelease/title"
                 tal:attributes="href archrelease/distrorelease/fmt:url"
-                title="To show the Distribution Release, click here."/>
+                title="To show the Distribution Release, click here."/> /
+	     <a tal:content="archrelease/title"
+                tal:attributes="href archrelease/fmt:url"
+                title="To show the Distribution Architecture Release, click here."/>
             </td>
             <td tal:content="build/datecreated/fmt:datetime">CREATED</td>
             <td tal:content="build/datebuilt/fmt:datetime">BUILT</td>

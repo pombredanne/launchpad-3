@@ -110,7 +110,7 @@ def get_bugmail_from_address(user):
     return u"%s <%s>" % (user.displayname, user.preferredemail.email)
 
 
-def get_bugmail_replyto_address(bug, user):
+def get_bugmail_replyto_address(bug):
     """Return an appropriate bugmail Reply-To address.
 
     :bug: the IBug.
@@ -119,8 +119,7 @@ def get_bugmail_replyto_address(bug, user):
 
         From: Foo Bar via Malone <123@bugs...>
     """
-    return u"%s via Malone <%s@%s>" % (
-        user.displayname, bug.id, config.launchpad.bugs_domain)
+    return u"Bug %d <%s@%s>" % (bug.id, bug.id, config.launchpad.bugs_domain)
 
 
 def get_bugmail_error_address():
@@ -171,7 +170,13 @@ def generate_bug_add_email(bug):
     for bugtask in bug.bugtasks:
         body += u"Affects: %s\n" % bugtask.targetname
         body += u"       Severity: %s\n" % bugtask.severity.title
-        body += u"       Priority: %s\n" % bugtask.priority.title
+
+        if bugtask.priority:
+            priority = bugtask.priority.title
+        else:
+            priority = "(none set)"
+        body += u"       Priority: %s\n" % priority
+
         if bugtask.assignee:
             # There's a person assigned to fix this task, so show that
             # information too.
@@ -394,7 +399,11 @@ def generate_bug_edit_email(bug_delta):
                     distrorelease_task.distrorelease.fullreleasename)
 
             body += u"%15s: %s\n" % (u"Severity", added_bugtask.severity.title)
-            body += u"%15s: %s\n" % (u"Priority", added_bugtask.priority.title)
+            if added_bugtask.priority:
+                priority_title = added_bugtask.priority.title
+            else:
+                priority_title = "(none set)"
+            body += u"%15s: %s\n" % (u"Priority", priority_title)
             if added_bugtask.assignee:
                 assignee = added_bugtask.assignee
                 body += u"%15s: %s <%s>\n" % (
@@ -497,7 +506,7 @@ def send_bug_notification(bug, user, subject, body,
         to_addrs = [to_addrs]
 
     if "Reply-To" not in headers:
-        headers["Reply-To"] = get_bugmail_replyto_address(bug, user)
+        headers["Reply-To"] = get_bugmail_replyto_address(bug)
     if "Sender" not in headers:
         headers["Sender"] = config.bounce_address
     from_addr = get_bugmail_from_address(user)
