@@ -12,7 +12,7 @@ Imports and test setup:
     >>> from zope.app.rdb.interfaces import IZopeDatabaseAdapter
     >>> from sqlos.interfaces import IConnectionName
     >>> from canonical.config import config
-    >>> from canonical.database.adapter import *
+    >>> from canonical.launchpad.webapp.adapter import *
 
     >>> from canonical.launchpad.ftests.harness import (
     ...     LaunchpadFunctionalTestSetup)

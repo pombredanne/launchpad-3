@@ -319,4 +319,21 @@
         template="../templates/rdf-macros.pt"
         />
 
+    <adapter for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
+        provides="canonical.launchpad.interfaces.IPerson"
+        factory="canonical.launchpad.components.person.personFromPrincipal" />
+
+    <content
+        class="canonical.launchpad.webapp.adapter.LaunchpadDatabaseAdapter">
+        <factory id="zope.da.LaunchpadDA" />
+        <require
+            permission="zope.app.rdb.Use"
+            interface="zope.app.rdb.interfaces.IZopeDatabaseAdapter"
+            />
+        <require
+            permission="zope.ManageServices"
+            interface="zope.app.rdb.interfaces.IZopeDatabaseAdapterManagement"
+            />
+    </content>
+
 </configure>

@@ -8,7 +8,7 @@
     -->
     <rdb:provideConnection
         name="launchpad"
-        component="canonical.database.adapter.LaunchpadDatabaseAdapter"
+        component="canonical.launchpad.webapp.adapter.LaunchpadDatabaseAdapter"
         dsn="dbi://launchpad:@/launchpad_ftest" />
 
     <sqlos:connectionName name="launchpad" />
