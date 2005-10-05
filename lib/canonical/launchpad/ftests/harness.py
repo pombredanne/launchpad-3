@@ -71,7 +71,6 @@ class LaunchpadTestSetup(PgTestSetup):
     template = 'launchpad_ftest_template'
     dbname = 'launchpad_ftest' # Needs to match ftesting.zcml
     dbuser = 'launchpad'
-    dbhost = 'localhost'
 
 
 class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
@@ -80,6 +79,10 @@ class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
         assert ZopelessTransactionManager._installed is None, \
                 'Last test using Zopeless failed to tearDown correctly'
         super(LaunchpadZopelessTestSetup, self).setUp()
+        if self.host is not None:
+            raise NotImplementedError('host not supported yet')
+        if self.port is not None:
+            raise NotImplementedError('port not supported yet')
         LaunchpadZopelessTestSetup.txn = initZopeless(
                 dbname=self.dbname, dbuser=self.dbuser
                 )
