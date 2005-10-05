@@ -220,6 +220,12 @@ class IBugTaskSearchListingView(IView):
     def search():
         """Return an IBatchNavigator for the POSTed search criteria."""
 
+    def shouldShowPackageName():
+        """Should the source package name be displayed in the list results?
+
+        This is mainly useful for the listview.
+        """
+
 
 class IBugTaskDelta(Interface):
     """The change made to a bug task (e.g. in an edit screen).
