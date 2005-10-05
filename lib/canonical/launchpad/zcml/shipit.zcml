@@ -5,6 +5,17 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+
+  <view
+      type="zope.publisher.interfaces.browser.IBrowserRequest"
+      for="canonical.launchpad.interfaces.shipit.IEmptyDefaultChoice
+           zope.schema.interfaces.IIterableVocabulary"
+      provides="zope.app.form.interfaces.IInputWidget"
+      factory="canonical.launchpad.interfaces.shipit.EmptyDefaultDropdownWidget"
+      permission="zope.Public"
+      />
+
+
     <browser:page
         for="*"
         permission="zope.Public"

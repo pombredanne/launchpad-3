@@ -362,6 +362,61 @@
             required="no" />
     </sectiontype>
 
+    <sectiontype name="buildsequencer_job">
+        <key name="command" datatype="string">
+            <description>
+                The subprocess to run. You can assume LPCONFIG will be set
+                and that PYTHONPATH will be set to include the launchpad/lib
+                directory and that CWD will be the top level of the launchpad
+                tree itself. But that is all.
+            </description>
+        </key>
+        <key name="mindelay" datatype="integer" default="1">
+            <description>
+                The minimum delay between invocations of this job type. The
+                slavescanner probably wants to be set to 5 seconds or so but
+                the queue builder probably wants 5 minutes or so (900 seconds).
+                Other tasks will have varying requirements placed on them.
+            </description>
+        </key>
+        <key name="alwayslog" datatype="boolean" default="false">
+            <description>
+                If set to true, the output of this job will always be logged to
+                the sequencer log file.
+            </description>
+        </key>
+    </sectiontype>    
+
+    <sectiontype name="buildsequencer">
+        <key name="mailproblemsto" datatype="string" default="">
+            <description>
+                If one of the subprocesses exits with a failure code then the
+                build sequencer will email this address with the output of
+                the subprocess. If this variable is set to a single dash then
+                the output will simply be logged instead.
+            </description>
+        </key>
+        <key name="launch" datatype="boolean" default="false">
+            <description>
+                If true, the buildsequencer will be started by the startup
+                scripts. This is similar to trebuchet_server/launch.
+            </description>
+        </key>
+        <key name="logfile" datatype="string">
+            <description>
+                The name of the log file for the sequencer (passed to twistd)
+            </description>
+        </key>
+        <key name="spew" datatype="boolean" required="no" default="no" />
+        <key name="smtphost" datatype="string" default="localhost" 
+            required="no" />
+        <key name="fromaddress" datatype="string" 
+            default="launchpad@lists.canonical.com" 
+            required="no" />
+        <multisection name="+" type="buildsequencer_job"
+            attribute="jobs" required="no" />
+    </sectiontype>
+
     <sectiontype name="canonical">
         <key name="dbhost" datatype="ipaddr-or-hostname" required="no" />
         <key name="dbname" datatype="string" required="yes" />
@@ -389,6 +444,7 @@
         <section name="*" type="karmacacheupdater"
             attribute="karmacacheupdater" />
         <section name="*" type="cveupdater" attribute="cveupdater" />
+        <section name="*" type="buildsequencer" attribute="buildsequencer" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file

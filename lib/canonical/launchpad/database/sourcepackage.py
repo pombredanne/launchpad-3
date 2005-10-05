@@ -454,6 +454,17 @@ class SourcePackage:
             return None
         return ticket
 
+    def __eq__(self, other):
+        """See canonical.launchpad.interfaces.ISourcePackage."""
+        return (
+            (ISourcePackage.providedBy(other)) and
+            (self.distrorelease.id == other.distrorelease.id) and
+            (self.sourcepackagename.id == other.sourcepackagename.id))
+
+    def __ne__(self, other):
+        """See canonical.launchpad.interfaces.ISourcePackage."""
+        return not self.__eq__(other)
+
 
 class DistroSourcePackage:
     """See canonical.launchpad.interfaces.IDistroSourcePackage."""
@@ -492,6 +503,17 @@ class DistroSourcePackage:
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setSourcePackage(self)
         return BugTaskSet().search(search_params)
+
+    def __eq__(self, other):
+        """See canonical.launchpad.interfaces.IDistroSourcePackage."""
+        return (
+            (IDistroSourcePackage.providedBy(other)) and
+            (self.distribution.id == other.distribution.id) and
+            (self.sourcepackagename.id == other.sourcepackagename.id))
+
+    def __ne__(self, other):
+        """See canonical.launchpad.interfaces.IDistroSourcePackage."""
+        return not self.__eq__(other)
 
 
 class SourcePackageSet(object):

@@ -1,3 +1,12 @@
+launchpad-buildd (11) unstable; urgency=low
+
+  * Quieten down the slave scripts and make them prettier for the logs.
+  * make unpack-chroot uncompress the chroot and keep it uncompressed if
+    possible. This fixes bug#2699
+  * Make the slave run the process reaper run even if the build failed.
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Fri, 30 Sep 2005 00:24:45 +0100
+
 launchpad-buildd (10) unstable; urgency=low
 
   * Make sure /etc/source-dependencies is present in the postinst.

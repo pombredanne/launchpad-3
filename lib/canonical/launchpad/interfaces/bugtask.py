@@ -61,8 +61,7 @@ class IBugTask(IHasDateCreated):
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     priority = Choice(
-        title=_('Priority'), vocabulary='BugTaskPriority',
-        default=dbschema.BugTaskPriority.MEDIUM)
+        title=_('Priority'), vocabulary='BugTaskPriority', required=False)
     severity = Choice(
         title=_('Severity'), vocabulary='BugTaskSeverity',
         default=dbschema.BugTaskSeverity.NORMAL)

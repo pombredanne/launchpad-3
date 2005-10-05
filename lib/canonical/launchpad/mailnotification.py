@@ -170,7 +170,13 @@ def generate_bug_add_email(bug):
     for bugtask in bug.bugtasks:
         body += u"Affects: %s\n" % bugtask.targetname
         body += u"       Severity: %s\n" % bugtask.severity.title
-        body += u"       Priority: %s\n" % bugtask.priority.title
+
+        if bugtask.priority:
+            priority = bugtask.priority.title
+        else:
+            priority = "(none set)"
+        body += u"       Priority: %s\n" % priority
+
         if bugtask.assignee:
             # There's a person assigned to fix this task, so show that
             # information too.
@@ -393,7 +399,11 @@ def generate_bug_edit_email(bug_delta):
                     distrorelease_task.distrorelease.fullreleasename)
 
             body += u"%15s: %s\n" % (u"Severity", added_bugtask.severity.title)
-            body += u"%15s: %s\n" % (u"Priority", added_bugtask.priority.title)
+            if added_bugtask.priority:
+                priority_title = added_bugtask.priority.title
+            else:
+                priority_title = "(none set)"
+            body += u"%15s: %s\n" % (u"Priority", priority_title)
             if added_bugtask.assignee:
                 assignee = added_bugtask.assignee
                 body += u"%15s: %s <%s>\n" % (

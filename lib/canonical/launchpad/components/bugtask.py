@@ -43,6 +43,13 @@ class BugTaskMixin:
     """Mix-in class for some property methods of IBugTask implementations."""
 
     @property
+    def title(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        title = 'Bug #%s in %s: "%s"' % (
+            self.bug.id, self.targetname, self.bug.title)
+        return title
+
+    @property
     def maintainer(self):
         """See canonical.launchpad.interfaces.IBugTask."""
         if self.product:

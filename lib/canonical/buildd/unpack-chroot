@@ -9,9 +9,14 @@
 
 # Needs TAR to be set to a gnu tar instance, that needs bzip2
 # Needs SUDO to be set to a sudo instance for passwordless access
+# BUNZIP2 must un-bzip2
+# FILE must implement the -b and -i arguments (so a Debianish file)
 
 TAR=/bin/tar
 SUDO=/usr/bin/sudo
+BUNZIP2=/usr/bin/bunzip2
+FILE=/usr/bin/file
+
 BUILDID="$1"
 TARBALL="$2"
 
@@ -19,9 +24,17 @@ set -e
 
 exec 2>&1
 
-set -x
+MIMETYPE=$($FILE -bi "$TARBALL")
+
+if [ x"$MIMETYPE" = "xapplication/x-bzip2" ]; then
+  echo "Uncompressing the tarball..."
+  $BUNZIP2 -c < "$TARBALL" > "$TARBALL".tmp
+  mv "$TARBALL".tmp "$TARBALL"
+  exec $0 "$@"
+fi
 
 cd $HOME
 cd "build-$BUILDID"
 
-$SUDO $TAR -xjf "$TARBALL"
+echo "Unpacking chroot for build $BUILDID"
+$SUDO $TAR -xf "$TARBALL"
