@@ -17,7 +17,7 @@ pytarget = $(targetshare)/canonical/buildd
 
 pyfiles = debian.py slave.py utils.py __init__.py slave_chroot_tool.py
 slavebins = unpack-chroot mount-chroot update-debian-chroot sbuild-package \
-scan-for-processes umount-chroot remove-build
+scan-for-processes umount-chroot remove-build apply-ogre-model
 
 BUILDDUID=65500
 BUILDDGID=65500
@@ -55,6 +55,7 @@ install:
 	install -m644 example.chroot debian/launchpad-buildd/usr/share/doc/launchpad-buildd/
 	ln -sf /usr/share/launchpad-buildd/canonical/buildd/slave_chroot_tool.py debian/launchpad-buildd/usr/bin/buildd-slave-chroot-tool
 	chmod 755 $(pytarget)/slave_chroot_tool.py
+	install -m755 debian/upgrade-config $(targetshare)/upgrade-config
 	# Okay, that's installed all the slave-related files
 
 

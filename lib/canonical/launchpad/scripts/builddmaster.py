@@ -22,8 +22,6 @@ import socket
 from cStringIO import StringIO
 import datetime
 import pytz
-import urllib2
-import urlparse
 import tempfile
 import os
 
@@ -111,10 +109,10 @@ class BuilderGroup:
                     raise BuildDaemonError("Failed to echo OK")
 
                 # ask builder information
-                vers, methods, arch, mechanisms = builder.slave.info()
+                vers, arch, mechanisms = builder.slave.info()
 
                 # attempt to wrong builder version 
-                if vers != 1 and vers != 2:
+                if vers != '1.0':
                     raise ProtocolVersionMismatch("Protocol version mismatch")
 
                 # attempt to wrong builder architecture
@@ -152,33 +150,13 @@ class BuilderGroup:
 
         url = librarian.getURLForAlias(libraryfilealias.id, is_buildd=True)
         
-        self.logger.debug("Asking builder on %s if it has file %s (%s, %s)"
-                          % (builder.url, libraryfilealias.filename,
-                             url, libraryfilealias.content.sha1))
+        self.logger.debug("Asking builder on %s to ensure it has file %s "
+                          "(%s, %s)" % (builder.url, libraryfilealias.filename,
+                                        url, libraryfilealias.content.sha1))
         
-        if not builder.slave.doyouhave(libraryfilealias.content.sha1, url):
-            warnings.warn('oops: Deprecated method, Verify if Slave can '
-                          'properly access librarian',
-                          DeprecationWarning)
-
-            self.logger.debug("Attempting to fetch %s to give to builder on %s"
-                              % (libraryfilealias.content.sha1, builder.url))
-            # 1. Get the file download object going
-            # XXX cprov 20050628
-            # It fails because the URL gets unescaped?
-            download = librarian.getFileByAlias(libraryfilealias.id)
-            file_content = xmlrpclib.Binary(download.read())
-            download.close()
-            # 2. Give the file to the remote end.
-            self.logger.debug("Passing it on...")
-            storedsum = builder.slave.storefile(file_content)
-            if storedsum != libraryfilealias.content.sha1:
-                raise BuildDaemonError, ("Storing to buildd slave failed, "
-                                         "%s != %s"
-                                         % (storedsum,
-                                            libraryfilealias.content.sha1))
-        else:
-            self.logger.debug("It does")
+        if not builder.slave.ensurepresent(libraryfilealias.content.sha1, url):
+            raise BuildDaemonError("Build slave was unable to fetch from %s" %
+                                   url)
 
     def findChrootFor(self, buildCandidate, pocket):
         """Return the CHROOT digest for an pair (buildCandidate, pocket).
@@ -190,7 +168,7 @@ class BuilderGroup:
         if chroot:
             return chroot.content.sha1        
 
-    def startBuild(self, builder, queueItem, filemap, buildtype, pocket):
+    def startBuild(self, builder, queueItem, filemap, buildtype, pocket, args):
         buildid = "%s-%s" % (queueItem.build.id, queueItem.id)
         self.logger.debug("Initiating build %s on %s"
                           % (buildid, builder.url))
@@ -201,75 +179,45 @@ class BuilderGroup:
             self.logger.debug("OOPS! Could not find CHROOT")
             return
         
-        builder.slave.startbuild(buildid, filemap, chroot, buildtype)
+        builder.slave.build(buildid, buildtype, chroot, filemap, args)
 
     def getLogFromSlave(self, slave, buildid, librarian):
-        log = slave.fetchlogtail()
-        slog = str(log)
-        sio = StringIO(slog)
-        aliasid = librarian.addFile("log-for-%s" % buildid,
-                                    len(slog), sio,
-                                    contentType="text/plain");
-        # XXX: dsilvers: 20050302: Remove these when the library works
-        self.commit()
-        return aliasid
+        return self.getFileFromSlave(slave, "log-for-%s.txt" % buildid,
+                                     'buildlog', librarian)
 
-    def getFileFromSlave(self, slave, filename, sha1sum, librarian, url):
+    def getFileFromSlave(self, slave, filename, sha1sum, librarian):
         """Request a file from Slave by passing a digest and store it in
         Librarian with correspondent filename.
         """
-        # XXX cprov 20050701
-        # What if the file wasn't available on Slave ?
-        # The chance of it happens are too low, since Master just requests
-        # files (digests) sent by Slave. but we should be aware of this
-        # possibilty.
-
-        # The [0] here is the version info out of the slave, see the
-        # xmlrpc_info method in canonical/buildd/slave.py
-        slaveversion = slave.info()[0]
         aliasid = None
         # figure out the MIME content-type
         ftype = filenameToContentType(filename)
-        if slaveversion == 1:
-            # receive an xmlrpc.Binary object containg the correspondent file
-            # for a given digest
-            filedata = slave.fetchfile(sha1sum)
+        # Protocol version 1.0new or higher provides /filecache/
+        # which allows us to be clever in large file transfer
+        out_file_fd, out_file_name = tempfile.mkstemp()
+        out_file = os.fdopen(out_file_fd, "r+")
+        try:
+            slave_file = slave.getFile(sha1sum)
 
-            # transform the data into a file object, because the librarian
-            # requires it. In the process, we have to cast the xmlrpc.Binary
-            # object to a string which can end up costing a lot of ram.
-            fileobj = StringIO(str(filedata))
-        
-            aliasid = librarian.addFile(filename, len(str(filedata)), fileobj,
-                                        contentType=ftype)
-        else:
-            # Protocol version 2 or higher provides /filecache/
-            # which allows us to be slightly more clever in large file transfer
-            out_file_fd, out_file_name = tempfile.mkstemp()
-            out_file = os.fdopen(out_file_fd, "r+")
-            try:
-                slave_file_url = urlparse.urljoin(url, "/filecache/" + sha1sum)
-                slave_file = urllib2.urlopen(slave_file_url)
-
-                # Read back and save the file 256kb at a time, by using the
-                # two-arg form of iter, see
-                # /usr/share/doc/python2.4/html/lib/built-in-funcs.html#l2h-42
-                bytes_written = 0
-                for chunk in iter(lambda: slave_file.read(1024*256), ''):
-                    out_file.write(chunk)
-                    bytes_written += len(chunk)
+            # Read back and save the file 256kb at a time, by using the
+            # two-arg form of iter, see
+            # /usr/share/doc/python2.4/html/lib/built-in-funcs.html#l2h-42
+            bytes_written = 0
+            for chunk in iter(lambda: slave_file.read(1024*256), ''):
+                out_file.write(chunk)
+                bytes_written += len(chunk)
                 
-                slave_file.close()
-                out_file.seek(0)
+            slave_file.close()
+            out_file.seek(0)
 
-                # upload it to the librarian...
-                aliasid = librarian.addFile(filename, bytes_written,
-                                            out_file,
-                                            contentType=ftype)
-            finally:
-                # Finally, remove the temporary file
-                out_file.close()
-                os.remove(out_file_name)
+            # upload it to the librarian...
+            aliasid = librarian.addFile(filename, bytes_written,
+                                        out_file,
+                                        contentType=ftype)
+        finally:
+            # Finally, remove the temporary file
+            out_file.close()
+            os.remove(out_file_name)
             
         return aliasid
 
@@ -377,8 +325,9 @@ class BuilderGroup:
         
         try:
             method(queueItem, slave, librarian, *res[1:])
-        except TypeError:
+        except TypeError, e:
             self.logger.critical("Received wrong number of args in response.")
+            self.logger.exception(e)
 
         self.commit()
 
@@ -398,19 +347,14 @@ class BuilderGroup:
                              logtail):
         """Build still building, Simple collects the logtail"""
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
-        # XXX cprov 20050902:
-        # guess() can fail if it receives an incomplete multibyte sequence,
-        # which could be possible since we are spliting the string in the
-        # slave side. Is it possible to ensure we are spliting it properly,
-        # whatever is the original charset ?
-        queueItem.logtail = encoding.guess(logtail)
+        queueItem.logtail = encoding.guess(str(logtail))
 
     def updateBuild_ABORTING(self, queueItem, slave, librarian, buildid):
         """Build was ABORTED.
         
         Master-side should wait until the slave finish the process correctly.
         """
-        queueItem.logtail = "Waiting slave process to be terminated"
+        queueItem.logtail = "Waiting for slave process to be terminated"
 
     def updateBuild_ABORTED(self, queueItem, slave, librarian, buildid):
         """ABORTING process has succesfully terminated.
@@ -472,7 +416,7 @@ class BuilderGroup:
         queueItem.build.buildstate = dbschema.BuildStatus.FULLYBUILT
         for result in filemap:
             aliasid = self.getFileFromSlave(slave, result, filemap[result],
-                                            librarian, queueItem.builder.url)
+                                            librarian)
             if result.endswith(".deb"):
                 # Process a binary package
                 self.processBinaryPackage(queueItem.build, aliasid, result)
@@ -979,7 +923,15 @@ class BuilddMaster:
                 fname = f.libraryfile.filename
                 filemap[fname] = f.libraryfile.content.sha1
                 builders.giveToBuilder(builder, f.libraryfile, self.librarian)
-                
+
+            build = queueItem.build
+            args = {
+                "ogrecomponent": build.sourcepackagerelease.component.name,
+                # XXX: dsilvers: 20051003: This is not ideal.
+                # For now, always request archindep. This needs altering so
+                # that we only request archindep when we need it.
+                "arch_indep": True
+                }
             builders.startBuild(builder, queueItem, filemap,
-                                "debian", pocket)
+                                "debian", pocket, args)
         self.commit()

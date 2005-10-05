@@ -17,6 +17,7 @@ class DebianBuildState:
     
     UNPACK = "UNPACK"
     MOUNT = "MOUNT"
+    OGRE = "OGRE"
     UPDATE = "UPDATE"
     SBUILD = "SBUILD"
     REAP = "REAP"
@@ -41,11 +42,12 @@ class DebianBuildManager(BuildManager):
         self._scanpath = slave._config.get("debianmanager", "processscanpath")
         self._sbuildargs = slave._config.get("debianmanager",
                                              "sbuildargs").split(" ")
+        self._ogrepath = slave._config.get("debianmanager", "ogrepath")
         self._state = DebianBuildState.UNPACK
         slave.emptyLog()
         self.alreadyfailed = False
 
-    def initiate(self, files, chroot):
+    def initiate(self, files, chroot, extra_args):
         """Initiate a build with a given set of files and chroot."""
         self._dscfile = None
         for f in files:
@@ -53,17 +55,36 @@ class DebianBuildManager(BuildManager):
                 self._dscfile = f
         if self._dscfile is None:
             raise ValueError, files
-        BuildManager.initiate(self, files, chroot)
+        if 'ogrecomponent' in extra_args:
+            # Ubuntu refers to the concept that "main sees only main
+            # while building" etc as "The Ogre Model" (onions, layers
+            # and all). If we're given an ogre component, use it
+            self.ogre = extra_args['ogrecomponent']
+        else:
+            self.ogre = False
+        if 'arch_indep' in extra_args:
+            self.arch_indep = extra_args['arch_indep']
+        else:
+            self.arch_indep = False
+
+        BuildManager.initiate(self, files, chroot, extra_args)
+
+    def doOgreModel(self):
+        """Perform the ogre model activation."""
+        self.runSubProcess(self._ogrepath,
+                           ["apply-ogre-model", self._buildid, self.ogre])
 
     def doUpdateChroot(self):
         """Perform the chroot upgrade."""
-        self.runSubProcess( self._updatepath,
-                            ["update-debian-chroot", self._buildid] )
+        self.runSubProcess(self._updatepath,
+                           ["update-debian-chroot", self._buildid])
 
     def doRunSbuild(self):
         """Run the sbuild process to build the package."""
         args = ["sbuild-package", self._buildid ]
         args.extend(self._sbuildargs)
+        if self.arch_indep:
+            args.extend(["-A"])
         args.extend([self._dscfile])
         self.runSubProcess( self._sbuildpath, args )
 
@@ -146,6 +167,23 @@ class DebianBuildManager(BuildManager):
                 self.alreadyfailed = True
             self._state = DebianBuildState.UMOUNT
             self.doUnmounting()
+        else:
+            # Run OGRE if we need to, else run UPDATE
+            if self.ogre:
+                self._state = DebianBuildState.OGRE
+                self.doOgreModel()
+            else:
+                self._state = DebianBuildState.UPDATE
+                self.doUpdateChroot()
+
+    def iterate_OGRE(self, success):
+        """Just finished running the ogre applicator."""
+        if success != 0:
+            if not self.alreadyfailed:
+                self._slave.chrootFail()
+                self.alreadyfailed = True
+            self._state = DebianBuildState.REAP
+            self.doReapProcesses()
         else:
             self._state = DebianBuildState.UPDATE
             self.doUpdateChroot()
