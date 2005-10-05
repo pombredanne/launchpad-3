@@ -37,7 +37,7 @@ Create an empty BuilderGroup object
   >>> from canonical.launchpad.scripts.builddmaster import BuilderGroup
   >>> buildergroup = BuilderGroup(logging.getLogger(), transaction)
   
-Mock Builders objects
+Mock Builder, a class to emulate the Builder behaviour:
 
   >>> class MockBuilder:
   ...     def __init__(self, name, slave):
@@ -46,6 +46,104 @@ Mock Builders objects
   ...         self.url = 'http://fake:0000'
   ...         slave.urlbase = self.url
   ...         self.name = name
+
+Let's play with a BuilderGroup method designed to rescue build slaves
+that are processing unknown jobs. In real conditions, this situation
+only happens if the slave is processing deleted or modified BuildQueue 
+entry, since Build entries are never removed. It might be caused by
+exceptions in slavescanner or queuebuilder scripts. 
+
+When we figured this situation out, the procedure to rescue is to
+request the slave XMLRPC method 'clean', reseting the slave completely. 
+
+We figured out if the building information is correct and sane by
+checking the job identifier field from status message information,
+which consists of "<Build.id>-<BuildQueue.id>".
+
+First let's emulate a sane and a lost slave. The SaneSlave returns a
+job identifier that exists in our sampledata, but the LostSlave
+returns a completly bogus one. 
+
+The the mock slave.clean() method is modified to print a message for
+testing purposes.  
+
+Initializing the sane_builder. It was not rescued, since the job
+identifier is sane (Build.id == 2 and BuildQueue.id == 1 exist): 
+
+  >>> class SaneBuildingSlave:
+  ...     def status(self):
+  ...         return ('BuilderStatus.BUILDING', '2-1')
+  ...     def clean(self):
+  ...         print 'Rescuing SaneSlave'
+
+  >>> sanebuilding_builder = MockBuilder('Sane Building Slave', 
+  ...                                    SaneBuildingSlave())
+
+  >>> assert buildergroup.rescueBuilderIfLost(sanebuilding_builder) is None
+
+A sane WAITING slave:
+
+  >>> class SaneWaitingSlave:
+  ...     def status(self):
+  ...         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '2-1')
+  ...     def clean(self):
+  ...         print 'Rescuing SaneSlave'
+
+  >>> sanewaiting_builder = MockBuilder('Sane Waiting Slave', 
+  ...                                   SaneWaitingSlave())
+
+  >>> assert buildergroup.rescueBuilderIfLost(sanewaiting_builder) is None
+
+A sane WAITING slave but with wrong BuildQueue/Build relation:
+
+  >>> class SaneWaitingSlave:
+  ...     def status(self):
+  ...         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '7-1')
+  ...     def clean(self):
+  ...         pass
+
+  >>> sanewaiting_builder = MockBuilder('Sane Waiting Slave', 
+  ...                                   SaneWaitingSlave())
+
+  >>> buildergroup.rescueBuilderIfLost(sanewaiting_builder)
+  WARNING:root:Builder 'Sane Waiting Slave' rescued from '7-1: Job build entry mismatch'
+
+It was rescued because the BuildQueue.id == 1 isn't related to
+Build.id == 7, so this pair relation is wrong.
+
+Let's test slaves with job identifier pointing non-existent
+Build/BuildQueue entries. first a lost slave in status 'BUILDING':
+
+  >>> class LostBuildingSlave:
+  ...     def status(self):
+  ...         return ('BuilderStatus.BUILDING', '1000-10000')
+  ...     def clean(self):
+  ...         pass
+
+  >>> lostbuilding_builder = MockBuilder('Lost Building Slave', 
+  ...                                    LostBuildingSlave())
+
+  >>> buildergroup.rescueBuilderIfLost(lostbuilding_builder)
+  WARNING:root:Builder 'Lost Building Slave' rescued from '1000-10000: The object Build by the ID 1000 does not exist'
+
+Then a lost slave in status 'WAITING':
+
+  >>> class LostWaitingSlave:
+  ...     def status(self):
+  ...         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '1000-10000')
+  ...     def clean(self):
+  ...         pass
+
+  >>> lostwaiting_builder = MockBuilder('Lost Waiting Slave', 
+  ...                                    LostWaitingSlave())
+
+  >>> buildergroup.rescueBuilderIfLost(lostwaiting_builder)
+  WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000: The object Build by the ID 1000 does not exist'
+
+Both got rescued, as expected.
+
+
+Let's create a bunch of mock slaves for testing the Builder State Handler:
 
   >>> class BrokenSlave:
   ...     def status(self):
@@ -273,6 +371,7 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   >>> assert bqItem10.build.buildlog is not None
   >>> bqItem10.build.buildstate.title
   'Fully built'
+
 
 Now, goes throught BuilddMaster class itself.
 

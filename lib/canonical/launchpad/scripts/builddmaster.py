@@ -2,8 +2,10 @@
 #Authors: Daniel Silverstone <daniel.silverstone@canonical.com>
 #         Celso Providelo <celso.providelo@canonical.com>
 
-""" Common code for Buildd scripts and daemons such as queuebuilder.py
-and slave-scanner-daemon.py.
+"""Common code for Buildd scripts
+
+Module used by buildd-queue-builder.py and buildd-slave-scanner.py
+cronscripts. 
 """
 
 __metaclass__ = type
@@ -25,6 +27,7 @@ import pytz
 import tempfile
 import os
 
+from sqlobject import SQLObjectNotFound
 from sqlobject.sqlbuilder import AND, IN
 
 from canonical.launchpad.database import (
@@ -127,23 +130,88 @@ class BuilderGroup:
                 builder.failnotes = reason
                 self.logger.debug("Builder on %s marked as failed due to: %s",
                                   builder.url, reason, exc_info=True)
-
-
+            # verify if the builder slave is working with sane information
+            self.rescueBuilderIfLost(builder)
+            
         self.updateOkSlaves()
 
+    def rescueBuilderIfLost(self, builder):
+        """Reset Builder slave if job information mismatch.
+        
+        If builder is BUILDING or WAITING an unknown job clean it.
+        Assuming the XMLRPC is working properly at this point.
+        """
+        # request slave status sentence 
+        sentence = builder.slave.status()
+            
+        # ident_position dict relates the position of the job identifier
+        # token in the sentence received from status(), according the
+        # two status we care about. See see lib/canonical/buildd/slave.py
+        # for further information about sentence format.
+        ident_position = {
+            'BuilderStatus.BUILDING': 1,
+            'BuilderStatus.WAITING': 2
+            }
 
+        # isolate the BuilderStatus string, always the first token in
+        # status returned sentence, see lib/canonical/buildd/slave.py
+        status = sentence[0]
+
+        # if slave is not building nor waiting, it's not in need of rescuing. 
+        if status not in ident_position.keys():
+            return
+
+        # extract information from the identifier
+        build_id, queue_item_id = sentence[ident_position[status]].split('-')
+
+        # check if build_id and queue_item_id exist
+        try:
+            build = Build.get(int(build_id))
+            queue_item = BuildQueue.get(int(queue_item_id))
+            # also check it build and buildqueue are properly related
+            if queue_item.build.id != build.id:
+                raise ValueError('Job build entry mismatch')
+
+        except (SQLObjectNotFound, ValueError), reason:
+            builder.slave.clean()
+            self.logger.warn("Builder '%s' rescued from '%s-%s: %s'" % (
+                builder.name, build_id, queue_item_id, reason))
+    
     def updateOkSlaves(self):
-        self.okslaves = [b for b in self.builders if b.builderok]
-        if len(self.okslaves) == 0:
-            self.logger.debug("They're all dead. Everybody's dead, Dave.")
+        """Build the 'okslaves' list
+
+        'okslaves' will contains the list of builder instances signed with
+        builder.builderok == true. Emits a log.warn message if no builder
+        were found.
+        """
+        self.okslaves = [builder for builder in self.builders
+                         if builder.builderok]
+        if not self.okslaves:
             self.logger.warn("No builders are available")
 
     def failBuilder(self, builder, reason):
+        """Mark builder as failed.
+
+        Set builderok as False, store the reason in failnotes and update
+        the list of working builders (self.okslaves).
+        """
         builder.builderok = False
         builder.failnotes = reason
         self.updateOkSlaves()
 
     def giveToBuilder(self, builder, libraryfilealias, librarian):
+        """Request Slave to download a given file from Librarian.
+        
+        Check id builder is working properly, build the librarian URL
+        for the given file and use the slave XMLRPC 'doyouhave' method
+        to request the download of the file directly by the slave.
+        if the slave returns False, which means it wasn't able to
+        download or recover from filecache, it tries to download
+        the file locally and push it through the XMLRPC interface.
+        This last algorithm is bogus and fails most of the time, that's
+        why we consider it deprecated and it'll be kept only til the next
+        protocol redesign.
+        """
         if not builder.builderok:
             raise BuildDaemonError("Attempted to give a file to a known-bad"
                                    " builder")
@@ -158,12 +226,14 @@ class BuilderGroup:
             raise BuildDaemonError("Build slave was unable to fetch from %s" %
                                    url)
 
-    def findChrootFor(self, buildCandidate, pocket):
-        """Return the CHROOT digest for an pair (buildCandidate, pocket).
-        With the digest in hand we can point the slave to grab it himself.
-        Return None if it wasn't found.
+    def findChrootFor(self, build_candidate, pocket):
+        """Return the CHROOT librarian identifier for (buildCandidate, pocket).
+        
+        Calculate the right CHROOT file for the given pair buildCandidate and
+        pocket and return the Librarian file identifier for it, return None
+        if it wasn't found or wasn't able to calculate.
         """
-        archrelease = buildCandidate.build.distroarchrelease
+        archrelease = build_candidate.build.distroarchrelease
         chroot = archrelease.getChroot(pocket)
         if chroot:
             return chroot.content.sha1        
@@ -176,7 +246,7 @@ class BuilderGroup:
         queueItem.buildstart = UTC_NOW
         chroot = self.findChrootFor(queueItem, pocket)
         if not chroot:
-            self.logger.debug("OOPS! Could not find CHROOT")
+            self.logger.critical("OOPS! Could not find CHROOT")
             return
         
         builder.slave.build(buildid, buildtype, chroot, filemap, args)
@@ -581,23 +651,44 @@ class BuilddMaster:
     
     def setupBuilders(self, archrelease):
         """Setting up a group of builder slaves for a given DistroArchRelease.
+
+        Use the annotation utility to store a BuilderGroup instance
+        keyed by the the DistroArchRelease.processorfamily in the
+        global registry 'notes' and refer to this 'note' in the private
+        attribute '_archrelease' keyed by the given DistroArchRelease
+        and the label 'builders'. This complicated arrangement enables us
+        to share builder slaves between different DistroArchRelases since
+        their processorfamily values are the same (compatible processors).
         """
         # Determine the builders for this distroarchrelease...
         builders = self._archreleases[archrelease].get("builders")
 
+        # if annotation for builders was already done, return 
         if builders is None:
+
+            # query the global annotation registry and verify if
+            # we have already done the builder checks for the
+            # processor family in question. if it's already done
+            # simply refer to that information in the _archreleases
+            # attribute.
             if 'builders' not in notes[archrelease.processorfamily]:
-                info = "builders.%s" % archrelease.processorfamily.name
+
                 # setup a BuilderGroup object
+                info = "builders.%s" % archrelease.processorfamily.name
                 builderGroup = BuilderGroup(self.getLogger(info), self._tm)
 
                 # check the available slaves for this archrelease
                 archFamilyId = archrelease.processorfamily.id
                 archTag = archrelease.architecturetag
                 builderGroup.checkAvailableSlaves(archFamilyId, archTag)
-
-                notes[archrelease.processorfamily]["builders"] = builderGroup
                 
+                # annotate the group of builders for the
+                # DistroArchRelease.processorfamily in question and the
+                # label 'builders'
+                notes[archrelease.processorfamily]["builders"] = builderGroup
+
+            # consolidate the annotation for the architecture release
+            # in the private attribute _archreleases
             builders = notes[archrelease.processorfamily]["builders"]
             self._archreleases[archrelease]["builders"] = builders
 
@@ -745,8 +836,8 @@ class BuilddMaster:
                 self._logger.debug("Creating buildqueue record for %s (%s) "
                                    " on %s" % (name, version, tag))
                 BuildQueue(build=build.id)
-        self.commit()
 
+        self.commit()
 
     def scanActiveBuilders(self):
         """Collect informations/results of current build jobs."""
@@ -767,14 +858,16 @@ class BuilddMaster:
         self.commit()
 
     def getLogger(self, subname=None):
+        """Return the logger instance with specific prefix"""
         if subname is None:
             return self._logger
-        l = logging.getLogger("%s.%s" % (self._logger.name, subname))
-        return l
+        
+        return logging.getLogger("%s.%s" % (self._logger.name, subname))
 
     def calculateCandidates(self):
-        """Return the candidates for building as a list of buildqueue items
-        which need ordering.
+        """Return the candidates for building
+        
+        The result is a unsorted list of buildqueue items.
         """
         # 1. determine all buildqueue items which needsbuild
         tries = ["build.distroarchrelease=%d" % d.id for d in
