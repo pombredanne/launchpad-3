@@ -6,15 +6,17 @@ import unittest
 from canonical.ftests.pgsql import PgTestSetup, ConnectionWrapper
 from canonical.functional import FunctionalTestSetup, FunctionalDocFileSuite
 
-from zope.app import zapi
+from zope.component import getUtility
 from zope.component.exceptions import ComponentLookupError
 from zope.component.servicenames import Utilities
 from zope.component import getService
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from sqlos.interfaces import IConnectionName
 
+from canonical.config import config
 from canonical.database.sqlbase import SQLBase, ZopelessTransactionManager
 from canonical.lp import initZopeless
+from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 
 import sqlos
 from sqlos.connection import connCache
@@ -28,8 +30,10 @@ __all__ = [
 
 def _disconnect_sqlos():
     try:
-        name = zapi.getUtility(IConnectionName).name
-        db_adapter = zapi.getUtility(IZopeDatabaseAdapter, name)
+        name = getUtility(IConnectionName).name
+        db_adapter = ILaunchpadDatabaseAdapter(
+                getUtility(IZopeDatabaseAdapter, name)
+                )
         # we have to disconnect long enough to drop
         # and recreate the DB
         db_adapter.disconnect()
@@ -43,12 +47,14 @@ def _disconnect_sqlos():
         del connCache[key]
     sqlos.connection.connCache = {}
 
-def _reconnect_sqlos():
+def _reconnect_sqlos(dbuser=None):
     _disconnect_sqlos()
     db_adapter = None
-    name = zapi.getUtility(IConnectionName).name
-    db_adapter = zapi.getUtility(IZopeDatabaseAdapter, name)
-    db_adapter.connect()
+    name = getUtility(IConnectionName).name
+    db_adapter = getUtility(IZopeDatabaseAdapter, name)
+    if dbuser is None:
+        dbuser = config.launchpad.dbuser
+    db_adapter.connect(dbuser)
 
     # Confirm that the database adapter *really is* connected and connected
     # to the right database
@@ -99,7 +105,7 @@ class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
         _disconnect_sqlos()
         super(LaunchpadFunctionalTestSetup, self).setUp()
         FunctionalTestSetup().setUp()
-        _reconnect_sqlos()
+        _reconnect_sqlos(self.dbuser)
         
     def tearDown(self):
         FunctionalTestSetup().tearDown()

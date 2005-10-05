@@ -6,6 +6,7 @@ from zope.interface import Interface, Attribute, implements
 
 from zope.app.security.interfaces import IAuthenticationService, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
+from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 
 
 class IPrincipalIdentifiedEvent(Interface):
@@ -97,7 +98,7 @@ class ILaunchpadPrincipal(IPrincipal):
     """
 
 
-class ILaunchpadDatabaseAdapter(Interface):
+class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):
     """The Launchpad customized database adapter"""
     def readonly():
         """Set the connection to read only.

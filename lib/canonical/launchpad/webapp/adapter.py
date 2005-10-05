@@ -31,6 +31,10 @@ class LaunchpadDatabaseAdapter(PsycopgAdapter):
     """
     implements(ILaunchpadDatabaseAdapter)
 
+    def __init__(self, dsn=None):
+        """Ignore dsn"""
+        super(LaunchpadDatabaseAdapter, self).__init__('dbi://')
+
     def connect(self, _dbuser=None):
         """See zope.app.rdb.interfaces.IZopeDatabaseAdapter
 
