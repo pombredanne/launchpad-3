@@ -65,7 +65,8 @@ def non_duplicate_bug(value):
     """Prevent dups of dups.
 
     Returns True if the dup target is not a duplicate /and/ if the
-    current bug doesn't have any duplicates referencing it, otherwise
+    current bug doesn't have any duplicates referencing it /and/ if the
+    bug isn't a duplicate of itself, otherwise
     return False.
     """
 
@@ -77,11 +78,17 @@ def non_duplicate_bug(value):
         user=getUtility(ILaunchBag).user,
         duplicateof=duplicate).count()
     target_is_dup = dup_target.duplicateof
+    if duplicate == dup_target:
+        raise LaunchpadValidationError(_(dedent("""
+            You can't mark a bug as a duplicate of itself.""")))
 
     if (not target_is_dup) and (not current_bug_has_dup_refs):
         return True
     else:
-        return False
+        raise LaunchpadValidationError(_(dedent("""
+            Bug %i is already a duplicate of bug %i. You can only
+            duplicate to bugs that are not duplicates themselves.
+            """% (dup_target.id, (dup_target.duplicateof).id))))
 
 
 def valid_bug_number(value):
