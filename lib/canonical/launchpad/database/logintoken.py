@@ -58,7 +58,7 @@ class LoginToken(SQLBase):
     def sendGPGValidationRequest(self, appurl, key, encrypt=None):
         """See ILoginToken."""
         formatted_uids = ''
-        for email in key.uids:
+        for email in key.emails:
             formatted_uids += '\t%s\n' % email
         
         template = open(

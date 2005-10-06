@@ -24,7 +24,9 @@ from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, OR
-from canonical.database.sqlbase import SQLBase, quote, cursor, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase, quote, cursor, sqlvalues, flush_database_updates,
+    flush_database_caches)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
@@ -960,6 +962,10 @@ class PersonSet:
         if not IPerson.providedBy(to_person):
             raise TypeError('to_person is not a person.')
 
+        # since we are doing direct SQL manipulation, make sure all
+        # changes have been flushed to the database
+        flush_database_updates()
+
         if len(getUtility(IEmailAddressSet).getByPerson(from_person)) > 0:
             raise ValueError('from_person still has email addresses.')
 
@@ -1244,15 +1250,20 @@ class PersonSet:
             ''' % vars())
         
         # Append a -merged suffix to the account's name.
-        name = "%s-merged" % from_person.name
-        cur.execute("SELECT id FROM Person WHERE name = '%s'" % name)
+        name = base = "%s-merged" % from_person.name.encode('ascii')
+        cur.execute("SELECT id FROM Person WHERE name = %s" % sqlvalues(name))
         i = 1
         while cur.fetchone():
-            name = "%s%d" % (name, i)
-            cur.execute("SELECT id FROM Person WHERE name = '%s'" % name)
+            name = "%s%d" % (base, i)
+            cur.execute("SELECT id FROM Person WHERE name = %s"
+                        % sqlvalues(name))
             i += 1
-        cur.execute("UPDATE Person SET name = '%s' WHERE id = %d"
-                    % (name, from_person.id))
+        cur.execute("UPDATE Person SET name = %s WHERE id = %s"
+                    % sqlvalues(name, from_person.id))
+
+        # Since we've updated the database behind SQLObject's back,
+        # flush its caches.
+        flush_database_caches()
 
 
 class EmailAddress(SQLBase):
