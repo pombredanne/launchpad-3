@@ -28,7 +28,7 @@ CREATE OR REPLACE FUNCTION generate_recipientdisplayname() RETURNS integer AS '
                 except UnicodeEncodeError:
                     strchar = ""
             L.append(strchar)
-        return "".join(L)
+        return "".join(L).encode("ASCII")
 
     def extract_suitable_name(familyname, givenname, displayname):
         """Try to extract a name that is suitable for being exported from the
@@ -46,7 +46,7 @@ CREATE OR REPLACE FUNCTION generate_recipientdisplayname() RETURNS integer AS '
 
                 first, last = displaynames[0], displaynames[-1]
                 if len(first + last) < 20:
-                    return "%s %s" (first, last)
+                    return "%s %s" % (first, last)
                 else:
                     return last[:20]
                     
@@ -78,7 +78,9 @@ CREATE OR REPLACE FUNCTION generate_recipientdisplayname() RETURNS integer AS '
     num = 0
     for row in requests:
         name = extract_suitable_name(
-            row["familyname"], row["givenname"], row["displayname"])
+            (row["familyname"] or "").decode("UTF-8"),
+            (row["givenname"] or "").decode("UTF-8"),
+            (row["displayname"] or "").decode("UTF-8"))
         name = unicode_to_unaccented_str(name)
         p = plpy.prepare("""
             UPDATE ShippingRequest 
