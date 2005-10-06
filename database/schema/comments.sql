@@ -1064,6 +1064,36 @@ COMMENT ON TABLE VoteCast IS 'Here we store who has already voted in a poll, to 
 COMMENT ON COLUMN VoteCast.person IS 'The person who voted.';
 COMMENT ON COLUMN VoteCast.poll IS 'The poll in which this person voted.';
 
+-- ShippingRequest
+COMMENT ON TABLE ShippingRequest IS 'A shipping request made through ShipIt.';
+COMMENT ON COLUMN ShippingRequest.recipient IS 'The person who requested.';
+COMMENT ON COLUMN ShippingRequest.daterequested IS 'The date this request was made.';
+COMMENT ON COLUMN ShippingRequest.shockandawe IS 'The Shock and Awe program that generated this request, in case this is part of a SA program.';
+COMMENT ON COLUMN ShippingRequest.approved IS 'Is this request approved? A value of NULL means it\'s pending approval.';
+COMMENT ON COLUMN ShippingRequest.whoapproved IS 'The person who approved this.';
+COMMENT ON COLUMN ShippingRequest.cancelled IS 'Is this request cancelled?';
+COMMENT ON COLUMN ShippingRequest.whocancelled IS 'The person who cancelled this.';
+COMMENT ON COLUMN ShippingRequest.reason IS 'A comment from the requester explaining why he want the CDs.';
+COMMENT ON COLUMN ShippingRequest.highpriority IS 'Is this a high priority request?';
+COMMENT ON COLUMN ShippingRequest.city IS 'The city to which this request should be shipped.';
+COMMENT ON COLUMN ShippingRequest.phone IS 'The phone number of the requester.';
+COMMENT ON COLUMN ShippingRequest.country IS 'The country to which this request should be shipped.';
+COMMENT ON COLUMN ShippingRequest.province IS 'The province to which this request should be shipped.';
+COMMENT ON COLUMN ShippingRequest.postcode IS 'The postcode to which this request should be shipped.';
+COMMENT ON COLUMN ShippingRequest.addressline1 IS 'The address (first line) to which this request should be shipped.';
+COMMENT ON COLUMN ShippingRequest.addressline2 IS 'The address (second line) to which this request should be shipped.';
+COMMENT ON COLUMN ShippingRequest.organization IS 'The organization requesting the CDs.';
+COMMENT ON COLUMN ShippingRequest.recipientdisplayname IS 'Used as the recipient\'s name when a request is made by a ShipIt admin in behalf of someone else';
+
+-- RequestedCDs
+COMMENT ON TABLE RequestedCDs IS 'The requested CDs of a Shipping Request.';
+COMMENT ON COLUMN RequestedCDs.quantity IS 'The number of CDs.';
+COMMENT ON COLUMN RequestedCDs.quantityapproved IS 'The number of CDs that were approved for shipping, in case the request was approved.';
+COMMENT ON COLUMN RequestedCDs.request IS 'The request itself.';
+COMMENT ON COLUMN RequestedCDs.distrorelease IS 'The distrorelease of the CDs (e.g. Ubuntu Breezy).';
+COMMENT ON COLUMN RequestedCDs.architecture IS 'The architecture the CDs are meant to be installed on (e.g. x86).';
+COMMENT ON COLUMN RequestedCDs.flavour IS 'The flavour of the distrorelease (e.g. EdUbuntu).';
+
 -- StandardShipItRequest
 COMMENT ON TABLE StandardShipItRequest IS 'The Standard ShipIt Requests. This is what we want most of the people to choose, having only a few people placing custom requests.';
 COMMENT ON COLUMN StandardShipItRequest.quantityx86 IS 'The quantity of X86 CDs';
@@ -1078,3 +1108,17 @@ COMMENT ON COLUMN ShockAndAwe.name IS 'The name of the Shock And Awe program';
 COMMENT ON COLUMN ShockAndAwe.title IS 'The title of the Shock And Awe program';
 COMMENT ON COLUMN ShockAndAwe.description IS 'The description of the Shock And Awe program';
 
+-- Shipment
+COMMENT ON TABLE Shipment IS 'A shipment is the link between a ShippingRequest and a ShippingRun. When a Shipment is created for a ShippingRequest, it gets locked and can\'t be changed anymore.';
+COMMENT ON COLUMN Shipment.logintoken IS 'A unique token used to identify users that come back after receiving CDs as part of an shock and awe campaign.';
+COMMENT ON COLUMN Shipment.shippingrun IS 'The shippingrun to which this shipment belongs.';
+COMMENT ON COLUMN Shipment.request IS 'A link to the ShippingRequest table.';
+COMMENT ON COLUMN Shipment.dateshipped IS 'The date when this shipment was shipped by the shipping company.';
+COMMENT ON COLUMN Shipment.shippingservice IS 'The shipping service used for this shipment.';
+COMMENT ON COLUMN Shipment.trackingcode IS 'A code used to track the shipment after it\'s shipped.';
+
+-- ShippingRun
+COMMENT ON TABLE ShippingRun IS 'A shipping run is a set of shipments that are sent to the shipping company in the same date.';
+COMMENT ON COLUMN ShippingRun.datecreated IS 'The date this shipping run was created.';
+COMMENT ON COLUMN ShippingRun.sentforshipping IS 'The exported file was sent to the shipping company already?';
+COMMENT ON COLUMN ShippingRun.csvfile IS 'A csv file with all requests of this shipping run, to be sent to the shipping company.';

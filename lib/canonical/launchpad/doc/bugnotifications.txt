@@ -68,7 +68,7 @@ examples throughout the rest of this document.
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
     >>> msg["Reply-To"]
-    'Sample Person via Malone <...@bugs...>'
+    'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
 
@@ -170,7 +170,7 @@ let's hang a bug onto the ILaunchBag utility.
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
     >>> msg["Reply-To"]
-    'Sample Person via Malone <...@bugs...>'
+    'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
 
@@ -211,7 +211,7 @@ let's hang a bug onto the ILaunchBag utility.
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
     >>> msg["Reply-To"]
-    'Sample Person via Malone <...@bugs...>'
+    'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
 
@@ -255,7 +255,7 @@ let's hang a bug onto the ILaunchBag utility.
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
     >>> msg["Reply-To"]
-    'Sample Person via Malone <...@bugs...>'
+    'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
 
@@ -295,7 +295,7 @@ let's hang a bug onto the ILaunchBag utility.
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
     >>> msg["Reply-To"]
-    'Sample Person via Malone <...@bugs...>'
+    'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
 
@@ -345,7 +345,7 @@ task Accepted, assigns himself to it, and adds a status note.
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
     >>> msg["Reply-To"]
-    'Sample Person via Malone <...@bugs...>'
+    'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
 
@@ -385,7 +385,7 @@ pretending we've just added a watch to a bug.
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
     >>> msg["Reply-To"]
-    'Sample Person via Malone <...@bugs...>'
+    'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
 
@@ -427,7 +427,7 @@ the changes made:
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
     >>> msg["Reply-To"]
-    'Sample Person via Malone <...@bugs...>'
+    'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
 
@@ -470,7 +470,7 @@ this document:
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
     >>> msg["Reply-To"]
-    'Sample Person via Malone <...@bugs...>'
+    'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
 
@@ -512,7 +512,7 @@ publishing an object created event.
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
     >>> msg["Reply-To"]
-    'Sample Person via Malone <...@bugs...>'
+    'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
 
@@ -553,7 +553,7 @@ When a link is edited, the notification will look as follows:
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
     >>> msg["Reply-To"]
-    'Sample Person via Malone <...@bugs...>'
+    'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
 
@@ -708,7 +708,7 @@ private, and Foo Bar is not an explicit subscriber to the bug, he will
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
     >>> msg["Reply-To"]
-    'Sample Person via Malone <...@bugs...>'
+    'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
 

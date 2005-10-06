@@ -272,14 +272,25 @@ class Person(SQLBase):
         """See IPerson."""
         return self.teamowner is not None
 
+    def pastShipItRequests(self):
+        """See IPerson."""
+        query = '''
+            ShippingRequest.recipient = %s AND
+            (ShippingRequest.approved = false OR
+             ShippingRequest.cancelled = true OR
+             ShippingRequest.id IN (SELECT request FROM Shipment))
+            ''' % sqlvalues(self.id)
+        return ShippingRequest.select(query)
+
     def currentShipItRequest(self):
         """See IPerson."""
-        notdenied = OR(ShippingRequest.q.approved==True,
-                       ShippingRequest.q.approved==None)
-        query = AND(ShippingRequest.q.recipientID==self.id,
-                    ShippingRequest.q.shipmentID==None,
-                    notdenied,
-                    ShippingRequest.q.cancelled==False)
+        query = '''
+            (ShippingRequest.approved = true OR
+             ShippingRequest.approved IS NULL)
+            AND ShippingRequest.recipient = %s AND
+            ShippingRequest.cancelled = false AND
+            ShippingRequest.id NOT IN (SELECT request FROM Shipment)
+            ''' % sqlvalues(self.id)
         return ShippingRequest.selectOne(query)
 
     def assignKarma(self, action_name):

@@ -778,9 +778,10 @@ class CalendarSubscribeView:
         self.context = ILaunchpadCalendar(context)
         self.request = request
 
+    def setUpUserSubscriptions(self):
         user = getUtility(ILaunchBag).user
         self._subscriptions = ICalendarSubscriptionSubset(user)
-
+        
     def isSubscribed(self):
         return self.context in self._subscriptions
 

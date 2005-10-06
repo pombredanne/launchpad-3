@@ -19,7 +19,7 @@ class BuilddSlaveTestSetup(TacTestSetup):
     Make sure the server is running
 
     >>> import xmlrpclib
-    >>> s = xmlrpclib.Server('http://localhost:8221/')
+    >>> s = xmlrpclib.Server('http://localhost:8221/rpc/')
     >>> s.echo('Hello World')
     ['Hello World']
     >>> BuilddSlaveTestSetup().tearDown()
@@ -27,7 +27,7 @@ class BuilddSlaveTestSetup(TacTestSetup):
     Again for luck !
     
     >>> BuilddSlaveTestSetup().setUp()
-    >>> s = xmlrpclib.Server('http://localhost:8221/')
+    >>> s = xmlrpclib.Server('http://localhost:8221/rpc/')
     >>> s.echo('Hello World')
     ['Hello World']
     >>> BuilddSlaveTestSetup().tearDown()    

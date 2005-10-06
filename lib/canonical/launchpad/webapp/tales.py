@@ -314,8 +314,12 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
 
         The icon displayed is calculated based on the IBugTask.priority.
         """
-        priority_title = self._context.priority.title.lower()
-        if priority_title == 'wontfix':
+        if self._context.priority:
+            priority_title = self._context.priority.title.lower()
+        else:
+            priority_title = None
+
+        if not priority_title or priority_title == 'wontfix':
             # Special-case Wontfix by returning the "generic" bug icon
             # because we actually hope to eliminate Wontfix
             # entirely. See
@@ -671,7 +675,7 @@ class FormattersAPI:
             # and put it outside the url text.
             trail = ''
             gt = ''
-            if url[-1] in (",", ".", "?") or url[-2:] == ";;":
+            if url[-1] in (",", ".", "?", ":") or url[-2:] == ";;":
                 # These common punctuation symbols often trail URLs; we
                 # deviate from the specification slightly here but end
                 # up with less chance of corrupting a URL because
@@ -743,7 +747,7 @@ class FormattersAPI:
         (?P<urlchars>[a-zA-Z0-9/:;@_%~#=&\.\-\?\+\$,]*)
       ) |
       (?P<bug>
-        bug\s+(?:\#|number\.?|num\.?|no\.?)?\s*
+        bug\s*(?:\#|number\.?|num\.?|no\.?)?\s*
         0*(?P<bugnum>\d+)
       )
     ''', re.IGNORECASE | re.VERBOSE)

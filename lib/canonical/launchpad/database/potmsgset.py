@@ -111,20 +111,12 @@ class POTMsgSet(SQLBase):
         for pomsgid in results:
             yield pomsgid
 
-    # XXX: Carlos Perello Marin 15/10/04: Review, not sure it's correct...
-    def getMessageIDSighting(self, pluralForm, allowOld=False):
-        """Return the message ID sighting that is current and has the
-        plural form provided.
-        """
-        if allowOld:
-            sighting = POMsgIDSighting.selectOneBy(
-                potmsgsetID=self.id,
-                pluralform=pluralForm)
-        else:
-            sighting = POMsgIDSighting.selectOneBy(
-                potmsgsetID=self.id,
-                pluralform=pluralForm,
-                inlastrevision=True)
+    def getPOMsgIDSighting(self, pluralForm):
+        """See IPOTMsgSet."""
+        sighting = POMsgIDSighting.selectOneBy(
+            potmsgsetID=self.id,
+            pluralform=pluralForm,
+            inlastrevision=True)
         if sighting is None:
             raise KeyError, pluralForm
         else:

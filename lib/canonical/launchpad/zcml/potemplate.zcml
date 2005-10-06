@@ -47,21 +47,17 @@
 
         <!-- Potemplate Portlets -->
         <browser:page
-            name="+portlet-actions"
-            template="../templates/potemplate-portlet-actions.pt"
-        />
-        <browser:page
             name="+portlet-details"
             template="../templates/potemplate-portlet-details.pt"
-        />
+            />
         <browser:page
             name="+portlet-relateds"
             template="../templates/potemplate-portlet-relateds.pt"
-        />
+            />
         <browser:page
             name="+portlet-for"
             template="../templates/potemplate-portlet-for.pt"
-        />
+            />
     </browser:pages>
 
     <browser:page

@@ -166,9 +166,10 @@ class Job:
 
         # set the repository
         if self.RCS == 'cvs':
-            if series.cvstarfileurl is not None and series.cvstarfileurl != "":
+            if self._use_cvstarfileurl(series):
                 self.repository = str(series.cvstarfileurl)
-            self.repository = str(series.cvsroot)
+            else:
+                self.repository = str(series.cvsroot)
             self.module = str(series.cvsmodule)
             self.branchfrom = str(series.cvsbranch) # FIXME: assumes cvs!
         elif self.RCS == 'svn':
@@ -185,6 +186,17 @@ class Job:
         self.releaseRoot = str(series.releaseroot)
         self.releaseFileGlob = str(series.releasefileglob)
         return self
+
+    def _use_cvstarfileurl(self, series):
+        "Should import be done by downloading a CVS repository tarball?"
+        if self.RCS != 'cvs':
+            return False
+        elif self.TYPE != 'import':
+            return False
+        elif series.cvstarfileurl is None or series.cvstarfileurl == "":
+            return False
+        else:
+            return True
 
     def _arch_from_series(self, series):
         """Setup the arch namespace from a productseries.

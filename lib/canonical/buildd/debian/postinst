@@ -56,6 +56,14 @@ case "$1" in
 	# which sbuild will rant about the absence of...
 	test -e /etc/source-dependencies || touch /etc/source-dependencies
 
+	# Now check if we're upgrading a previous version...
+	if [ "x$2" != "x" ]; then
+	    for CONFIG in $(ls /etc/launchpad-buildd/* \
+	                  | grep -v "^-" | grep -v "~$"); do
+		/usr/share/launchpad-buildd/upgrade-config $2 $CONFIG
+	    done
+	fi
+
 	;;
     abort-upgrade|abort-remove|abort-deconfigure)
 

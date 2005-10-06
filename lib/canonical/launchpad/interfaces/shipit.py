@@ -2,12 +2,47 @@
 
 __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'IRequestedCDs', 'IShippingRequest', 'IShippingRequestSet',
-           'ShippingRequestStatus']
+           'ShippingRequestStatus', 'IShipment', 'IShippingRun',
+           'IShipItCountry', 'IShippingRunSet', 'IShipmentSet',
+           'ShippingRequestPriority']
 
-from zope.schema import Bool, Int, Datetime, Text, TextLine
-from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+from zope.schema import Bool, Choice, Int, Datetime, Text, TextLine
+from zope.interface import Interface, Attribute, implements
+from zope.schema.interfaces import IChoice
+from zope.app.form.browser.itemswidgets import DropdownWidget
+
+from canonical.launchpad import _
+
+
+class IEmptyDefaultChoice(IChoice):
+    pass
+
+
+class EmptyDefaultChoice(Choice):
+    implements(IEmptyDefaultChoice)
+
+
+# XXX: This sould probably be moved somewhere else, but as I need to get this
+# in production ASAP I'm leaving it here for now. -- Guilherme Salgado
+# 2005-10-03
+class EmptyDefaultDropdownWidget(DropdownWidget):
+    """A dropdown widget in which the default option is one that is not part
+    of its vocabulary.
+    """
+    firstItem = True
+
+    def renderItems(self, value):
+        items = DropdownWidget.renderItems(self, value)
+        option = '<option value="">Choose one</option>'
+        items.insert(0, option)
+        return items
+
+
+class IShipItCountry(Interface):
+    """This schema is only to get the Country widget."""
+
+    country = EmptyDefaultChoice(title=_('Country'), required=True, 
+                     vocabulary='CountryName')
 
 
 class IShippingRequest(Interface):
@@ -16,8 +51,6 @@ class IShippingRequest(Interface):
     id = Int(title=_('The unique ID'), required=True, readonly=True)
 
     recipient = Int(title=_('Recipient'), required=True, readonly=True)
-
-    shipment = Int(title=_('Shipment'), required=True, readonly=False)
 
     daterequested = Datetime(
         title=_('Date of Request'), required=True, readonly=True)
@@ -48,6 +81,55 @@ class IShippingRequest(Interface):
         title=_('High Priority?'), required=False, readonly=False,
         description=_('Is this a high priority request?'))
 
+    recipientdisplayname = TextLine(
+            title=_('Name'), required=False, readonly=False,
+            description=_("The name of the person who's going to receive "
+                          "this order.")
+            )
+    addressline1 = TextLine(
+            title=_('Address'), required=True, readonly=False,
+            description=_('The address to where the CDs will be shipped '
+                          '(Line 1)')
+            )
+    addressline2 = TextLine(
+            title=_('Address'), required=False, readonly=False,
+            description=_('The address to where the CDs will be shipped '
+                          '(Line 2)')
+            )
+    city = TextLine(
+            title=_('City'), required=True, readonly=False,
+            description=_('The City/Town/Village/etc to where the CDs will be '
+                          'shipped.')
+            )
+    province = TextLine(
+            title=_('Province'), required=True, readonly=False,
+            description=_('The State/Province/etc to where the CDs will be '
+                          'shipped.')
+            )
+    country = EmptyDefaultChoice(
+            title=_('Country'), required=True, readonly=False,
+            vocabulary='CountryName',
+            description=_('The Country to where the CDs will be shipped.')
+            )
+    postcode = TextLine(
+            title=_('Postcode'), required=True, readonly=False,
+            description=_('The Postcode to where the CDs will be shipped.')
+            )
+    phone = TextLine(
+            title=_('Phone'), required=True, readonly=False,
+            description=_('[(+CountryCode) number] e.g. (+55) 16 33619445')
+            )
+    organization = TextLine(
+            title=_('Organization'), required=False, readonly=False,
+            description=_('The Organization requesting the CDs')
+            )
+
+    shipment = Attribute(_(
+        "This request's Shipment or None if the request wasn't shipped yet."))
+    countrycode = Attribute(
+        _("The iso3166code2 code of this request's country. Can't be None."))
+    shippingservice = Attribute(
+        _("The shipping service used to ship this request. Can't be None."))
     totalCDs = Attribute(_('Total number of CDs in this request.'))
     totalapprovedCDs = Attribute(
         _('Total number of approved CDs in this request.'))
@@ -132,8 +214,10 @@ class ShippingRequestStatus:
 class IShippingRequestSet(Interface):
     """The set of all ShippingRequests"""
 
-    def new(recipient, quantityx86, quantityamd64, quantityppc, reason=None,
-            shockandawe=None):
+    def new(recipient, quantityx86, quantityamd64, quantityppc,
+            recipientdisplayname, country, city, addressline1,
+            addressline2=None, province=None, postcode=None, phone=None,
+            organization=None, reason=None, shockandawe=None):
         """Create and return a new ShippingRequest.
         
         This method can't be used if recipient already has a
@@ -145,6 +229,12 @@ class IShippingRequestSet(Interface):
         """Return the oldest request with status PENDING.
         
         Return None if there's no requests with status PENDING.
+        """
+
+    def getUnshippedRequests(priority):
+        """Return all requests that are eligible for shipping.
+
+        These are approved requests that weren't shipped yet.
         """
 
     def get(id, default=None):
@@ -245,3 +335,72 @@ class IStandardShipItRequestSet(Interface):
         of CDs.
         """
 
+
+class IShipment(Interface):
+    """The shipment of a given request."""
+
+    id = Int(title=_('The unique ID'), required=True, readonly=True)
+    logintoken = TextLine(title=_('Token'), readonly=True, required=True)
+    dateshipped = Datetime(
+        title=_('Date Shipped'), readonly=True, required=True)
+    shippingservice = Int(
+        title=_('Shipping Service'), readonly=True, required=True)
+    shippingrun = Int(title=_('Shipping Run'), readonly=True, required=True)
+    request = Int(title=_('The ShipIt Request'), readonly=True, required=True)
+    trackingcode = TextLine(
+        title=_('Tracking Code'), readonly=True, required=False)
+
+
+class IShipmentSet(Interface):
+    """The set of Shipment objects."""
+
+    def new(shippingservice, shippingrun, trackingcode=None, dateshipped=None):
+        """Create a new Shipment object with the given arguments."""
+
+    def getByToken(token):
+        """Return the Shipment with the given token or None if it doesn't 
+        exist.
+        """
+
+
+class IShippingRun(Interface):
+    """A set of requests that were sent to shipping at the same date."""
+
+    id = Int(title=_('The unique ID'), required=True, readonly=True)
+    datecreated = Datetime(
+        title=_('Date of Creation'), required=True, readonly=True)
+
+    csvfile = Int(
+        title=_('A csv file with all requests of this run.'),
+        required=False, readonly=False)
+
+    sentforshipping = Bool(
+        title=_('Was this ShippingRun sent for shipping?'),
+        required=False, readonly=False)
+
+    requests = Attribute(_('All requests that are part of this shipping run.'))
+
+
+class IShippingRunSet(Interface):
+    """The set of ShippingRun objects."""
+
+    def new():
+        """Create a new ShippingRun object."""
+
+    def get(id):
+        """Return the ShippingRun with the given id or None if it doesn't
+        exist.
+        """
+
+    def getUnshipped():
+        """Return all ShippingRuns that are not yet sent for shipping. """
+
+    def getShipped():
+        """Return all ShippingRuns that are already sent for shipping. """
+
+
+class ShippingRequestPriority:
+    """The priority of a given ShippingRequest."""
+
+    HIGH = 'high'
+    NORMAL = 'normal'

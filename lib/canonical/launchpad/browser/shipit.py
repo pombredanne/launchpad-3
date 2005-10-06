@@ -5,14 +5,15 @@ __metaclass__ = type
 __all__ = ['StandardShipItRequestAddView', 'ShippingRequestAdminView',
            'ShippingRequestsView', 'ShipItLoginView', 'ShipItRequestView',
            'ShipItUnauthorizedView', 'StandardShipItRequestsView',
-           'ShippingRequestURL', 'StandardShipItRequestURL']
+           'ShippingRequestURL', 'StandardShipItRequestURL',
+           'ShipItExportsView']
 
 from zope.event import notify
 from zope.component import getUtility
 from zope.interface import implements
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
-from zope.app.form.interfaces import IInputWidget
+from zope.app.form.interfaces import IInputWidget, WidgetInputError
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
@@ -26,7 +27,8 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.helpers import positiveIntOrZero, intOrZero
 from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IShippingRequestSet, ILaunchBag, IShipItCountry,
-    ShippingRequestStatus, ILaunchpadCelebrities, ICanonicalUrlData)
+    ShippingRequestStatus, ILaunchpadCelebrities, ICanonicalUrlData,
+    IShippingRunSet)
 
 from canonical.launchpad import _
 
@@ -51,13 +53,12 @@ class StandardShipItRequestURL:
 
 class ShipItUnauthorizedView(SystemErrorView):
 
-    forbidden_page = ViewPageTemplateFile(
-        '../templates/launchpad-forbidden.pt')
+    response_code = 403
+    forbidden_page = ViewPageTemplateFile('../templates/launchpad-forbidden.pt')
 
     def __call__(self):
         # Users should always go to shipit.ubuntu.com and login before
         # going to any other page.
-        self.request.response.setStatus(403) # Forbidden
         return self.forbidden_page()
 
 
@@ -67,6 +68,9 @@ class ShipItUnauthorizedView(SystemErrorView):
 # 2005-09-09
 class ShipItLoginView(LoginOrRegister):
     """Process the login form and redirect the user to the request page."""
+
+    def get_application_url(self):
+        return 'https://launchpad.net'
 
     def process_form(self):
         if getUtility(ILaunchBag).user is not None:
@@ -94,6 +98,10 @@ class ShipItLoginView(LoginOrRegister):
 class ShipItRequestView:
     """The view for people to create/edit ShipIt requests."""
 
+    shipping_fields = ['addressline1', 'addressline2', 'postcode', 'city',
+                       'province', 'organization', 'phone', 'country',
+                       'recipientdisplayname']
+
     # XXX: These 2 email addresses must go into launchpad.conf
     # -- GuilhermeSalgado 2005-09-01
     shipit_admins = 'info@shipit.ubuntu.com'
@@ -116,62 +124,58 @@ Reason:
         self.context = context
         self.request = request
         self.user = getUtility(ILaunchBag).user
-        setUpWidgets(self, IShipItCountry, IInputWidget,
-                     initial={'country': getattr(self.user, 'country', None)})
+        self.userIsShipItAdmin = False
         self.addressFormMessages = []
-        self.requestFormMessages = []
-        self.currentOrder = None
+        self.orderFormMessages = []
+        self.order = None
         self.isCustomOrder = False
         self.orderCreated = False
         self.orderChanged = False
+        self.selectedOrderType = None
 
     def hasErrorMessages(self):
         """Return True if there are any error messages we need to display."""
-        return bool(self.addressFormMessages or self.requestFormMessages)
+        return bool(self.addressFormMessages or self.orderFormMessages)
 
     def standardShipItRequests(self):
         """Return all standard ShipIt Requests."""
         return getUtility(IStandardShipItRequestSet).getAll()
 
-    def processForm(self):
-        """Process the ShipIt form, if it was submitted."""
-        self.currentOrder = self.user.currentShipItRequest()
+    def _doBasicSetup(self):
+        """Do some basic setup needed to display/process the order form."""
+        user = self.user
+        shipit_admins = getUtility(ILaunchpadCelebrities).shipit_admin
+        self.userIsShipItAdmin = user.inTeam(shipit_admins)
+        if self.userIsShipItAdmin:
+            # ShipIt administrators can edit any existing order or create a
+            # new one in behalf of other people.
+            order_id = self.request.get('order')
+            if not order_id:
+                # This can be a POST, and in this case the order will be a
+                # hidden field in the form.
+                order_id = self.request.form.get('order')
+            if order_id:
+                # edit a specific order
+                self.order = getUtility(IShippingRequestSet).get(order_id)
+            else:
+                # create a new one
+                self.order = None
+        else:
+            # Normal users can only edit their current orders or place new
+            # ones.
+            self.order = user.currentShipItRequest()
 
-        if self.request.method != "POST":
-            if self.currentOrder is not None:
-                self._loadRequestForDisplay()
-            return
+        setUpWidgets(self, IShipItCountry, IInputWidget,
+                     initial={'country': getattr(self.order, 'country', None)})
 
-        form = self.request.form
-        if 'newrequest' in form or 'changerequest' in form:
-            self._readAndValidateRequestDetails()
-            self._readAndValidateContactDetails()
-            if not self.hasErrorMessages():
-                self._saveContactDetails()
-                if 'newrequest' in form:
-                    if self.currentOrder is not None:
-                        # User reloaded the page after posting a new order;
-                        # when we accept multiple orders at once this will
-                        # need to be changed.
-                        return
-                    self._createNewRequest()
-                elif 'changerequest' in form:
-                    assert self.currentOrder
-                    self._changeExistingRequest()
-        elif 'cancelrequest' in form:
-            assert self.currentOrder
-            self.currentOrder.cancel(getUtility(ILaunchBag).user)
-            self.currentOrder = None
-
-        flush_database_updates()
-
-    def _loadRequestForDisplay(self):
-        order = self.currentOrder
+    def _loadOrderForDisplay(self):
+        assert self.order is not None
+        order = self.order
         standardrequestset = getUtility(IStandardShipItRequestSet)
         standardrequest = standardrequestset.getByNumbersOfCDs(
             order.quantityx86, order.quantityamd64, order.quantityppc)
         if standardrequest is not None:
-            self.selectedOrder = standardrequest.id
+            self.selectedOrderType = standardrequest.id
             self.reason = None
         else:
             self.quantityx86 = order.quantityx86
@@ -180,12 +184,57 @@ Reason:
             self.isCustomOrder = True
             self.reason = order.reason
 
+    def orderIsCancelledOrShipped(self):
+        """Return True if self.order is not None and is cancelled or shipped."""
+        if self.order is not None:
+            return self.order.cancelled or self.order.shipment is not None
+        return False
+
+    def shouldShowOrderDetails(self):
+        """Return True if the logged in user is not a ShipIt admin or if the
+        order's recipient is a ShipIt admin.
+        """
+        if self.order is None:
+            return True
+        shipit_admins = getUtility(ILaunchpadCelebrities).shipit_admin
+        return (not self.userIsShipItAdmin or
+                self.order.recipient.inTeam(shipit_admins))
+
+    def processForm(self):
+        """Process the ShipIt form, if it was submitted."""
+        self._doBasicSetup()
+        if self.request.method != "POST":
+            if self.order is not None:
+                self._loadOrderForDisplay()
+            return
+
+        form = self.request.form
+        if 'newrequest' in form or 'changerequest' in form:
+            self._readAndValidateFormData()
+            if not self.hasErrorMessages():
+                if 'newrequest' in form:
+                    if self.order is not None:
+                        # User reloaded the page after posting a new order;
+                        # when we accept multiple orders at once this will
+                        # need to be changed.
+                        return
+                    self._createNewOrder()
+                elif 'changerequest' in form:
+                    assert self.order is not None
+                    self._changeExistingOrder()
+        elif 'cancelrequest' in form:
+            assert self.order is not None
+            self.order.cancel(getUtility(ILaunchBag).user)
+            self.order = None
+
+        flush_database_updates()
+
     def _notifyShipItAdmins(self, order):
         """Notify the shipit admins by email that there's a new request."""
         subject = ('[ShipIt] New Custom Request for %d CDs' % order.totalCDs)
         recipient = order.recipient
         headers = {'Reply-To': recipient.preferredemail.email}
-        replacements = {'recipientname': recipient.displayname,
+        replacements = {'recipientname': order.recipientdisplayname,
                         'recipientemail': recipient.preferredemail.email,
                         'requesturl': canonical_url(order),
                         'quantityx86': order.quantityx86,
@@ -196,24 +245,30 @@ Reason:
         simple_sendmail(self.from_addr, self.shipit_admins, subject, message,
                         headers)
 
-    def _createNewRequest(self):
+    def _createNewOrder(self):
         """Create and return a new ShippingRequest.
 
         If this is a custom request, then send an email to the shipit admins
         with the details of the request.
         The attributes used to create this ShippingRequest are the ones stored
-        in this object by the _readAndValidateRequestDetails() method.
+        in this object by the self._readAndValidateFormData() method.
         """
+        assert self.order is None
         self.orderCreated = True
-        order = getUtility(IShippingRequestSet).new(
-            self.user, self.quantityx86, self.quantityamd64,
-            self.quantityppc, self.reason)
+        all_fields = (self.shipping_fields + 
+                      ['quantityx86', 'quantityamd64', 'quantityppc', 'reason'])
+        kw = {}
+        for field in all_fields:
+            kw[field] = getattr(self, field)
 
-        self.currentOrder = order
+        kw['recipient'] = self.user
+        order = getUtility(IShippingRequestSet).new(**kw)
+        self.order = order
         # Orders with a total of 80 CDs or less get approved automatically.
         # XXX: Ideally it should be possible to tweak this number through
         # a web interface. -- Guilherme Salgado 2005-09-27
-        if self.isCustomOrder and order.totalCDs > 80:
+        if (self.isCustomOrder and order.totalCDs > 80 and 
+            not self.userIsShipItAdmin):
             self._notifyShipItAdmins(order)
         else:
             order.approve(
@@ -221,29 +276,25 @@ Reason:
 
         return order
 
-    def _saveContactDetails(self):
-        """Save the contact details for this user.
+    def _changeExistingOrder(self):
+        """Save the order quantities and shipping details in the current order.
 
-        This method assumes the contact details are stored as attributes of
-        this object. This is obtained by calling
-        self._readAndValidateContactDetails().
+        This method assumes the order details are stored as attributes of
+        this object. This is obtained by calling self._readAndValidateFormData.
         """
-        contact_fields = ['addressline1', 'addressline2', 'postcode', 'city',
-                          'province', 'organization', 'phone']
-
-        for field in contact_fields:
-            setattr(self.user, field, getattr(self, field))
-        self.user.country = self.country
-
-    def _changeExistingRequest(self):
-        """Save the request details in the current request.
-
-        This method assumes the request details are stored as attributes of
-        this object. This is obtained by calling
-        self._readAndValidateRequestDetails().
-        """
+        assert self.order is not None
         self.orderChanged = True
-        order = self.currentOrder
+        order = self.order
+
+        # Save the shipping details
+        for field in self.shipping_fields:
+            setattr(self.order, field, getattr(self, field))
+
+        if not self.shouldShowOrderDetails():
+            # ShipIt admins can edit only the shipping address of an order
+            # that wasn't created by them.
+            return
+
         wasStandard = order.isStandardRequest()
         order.quantityx86 = self.quantityx86
         order.quantityppc = self.quantityppc
@@ -257,27 +308,34 @@ Reason:
             order.clearApproval()
             self._notifyShipItAdmins(order)
 
-    def _readAndValidateRequestDetails(self):
+    def _readAndValidateFormData(self):
+        """Read all information provided in the form and save them as instance
+        variables, in this object.
+        """
+        self._readAndValidateOrderDetails()
+        self._readAndValidateContactDetails()
+
+    def _readAndValidateOrderDetails(self):
         """Read the request details from the form, do any necessary validation
         and save them in the view."""
         form = self.request.form
-        requesttype = form.get('requesttype')
-        if requesttype == 'standard':
+        ordertype = form.get('ordertype')
+        if ordertype == 'standard':
             self.isCustomOrder = False
-            self.selectedOrder = int(form.get('standardrequest'))
+            self.selectedOrderType = int(form.get('standardrequest'))
             order = getUtility(IStandardShipItRequestSet).get(
-                self.selectedOrder)
+                self.selectedOrderType)
             if order is None:
                 msg = _('The standard request numbers have changed since you '
                         'submitted your request; please review the new numbers '
                         'and make a new selection.')
-                self.requestFormMessages.append(msg)
+                self.orderFormMessages.append(msg)
                 return
             self.quantityx86 = order.quantityx86
             self.quantityamd64 = order.quantityamd64
             self.quantityppc = order.quantityppc
             self.reason = None
-        elif requesttype == 'custom':
+        elif ordertype == 'custom':
             self.isCustomOrder = True
             self.quantityx86 = intOrZero(form.get('quantityx86'))
             self.quantityamd64 = intOrZero(form.get('quantityamd64'))
@@ -285,12 +343,12 @@ Reason:
 
             if (self.quantityx86 < 0 or self.quantityamd64 < 0 or
                 self.quantityppc < 0):
-                self.requestFormMessages.append(_(
+                self.orderFormMessages.append(_(
                     "You requested a negative number of CDs, which doesn't "
                     "make sense. Please correct the number below."))
 
             if (self.quantityx86 + self.quantityamd64 + self.quantityppc) == 0:
-                self.requestFormMessages.append(_(
+                self.orderFormMessages.append(_(
                     "You have requested a total of zero CDs. An order must "
                     "have at least one CD requested; please correct below."))
 
@@ -298,7 +356,7 @@ Reason:
             if not self.reason:
                 msg = _(("You've chosen to make a custom request. Please "
                          "provide a reason to justify it."))
-                self.requestFormMessages.append(msg)
+                self.orderFormMessages.append(msg)
 
     def _readAndValidateContactDetails(self):
         """Read the contact details from the form, do any necesary validation
@@ -307,7 +365,8 @@ Reason:
         #   - addressline1
         #   - city
         #   - zip (only if in ['US', 'GB', 'FR', 'IT', 'DE', 'NO', 'SE', 'ES'])
-        validators = {'organization': ("Organization",
+        validators = {'recipientdisplayname': ("Name", self._validatename),
+                      'organization': ("Organization",
                                        self._validateorganization),
                       'addressline1': ("Address", self._validateaddressline1),
                       'addressline2': ("Address", self._validateaddressline2),
@@ -317,9 +376,15 @@ Reason:
                       'phone': ("Phone", self._validatephone)}
         form = self.request.form
         msg = None
-        self.country = self.country_widget.getInputValue()
+        try:
+            self.country = self.country_widget.getInputValue()
+        except WidgetInputError:
+            self.country = None
+            self.addressFormMessages.append(_(
+                'You must choose your country from the list below.'))
+            
         for field, (field_title, validator) in validators.items():
-            value = form.get(field)
+            value = form.get(field, "")
             # Save all field values in the view so we can display them, if
             # anything goes wrong.
             setattr(self, field, value)
@@ -348,12 +413,27 @@ Reason:
     # of the shipping companies.
     #
 
+    def _validatename(self, value):
+        """Make sure the entered name follows the mailing constraints.
+
+        Add an error message to self.addressFormMessages if it doesn't.
+        """
+        if not value:
+            self.addressFormMessages.append(_(
+                "You must enter the recipient's name in the form."))
+        elif len(value) > 20:
+            self.addressFormMessages.append(_(
+                "The recipient's name can't have more than 20 characters."))
+
     def _validatepostcode(self, value):
         """Make sure postcode follows the mailing constraints.
 
         Add an error message to self.addressFormMessages if it doesn't.
         """
-        code = self.country.iso3166code2
+        if self.country is not None:
+            code = self.country.iso3166code2
+        else:
+            code = None
         if (not value and
             code in ('US', 'GB', 'FR', 'IT', 'DE', 'NO', 'SE', 'ES')):
             self.addressFormMessages.append(_(
@@ -507,6 +587,10 @@ class StandardShipItRequestAddView(AddView):
 class ShippingRequestAdminView:
     """The view for ShipIt admins to approve/reject requests."""
 
+    def contextCancelledOrShipped(self):
+        """Return true if the context was cancelled or shipped."""
+        return self.context.cancelled or self.context.shipment is not None
+
     def _getApprovedQuantities(self):
         """Return a list containing the approved quantities for each
         architecture.
@@ -533,6 +617,7 @@ class ShippingRequestAdminView:
         if 'DENY' in request:
             if not context.isDenied():
                 context.deny()
+                flush_database_updates()
                 self._goToNextPending(previous_action='denied')
             else:
                 # XXX: Must give some kind of warning in this case.
@@ -546,12 +631,14 @@ class ShippingRequestAdminView:
             x86, amd64, ppc = self._getApprovedQuantities()
             context.setApprovedTotals(x86, amd64, ppc)
             context.highpriority = highpriority
+            flush_database_updates()
             self._goToNextPending(previous_action='changed')
         elif 'APPROVE' in request:
             if not context.approved:
                 x86, amd64, ppc = self._getApprovedQuantities()
                 context.approve(x86, amd64, ppc, whoapproved=user)
                 context.highpriority = highpriority
+                flush_database_updates()
                 self._goToNextPending(previous_action='approved')
             else:
                 # XXX: Must give some kind of warning in this case.
@@ -568,4 +655,35 @@ class ShippingRequestAdminView:
             url = '%s?previous=%d&%s=1' % (canonical_url(next_order),
                                            self.context.id, previous_action)
             self.request.response.redirect(url)
+
+
+class ShipItExportsView:
+    """The view for the list of shipit exports."""
+
+    def process_form(self):
+        """Process the form, marking the choosen ShippingRun as 'sent for
+        shipping'.
+        """
+        if self.request.method != 'POST':
+            return
+
+        for key, value in self.request.form.items():
+            if key.isdigit() and value == 'Yes':
+                shippingrun_id = int(key)
+                shippingrun = getUtility(IShippingRunSet).get(shippingrun_id)
+                shippingrun.sentforshipping = True
+                break
+        flush_database_updates()
+
+    def sent_exports(self):
+        """Return all exports that were sent to the shipping companies."""
+        return getUtility(IShippingRunSet).getShipped()
+
+    def unsent_exports(self):
+        """Return all exports that weren't sent to the shipping companies."""
+        return getUtility(IShippingRunSet).getUnshipped()
+
+    def no_exports(self):
+        """Return True if there's no generated exports."""
+        return not (self.unsent_exports() or self.sent_exports())
 

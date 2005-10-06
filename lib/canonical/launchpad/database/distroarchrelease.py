@@ -47,16 +47,17 @@ class DistroArchRelease(SQLBase):
                             intermediateTable='BinaryPackagePublishing',
                             otherColumn='binarypackage')
 
-    # for launchpad pages
+    @property
     def title(self):
-        title = self.distrorelease.distribution.displayname
-        title += ' ' + self.distrorelease.displayname
-        title += ' for the ' + self.architecturetag
-        title += ' ('+self.processorfamily.name+') architecture'
-        return title
-    title = property(title)
-
+        """See IDistroArchRelease """
+        return '%s for %s (%s)' % (
+            self.distrorelease.title, self.architecturetag,
+            self.processorfamily.name
+            )
+    
+    @property
     def binarycount(self):
+        """See IDistroArchRelease """
         # XXX: Needs system doc test. SteveAlexander 2005-04-24.
         query = ('BinaryPackagePublishing.distroarchrelease = %s AND '
                  'BinaryPackagePublishing.status = %s'
@@ -64,8 +65,6 @@ class DistroArchRelease(SQLBase):
                     self.id, dbschema.PackagePublishingStatus.PUBLISHED
                  ))
         return BinaryPackagePublishing.select(query).count()
-        #return len(self.packages)
-    binarycount = property(binarycount)
 
     def getChroot(self, pocket=None, default=None):
         """See IDistroArchRelease"""

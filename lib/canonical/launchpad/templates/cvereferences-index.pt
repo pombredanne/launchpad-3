@@ -1,5 +1,0 @@
-<html tal:replace="python:request.response.redirect('..')">
-    <body>
-        <a href=".">Here</a>
-    </body>
-</html>

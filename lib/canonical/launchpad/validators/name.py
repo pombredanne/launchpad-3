@@ -7,14 +7,8 @@ __metaclass__ = type
 import re
 from textwrap import dedent
 
-from zope.schema import ValidationError
-
 from canonical.launchpad import _
 from canonical.launchpad.validators import LaunchpadValidationError
-
-from zope.schema import ValidationError
-
-from canonical.launchpad import _
 
 def valid_name(name):
     """Return True if the name is valid, otherwise False.

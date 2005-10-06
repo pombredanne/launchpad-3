@@ -17,11 +17,12 @@ set -e
 
 exec 2>&1
 
-set -x
+echo "Scanning for processes to kill in build $BUILDID..."
 
 [ $(id -u) = "0" ] || exec $SUDO $0 "$HOME/build-$BUILDID/chroot-autobuild"
 
 PREFIX="$BUILDID"
+FOUND=0
 
 for ROOT in /proc/*/root; do
     LINK=$(readlink $ROOT)
@@ -30,6 +31,11 @@ for ROOT in /proc/*/root; do
 	    # this process is in the chroot...
 	    PID=$(basename $(dirname "$ROOT"))
 	    kill -9 "$PID"
+	    FOUND=1
 	fi
     fi
 done
+
+if [ "x$FOUND" = "x1" ]; then
+  exec $0 $1
+fi

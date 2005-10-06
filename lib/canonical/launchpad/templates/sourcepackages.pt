@@ -10,10 +10,6 @@
   <div tal:replace="structure context/distrorelease/@@+portlet-details" /> <br />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/distrorelease/@@+portlet-actions" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <h1>Source Package Search</h1>

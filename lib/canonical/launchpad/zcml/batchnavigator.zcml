@@ -1,0 +1,12 @@
+<configure
+  xmlns:browser="http://namespaces.zope.org/browser"
+  i18n_domain="launchpad">
+
+  <browser:page
+      for="canonical.lp.interfaces.IBatchNavigator"
+      name="+navigation-links"
+      template="../templates/batchnavigator-navigation-links.pt"
+      permission="zope.Public"
+      />
+
+</configure>

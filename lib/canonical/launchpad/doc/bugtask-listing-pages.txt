@@ -1,0 +1,45 @@
+BugTask Listing Views
+=====================
+
+The +bugs view for some IBugTargets is driven by a view that provides
+IBugTaskSearchListingView. At the time of this writing, those include
+the +bugs view for an IProduct, and IDistribution and an
+IDistroRelease.
+
+    >>> from zope.component import getUtility, queryView
+    >>> from zope.publisher.browser import TestRequest
+    >>> from canonical.launchpad.interfaces import (
+    ...     IProductSet, IDistributionSet, IDistroReleaseSet,
+    ...     IBugTaskSearchListingView)
+
+    >>> upstream_firefox = getUtility(IProductSet).get(1)
+    >>> ubuntu = getUtility(IDistributionSet).get(1)
+    >>> ubuntu_hoary = getUtility(IDistroReleaseSet).get(3)
+
+    >>> request = TestRequest()
+    >>> upstream_bugs_view = queryView(upstream_firefox, "+bugs", request)
+    >>> IBugTaskSearchListingView.providedBy(upstream_bugs_view)
+    True
+
+    >>> distro_bugs_view = queryView(ubuntu, "+bugs", request)
+    >>> IBugTaskSearchListingView.providedBy(distro_bugs_view)
+    True
+
+    >>> distrorelease_bugs_view = queryView(ubuntu_hoary, "+bugs", request)
+    >>> IBugTaskSearchListingView.providedBy(distrorelease_bugs_view)
+    True
+
+In distro and distrorelease listings, we want to show the
+sourcepackage name.
+
+   >>> distro_bugs_view.shouldShowPackageName()
+   True
+
+   >>> distrorelease_bugs_view.shouldShowPackageName()
+   True
+
+In upstream listings, of course, we do not (afterall, there *is* no package
+name. ;)
+
+   >>> upstream_bugs_view.shouldShowPackageName()
+   False
