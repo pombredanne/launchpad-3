@@ -22,8 +22,7 @@ __all__ = [
     ]
 
 def addTrustedKeyring(filename, ownertrust=validity.MARGINAL):
-    """Add a keyring of keys belonging to people trusted to make
-    good signatures.
+    """Add a keyring of keys owned by people trusted to make good signatues.
     """
     gpg = getUtility(IGPGHandler)
     keys = gpg.importKeyringFile(filename)
@@ -36,8 +35,9 @@ def addOtherKeyring(filename):
     gpg.importKeyringFile(filename)
 
 def getValidUids(minvalid=validity.MARGINAL):
-    """Returns an iterator yielding (fingerprint, email) pairs,
-    iterating for all valid user IDs in the keyring.
+    """Returns an iterator yielding (fingerprint, email) pairs.
+    
+    Only UIDs assigned a validity of at least 'minvalid' are returned.
     """
     gpg = getUtility(IGPGHandler)
     gpg.checkTrustDb()
@@ -48,9 +48,10 @@ def getValidUids(minvalid=validity.MARGINAL):
                 yield key.fingerprint, uid.email
 
 def findEmailClusters(minvalid=validity.MARGINAL):
-    """Returns an iterator yielding sets of related email
-    addresses.  Two email addresses are considered to be related
-    if they appear as valid user IDs on a PGP key in the keyring.
+    """Returns an iterator yielding sets of related email addresses.
+    
+    Two email addresses are considered to be related if they appear as
+    valid user IDs on a PGP key in the keyring.
     """
     emails = {}       # fingerprint -> set(emails)
     fingerprints = {} # email -> set(fingerprints)

@@ -16,31 +16,29 @@ from pyme.constants import validity
 test_fpr = 'A419AE861E88BC9E04B9C26FBA2B9389DFD20543'
 foobar_fpr = '340CA3BB270E2716C9EE0B768E7EB7086C64A8C5'
 
-class FakeLogger:
-    """Helper class to test logging"""
+
+class LogCollector(logging.Handler):
     def __init__(self):
-        self.messages = []
+        logging.Handler.__init__(self)
+        self.records = []
+    def emit(self, record):
+        self.records.append(self.format(record))
 
-    def log(self, level, msg, *args, **kwargs):
-        self.messages.append((level, msg % args))
 
-    def getMessages(self, level):
-        return [msg for (lvl, msg) in self.messages if lvl == level]
+def setupLogger(name='test_keyringtrustanalyser'):
+    """Set up the named logger to collect log messages.
 
-    def debug(self, msg, *args, **kwargs):
-        self.log(logging.DEBUG, msg, *args, **kwargs)
-
-    def info(self, msg, *args, **kwargs):
-        self.log(logging.INFO, msg, *args, **kwargs)
-
-    def warning(self, msg, *args, **kwargs):
-        self.log(logging.WARNING, msg, *args, **kwargs)
-
-    def error(self, msg, *args, **kwargs):
-        self.log(logging.ERROR, msg, *args, **kwargs)
-
-    def critical(self, msg, *args, **kwargs):
-        self.log(logging.CRITICAL, msg, *args, **kwargs)
+    Returns (logger, handler)
+    """
+    logger = logging.getLogger(name)
+    for handler in logger.handlers[:]:
+        logger.removeHandler(handler)
+        handler.flush()
+        handler.close()
+    handler = LogCollector()
+    handler.setFormatter(logging.Formatter("%(levelname)s:%(message)s"))
+    logger.addHandler(handler)
+    return logger, handler
 
 
 class TestKeyringTrustAnalyser(FunctionalTestCase):
@@ -225,16 +223,16 @@ class TestMergeClusters(FunctionalTestCase):
         self.assertEqual(person1.merged, None)
         self.assertEqual(person2.merged, None)
 
-        logger = FakeLogger()
+        logger, collector = setupLogger()
         mergeClusters([set(['test@canonical.com', 'foo.bar@canonical.com'])],
                       logger=logger)
 
         self.assertEqual(person1.merged, None)
         self.assertEqual(person2.merged, None)
 
-        warnings = logger.getMessages(logging.WARNING)
-        self.assertNotEqual(warnings, [])
-        self.assertTrue(warnings[0].startswith('Multiple validated '
+        messages = collector.records
+        self.assertNotEqual(messages, [])
+        self.assertTrue(messages[0].startswith('WARNING:Multiple validated '
                                                'user accounts'))
 
     def testMergeTwoUnvalidatedAccounts(self):
