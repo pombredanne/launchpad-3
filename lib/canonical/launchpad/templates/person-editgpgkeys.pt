@@ -50,7 +50,7 @@
 
       <h2>Keys Pending Validation</h2>
 
-      <div style="margin-bottom: 1em">
+      <div>
         <label tal:repeat="fingerprint context/pendinggpgkeys">
           <input type="checkbox" name="REMOVE_GPGTOKEN"
                  tal:attributes="value fingerprint"/>
