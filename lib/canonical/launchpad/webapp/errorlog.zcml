@@ -2,13 +2,6 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser">
 
-    <!-- enable the error reporting service at /errors -->
-    <browser:suburl
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        name="errors"
-        utility="zope.app.errorservice.interfaces.ILocalErrorReportingService"
-        />
-
     <content class="zope.app.errorservice.RootErrorReportingService">
         <require
             permission="zope.Public"

@@ -24,10 +24,10 @@ from zope.component import getUtility, getView
 from zope.exceptions import NotFoundError
 
 from canonical.launchpad.interfaces import (
-    IBugSet, IBugTaskSet, IBugTask, IDistributionSet, IProjectSet, IProductSet,
+    IBugSet, IBugTask, IDistributionSet, IProjectSet, IProductSet,
     IBugTrackerSet, ILaunchBag, ITeamMembershipSubset, ICalendarOwner,
     ILanguageSet, IBugAttachmentSet, IPublishedPackageSet, IPollSet,
-    IPollOptionSet, BugTaskSearchParams, IDistroReleaseLanguageSet,
+    IPollOptionSet, IDistroReleaseLanguageSet,
     IBugExternalRefSet, ICveSet, IBugWatchSet, IProduct, INullBugTask,
     IDistroSourcePackageSet, ISourcePackageNameSet, IPOTemplateSet,
     IDistribution, IDistroRelease, ISourcePackage, IDistroSourcePackage,
@@ -37,6 +37,7 @@ from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp import (
     Navigation, stepthrough, redirection, stepto)
 from canonical.launchpad.helpers import shortlist
+import canonical.launchpad.layers
 
 
 class CalendarTraversalMixin:
@@ -200,6 +201,8 @@ def _get_task_for_context(bugid, context):
 class MaloneApplicationNavigation(Navigation):
 
     usedfor = IMaloneApplication
+
+    newlayer = canonical.launchpad.layers.MaloneLayer
 
     @stepto('bugs')
     def bugs(self):

@@ -12,11 +12,6 @@
             interface="canonical.launchpad.interfaces.IRegistryApplication" />
     </securedutility>
 
-    <!-- This view registers 'registry' as a suburl of ILaunchpadRoot. -->
-    <browser:suburl
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        utility="canonical.launchpad.interfaces.IRegistryApplication"
-        name="registry" />
     <browser:url
         for="canonical.launchpad.interfaces.IRegistryApplication"
         path_expression="string:registry"

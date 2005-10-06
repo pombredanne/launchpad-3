@@ -3,7 +3,8 @@
 
 __metaclass__ = type
 __all__ = ['LoginStatus', 'MaintenanceMessage', 'MenuBox',
-           'RosettaContextMenu', 'MaloneContextMenu']
+           'RosettaContextMenu', 'MaloneContextMenu',
+           'LaunchpadRootNavigation', 'FOAFApplicationNavigation']
 
 import cgi
 import urllib
@@ -11,11 +12,20 @@ import os.path
 from datetime import timedelta, datetime
 
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
+from zope.app.errorservice.interfaces import ILocalErrorReportingService
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ILaunchpadRoot, IRosettaApplication, IMaloneApplication)
+    ILaunchBag, ILaunchpadRoot, IRosettaApplication, IMaloneApplication,
+    IProductSet, IShipItApplication, IPersonSet, IDistributionSet,
+    ISourcePackageNameSet, IBinaryPackageNameSet, IProjectSet,
+    ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
+    IBazaarApplication, ICodeOfConductSet, IMaloneApplication,
+    IRegistryApplication, IRosettaApplication, ISpecificationSet, ISprintSet,
+    ITicketSet, IFOAFApplication, IBuilderSet, IBountySet)
+from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView)
+    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
+    Navigation, stepto, stepthrough)
 
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
@@ -100,6 +110,7 @@ class MaintenanceMessage:
 
 
 class LaunchpadRootFacets(StandardLaunchpadFacets):
+
     usedfor = ILaunchpadRoot
 
     def overview(self):
@@ -251,3 +262,60 @@ class LoginStatus:
         if full_url.endswith(logout_url_end):
             full_url = full_url[:-len(logout_url_end)]
         return '%s/+login%s' % (full_url, query_string)
+
+
+class LaunchpadRootNavigation(Navigation):
+
+    usedfor = ILaunchpadRoot
+
+    stepto_utilities = {
+        'products': IProductSet,
+        'shipit': IShipItApplication,
+        'people': IPersonSet,
+        'distros': IDistributionSet,
+        'sourcepackagenames': ISourcePackageNameSet,
+        'binarypackagenames': IBinaryPackageNameSet,
+        'projects': IProjectSet,
+        'token': ILoginTokenSet,
+        'karmaaction': IKarmaActionSet,
+        'potemplatenames': IPOTemplateNameSet,
+        'bazaar': IBazaarApplication,
+        'codeofconduct': ICodeOfConductSet,
+        'malone': IMaloneApplication,
+        'bugs': IMaloneApplication,
+        'registry': IRegistryApplication,
+        'rosetta': IRosettaApplication,
+        'specs': ISpecificationSet,
+        'sprints': ISprintSet,
+        'support': ITicketSet,
+        'foaf': IFOAFApplication,
+        '+builds': IBuilderSet,
+        'bounties': IBountySet,
+        'errors': ILocalErrorReportingService
+        }
+
+    def traverse(self, name):
+        if name in self.stepto_utilities:
+            return getUtility(self.stepto_utilities[name])
+        else:
+            return None
+
+    @stepto('calendar')
+    def calendar(self):
+        # XXX permission=launchpad.AnyPerson
+        return MergedCalendar()
+
+
+class FOAFApplicationNavigation(Navigation):
+
+    usedfor = IFOAFApplication
+
+    @stepto('projects')
+    def projects(self):
+        # DEPRECATED
+        return getUtility(IProjectSet)
+
+    @stepto('people')
+    def people(self):
+        # DEPRECATED
+        return getUtility(IPersonSet)

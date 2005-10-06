@@ -10,13 +10,6 @@
             interface="canonical.launchpad.interfaces.IRosettaApplication" />
     </securedutility>
 
-    <browser:suburl
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        utility="canonical.launchpad.interfaces.IRosettaApplication"
-        name="rosetta"
-        newlayer="canonical.launchpad.layers.RosettaLayer"
-        />
-
     <browser:url
         for="canonical.launchpad.interfaces.IRosettaApplication"
         path_expression="string:rosetta"
@@ -26,20 +19,6 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IRosettaApplication"
         name="+index"
-        />
-
-    <!-- This suburl of projectset under rosettaapp is deprecated. -->
-    <browser:suburl
-        for="canonical.launchpad.interfaces.IRosettaApplication"
-        utility="canonical.launchpad.interfaces.IProjectSet"
-        name="projects"
-        />
-
-    <!-- This suburl of productset under rosettaapp is deprecated. -->
-    <browser:suburl
-        for="canonical.launchpad.interfaces.IRosettaApplication"
-        utility="canonical.launchpad.interfaces.IProductSet"
-        name="products"
         />
 
     <browser:pages

@@ -103,11 +103,6 @@
         <allow interface="canonical.launchpad.interfaces.IBountySet" />
     </securedutility>
 
-    <browser:suburl
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        utility="canonical.launchpad.interfaces.IBountySet"
-        name="bounties" />
-
     <browser:url
         for="canonical.launchpad.interfaces.IBountySet"
         path_expression="string:bounties"
