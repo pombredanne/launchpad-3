@@ -2,8 +2,6 @@
 
 __metaclass__ = type
 
-import os
-
 from zope.app.component.metaconfigure import handler, utility
 from zope.app.mail.interfaces import IMailer
 from zope.app.mail.metadirectives import IMailerDirective
@@ -62,11 +60,9 @@ class IStubMailerDirective(IMailerDirective):
             )
     to_addr = ASCII(
             title=u"To Address",
-            description= u"""\
-                All outgoing emails will be redirected to this email
-                address. If not specified, will use the current
-                user@localhost""",
-            required=False,
+            description=
+                u"All outgoing emails will be redirected to this email address",
+            required=True,
             )
     mailer = ASCII(
             title=u"Mailer to use",
@@ -88,10 +84,8 @@ class IStubMailerDirective(IMailerDirective):
 
 
 def stubMailerHandler(
-        _context, name, from_addr, to_addr=None, mailer='sendmail', rewrite=False
+        _context, name, from_addr, to_addr, mailer='sendmail', rewrite=False
         ):
-    if to_addr is None:
-        to_addr = "%s@localhost" % os.environ.get("USER", "root")
     _context.action(
            discriminator = ('utility', IMailer, name),
            callable = handler,
