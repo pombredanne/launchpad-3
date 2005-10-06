@@ -382,18 +382,13 @@ def traverse_bugtask(bugtask, request, name):
 
 def traverse_bugs(bugcontainer, request, name):
     """Traverse an IBugSet."""
-    if name == 'assigned':
-        # XXX: this is obviously broken, because it's not even imported.
-        #   -- kiko, 2005-09-23
-        return BugTasksReport()
-    else:
-        # If the bug is not found, we expect a NotFoundError. If the
-        # value of name is not a value that can be used to retrieve a
-        # specific bug, we expect a ValueError.
-        try:
-            return getUtility(IBugSet).get(name)
-        except (NotFoundError, ValueError):
-            return None
+    # If the bug is not found, we expect a NotFoundError. If the
+    # value of name is not a value that can be used to retrieve a
+    # specific bug, we expect a ValueError.
+    try:
+        return getUtility(IBugSet).get(name)
+    except (NotFoundError, ValueError):
+        return None
 
 
 def traverse_poll(poll, request, name):
