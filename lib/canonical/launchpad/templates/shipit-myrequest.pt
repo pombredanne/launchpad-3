@@ -171,16 +171,16 @@
                 should choose a standard one.
               </div>
               <select name="standardrequest" class="listing">
-                <tal:block tal:condition="view/selectedOrder|nothing">
+                <tal:block tal:condition="view/selectedOrderType|nothing">
                   <option tal:repeat="request view/standardShipItRequests"
                           tal:attributes="
                             value request/id;
-                            selected python: view.selectedOrder == request.id"
+                            selected python: view.selectedOrderType == request.id"
                           tal:content="request/description">
                     Request description
                   </option>
                 </tal:block>
-                <tal:block tal:condition="not: view/selectedOrder|nothing">
+                <tal:block tal:condition="not: view/selectedOrderType|nothing">
                   <option tal:repeat="request view/standardShipItRequests"
                           tal:attributes="value request/id; selected request/isdefault"
                           tal:content="request/description">
