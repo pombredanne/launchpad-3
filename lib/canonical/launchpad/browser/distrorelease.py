@@ -74,7 +74,7 @@ class DistroReleaseBugsMenu(ApplicationMenu):
         return Link('+filebug', 'Report a Bug', icon='add')
 
     def cve(self):
-        return Link('+cve', 'CVE List', icon='info')
+        return Link('+cve', 'CVE List', icon='cve')
 
 
 class DistroReleaseSpecificationsMenu(ApplicationMenu):
@@ -165,7 +165,6 @@ class DistroReleaseView:
         """
         distro_url = canonical_url(self.context.distribution)
         return self.request.response.redirect(distro_url + "/+filebug")
-
 
     def getBuilt(self):
         """Return the last build records within the DistroRelease context.

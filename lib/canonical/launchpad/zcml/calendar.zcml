@@ -117,13 +117,6 @@
       template="../templates/calendar-subscribe.pt"
       lp:url="$obj/calendar/+subscribe" />
 
-  <browser:page
-      for="canonical.launchpad.interfaces.ILaunchpadCalendar"
-      name="+portlet-actions"
-      permission="zope.Public"
-      template="../templates/calendar-portlet-actions.pt"
-      lp:url="/$Calendar/+portlet-actions" />
-
   <browser:traverse
       for="canonical.launchpad.interfaces.ICalendarEventSet"
       getter="__getitem__" />
@@ -314,7 +307,7 @@
       parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot" />
 
   <browser:pages
-      for="canonical.launchpad.interfaces.ILaunchpadMergedCalendar"
+      for="canonical.launchpad.interfaces.ILaunchpadCalendar"
       permission="launchpad.AnyPerson"
       class="canonical.launchpad.browser.CalendarSubscriptionsView">
     <browser:page

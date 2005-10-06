@@ -12,14 +12,13 @@ import canonical.launchpad.layers
 
 
 class SystemErrorView:
-    """Helper class for views on exceptions for the Debug layer.
+    """Helper class for views on exceptions.
 
     Also, sets a 500 response code.
     """
 
     # Override this in subclasses.  A value of None means "don't set this"
     response_code = 500
-
 
     show_tracebacks = False
     pagetesting = False

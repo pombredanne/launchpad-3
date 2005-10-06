@@ -61,8 +61,7 @@ class IBugTask(IHasDateCreated):
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     priority = Choice(
-        title=_('Priority'), vocabulary='BugTaskPriority',
-        default=dbschema.BugTaskPriority.MEDIUM)
+        title=_('Priority'), vocabulary='BugTaskPriority', required=False)
     severity = Choice(
         title=_('Severity'), vocabulary='BugTaskSeverity',
         default=dbschema.BugTaskSeverity.NORMAL)
@@ -220,6 +219,12 @@ class IBugTaskSearchListingView(IView):
 
     def search():
         """Return an IBatchNavigator for the POSTed search criteria."""
+
+    def shouldShowPackageName():
+        """Should the source package name be displayed in the list results?
+
+        This is mainly useful for the listview.
+        """
 
 
 class IBugTaskDelta(Interface):

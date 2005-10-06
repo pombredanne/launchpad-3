@@ -110,9 +110,7 @@ class BugTask(SQLBase, BugTaskMixin):
         default=BugTaskStatus.NEW)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
     priority = EnumCol(
-        dbName='priority', notNull=True,
-        schema=BugTaskPriority,
-        default=BugTaskPriority.MEDIUM)
+        dbName='priority', notNull=False, schema=BugTaskPriority, default=None)
     severity = EnumCol(
         dbName='severity', notNull=True,
         schema=BugTaskSeverity,
@@ -137,15 +135,6 @@ class BugTask(SQLBase, BugTaskMixin):
         now = datetime.datetime.now(UTC)
 
         return now - self.datecreated
-
-    @property
-    def title(self):
-        """Generate the title for this bugtask based on the id of the bug
-        and the bugtask's targetname.  See IBugTask.
-        """
-        title = 'Bug #%s in %s: "%s"' % (
-            self.bug.id, self.targetname, self.bug.title)
-        return title
 
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""

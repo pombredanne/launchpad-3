@@ -219,6 +219,17 @@
         </form>
       </div>
 
+      <div tal:condition="view/isDeclined"> 
+        
+        <h1>Declined Member</h1>
+
+        <a tal:attributes="href string:/people/${context/person/name}"
+          tal:content="string: ${context/person/browsername}
+                               (${context/person/name})"></a>
+          asked to join this team, but the request was declined.
+
+      </div>
+
       <div tal:condition="view/isProposed"> 
 
         <h1>Proposed Member</h1>

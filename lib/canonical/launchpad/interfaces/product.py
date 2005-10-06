@@ -163,9 +163,6 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
     sourcepackages = Attribute(_("List of distribution packages for this \
         product"))
 
-    bugtasks = Attribute(
-        """A list of BugTasks for this Product.""")
-
     serieslist = Attribute(_("""An iterator over the ProductSeries for this
         product"""))
 

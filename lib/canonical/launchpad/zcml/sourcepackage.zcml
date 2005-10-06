@@ -107,15 +107,6 @@
             lp:url="/distros/ubuntu/hoary/+sources/evolution/+portlet-details"
             />
         <browser:page
-            name="+portlet-actions"
-            facet="overview"
-            template="../templates/sourcepackage-portlet-actions.pt" />
-        <browser:page
-            name="+portlet-bugtasklist-actions"
-            facet="bugs"
-            template="../templates/sourcepackage-portlet-bugtasklist-actions.pt"
-            />
-        <browser:page
             name="+portlet-translations"
             facet="translations"
             template="../templates/sourcepackage-portlet-translations.pt"
@@ -208,14 +199,6 @@
             facet="overview"
             template="../templates/sourcepackage-portlet-details.pt"
             lp:url="/distros/ubuntu/+sources/evolution/+portlet-details" />
-        <browser:page
-            name="+portlet-actions"
-            facet="overview"
-            template="../templates/sourcepackage-portlet-actions.pt" />
-        <browser:page
-            name="+portlet-bugtasklist-actions"
-            facet="bugs"
-            template="../templates/sourcepackage-portlet-bugtasklist-actions.pt" />
     </browser:pages>
 
     <browser:page

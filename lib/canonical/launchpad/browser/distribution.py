@@ -89,7 +89,7 @@ class DistributionBugsMenu(ApplicationMenu):
 
     def cve_list(self):
         text = 'CVE List'
-        return Link('+cve', text, icon='info')
+        return Link('+cve', text, icon='cve')
 
     def new(self):
         text = 'Report a Bug'

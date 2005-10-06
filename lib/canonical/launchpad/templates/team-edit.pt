@@ -10,10 +10,6 @@
       <div tal:replace="structure context/@@+portlet-details" />
   </metal:leftportlets>
 
-  <metal:rightportlets fill-slot="portlets_two">
-      <div tal:replace="structure context/@@+portlet-actions" />
-  </metal:rightportlets>
-
   <h1>
     Edit &#8220;<span tal:replace="context/browsername">
     Foo</span>&#8221; team

@@ -2,8 +2,10 @@
 #Authors: Daniel Silverstone <daniel.silverstone@canonical.com>
 #         Celso Providelo <celso.providelo@canonical.com>
 
-""" Common code for Buildd scripts and daemons such as queuebuilder.py
-and slave-scanner-daemon.py.
+"""Common code for Buildd scripts
+
+Module used by buildd-queue-builder.py and buildd-slave-scanner.py
+cronscripts. 
 """
 
 __metaclass__ = type
@@ -22,11 +24,10 @@ import socket
 from cStringIO import StringIO
 import datetime
 import pytz
-import urllib2
-import urlparse
 import tempfile
 import os
 
+from sqlobject import SQLObjectNotFound
 from sqlobject.sqlbuilder import AND, IN
 
 from canonical.launchpad.database import (
@@ -111,10 +112,10 @@ class BuilderGroup:
                     raise BuildDaemonError("Failed to echo OK")
 
                 # ask builder information
-                vers, methods, arch, mechanisms = builder.slave.info()
+                vers, arch, mechanisms = builder.slave.info()
 
                 # attempt to wrong builder version 
-                if vers != 1 and vers != 2:
+                if vers != '1.0':
                     raise ProtocolVersionMismatch("Protocol version mismatch")
 
                 # attempt to wrong builder architecture
@@ -129,68 +130,115 @@ class BuilderGroup:
                 builder.failnotes = reason
                 self.logger.debug("Builder on %s marked as failed due to: %s",
                                   builder.url, reason, exc_info=True)
-
-
+            # verify if the builder slave is working with sane information
+            self.rescueBuilderIfLost(builder)
+            
         self.updateOkSlaves()
 
+    def rescueBuilderIfLost(self, builder):
+        """Reset Builder slave if job information mismatch.
+        
+        If builder is BUILDING or WAITING an unknown job clean it.
+        Assuming the XMLRPC is working properly at this point.
+        """
+        # request slave status sentence 
+        sentence = builder.slave.status()
+            
+        # ident_position dict relates the position of the job identifier
+        # token in the sentence received from status(), according the
+        # two status we care about. See see lib/canonical/buildd/slave.py
+        # for further information about sentence format.
+        ident_position = {
+            'BuilderStatus.BUILDING': 1,
+            'BuilderStatus.WAITING': 2
+            }
 
+        # isolate the BuilderStatus string, always the first token in
+        # status returned sentence, see lib/canonical/buildd/slave.py
+        status = sentence[0]
+
+        # if slave is not building nor waiting, it's not in need of rescuing. 
+        if status not in ident_position.keys():
+            return
+
+        # extract information from the identifier
+        build_id, queue_item_id = sentence[ident_position[status]].split('-')
+
+        # check if build_id and queue_item_id exist
+        try:
+            build = Build.get(int(build_id))
+            queue_item = BuildQueue.get(int(queue_item_id))
+            # also check it build and buildqueue are properly related
+            if queue_item.build.id != build.id:
+                raise ValueError('Job build entry mismatch')
+
+        except (SQLObjectNotFound, ValueError), reason:
+            builder.slave.clean()
+            self.logger.warn("Builder '%s' rescued from '%s-%s: %s'" % (
+                builder.name, build_id, queue_item_id, reason))
+    
     def updateOkSlaves(self):
-        self.okslaves = [b for b in self.builders if b.builderok]
-        if len(self.okslaves) == 0:
-            self.logger.debug("They're all dead. Everybody's dead, Dave.")
+        """Build the 'okslaves' list
+
+        'okslaves' will contains the list of builder instances signed with
+        builder.builderok == true. Emits a log.warn message if no builder
+        were found.
+        """
+        self.okslaves = [builder for builder in self.builders
+                         if builder.builderok]
+        if not self.okslaves:
             self.logger.warn("No builders are available")
 
     def failBuilder(self, builder, reason):
+        """Mark builder as failed.
+
+        Set builderok as False, store the reason in failnotes and update
+        the list of working builders (self.okslaves).
+        """
         builder.builderok = False
         builder.failnotes = reason
         self.updateOkSlaves()
 
     def giveToBuilder(self, builder, libraryfilealias, librarian):
+        """Request Slave to download a given file from Librarian.
+        
+        Check id builder is working properly, build the librarian URL
+        for the given file and use the slave XMLRPC 'doyouhave' method
+        to request the download of the file directly by the slave.
+        if the slave returns False, which means it wasn't able to
+        download or recover from filecache, it tries to download
+        the file locally and push it through the XMLRPC interface.
+        This last algorithm is bogus and fails most of the time, that's
+        why we consider it deprecated and it'll be kept only til the next
+        protocol redesign.
+        """
         if not builder.builderok:
             raise BuildDaemonError("Attempted to give a file to a known-bad"
                                    " builder")
 
         url = librarian.getURLForAlias(libraryfilealias.id, is_buildd=True)
         
-        self.logger.debug("Asking builder on %s if it has file %s (%s, %s)"
-                          % (builder.url, libraryfilealias.filename,
-                             url, libraryfilealias.content.sha1))
+        self.logger.debug("Asking builder on %s to ensure it has file %s "
+                          "(%s, %s)" % (builder.url, libraryfilealias.filename,
+                                        url, libraryfilealias.content.sha1))
         
-        if not builder.slave.doyouhave(libraryfilealias.content.sha1, url):
-            warnings.warn('oops: Deprecated method, Verify if Slave can '
-                          'properly access librarian',
-                          DeprecationWarning)
+        if not builder.slave.ensurepresent(libraryfilealias.content.sha1, url):
+            raise BuildDaemonError("Build slave was unable to fetch from %s" %
+                                   url)
 
-            self.logger.debug("Attempting to fetch %s to give to builder on %s"
-                              % (libraryfilealias.content.sha1, builder.url))
-            # 1. Get the file download object going
-            # XXX cprov 20050628
-            # It fails because the URL gets unescaped?
-            download = librarian.getFileByAlias(libraryfilealias.id)
-            file_content = xmlrpclib.Binary(download.read())
-            download.close()
-            # 2. Give the file to the remote end.
-            self.logger.debug("Passing it on...")
-            storedsum = builder.slave.storefile(file_content)
-            if storedsum != libraryfilealias.content.sha1:
-                raise BuildDaemonError, ("Storing to buildd slave failed, "
-                                         "%s != %s"
-                                         % (storedsum,
-                                            libraryfilealias.content.sha1))
-        else:
-            self.logger.debug("It does")
-
-    def findChrootFor(self, buildCandidate, pocket):
-        """Return the CHROOT digest for an pair (buildCandidate, pocket).
-        With the digest in hand we can point the slave to grab it himself.
-        Return None if it wasn't found.
+    def findChrootFor(self, build_candidate, pocket):
+        """Return the CHROOT librarian identifier for (buildCandidate, pocket).
+        
+        Calculate the right CHROOT file for the given pair buildCandidate and
+        pocket and return the Librarian file identifier for it, return None
+        if it wasn't found or wasn't able to calculate.
         """
-        archrelease = buildCandidate.build.distroarchrelease
+        archrelease = build_candidate.build.distroarchrelease
         chroot = archrelease.getChroot(pocket)
         if chroot:
             return chroot.content.sha1        
 
-    def startBuild(self, builder, queueItem, filemap, buildtype, pocket):
+    def startBuild(self, builder, queueItem, filemap, buildtype, pocket, args):
         buildid = "%s-%s" % (queueItem.build.id, queueItem.id)
         self.logger.debug("Initiating build %s on %s"
                           % (buildid, builder.url))
@@ -198,78 +246,48 @@ class BuilderGroup:
         queueItem.buildstart = UTC_NOW
         chroot = self.findChrootFor(queueItem, pocket)
         if not chroot:
-            self.logger.debug("OOPS! Could not find CHROOT")
+            self.logger.critical("OOPS! Could not find CHROOT")
             return
         
-        builder.slave.startbuild(buildid, filemap, chroot, buildtype)
+        builder.slave.build(buildid, buildtype, chroot, filemap, args)
 
     def getLogFromSlave(self, slave, buildid, librarian):
-        log = slave.fetchlogtail()
-        slog = str(log)
-        sio = StringIO(slog)
-        aliasid = librarian.addFile("log-for-%s" % buildid,
-                                    len(slog), sio,
-                                    contentType="text/plain");
-        # XXX: dsilvers: 20050302: Remove these when the library works
-        self.commit()
-        return aliasid
+        return self.getFileFromSlave(slave, "log-for-%s.txt" % buildid,
+                                     'buildlog', librarian)
 
-    def getFileFromSlave(self, slave, filename, sha1sum, librarian, url):
+    def getFileFromSlave(self, slave, filename, sha1sum, librarian):
         """Request a file from Slave by passing a digest and store it in
         Librarian with correspondent filename.
         """
-        # XXX cprov 20050701
-        # What if the file wasn't available on Slave ?
-        # The chance of it happens are too low, since Master just requests
-        # files (digests) sent by Slave. but we should be aware of this
-        # possibilty.
-
-        # The [0] here is the version info out of the slave, see the
-        # xmlrpc_info method in canonical/buildd/slave.py
-        slaveversion = slave.info()[0]
         aliasid = None
         # figure out the MIME content-type
         ftype = filenameToContentType(filename)
-        if slaveversion == 1:
-            # receive an xmlrpc.Binary object containg the correspondent file
-            # for a given digest
-            filedata = slave.fetchfile(sha1sum)
+        # Protocol version 1.0new or higher provides /filecache/
+        # which allows us to be clever in large file transfer
+        out_file_fd, out_file_name = tempfile.mkstemp()
+        out_file = os.fdopen(out_file_fd, "r+")
+        try:
+            slave_file = slave.getFile(sha1sum)
 
-            # transform the data into a file object, because the librarian
-            # requires it. In the process, we have to cast the xmlrpc.Binary
-            # object to a string which can end up costing a lot of ram.
-            fileobj = StringIO(str(filedata))
-        
-            aliasid = librarian.addFile(filename, len(str(filedata)), fileobj,
-                                        contentType=ftype)
-        else:
-            # Protocol version 2 or higher provides /filecache/
-            # which allows us to be slightly more clever in large file transfer
-            out_file_fd, out_file_name = tempfile.mkstemp()
-            out_file = os.fdopen(out_file_fd, "r+")
-            try:
-                slave_file_url = urlparse.urljoin(url, "/filecache/" + sha1sum)
-                slave_file = urllib2.urlopen(slave_file_url)
-
-                # Read back and save the file 256kb at a time, by using the
-                # two-arg form of iter, see
-                # /usr/share/doc/python2.4/html/lib/built-in-funcs.html#l2h-42
-                bytes_written = 0
-                for chunk in iter(lambda: slave_file.read(1024*256), ''):
-                    out_file.write(chunk)
-                    bytes_written += len(chunk)
+            # Read back and save the file 256kb at a time, by using the
+            # two-arg form of iter, see
+            # /usr/share/doc/python2.4/html/lib/built-in-funcs.html#l2h-42
+            bytes_written = 0
+            for chunk in iter(lambda: slave_file.read(1024*256), ''):
+                out_file.write(chunk)
+                bytes_written += len(chunk)
                 
-                slave_file.close()
-                out_file.seek(0)
+            slave_file.close()
+            out_file.seek(0)
 
-                # upload it to the librarian...
-                aliasid = librarian.addFile(filename, bytes_written,
-                                            out_file,
-                                            contentType=ftype)
-            finally:
-                # Finally, remove the temporary file
-                out_file.close()
-                os.remove(out_file_name)
+            # upload it to the librarian...
+            aliasid = librarian.addFile(filename, bytes_written,
+                                        out_file,
+                                        contentType=ftype)
+        finally:
+            # Finally, remove the temporary file
+            out_file.close()
+            os.remove(out_file_name)
             
         return aliasid
 
@@ -377,8 +395,9 @@ class BuilderGroup:
         
         try:
             method(queueItem, slave, librarian, *res[1:])
-        except TypeError:
+        except TypeError, e:
             self.logger.critical("Received wrong number of args in response.")
+            self.logger.exception(e)
 
         self.commit()
 
@@ -398,19 +417,14 @@ class BuilderGroup:
                              logtail):
         """Build still building, Simple collects the logtail"""
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
-        # XXX cprov 20050902:
-        # guess() can fail if it receives an incomplete multibyte sequence,
-        # which could be possible since we are spliting the string in the
-        # slave side. Is it possible to ensure we are spliting it properly,
-        # whatever is the original charset ?
-        queueItem.logtail = encoding.guess(logtail)
+        queueItem.logtail = encoding.guess(str(logtail))
 
     def updateBuild_ABORTING(self, queueItem, slave, librarian, buildid):
         """Build was ABORTED.
         
         Master-side should wait until the slave finish the process correctly.
         """
-        queueItem.logtail = "Waiting slave process to be terminated"
+        queueItem.logtail = "Waiting for slave process to be terminated"
 
     def updateBuild_ABORTED(self, queueItem, slave, librarian, buildid):
         """ABORTING process has succesfully terminated.
@@ -472,7 +486,7 @@ class BuilderGroup:
         queueItem.build.buildstate = dbschema.BuildStatus.FULLYBUILT
         for result in filemap:
             aliasid = self.getFileFromSlave(slave, result, filemap[result],
-                                            librarian, queueItem.builder.url)
+                                            librarian)
             if result.endswith(".deb"):
                 # Process a binary package
                 self.processBinaryPackage(queueItem.build, aliasid, result)
@@ -637,23 +651,44 @@ class BuilddMaster:
     
     def setupBuilders(self, archrelease):
         """Setting up a group of builder slaves for a given DistroArchRelease.
+
+        Use the annotation utility to store a BuilderGroup instance
+        keyed by the the DistroArchRelease.processorfamily in the
+        global registry 'notes' and refer to this 'note' in the private
+        attribute '_archrelease' keyed by the given DistroArchRelease
+        and the label 'builders'. This complicated arrangement enables us
+        to share builder slaves between different DistroArchRelases since
+        their processorfamily values are the same (compatible processors).
         """
         # Determine the builders for this distroarchrelease...
         builders = self._archreleases[archrelease].get("builders")
 
+        # if annotation for builders was already done, return 
         if builders is None:
+
+            # query the global annotation registry and verify if
+            # we have already done the builder checks for the
+            # processor family in question. if it's already done
+            # simply refer to that information in the _archreleases
+            # attribute.
             if 'builders' not in notes[archrelease.processorfamily]:
-                info = "builders.%s" % archrelease.processorfamily.name
+
                 # setup a BuilderGroup object
+                info = "builders.%s" % archrelease.processorfamily.name
                 builderGroup = BuilderGroup(self.getLogger(info), self._tm)
 
                 # check the available slaves for this archrelease
                 archFamilyId = archrelease.processorfamily.id
                 archTag = archrelease.architecturetag
                 builderGroup.checkAvailableSlaves(archFamilyId, archTag)
-
-                notes[archrelease.processorfamily]["builders"] = builderGroup
                 
+                # annotate the group of builders for the
+                # DistroArchRelease.processorfamily in question and the
+                # label 'builders'
+                notes[archrelease.processorfamily]["builders"] = builderGroup
+
+            # consolidate the annotation for the architecture release
+            # in the private attribute _archreleases
             builders = notes[archrelease.processorfamily]["builders"]
             self._archreleases[archrelease]["builders"] = builders
 
@@ -801,8 +836,8 @@ class BuilddMaster:
                 self._logger.debug("Creating buildqueue record for %s (%s) "
                                    " on %s" % (name, version, tag))
                 BuildQueue(build=build.id)
-        self.commit()
 
+        self.commit()
 
     def scanActiveBuilders(self):
         """Collect informations/results of current build jobs."""
@@ -823,14 +858,16 @@ class BuilddMaster:
         self.commit()
 
     def getLogger(self, subname=None):
+        """Return the logger instance with specific prefix"""
         if subname is None:
             return self._logger
-        l = logging.getLogger("%s.%s" % (self._logger.name, subname))
-        return l
+        
+        return logging.getLogger("%s.%s" % (self._logger.name, subname))
 
     def calculateCandidates(self):
-        """Return the candidates for building as a list of buildqueue items
-        which need ordering.
+        """Return the candidates for building
+        
+        The result is a unsorted list of buildqueue items.
         """
         # 1. determine all buildqueue items which needsbuild
         tries = ["build.distroarchrelease=%d" % d.id for d in
@@ -979,7 +1016,15 @@ class BuilddMaster:
                 fname = f.libraryfile.filename
                 filemap[fname] = f.libraryfile.content.sha1
                 builders.giveToBuilder(builder, f.libraryfile, self.librarian)
-                
+
+            build = queueItem.build
+            args = {
+                "ogrecomponent": build.sourcepackagerelease.component.name,
+                # XXX: dsilvers: 20051003: This is not ideal.
+                # For now, always request archindep. This needs altering so
+                # that we only request archindep when we need it.
+                "arch_indep": True
+                }
             builders.startBuild(builder, queueItem, filemap,
-                                "debian", pocket)
+                                "debian", pocket, args)
         self.commit()

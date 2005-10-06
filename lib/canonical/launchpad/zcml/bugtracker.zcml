@@ -40,10 +40,6 @@
             template="../templates/bugtracker-portlet-details.pt"
             lp:url="/malone/bugtrackers/$BugTracker.name/+portlet-details" />
         <browser:page
-            name="+portlet-actions"
-            template="../templates/bugtracker-portlet-actions.pt"
-            lp:url="/malone/bugtrackers/$BugTracker.name/+portlet-actions" />
-        <browser:page
             name="+portlet-projects"
             template="../templates/bugtracker-portlet-projects.pt"
             lp:url="/malone/bugtrackers/$BugTracker.name/+portlet-projects" />
@@ -111,10 +107,6 @@
             name="+portlet-info"
             template="../templates/bugtrackers-portlet-info.pt"
             lp:url="malone/bugtrackers/+portlet-info" />
-        <browser:page
-            name="+portlet-actions"
-            template="../templates/bugtrackers-portlet-actions.pt"
-            lp:url="/malone/bugtrackers/+portlet-actions" />
         <browser:page
             name="+portlet-details"
             template="../templates/bugtrackers-portlet-details.pt"
