@@ -140,7 +140,7 @@
         facet="overview"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="products/+new">
+        lp:url="projects/+new">
         <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="name"
