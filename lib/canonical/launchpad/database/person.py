@@ -1250,15 +1250,16 @@ class PersonSet:
             ''' % vars())
         
         # Append a -merged suffix to the account's name.
-        name = "%s-merged" % from_person.name
-        cur.execute("SELECT id FROM Person WHERE name = '%s'" % name)
+        name = base = "%s-merged" % from_person.name.encode('ascii')
+        cur.execute("SELECT id FROM Person WHERE name = %s" % sqlvalues(name))
         i = 1
         while cur.fetchone():
-            name = "%s%d" % (name, i)
-            cur.execute("SELECT id FROM Person WHERE name = '%s'" % name)
+            name = "%s%d" % (base, i)
+            cur.execute("SELECT id FROM Person WHERE name = %s"
+                        % sqlvalues(name))
             i += 1
-        cur.execute("UPDATE Person SET name = '%s' WHERE id = %d"
-                    % (name, from_person.id))
+        cur.execute("UPDATE Person SET name = %s WHERE id = %s"
+                    % sqlvalues(name, from_person.id))
 
         # Since we've updated the database behind SQLObject's back,
         # flush its caches.
