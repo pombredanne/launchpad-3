@@ -736,6 +736,18 @@ class BugTaskSearchListingView:
 
         return sortlink
 
+    def shouldShowPackageName(self):
+        """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
+        target = self.context
+
+        # It only makes sense to show the sourcepackage name when viewing
+        # distribution or distrorelease bugs.
+        if (IDistribution.providedBy(target) or
+            IDistroRelease.providedBy(target)):
+            return True
+        else:
+            return False
+
     def getSortClass(self, colname):
         """Return a class appropriate for sorted columns"""
         sorted, ascending = self._getSortStatus(colname)
@@ -766,8 +778,6 @@ class BugTaskSearchListingView:
             sorted = False
 
         return (sorted, ascending)
-
-
 
     def _countTasks(self, **kwargs):
         search_params = BugTaskSearchParams(**kwargs)

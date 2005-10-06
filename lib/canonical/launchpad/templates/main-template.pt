@@ -89,7 +89,6 @@
         </tal:facet>
       </tal:facetmenu>
       </tal:condition>
-      &nbsp;
     </ul>
 
     <!-- Menus -->

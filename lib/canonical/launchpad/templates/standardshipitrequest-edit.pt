@@ -5,7 +5,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div class="shipitPortlet"
-       tal:content="structure context/@@+portlet-actions" />
+       tal:content="structure context/@@+portlet-navigation" />
 </metal:rightportlets>
 
 <body>

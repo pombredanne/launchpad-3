@@ -661,6 +661,8 @@ def productseries(context, view):
 
 shipit_index = 'ShipIt'
 
+shipit_exports = 'ShipIt Exports'
+
 shipit_myrequest = "Your ShipIt Order"
 
 shipitrequests_index = 'ShipIt Requests'

@@ -47,7 +47,7 @@
   <h2>Most Active Projects</h2>
 
   <div style="font-size: 80%;">
-    <img src="/++resource++product_icon.gif" />
+    <img alt="" src="/++resource++product_icon.gif" />
     <b>The Ubuntu Distribution</b>
     [<a href="/distros/ubuntu">View</a>]<br />
     <div style="margin-left: 30px;">
@@ -58,7 +58,7 @@
 
     <hr />
 
-    <img src="/++resource++product_icon.gif" />
+    <img alt="" src="/++resource++product_icon.gif" />
     <b>GnomeBaker - CD Burning Application</b>
     [<a href="/products/gnomebaker">View</a>]<br />
     <div style="margin-left: 30px;">
@@ -69,7 +69,7 @@
 
     <hr />
 
-    <img src="/++resource++product_icon.gif" />
+    <img alt="" src="/++resource++product_icon.gif" />
     <b>Bazaar - Distributed Revision Control</b>
     [<a href="/products/bazaar">View</a>]<br />
     <div style="margin-left: 30px;">

@@ -4,14 +4,9 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div class="shipitPortlet"
-       tal:content="structure context/@@+portlet-actions" />
-</metal:rightportlets>
-
 <body>
 
-  <div metal:fill-slot="main">
+  <div metal:fill-slot="body">
 
     <br />
     <tal:block condition="request/previous|nothing">
@@ -29,13 +24,22 @@
       Request #<span tal:replace="context/id" />
     </h1>
 
-    <tal:block condition="context/cancelled">
-      <p class="portalMessage">This request was cancelled by 
+    <table>
+    <tbody>
+    <tr>
+    <td width="80%">
+
+    <tal:block condition="view/contextCancelledOrShipped">
+      <p tal:condition="context/cancelled" 
+         class="portalMessage">This request was cancelled by 
         <span tal:replace="context/whocancelled/displayname" />.
+      </p>
+      <p tal:condition="context/shipment" 
+         class="portalMessage">This request was already shipped.
       </p>
     </tal:block>
 
-    <tal:block condition="not: context/cancelled">
+    <tal:block condition="not: view/contextCancelledOrShipped">
       <tal:block condition="context/isApproved">
         <br />
         <p class="portalMessage">This request is currently approved. The
@@ -153,7 +157,7 @@
               /></a>)
         </td>
         <td tal:condition="context/recipientdisplayname">
-          <span tal:replace="context/recipientname" />
+          <span tal:replace="context/recipientdisplayname" />
         </td>
       </tr>
       <tr tal:condition="context/organization">
@@ -208,6 +212,16 @@
         </a>
       </li>
     </ul>
+
+    </td>
+    <td
+      width="20%"
+      style="vertical-align: top;"
+      tal:content="structure context/@@+portlet-navigation"
+    />
+    </tr>
+    </table>  
+  
   </div>
 
 </body>

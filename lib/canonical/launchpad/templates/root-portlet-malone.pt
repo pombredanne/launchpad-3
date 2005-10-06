@@ -2,7 +2,7 @@
   <h4>Tracking Bugs:</h4>
 
   <div class="portletBody portletContent" i18n:translate="malone-blurb">
-    <img src="/++resource++bug" />
+    <img alt="" src="/++resource++bug" />
     <a i18n:attributes="title" title="Malone"
        href="malone" i18n:translate="">Malone</a> is a
     <b>web-based global bug tracking</b>

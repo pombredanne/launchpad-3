@@ -2,6 +2,8 @@
   <tal:comment replace="nothing">
   This macro expects the following variables defined:
       :task: An IBugTask to be rendered.
+      :show_packagename: Should the sourcepackage name be shown?
+      Defaults to False.
   </tal:comment>
 
   <td style="width: 20px" valign="baseline">
@@ -28,6 +30,11 @@
       class="lesser"
     >It doesn't work.</div>
     <div class="lesser">
+      <tal:packagename condition="show_packagename|nothing">
+        reported in <a tal:attributes="href string:${task/target/fmt:url}/+bugs;
+                                       title string:Show bugs in ${task/targetname}"
+                       tal:content="task/sourcepackagename/name">blah</a>,
+      </tal:packagename>
       <tal:status content="structure task/statusdisplayhtml">
         assigned to Foo Bar
       </tal:status>

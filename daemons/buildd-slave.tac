@@ -29,8 +29,7 @@ builddslaveService = service.IServiceCollection(application)
 tachandler.ReadyService().setServiceParent(builddslaveService)
 
 root = resource.Resource()
-root.putChild('', slave)
-root.putChild('RPC2', slave)
+root.putChild('rpc', slave)
 root.putChild('filecache', static.File(conf.get('slave', 'filecache')))
 slavesite = server.Site(root)
 

@@ -2,7 +2,10 @@
 
 __metaclass__ = type
 __all__ = ['StandardShipItRequest', 'StandardShipItRequestSet',
-           'ShippingRequest', 'ShippingRequestSet', 'RequestedCDs']
+           'ShippingRequest', 'ShippingRequestSet', 'RequestedCDs',
+           'Shipment', 'ShipmentSet', 'ShippingRun', 'ShippingRunSet']
+
+import random
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -15,11 +18,13 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp.dbschema import (
-        ShipItDistroRelease, ShipItArchitecture, ShipItFlavour, EnumCol)
+        ShipItDistroRelease, ShipItArchitecture, ShipItFlavour, EnumCol,
+        ShippingService)
 from canonical.launchpad.interfaces import (
         IStandardShipItRequest, IStandardShipItRequestSet, IShippingRequest,
         IRequestedCDs, IShippingRequestSet, ShippingRequestStatus,
-        ILaunchpadCelebrities)
+        ILaunchpadCelebrities, IShipment, IShippingRun, IShippingRunSet,
+        IShipmentSet, ShippingRequestPriority)
 
 
 class RequestedCDsDescriptor:
@@ -52,9 +57,6 @@ class ShippingRequest(SQLBase):
     recipient = ForeignKey(dbName='recipient', foreignKey='Person',
                            notNull=True)
 
-    shipment = ForeignKey(dbName='shipment', foreignKey='Shipment',
-                          default=None)
-
     daterequested = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     shockandawe = ForeignKey(dbName='shockandawe', foreignKey='ShockAndAwe',
@@ -72,23 +74,33 @@ class ShippingRequest(SQLBase):
     reason = StringCol(default=None)
     highpriority = BoolCol(notNull=True, default=False)
 
-    city = StringCol(default=None)
+    city = StringCol(notNull=True)
     phone = StringCol(default=None)
-    country = ForeignKey(dbName='country', foreignKey='Country', default=None)
+    country = ForeignKey(dbName='country', foreignKey='Country', notNull=True)
     province = StringCol(default=None)
     postcode = StringCol(default=None)
-    addressline1 = StringCol(default=None)
+    addressline1 = StringCol(notNull=True)
     addressline2 = StringCol(default=None)
     organization = StringCol(default=None)
-    recipientdisplayname = StringCol(default=None)
+    recipientdisplayname = StringCol(notNull=True)
 
     @property
-    def recipientname(self):
+    def shipment(self):
         """See IShippingRequest"""
-        if self.recipientdisplayname:
-            return self.recipientdisplayname
+        return Shipment.selectOneBy(requestID=self.id)
+
+    @property
+    def countrycode(self):
+        """See IShippingRequest"""
+        return self.country.iso3166code2
+
+    @property
+    def shippingservice(self):
+        """See IShippingRequest"""
+        if self.highpriority:
+            return ShippingService.TNT
         else:
-            return self.recipient.displayname
+            return ShippingService.SPRING
 
     @property
     def totalCDs(self):
@@ -208,17 +220,21 @@ class ShippingRequestSet:
             return default
 
     def new(self, recipient, quantityx86, quantityamd64, quantityppc,
-            reason=None, shockandawe=None, recipientdisplayname=None):
+            recipientdisplayname, country, city, addressline1,
+            addressline2=None, province=None, postcode=None, phone=None,
+            organization=None, reason=None, shockandawe=None):
         """See IShippingRequestSet"""
         if not recipient.inTeam(getUtility(ILaunchpadCelebrities).shipit_admin):
             # Non shipit-admins can't place more than one order at a time
             # neither specify a name different than their own.
             assert recipient.currentShipItRequest() is None
-            assert recipientdisplayname is None
 
-        request = ShippingRequest(recipient=recipient, reason=reason,
-                                  shockandawe=shockandawe,
-                                  recipientdisplayname=recipientdisplayname)
+        request = ShippingRequest(
+            recipient=recipient, reason=reason, shockandawe=shockandawe,
+            city=city, country=country, addressline1=addressline1,
+            addressline2=addressline2, province=province, postcode=postcode,
+            recipientdisplayname=recipientdisplayname,
+            organization=organization, phone=phone)
 
         RequestedCDs(request=request, quantity=quantityx86,
                      distrorelease=ShipItDistroRelease.BREEZY,
@@ -246,6 +262,20 @@ class ShippingRequestSet:
             # Okay, if you don't want any filtering I won't filter
             query = ""
         return query
+
+    def getUnshippedRequests(self, priority):
+        """See IShippingRequestSet"""
+        query = ('ShippingRequest.cancelled = false AND '
+                 'ShippingRequest.approved = true AND '
+                 'ShippingRequest.id NOT IN (SELECT request from Shipment) ')
+        if priority == ShippingRequestPriority.HIGH:
+            query += 'AND ShippingRequest.highpriority = true'
+        elif priority == ShippingRequestPriority.NORMAL:
+            query += 'AND ShippingRequest.highpriority = false'
+        else:
+            # Nothing to filter, return all unshipped requests.
+            pass
+        return ShippingRequest.select(query)
 
     def getOldestPending(self):
         """See IShippingRequestSet"""
@@ -399,4 +429,91 @@ class StandardShipItRequestSet:
         return StandardShipItRequest.selectOneBy(quantityx86=quantityx86,
                                                  quantityamd64=quantityamd64,
                                                  quantityppc=quantityppc)
+
+class Shipment(SQLBase):
+    """See IShipment"""
+
+    implements(IShipment)
+
+    logintoken = StringCol(unique=True, notNull=True)
+    dateshipped = UtcDateTimeCol(default=None)
+    shippingservice = EnumCol(schema=ShippingService, notNull=True)
+    shippingrun = ForeignKey(dbName='shippingrun', foreignKey='ShippingRun',
+                             notNull=True)
+    request = ForeignKey(dbName='request', foreignKey='ShippingRequest',
+                         notNull=True, unique=True)
+    trackingcode = StringCol(default=None)
+
+
+class ShipmentSet:
+    """See IShipmentSet"""
+
+    implements(IShipmentSet)
+
+    def new(self, request, shippingservice, shippingrun, trackingcode=None,
+            dateshipped=None):
+        """See IShipmentSet"""
+        token = self._generateToken()
+        while self.getByToken(token):
+            token = self._generateToken()
+
+        return Shipment(
+            shippingservice=shippingservice, shippingrun=shippingrun,
+            trackingcode=trackingcode, logintoken=token,
+            dateshipped=dateshipped, request=request)
+
+    def _generateToken(self):
+        characters = '23456789bcdfghjkmnpqrstwxz'
+        length = 10
+        return ''.join([random.choice(characters) for count in range(length)])
+
+    def getByToken(self, token):
+        """See IShipmentSet"""
+        return Shipment.selectOneBy(logintoken=token)
+
+
+class ShippingRun(SQLBase):
+    """See IShippingRun"""
+
+    implements(IShippingRun)
+    _defaultOrder = '-datecreated'
+
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    csvfile = ForeignKey(
+        dbName='csvfile', foreignKey='LibraryFileAlias', default=None)
+    sentforshipping = BoolCol(notNull=True, default=False)
+
+    @property
+    def requests(self):
+        query = ("ShippingRequest.id = Shipment.request AND "
+                 "Shipment.shippingrun = ShippingRun.id AND "
+                 "ShippingRun.id = %s" % sqlvalues(self.id))
+
+        clausetables = ['ShippingRun', 'Shipment']
+        return ShippingRequest.select(query, clauseTables=clausetables)
+
+
+class ShippingRunSet:
+    """See IShippingRunSet"""
+
+    implements(IShippingRunSet)
+
+    def new(self):
+        """See IShippingRunSet"""
+        return ShippingRun()
+
+    def get(self, id):
+        """See IShippingRunSet"""
+        try:
+            return ShippingRun.get(id)
+        except SQLObjectNotFound:
+            return None
+
+    def getUnshipped(self):
+        """See IShippingRunSet"""
+        return ShippingRun.select(ShippingRun.q.sentforshipping==False)
+
+    def getShipped(self):
+        """See IShippingRunSet"""
+        return ShippingRun.select(ShippingRun.q.sentforshipping==True)
 

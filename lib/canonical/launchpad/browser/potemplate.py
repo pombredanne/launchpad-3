@@ -6,9 +6,8 @@ __metaclass__ = type
 
 __all__ = [
     'POTemplateSubsetView', 'POTemplateView', 'POTemplateEditView',
-    'POTemplateAdminView', 'POTemplateAddView', 'BaseExportView',
-    'POTemplateExportView', 'POTemplateTranslateView',
-    'POTemplateSubsetURL', 'POTemplateURL']
+    'POTemplateAdminView', 'POTemplateAddView', 'POTemplateExportView',
+    'POTemplateTranslateView', 'POTemplateSubsetURL', 'POTemplateURL']
 
 from sets import Set
 from datetime import datetime

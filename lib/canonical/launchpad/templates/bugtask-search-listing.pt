@@ -57,7 +57,8 @@
 
       <table>
         <tr tal:condition="view/showListView"
-            tal:repeat="task task_batch_navigator/batch">
+            tal:repeat="task task_batch_navigator/batch"
+            tal:define="show_packagename view/shouldShowPackageName">
           <td tal:condition="view/mass_edit_allowed">
             <input type="checkbox" name="task" tal:attributes="value task/id" />
           </td>

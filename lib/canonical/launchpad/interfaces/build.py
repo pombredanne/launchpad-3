@@ -50,3 +50,8 @@ class IBuildSet(Interface):
 
         The results are limited by 'limit'.
         """
+
+    def getBuildsForDistribution(distro, state=None):
+        """Return builds for a given distribution (optionally in the given
+        state only.
+        """
