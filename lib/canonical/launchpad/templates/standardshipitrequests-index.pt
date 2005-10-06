@@ -5,13 +5,14 @@
       i18n:domain="launchpad">
 <body>
 
-  <div metal:fill-slot="body" style="padding-left: 1em">
+  <div metal:fill-slot="body">
 
   <h1>Standard Request Options</h1>
 
-  <div class="sidebar">
-    <div tal:replace="structure context/@@+portlet-actions" />
-  </div>
+  <table>
+  <tbody>
+  <tr>
+  <td width="80%">
 
   <tal:block define="alloptions context/getAll">
 
@@ -67,6 +68,16 @@
     </li>
   </ul>
   </tal:block>
+
+  </td>
+  <td
+    width="20%"
+    style="vertical-align: top;"
+    tal:content="structure context/@@+portlet-navigation"
+  />
+  </tr>
+  </table>  
+  
 
 </div>
 

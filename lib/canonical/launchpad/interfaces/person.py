@@ -337,6 +337,14 @@ class IPerson(Interface):
         a member of himself (i.e. person1.inTeam(person1)).
         """
 
+    def pastShipItRequests():
+        """Return the requests made by this person that can't be changed
+        anymore.
+        
+        Any request that is cancelled, denied or sent for shipping can't be
+        changed.
+        """
+
     def currentShipItRequest():
         """Return this person's unshipped ShipIt request, if there's one.
         

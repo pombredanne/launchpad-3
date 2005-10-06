@@ -321,6 +321,14 @@
         </key>
     </sectiontype>
 
+    <sectiontype name="shipitexporter">
+        <key name="dbuser" datatype="string" default="shipit">
+            <description>
+                The database user wich will be used to generate shipit exports.
+            </description>
+        </key>
+    </sectiontype>
+
     <sectiontype name="karmacacheupdater">
         <key name="dbuser" datatype="string" default="karma">
             <description>
@@ -441,6 +449,7 @@
         <section name="*" type="dyson" attribute="dyson" />
         <section name="*" type="gina" attribute="gina" />
         <section name="*" type="trebuchet" attribute="trebuchet" />
+        <section name="*" type="shipitexporter" attribute="shipitexporter" />
         <section name="*" type="karmacacheupdater"
             attribute="karmacacheupdater" />
         <section name="*" type="cveupdater" attribute="cveupdater" />

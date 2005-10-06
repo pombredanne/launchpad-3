@@ -6,9 +6,10 @@ import re
 import codecs
 import unicodedata
 from warnings import warn
+from htmlentitydefs import codepoint2name
 from cStringIO import StringIO
 
-__all__ = ['guess', 'ascii_smash']
+__all__ = ['guess', 'ascii_smash', 'unicode_to_unaccented_str']
 
 _boms = [
     (codecs.BOM_UTF16_BE, 'utf_16_be'),
@@ -147,6 +148,33 @@ def guess(s):
 
     # Otherwise we default to ISO-8859-1
     return unicode(s, 'ISO-8859-1', 'replace')
+
+
+def unicode_to_unaccented_str(text):
+    """Converts a unicode string into an ascii-only str, converting accented
+    characters to their plain equivalents.
+
+    >>> unicode_to_unaccented_str(u'')
+    ''
+    >>> unicode_to_unaccented_str(u'foo bar 123')
+    'foo bar 123'
+    >>> unicode_to_unaccented_str(u'viva S\xe3o Carlos!')
+    'viva Sao Carlos!'
+    """
+    assert isinstance(text, unicode)
+    L = []
+    for char in text:
+        charnum = ord(char)
+        codepoint = codepoint2name.get(charnum)
+        if codepoint is not None:
+            strchar = codepoint[0]
+        else:
+            try:
+                strchar = char.encode('ascii')
+            except UnicodeEncodeError:
+                strchar = ''
+        L.append(strchar)
+    return ''.join(L)
 
 
 def ascii_smash(unicode_string):
