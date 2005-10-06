@@ -136,6 +136,7 @@ spider -- StuartBishop 20050822
 
 >>> check("/malone")
 >>> check_redirect("/malone/assigned")
+>>> check_not_found("/malone/bugs/assigned")
 >>> check_redirect("/malone/bugs")
 >>> check_redirect("/malone/bugs/1")
 >>> check("/malone/distros")
