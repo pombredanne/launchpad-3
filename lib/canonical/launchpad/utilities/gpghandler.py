@@ -36,6 +36,11 @@ import pyme.core
 import pyme.errors
 from pyme.constants import validity
 
+# XXX: 20051006 jamesh
+# this constant should also be exported in the pyme.constants.import module,
+# but said module can not be imported, due to it's name being a keyword ...
+from pyme._gpgme import GPGME_IMPORT_SECRET
+
 
 class GPGHandler:
     """See IGPGHandler."""
@@ -159,30 +164,20 @@ class GPGHandler:
         c.op_import(newkey)
         result = c.op_import_result()
 
-        # XXX cprov 20050929:
-        # We don't know exactly why in some cases when 'considered'
-        # is different than zero, 'imports' is None. It might be related
-        # with public key integrity somehow. There is a bunch of tests in
-        # doc/gpg-import.txt
-
-        # if not considered -> format wasn't recognized no key was imported
-        if result.considered == 0 or result.imports is None:
+        # Multiple keys supplied which one was desired is unknown
+        if result.imports is None or result.imports.next is not None:
             return None
 
         # if it's a secret key, simply returns
-        if result.secret_imported == 1:
+        if result.imports.status & GPGME_IMPORT_SECRET != 0:
             return None
-
+        
         fingerprint = result.imports.fpr
-
-        if result.imported != 1:
-            # Multiple keys supplied which one was desired is unknown
-            return None
 
         key = PymeKey(fingerprint)
 
         # pubkey not recognized
-        if key == None:
+        if key.fingerprint is None:
             return None
 
         return key
@@ -220,7 +215,7 @@ class GPGHandler:
 
         # retrive pyme key object
         try:
-            key = c.get_key(fingerprint.encde('ascii'), 0)
+            key = c.get_key(fingerprint.encode('ascii'), 0)
         except pyme.errors.GPGMEError:
             return None
         

@@ -8,7 +8,7 @@ from sqlos.adapter import PostgresAdapter
 from sqlobject.sqlbuilder import sqlrepr
 from sqlobject.styles import Style
 from datetime import datetime
-from sqlobject import connectionForURI
+from sqlobject import connectionForURI, SQLObjectNotFound
 import thread, warnings
 import time
 
