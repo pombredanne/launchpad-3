@@ -25,9 +25,9 @@
         layer="canonical.launchpad.layers.MaloneLayer"
         name="+bugs" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IDistribution"
-        function="canonical.launchpad.browser.traversers.traverse_distribution"
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="DistributionNavigation"
         />
 
     <browser:url

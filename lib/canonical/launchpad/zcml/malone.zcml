@@ -43,9 +43,10 @@
         for="canonical.launchpad.interfaces.IMaloneApplication"
         name="+index" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IMaloneApplication"
-        function="canonical.launchpad.browser.traverse_malone_application" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="MaloneApplicationNavigation"
+        />
 
     <!-- pages for the malone application -->
     <browser:pages

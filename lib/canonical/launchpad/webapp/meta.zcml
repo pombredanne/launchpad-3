@@ -30,6 +30,13 @@
 
   <directive
       namespace="http://namespaces.zope.org/browser"
+      name="navigation"
+      schema="canonical.launchpad.webapp.metazcml.INavigationDirective"
+      handler="canonical.launchpad.webapp.metazcml.navigation"
+      />
+
+  <directive
+      namespace="http://namespaces.zope.org/browser"
       name="favicon"
       schema="canonical.launchpad.webapp.metazcml.IFaviconDirective"
       handler="canonical.launchpad.webapp.metazcml.favicon"

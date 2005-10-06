@@ -297,6 +297,22 @@ class IMenusDirective(Interface):
         )
 
 
+class INavigationDirective(Interface):
+    """Hook up traversal etc."""
+
+    module = GlobalObject(
+        title=u"Module in which menu classes are found.",
+        required=True
+        )
+
+    classes = Tokens(
+        value_type=PythonIdentifier(),
+        title=u"Space separated list of classes to be registered as navigation"
+               " components",
+        required=True
+        )
+
+
 class IFaviconDirective(Interface):
 
     for_ = GlobalObject(
@@ -487,6 +503,25 @@ def menus(_context, module, classes):
         factory = [menuclass]
         adapter(_context, factory, provides, for_, name=name,
                 permission=PublicPermission)
+
+
+def navigation(_context, module, classes):
+    """Handler for the INavigationDirective."""
+    if not inspect.ismodule(module):
+        raise TypeError("module attribute must be a module: %s, %s" %
+                        module, type(module))
+    for navclassname in classes:
+        navclass = getattr(module, navclassname)
+
+        factory = [navclass]
+        layer = IDefaultBrowserLayer
+        provides = IBrowserPublisher
+        name = ''
+        for_ = [navclass.usedfor]
+
+        view(_context, factory, layer, name, for_, permission=PublicPermission,
+             provides=provides)
+
 
 def traverse(_context, for_, getter=None, function=None, permission=None,
              adaptwith=None, layer=IDefaultBrowserLayer):
