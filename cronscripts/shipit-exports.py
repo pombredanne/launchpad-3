@@ -147,6 +147,7 @@ def main(argv):
     # to split a shippingrun into two just because there's 10 requests more
     # than the limit, so we only split them if there's at least 50% more
     # requests than MAX_SHIPPINGRUN_SIZE.
+    file_counter = 1
     while len(request_ids):
         ztm.begin()
         if len(request_ids) > MAX_SHIPPINGRUN_SIZE * 1.5:
@@ -164,12 +165,15 @@ def main(argv):
         # Send the file to librarian.
         fileset = getUtility(ILibraryFileAliasSet)
         now = datetime.now(pytz.timezone('UTC'))
-        filename = ('%s-prio-orders-%s' %
-                    (options.priority, now.strftime('%Y-%m-%d-%H:%M:%S')))
+        filename = 'Ubuntu'
+        if options.priority == 'high':
+            filename += '-High-Pri'
+        filename += '-%s-%d.csv' % (now.strftime('%y-%m-%d'), file_counter)
         shippingrun.csvfile = fileset.create(
             name=filename, size=len(csv_file.getvalue()), file=csv_file,
             contentType='text/plain')
         ztm.commit()
+        file_counter += 1
 
     logger_obj.info('Done.')
     return 0
