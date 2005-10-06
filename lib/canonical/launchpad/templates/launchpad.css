@@ -622,7 +622,6 @@ code {
   color: inherit;
   background: transparent;
   border: none;
-  padding: inherit;
 }
 pre, textarea {
   font-family: monospace;
