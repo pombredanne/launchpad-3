@@ -294,13 +294,6 @@
 
   <!-- MergedCalendar -->
 
-  <browser:suburl
-      for="canonical.launchpad.interfaces.ILaunchpadRoot"
-      class="canonical.launchpad.components.cal.MergedCalendar"
-      name="calendar"
-      permission="launchpad.AnyPerson"
-      lp:url="/calendar/" />
-
   <browser:url
       for="canonical.launchpad.components.cal.MergedCalendar"
       path_expression="string:calendar"

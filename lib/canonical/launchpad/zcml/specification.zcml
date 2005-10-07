@@ -263,11 +263,6 @@
       <allow interface="canonical.launchpad.interfaces.ISpecificationSet" />
   </securedutility>
 
-  <browser:suburl
-    for="canonical.launchpad.interfaces.ILaunchpadRoot"
-    utility="canonical.launchpad.interfaces.ISpecificationSet"
-    name="specs" />
-
   <browser:url
     for="canonical.launchpad.interfaces.ISpecificationSet"
     path_expression="string:specs"

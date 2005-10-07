@@ -1,6 +1,4 @@
 # (c) Canonical Software Ltd. 2004, all rights reserved.
-"""Implementation of the browser:suburl and browser:traverser directives.
-"""
 
 __metaclass__ = type
 
@@ -133,87 +131,11 @@ class SecuredUtilityDirective:
         return ()
 
 
-class ISubURLDispatch(Interface):
-
-    def __call__():
-        """Returns the object at this suburl"""
-
-
-class SubURLTraverser:
-    implements(IBrowserPublisher)
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def publishTraverse(self, request, name):
-        """Search for views, and if no view is found, look for subURLs."""
-        view = queryView(self.context, name, request)
-        # XXX I should be looking for views for normal publication here.
-        # so, views providing ISubURLDispatch and not "normal publication"
-        # shouldn't show up.
-        if view is None or ISubURLDispatch.providedBy(view):
-            if view is None:
-                dispatcher = queryMultiView((self.context,), request,
-                        providing=ISubURLDispatch, name=name)
-                if dispatcher is None:
-                    raise NotFound(self.context, name)
-            else:
-                dispatcher = view
-            ob = dispatcher()
-            getUtility(IOpenLaunchBag).add(ob)
-            return ob
-        else:
-            return view
-
-    def browserDefault(self, request):
-        view_name = getDefaultViewName(self.context, request)
-        return self.context, (view_name,)
-
-
 class IDefaultViewDirective(
     zope.app.publisher.browser.metadirectives.IDefaultViewDirective):
 
     layer = LayerField(
         title=u"The layer to declare this default view for",
-        required=False
-        )
-
-
-class ISubURLDirective(Interface):
-
-    for_ = GlobalObject(
-        title=u"Specification of the object that has this suburl",
-        required=True
-        )
-
-    permission = Permission(
-        title=u"Permission",
-        required=False
-        )
-
-    class_ = GlobalObject(
-        title=u"Class",
-        required=False
-        )
-
-    utility = GlobalObject(
-        title=u"Utility",
-        required=False
-        )
-
-    name = TextLine(
-        title=u"The name of the suburl.",
-        required=True
-        )
-
-    adaptwith = GlobalObject(
-        title=u"Adapter factory to use",
-        required=False
-        )
-
-    newlayer = LayerField(
-        title=u"New layer to use beneath this URL",
         required=False
         )
 
@@ -297,6 +219,22 @@ class IMenusDirective(Interface):
         )
 
 
+class INavigationDirective(Interface):
+    """Hook up traversal etc."""
+
+    module = GlobalObject(
+        title=u"Module in which menu classes are found.",
+        required=True
+        )
+
+    classes = Tokens(
+        value_type=PythonIdentifier(),
+        title=u"Space separated list of classes to be registered as navigation"
+               " components",
+        required=True
+        )
+
+
 class IFaviconDirective(Interface):
 
     for_ = GlobalObject(
@@ -308,85 +246,6 @@ class IFaviconDirective(Interface):
         title=u"Path to the image file",
         required=True
         )
-
-
-class SubURLDispatcher:
-    implements(ISubURLDispatch)
-
-    newlayer = None
-
-    def __init__(self, context, request):
-        # In future, we may use the context to provide a __parent__ for
-        # the app-level component.
-        # Perhaps the zcml directive will allow us to specify an app-level
-        # name too. yagni for now.
-        self.context = context
-        self.request = request
-
-    def __call__(self):
-        raise NotImplementedError
-
-
-# The `for_` objects we have already seen, so we set their traverser to be
-# the SubURLTraverser once only.  If we set it more than once, we get
-# a configuration conflict error.
-suburl_traversers = set()
-
-def suburl(_context, for_, name, permission=None, utility=None, class_=None,
-           adaptwith=None, newlayer=None):
-    if utility is None and class_ is None:
-        raise TypeError("Cannot specify both utility and class.")
-
-    # So we can use "type" below, for documentation.
-    type = IDefaultBrowserLayer
-
-    global suburl_traversers
-    if for_ not in suburl_traversers:
-        view(_context, [SubURLTraverser], type, '', [for_],
-             provides=IBrowserPublisher, permission=None)
-        suburl_traversers.add(for_)
-
-
-    # TODO: Move layer-setting into a handler for the BeforeTraverse event
-    #       because that's actually what we want to handle.
-
-    if class_ is not None:
-        class Dispatcher(SubURLDispatcher):
-            def __call__(self):
-                # Note that `newlayer`, `class_` and `adaptwith` are bound
-                # from the containing context.
-                val = class_()
-                if adaptwith is not None:
-                    val = adaptwith(val)
-                if newlayer is not None:
-                    # Steve told me to comment this and add the setFirstLayer
-                    # line to get shipit to work.
-                    #setAdditionalLayer(self.request, newlayer)
-                    setFirstLayer(self.request, newlayer)
-                #getUtility(IOpenLaunchBag).add(val)
-                return val
-
-    if utility is not None:
-        class Dispatcher(SubURLDispatcher):
-            def __call__(self):
-                # Note that `newlayer`, `utility` and `adaptwith` are bound
-                # from the containing context.
-                val = getUtility(utility)
-                if adaptwith is not None:
-                    val = adaptwith(val)
-                if newlayer is not None:
-                    # Steve told me to comment this and add the setFirstLayer
-                    # line to get shipit to work.
-                    #setAdditionalLayer(self.request, newlayer)
-                    setFirstLayer(self.request, newlayer)
-                #getUtility(IOpenLaunchBag).add(val)
-                return val
-
-    factory = [Dispatcher]
-    if permission == PublicPermission:
-        permission = CheckerPublic
-
-    view(_context, factory, type, name, [for_], permission=permission)
 
 
 class URLTraverse:
@@ -487,6 +346,25 @@ def menus(_context, module, classes):
         factory = [menuclass]
         adapter(_context, factory, provides, for_, name=name,
                 permission=PublicPermission)
+
+
+def navigation(_context, module, classes):
+    """Handler for the INavigationDirective."""
+    if not inspect.ismodule(module):
+        raise TypeError("module attribute must be a module: %s, %s" %
+                        module, type(module))
+    for navclassname in classes:
+        navclass = getattr(module, navclassname)
+
+        factory = [navclass]
+        layer = IDefaultBrowserLayer
+        provides = IBrowserPublisher
+        name = ''
+        for_ = [navclass.usedfor]
+
+        view(_context, factory, layer, name, for_, permission=PublicPermission,
+             provides=provides)
+
 
 def traverse(_context, for_, getter=None, function=None, permission=None,
              adaptwith=None, layer=IDefaultBrowserLayer):

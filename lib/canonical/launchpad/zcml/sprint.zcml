@@ -72,12 +72,6 @@
       <allow interface="canonical.launchpad.interfaces.ISprintSet" />
   </securedutility>
 
-  <browser:suburl
-    for="canonical.launchpad.interfaces.ILaunchpadRoot"
-    utility="canonical.launchpad.interfaces.ISprintSet"
-    name="sprints"
-    />
-
   <browser:url
     for="canonical.launchpad.interfaces.ISprintSet"
     path_expression="string:sprints"

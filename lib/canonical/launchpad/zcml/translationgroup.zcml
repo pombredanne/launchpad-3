@@ -88,10 +88,10 @@
       <allow interface="canonical.launchpad.interfaces.ITranslationGroupSet" />
     </securedutility>
 
-    <browser:suburl
-        for="canonical.launchpad.interfaces.IRosettaApplication"
-        utility="canonical.launchpad.interfaces.ITranslationGroupSet"
-        name="groups" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="RosettaApplicationNavigation"
+        />
 
     <browser:url
         for="canonical.launchpad.interfaces.ITranslationGroupSet"

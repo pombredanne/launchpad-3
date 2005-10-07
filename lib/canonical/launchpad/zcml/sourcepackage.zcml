@@ -19,9 +19,11 @@
         layer="canonical.launchpad.layers.MaloneLayer"
         name="+bugs" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.ISourcePackage"
-        function="canonical.launchpad.browser.traverse_sourcepackage" />
+
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="SourcePackageNavigation"
+        />
 
     <browser:url
         for="canonical.launchpad.interfaces.ISourcePackage"
@@ -179,9 +181,9 @@
         <allow interface="canonical.launchpad.interfaces.IDistroSourcePackage" />
     </content>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IDistroSourcePackage"
-        function="canonical.launchpad.browser.traverse_distro_sourcepackage"
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="DistroSourcePackageNavigation"
         />
 
     <browser:url

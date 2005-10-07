@@ -151,7 +151,7 @@ Viewing a bug in the context of an upstream where the bug has already
 been reported (including checking the various pages that hang off that
 one.)
 
->>> check_not_found("/products/firefox/+bug")
+>>> check_redirect("/products/firefox/+bug")
 >>> check("/products/firefox/+bug/1", auth=True)
 >>> check("/products/firefox/+bug/1/+edit", auth=True)
 >>> check("/products/firefox/+bug/1/+secrecy", auth=True)
@@ -173,14 +173,14 @@ been reported.
 Viewing a bug in the context of a distribution where the bug has not
 yet been reported.
 
->>> check_not_found("/distros/ubuntu/+bug")
+>>> check_redirect("/distros/ubuntu/+bug")
 >>> check_not_found("/distros/ubuntu/+bug/3/+viewstatus")
 >>> check_not_found("/distros/ubuntu/+bug/3/+editstatus")
 
 Viewing a bug in the context of a distorelease where the bug has not
 yet been reported.
 
->>> check_not_found("/distros/ubuntu/warty/+bug")
+>>> check_redirect("/distros/ubuntu/warty/+bug")
 >>> check("/distros/ubuntu/warty/+bug/3")
 >>> check_not_found("/distros/ubuntu/warty/+bug/3/+viewstatus")
 >>> check_not_found("/distros/ubuntu/warty/+bug/3/+editstatus")
@@ -193,7 +193,7 @@ already been reported.
 Viewing a bug in the context of a distro source package in which it's
 not yet been reported.
 
->>> check_not_found("/distros/ubuntu/+sources/thunderbird/+bug")
+>>> check_redirect("/distros/ubuntu/+sources/thunderbird/+bug")
 >>> check("/distros/ubuntu/+sources/thunderbird/+bug/1")
 >>> check_not_found("/distros/ubuntu/+sources/thunderbird/+bug/1/+viewstatus")
 >>> check_not_found("/distros/ubuntu/+sources/thunderbird/+bug/1/+editstatus")

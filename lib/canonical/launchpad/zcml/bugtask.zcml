@@ -64,9 +64,10 @@
         path_expression="string:+bug/${bug/id}"
         attribute_to_parent="target" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBugTask"
-        function="canonical.launchpad.browser.traversers.traverse_bugtask" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BugTaskNavigation"
+        />
 
     <adapter
         for="canonical.launchpad.interfaces.IBugTask"

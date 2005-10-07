@@ -2,11 +2,13 @@
 
 __metaclass__ = type
 
-__all__ = ['StandardShipItRequestAddView', 'ShippingRequestAdminView',
-           'ShippingRequestsView', 'ShipItLoginView', 'ShipItRequestView',
-           'ShipItUnauthorizedView', 'StandardShipItRequestsView',
-           'ShippingRequestURL', 'StandardShipItRequestURL',
-           'ShipItExportsView']
+__all__ = [
+    'StandardShipItRequestAddView', 'ShippingRequestAdminView',
+    'ShippingRequestsView', 'ShipItLoginView', 'ShipItRequestView',
+    'ShipItUnauthorizedView', 'StandardShipItRequestsView',
+    'ShippingRequestURL', 'StandardShipItRequestURL',
+    'ShipItExportsView', 'ShipItNavigation',
+    'StandardShipItRequestSetNavigation', 'ShippingRequestSetNavigation']
 
 from zope.event import notify
 from zope.component import getUtility
@@ -21,14 +23,16 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import (
+    canonical_url, Navigation, stepto)
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.helpers import positiveIntOrZero, intOrZero
 from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IShippingRequestSet, ILaunchBag, IShipItCountry,
     ShippingRequestStatus, ILaunchpadCelebrities, ICanonicalUrlData,
-    IShippingRunSet)
+    IShippingRunSet, IShipItApplication)
+import canonical.launchpad.layers
 
 from canonical.launchpad import _
 
@@ -382,7 +386,7 @@ Reason:
             self.country = None
             self.addressFormMessages.append(_(
                 'You must choose your country from the list below.'))
-            
+
         for field, (field_title, validator) in validators.items():
             value = form.get(field, "")
             # Save all field values in the view so we can display them, if
@@ -686,4 +690,36 @@ class ShipItExportsView:
     def no_exports(self):
         """Return True if there's no generated exports."""
         return not (self.unsent_exports() or self.sent_exports())
+
+
+class ShipItNavigation(Navigation):
+
+    usedfor = IShipItApplication
+    newlayer = canonical.launchpad.layers.ShipItLayer
+
+    @stepto('requests')
+    def requests(self):
+        # XXX: permission=launchpad.Admin
+        return getUtility(IShippingRequestSet)
+
+    @stepto('standardoptions')
+    def standardoptions(self):
+        # XXX: permission=launchpad.Admin
+        return getUtility(IStandardShipItRequestSet)
+
+
+class ShippingRequestSetNavigation(Navigation):
+
+    usedfor = IShippingRequestSet
+
+    def traverse(self, name):
+        return self.context.get(name)
+
+
+class StandardShipItRequestSetNavigation(Navigation):
+
+    usedfor = IStandardShipItRequestSet
+
+    def traverse(self, name):
+        return self.context.get(name)
 
