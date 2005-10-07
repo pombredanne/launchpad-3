@@ -9,9 +9,10 @@
 
   <!-- Person -->
 
-  <browser:traverse
-      for="canonical.launchpad.interfaces.IPerson"
-      function="canonical.launchpad.browser.traversers.traverse_person" />
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="TeamNavigation PersonNavigation"
+      />
 
   <content class="canonical.launchpad.database.Person">
       <allow interface="canonical.launchpad.interfaces.IPerson" />
@@ -293,9 +294,6 @@
   </browser:pages>
 
   <!-- Team Views -->
-  <browser:traverse
-      for="canonical.launchpad.interfaces.ITeam"
-      function="canonical.launchpad.browser.traverse_team" />
 
   <browser:pages
       for="canonical.launchpad.interfaces.ITeam"

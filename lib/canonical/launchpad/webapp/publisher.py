@@ -7,19 +7,78 @@ XXX: Much stuff from canonical.publication needs to move here.
 __metaclass__ = type
 __all__ = ['UserAttributeCache', 'LaunchpadView', 'canonical_url', 'nearest',
            'get_current_browser_request', 'canonical_url_iterator',
-           'rootObject']
+           'rootObject', 'Navigation', 'stepthrough', 'redirection', 'stepto']
 
 from zope.interface import implements
-from zope.component import getUtility
+from zope.exceptions import NotFoundError
+from zope.component import getUtility, queryView, getDefaultViewName
+from zope.interface.advice import addClassAdvisor
 import zope.security.management
 from zope.security.checker import ProxyFactory, NamesChecker
+from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
+from zope.publisher.interfaces import NotFound
+from canonical.launchpad.layers import setFirstLayer
 from canonical.launchpad.interfaces import (
     ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
-    ILaunchBag)
+    ILaunchBag, IOpenLaunchBag)
 
 # Import the launchpad.conf configuration object.
 from canonical.config import config
+
+
+class DecoratorAdvisor:
+    """Base class for a function decorator that adds class advice.
+
+    The advice stores information in a magic attribute in the class's dict.
+    The magic attribute's value is a dict, which contains names and functions
+    that were set in the function decorators.
+    """
+
+    magic_class_attribute = None
+
+    def __init__(self, name):
+        self.name = name
+
+    def __call__(self, fn):
+        self.fn = fn
+        addClassAdvisor(self.advise)
+
+    def advise(self, cls):
+        assert self.magic_class_attribute is not None, (
+            'You must provide the magic_class_attribute to use')
+        D = cls.__dict__.get(self.magic_class_attribute)
+        if D is None:
+            D = {}
+            setattr(cls, self.magic_class_attribute, D)
+        D[self.name] = self.fn
+        return cls
+
+
+class stepthrough(DecoratorAdvisor):
+
+    magic_class_attribute = '__namespace_traversals__'
+
+
+class stepto(DecoratorAdvisor):
+
+    magic_class_attribute = '__stepto_traversals__'
+
+
+class redirection:
+
+    def __init__(self, fromname, toname):
+        self.fromname = fromname
+        self.toname = toname
+        addClassAdvisor(self.advise)
+
+    def advise(self, cls):
+        redirections = cls.__dict__.get('__redirections__')
+        if redirections is None:
+            redirections = {}
+            setattr(cls, '__redirections__', redirections)
+        redirections[self.fromname] = self.toname
+        return cls
 
 
 class UserAttributeCache:
@@ -181,3 +240,137 @@ class RootObject:
     implements(ILaunchpadApplication, ILaunchpadRoot)
 
 rootObject = ProxyFactory(RootObject(), NamesChecker(["__class__"]))
+
+
+class Navigation:
+    """Base class for writing browser navigation components.
+
+    Note that the canonical_url part of Navigation is used outside of
+    the browser context.
+
+    Override or set these things:
+
+        def traverse(name):
+
+        namespace_traversals = {'+bug': traverse_bug}
+        new_layer = ShipitLayer
+
+    """
+    implements(IBrowserPublisher)
+
+    def __init__(self, context, request=None):
+        """Initialize with context and maybe with a request."""
+        self.context = context
+        self.request = request
+
+    # Set this if you want to set a new layer before doing any traversal.
+    newlayer = None
+
+    def traverse(self, name):
+        """Override this method to handle traversal.
+
+        Raise NotFoundError if the name cannot be traversed.
+        """
+        raise NotFoundError(name)
+
+    # The next methods are for use by the Zope machinery.
+
+    def publishTraverse(self, request, name):
+        """Shim, to set objects in the launchbag when traversing them.
+
+        This needs moving into the publication component, once it has been
+        refactored.
+        """
+        nextobj = self._publishTraverse(request, name)
+        getUtility(IOpenLaunchBag).add(nextobj)
+        return nextobj
+
+    def _combined_class_info(self, attrname):
+        """Walk the class's __mro__ looking for attributes with the given
+        name in class dicts.  Combine the values of these attributes into
+        a single dict.  Return it.
+        """
+        combined_info = {}
+        for cls in type(self).__mro__:
+            value = cls.__dict__.get(attrname)
+            if value is not None:
+                combined_info.update(value)
+        return combined_info
+
+    def _publishTraverse(self, request, name):
+        """Traverse, like zope wants."""
+
+        # First, set a new layer if there is one.  This is important to do
+        # first so that if there's an error, we get the error page for
+        # this request.
+        if self.newlayer is not None:
+            setFirstLayer(request, self.newlayer)
+
+        # Next, see if we're being asked to stepto somewhere.
+        stepto_traversals = self._combined_class_info('__stepto_traversals__')
+        if stepto_traversals is not None:
+            if name in stepto_traversals:
+                handler = stepto_traversals[name]
+                return handler(self)
+
+        # Next, see if we have at least two path steps in total to traverse;
+        # that is, the current name and one on the request's traversal stack.
+        # If so, see if the name is in the namespace_traversals, and if so,
+        # dispatch to the appropriate function.  We can optimise by changing
+        # the order of these checks around a bit.
+        namespace_traversals = self._combined_class_info(
+            '__namespace_traversals__')
+        if namespace_traversals is not None:
+            if name in namespace_traversals:
+                traversalstack = request.getTraversalStack()
+                if len(traversalstack) > 0:
+                    nextstep = traversalstack.pop()
+                    request._traversed_names.append(nextstep)
+                    request.setTraversalStack(traversalstack)
+                    handler = namespace_traversals[name]
+                    return handler(self, nextstep)
+
+        # Next, look up views on the context object.  If a view exists,
+        # use it.
+        view = queryView(self.context, name, request)
+        if view is not None:
+            return view
+
+        # Next, look up redirections.  Note that registered views take
+        # priority over redirections, because you can always make your
+        # view redirect, but you can't make your redirection 'view'.
+        redirections = self._combined_class_info('__redirections__')
+        if redirections is not None:
+            if name in redirections:
+                return RedirectionView(redirections[name], request)
+
+        # Finally, use the self.traverse() method.  This can return
+        # an object to be traversed, or raise NotFoundError.  It must not
+        # return None.
+        try:
+            nextobj = self.traverse(name)
+        except NotFoundError:
+            raise NotFound(self.context, name)
+        if nextobj is None:
+            raise NotFound(self.context, name)
+        return nextobj
+
+    def browserDefault(self, request):
+        view_name = getDefaultViewName(self.context, request)
+        return self.context, (view_name, )
+
+
+class RedirectionView:
+    implements(IBrowserPublisher)
+
+    def __init__(self, target, request):
+        self.target = target
+        self.request = request
+
+    def __call__(self):
+        self.request.response.redirect(self.target)
+        return ''
+
+    def browserDefault(self, request):
+        return self, ()
+

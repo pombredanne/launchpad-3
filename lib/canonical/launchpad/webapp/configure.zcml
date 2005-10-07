@@ -6,6 +6,10 @@
     <include file="servers.zcml" />
     <include file="errorlog.zcml" />
 
+    <content class="canonical.launchpad.webapp.publisher.RedirectionView">
+      <allow attributes="browserDefault __call__" />
+    </content>
+
     <!-- links -->
     <content class="canonical.launchpad.webapp.menu.LinkData">
       <allow interface="canonical.launchpad.interfaces.ILinkData" />
@@ -276,7 +280,7 @@
 
 
     <!-- Default favicon -->
-    <browser:favicon for="*" file="../images/defaultFavicon.gif" />
+    <browser:favicon for="*" file="../images/launchpad_favicon.png" />
 
     <!-- LaunchBag Utility -->
     <utility

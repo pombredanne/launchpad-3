@@ -5,6 +5,11 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="ShipItNavigation ShippingRequestSetNavigation
+               StandardShipItRequestSetNavigation"
+      />
 
   <view
       type="zope.publisher.interfaces.browser.IBrowserRequest"
@@ -102,19 +107,6 @@
         permission="launchpad.Admin" 
         template="../templates/shipit-exports.pt" />
 
-    <browser:suburl
-      for="canonical.launchpad.interfaces.IShipItApplication"
-      name="requests"
-      utility="canonical.launchpad.interfaces.IShippingRequestSet"
-      permission="launchpad.Admin" />
-
-    <browser:suburl
-      for="canonical.launchpad.interfaces.IShipItApplication"
-      name="standardoptions"
-      utility="canonical.launchpad.interfaces.IStandardShipItRequestSet"
-      permission="launchpad.Admin" />
-
-
     <!-- ShippingRequest -->
     <content class="canonical.launchpad.database.ShippingRequest">
         <allow interface="canonical.launchpad.interfaces.IShippingRequest" />
@@ -163,10 +155,6 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IShippingRequestSet"
         name="+index" />
-
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IShippingRequestSet"
-        getter="get" />
 
     <browser:page
         for="canonical.launchpad.interfaces.IShippingRequestSet"
@@ -239,10 +227,6 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
         name="+index" />
-
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
-        getter="get" />
 
     <browser:page
         name="+index"

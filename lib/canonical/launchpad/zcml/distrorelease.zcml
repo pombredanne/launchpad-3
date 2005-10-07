@@ -20,9 +20,10 @@
     <allow interface="canonical.launchpad.interfaces.IDistroReleaseSet" />
   </securedutility>
 
-  <browser:traverse
-    for="canonical.launchpad.interfaces.IDistroRelease"
-    function="canonical.launchpad.browser.traversers.traverse_distrorelease" />
+  <browser:navigation
+    module="canonical.launchpad.browser"
+    classes="DistroReleaseNavigation"
+    />
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistroRelease"

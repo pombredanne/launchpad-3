@@ -24,9 +24,9 @@
             />
     </content>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IPOTemplate"
-        function="canonical.launchpad.browser.traversers.traverse_potemplate"
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="POTemplateNavigation"
         />
 
     <browser:defaultView
