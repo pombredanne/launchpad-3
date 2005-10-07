@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistroArchReleaseNavigation',
     'DistroArchReleaseContextMenu',
     'DistroArchReleaseFacets',
     'DistroArchReleaseView',
@@ -14,12 +15,20 @@ from canonical.lp.batching import BatchNavigator
 from zope.component import getUtility
 
 from canonical.launchpad.webapp import (
-    canonical_url, StandardLaunchpadFacets, ContextMenu, Link)
+    canonical_url, StandardLaunchpadFacets, ContextMenu, Link, Navigation)
 
 from canonical.launchpad.interfaces import (
     IDistroArchRelease, IBuildSet)
 
 BATCH_SIZE = 40
+
+
+class DistroArchReleaseNavigation(Navigation):
+
+    usedfor = IDistroArchRelease
+
+    def traverse(self, name):
+        return self.context[name]
 
 
 class DistroArchReleaseFacets(StandardLaunchpadFacets):

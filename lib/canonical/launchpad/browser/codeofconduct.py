@@ -5,6 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'SignedCodeOfConductSetNavigation',
+    'CodeOfConductSetNavigation',
     'CodeOfConductContextMenu',
     'CodeOfConductSetContextMenu',
     'SignedCodeOfConductSetContextMenu',
@@ -28,10 +30,26 @@ import zope.security.interfaces
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.webapp import (
-    ContextMenu, Link, enabled_with_permission)
+    ContextMenu, Link, enabled_with_permission, Navigation)
 from canonical.launchpad.interfaces import (
     IPerson, ILaunchBag, ICodeOfConduct, ISignedCodeOfConduct,
     ISignedCodeOfConductSet, ICodeOfConductSet)
+
+
+class SignedCodeOfConductSetNavigation(Navigation):
+
+    usedfor = ISignedCodeOfConductSet
+
+    def traverse(self, name):
+        return self.context[name]
+
+
+class CodeOfConductSetNavigation(Navigation):
+
+    usedfor = ICodeOfConductSet
+
+    def traverse(self, name):
+        return self.context[name]
 
 
 class CodeOfConductContextMenu(ContextMenu):

@@ -3,7 +3,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'traverseCalendar',
+    'CalendarNavigation',
+    'CalendarEventSetNavigation',
     'CalendarDay',
     'CalendarWeek',
     'CalendarMonth',
@@ -50,7 +51,7 @@ from canonical.launchpad.interfaces import (
      ICalendarEventSet, ICalendarSubscriptionSubset, ICalendarRange,
      ILaunchBag)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, Link, canonical_url)
+    ApplicationMenu, ContextMenu, Link, canonical_url, Navigation, stepto)
 
 from schoolbell.interfaces import ICalendar
 from schoolbell.utils import (
@@ -93,13 +94,9 @@ colours = [
 
 UTC = pytz.timezone('UTC')
 
-_year_pat  = re.compile(r'^(\d\d\d\d)$')
-_month_pat = re.compile(r'^(\d\d\d\d)-(\d\d)$')
-_week_pat  = re.compile(r'^(\d\d\d\d)-W(\d\d)$')
-_day_pat   = re.compile(r'^(\d\d\d\d)-(\d\d)-(\d\d)$')
-def traverseCalendar(calendar, request, name):
-    """Traverse sub-URLs of an ICalendar
-    
+class CalendarNavigation(Navigation):
+    """Navigation handling for Calendars.
+
     The calendar URL space is as follows:
       .../2005-04-01 -- day view for 2005-04-01
       .../2005-W01   -- week view for first ISO week of 2005
@@ -110,57 +107,87 @@ def traverseCalendar(calendar, request, name):
       .../this-month -- month view for this month
       .../this-year  -- year view for this year
       .../events     -- events set for this calendar
-
-    If the URL does not match one of these names, None is returned.
     """
-    user_timezone = getUtility(ILaunchBag).timezone
 
-    match = _year_pat.match(name)
-    if match:
-        try:
-            return CalendarYear(calendar,
-                                date(int(match.group(1)), 1, 1))
-        except ValueError:
-            return None
-    match = _month_pat.match(name)
-    if match:
-        try:
-            return CalendarMonth(calendar,
-                                 date(int(match.group(1)),
-                                      int(match.group(2)),
-                                      1))
-        except ValueError:
-            return None
-    match = _week_pat.match(name)
-    if match:
-        try:
-            start, end = weeknum_bounds(int(match.group(1)),
-                                        int(match.group(2)))
-            return CalendarWeek(calendar, start)
-        except ValueError:
-            return None
-    match = _day_pat.match(name)
-    if match:
-        try:
-            return CalendarDay(calendar,
-                               date(int(match.group(1)),
-                                    int(match.group(2)),
-                                    int(match.group(3))))
-        except ValueError:
-            return None
-    now = datetime.now(user_timezone)
-    if name == 'today':
-        return CalendarDay(calendar, now)
-    elif name == 'this-week':
-        return CalendarWeek(calendar, now)
-    elif name == 'this-month':
-        return CalendarMonth(calendar, now)
-    elif name == 'this-year':
-        return CalendarYear(calendar, now)
-    elif name == 'events':
-        return getUtility(ICalendarEventSet)
-    else:
+    usedfor = ICalendar
+
+    _year_pat  = re.compile(r'^(\d\d\d\d)$')
+    _month_pat = re.compile(r'^(\d\d\d\d)-(\d\d)$')
+    _week_pat  = re.compile(r'^(\d\d\d\d)-W(\d\d)$')
+    _day_pat   = re.compile(r'^(\d\d\d\d)-(\d\d)-(\d\d)$')
+
+    def traverse(self, name):
+        """Traverse sub-URLs of an ICalendar
+
+        If the URL does not match one of these names, None is returned.
+        """
+        match = self._year_pat.match(name)
+        if match:
+            try:
+                return CalendarYear(self.context,
+                                    date(int(match.group(1)), 1, 1))
+            except ValueError:
+                return None
+        match = self._month_pat.match(name)
+        if match:
+            try:
+                return CalendarMonth(self.context,
+                                     date(int(match.group(1)),
+                                          int(match.group(2)),
+                                          1))
+            except ValueError:
+                return None
+        match = self._week_pat.match(name)
+        if match:
+            try:
+                start, end = weeknum_bounds(int(match.group(1)),
+                                            int(match.group(2)))
+                return CalendarWeek(self.context, start)
+            except ValueError:
+                return None
+        match = self._day_pat.match(name)
+        if match:
+            try:
+                return CalendarDay(self.context,
+                                   date(int(match.group(1)),
+                                        int(match.group(2)),
+                                        int(match.group(3))))
+            except ValueError:
+                return None
         return None
+
+    @property
+    def _datetimenow(self):
+        user_timezone = getUtility(ILaunchBag).timezone
+        now = datetime.now(user_timezone)
+
+    @stepto('today')
+    def today(self):
+        return CalendarDay(self.context, self._datetimenow)
+
+    @stepto('this-week')
+    def thisweek(self):
+        return CalendarWeek(self.context, self._datetimenow)
+
+    @stepto('this-month')
+    def thismonth(self):
+        return CalendarMonth(self.context, self._datetimenow)
+
+    @stepto('this-year')
+    def thisyear(self):
+        return CalendarYear(self.context, self._datetimenow)
+
+    @stepto('events')
+    def events(self):
+        return getUtility(ICalendarEventSet)
+
+
+class CalendarEventSetNavigation(Navigation):
+
+    usedfor = ICalendarEventSet
+
+    def traverse(self, name):
+        return self.context[name]
 
 
 class CalendarDay:

@@ -437,3 +437,22 @@ Check those from ThingSetNavigation4:
     >>> instance_of_c.publishTraverse(request, 'baz')
     'baz'
 
+
+== Showing that the name of the function really doesn't matter ==
+
+    >>> class DupeNames(Navigation):
+    ...
+    ...     @stepto('foo')
+    ...     def doit(self):
+    ...         return 'foo'
+    ...
+    ...     @stepto('bar')
+    ...     def doit(self):
+    ...         return 'bar'
+
+    >>> instance_of_dupenames = DupeNames(thingset, request)
+    >>> instance_of_dupenames.publishTraverse(request, 'foo')
+    'foo'
+    >>> instance_of_dupenames.publishTraverse(request, 'bar')
+    'bar'
+

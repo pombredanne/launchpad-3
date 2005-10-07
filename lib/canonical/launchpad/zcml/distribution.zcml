@@ -256,9 +256,10 @@
         layer="canonical.launchpad.layers.MaloneLayer"
         name="+bugs" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IDistributionSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="DistributionSetNavigation"
+        />
     <browser:url
         for="canonical.launchpad.interfaces.IDistribution"
         path_expression="name"

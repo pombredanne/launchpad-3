@@ -21,7 +21,6 @@ __all__ = [
     ]
 
 from zope.component import getUtility, getView
-from zope.exceptions import NotFoundError
 
 from canonical.launchpad.interfaces import (
     IBugSet, IBugTask, IDistributionSet, IProjectSet, IProductSet,
@@ -31,7 +30,8 @@ from canonical.launchpad.interfaces import (
     IBugExternalRefSet, ICveSet, IBugWatchSet, IProduct, INullBugTask,
     IDistroSourcePackageSet, ISourcePackageNameSet, IPOTemplateSet,
     IDistribution, IDistroRelease, ISourcePackage, IDistroSourcePackage,
-    IProject, IMaloneApplication, IPerson, ITeam, IPoll, IPOTemplate)
+    IProject, IMaloneApplication, IPerson, ITeam, IPoll, IPOTemplate,
+    NotFoundError)
 from canonical.launchpad.database import ProductSeriesSet, SourcePackageSet
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp import (

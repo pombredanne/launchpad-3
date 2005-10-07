@@ -26,9 +26,10 @@
         path_expression="architecturetag"
         attribute_to_parent="distrorelease" />
 
-    <browser:traverse
-        for="canonical.launchpad.database.DistroArchRelease" 
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="DistroArchReleaseNavigation"
+        />
 
     <browser:pages
         for="canonical.launchpad.database.DistroArchRelease" 

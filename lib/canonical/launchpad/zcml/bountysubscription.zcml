@@ -27,8 +27,9 @@
         />
     </securedutility>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBountySubscriptionSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BountySubscriptionNavigation"
+        />
 
 </configure>

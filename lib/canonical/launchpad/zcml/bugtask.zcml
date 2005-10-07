@@ -66,7 +66,7 @@
 
     <browser:navigation
         module="canonical.launchpad.browser"
-        classes="BugTaskNavigation"
+        classes="BugTaskNavigation BugTaskSetNavigation"
         />
 
     <adapter
@@ -222,10 +222,6 @@
         class="canonical.launchpad.database.BugTaskSet">
         <allow interface="canonical.launchpad.interfaces.IBugTaskSet" />
     </securedutility>
-
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBugTaskSet"
-        getter="__getitem__" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugTaskSet"

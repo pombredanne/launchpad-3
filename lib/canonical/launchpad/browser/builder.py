@@ -4,8 +4,8 @@
 
 __metaclass__ = type
 
-__all__ = ['BuildFarmFacets', 'BuilderFacets', 'BuilderSetAddView',
-           'BuilderView']
+__all__ = ['BuilderSetNavigation', 'BuildFarmFacets', 'BuilderFacets',
+           'BuilderSetAddView', 'BuilderView']
 
 import datetime
 import pytz
@@ -24,7 +24,15 @@ from canonical.launchpad.interfaces import (
     )
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link)
+    StandardLaunchpadFacets, Link, Navigation)
+
+
+class BuilderSetNavigation(Navigation):
+
+    usedfor = IBuilderSet
+
+    def traverse(self, name):
+        return self.context[name]
 
 
 class BuildFarmFacets(StandardLaunchpadFacets):

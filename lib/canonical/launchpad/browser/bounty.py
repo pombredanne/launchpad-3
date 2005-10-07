@@ -3,6 +3,9 @@
 __metaclass__ = type
 
 __all__ = [
+    'BountySetNavigation',
+    'BountiesAppMenu',
+    'BountyContextMenu',
     'BountyView',
     'BountyLinkView',
     'BountyEditView',
@@ -22,7 +25,15 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, ApplicationMenu, ContextMenu, Link,
-    enabled_with_permission)
+    enabled_with_permission, Navigation)
+
+
+class BountySetNavigation(Navigation):
+
+    usedfor = IBountySet
+
+    def traverse(self, name):
+        return self.context[name]
 
 
 class BountiesAppMenu(ApplicationMenu):

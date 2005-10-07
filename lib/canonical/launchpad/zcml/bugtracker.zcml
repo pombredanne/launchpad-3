@@ -87,8 +87,10 @@
         for="canonical.launchpad.interfaces.IBugTrackerSet"
         name="+index" />
 
-    <browser:traverse for="canonical.launchpad.interfaces.IBugTrackerSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BugTrackerSetNavigation"
+        />
 
     <browser:url
         for="canonical.launchpad.interfaces.IBugTrackerSet"
