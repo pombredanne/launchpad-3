@@ -314,7 +314,6 @@ Reason:
             # that wasn't created by them.
             return
 
-        wasStandard = order.isStandardRequest()
         order.quantityx86 = self.quantityx86
         order.quantityppc = self.quantityppc
         order.quantityamd64 = self.quantityamd64
@@ -401,7 +400,7 @@ Reason:
             self.country = None
             self.addressFormMessages.append(_(
                 'You must choose your country from the list below.'))
-            
+
         for field, (field_title, validator) in validators.items():
             value = form.get(field, "")
             # Save all field values in the view so we can display them, if

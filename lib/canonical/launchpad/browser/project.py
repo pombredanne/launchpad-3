@@ -139,13 +139,13 @@ class ProjectView(object):
             return
         if not self.request.method == "POST":
             return
-        # Extract details from the form and update the Product
+        # Extract details from the form and update the project
         self.context.displayname = self.form['displayname']
         self.context.title = self.form['title']
         self.context.summary = self.form['summary']
         self.context.description = self.form['description']
         self.context.homepageurl = self.form['homepageurl']
-        # now redirect to view the product
+        # now redirect to view the project
         self.request.response.redirect(self.request.URL[-1])
 
     def hasProducts(self):

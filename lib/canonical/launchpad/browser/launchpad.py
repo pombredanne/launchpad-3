@@ -21,6 +21,8 @@ from datetime import timedelta, datetime
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
 from zope.app.errorservice.interfaces import ILocalErrorReportingService
 from zope.component import getUtility
+
+import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
     ILaunchBag, ILaunchpadRoot, IRosettaApplication, IMaloneApplication,
     IProductSet, IShipItApplication, IPersonSet, IDistributionSet,
@@ -33,8 +35,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
-    Navigation, stepto, stepthrough)
-import canonical.launchpad.layers
+    Navigation, stepto)
 
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should

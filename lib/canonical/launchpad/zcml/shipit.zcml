@@ -107,6 +107,7 @@
         permission="launchpad.Admin" 
         template="../templates/shipit-exports.pt" />
 
+
     <!-- ShippingRequest -->
     <content class="canonical.launchpad.database.ShippingRequest">
         <allow interface="canonical.launchpad.interfaces.IShippingRequest" />
