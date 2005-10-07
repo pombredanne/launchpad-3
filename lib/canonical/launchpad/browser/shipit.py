@@ -299,7 +299,6 @@ Reason:
             # that wasn't created by them.
             return
 
-        wasStandard = order.isStandardRequest()
         order.quantityx86 = self.quantityx86
         order.quantityppc = self.quantityppc
         order.quantityamd64 = self.quantityamd64
