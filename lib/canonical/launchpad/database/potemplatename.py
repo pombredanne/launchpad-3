@@ -4,14 +4,15 @@ __metaclass__ = type
 __all__ = ['POTemplateNameSet', 'POTemplateName']
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
-from sqlobject import StringCol, MultipleJoin, SQLObjectNotFound, OR, \
-    CONTAINSSTRING
+from sqlobject import (
+    StringCol, MultipleJoin, SQLObjectNotFound, OR, CONTAINSSTRING)
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import IPOTemplateName, IPOTemplateNameSet
+from canonical.launchpad.interfaces import (
+    IPOTemplateName, IPOTemplateNameSet, NotFoundError)
+
 
 class POTemplateNameSet:
     implements(IPOTemplateNameSet)

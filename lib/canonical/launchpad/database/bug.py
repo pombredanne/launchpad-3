@@ -10,13 +10,13 @@ from email.Utils import make_msgid
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
 
-from canonical.launchpad.interfaces import IBug, IBugSet, ICveSet
+from canonical.launchpad.interfaces import (
+    IBug, IBugSet, ICveSet, NotFoundError)
 from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT

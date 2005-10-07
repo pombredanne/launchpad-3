@@ -4,14 +4,11 @@ __metaclass__ = type
 
 __all__ = ['BountySubscriptionNavigation']
 
-from canonical.launchpad.webapp import Navigation
+from canonical.launchpad.webapp import GetitemNavigation
 from canonical.launchpad.interfaces import IBountySubscription
 
 
-class BountySubscriptionNavigation(Navigation):
+class BountySubscriptionNavigation(GetitemNavigation):
 
     usedfor = IBountySubscription
-
-    def traverse(self, name):
-        return self.context[name]
 

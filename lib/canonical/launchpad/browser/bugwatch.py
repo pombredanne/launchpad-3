@@ -9,7 +9,7 @@ from zope.app.form.utility import getWidgetsData
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IBugWatch, IBugWatchSet, ILaunchBag)
-from canonical.launchpad.webapp import canonical_url, Navigation
+from canonical.launchpad.webapp import canonical_url, GetitemNavigation
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
 
@@ -27,10 +27,7 @@ class BugWatchAddView(SQLObjectAddView):
         return canonical_url(self.context)
 
 
-class BugWatchSetNavigation(Navigation):
+class BugWatchSetNavigation(GetitemNavigation):
 
     usedfor = IBugWatchSet
-
-    def traverse(self, name):
-        return self.context[name]
 

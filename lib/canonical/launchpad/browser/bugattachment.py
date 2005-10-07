@@ -15,7 +15,7 @@ from zope.app.content_types import guess_content_type
 
 from canonical.lp import Passthrough
 from canonical.lp.dbschema import BugAttachmentType
-from canonical.launchpad.webapp import canonical_url, Navigation
+from canonical.launchpad.webapp import canonical_url, GetitemNavigation
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.interfaces import (
@@ -24,12 +24,9 @@ from canonical.launchpad.interfaces import (
     IBugAttachmentEditForm)
 
 
-class BugAttachmentSetNavigation(Navigation):
+class BugAttachmentSetNavigation(GetitemNavigation):
 
     usedfor = IBugAttachmentSet
-
-    def traverse(self, name):
-        return self.context[name]
 
 
 class BugAttachmentAddView(SQLObjectAddView):

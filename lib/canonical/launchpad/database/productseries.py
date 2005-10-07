@@ -8,24 +8,22 @@ import sets
 from warnings import warn
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
 from sqlobject import ForeignKey, StringCol, MultipleJoin, DateTimeCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 # canonical imports
-from canonical.launchpad.interfaces import \
-    IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin, \
-    IProductSeriesSet
+from canonical.launchpad.interfaces import (
+    IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin,
+    IProductSeriesSet, NotFoundError)
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
-from canonical.database.sqlbase import (SQLBase, quote,
-    flush_database_updates, sqlvalues)
+from canonical.database.sqlbase import (
+    SQLBase, quote, flush_database_updates, sqlvalues)
 from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import (
     EnumCol, ImportStatus, PackagingType, RevisionControlSystems)
-
 
 
 class ProductSeries(SQLBase):
@@ -193,6 +191,7 @@ class ProductSeries(SQLBase):
         """Has the series source failed automatic testing by roomba?"""
         return self.importstatus == ImportStatus.TESTFAILED
 
+
 class ProductSeriesSet:
 
     implements(IProductSeriesSet)
@@ -207,11 +206,12 @@ class ProductSeriesSet:
 
     def __getitem__(self, name):
         if not self.product:
-            raise KeyError('ProductSeriesSet not initialised with product.')
+            raise AssertionError(
+                'ProductSeriesSet not initialised with product.')
         series = ProductSeries.selectOneBy(productID=self.product.id,
                                            name=name)
         if series is None:
-            raise KeyError(name)
+            raise NotFoundError(name)
         return series
 
     def _querystr(self, ready=None, text=None,

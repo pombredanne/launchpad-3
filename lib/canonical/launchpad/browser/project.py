@@ -5,7 +5,8 @@
 __metaclass__ = type
 
 __all__ = ['ProjectView', 'ProjectEditView', 'ProjectAddProductView',
-           'ProjectSetView', 'ProjectAddView', 'ProjectRdfView']
+           'ProjectSetView', 'ProjectAddView', 'ProjectRdfView',
+           'ProjectSetNavigation']
 
 from urllib import quote as urlquote
 
@@ -23,9 +24,14 @@ from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ApplicationMenu,
-    structured)
+    structured, GetitemNavigation)
 
 _ = MessageIDFactory('launchpad')
+
+
+class ProjectSetNavigation(GetitemNavigation):
+
+    usedfor = IProjectSet
 
 
 class ProjectFacets(StandardLaunchpadFacets):

@@ -25,15 +25,12 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, ApplicationMenu, ContextMenu, Link,
-    enabled_with_permission, Navigation)
+    enabled_with_permission, GetitemNavigation)
 
 
-class BountySetNavigation(Navigation):
+class BountySetNavigation(GetitemNavigation):
 
     usedfor = IBountySet
-
-    def traverse(self, name):
-        return self.context[name]
 
 
 class BountiesAppMenu(ApplicationMenu):

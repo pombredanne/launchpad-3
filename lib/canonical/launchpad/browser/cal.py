@@ -51,7 +51,8 @@ from canonical.launchpad.interfaces import (
      ICalendarEventSet, ICalendarSubscriptionSubset, ICalendarRange,
      ILaunchBag)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, Link, canonical_url, Navigation, stepto)
+    ApplicationMenu, ContextMenu, Link, canonical_url, Navigation,
+    GetitemNavigation, stepto)
 
 from schoolbell.interfaces import ICalendar
 from schoolbell.utils import (
@@ -182,12 +183,9 @@ class CalendarNavigation(Navigation):
         return getUtility(ICalendarEventSet)
 
 
-class CalendarEventSetNavigation(Navigation):
+class CalendarEventSetNavigation(GetitemNavigation):
 
     usedfor = ICalendarEventSet
-
-    def traverse(self, name):
-        return self.context[name]
 
 
 class CalendarDay:

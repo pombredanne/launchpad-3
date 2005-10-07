@@ -8,7 +8,7 @@ __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'nearest_menu', 'canonical_url', 'nearest', 'structured',
            'StandardLaunchpadFacets', 'enabled_with_permission',
            'LaunchpadView', 'Navigation', 'stepthrough', 'redirection',
-           'stepto']
+           'stepto', 'GetitemNavigation']
 
 from zope.component import getUtility
 
@@ -19,6 +19,14 @@ from canonical.launchpad.webapp.publisher import (
     canonical_url, nearest, LaunchpadView, Navigation, stepthrough,
     redirection, stepto)
 from canonical.launchpad.interfaces import ILaunchBag
+
+
+class GetitemNavigation(Navigation):
+    """Base class for navigation where fall-back traversal uses context[name].
+    """
+
+    def traverse(self, name):
+        return self.context[name]
 
 
 class StandardLaunchpadFacets(FacetMenu):

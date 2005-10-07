@@ -9,14 +9,15 @@ from zope.component import getUtility
 from sqlobject import StringCol, ForeignKey
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
-from canonical.lp.dbschema import EnumCol, PackagePublishingStatus, \
-        SourcePackageFormat, PackagePublishingPocket
+from canonical.lp.dbschema import (
+    EnumCol, PackagePublishingStatus,  SourcePackageFormat,
+    PackagePublishingPocket)
 
-from canonical.launchpad.interfaces import \
-    ISourcePackageInDistro, ISourcePackageInDistroSet
+from canonical.launchpad.interfaces import (
+    ISourcePackageInDistro, ISourcePackageInDistroSet, NotFoundError)
 
-from canonical.launchpad.database.vsourcepackagereleasepublishing import \
-     VSourcePackageReleasePublishing
+from canonical.launchpad.database.vsourcepackagereleasepublishing import (
+     VSourcePackageReleasePublishing)
 
 
 class SourcePackageInDistro(SQLBase):
@@ -73,6 +74,6 @@ class SourcePackageInDistroSet:
 
         item = VSourcePackageReleasePublishing.select(query)
         if item is None:
-            raise KeyError, name
+            raise NotFoundError(name)
         return item
 

@@ -4,14 +4,10 @@ __metaclass__ = type
 
 __all__ = ['BinaryPackageReleaseNavigation']
 
-from canonical.launchpad.webapp import Navigation
+from canonical.launchpad.webapp import GetitemNavigation
 from canonical.launchpad.interfaces import IBinaryPackageRelease
 
 
-class BinaryPackageReleaseNavigation(Navigation):
+class BinaryPackageReleaseNavigation(GetitemNavigation):
 
     usedfor = IBinaryPackageRelease
-
-    def traverse(self, name):
-        return self.context[name]
-

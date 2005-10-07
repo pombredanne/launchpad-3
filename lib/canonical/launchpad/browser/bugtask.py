@@ -24,7 +24,7 @@ from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
 
 from canonical.lp import dbschema
-from canonical.launchpad.webapp import canonical_url, Link, Navigation
+from canonical.launchpad.webapp import canonical_url, Link, GetitemNavigation
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
@@ -46,12 +46,9 @@ STATUS_OPEN = any(dbschema.BugTaskStatus.NEW,
                   dbschema.BugTaskStatus.ACCEPTED)
 
 
-class BugTaskSetNavigation(Navigation):
+class BugTaskSetNavigation(GetitemNavigation):
 
     usedfor = IBugTaskSet
-
-    def traverse(self, name):
-        return self.context[name]
 
 
 class BugTaskContextMenu(BugContextMenu):

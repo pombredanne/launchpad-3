@@ -18,16 +18,13 @@ from canonical.lp.dbschema import BugTrackerType
 from canonical.launchpad.interfaces import (
     IProject, IProjectBugTrackerSet, IBugTracker, IBugTrackerSet, ILaunchBag)
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, Navigation)
+    canonical_url, ContextMenu, Link, GetitemNavigation)
 from zope.app.form.browser.editview import EditView
 
 
-class BugTrackerSetNavigation(Navigation):
+class BugTrackerSetNavigation(GetitemNavigation):
 
     usedfor = IBugTrackerSet
-
-    def traverse(self, name):
-        return self.context[name]
 
 
 class BugTrackerContextMenu(ContextMenu):

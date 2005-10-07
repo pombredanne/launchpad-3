@@ -14,9 +14,10 @@
             set_attributes="name dateexpected visible" />
     </content>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IMilestoneSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="MilestoneSetNavigation"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IMilestone"

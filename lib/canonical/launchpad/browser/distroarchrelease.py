@@ -15,7 +15,8 @@ from canonical.lp.batching import BatchNavigator
 from zope.component import getUtility
 
 from canonical.launchpad.webapp import (
-    canonical_url, StandardLaunchpadFacets, ContextMenu, Link, Navigation)
+    canonical_url, StandardLaunchpadFacets, ContextMenu, Link,
+    GetitemNavigation)
 
 from canonical.launchpad.interfaces import (
     IDistroArchRelease, IBuildSet)
@@ -23,12 +24,9 @@ from canonical.launchpad.interfaces import (
 BATCH_SIZE = 40
 
 
-class DistroArchReleaseNavigation(Navigation):
+class DistroArchReleaseNavigation(GetitemNavigation):
 
     usedfor = IDistroArchRelease
-
-    def traverse(self, name):
-        return self.context[name]
 
 
 class DistroArchReleaseFacets(StandardLaunchpadFacets):

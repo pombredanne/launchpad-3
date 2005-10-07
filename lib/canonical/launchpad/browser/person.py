@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'PersonSetNavigation',
     'PeopleContextMenu',
     'PersonFacets',
     'PersonBugsMenu',
@@ -72,10 +73,18 @@ from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission)
+    enabled_with_permission, Navigation)
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
+
+
+class PersonSetNavigation(Navigation):
+
+    usedfor = IPersonSet
+
+    def traverse(self, name):
+        return self.context.getByName(name)
 
 
 class PeopleContextMenu(ContextMenu):

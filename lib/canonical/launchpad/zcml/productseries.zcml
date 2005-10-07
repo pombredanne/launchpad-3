@@ -34,9 +34,10 @@
         classes="ProductSeriesContextMenu"
         />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IProductSeries"
-        function="canonical.launchpad.browser.traverseProductSeries" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="ProductSeriesNavigation ProductSeriesSetNavigation"
+        />
 
     <browser:url
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -251,10 +252,6 @@
         provides="canonical.launchpad.interfaces.IProductSeriesSet">
         <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />
     </securedutility>
-
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IProductSeriesSet"
-        getter="__getitem__" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProductSeriesSet"

@@ -173,9 +173,10 @@
     <allow interface="canonical.launchpad.interfaces.ITicketSet" />
   </securedutility>
 
-  <browser:traverse
-    for="canonical.launchpad.interfaces.ITicketSet"
-    getter="__getitem__" />
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="TicketSetNavigation"
+      />
 
   <browser:url
     for="canonical.launchpad.interfaces.ITicketSet"

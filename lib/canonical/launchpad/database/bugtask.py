@@ -20,7 +20,6 @@ from sqlos.interfaces import ISQLObject
 
 import pytz
 
-from zope.exceptions import NotFoundError
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
@@ -34,9 +33,11 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
-from canonical.launchpad.interfaces import (BugTaskSearchParams,
-    IBugTask, IBugTasksReport, IBugTaskSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag)
+from canonical.launchpad.interfaces import (
+    BugTaskSearchParams, IBugTask, IBugTasksReport, IBugTaskSet,
+    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, ILaunchBag,
+    NotFoundError)
+
 
 debbugsstatusmap = {'open': BugTaskStatus.NEW,
                     'forwarded': BugTaskStatus.ACCEPTED,
@@ -220,7 +221,7 @@ class BugTaskSet:
         try:
             task = BugTask.get(task_id)
         except SQLObjectNotFound:
-            raise KeyError, task_id
+            raise NotFoundError(task_id)
         return task
 
     def __iter__(self):

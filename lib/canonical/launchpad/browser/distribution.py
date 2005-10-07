@@ -28,15 +28,12 @@ from canonical.launchpad.browser import BugTaskSearchListingView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission, Navigation)
+    enabled_with_permission, GetitemNavigation)
 
 
-class DistributionSetNavigation(Navigation):
+class DistributionSetNavigation(GetitemNavigation):
 
     usedfor = IDistributionSet
-
-    def traverse(self, name):
-        return self.context[name]
 
 
 class DistributionFacets(StandardLaunchpadFacets):

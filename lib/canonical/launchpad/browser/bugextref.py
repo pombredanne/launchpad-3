@@ -13,15 +13,12 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IBugExternalRef, IBugExternalRefSet, ILaunchBag)
 from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.webapp import canonical_url, Navigation
+from canonical.launchpad.webapp import canonical_url, GetitemNavigation
 
 
-class BugExternalRefSetNavigation(Navigation):
+class BugExternalRefSetNavigation(GetitemNavigation):
 
     usedfor = IBugExternalRefSet
-
-    def traverse(self, name):
-        return self.context[name]
 
 
 class BugExternalRefsView:

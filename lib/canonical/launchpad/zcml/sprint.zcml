@@ -82,10 +82,10 @@
     for="canonical.launchpad.interfaces.ISprintSet"
     name="+index" />
 
-  <browser:traverse
-    for="canonical.launchpad.interfaces.ISprintSet"
-    getter="__getitem__"
-    />
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="SprintSetNavigation"
+      />
 
   <browser:pages
     for="canonical.launchpad.interfaces.ISprintSet"

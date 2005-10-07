@@ -24,15 +24,12 @@ from canonical.launchpad.interfaces import (
     )
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, Navigation)
+    StandardLaunchpadFacets, Link, GetitemNavigation)
 
 
-class BuilderSetNavigation(Navigation):
+class BuilderSetNavigation(GetitemNavigation):
 
     usedfor = IBuilderSet
-
-    def traverse(self, name):
-        return self.context[name]
 
 
 class BuildFarmFacets(StandardLaunchpadFacets):

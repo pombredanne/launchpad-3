@@ -4,14 +4,11 @@ __metaclass__ = type
 
 __all__ = ['BugPackageInfestationSetNavigation']
 
-from canonical.launchpad.webapp import Navigation
+from canonical.launchpad.webapp import GetitemNavigation
 from canonical.launchpad.interfaces import IBugPackageInfestationSet
 
 
-class BugPackageInfestationSetNavigation(Navigation):
+class BugPackageInfestationSetNavigation(GetitemNavigation):
 
     usedfor = IBugPackageInfestationSet
-
-    def traverse(self, name):
-        return self.context[name]
 
