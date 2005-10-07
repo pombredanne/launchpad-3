@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ProductSetNavigation',
     'ProductFacets',
     'ProductOverviewMenu',
     'ProductBugsMenu',
@@ -43,7 +44,12 @@ from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission, structured)
+    enabled_with_permission, structured, GetitemNavigation)
+
+
+class ProductSetNavigation(GetitemNavigation):
+
+    usedfor = IProductSet
 
 
 class ProductFacets(StandardLaunchpadFacets):

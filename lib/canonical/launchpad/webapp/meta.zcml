@@ -2,13 +2,6 @@
 
   <directive
       namespace="http://namespaces.zope.org/browser"
-      name="traverse"
-      schema="canonical.launchpad.webapp.metazcml.ITraverseDirective"
-      handler="canonical.launchpad.webapp.metazcml.traverse"
-      />
-
-  <directive
-      namespace="http://namespaces.zope.org/browser"
       name="url"
       schema="canonical.launchpad.webapp.metazcml.IURLDirective"
       handler="canonical.launchpad.webapp.metazcml.url"

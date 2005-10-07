@@ -38,7 +38,8 @@ from canonical.launchpad.interfaces import (
     IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IMaintainershipSet,
     IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
     ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
-    ILoginTokenSet, KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken)
+    ILoginTokenSet, KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken,
+    NotFoundError)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -754,7 +755,7 @@ class PersonSet:
         """See IPersonSet."""
         person = self.get(personid)
         if person is None:
-            raise KeyError(personid)
+            raise NotFoundError(personid)
         else:
             return person
 
@@ -1295,7 +1296,7 @@ class EmailAddressSet:
         """See IEmailAddressSet."""
         email = self.get(emailid)
         if email is None:
-            raise KeyError(emailid)
+            raise NotFoundError(emailid)
         else:
             return email
 

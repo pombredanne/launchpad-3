@@ -58,9 +58,10 @@
       />
   </securedutility>
 
-  <browser:traverse
-    for="canonical.launchpad.interfaces.IBugProductInfestationSet"
-    getter="__getitem__" />
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="BugProductInfestationSetNavigation"
+      />
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IBugProductInfestationSet"

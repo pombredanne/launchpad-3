@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistributionSetNavigation',
     'DistributionFacets',
     'DistributionView',
     'DistributionBugsView',
@@ -27,7 +28,12 @@ from canonical.launchpad.browser import BugTaskSearchListingView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission)
+    enabled_with_permission, GetitemNavigation)
+
+
+class DistributionSetNavigation(GetitemNavigation):
+
+    usedfor = IDistributionSet
 
 
 class DistributionFacets(StandardLaunchpadFacets):

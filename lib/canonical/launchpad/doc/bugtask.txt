@@ -178,13 +178,13 @@ task. It concatenates the display names of the distribution,
 
     >>> bugtask = bugtaskset.get(1)
     >>> bugtask.targetname
-    u'upstream ubuntu'
+    u'ubuntu (upstream)'
 
 distro release, or product;
 
     >>> bugtask = bugtaskset.get(2)
     >>> bugtask.targetname
-    u'upstream firefox'
+    u'firefox (upstream)'
 
 the name of the source package (if any); and the name of the binary
 package (but only if it's named differently from the source
@@ -209,6 +209,7 @@ it in isolation.
     ...     def __init__(self, name):
     ...         self.name = '[%s.name]' % name
     ...         self.displayname = '[%s.displayname]' % name
+    ...         self.fullreleasename = '[%s.fullreleasename]' % name
 
 When all the important attributes are None, then the bugtask is in an invalid
 state.
@@ -223,7 +224,7 @@ Product alone:
 
     >>> bugtask.product = NamedThing('product')
     >>> bugtask.targetname()
-    'upstream [product.name]'
+    '[product.name] (upstream)'
 
 Put things back the way they were.
 
@@ -239,13 +240,13 @@ Distribution and sourcepackagename.
 
     >>> bugtask.sourcepackagename = NamedThing('spn')
     >>> bugtask.targetname()
-    '[distribution.displayname] [spn.name]'
+    '[spn.name] ([distribution.displayname])'
 
 Distribution and sourcepackagename and binarypackagename.
 
     >>> bugtask.binarypackagename = NamedThing('bpn')
     >>> bugtask.targetname()
-    '[distribution.displayname] [spn.name] [bpn.name]'
+    '[spn.name] [bpn.name] ([distribution.displayname])'
 
 Reset the state of our bugtask.
 
@@ -258,19 +259,19 @@ Just a distrorelease.
     >>> bugtask.distrorelease = NamedThing('distrorelease')
     >>> bugtask.distrorelease.distribution = NamedThing('distribution')
     >>> bugtask.targetname()
-    '[distribution.displayname] [distrorelease.displayname]'
+    '[distrorelease.fullreleasename]'
 
 Distrorelease and sourcepackagename.
 
     >>> bugtask.sourcepackagename = NamedThing('spn')
     >>> bugtask.targetname()
-    '[distribution.displayname] [distrorelease.displayname] [spn.name]'
+    '[spn.name] ([distrorelease.fullreleasename])'
 
 Distrorelease, sourcepackagename and binarypackagename.
 
     >>> bugtask.binarypackagename = NamedThing('bpn')
     >>> bugtask.targetname()
-    '[distribution.displayname] [distrorelease.displayname] [spn.name] [bpn.name]'
+    '[spn.name] [bpn.name] ([distrorelease.fullreleasename])'
 
 Note that we haven't tested any combinations that shouldn't occur, except
 for the case when everything is None.
@@ -433,7 +434,7 @@ like these, use the NullBugTask object.
 
     >>> null_bugtask.id is None
     True
-    >>> null_bugtask.title == 'Bug #1 in upstream netapplet: "Firefox does not support SVG"'
+    >>> null_bugtask.title == 'Bug #1 in netapplet (upstream): "Firefox does not support SVG"'
     True
     >>> null_bugtask.product is netapplet
     True
@@ -476,7 +477,7 @@ like these, use the NullBugTask object.
     >>> null_bugtask.target == netapplet
     True
     >>> null_bugtask.targetname
-    u'upstream netapplet'
+    u'netapplet (upstream)'
     >>> expected_related_task_ids = [
     ...     task.id for task in null_bugtask.related_tasks]
     >>> actual_related_task_ids = [task.id for task in bug_one.bugtasks]
@@ -485,7 +486,7 @@ like these, use the NullBugTask object.
     >>> expected_related_task_ids == actual_related_task_ids
     True
     >>> null_bugtask.statusdisplayhtml
-    u'Not reported in upstream netapplet'
+    u'Not reported in netapplet (upstream)'
     >>> null_bugtask.statuselsewhere
     'Fixed in 2 of 7 places'
 
@@ -679,13 +680,13 @@ Let's just make sure that the tasks on bug_one sort correctly.
     >>> tasks = bug_one.bugtasks
     >>> for task in tasks:
     ...     print task.targetname
-    upstream evolution
-    upstream firefox
-    upstream ubuntu
+    evolution (upstream)
+    firefox (upstream)
+    ubuntu (upstream)
     ubuntu
-    ubuntu mozilla-firefox
-    ubuntu hoary
-    debian mozilla-firefox
+    mozilla-firefox (ubuntu)
+    Ubuntu Hoary
+    mozilla-firefox (debian)
 
 BugTask Adaptation
 ------------------

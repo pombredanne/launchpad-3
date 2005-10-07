@@ -124,7 +124,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'gpgkey'::pg_catalog.regclass;
 
-INSERT INTO gpgkey (id, owner, keyid, fingerprint, active, algorithm, keysize) VALUES (1, 16, '12345678', 'ABCDEF0123456789ABCDDCBA0000111112345678', true, 17, 1024);
+INSERT INTO gpgkey (id, "owner", keyid, fingerprint, active, algorithm, keysize) VALUES (1, 16, '12345678', 'ABCDEF0123456789ABCDDCBA0000111112345678', true, 17, 1024);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'gpgkey'::pg_catalog.regclass;
@@ -3199,7 +3199,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (406, 'ter', 'Tereno', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (407, 'tet', 'Tetum', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (408, 'tg', 'Tajik', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (409, 'tl', 'Tagalog', NULL, NULL, NULL, true);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (409, 'tl', 'Tagalog', NULL, 2, 'n > 1', true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (410, 'th', 'Thai', NULL, NULL, NULL, true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (411, 'bo', 'Tibetan', NULL, 1, '0', true);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (412, 'tig', 'Tigre', NULL, NULL, NULL, true);
@@ -3349,6 +3349,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (556, 'so_ET', 'Somali (Ethiopia)', NULL, NULL, NULL, false);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (557, 'so_KE', 'Somali (Kenya)', NULL, NULL, NULL, false);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (558, 'so_SO', 'Somali (Somalia)', NULL, NULL, NULL, false);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (559, 'fil', 'Filipino', NULL, NULL, NULL, true);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = '"language"'::pg_catalog.regclass;
@@ -3634,11 +3635,13 @@ INSERT INTO spokenin ("language", country, id) VALUES (41, 75, 76);
 INSERT INTO spokenin ("language", country, id) VALUES (45, 21, 125);
 INSERT INTO spokenin ("language", country, id) VALUES (47, 101, 131);
 INSERT INTO spokenin ("language", country, id) VALUES (47, 19, 129);
+INSERT INTO spokenin ("language", country, id) VALUES (51, 171, 337);
 INSERT INTO spokenin ("language", country, id) VALUES (56, 28, 134);
 INSERT INTO spokenin ("language", country, id) VALUES (58, 75, 133);
 INSERT INTO spokenin ("language", country, id) VALUES (62, 34, 126);
 INSERT INTO spokenin ("language", country, id) VALUES (64, 68, 10);
 INSERT INTO spokenin ("language", country, id) VALUES (68, 200, 142);
+INSERT INTO spokenin ("language", country, id) VALUES (70, 171, 336);
 INSERT INTO spokenin ("language", country, id) VALUES (76, 193, 70);
 INSERT INTO spokenin ("language", country, id) VALUES (76, 209, 72);
 INSERT INTO spokenin ("language", country, id) VALUES (76, 45, 66);
@@ -3686,6 +3689,7 @@ INSERT INTO spokenin ("language", country, id) VALUES (149, 225, 1);
 INSERT INTO spokenin ("language", country, id) VALUES (157, 85, 37);
 INSERT INTO spokenin ("language", country, id) VALUES (159, 101, 2);
 INSERT INTO spokenin ("language", country, id) VALUES (165, 106, 156);
+INSERT INTO spokenin ("language", country, id) VALUES (167, 171, 338);
 INSERT INTO spokenin ("language", country, id) VALUES (169, 101, 155);
 INSERT INTO spokenin ("language", country, id) VALUES (174, 99, 154);
 INSERT INTO spokenin ("language", country, id) VALUES (178, 100, 173);
@@ -3714,6 +3718,8 @@ INSERT INTO spokenin ("language", country, id) VALUES (305, 162, 224);
 INSERT INTO spokenin ("language", country, id) VALUES (313, 75, 140);
 INSERT INTO spokenin ("language", country, id) VALUES (316, 112, 138);
 INSERT INTO spokenin ("language", country, id) VALUES (316, 70, 136);
+INSERT INTO spokenin ("language", country, id) VALUES (322, 171, 340);
+INSERT INTO spokenin ("language", country, id) VALUES (324, 171, 339);
 INSERT INTO spokenin ("language", country, id) VALUES (325, 101, 151);
 INSERT INTO spokenin ("language", country, id) VALUES (329, 103, 240);
 INSERT INTO spokenin ("language", country, id) VALUES (333, 173, 152);
@@ -3766,6 +3772,7 @@ INSERT INTO spokenin ("language", country, id) VALUES (427, 218, 9);
 INSERT INTO spokenin ("language", country, id) VALUES (435, 223, 127);
 INSERT INTO spokenin ("language", country, id) VALUES (439, 229, 157);
 INSERT INTO spokenin ("language", country, id) VALUES (442, 232, 172);
+INSERT INTO spokenin ("language", country, id) VALUES (447, 171, 341);
 INSERT INTO spokenin ("language", country, id) VALUES (449, 225, 143);
 INSERT INTO spokenin ("language", country, id) VALUES (451, 22, 128);
 INSERT INTO spokenin ("language", country, id) VALUES (454, 198, 141);
@@ -3864,6 +3871,7 @@ INSERT INTO spokenin ("language", country, id) VALUES (555, 60, 253);
 INSERT INTO spokenin ("language", country, id) VALUES (556, 70, 255);
 INSERT INTO spokenin ("language", country, id) VALUES (557, 112, 257);
 INSERT INTO spokenin ("language", country, id) VALUES (558, 197, 259);
+INSERT INTO spokenin ("language", country, id) VALUES (559, 171, 342);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'spokenin'::pg_catalog.regclass;
@@ -5949,7 +5957,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'signedcodeofconduct'::pg_catalog.regclass;
 
-INSERT INTO signedcodeofconduct (id, owner, signingkey, datecreated, signedcode,recipient, active, admincomment) VALUES (1, 16, 1, '2005-09-27 10:01:13', 'Sampledata signedcode', NULL, true, NULL); 
+INSERT INTO signedcodeofconduct (id, "owner", signingkey, datecreated, signedcode, recipient, active, admincomment) VALUES (1, 16, 1, '2005-09-27 10:01:13', 'Sampledata signedcode', NULL, true, NULL);
+
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'signedcodeofconduct'::pg_catalog.regclass;
 
@@ -7827,19 +7836,19 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'shippingrequest'::pg_catalog.regclass;
 
-INSERT INTO shippingrequest (id, recipientdisplayname,recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (1, 'Same Name', 52, 55, false, NULL, '2005-08-01 18:38:24.526648', true, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 25, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipientdisplayname,recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (2, 'Same Name', 22, NULL, false, NULL, '2005-09-01 18:38:24.526648', true, NULL, NULL, false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipientdisplayname,recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (3, 'Same Name', 51, NULL, false, NULL, '2005-07-01 18:38:24.526648', true, NULL, NULL, false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 35, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipientdisplayname,recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (4, 'Same Name', 2, NULL, false, NULL, '2005-04-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 45, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipientdisplayname,recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (5, 'Same Name', 23, NULL, false, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipientdisplayname,recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (6, 'Same Name', 28, NULL, true, 55, '2005-04-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 19, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipientdisplayname,recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (7, 'Same Name', 27, NULL, false, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipientdisplayname,recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (8, 'Same Name', 46, NULL, false, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipientdisplayname,recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (9, 'Same Name', 50, NULL, false, NULL, '2005-05-04 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipientdisplayname,recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (10, 'Same Name', 14, NULL, false, NULL, '2005-05-03 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipientdisplayname,recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (11, 'Same Name', 13, NULL, false, NULL, '2005-05-02 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipientdisplayname,recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (12, 'Same Name', 6, NULL, false, NULL, '2005-05-08 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipientdisplayname,recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (13, 'Same Name', 55, NULL, false, NULL, '2005-05-09 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (1, 52, 55, false, NULL, '2005-08-01 18:38:24.526648', true, NULL, 'noreason', false, 'Same Name', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 25, '999432423', '+55 16 3374-2027');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (2, 22, NULL, false, NULL, '2005-09-01 18:38:24.526648', true, NULL, NULL, false, 'Same Name', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (3, 51, NULL, false, NULL, '2005-07-01 18:38:24.526648', true, NULL, NULL, false, 'Same Name', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 35, '999432423', '+55 16 3374-2027');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (4, 2, NULL, false, NULL, '2005-04-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Same Name', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 45, '999432423', '+55 16 3374-2027');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (5, 23, NULL, false, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Same Name', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (6, 28, NULL, true, 55, '2005-04-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Same Name', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 19, '999432423', '+55 16 3374-2027');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (7, 27, NULL, false, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Same Name', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (8, 46, NULL, false, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Same Name', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (9, 50, NULL, false, NULL, '2005-05-04 18:38:24.526648', NULL, NULL, 'noreason', false, 'Same Name', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (10, 14, NULL, false, NULL, '2005-05-03 18:38:24.526648', NULL, NULL, 'noreason', false, 'Same Name', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (11, 13, NULL, false, NULL, '2005-05-02 18:38:24.526648', NULL, NULL, 'noreason', false, 'Same Name', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (12, 6, NULL, false, NULL, '2005-05-08 18:38:24.526648', NULL, NULL, 'noreason', false, 'Same Name', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (13, 55, NULL, false, NULL, '2005-05-09 18:38:24.526648', NULL, NULL, 'noreason', false, 'Same Name', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'shippingrequest'::pg_catalog.regclass;

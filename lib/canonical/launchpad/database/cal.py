@@ -30,7 +30,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import (
     ILaunchpadCalendar, ICalendarSet, ICalendarEventSet,
     ICalendarSubscriptionSubset, IHasOwner, IPerson, ITeam, IProject,
-    IProduct)
+    IProduct, NotFoundError)
 
 
 DEFAULT_COLOUR = '#efefef'
@@ -103,7 +103,7 @@ class Calendar(SQLBase, CalendarMixin, EditableCalendarMixin):
         try:
             return CalendarEvent.byUniqueID(unique_id)
         except SQLObjectNotFound:
-            raise KeyError(unique_id)
+            raise NotFoundError(unique_id)
 
     def expand(self, first, last):
         """See ICalendar"""
@@ -120,7 +120,7 @@ class Calendar(SQLBase, CalendarMixin, EditableCalendarMixin):
         # TODO: support recurring events
         try:
             self.find(event.unique_id)
-        except KeyError:
+        except NotFoundError:
             e = CalendarEvent(calendar=self, dtstart=event.dtstart,
                               duration=event.duration, title=event.title,
                               location=event.location, description=event.description,
@@ -133,7 +133,7 @@ class Calendar(SQLBase, CalendarMixin, EditableCalendarMixin):
         """See ICalendar"""
         try:
             self.find(event.unique_id).destroySelf()
-        except KeyError:
+        except NotFoundError:
             raise ValueError('event %r not in calendar' % event.unique_id)
 
 

@@ -28,9 +28,10 @@
         module="canonical.launchpad.browser.builder"
         classes="BuildFarmFacets" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBuilderSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BuilderSetNavigation"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBuilderSet"

@@ -15,8 +15,7 @@ from canonical.database.sqlbase import (
 from canonical.lp import dbschema
 
 from canonical.launchpad.interfaces import (
-    IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot
-    )
+    IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot, NotFoundError)
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
 
 __all__ = [
@@ -95,7 +94,7 @@ class DistroArchRelease(SQLBase):
         try:
             return packages[0]
         except IndexError:
-            raise KeyError, name
+            raise NotFoundError(name)
 
 
 class PocketChroot(SQLBase):

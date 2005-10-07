@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'TicketSetNavigation',
     'TicketView',
     'TicketAddView',
     'TicketEditView',
@@ -22,7 +23,12 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, canonical_url,
-    enabled_with_permission)
+    enabled_with_permission, GetitemNavigation)
+
+
+class TicketSetNavigation(GetitemNavigation):
+
+    usedfor = ITicketSet
 
 
 class TicketView:

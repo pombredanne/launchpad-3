@@ -9,7 +9,6 @@ import sets
 from warnings import warn
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 from zope.component import getUtility
 
 from sqlobject import (
@@ -34,7 +33,8 @@ from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.ticket import Ticket
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
-    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner)
+    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner, NotFoundError
+    )
 
 
 class Product(SQLBase):

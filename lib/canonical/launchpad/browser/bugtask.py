@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugTaskSetNavigation',
     'BugTaskContextMenu',
     'BugTasksReportView',
     'BugTaskEditView',
@@ -23,7 +24,7 @@ from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
 
 from canonical.lp import dbschema
-from canonical.launchpad.webapp import canonical_url, Link
+from canonical.launchpad.webapp import canonical_url, Link, GetitemNavigation
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
@@ -43,6 +44,11 @@ from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
 #       -- kiko, 2005-08-23
 STATUS_OPEN = any(dbschema.BugTaskStatus.NEW,
                   dbschema.BugTaskStatus.ACCEPTED)
+
+
+class BugTaskSetNavigation(GetitemNavigation):
+
+    usedfor = IBugTaskSet
 
 
 class BugTaskContextMenu(BugContextMenu):

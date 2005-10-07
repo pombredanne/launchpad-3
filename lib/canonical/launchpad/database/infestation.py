@@ -19,9 +19,9 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from sqlobject import ForeignKey, IntCol
 
-from canonical.launchpad.interfaces import \
-    IBugProductInfestationSet, IBugPackageInfestationSet, \
-    IBugProductInfestation, IBugPackageInfestation
+from canonical.launchpad.interfaces import (
+    IBugProductInfestationSet, IBugPackageInfestationSet,
+    IBugProductInfestation, IBugPackageInfestation, NotFoundError)
 
 from canonical.launchpad.database.bugset import BugSetBase
 from canonical.lp import dbschema
@@ -93,7 +93,7 @@ class BugProductInfestationSet(BugSetBase):
     def __getitem__(self, id):
         item = self.table.selectOne(self.table.q.id == id)
         if item is None:
-            raise KeyError, id
+            raise NotFoundError(id)
         return item
 
     def __iter__(self):
@@ -111,7 +111,7 @@ class BugPackageInfestationSet(BugSetBase):
     def __getitem__(self, id):
         item = self.table.selectOne(self.table.q.id == id)
         if item is None:
-            raise KeyError, id
+            raise NotFoundError(id)
         return item
 
     def __iter__(self):

@@ -8,9 +8,9 @@ from datetime import datetime
 import xmlrpclib
 import urlparse
 import urllib2
+import pytz
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
 # SQLObject/SQLBase
 from sqlobject import (
@@ -22,11 +22,10 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.build import Build
 
 from canonical.launchpad.interfaces import (
-    IBuilder, IBuilderSet, IBuildQueue, IBuildQueueSet)
+    IBuilder, IBuilderSet, IBuildQueue, IBuildQueueSet, NotFoundError)
 
 from canonical.lp.dbschema import EnumCol, BuildStatus
 
-import pytz
 
 class BuilderSlave(xmlrpclib.Server):
     """Add in a few useful methods for the XMLRPC slave."""

@@ -268,9 +268,10 @@
         for="canonical.launchpad.interfaces.IProjectSet"
         name="+index" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IProjectSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="ProjectSetNavigation"
+        />
     <browser:url
         for="canonical.launchpad.interfaces.IProject"
         path_expression="name"

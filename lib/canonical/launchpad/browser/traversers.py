@@ -21,7 +21,6 @@ __all__ = [
     ]
 
 from zope.component import getUtility, getView
-from zope.exceptions import NotFoundError
 
 from canonical.launchpad.interfaces import (
     IBugSet, IBugTask, IDistributionSet, IProjectSet, IProductSet,
@@ -31,11 +30,12 @@ from canonical.launchpad.interfaces import (
     IBugExternalRefSet, ICveSet, IBugWatchSet, IProduct, INullBugTask,
     IDistroSourcePackageSet, ISourcePackageNameSet, IPOTemplateSet,
     IDistribution, IDistroRelease, ISourcePackage, IDistroSourcePackage,
-    IProject, IMaloneApplication, IPerson, ITeam, IPoll, IPOTemplate)
+    IProject, IMaloneApplication, IPerson, ITeam, IPoll, IPOTemplate,
+    NotFoundError)
 from canonical.launchpad.database import ProductSeriesSet, SourcePackageSet
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp import (
-    Navigation, stepthrough, redirection, stepto)
+    Navigation, GetitemNavigation, stepthrough, redirection, stepto)
 from canonical.launchpad.helpers import shortlist
 import canonical.launchpad.layers
 
@@ -72,7 +72,7 @@ class SourcePackageNavigation(Navigation, BugTargetTraversalMixin):
                    sourcepackagename=self.context.sourcepackagename)
 
 
-class DistroReleaseNavigation(Navigation, BugTargetTraversalMixin):
+class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     usedfor = IDistroRelease
 
@@ -98,12 +98,6 @@ class DistroReleaseNavigation(Navigation, BugTargetTraversalMixin):
     @stepto('+sources')
     def sources(self):
         return SourcePackageSet(distrorelease=self.context)
-
-    def traverse(self, name):
-        try:
-            return self.context[name]
-        except KeyError:
-            raise NotFoundError
 
 
 class ProjectNavigation(Navigation, CalendarTraversalMixin):
@@ -248,7 +242,7 @@ class POTemplateNavigation(Navigation):
             raise AssertionError('We only know about GET, HEAD, and POST')
 
 
-class DistributionNavigation(Navigation, BugTargetTraversalMixin):
+class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     usedfor = IDistribution
 
@@ -292,12 +286,6 @@ class DistributionNavigation(Navigation, BugTargetTraversalMixin):
         except ValueError:
             raise NotFoundError
         return self.context.getTicket(ticket_num)
-
-    def traverse(self, name):
-        try:
-            return self.context[name]
-        except KeyError:
-            return None
 
 
 class PersonNavigation(Navigation, CalendarTraversalMixin):

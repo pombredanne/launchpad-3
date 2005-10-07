@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'LoginTokenSetNavigation',
     'LoginTokenView',
     'ResetPasswordView',
     'ValidateEmailView',
@@ -24,11 +25,16 @@ from canonical.lp.dbschema import GPGKeyAlgorithm
 
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logInPerson
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, GetitemNavigation
 
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, IPasswordEncryptor, ILoginTokenSet,
     IGPGKeySet, IGPGHandler, ILaunchBag)
+
+
+class LoginTokenSetNavigation(GetitemNavigation):
+
+    usedfor = ILoginTokenSet
 
 
 class LoginTokenView:

@@ -17,10 +17,11 @@ from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.interfaces import (
-    ILoginToken, ILoginTokenSet, IGPGHandler
+    ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError
     )
 from canonical.lp.dbschema import LoginTokenType, EnumCol
 from canonical.launchpad.validators.email import valid_email
+
 
 class LoginToken(SQLBase):
     implements(ILoginToken)
@@ -60,11 +61,11 @@ class LoginToken(SQLBase):
         formatted_uids = ''
         for email in key.emails:
             formatted_uids += '\t%s\n' % email
-        
+
         template = open(
             'lib/canonical/launchpad/emailtemplates/validate-gpg.txt').read()
         fromaddress = "Launchpad GPG Validator <noreply@ubuntu.com>"
-        
+
         replacements = {'longstring': self.token,
                         'requester': self.requester.browsername,
                         'requesteremail': self.requesteremail,
@@ -118,14 +119,14 @@ class LoginTokenSet:
 
         if requesterid:
             query += 'AND requester=%s' % requesterid
-        
+
         return LoginToken.select(query)
 
     def deleteByFingerprintAndRequester(self, fingerprint, requester):
         for token in self.searchByFingerprintAndRequester(fingerprint,
                                                           requester):
             token.destroySelf()
-            
+
     def new(self, requester, requesteremail, email, tokentype,
             fingerprint=None):
         """See ILoginTokenSet."""
@@ -146,6 +147,6 @@ class LoginTokenSet:
         """See ILoginTokenSet."""
         token = LoginToken.selectOneBy(token=tokentext)
         if token is None:
-            raise KeyError, tokentext
+            raise NotFoundError(tokentext)
         return token
 

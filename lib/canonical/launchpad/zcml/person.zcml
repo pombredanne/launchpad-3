@@ -395,9 +395,10 @@
       for="canonical.launchpad.interfaces.IPersonSet"
       name="+index" />
 
-  <browser:traverse
-      for="canonical.launchpad.interfaces.IPersonSet"
-      getter="getByName" />
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="PersonSetNavigation"
+      />
 
   <browser:addform
       name="+newteam"

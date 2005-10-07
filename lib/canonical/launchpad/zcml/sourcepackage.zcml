@@ -256,9 +256,9 @@
         attribute_to_parent="distrorelease"
         />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.ISourcePackageSet"
-        function="canonical.launchpad.browser.traverseSourcePackageSet"
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="SourcePackageSetNavigation"
         />
 
     <browser:defaultView

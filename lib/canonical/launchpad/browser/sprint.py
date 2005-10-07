@@ -3,6 +3,14 @@
 """Sprint views."""
 
 __metaclass__ = type
+__all__ = [
+    'SprintSetNavigation',
+    'SprintContextMenu',
+    'SprintSetContextMenu',
+    'SprintView',
+    'SprintAddView',
+    'SprintEditView',
+    ]
 
 from zope.component import getUtility
 
@@ -11,15 +19,13 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
-from canonical.launchpad.webapp import canonical_url, ContextMenu, Link
+from canonical.launchpad.webapp import (
+    canonical_url, ContextMenu, Link, GetitemNavigation)
 
-__all__ = [
-    'SprintContextMenu',
-    'SprintSetContextMenu',
-    'SprintView',
-    'SprintAddView',
-    'SprintEditView',
-    ]
+
+class SprintSetNavigation(GetitemNavigation):
+
+    usedfor = ISprintSet
 
 
 class SprintContextMenu(ContextMenu):
