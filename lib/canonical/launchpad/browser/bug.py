@@ -46,9 +46,8 @@ class BugSetNavigation(Navigation):
 class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = ['editdescription', 'secrecy', 'markduplicate', 'subscription',
-             'addsubscriber', 'addattachment', 'linktocve', 'addurl', 
-             'addwatch', 'filebug', 'searchbugs', 'activitylog',
-             'targetfix']
+             'addsubscriber', 'addattachment', 'linktocve', 'addwatch',
+             'filebug', 'activitylog', 'targetfix']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -97,10 +96,6 @@ class BugContextMenu(ContextMenu):
         text = 'Remove CVE link'
         return Link('+unlinkcve', text, icon='edit', enabled=enabled)
 
-    def addurl(self):
-        text = 'Link to Web Page'
-        return Link('+addurl', text, icon='add')
-
     def addwatch(self):
         text = 'Link To Other Bugtracker'
         return Link('+addwatch', text, icon='add')
@@ -110,12 +105,6 @@ class BugContextMenu(ContextMenu):
         linktarget = '%s/%s' % (canonical_url(bugtarget), '+filebug')
         text = 'Report a Bug in %s' % bugtarget.displayname
         return Link(linktarget, text, icon='add')
-
-    def searchbugs(self):
-        bugtarget = self.context.target
-        linktarget = '%s/%s' % (canonical_url(bugtarget), '+bugs')
-        text = 'Search %s Bugs' % bugtarget.displayname
-        return Link(linktarget, text, icon='bugs')
 
     def activitylog(self):
         text = 'Activity Log'

@@ -278,7 +278,12 @@ class BugTaskView:
     """View class for presenting information about an IBugTask."""
 
     def __init__(self, context, request):
-        self.context = context
+        # Make sure we always have the current bugtask.
+        if not IBugTask.providedBy(context):
+            self.context = getUtility(ILaunchBag).bugtask
+        else:
+            self.context = context
+
         self.request = request
         self.notices = []
 
