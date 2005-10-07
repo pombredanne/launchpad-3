@@ -14,7 +14,7 @@ from zope.component import getUtility
 from zope.interface import implements, directlyProvides, directlyProvidedBy
 
 from canonical.launchpad.interfaces import (
-    IBugTaskDelta, IBugTask, IMaintainershipSet, IUpstreamBugTask,
+    IBugTaskDelta, IMaintainershipSet, IUpstreamBugTask,
     IDistroBugTask, IDistroReleaseBugTask, IDistroSourcePackageSet,
     INullBugTask)
 from canonical.lp.dbschema import BugTaskStatus
@@ -79,15 +79,15 @@ class BugTaskMixin:
         Depending on whether the task has a distribution,
         distrorelease, sourcepackagename, binarypackagename, and/or
         product, the targetname will have one of these forms:
+        * sourcepackagename.name (distribution.displayname)
+        * sourcepackagename.name binarypackagename.name
+            (distribution.displayname)
+        * sourcepackagename.name (distrorelease.fullreleasename)
+        * sourcepackagename.name binarypackagename.name
+            (distrorelease.fullreleasename)
         * distribution.displayname
-        * distribution.displayname sourcepackagename.name
-        * distribution.displayname sourcepackagename.name binarypackagename.name
-        * distribution.displayname distrorelease.displayname
-        * distribution.displayname distrorelease.displayname
-          sourcepackagename.name
-        * distribution.displayname distrorelease.displayname
-          sourcepackagename.name binarypackagename.name
-        * upstream product.name
+        * distrorelease.fullreleasename
+        * product.name (upstream)
         """
         if self.distribution or self.distrorelease:
             if self.sourcepackagename is None:
@@ -99,19 +99,25 @@ class BugTaskMixin:
             else:
                 binarypackagename_name = self.binarypackagename.name
             L = []
-            if self.distribution:
-                L.append(self.distribution.displayname)
-            elif self.distrorelease:
-                L.append(self.distrorelease.distribution.displayname)
-                L.append(self.distrorelease.displayname)
             if self.sourcepackagename:
-                L.append(self.sourcepackagename.name)
+                L.append(sourcepackagename_name)
             if (binarypackagename_name and
                 binarypackagename_name != sourcepackagename_name):
                 L.append(binarypackagename_name)
-            return ' '.join(L)
+            if L:
+                name = " ".join(L)
+                if self.distribution:
+                    name += " (%s)" % self.distribution.displayname
+                elif self.distrorelease:
+                    name += " (%s)" % self.distrorelease.fullreleasename
+                return name
+            else:
+                if self.distribution:
+                    return self.distribution.displayname
+                elif self.distrorelease:
+                    return self.distrorelease.fullreleasename
         elif self.product:
-            return 'upstream ' + self.product.name
+            return '%s (upstream)' % self.product.name
         else:
             raise AssertionError("Unable to determine bugtask target")
 

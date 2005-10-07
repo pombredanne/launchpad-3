@@ -1,0 +1,39 @@
+In the bug page, you could request a fix for a Upstream or distribution.
+This is a pagetest for requesting a fix for a distribution leaving the
+source package blank.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+bug/6/+distrotask HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------1447716409915377146573672
+  ... Content-Length: 424
+  ...
+  ... -----------------------------1447716409915377146573672
+  ... Content-Disposition: form-data; name="field.distribution"
+  ... 
+  ... ubuntu
+  ... -----------------------------1447716409915377146573672
+  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... 
+  ... 
+  ... -----------------------------1447716409915377146573672
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------1447716409915377146573672--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../distros/ubuntu/+bug/6
+  ...
+
+Now we test if the ubuntu distribution is on the request list.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+bug/6 HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...click here...">ubuntu</a>...
+  ...

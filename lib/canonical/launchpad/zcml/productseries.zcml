@@ -166,7 +166,7 @@
             lp:url="/products/$Product.name/+series/$ProductSeries.name/+source"
             />
     </browser:pages>
-    
+
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeriesSourceAdmin"
         class="canonical.launchpad.browser.ProductSeriesView"
@@ -178,7 +178,7 @@
             lp:url="/products/$Product.name/+series/$ProductSeries.name/+sourceadmin"
             />
     </browser:pages>
-    
+
     <browser:editform
         name="+review"
         for="canonical.launchpad.interfaces.IProductSeries"

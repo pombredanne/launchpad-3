@@ -382,22 +382,7 @@ def generate_bug_edit_email(bug_delta):
             added_bugtasks = [bug_delta.added_bugtasks]
 
         for added_bugtask in added_bugtasks:
-            upstream_task = IUpstreamBugTask(added_bugtask, None)
-            distro_task = IDistroBugTask(added_bugtask, None)
-            distrorelease_task = IDistroReleaseBugTask(added_bugtask, None)
-
-            if upstream_task:
-                body += u"Also affects: %s (upstream)\n" % (
-                    upstream_task.product.displayname)
-            elif distro_task:
-                body += u"Also affects: %s (%s)\n" % (
-                    distro_task.sourcepackagename.name,
-                    distro_task.distribution.displayname.capitalize())
-            elif distrorelease_task:
-                body += u"Also affects: %s (%s)\n" % (
-                    distrorelease_task.sourcepackagename.name,
-                    distrorelease_task.distrorelease.fullreleasename)
-
+            body += u"Also affects: %s" % added_bugtask.targetname
             body += u"%15s: %s\n" % (u"Severity", added_bugtask.severity.title)
             if added_bugtask.priority:
                 priority_title = added_bugtask.priority.title
@@ -884,7 +869,6 @@ def notify_bug_cve_added(bugcve, event):
         bugurl=canonical_url(bugcve.bug),
         user=event.user,
         cve={'new': bugcve.cve})
-    to_addrs = get_cc_list(bugcve.bug)
 
     send_bug_edit_notification(bug_delta)
 
