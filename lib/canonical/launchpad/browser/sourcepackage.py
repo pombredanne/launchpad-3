@@ -3,6 +3,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'SourcePackageNavigation',
+    'DistroSourcePackageNavigation',
     'SourcePackageSetNavigation',
     'SourcePackageFacets',
     'SourcePackageReleasePublishingView',
@@ -27,18 +29,35 @@ from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ILaunchBag, ICountry, IBugTaskSet,
-    ISourcePackage, IBugSet, ISourcePackageSet)
+    ISourcePackage, IBugSet, ISourcePackageSet, IDistroSourcePackage)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.soyuz.generalapp import builddepsSet
 from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu,
-    enabled_with_permission, structured, Navigation)
+    enabled_with_permission, structured, Navigation, stepto)
 
 from apt_pkg import ParseSrcDepends
 
 BATCH_SIZE = 40
+
+
+class SourcePackageNavigation(Navigation, BugTargetTraversalMixin):
+
+    usedfor = ISourcePackage
+
+    @stepto('+pots')
+    def pots(self):
+        potemplateset = getUtility(IPOTemplateSet)
+        return potemplateset.getSubset(
+                   distrorelease=self.context.distrorelease,
+                   sourcepackagename=self.context.sourcepackagename)
+
+
+class DistroSourcePackageNavigation(Navigation, BugTargetTraversalMixin):
+    usedfor = IDistroSourcePackage
 
 
 class SourcePackageSetNavigation(Navigation):

@@ -25,7 +25,8 @@ permitted_database_imports = text_lines_to_set("""
     """)
 
 warned_database_imports = text_lines_to_set("""
-    canonical.launchpad.browser.traversers
+    canonical.launchpad.browser.distrorelease
+    canonical.launchpad.browser.product
     canonical.launchpad.scripts.builddmaster
     canonical.launchpad.scripts.rosetta
     canonical.launchpad.systemhomes
