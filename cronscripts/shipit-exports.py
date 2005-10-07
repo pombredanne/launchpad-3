@@ -16,7 +16,7 @@ from zope.component import getUtility
 import pytz
 
 from canonical.config import config
-from canonical.encoding import unicode_to_unaccented_str
+from canonical.uuid import generate_uuid
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
@@ -104,7 +104,7 @@ def export_shippingrun(shippingrun):
                 # Text fields can't have non-ASCII characters or commas.
                 # This is a restriction of the shipping company.
                 value = value.replace(',', ';')
-                value = unicode_to_unaccented_str(value)
+                value = value.encode('ASCII')
             row.append(value)
         row.append(request.shipment.logintoken)
         row.append(request.shippingservice.title)
@@ -168,7 +168,9 @@ def main(argv):
         filename = 'Ubuntu'
         if options.priority == 'high':
             filename += '-High-Pri'
-        filename += '-%s-%d.csv' % (now.strftime('%y-%m-%d'), file_counter)
+        filename += '-%s-%d.%s.csv' % (
+                now.strftime('%y-%m-%d'), file_counter, generate_uuid()
+                )
         shippingrun.csvfile = fileset.create(
             name=filename, size=len(csv_file.getvalue()), file=csv_file,
             contentType='text/plain')

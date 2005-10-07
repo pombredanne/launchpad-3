@@ -201,4 +201,17 @@ COMMENT ON FUNCTION is_person(text) IS
     
 SET check_function_bodies=true;
 
+CREATE OR REPLACE FUNCTION is_printable_ascii(text) RETURNS boolean AS '
+    import re, string
+    try:
+        text = args[0].decode("ASCII")
+    except UnicodeError:
+        return False
+    if re.search(r"^[%s]*$" % re.escape(string.printable), text) is None:
+        return False
+    return True
+' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
+
+COMMENT ON FUNCTION is_printable_ascii(text) IS
+    'True if the string is pure printable US-ASCII';
 
