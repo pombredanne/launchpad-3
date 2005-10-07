@@ -21,6 +21,8 @@ from datetime import timedelta, datetime
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
 from zope.app.errorservice.interfaces import ILocalErrorReportingService
 from zope.component import getUtility
+
+import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
     ILaunchBag, ILaunchpadRoot, IRosettaApplication, IMaloneApplication,
     IProductSet, IShipItApplication, IPersonSet, IDistributionSet,
@@ -42,6 +44,7 @@ from canonical.launchpad.webapp import (
 #     Same for MenuAPI.
 from canonical.launchpad.webapp.tales import (
     DurationFormatterAPI, MenuAPI)
+
 
 
 class MaloneApplicationNavigation(Navigation):
