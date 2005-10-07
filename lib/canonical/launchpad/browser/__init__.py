@@ -66,6 +66,5 @@ from canonical.launchpad.browser.team import *
 from canonical.launchpad.browser.builder import *
 from canonical.launchpad.browser.translationgroup import *
 from canonical.launchpad.browser.translator import *
-from canonical.launchpad.browser.traversers import *
 from canonical.launchpad.browser.widgets import *
 from canonical.launchpad.browser.calendarwidgets import *

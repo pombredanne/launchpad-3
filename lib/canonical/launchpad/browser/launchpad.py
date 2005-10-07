@@ -2,9 +2,16 @@
 """Browser code for the launchpad application."""
 
 __metaclass__ = type
-__all__ = ['LoginStatus', 'MaintenanceMessage', 'MenuBox',
-           'RosettaContextMenu', 'MaloneContextMenu',
-           'LaunchpadRootNavigation', 'FOAFApplicationNavigation']
+__all__ = [
+    'LoginStatus',
+    'MaintenanceMessage',
+    'MenuBox',
+    'RosettaContextMenu',
+    'MaloneContextMenu',
+    'LaunchpadRootNavigation',
+    'FOAFApplicationNavigation',
+    'MaloneApplicationNavigation'
+    ]
 
 import cgi
 import urllib
@@ -21,7 +28,8 @@ from canonical.launchpad.interfaces import (
     ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
     IBazaarApplication, ICodeOfConductSet, IMaloneApplication,
     IRegistryApplication, IRosettaApplication, ISpecificationSet, ISprintSet,
-    ITicketSet, IFOAFApplication, IBuilderSet, IBountySet)
+    ITicketSet, IFOAFApplication, IBuilderSet, IBountySet, IBugSet,
+    IBugTrackerSet, ICveSet)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
@@ -34,6 +42,42 @@ from canonical.launchpad.webapp import (
 #     Same for MenuAPI.
 from canonical.launchpad.webapp.tales import (
     DurationFormatterAPI, MenuAPI)
+
+
+class MaloneApplicationNavigation(Navigation):
+
+    usedfor = IMaloneApplication
+
+    newlayer = canonical.launchpad.layers.MaloneLayer
+
+    @stepto('bugs')
+    def bugs(self):
+        return getUtility(IBugSet)
+
+    @stepto('bugtrackers')
+    def bugtrackers(self):
+        return getUtility(IBugTrackerSet)
+
+    @stepto('cve')
+    def cve(self):
+        return getUtility(ICveSet)
+
+    @stepto('distros')
+    def distros(self):
+        return getUtility(IDistributionSet)
+
+    @stepto('projects')
+    def projects(self):
+        return getUtility(IProjectSet)
+
+    @stepto('products')
+    def products(self):
+        return getUtility(IProductSet)
+
+    def traverse(self, name):
+        if name.isdigit():
+            # Make /bugs/$bug.id and /malone/$bug.id Just Work
+            return getUtility(IBugSet).get(name)
 
 
 class MenuBox(LaunchpadView):

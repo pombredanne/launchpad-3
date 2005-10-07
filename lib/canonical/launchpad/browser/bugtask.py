@@ -5,6 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugTargetTraversalMixin',
+    'BugTaskNavigation',
     'BugTaskSetNavigation',
     'BugTaskContextMenu',
     'BugTasksReportView',
@@ -18,32 +20,141 @@ __all__ = [
 import urllib
 
 from zope.interface import implements
-from zope.component import getUtility
-from zope.exceptions import NotFoundError
+from zope.component import getUtility, getView
 from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
 
 from canonical.lp import dbschema
-from canonical.launchpad.webapp import canonical_url, Link, GetitemNavigation
+from canonical.launchpad.webapp import (
+    canonical_url, Link, GetitemNavigation, Navigation, stepthrough,
+    redirection)
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
     IPersonSet, ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch,
     IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask, IBugTaskSet,
     IDistroReleaseSet, ISourcePackageNameSet, BugTaskSearchParams,
-    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
+    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask,
+    INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
+    NotFoundError, IDistroSourcePackage, ISourcePackage)
 from canonical.launchpad.interfaces import IBugTaskSearchListingView
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
+from canonical.launchpad.components.bugtask import NullBugTask
 
 # This shortcut constant indicates what we consider "open"
 # (non-terminal) states. XXX: should this be centralized elsewhere?
 #       -- kiko, 2005-08-23
 STATUS_OPEN = any(dbschema.BugTaskStatus.NEW,
                   dbschema.BugTaskStatus.ACCEPTED)
+
+
+class BugTargetTraversalMixin:
+    """Mix-in in class that provides .../+bug/NNN traversal."""
+
+    redirection('+bug', '+bugs')
+
+    @stepthrough('+bug')
+    def traverse_bug(self, name):
+        """Traverses +bug portions of URLs"""
+        if name.isdigit():
+            return self._get_task_for_context(name)
+        raise NotFoundError
+
+    def _get_task_for_context(self, name):
+        """Return the IBugTask for this name in this context.
+
+        If the bug has been reported, but not in this specific context, a
+        NullBugTask will be returned.
+
+        Raises NotFoundError if no bug with the given name is found.
+
+        If the context type does provide IProduct, IDistribution,
+        IDistroRelease, ISourcePackage or IDistroSourcePackage a TypeError
+        is raised.
+        """
+        context = self.context
+        # Raises NotFoundError if no bug with that ID exists.
+        bug = getUtility(IBugSet).get(name)
+
+        # Loop through this bug's tasks to try and find the appropriate task
+        # for this context. We always want to return a task, whether or not
+        # the user has the permission to see it so that, for example, an
+        # anonymous user is presented with a login screen at the correct URL,
+        # rather than making it look as though this task was "not found",
+        # because it was filtered out by privacy-aware code.
+        for bugtask in helpers.shortlist(bug.bugtasks):
+            if bugtask.target == context:
+                return bugtask
+
+        # If we've come this far, it means that no actual task exists in this
+        # context, so we'll return a null bug task. This makes it possible to,
+        # for example, return a bug page for a context in which the bug hasn't
+        # yet been reported.
+        if IProduct.providedBy(context):
+            null_bugtask = NullBugTask(bug=bug, product=context)
+        elif IDistribution.providedBy(context):
+            null_bugtask = NullBugTask(bug=bug, distribution=context)
+        elif IDistroSourcePackage.providedBy(context):
+            null_bugtask = NullBugTask(
+                bug=bug, distribution=context.distribution,
+                sourcepackagename=context.sourcepackagename)
+        elif IDistroRelease.providedBy(context):
+            null_bugtask = NullBugTask(bug=bug, distrorelease=context)
+        elif ISourcePackage.providedBy(context):
+            null_bugtask = NullBugTask(
+                bug=bug, distrorelease=context.distrorelease,
+                sourcepackagename=context.sourcepackagename)
+        else:
+            raise TypeError(
+                "Unknown context type for bug task: %s" % repr(context))
+
+        return null_bugtask
+
+
+class BugTaskNavigation(Navigation):
+
+    usedfor = IBugTask
+
+    def traverse(self, name):
+        # Are we traversing to the view or edit status page of the
+        # bugtask? If so, and the task actually exists, return the
+        # appropriate page. If the task doesn't yet exist (i.e. it's a
+        # NullBugTask), then return a 404. In other words, the URL:
+        #
+        #   /products/foo/+bug/1/+viewstatus
+        #
+        # will return the +viewstatus page if bug 1 has actually been
+        # reported in "foo". If bug 1 has not yet been reported in "foo",
+        # a 404 will be returned.
+        if name in ("+viewstatus", "+editstatus"):
+            if INullBugTask.providedBy(self.context):
+                # The bug has not been reported in this context.
+                return None
+            else:
+                # The bug has been reported in this context.
+                return getView(self.context, name + "-page", self.request)
+
+    @stepthrough('attachments')
+    def traverse_attachments(self, name):
+        if name.isdigit():
+            return getUtility(IBugAttachmentSet)[name]
+
+    @stepthrough('references')
+    def traverse_references(self, name):
+        if name.isdigit():
+            return getUtility(IBugExternalRefSet)[name]
+
+    @stepthrough('watches')
+    def traverse_references(self, name):
+        if name.isdigit():
+            return getUtility(IBugWatchSet)[name]
+
+    redirection('watches', '..')
+    redirection('references', '..')
 
 
 class BugTaskSetNavigation(GetitemNavigation):

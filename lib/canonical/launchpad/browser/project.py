@@ -4,9 +4,16 @@
 
 __metaclass__ = type
 
-__all__ = ['ProjectView', 'ProjectEditView', 'ProjectAddProductView',
-           'ProjectSetView', 'ProjectAddView', 'ProjectRdfView',
-           'ProjectSetNavigation']
+__all__ = [
+    'ProjectNavigation',
+    'ProjectSetNavigation',
+    'ProjectView',
+    'ProjectEditView',
+    'ProjectAddProductView',
+    'ProjectSetView',
+    'ProjectAddView',
+    'ProjectRdfView',
+    ]
 
 from urllib import quote as urlquote
 
@@ -22,11 +29,20 @@ from canonical.launchpad.interfaces import (
     IPerson, IProject, IProjectSet, IProductSet, ICalendarOwner)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ApplicationMenu,
-    structured, GetitemNavigation)
+    structured, GetitemNavigation, Navigation)
 
 _ = MessageIDFactory('launchpad')
+
+
+class ProjectNavigation(Navigation, CalendarTraversalMixin):
+
+    usedfor = IProject
+
+    def traverse(self, name):
+        return self.context.getProduct(name)
 
 
 class ProjectSetNavigation(GetitemNavigation):

@@ -52,7 +52,7 @@ class ShippingRequest(SQLBase):
     """See IShippingRequest"""
 
     implements(IShippingRequest)
-    _defaultOrder = 'daterequested'
+    _defaultOrder = ['daterequested', 'id']
 
     recipient = ForeignKey(dbName='recipient', foreignKey='Person',
                            notNull=True)
@@ -476,7 +476,7 @@ class ShippingRun(SQLBase):
     """See IShippingRun"""
 
     implements(IShippingRun)
-    _defaultOrder = '-datecreated'
+    _defaultOrder = ['-datecreated', 'id']
 
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     csvfile = ForeignKey(
