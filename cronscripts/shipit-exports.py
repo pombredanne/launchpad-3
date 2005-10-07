@@ -147,6 +147,7 @@ def main(argv):
     # to split a shippingrun into two just because there's 10 requests more
     # than the limit, so we only split them if there's at least 50% more
     # requests than MAX_SHIPPINGRUN_SIZE.
+    file_counter = 1
     while len(request_ids):
         ztm.begin()
         if len(request_ids) > MAX_SHIPPINGRUN_SIZE * 1.5:
@@ -174,6 +175,7 @@ def main(argv):
             name=filename, size=len(csv_file.getvalue()), file=csv_file,
             contentType='text/plain')
         ztm.commit()
+        file_counter += 1
 
     logger_obj.info('Done.')
     return 0

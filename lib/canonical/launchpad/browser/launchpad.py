@@ -46,7 +46,6 @@ from canonical.launchpad.webapp.tales import (
     DurationFormatterAPI, MenuAPI)
 
 
-
 class MaloneApplicationNavigation(Navigation):
 
     usedfor = IMaloneApplication
