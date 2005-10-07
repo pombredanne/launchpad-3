@@ -78,6 +78,30 @@ newline.
     <p>Here are two paragraphs with lots of whitespace between them.</p>
     <p>But they're still just two paragraphs.</p>
 
+If a line begins with whitespace, it will not be merged with the
+previous line, even if that line was between 60 and 80 characters
+long.  This aids in the display of code samples:
+
+    >>> text = (
+    ...     'This line is 69 characters.  Next is a code sample '
+    ...     'written in Python.\n'
+    ...     '    def messageCount(self):\n'
+    ...     '        """See IRosettaStats."""\n'
+    ...     '        return self.potemplate.messageCount()\n'
+    ...     '\n'
+    ...     '    def currentCount(self, language=None):\n'
+    ...     '        """See IRosettaStats."""\n'
+    ...     '        return self.currentCount\n')
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>This line is 69 characters.  Next is a code sample written in Python.<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;def messageCount(self):<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"""See IRosettaStats."""<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return self.potemplate.messageCount()</p>
+    <p>&nbsp;&nbsp;&nbsp;&nbsp;def currentCount(self, language=None):<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"""See IRosettaStats."""<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return self.currentCount</p>
+
+
 fmt:text-to-html knows how to linkify URLs:
 
     >>> text = (
