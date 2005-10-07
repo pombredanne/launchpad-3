@@ -3,8 +3,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'PersonNavigation',
-    'TeamNavigation',
     'PersonSetNavigation',
     'PeopleContextMenu',
     'PersonFacets',
@@ -64,11 +62,10 @@ from canonical.launchpad.interfaces import (
     IKarmaSet, UBUNTU_WIKI_URL, ITeamMembershipSet, IObjectReassignment,
     ITeamReassignment, IPollSubset, IPerson, ICalendarOwner,
     BugTaskSearchParams, ITeam, valid_emblem, valid_hackergotchi,
-    ILibraryFileAliasSet, ITeamMembershipSubset, IPollSet)
+    ILibraryFileAliasSet)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.form import FormView
-from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
@@ -76,27 +73,10 @@ from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission, Navigation, stepto, stepthrough)
+    enabled_with_permission, Navigation)
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
-
-
-class PersonNavigation(Navigation, CalendarTraversalMixin):
-    usedfor = IPerson
-
-
-class TeamNavigation(Navigation, CalendarTraversalMixin):
-
-    usedfor = ITeam
-
-    @stepto('+members')
-    def members(self):
-        return ITeamMembershipSubset(self.context)
-
-    @stepthrough('+poll')
-    def traverse_poll(self, name):
-        return getUtility(IPollSet).getByTeamAndName(self.context, name)
 
 
 class PersonSetNavigation(Navigation):

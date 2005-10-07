@@ -3,7 +3,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'BugSetNavigation',
     'BugView',
     'BugSetView',
     'BugEditView',
@@ -20,27 +19,13 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, structured, Navigation)
+    canonical_url, ContextMenu, Link, structured)
 from canonical.launchpad.interfaces import (
     IBug, ILaunchBag, IBugSet, IBugLinkTarget, IBugCve,
-    IDistroBugTask, IDistroReleaseBugTask, NotFoundError)
+    IDistroBugTask, IDistroReleaseBugTask)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.form import FormView
-
-
-class BugSetNavigation(Navigation):
-
-    usedfor = IBugSet
-
-    def traverse(self, name):
-        # If the bug is not found, we expect a NotFoundError. If the
-        # value of name is not a value that can be used to retrieve a
-        # specific bug, we expect a ValueError.
-        try:
-            return getUtility(IBugSet).get(name)
-        except (NotFoundError, ValueError):
-            return None
 
 
 class BugContextMenu(ContextMenu):

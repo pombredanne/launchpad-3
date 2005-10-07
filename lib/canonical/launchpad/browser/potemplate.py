@@ -8,9 +8,7 @@ __all__ = [
     'POTemplateSubsetView', 'POTemplateView', 'POTemplateEditView',
     'POTemplateAdminView', 'POTemplateAddView', 'POTemplateExportView',
     'POTemplateTranslateView', 'POTemplateSubsetURL', 'POTemplateURL',
-    'POTemplateSetNavigation', 'POTemplateSubsetNavigation',
-    'POTemplateNavigation'
-    ]
+    'POTemplateSetNavigation', 'POTemplateSubsetNavigation']
 
 from sets import Set
 from datetime import datetime
@@ -32,21 +30,7 @@ from canonical.launchpad.browser.pofile import (
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
-    GetitemNavigation, Navigation)
-
-
-class POTemplateNavigation(Navigation):
-
-    usedfor = IPOTemplate
-
-    def traverse(self, name):
-        user = getUtility(ILaunchBag).user
-        if self.request.method in ['GET', 'HEAD']:
-            return self.context.getPOFileOrDummy(name, owner=user)
-        elif self.request.method == 'POST':
-            return self.context.getOrCreatePOFile(name, owner=user)
-        else:
-            raise AssertionError('We only know about GET, HEAD, and POST')
+    GetitemNavigation)
 
 
 class POTemplateFacets(StandardLaunchpadFacets):

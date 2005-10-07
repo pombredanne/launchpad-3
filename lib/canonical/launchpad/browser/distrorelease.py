@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistroReleaseNavigation',
     'DistroReleaseFacets',
     'DistroReleaseView',
     'DistroReleaseBugsView',
@@ -21,47 +20,14 @@ from zope.app.form.browser.add import AddView
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu,
-    enabled_with_permission, GetitemNavigation, stepthrough, stepto)
+    enabled_with_permission)
 
 from canonical.launchpad.interfaces import (
-    IDistroReleaseLanguageSet, IBugTaskSearchListingView, IDistroRelease,
-    ICountry, IDistroReleaseSet, ILaunchBag, IBuildSet, ILanguageSet,
-    NotFoundError, IPublishedPackageSet)
+    IDistroReleaseLanguageSet,
+    IBugTaskSearchListingView, IDistroRelease, ICountry,
+    IDistroReleaseSet, ILaunchBag, IBuildSet)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
-from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
-
-# XXX: This import needs to go away.  SteveAlexander, 2005-10-07
-from canonical.launchpad.database import SourcePackageSet
-
-
-class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
-
-    usedfor = IDistroRelease
-
-    @stepthrough('+lang')
-    def traverse_lang(self, langcode):
-        langset = getUtility(ILanguageSet)
-        try:
-            lang = langset[langcode]
-        except IndexError:
-            # Unknown language code.
-            raise NotFoundError
-        drlang = self.context.getDistroReleaseLanguage(lang)
-        if drlang is not None:
-            return drlang
-        else:
-            drlangset = getUtility(IDistroReleaseLanguageSet)
-            return drlangset.getDummy(self.context, lang)
-
-    @stepto('+packages')
-    def packages(self):
-        return getUtility(IPublishedPackageSet)
-
-    @stepto('+sources')
-    def sources(self):
-        return SourcePackageSet(distrorelease=self.context)
-
 
 class DistroReleaseFacets(StandardLaunchpadFacets):
 

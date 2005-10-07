@@ -224,24 +224,10 @@ Reason:
                         return
                     self._createNewOrder()
                 elif 'changerequest' in form:
-                    if self.order is None:
-                        # You know, it's always possible that we generate a
-                        # shipping run while the user is editting his order,
-                        # and in this case we can't allow him to change the
-                        # order anymore. But this also covers the case when he
-                        # cancelled the order in another tab/window and now is
-                        # trying to change an order that was cancelled.
-                        return
+                    assert self.order is not None
                     self._changeExistingOrder()
         elif 'cancelrequest' in form:
-            if self.order is None:
-                # You know, it's always possible that we generate a shipping
-                # run after the user opened this page and then he can try to
-                # cancel an order that was already exported, and that's
-                # something we can't allow. This also covers the case when he
-                # cancelled the order in another tab/window and now is
-                # trying to cancel it again. Or even a page reload.
-                return
+            assert self.order is not None
             self.order.cancel(getUtility(ILaunchBag).user)
             self.order = None
 
@@ -249,8 +235,7 @@ Reason:
 
     def _notifyShipItAdmins(self, order):
         """Notify the shipit admins by email that there's a new request."""
-        subject = ('[ShipIt] New Custom Request for %d CDs [#%d]'
-                   % (order.totalCDs, order.id))
+        subject = ('[ShipIt] New Custom Request for %d CDs' % order.totalCDs)
         recipient = order.recipient
         headers = {'Reply-To': recipient.preferredemail.email}
         replacements = {'recipientname': order.recipientdisplayname,

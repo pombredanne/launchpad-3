@@ -47,22 +47,19 @@
     <tal:block condition="view/shouldShowOrderDetails">
 
       <tal:block condition="not: view/userIsShipItAdmin">
-      <tal:block condition="view/user/pastShipItRequests">
-        <h1>Your previous requests</h1>
+        <h1>Previous requests you made</h1>
 
         <ul>
           <li tal:repeat="pastorder view/user/pastShipItRequests">
             <span tal:replace="pastorder/daterequested/fmt:date" />:
             <span tal:replace="pastorder/totalCDs" /> CDs 
             <span tal:condition="pastorder/cancelled">(cancelled)</span>
-            <tal:block tal:condition="not: pastorder/cancelled">
-              <span tal:condition="pastorder/shipment">(sent to shipping
-                company)</span>
-              <span tal:condition="pastorder/isDenied">(denied)</span>
-            </tal:block>
+            <span tal:condition="pastorder/shipment">(sent to shipping
+              company)</span>
+            <span tal:condition="not: pastorder/approved">(denied)</span>
           </li>
         </ul>
-      </tal:block>
+           
       </tal:block>
 
       <tal:block condition="not: order">

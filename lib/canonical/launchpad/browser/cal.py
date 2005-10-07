@@ -3,7 +3,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'CalendarTraversalMixin',
     'CalendarNavigation',
     'CalendarEventSetNavigation',
     'CalendarDay',
@@ -93,18 +92,8 @@ colours = [
     { 'code': '#c1c1c1', 'name': _('Grey') },
     ]
 
+
 UTC = pytz.timezone('UTC')
-
-
-class CalendarTraversalMixin:
-    """Mixin class for use in Navigation classes where you can traverse to
-    +calendar.
-    """
-
-    @stepto('+calendar')
-    def calendar(self):
-        return ICalendarOwner(self.context).calendar
-
 
 class CalendarNavigation(Navigation):
     """Navigation handling for Calendars.

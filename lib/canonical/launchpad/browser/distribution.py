@@ -3,7 +3,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistributionNavigation',
     'DistributionSetNavigation',
     'DistributionFacets',
     'DistributionView',
@@ -23,61 +22,13 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPerson, IBugTaskSearchListingView,
-    IBugSet, IPublishedPackageSet, ISourcePackageNameSet, NotFoundError,
-    IDistroSourcePackageSet)
+    IBugSet)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser import BugTaskSearchListingView
-from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission, GetitemNavigation, stepthrough, stepto)
-
-
-class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
-
-    usedfor = IDistribution
-
-    @stepto('+packages')
-    def packages(self):
-        return getUtility(IPublishedPackageSet)
-
-    @stepthrough('+sources')
-    def traverse_sources(self, name):
-        # XXX: Brad Bollenbach, 2005-09-12: There is not yet an
-        # interface for $distro/+sources; for now, this code's only
-        # promise is that it will return the correct
-        # IDistroSourcePackage for a URL path like:
-        #
-        # /distros/ubuntu/+sources/mozilla-firefox
-        #
-        # Obviously, there needs to be a simple page designed for a
-        # bare +sources. Here's the bug report to track that task:
-        #
-        # https://launchpad.net/malone/bugs/2230
-        sourcepackagenameset = getUtility(ISourcePackageNameSet)
-        srcpackagename = sourcepackagenameset.queryByName(name)
-        if not srcpackagename:
-            raise NotFoundError
-        return getUtility(IDistroSourcePackageSet).getPackage(
-            distribution=self.context, sourcepackagename=srcpackagename)
-
-    @stepthrough('+milestone')
-    def traverse_milestone(self, name):
-        return self.context.getMilestone(name)
-
-    @stepthrough('+spec')
-    def traverse_spec(self, name):
-        return self.context.getSpecification(name)
-
-    @stepthrough('+ticket')
-    def traverse_ticket(self, name):
-        # tickets should be ints
-        try:
-            ticket_num = int(name)
-        except ValueError:
-            raise NotFoundError
-        return self.context.getTicket(ticket_num)
+    enabled_with_permission, GetitemNavigation)
 
 
 class DistributionSetNavigation(GetitemNavigation):
@@ -244,7 +195,13 @@ class DistributionFileBugView(SQLObjectAddView):
             raise Unauthorized(
                 "Need an authenticated user in order to file a"
                 " bug on a distribution.")
-        self.context.newBug(...)
+        bug = getUtility(IBugSet).createBug(
+            distribution=self.context,
+            sourcepackagename=data['sourcepackagename'],
+            title=data['title'],
+            comment=data['comment'],
+            private=data['private'],
+            owner=data['owner'])
         notify(SQLObjectCreatedEvent(bug))
         self.addedBug = bug
         return bug
