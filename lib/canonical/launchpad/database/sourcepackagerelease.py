@@ -58,15 +58,10 @@ class SourcePackageRelease(SQLBase):
                      notNull=True)
     uploaddistrorelease = ForeignKey(foreignKey='DistroRelease',
                                      dbName='uploaddistrorelease')
-
-    builds = MultipleJoin('Build', joinColumn='sourcepackagerelease')
+    builds = MultipleJoin('Build', joinColumn='sourcepackagerelease',
+                          orderBy=['-datecreated'])
     files = MultipleJoin('SourcePackageReleaseFile',
                          joinColumn='sourcepackagerelease')
-
-    @property
-    def builds(self):
-        return Build.selectBy(sourcepackagereleaseID=self.id,
-            orderBy=['-datecreated'])
 
     @property
     def latest_build(self):
@@ -78,6 +73,10 @@ class SourcePackageRelease(SQLBase):
     @property
     def name(self):
         return self.sourcepackagename.name
+
+    @property
+    def title(self):
+        return '%s - %s' % (self.sourcepackagename.name, self.version)
 
     @property
     def productrelease(self):
