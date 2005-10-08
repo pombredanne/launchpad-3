@@ -31,9 +31,11 @@
     >It doesn't work.</div>
     <div class="lesser">
       <tal:packagename condition="show_packagename|nothing">
-        reported in <a tal:attributes="href string:${task/target/fmt:url}/+bugs;
-                                       title string:Show bugs in ${task/targetname}"
-                       tal:content="task/sourcepackagename/name">blah</a>,
+        <tal:has_package condition="task/sourcepackagename">
+            reported in <a tal:attributes="href string:${task/target/fmt:url}/+bugs;
+                                           title string:Show bugs in ${task/targetname}"
+                           tal:content="task/sourcepackagename/name">blah</a>,
+        </tal:has_package>
       </tal:packagename>
       <tal:status content="structure task/statusdisplayhtml">
         assigned to Foo Bar

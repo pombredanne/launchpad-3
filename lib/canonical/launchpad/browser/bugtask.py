@@ -398,16 +398,19 @@ class BugTaskReleaseTargetingView:
 
         release_target_details = []
         sourcepackagename = bugtask.sourcepackagename
-        for possible_release_target in distribution.releases:
-            sourcepackage = possible_release_target.getSourcePackageByName(
-                sourcepackagename)
+        for possible_target in distribution.releases:
+            if sourcepackagename is not None:
+                sourcepackage = possible_target.getSourcePackageByName(
+                    sourcepackagename)
+            else:
+                sourcepackage = None
             bug_distrorelease_target_details = BugDistroReleaseTargetDetails(
-                release=possible_release_target, sourcepackage=sourcepackage)
+                release=possible_target, sourcepackage=sourcepackage)
 
-            if possible_release_target in distro_release_tasks:
+            if possible_target in distro_release_tasks:
                 # This release is already a target for this bugfix, so
                 # let's grab some more data about this task.
-                task = distro_release_tasks[possible_release_target]
+                task = distro_release_tasks[possible_target]
 
                 bug_distrorelease_target_details.istargeted = True
                 bug_distrorelease_target_details.assignee = task.assignee
@@ -441,13 +444,21 @@ class BugTaskReleaseTargetingView:
             distribution = bugtask.distrorelease.distribution
 
         for target in targets:
+            if target is None:
+                # If the user didn't change anything a single target
+                # with the value of None is submitted, so just skip. 
+                continue
             # A target value looks like 'warty.mozilla-firefox'. If
             # there was no specific sourcepackage targeted, it would
             # look like 'warty.'
-            releasename, spname = target.split(".")
+            if "." in target:
+                releasename, spname = target.split(".")
+                spname = getUtility(ISourcePackageNameSet).queryByName(spname)
+            else:
+                releasename = target
+                spname = None
             release = getUtility(IDistroReleaseSet).queryByName(
                 distribution, releasename)
-            spname = getUtility(ISourcePackageNameSet).queryByName(spname)
 
             if not release:
                 raise ValueError(
@@ -459,8 +470,8 @@ class BugTaskReleaseTargetingView:
                     bug=bug, owner=user, distrorelease=release,
                     sourcepackagename=spname)
 
-        # Redirect the user back to the task edit form.
-        self.request.response.redirect(canonical_url(bugtask) + "/+editstatus")
+        # Redirect the user back to the task form.
+        self.request.response.redirect(canonical_url(bugtask)) 
 
 
 class BugTaskEditView(SQLObjectEditView):
