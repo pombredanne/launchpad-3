@@ -46,13 +46,15 @@ class ProductSeries(SQLBase):
                       notNull=False, default=None)
     cvsroot = StringCol(default=None)
     cvsmodule = StringCol(default=None)
-    cvstarfileurl = StringCol(default=None)
     cvsbranch = StringCol(default=None)
-    svnrepository = StringCol(default=None)
     # where are the tarballs released from this branch placed?
+    cvstarfileurl = StringCol(default=None)
+    svnrepository = StringCol(default=None)
+    # XXX bkrepository is in the data model but not here
+    #   -- matsubara, 2005-10-06
     releaseroot = StringCol(default=None)
-    releaseverstyle = StringCol(default=None)
     releasefileglob = StringCol(default=None)
+    releaseverstyle = StringCol(default=None)
     # these fields tell us where to publish upstream as bazaar branch
     targetarcharchive = StringCol(default=None)
     targetarchcategory = StringCol(default=None)
