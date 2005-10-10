@@ -100,8 +100,11 @@ class LoginTokenSet:
 
     def searchByEmailAndRequester(self, email, requester):
         """See ILoginTokenSet."""
+        requester_id = None
+        if requester is not None:
+            requester_id = requester.id
         return LoginToken.select(AND(LoginToken.q.email==email,
-                                     LoginToken.q.requesterID==requester.id))
+                                     LoginToken.q.requesterID==requester_id))
 
     def deleteByEmailAndRequester(self, email, requester):
         """See ILoginTokenSet."""
