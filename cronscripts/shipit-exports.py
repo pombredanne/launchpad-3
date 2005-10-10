@@ -86,9 +86,9 @@ def export_shippingrun(shippingrun):
                    ('Ship to zip', 'postcode'),
                    ('Ship to country', 'countrycode'),
                    ('Ship to phone', 'phone'),
-                   ('ship quantity i386', 'quantityx86approved'),
-                   ('ship quantity amd64', 'quantityamd64approved'),
-                   ('ship quantity ppc', 'quantityppcapproved'))
+                   ('ship quantity PC', 'quantityx86approved'),
+                   ('ship quantity 64-bit PC', 'quantityamd64approved'),
+                   ('ship quantity Mac', 'quantityppcapproved'))
 
     csv_file = StringIO()
     csv_writer = csv.writer(csv_file)
