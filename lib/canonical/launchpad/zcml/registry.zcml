@@ -12,11 +12,6 @@
             interface="canonical.launchpad.interfaces.IRegistryApplication" />
     </securedutility>
 
-    <!-- This view registers 'registry' as a suburl of RootObject. -->
-    <browser:suburl
-        for="canonical.publication.RootObject"
-        utility="canonical.launchpad.interfaces.IRegistryApplication"
-        name="registry" />
     <browser:url
         for="canonical.launchpad.interfaces.IRegistryApplication"
         path_expression="string:registry"
@@ -28,7 +23,7 @@
         name="+index" />
 
     <!-- general template for everything in registry -->
-    <browser:pages for="*" permission="zope.Public">
+    <browser:pages for="*" facet="overview" permission="zope.Public">
         <browser:page name="launchpad_template"
             template="../templates/main-template.pt" />
     </browser:pages>
@@ -36,6 +31,7 @@
     <!-- browser:pages for the registry application -->
     <browser:pages 
         for="canonical.launchpad.interfaces.IRegistryApplication"
+        facet="overview"
         permission="zope.Public"
         lp:url="registry">
         <browser:page name="+index"

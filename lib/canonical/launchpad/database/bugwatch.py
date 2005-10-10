@@ -1,12 +1,11 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BugWatch', 'BugWatchSet', 'BugWatchFactory']
+__all__ = ['BugWatch', 'BugWatchSet']
 
 import re
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 from zope.component import getUtility
 
 # SQL imports
@@ -18,13 +17,15 @@ from canonical.database.sqlbase import SQLBase, flush_database_updates
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.interfaces import (IBugWatch, IBugWatchSet,
-    IBugTrackerSet)
+from canonical.launchpad.interfaces import (
+    IBugWatch, IBugWatchSet, IBugTrackerSet, NotFoundError)
 from canonical.launchpad.database.bugset import BugSetBase
+
 
 bugzillaref = re.compile(r'(https?://.+/)show_bug.cgi.+id=(\d+).*')
 roundupref = re.compile(r'(https?://.+/)issue(\d+).*')
 tracref = re.compile(r'(https?://.+/)tickets/(\d+)')
+
 
 class BugWatch(SQLBase):
     """See canonical.launchpad.interfaces.IBugWatch."""
@@ -58,7 +59,7 @@ class BugWatch(SQLBase):
             # slashes -- should we instead ensure when it is entered?
             # Filed bug 1434.
             BugTrackerType.BUGZILLA: '%s/show_bug.cgi?id=%s',
-            BugTrackerType.TRAC:     '%s/tickets/%s',
+            BugTrackerType.TRAC:     '%s/ticket/%s',
             BugTrackerType.DEBBUGS:  '%s/cgi-bin/bugreport.cgi?bug=%s',
             BugTrackerType.ROUNDUP:  '%s/issue%s'
         }
@@ -88,6 +89,9 @@ class BugWatchSet(BugSetBase):
             return BugWatch.get(watch_id)
         except SQLObjectNotFound:
             raise NotFoundError, watch_id
+
+    def search(self):
+        return BugWatch.select()
 
     def _find_watches(self, pattern, trackertype, text, bug, owner):
         """Find the watches in a piece of text, based on a given pattern and
@@ -149,10 +153,10 @@ class BugWatchSet(BugSetBase):
                 raise AssertionError('MessageChunk without content or blob.')
         return sorted(watches, key=lambda a: a.remotebug)
 
-
-def BugWatchFactory(context, **kw):
-    bug = context.context.bug
-    return BugWatch(
-        bug=bug, owner=context.request.principal.id, datecreated=UTC_NOW,
-        lastchanged=UTC_NOW, lastchecked=UTC_NOW, **kw)
+    def createBugWatch(self, bug, owner, bugtracker, remotebug):
+        """See canonical.launchpad.interfaces.IBugWatchSet."""
+        return BugWatch(
+            bug=bug, owner=owner, datecreated=UTC_NOW,
+            lastchanged=UTC_NOW, lastchecked=UTC_NOW,
+            bugtracker=bugtracker, remotebug=remotebug)
 

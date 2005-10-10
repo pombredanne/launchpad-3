@@ -86,8 +86,8 @@
       />
 
   <vocabulary
-    name="CVEState"
-    factory="canonical.launchpad.vocabularies.CVEStateVocabulary"
+    name="CveStatus"
+    factory="canonical.launchpad.vocabularies.CveStatusVocabulary"
     />
 
   <vocabulary
@@ -216,6 +216,11 @@
     />
 
   <vocabulary
+    name="Sprint"
+    factory="canonical.launchpad.vocabularies.SprintVocabulary"
+    />
+
+  <vocabulary
     name="TeamSubscriptionPolicy"
     factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
     />
@@ -273,6 +278,11 @@
   <vocabulary
     name="ValidTeamOwner"
     factory="canonical.launchpad.vocabularies.ValidTeamOwnerVocabulary"
+    />
+
+  <vocabulary
+    name="Processor"
+    factory="canonical.launchpad.vocabularies.ProcessorVocabulary"
     />
 
   <!-- Define the widget used by Choice fields that use huge vocabularies -->

@@ -10,7 +10,8 @@
         <allow interface="canonical.launchpad.interfaces.IBranch" />
         <require
             permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.IBranch" />
+            set_schema="canonical.launchpad.interfaces.IBranch"
+        />
     </content>
 
     <browser:defaultView
@@ -24,6 +25,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBranch"
+        facet="overview"
         permission="zope.Public"
         class="canonical.launchpad.browser.BranchView" >
         <browser:page

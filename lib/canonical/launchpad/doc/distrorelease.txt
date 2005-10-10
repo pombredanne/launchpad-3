@@ -76,4 +76,25 @@ DistroRelease.getPublishedReleases:
     >>> print prs[0].sourcepackagerelease.sourcepackagename.name
     mozilla-firefox
 
+
+CVE BugTasks on a Distro Release
+------------------------------
+
+A distro release should know what CVE-related bug tasks exist on it, and
+what state they are in. We should be able to find open, and closed,
+bugtasks, using this API. Based on the sample data we know the following
+about Debian:
+
+    >>> woody = distroreleaseset.get(6)
+    >>> tasks = woody.open_cve_bugtasks
+    >>> for task in tasks:
+    ...     print task.id
+    20
+
+There should be NO resolved CVE tasks:
+
+    >>> tasks = woody.resolved_cve_bugtasks
+    >>> print len(tasks)
+    0
+
 [1] https://wiki.launchpad.canonical.com/DerivationOverview

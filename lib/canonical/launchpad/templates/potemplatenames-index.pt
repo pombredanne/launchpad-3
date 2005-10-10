@@ -7,17 +7,10 @@
 
 <metal:rightportlets fill-slot="portlets_two">
 
-<div class="portlet">
-
-    <h4>Actions:</h4>
-
-    <div class="portletBody">
-        <div class="portletContent">
+<div class="portlet portletBody portletContent">
           <ul>
-            <li class="add"><a href="+add">Add a new template name.</li>
+            <li class="add"><a href="+add">New Template Name</li>
           </ul>
-        </div>
-    </div>
 </div>
 
 </metal:rightportlets>
@@ -100,7 +93,7 @@
                   <strong>No PO Template Names matching
                     &#8220;<span tal:replace="view/text">moz</span>&#8221;
                   were found.</strong>
-                  You can <a href="+new">register a new PO Template Name</a>.
+                  You can <a href="+add">register a new PO Template Name</a>.
                 </p>
               </td>
             </tr>

@@ -5,6 +5,8 @@
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
+<facet facet="bugs">
+
   <!-- BugProductInfestation -->
   <content class="canonical.launchpad.database.BugProductInfestation">
     <allow interface="canonical.launchpad.interfaces.IBugProductInfestation" />
@@ -56,9 +58,10 @@
       />
   </securedutility>
 
-  <browser:traverse
-    for="canonical.launchpad.interfaces.IBugProductInfestationSet"
-    getter="__getitem__" />
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="BugProductInfestationSetNavigation"
+      />
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IBugProductInfestationSet"
@@ -71,5 +74,5 @@
       template="../templates/bugproductinfestations-index.pt"
       lp:url="malone/bugs/$Bug.id/productinfestations/+index" />
   </browser:pages>
-
+</facet>
 </configure>

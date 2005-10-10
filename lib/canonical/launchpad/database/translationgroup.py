@@ -4,20 +4,20 @@ __metaclass__ = type
 __all__ = ['TranslationGroup', 'TranslationGroupSet']
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
-from sqlobject import (DateTimeCol, ForeignKey, StringCol, MultipleJoin,
-                       RelatedJoin)
-from sqlobject import SQLObjectNotFound
+from sqlobject import (
+    DateTimeCol, ForeignKey, StringCol, MultipleJoin, RelatedJoin,
+    SQLObjectNotFound)
 
-from canonical.launchpad.interfaces import \
-    ITranslationGroup, ITranslationGroupSet
+from canonical.launchpad.interfaces import (
+    ITranslationGroup, ITranslationGroupSet, NotFoundError)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 
 from canonical.launchpad.database.translator import Translator
 from canonical.launchpad.database.language import Language
+
 
 class TranslationGroup(SQLBase):
     """A TranslationGroup."""

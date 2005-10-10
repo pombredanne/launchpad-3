@@ -22,7 +22,6 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
   <div tal:replace="structure context/@@+portlet-hctstatus" />
 </metal:rightportlets>
 
@@ -77,7 +76,7 @@
 
     </div>
 
-    <div class="form actions">
+    <div class="actions">
       <input
         type="submit"
         name="packaging"

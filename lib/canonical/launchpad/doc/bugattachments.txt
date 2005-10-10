@@ -59,7 +59,14 @@ attachment needs to handle that:
     ...                                 'field.filecontent': filecontent,
     ...                                 'field.patch': u'',
     ...                                 'UPDATE_SUBMIT': ''})
-    >>> add_attachment_view = getView(bug_one, '+addattachment', add_request)
+
+Note that the +addattachment view is actually registered on a "bug in
+context", i.e. an IBugTask, so let's grab the first bugtask on bug_one
+and work with that:
+
+    >>> bugtask = bug_one.bugtasks[0]
+
+    >>> add_attachment_view = getView(bugtask, '+addattachment', add_request)
     >>> add_attachment_view.update()
     u'An error ...'
     >>> add_attachment_view.filecontent_widget.error()
@@ -78,7 +85,7 @@ upload it:
     ...                                 'field.filecontent': filecontent,
     ...                                 'field.patch': u'',
     ...                                 'UPDATE_SUBMIT': ''})
-    >>> add_attachment_view = getView(bug_one, '+addattachment', add_request)
+    >>> add_attachment_view = getView(bugtask, '+addattachment', add_request)
     >>> add_attachment_view.update()
     u'An error ...'
     >>> add_attachment_view.filecontent_widget.error()
@@ -95,7 +102,7 @@ means no limit:
     ...                                 'field.filecontent': filecontent,
     ...                                 'field.patch': u'',
     ...                                 'UPDATE_SUBMIT': ''})
-    >>> add_attachment_view = getView(bug_one, '+addattachment', add_request)
+    >>> add_attachment_view = getView(bugtask, '+addattachment', add_request)
     >>> len(add_attachment_view.errors)
     0
     >>> add_attachment_view.update()
@@ -109,7 +116,7 @@ Let's try uploading a file with some weird characters in them:
     ...                                 'field.filecontent': filecontent,
     ...                                 'field.patch': u'',
     ...                                 'UPDATE_SUBMIT': ''})
-    >>> add_attachment_view = getView(bug_one, '+addattachment', add_request)
+    >>> add_attachment_view = getView(bugtask, '+addattachment', add_request)
     >>> len(add_attachment_view.errors)
     0
     >>> add_attachment_view.update()
@@ -196,8 +203,8 @@ Search for attachments
 
 We can search for attachment of a specific types:
 
-    >>> from canonical.launchpad.interfaces import (IBugTaskSet,
-    ...                                             BugTaskSearchParams)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugTaskSet, BugTaskSearchParams)
     >>> from canonical.lp.dbschema import BugAttachmentType
     >>> bugtaskset = getUtility(IBugTaskSet)
     >>> attachmenttype = BugAttachmentType.UNSPECIFIED

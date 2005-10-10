@@ -2,7 +2,7 @@ A bug watch models the status of a bug, as it appears in an external
 bug tracking system (e.g. debbugs.)
 
   >>> print http(r"""
-  ... POST /malone/bugs/2/watches/+new HTTP/1.1
+  ... POST /distros/debian/+sources/mozilla-firefox/+bug/2/+addwatch HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 0
   ... Content-Type: application/x-www-form-urlencoded
@@ -18,11 +18,10 @@ in which the bug is to be watched and, of course, providing the ID of
 the bug to be watched in that system.
 
   >>> print http(r"""
-  ... POST /malone/bugs/2/watches/+new HTTP/1.1
+  ... POST /distros/debian/+sources/mozilla-firefox/+bug/2/+addwatch HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 408
   ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
-  ... Referer: http://localhost:9000/malone/bugs/2/watches/+new
   ... 
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.bugtracker"
@@ -51,9 +50,8 @@ the bug to be watched in that system.
 
 
   >>> print http(r"""
-  ... GET /malone/bugs/2/watches/ HTTP/1.1
+  ... GET /distros/debian/+sources/mozilla-firefox/+bug/2/watches/ HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Referer: http://localhost:9000/malone/bugs/2/watches/+new
   ... """)
   HTTP/1.1 303 See Other
   ...
@@ -63,8 +61,7 @@ the bug to be watched in that system.
 
 
   >>> print http(r"""
-  ... GET /malone/bugs/2/ HTTP/1.1
-  ... Referer: http://localhost:9000/malone/bugs/2/watches/+new
+  ... GET /distros/debian/+sources/mozilla-firefox/+bug/2 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -75,9 +72,8 @@ If you make a mistake when entering the bug watch information, the
 watch can be edited.
 
   >>> print http(r"""
-  ... GET /malone/bugs/2/watches/5/+edit HTTP/1.1
+  ... GET /distros/debian/+sources/mozilla-firefox/+bug/2/watches/5/+edit HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Referer: http://localhost:9000/malone/bugs/2/
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -86,11 +82,10 @@ watch can be edited.
 
 
   >>> print http(r"""
-  ... POST /malone/bugs/2/watches/5/+edit HTTP/1.1
+  ... POST /distros/debian/+sources/mozilla-firefox/+bug/2/watches/5/+edit HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 411
   ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
-  ... Referer: http://localhost:9000/malone/bugs/2/watches/5/+edit
   ... 
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.bugtracker"
@@ -112,5 +107,5 @@ watch can be edited.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/malone/bugs/2
+  Location: http://localhost:9000/distros/debian/+sources/mozilla-firefox/+bug/2
   ...

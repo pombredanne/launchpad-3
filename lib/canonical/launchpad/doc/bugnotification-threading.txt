@@ -1,0 +1,263 @@
+Bug Notification Threading
+==========================
+
+In order to make the notifications more usable, all notifications
+related to a specific bug have their headers set so that they will be
+grouped together by an email client that handles threading correctly.
+Comments added by the web UI won't be correctly threaded, though, since
+you can't know to which comment the new comment was a reply to.
+
+Let's create a bug and add a few comments to it to show how it works.
+First we need to login in order to create a bug:
+
+    >>> login('test@canonical.com')
+
+Now we can submit a bug on Firefox:
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, IProductSet, IBugSet)
+    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> firefox = getUtility(IProductSet).get(4)
+    >>> firefox_bug = getUtility(IBugSet).createBug(
+    ...     product=firefox, title="Yet another firefox bug",
+    ...     comment="Firefox crashed again", owner=sample_person)
+
+In order for the notification to be sent, we need to send an event,
+telling the system that a bug has been created:
+
+    >>> from zope.event import notify
+    >>> from canonical.launchpad.event import SQLObjectCreatedEvent
+    >>> notify(SQLObjectCreatedEvent(firefox_bug))
+
+    >>> import transaction
+    >>> from canonical.launchpad.mail import stub
+    >>> import email
+
+Now we can look at the notification that got sent. Since we're going to
+do it a few times we create a helper function which will make sure that
+the transaction is committed, so that mail get sent, and return the
+latest mail sent:
+
+    >>> def get_latest_notification():
+    ...     transaction.commit()
+    ...     from_addr, to_addr, raw_message = stub.test_emails.pop()
+    ...     stub.test_emails = []
+    ...     return email.message_from_string(raw_message)
+    >>> add_notification = get_latest_notification()
+
+This is our root in the thread, it's not a reply to any message:
+
+    >>> add_notification['In-Reply-To'] is None
+    True
+    >>> add_notification['References'] is None
+    True
+
+Let's add a comment to the bug and check that the notification's
+headers are correct set:
+
+    >>> from canonical.launchpad.interfaces import IBugMessageSet
+    >>> comment = getUtility(IBugMessageSet).createMessage(
+    ...     subject='Re: Yet another firefox bug', bug=firefox_bug,
+    ...     owner=sample_person, content='It sure does crash a lot.')
+    >>> notify(SQLObjectCreatedEvent(comment))
+    >>> comment_notification = get_latest_notification()
+
+    >>> add_notification['Message-Id'] in comment_notification['References']
+    True
+
+If we add another comment we can see that it also has the add
+notification in its References header, but it doesn't have the other
+comment there, since we don't know if the new comment is a reply to it
+or not:
+
+    >>> new_comment = getUtility(IBugMessageSet).createMessage(
+    ...     subject='Re: Yet another firefox bug', bug=firefox_bug,
+    ...     content="What's the bug?.", owner=sample_person)
+    >>> notify(SQLObjectCreatedEvent(new_comment))
+    >>> new_comment_notification = get_latest_notification()
+
+    >>> references = new_comment_notification['References']
+    >>> add_notification['Message-Id'] in references
+    True
+    >>> comment_notification['Message-Id'] in references
+    False
+
+So, what if someone replies to a notification via email? Given that his
+email client correctly sets either the References or In-Reply-To
+header, the new notification will be correctly threaded. Let's first
+create an email with In-Reply-To set to the first comment made:
+
+    >>> email_comment = """From: Foo Bar <foo.bar@canonical.com>
+    ... To: somebug
+    ... Subject: Duplicate
+    ... In-Reply-To: %s
+    ... Message-Id: <1234>
+    ... Date: Wed, 13 Apr 2005 19:17:16 -0400
+    ...
+    ... Hasn't this bug been reported before?
+    ... """ % comment_notification['Message-Id']
+
+Now we put it in the database and link it to the bug:
+
+    >>> from canonical.launchpad.interfaces import IMessageSet
+    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+    >>> LibrarianTestSetup().setUp()
+    >>> message = getUtility(IMessageSet).fromEmail(email_comment)
+    >>> bugmessage = firefox_bug.linkMessage(message)
+    >>> notify(SQLObjectCreatedEvent(bugmessage))
+
+If we look at the sent notification we can see that it's a reply to
+comment_notification:
+
+    >>> email_notification = get_latest_notification()
+    >>> references = email_notification['References'].split()
+    >>> comment_notification['Message-Id'] == references[-1]
+    True
+
+Let's do the same thing but use References instead of In-Reply-To. This
+time we also include the whole thread in the header, that is
+email_comment is a reply to comment_notification which is a reply to
+add_notification:
+
+    >>> email_comment = """From: Foo Bar <foo.bar@canonical.com>
+    ... To: somebug
+    ... Subject: Duplicate
+    ... References: %s %s
+    ... Message-Id: <5678>
+    ... Date: Wed, 13 Apr 2005 20:17:16 -0400
+    ...
+    ... Hasn't this bug been reported before?
+    ... """ % (add_notification['Message-Id'],
+    ...        comment_notification['Message-Id'])
+    >>> message = getUtility(IMessageSet).fromEmail(email_comment)
+    >>> bugmessage = firefox_bug.linkMessage(message)
+    >>> notify(SQLObjectCreatedEvent(bugmessage))
+
+    >>> email_notification = get_latest_notification()
+    >>> references = email_notification['References'].split()
+    >>> len(references)
+    2
+    >>> comment_notification['Message-Id'] == references[1]
+    True
+    >>> add_notification['Message-Id'] == references[0]
+    True
+
+
+Let's reply to this latest notification as well:
+
+    >>> references.append(email_notification['Message-Id'])
+    >>> new_email_comment = """From: Foo Bar <foo.bar@canonical.com>
+    ... To: somebug
+    ... Subject: Duplicate
+    ... References: %s
+    ... Message-Id: <9101112>
+    ... Date: Wed, 13 Apr 2005 20:17:16 -0400
+    ...
+    ... Hasn't this bug been reported before?
+    ... """ % ' '.join(references)
+
+    >>> message = getUtility(IMessageSet).fromEmail(new_email_comment)
+    >>> bugmessage = firefox_bug.linkMessage(message)
+    >>> notify(SQLObjectCreatedEvent(bugmessage))
+
+    >>> new_email_notification = get_latest_notification()
+    >>> references = new_email_notification['References'].split()
+    >>> len(references)
+    3
+    >>> email_notification['Message-Id'] == references[2]
+    True
+    >>> comment_notification['Message-Id'] == references[1]
+    True
+    >>> add_notification['Message-Id'] == references[0]
+    True
+
+
+If we reply to a message that isn't stored in our database, our reply
+will still be threaded correctly, if one of the messages in the
+References or In-Reply-To headers is in the database.
+
+    >>> references.append('<nonexistant>')
+    >>> new_email_comment = """From: Foo Bar <foo.bar@canonical.com>
+    ... To: somebug
+    ... Subject: Duplicate
+    ... References: %s
+    ... Message-Id: <9101112>
+    ... Date: Wed, 13 Apr 2005 20:17:16 -0400
+    ...
+    ... Hasn't this bug been reported before?
+    ... """ % ' '.join(references)
+
+    >>> message = getUtility(IMessageSet).fromEmail(new_email_comment)
+    >>> bugmessage = firefox_bug.linkMessage(message)
+    >>> notify(SQLObjectCreatedEvent(bugmessage))
+
+    >>> new_email_notification = get_latest_notification()
+    >>> references = new_email_notification['References'].split()
+
+    >>> email_notification['Message-Id'] in references
+    True
+    >>> comment_notification['Message-Id'] in references
+    True
+    >>> add_notification['Message-Id'] in references
+    True
+
+XXX: We should sort out how the example above should be handled. At the
+     moment <nonexistant> isn't in the References header, even though it
+     should.
+     -- Bjorn Tillenius, 2005-08-25
+
+    >>> '<nonexistant>' in references
+    False
+
+Now let's edit the bug and bugtasks and make sure that the initial
+notification is in the References header.
+
+    >>> from canonical.launchpad.helpers import Snapshot
+    >>> from canonical.launchpad.interfaces import IBug
+    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
+    >>> snapshot = Snapshot(firefox_bug, providing=IBug)
+    >>> firefox_bug.title = "Some other title"
+    >>> notify(SQLObjectModifiedEvent(
+    ...     firefox_bug, snapshot, edited_fields=['title']))
+    >>> edit_notification = get_latest_notification()
+    >>> references = edit_notification['References'].split()
+    >>> add_notification['Message-Id'] in references
+    True
+
+    >>> from canonical.launchpad.interfaces import IUpstreamBugTask
+    >>> firefox_task = firefox_bug.bugtasks[0]
+    >>> snapshot = Snapshot(firefox_task, providing=IUpstreamBugTask)
+    >>> firefox_task.assignee = sample_person
+    >>> notify(SQLObjectModifiedEvent(
+    ...     firefox_task, snapshot, edited_fields=['assignee']))
+    >>> edit_notification = get_latest_notification()
+    >>> references = edit_notification['References'].split()
+    >>> add_notification['Message-Id'] in references
+    True
+
+Let's add a distribution task and a web reference to see that the
+threading works for these notifications as well.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IBugTaskSet, ISourcePackageNameSet)
+    >>> mozilla_firefox = getUtility(ISourcePackageNameSet)['mozilla-firefox']
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> distrotask = getUtility(IBugTaskSet).createTask(
+    ...     firefox_bug, sample_person, distribution=ubuntu,
+    ...     sourcepackagename=mozilla_firefox)
+    >>> notify(SQLObjectCreatedEvent(distrotask))
+    >>> edit_notification = get_latest_notification()
+    >>> references = edit_notification['References'].split()
+    >>> add_notification['Message-Id'] in references
+    True
+
+    >>> from canonical.launchpad.interfaces import IBugExternalRefSet
+    >>> extref = getUtility(IBugExternalRefSet).createBugExternalRef(
+    ...     firefox_bug, 'http://foo.bar/baz', "Foo", sample_person)
+    >>> notify(SQLObjectCreatedEvent(extref))
+    >>> edit_notification = get_latest_notification()
+    >>> references = edit_notification['References'].split()
+    >>> add_notification['Message-Id'] in references
+    True
+
+    >>> LibrarianTestSetup().tearDown()

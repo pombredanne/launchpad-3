@@ -1,4 +1,3 @@
-
 Specifications and Milestones
 =============================
 
@@ -24,7 +23,7 @@ Now, we will POST to it. We expect to be redirected to the spec home page.
   ... -----------------------------17148587251480984875899951709
   ... Content-Disposition: form-data; name="field.milestone"
   ... 
-  ... 1.0
+  ... 1
   ... -----------------------------17148587251480984875899951709
   ... Content-Disposition: form-data; name="field.milestone-empty-marker"
   ... 

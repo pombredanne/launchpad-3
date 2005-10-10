@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'LoginTokenSetNavigation',
     'LoginTokenView',
     'ResetPasswordView',
     'ValidateEmailView',
@@ -24,11 +25,16 @@ from canonical.lp.dbschema import GPGKeyAlgorithm
 
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logInPerson
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, GetitemNavigation
 
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, IPasswordEncryptor, ILoginTokenSet,
     IGPGKeySet, IGPGHandler, ILaunchBag)
+
+
+class LoginTokenSetNavigation(GetitemNavigation):
+
+    usedfor = ILoginTokenSet
 
 
 class LoginTokenView:
@@ -103,9 +109,10 @@ class ResetPasswordView(BaseLoginTokenView):
 
         form = self.request.form
         self.email = form.get("email").strip()
-        # XXX: Should not do case-sensitive comparison with the part after the
-        # @ of the email address. -- GuilhermeSalgado, 2005-08-15
-        if self.email != self.context.email:
+        # All operations with email addresses must be case-insensitive. We
+        # enforce that in EmailAddressSet, but here we only do a comparison,
+        # so we have to .lower() them first.
+        if self.email.lower() != self.context.email.lower():
             self.errormessage = (
                 "The email address you provided didn't match the address "
                 "you provided when requesting the password reset.")
@@ -296,7 +303,7 @@ class ValidateEmailView(BaseLoginTokenView):
 
         self.formProcessed = True
 
-        guessed, hijacked = self._guessGPGEmails(key.uids)
+        guessed, hijacked = self._guessGPGEmails(key.emails)
 
         if len(guessed):
             # build email list

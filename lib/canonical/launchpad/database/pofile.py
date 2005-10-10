@@ -11,26 +11,27 @@ import os.path
 # Zope interfaces
 from zope.interface import implements, providedBy
 from zope.component import getUtility
-from zope.exceptions import NotFoundError
 from zope.event import notify
 
-from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
-    SQLObjectNotFound)
+from sqlobject import (
+    ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound)
 
-from canonical.database.sqlbase import (SQLBase, flush_database_updates,
-    sqlvalues)
+from canonical.database.sqlbase import (
+    SQLBase, flush_database_updates, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 
-from canonical.lp.dbschema import (EnumCol, RosettaImportStatus,
-    TranslationPermission, TranslationValidationStatus)
+from canonical.lp.dbschema import (
+    EnumCol, RosettaImportStatus, TranslationPermission,
+    TranslationValidationStatus)
 
 import canonical.launchpad
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.interfaces import (IPOFileSet, IEditPOFile,
-    IRawFileData, IPOTemplateExporter, ZeroLengthPOExportError,
-    ILibraryFileAliasSet, IPOFile, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces import (
+    IPOFileSet, IPOFile, IRawFileData, IPOTemplateExporter,
+    ZeroLengthPOExportError, ILibraryFileAliasSet, ILaunchpadCelebrities,
+    NotFoundError)
 
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -38,12 +39,13 @@ from canonical.launchpad.database.pomsgset import POMsgSet
 
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po, OldPOImported
-from canonical.launchpad.components.poparser import (POSyntaxError,
-    POHeader, POInvalidInputError)
+from canonical.launchpad.components.poparser import (
+    POSyntaxError, POHeader, POInvalidInputError)
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 
+
 class POFile(SQLBase, RosettaStats):
-    implements(IEditPOFile, IRawFileData)
+    implements(IPOFile, IRawFileData)
 
     _table = 'POFile'
 
@@ -143,7 +145,7 @@ class POFile(SQLBase, RosettaStats):
             distinct=True)
 
     def canEditTranslations(self, person):
-        """See IEditPOFile."""
+        """See IPOFile."""
         # If the person is None, then they cannot edit
         if person is None:
             return False
@@ -388,14 +390,13 @@ class POFile(SQLBase, RosettaStats):
             sequence > 0
             """ % sqlvalues(self.id)).count()
 
-    # IEditPOFile
     def expireAllMessages(self):
-        """See IEditPOFile."""
+        """See IPOFile."""
         for msgset in self.currentMessageSets():
             msgset.sequence = 0
 
     def updateStatistics(self, tested=False):
-        """See IEditPOFile."""
+        """See IPOFile."""
         # make sure all the data is in the db
         flush_database_updates()
         # make a note of the pre-update position
@@ -463,7 +464,7 @@ class POFile(SQLBase, RosettaStats):
         return (current, updates, rosetta)
 
     def createMessageSetFromMessageSet(self, potmsgset):
-        """See IEditPOFile."""
+        """See IPOFile."""
         messageSet = POMsgSet(
             sequence=0,
             pofile=self,
@@ -476,7 +477,7 @@ class POFile(SQLBase, RosettaStats):
         return messageSet
 
     def createMessageSetFromText(self, text):
-        """See IEditPOFile."""
+        """See IPOFile."""
         try:
             potmsgset = self.potemplate[text]
         except KeyError:
@@ -485,7 +486,7 @@ class POFile(SQLBase, RosettaStats):
         return self.createMessageSetFromMessageSet(potmsgset)
 
     def updateHeader(self, new_header):
-        """See IEditPOFile."""
+        """See IPOFile."""
         # check that the plural forms info is valid
         new_plural_form = new_header.get('Plural-Forms', None)
         if new_plural_form is None:
@@ -517,6 +518,26 @@ class POFile(SQLBase, RosettaStats):
         self.fuzzyheader = 'fuzzy' in new_header.flags
         self.pluralforms = new_header.nplurals
 
+    def isPORevisionDateOlder(self, header):
+        """See IPOFile."""
+        old_header = POHeader(msgstr=self.header)
+        old_header.finish()
+
+        # Get the old and new PO-Revision-Date entries as datetime objects.
+        # That's the second element from the tuple that getPORevisionDate
+        # returns.
+        (old_date_string, old_date) = old_header.getPORevisionDate()
+        (new_date_string, new_date) = header.getPORevisionDate()
+
+        # Check whether or not the date is older.
+        if old_date is None or new_date is None or old_date <= new_date:
+            # If one of the headers, or both headers, has a missing or wrong
+            # PO-Revision-Date, then they cannot be compared, so we consider
+            # the new header to be the most recent.
+            return False
+        elif old_date > new_date:
+            return True
+
     # ICanAttachRawFileData implementation
 
     def attachRawFileData(self, contents, published, importer=None):
@@ -545,26 +566,6 @@ class POFile(SQLBase, RosettaStats):
         schema=RosettaImportStatus, default=RosettaImportStatus.IGNORE)
 
     rawfilepublished = BoolCol(notNull=False, default=None)
-
-    def isPORevisionDateNewer(self, header):
-        """See IPOFile."""
-        # Check now that the file we are trying to import is newer than the
-        # one we already have in our database. That's done comparing the
-        # PO-Revision-Date field of the headers.
-        old_header = POHeader(msgstr=self.header)
-        old_header.finish()
-
-        # Get the old and new PO-Revision-Date entries as datetime objects.
-        (old_date_string, old_date) = old_header.getPORevisionDate()
-        (new_date_string, new_date) = header.getPORevisionDate()
-
-        # Check if the import should or not be ignored.
-        if old_date is None or new_date is None or old_date < new_date:
-            # If one or both headers had a missing or wrong PO-Revision-Date,
-            # the new header is always accepted as newer.
-            return True
-        elif old_date >= new_date:
-            return False
 
     def doRawImport(self, logger=None):
         """See IRawFileData."""

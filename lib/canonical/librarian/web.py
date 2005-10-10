@@ -58,17 +58,17 @@ class LibraryFileAliasResource(resource.Resource):
             return fourOhFour
         filename = request.postpath[0]
 
-        deferred = deferToThread(self._getFileAlias, filename)
-        deferred.addCallback(self._cb_getFileAlias, aliasID, request)
+        deferred = deferToThread(self._getFileAlias, aliasID)
+        deferred.addCallback(self._cb_getFileAlias, aliasID, filename, request)
         deferred.addErrback(self._eb_getFileAlias)
         return util.DeferredResource(deferred)
 
-    def _getFileAlias(self, filename):
+    def _getFileAlias(self, aliasID):
         begin()
         try:
             try:
-                alias = self.storage.getFileAlias(self.fileID, filename)
-                return alias.id, alias.mimetype
+                alias = self.storage.getFileAlias(aliasID)
+                return alias.contentID, alias.filename, alias.mimetype
             except LookupError:
                 raise NotFound
         finally:
@@ -78,8 +78,18 @@ class LibraryFileAliasResource(resource.Resource):
         failure.trap(NotFound)
         return fourOhFour
         
-    def _cb_getFileAlias(self, (dbAliasID, mimetype), aliasID, request):
-        if dbAliasID != aliasID:
+    def _cb_getFileAlias(
+            self, (dbcontentID, dbfilename, mimetype),
+            aliasID, filename, request
+            ):
+        # Return a 404 if the filename in the URL is incorrect. This offers
+        # a crude form of access control (stuff we care about can have
+        # unguessable names effectivly using the filename as a secret).
+        if dbfilename.encode('utf-8') != filename:
+            return fourOhFour
+        # Return a 404 if the contentid in the URL is incorrect. This doesn't
+        # gain us much I guess.
+        if dbcontentID != self.fileID:
             return fourOhFour
         if self.storage.hasFile(self.fileID) or self.upstreamHost is None:
             return File(mimetype.encode('ascii'),
@@ -128,7 +138,7 @@ class DigestSearchResource(resource.Resource):
 
     def _cb_matchingAliases(self, matches, request):
         text = '\n'.join([str(len(matches))] + matches)
-        response = static.Data(text.encode('utf-8'), 
+        response = static.Data(text.encode('utf-8'),
                                'text/plain; charset=utf-8').render(request)
         request.write(response)
         request.finish()

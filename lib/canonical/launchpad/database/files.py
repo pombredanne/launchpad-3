@@ -29,7 +29,7 @@ class BinaryPackageFile(SQLBase):
                                       foreignKey='BinaryPackageRelease',
                                       notNull=True)
     libraryfile = ForeignKey(dbName='libraryfile',
-                             foreignKey='LibraryFile', notNull=True)
+                             foreignKey='LibraryFileAlias', notNull=True)
     filetype = EnumCol(dbName='filetype',
                        schema=BinaryPackageFileType)
 
@@ -52,14 +52,11 @@ class SourcePackageReleaseFile(SQLBase):
 
     implements(ISourcePackageReleaseFile)
 
-    _columns = [
-        ForeignKey(name='sourcepackagerelease',
-                   foreignKey='SourcePackageRelease',
-                   dbName='sourcepackagerelease'),
-        ForeignKey(name='libraryfile', foreignKey='LibraryFileAlias',
-                   dbName='libraryfile'),
-        EnumCol('filetype', schema=SourcePackageFileType),
-    ]
+    sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
+                                      dbName='sourcepackagerelease')
+    libraryfile = ForeignKey(foreignKey='LibraryFileAlias',
+                             dbName='libraryfile')
+    filetype = EnumCol(schema=SourcePackageFileType)
 
     @property
     def url(self):
@@ -73,10 +70,11 @@ class SourcePackageReleaseFile(SQLBase):
         else:
             name = self.libraryfile.filename
             return DownloadURL(name, url)
-            
+
 class DownloadURL:
     implements(IDownloadURL)
 
     def __init__(self, filename, fileurl):
         self.filename = filename
         self.fileurl = fileurl
+

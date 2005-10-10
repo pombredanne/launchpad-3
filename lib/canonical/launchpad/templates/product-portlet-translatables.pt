@@ -1,3 +1,22 @@
+
+<div class="portlet" tal:condition="context/translatable_series">
+
+  <h4>Translatable Branches:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li class="translations"
+          tal:repeat="series context/translatable_series">
+        <a tal:content="series/title"
+               tal:attributes="href string:${series/fmt:url}/+translations">
+          series title</a>
+      </li>
+    </ul>
+
+  </div>
+</div>
+
 <div class="portlet" tal:condition="context/translatable_packages">
 
   <h4>Translatable Distro Packages:</h4>
@@ -17,20 +36,3 @@
 
 </div>
 
-<div class="portlet" tal:condition="context/translatable_series">
-
-  <h4>Translatable Branches:</h4>
-
-  <div class="portletBody portletContent">
-
-    <ul>
-      <li class="translations"
-          tal:repeat="series context/translatable_series">
-        <a tal:content="series/title"
-               tal:attributes="href string:${series/fmt:url}/+translations">
-          series title</a>
-      </li>
-    </ul>
-
-  </div>
-</div>

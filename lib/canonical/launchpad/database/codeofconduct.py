@@ -15,7 +15,6 @@ from datetime import datetime
 
 from zope.interface import implements
 from zope.component import getUtility
-from zope.exceptions import NotFoundError
 
 from sqlobject import ForeignKey, StringCol, BoolCol
 
@@ -27,8 +26,8 @@ from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.interfaces import (
     ICodeOfConduct, ICodeOfConductSet, ICodeOfConductConf,
     ISignedCodeOfConduct, ISignedCodeOfConductSet, IGPGHandler,
-    IGPGKeySet
-    )
+    IGPGKeySet, NotFoundError)
+
 
 class CodeOfConduct:
     """CoC class model.
@@ -147,7 +146,7 @@ class SignedCodeOfConduct(SQLBase):
     signingkey = ForeignKey(foreignKey="GPGKey", dbName="signingkey",
                             notNull=False, default=None)
 
-    datecreated = UtcDateTimeCol(dbName='datecreated', notNull=False,
+    datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
                                  default=UTC_NOW)
 
     recipient = ForeignKey(foreignKey="Person", dbName="recipient",
@@ -156,7 +155,7 @@ class SignedCodeOfConduct(SQLBase):
     admincomment = StringCol(dbName='admincomment', notNull=False,
                              default=None)
 
-    active = BoolCol(dbName='active', notNull=False, default=False)
+    active = BoolCol(dbName='active', notNull=True, default=False)
 
     @property
     def displayname(self):
@@ -296,8 +295,9 @@ class SignedCodeOfConductSet:
         # entries. If it is it should be part of FTI queries,
         # isn't it ?
 
-        # if displayname was '%' return all SignedCoC entries
-        if displayname != '%':
+        # the name shoudl work like a filter, if you don't enter anything
+        # you get everything.
+        if displayname:
             query +=' AND Person.fti @@ ftq(%s)' % quote(displayname)
 
         # Attempt to search for directive

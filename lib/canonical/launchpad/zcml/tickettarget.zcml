@@ -5,6 +5,8 @@
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
+<facet facet="support">
+
   <browser:pages
     for="canonical.launchpad.interfaces.ITicketTarget"
     class="canonical.launchpad.browser.TicketTargetView"
@@ -27,8 +29,8 @@
     for="canonical.launchpad.interfaces.ITicketTarget"
     schema="canonical.launchpad.interfaces.ITicket"
     class="canonical.launchpad.browser.TicketAddView"
-    label="Make a Support Request"
-    fields="title description owner"
+    label="Make a support request"
+    fields="description title owner"
     keyword_arguments="title description owner"
     permission="launchpad.AnyPerson"
     template="../templates/ticket-add.pt"
@@ -37,5 +39,7 @@
       field="owner"
       class="canonical.widgets.HiddenUserWidget" />
   </browser:addform>
+
+</facet>
 
 </configure>

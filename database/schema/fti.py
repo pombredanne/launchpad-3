@@ -18,6 +18,8 @@ DEFAULT_CONFIG = 'default'
 TSEARCH2_SQL = '/usr/share/postgresql'
 if os.path.isdir('/usr/share/postgresql/7.4'):
     TSEARCH2_SQL = TSEARCH2_SQL + '/7.4'
+elif os.path.isdir('/usr/share/postgresql/8.0'):
+    TSEARCH2_SQL = TSEARCH2_SQL + '/8.0'
 TSEARCH2_SQL = TSEARCH2_SQL + '/contrib/tsearch2.sql'
 if not os.path.exists(TSEARCH2_SQL):
     # Can't log because logger not yet setup
@@ -47,6 +49,11 @@ ALL_FTI = [
     ('binarypackagerelease', [
             ('summary', C),
             ('description', D),
+            ]),
+
+    ('cve', [
+            ('sequence', A),
+            ('description', B),
             ]),
 
     ('message', [
@@ -216,9 +223,9 @@ def setup(con, configuration=DEFAULT_CONFIG):
         query = args[0].decode('utf8').lower()
         ## plpy.debug('1 query is %s' % repr(query))
 
-        # Convert &, |, ! and : symbols to whitespace since they have
+        # Convert &, |, !, : and \ symbols to whitespace since they have
         # special meaning to tsearch2
-        query = re.sub(r"[\&\|\!\:]+", " ", query)
+        query = re.sub(r"[\&\|\!\:\\]+", " ", query)
         ## plpy.debug('2 query is %s' % repr(query))
 
         # Convert AND, OR and NOT to tsearch2 punctuation

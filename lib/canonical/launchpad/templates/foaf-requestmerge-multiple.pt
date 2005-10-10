@@ -8,6 +8,11 @@
 
 <div metal:fill-slot="main">
 
+  <tal:block condition="not: view/dupe">
+    <h1>No user account found to merge</h1>
+  </tal:block>
+
+  <tal:block condition="view/dupe">
     <tal:block tal:condition="not: view/formProcessed">
       <h1>Merge User Accounts</h1>
 
@@ -49,6 +54,7 @@
       merge.</p>
     </tal:block>
 
+  </tal:block>
 </div> 
 
 </body>

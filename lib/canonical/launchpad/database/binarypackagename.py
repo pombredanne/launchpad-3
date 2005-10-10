@@ -16,7 +16,7 @@ from canonical.database.sqlbase import SQLBase
 
 # interfaces and database 
 from canonical.launchpad.interfaces import (
-    IBinaryPackageName, IBinaryPackageNameSet)
+    IBinaryPackageName, IBinaryPackageNameSet, NotFoundError)
 
 
 class BinaryPackageName(SQLBase):
@@ -58,7 +58,7 @@ class BinaryPackageNameSet:
         try:
             return BinaryPackageName.byName(name)
         except SQLObjectNotFound:
-            raise KeyError, name
+            raise NotFoundError(name)
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.IBinaryPackageNameSet."""

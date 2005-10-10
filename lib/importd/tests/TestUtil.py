@@ -70,7 +70,7 @@ class TestVisitor(object):
         pass
 
 
-class TestLoader(pybaz.tests.framework.OrderedTestLoader):
+class TestLoader(unittest.TestLoader):
     suiteClass = TestSuite
 
 

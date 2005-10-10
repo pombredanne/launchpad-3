@@ -5,6 +5,8 @@
   xmlns:i18n="http://namespaces.zope.org/i18n"
   i18n_domain="launchpad">
 
+<facet facet="specifications">
+
   <!-- Specification -->
   <content class="canonical.launchpad.database.Specification">
     <allow interface="canonical.launchpad.interfaces.ISpecification" />
@@ -12,6 +14,11 @@
       permission="launchpad.AnyPerson"
       set_schema="canonical.launchpad.interfaces.ISpecification" />
   </content>
+
+  <browser:menus
+    module="canonical.launchpad.browser"
+    classes="SpecificationContextMenu"
+    />
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISpecification"
@@ -35,9 +42,6 @@
     <browser:page
       name="+listing-detailed"
       template="../templates/specification-listing-detailed.pt" />
-    <browser:page
-      name="+portlet-actions"
-      template="../templates/specification-portlet-actions.pt" />
     <browser:page
       name="+portlet-details"
       template="../templates/specification-portlet-details.pt" />
@@ -82,6 +86,10 @@
       field="whiteboard"
       class="zope.app.form.browser.TextAreaWidget"
       height="5" />
+    <browser:widget
+      field="specurl"
+      class="zope.app.form.browser.TextWidget"
+      displayWidth="60" />
   </browser:editform>
 
   <browser:editform
@@ -188,7 +196,7 @@
     for="canonical.launchpad.interfaces.ISpecification"
     schema="canonical.launchpad.interfaces.ISpecificationBug"
     class="canonical.launchpad.browser.SpecificationBugAddView"
-    label="Link Specification and Bug"
+    label="Link specification to bug report"
     fields="bug"
     keyword_arguments="bug"
     permission="launchpad.AnyPerson"
@@ -231,6 +239,18 @@
     template="../templates/specification-removedep.pt">
   </browser:addform>
 
+  <browser:addform
+    name="+linksprint"
+    for="canonical.launchpad.interfaces.ISpecification"
+    schema="canonical.launchpad.interfaces.ISprintSpecification"
+    class="canonical.launchpad.browser.SprintSpecificationAddView"
+    label="Add Spec to Sprint Topic List"
+    fields="sprint"
+    keyword_arguments="sprint"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-linksprint.pt">
+  </browser:addform>
+
 
   <!-- SpecificationSet -->
   <content class="canonical.launchpad.database.SpecificationSet">
@@ -242,11 +262,6 @@
     provides="canonical.launchpad.interfaces.ISpecificationSet" >
       <allow interface="canonical.launchpad.interfaces.ISpecificationSet" />
   </securedutility>
-
-  <browser:suburl
-    for="canonical.publication.RootObject"
-    utility="canonical.launchpad.interfaces.ISpecificationSet"
-    name="specs" />
 
   <browser:url
     for="canonical.launchpad.interfaces.ISpecificationSet"
@@ -265,11 +280,16 @@
       name="+index"
       template="../templates/specifications-index.pt" />
     <browser:page
-      name="+portlet-actions"
-      template="../templates/specifications-portlet-actions.pt" />
+      name="+portlet-overview"
+      template="../templates/specifications-portlet-overview.pt" />
     <browser:page
       name="+portlet-details"
       template="../templates/specifications-portlet-details.pt" />
+    <browser:page
+      name="+portlet-sprints"
+      template="../templates/specifications-portlet-sprints.pt" />
   </browser:pages>
+
+</facet>
 
 </configure>

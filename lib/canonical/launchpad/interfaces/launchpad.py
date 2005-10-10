@@ -5,28 +5,43 @@ Note that these are not interfaces to application content objects.
 """
 __metaclass__ = type
 
-from zope.interface import Interface, Attribute
+from zope.interface import Interface, Attribute, implements
+import zope.exceptions
 from zope.i18nmessageid import MessageIDFactory
+import zope.app.publication.interfaces
+import zope.app.traversing.interfaces
 from persistent import IPersistent
 
 _ = MessageIDFactory('launchpad')
 
-__all__ = ['ILaunchpadRoot', 'ILaunchpadApplication', 'IMaloneApplication',
-           'IRosettaApplication', 'IRegistryApplication', 'IBazaarApplication',
-           'IFOAFApplication', 'IPasswordEncryptor',
-           'IReadZODBAnnotation', 'IWriteZODBAnnotation',
-           'IZODBAnnotation', 'IAuthorization',
-           'IHasOwner', 'IHasAssignee', 'IHasProduct', 
-           'IHasProductAndAssignee', 'IOpenLaunchBag',
-           'IAging', 'IHasDateCreated',
-           'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
-           'ILink', 'IDefaultLink', 'IMenu', 'IMenuBase',
-           'IFacetMenu', 'IExtraFacetMenu',
-           'IApplicationMenu', 'IExtraApplicationMenu',
-           'ICanonicalUrlData', 'NoCanonicalUrl',
-           'IDBSchema', 'IDBSchemaItem', 'IAuthApplication',
-           'IPasswordChangeApp', 'IPasswordResets'
-           ]
+__all__ = [
+    'NotFoundError', 'NameNotAvailable',
+    'ILaunchpadRoot', 'ILaunchpadApplication',
+    'IMaloneApplication', 'IRosettaApplication', 'IRegistryApplication',
+    'IBazaarApplication', 'IFOAFApplication', 'IPasswordEncryptor',
+    'IReadZODBAnnotation', 'IWriteZODBAnnotation',
+    'IZODBAnnotation', 'IAuthorization',
+    'IHasOwner', 'IHasAssignee', 'IHasProduct', 
+    'IHasProductAndAssignee', 'IOpenLaunchBag',
+    'IAging', 'IHasDateCreated',
+    'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
+    'ILinkData', 'ILink', 'IFacetLink', 'IStructuredString',
+    'IMenu', 'IMenuBase', 'IFacetMenu',
+    'IApplicationMenu', 'IContextMenu',
+    'ICanonicalUrlData', 'NoCanonicalUrl',
+    'IDBSchema', 'IDBSchemaItem', 'IAuthApplication',
+    'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
+    'IAfterTraverseEvent', 'AfterTraverseEvent',
+    'IBeforeTraverseEvent', 'BeforeTraverseEvent'
+    ]
+
+
+class NotFoundError(zope.exceptions.NotFoundError):
+    """Launchpad object not found."""
+
+
+class NameNotAvailable(KeyError):
+    """You're trying to set a name, but the name you chose is not available."""
 
 
 class ILaunchpadCelebrities(Interface):
@@ -70,7 +85,7 @@ class ILaunchpadApplication(Interface):
     title = Attribute('Title')
 
 
-class ILaunchpadRoot(Interface):
+class ILaunchpadRoot(zope.app.traversing.interfaces.IContainmentRoot):
     """Marker interface for the root object of Launchpad."""
 
 
@@ -83,6 +98,7 @@ class IMaloneApplication(ILaunchpadApplication):
     bugtask_count = Attribute("The number of bug tasks in Malone")
     bugtracker_count = Attribute("The number of bug trackers in Malone")
     top_bugtrackers = Attribute("The BugTrackers with the most watches.")
+    latest_bugs = Attribute("The latest 5 bugs filed.")
 
 
 class IRosettaApplication(ILaunchpadApplication):
@@ -90,38 +106,19 @@ class IRosettaApplication(ILaunchpadApplication):
 
     statsdate = Attribute("""The date stats were last updated.""")
 
-    def translatable_products(self):
+    def translatable_products():
         """Return a list of the translatable products."""
 
-    def translatable_distroreleases(self):
+    def translatable_distroreleases():
         """Return a list of the distroreleases in launchpad for which
         translations can be done.
         """
 
-    def translation_groups(self):
+    def translation_groups():
         """Return a list of the translation groups in the system."""
 
-    def updateStatistics(self):
+    def updateStatistics():
         """Update the Rosetta statistics in the system."""
-
-    def potemplate_count(self):
-        """Return the number of potemplates in the system."""
-
-    def pofile_count(self):
-        """Return the number of pofiles in the system."""
-
-    def pomsgid_count(self):
-        """Return the number of msgs in the system."""
-
-    def translator_count(self):
-        """Return the number of people who have given translations."""
-
-    def language_count(self):
-        """Return the number of languages Rosetta can translate into."""
-
-    def translation_groups():
-        """Return an iterator over the set of translation groups in
-        Rosetta."""
 
     def potemplate_count():
         """Return the number of potemplates in the system."""
@@ -130,13 +127,13 @@ class IRosettaApplication(ILaunchpadApplication):
         """Return the number of pofiles in the system."""
 
     def pomsgid_count():
-        """Return the number of PO MsgID's in the system."""
+        """Return the number of msgs in the system."""
 
     def translator_count():
-        """Return the number of translators in the system."""
+        """Return the number of people who have given translations."""
 
     def language_count():
-        """Return the number of languages in the system."""
+        """Return the number of languages Rosetta can translate into."""
 
 
 class IRegistryApplication(ILaunchpadApplication):
@@ -145,6 +142,10 @@ class IRegistryApplication(ILaunchpadApplication):
 
 class IFOAFApplication(ILaunchpadApplication):
     """FOAF application root."""
+
+
+class IShipItApplication(ILaunchpadApplication):
+    """ShipIt application root."""
 
 
 class IBazaarApplication(ILaunchpadApplication):
@@ -176,11 +177,10 @@ class IPasswordResets(IPersistent):
     """Interface for PasswordResets"""
 
     lifetime = Attribute("Maximum time between request and reset password")
-    
+
     def newURL(person):
         """Create a new URL and store person and creation time"""
-        
-        
+
     def getPerson(long_url):
         """Get the person object using the long_url if not expired"""
 
@@ -287,18 +287,19 @@ class IHasDateCreated(Interface):
 
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')
-    person = Attribute('Person, or None')
-    project = Attribute('Project, or None')
-    product = Attribute('Product, or None')
-    distribution = Attribute('Distribution, or None')
-    distrorelease = Attribute('DistroRelease, or None')
-    distroarchrelease = Attribute('DistroArchRelease, or None')
-    sourcepackage = Attribute('Sourcepackage, or None')
+    person = Attribute('IPerson, or None')
+    project = Attribute('IProject, or None')
+    product = Attribute('IProduct, or None')
+    distribution = Attribute('IDistribution, or None')
+    distrorelease = Attribute('IDistroRelease, or None')
+    distroarchrelease = Attribute('IDistroArchRelease, or None')
+    sourcepackage = Attribute('ISourcepackage, or None')
     sourcepackagereleasepublishing = Attribute(
-        'SourcepackageReleasePublishing, or None')
-    bug = Attribute('Bug, or None')
+        'ISourcepackageReleasePublishing, or None')
+    bug = Attribute('IBug, or None')
+    bugtask = Attribute('IBugTask, or None')
 
-    user = Attribute('Currently authenticated person, or None')
+    user = Attribute('Currently authenticated IPerson, or None')
     login = Attribute('The login used by the authenticated person, or None')
 
     timezone = Attribute("The user's time zone")
@@ -313,56 +314,113 @@ class IOpenLaunchBag(ILaunchBag):
         '''Set the login to the given value.'''
 
 
-class ILink(Interface):
+class IStructuredString(Interface):
+    """An object that represents a string that is to retain its html structure
+    in a menu's link text.
+    """
 
-    name = Attribute(
-        'the name of this link, as declared in python for example')
-
-    target = Attribute('the relative path to the target of this link')
-
-    url = Attribute('canonical url this link points to')
-
-    text = Attribute('the text of the link')
-
-    summary = Attribute('summary of the link, for example for a tooltip')
-
-    selected = Attribute('whether this link is selected or not')
-
-    linked = Attribute('whether this link should be available to traverse')
+    escapedtext = Attribute("The escaped text for display on a web page.")
 
 
-class IDefaultLink(ILink):
-    """Link that is selected when other links are not."""
+class ILinkData(Interface):
+    """An object with immutable attributes that represents the data a
+    programmer provides about a link in a menu.
+    """
+
+    target = Attribute("The place this link should link to.  This may be "
+        "a path relative to the context of the menu this link appears in, "
+        "or an absolute path, or an absolute URL.")
+
+    text = Attribute(
+        "The text of this link, as appears underlined on a page.")
+
+    summary = Attribute(
+        "The summary text of this link, as appears as a tooltip on the link.")
+
+    icon = Attribute("The name of the icon to use.")
+
+    enabled = Attribute("Boolean to say whether this link is enabled.")
+
+
+class ILink(ILinkData):
+    """An object that represents a link in a menu.
+
+    The attributes name, url and linked may be set by the menus infrastructure.
+    """
+
+    name = Attribute("The name of this link in Python data structures.")
+
+    url = Attribute(
+        "The full url this link points to.  Set by the menus infrastructure. "
+        "None before it is set.")
+
+    linked = Attribute(
+        "A boolean value saying whether this link should appear as a clickable"
+        " link in the UI.  The general rule is that a link to the current"
+        " page should not be shown linked.  Defaults to True.")
+
+    enabled = Attribute(
+        "Boolean to say whether this link is enabled.  Can be read and set.")
+
+    escapedtext = Attribute("Text string, escaped as necessary.")
+
+
+class IFacetLink(ILink):
+    """A link in a facet menu.
+
+    It has a 'selected' attribute that is set by the menus infrastructure,
+    and indicates whether the link is the selected facet.
+    """
+
+    selected = Attribute(
+        "A boolean value saying whether this link is the selected facet menu "
+        "item.  Defaults to False.")
 
 
 class IMenu(Interface):
     """Public interface for facets, menus, extra facets and extra menus."""
 
-    def __iter__():
-        """Iterate over the links in this menu."""
+    def iterlinks(requesturl=None):
+        """Iterate over the links in this menu.
+
+        requesturl, if it is not None, is a Url object that is used to
+        decide whether a menu link points to the page being requested,
+        in which case it will not be linked.
+        """
 
 
 class IMenuBase(IMenu):
     """Common interface for facets, menus, extra facets and extra menus."""
 
     context = Attribute('the object that has this menu')
-    request = Attribute('The web request.  May be None.')
 
 
 class IFacetMenu(IMenuBase):
     """Main facet menu for an object."""
 
+    def iterlinks(requesturl=None, selectedfacetname=None):
+        """Iterate over the links in this menu.
 
-class IExtraFacetMenu(IMenuBase):
-    """Extra facet menu for an object."""
+        requesturl, if it is not None, is a Url object that is used to
+        decide whether a menu link points to the page being requested,
+        in which case it will not be linked.
+
+        If selectedfacetname is provided, the link with that name will be
+        marked as 'selected'.
+        """
+
+    defaultlink = Attribute(
+        "The name of the default link in this menu.  That is, the one that "
+        "will be selected if no others are selected.  It is None if there "
+        "is no default link.")
 
 
 class IApplicationMenu(IMenuBase):
     """Application menu for an object."""
 
 
-class IExtraApplicationMenu(IMenuBase):
-    """Extra application menu for an object."""
+class IContextMenu(IMenuBase):
+    """Context menu for an object."""
 
 
 class ICanonicalUrlData(Interface):
@@ -427,3 +485,41 @@ class IDBSchemaItem(Interface):
     def __hash__():
         """Returns a hash value."""
 
+
+class IAfterTraverseEvent(Interface):
+    """An event which gets sent after publication traverse."""
+
+
+class AfterTraverseEvent:
+    """An event which gets sent after publication traverse."""
+
+    implements(IAfterTraverseEvent)
+
+    def __init__(self, ob, request):
+        self.object = ob
+        self.request = request
+
+
+class IBeforeTraverseEvent(
+    zope.app.publication.interfaces.IBeforeTraverseEvent):
+    pass
+
+
+class BeforeTraverseEvent(zope.app.publication.interfaces.BeforeTraverseEvent):
+    pass
+
+
+# XXX: These need making into a launchpad version rather than the zope versions
+#      for the publisher simplification work.  SteveAlexander 2005-09-14
+# class IEndRequestEvent(Interface):
+#     """An event which gets sent when the publication is ended"""
+# 
+# # called in zopepublication's endRequest method, after ending
+# # the interaction.  it is used only by local sites, to clean
+# # up per-thread state.
+# class EndRequestEvent(object):
+#     """An event which gets sent when the publication is ended"""
+#     implements(IEndRequestEvent)
+#     def __init__(self, ob, request):
+#         self.object = ob
+#         self.request = request

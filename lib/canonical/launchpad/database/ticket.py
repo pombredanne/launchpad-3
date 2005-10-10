@@ -7,12 +7,11 @@ import datetime
 from email.Utils import make_msgid
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, MultipleJoin, RelatedJoin)
 
-from canonical.launchpad.interfaces import ITicket, ITicketSet
+from canonical.launchpad.interfaces import ITicket, ITicketSet, NotFoundError
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -237,7 +236,7 @@ class TicketSet:
 
     def __init__(self):
         """See ITicketSet."""
-        self.title = 'Launchpad Support Tickets'
+        self.title = 'Launchpad'
 
     @property
     def latest_tickets(self):

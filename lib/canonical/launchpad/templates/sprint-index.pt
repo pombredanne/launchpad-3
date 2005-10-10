@@ -1,0 +1,45 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-attendees" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Meeting Overview</h1>
+
+  <p class="documentDescription" tal:content="context/summary">
+    Sprint Summary Goes Here
+  </p>
+
+  <p class="portalMessage" tal:condition="not:context/specifications">
+    There are no specifications registered for discussion at
+    <span tal:replace="context/title">Ubuntu Below Zero</span>
+    at the moment.
+  </p>
+
+  <tal:has_homepage condition="context/home_page">
+    <img src="/++resource++sprint" />
+    <a tal:attributes="href context/home_page">
+      View the Meeting Home Page
+    </a>
+  </tal:has_homepage>
+
+  <tal:specifications condition="context/specifications">
+    <tal:block repeat="category view/categories">
+      <h2 tal:content="category/status/title">Approved</h2>
+      <div
+        tal:repeat="spec category/specs"
+        tal:replace="structure spec/@@+listing-detailed"
+      />
+    </tal:block>
+  </tal:specifications>
+</div>
+</body>
+</html>

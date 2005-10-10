@@ -21,7 +21,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
-    IPublishedPackageSet)
+    IPublishedPackageSet, NotFoundError)
 
 from canonical.launchpad.database.sourcepackageindistro import (
     SourcePackageInDistro)
@@ -30,14 +30,15 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.language import Language
-from canonical.launchpad.database.distroreleaselanguage import \
-    DistroReleaseLanguage, DummyDistroReleaseLanguage
+from canonical.launchpad.database.distroreleaselanguage import (
+    DistroReleaseLanguage, DummyDistroReleaseLanguage)
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName, SourcePackageNameSet)
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.binarypackagerelease import BinaryPackageRelease
-from canonical.launchpad.database.bugtask import BugTaskSet
+from canonical.launchpad.database.bugtask import BugTaskSet, BugTask
+from canonical.launchpad.database.binarypackagerelease import (
+        BinaryPackageRelease)
 from canonical.launchpad.helpers import shortlist
 
 
@@ -186,6 +187,41 @@ class DistroRelease(SQLBase):
         return SourcePackageInDistro.select(
             query, clauseTables=["BugTask"], distinct=True)
 
+    @property
+    def open_cve_bugtasks(self):
+        """See IDistroRelease."""
+        result = BugTask.select("""
+            CVE.id = BugCve.cve AND
+            BugCve.bug = Bug.id AND
+            BugTask.bug = Bug.id AND
+            BugTask.distrorelease=%s AND
+            BugTask.status IN (%s, %s)
+            """ % sqlvalues(
+                self.id,
+                BugTaskStatus.NEW,
+                BugTaskStatus.ACCEPTED),
+            clauseTables=['Bug', 'Cve', 'BugCve'],
+            orderBy=['-severity', 'datecreated'])
+        return result
+
+    @property
+    def resolved_cve_bugtasks(self):
+        """See IDistroRelease."""
+        result = BugTask.select("""
+            CVE.id = BugCve.cve AND
+            BugCve.bug = Bug.id AND
+            BugTask.bug = Bug.id AND
+            BugTask.distrorelease=%s AND
+            BugTask.status IN (%s, %s, %s)
+            """ % sqlvalues(
+                self.id,
+                BugTaskStatus.REJECTED,
+                BugTaskStatus.FIXED,
+                BugTaskStatus.PENDINGUPLOAD),
+            clauseTables=['Bug', 'Cve', 'BugCve'],
+            orderBy=['-severity', 'datecreated'])
+        return result
+
     def getDistroReleaseLanguage(self, language):
         """See IDistroRelease."""
         return DistroReleaseLanguage.selectOneBy(
@@ -199,35 +235,38 @@ class DistroRelease(SQLBase):
             return drl
         return DummyDistroReleaseLanguage(self, language)
 
-    def updateStatistics(self):
+    def updateStatistics(self, ztm):
         """See IDistroRelease."""
         # first find the set of all languages for which we have pofiles in
         # the distribution
-        langset = set(Language.select('''
-            Language.id = POFile.language AND
-            POFile.potemplate = POTemplate.id AND
-            POTemplate.distrorelease = %s
-            ''' % sqlvalues(self.id),
-            orderBy=['code'],
-            distinct=True,
-            clauseTables=['POFile', 'POTemplate']))
+        langidset = set([
+            language.id for language in Language.select('''
+                Language.id = POFile.language AND
+                POFile.potemplate = POTemplate.id AND
+                POTemplate.distrorelease = %s
+                ''' % sqlvalues(self.id),
+                orderBy=['code'],
+                distinct=True,
+                clauseTables=['POFile', 'POTemplate'])
+            ])
         # now run through the existing DistroReleaseLanguages for the
         # distrorelease, and update their stats, and remove them from the
         # list of languages we need to have stats for
         for distroreleaselanguage in self.distroreleaselanguages:
-            distroreleaselanguage.updateStatistics()
-            langset.remove(distroreleaselanguage.language)
+            distroreleaselanguage.updateStatistics(ztm)
+            langidset.discard(distroreleaselanguage.language.id)
         # now we should have a set of languages for which we NEED
         # to have a DistroReleaseLanguage
-        for lang in langset:
-            drl = DistroReleaseLanguage(distrorelease=self, language=lang)
-            drl.updateStatistics()
+        for langid in langidset:
+            drl = DistroReleaseLanguage(distrorelease=self, languageID=langid)
+            drl.updateStatistics(ztm)
         # lastly, we need to update the message count for this distro
         # release itself
         messagecount = 0
         for potemplate in self.potemplates:
             messagecount += potemplate.messageCount()
         self.messagecount = messagecount
+        ztm.commit()
 
 
     def findSourcesByName(self, pattern):
@@ -253,8 +292,8 @@ class DistroRelease(SQLBase):
         item = DistroArchRelease.selectOneBy(
             distroreleaseID=self.id, architecturetag=arch)
         if item is None:
-            raise KeyError, 'Unknown architecture %s for %s %s' % (
-                arch, self.distribution.name, self.name )
+            raise NotFoundError('Unknown architecture %s for %s %s' % (
+                arch, self.distribution.name, self.name))
         return item
 
     def getPublishedReleases(self, sourcepackage_or_name):
@@ -278,7 +317,7 @@ class DistroRelease(SQLBase):
     def publishedBinaryPackages(self, component=None):
         """See IDistroRelease."""
         # XXX sabdfl 04/07/05 this can become a utility when that works
-        # XXX kiko: this method is untested and possibly unused
+        # this is used by the debbugs import process, mkdebwatches
         pubpkgset = getUtility(IPublishedPackageSet)
         result = pubpkgset.query(distrorelease=self, component=component)
         return [BinaryPackageRelease.get(pubrecord.binarypackagerelease)

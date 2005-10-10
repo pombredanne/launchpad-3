@@ -11,19 +11,13 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
-  <h1>Create Bug from Ticket</h1>
+  <h1>Create bug report based on support request</h1>
 
-  <p class="documentDescription">
-    Use this page to create a bug report from this support request. Before
-    doing so, please make sure that you have edited the support request
-    title and description to reflect, exactly, the bug report you are
-    making.
+  <p>
+    If these fields do not reflect what you want the bug report to contain,
+    go back and edit them first.
   </p>
 
   <p>
@@ -34,11 +28,6 @@
   <p>
     <label>Proposed Bug Description:</label><br />
     <span tal:replace="context/description" />
-  </p>
-
-  <p>
-    Choose "Create Bug" to create the bug report, or "Cancel" to
-    return to the ticket page.
   </p>
 
   <form action="." method="POST">
@@ -52,7 +41,7 @@
       <input tal:condition="not: context/bugs"
              type="submit"
              name="makebug"
-             value="Create Bug" />
+             value="Create Bug Report" />
     </div>
   </form>
 

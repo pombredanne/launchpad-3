@@ -4,16 +4,13 @@ __metaclass__ = type
 __all__ = ['Distribution', 'DistributionSet', 'DistroPackageFinder']
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
 from sqlobject import (
-    RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey,
-    MultipleJoin)
+    RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey, MultipleJoin)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.distributionbounty import \
-    DistributionBounty
+from canonical.launchpad.database.distributionbounty import DistributionBounty
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.milestone import Milestone
@@ -21,10 +18,10 @@ from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.ticket import Ticket
-from canonical.lp.dbschema import (EnumCol, BugTaskStatus,
-    DistributionReleaseStatus, TranslationPermission)
-from canonical.launchpad.interfaces import (IDistribution, IDistributionSet,
-    IDistroPackageFinder)
+from canonical.lp.dbschema import (
+    EnumCol, BugTaskStatus, DistributionReleaseStatus, TranslationPermission)
+from canonical.launchpad.interfaces import (
+    IDistribution, IDistributionSet, IDistroPackageFinder, NotFoundError)
 
 
 class Distribution(SQLBase):
@@ -48,7 +45,7 @@ class Distribution(SQLBase):
         default=TranslationPermission.OPEN)
     lucilleconfig = StringCol(notNull=False, default=None)
     releases = MultipleJoin('DistroRelease', joinColumn='distribution',
-                            orderBy=['version', 'datecreated', '-id'])
+                            orderBy=['version', '-id'])
     bounties = RelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistroBounty')
@@ -69,7 +66,8 @@ class Distribution(SQLBase):
     def open_cve_bugtasks(self):
         """See IDistribution."""
         result = BugTask.select("""
-           CVERef.bug = Bug.id AND
+            CVE.id = BugCve.cve AND
+            BugCve.bug = Bug.id AND
             BugTask.bug = Bug.id AND
             BugTask.distribution=%s AND
             BugTask.status IN (%s, %s)
@@ -77,7 +75,7 @@ class Distribution(SQLBase):
                 self.id,
                 BugTaskStatus.NEW,
                 BugTaskStatus.ACCEPTED),
-            clauseTables=['Bug', 'CVERef'],
+            clauseTables=['Bug', 'Cve', 'BugCve'],
             orderBy=['-severity', 'datecreated'])
         return result
 
@@ -85,7 +83,8 @@ class Distribution(SQLBase):
     def resolved_cve_bugtasks(self):
         """See IDistribution."""
         result = BugTask.select("""
-            CVERef.bug = Bug.id AND
+            CVE.id = BugCve.cve AND
+            BugCve.bug = Bug.id AND
             BugTask.bug = Bug.id AND
             BugTask.distribution=%s AND
             BugTask.status IN (%s, %s, %s)
@@ -94,7 +93,7 @@ class Distribution(SQLBase):
                 BugTaskStatus.REJECTED,
                 BugTaskStatus.FIXED,
                 BugTaskStatus.PENDINGUPLOAD),
-            clauseTables=['Bug', 'CVERef'],
+            clauseTables=['Bug', 'Cve', 'BugCve'],
             orderBy=['-severity', 'datecreated'])
         return result
 
@@ -121,7 +120,7 @@ class Distribution(SQLBase):
         for release in self.releases:
             if release.name == name:
                 return release
-        raise KeyError, name
+        raise NotFoundError(name)
 
     def __iter__(self):
         return iter(self.releases)
@@ -203,6 +202,28 @@ class Distribution(SQLBase):
                 return None
         linker = DistributionBounty(distribution=self, bounty=bounty)
         return None
+
+    def getDistroReleaseAndPocket(self, distrorelease_name):
+        """See IDistribution."""
+        from canonical.archivepublisher.publishing import (
+            pocketsuffix, suffixpocket)
+
+        # Get the list of suffixes
+        suffixes = [suffix for suffix, ignored in suffixpocket.items()]
+        # Sort it longest string first
+        suffixes.sort(key=len, reverse=True)
+        
+        for suffix in suffixes:
+            if distrorelease_name.endswith(suffix):
+                try:
+                    left_size = len(distrorelease_name) - len(suffix)
+                    return (self[distrorelease_name[:left_size]],
+                            suffixpocket[suffix])
+                except KeyError:
+                    # Swallow KeyError to continue round the loop
+                    pass
+
+        raise NotFoundError(distrorelease_name)
 
 
 class DistributionSet:

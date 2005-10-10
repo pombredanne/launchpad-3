@@ -12,20 +12,12 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
-</metal:rightportlets>
-
   <div metal:fill-slot="main">
 
     <div metal:use-macro="context/@@launchpad_editform/editform">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Edit the support request details using the form below.
     </div>
-
-  </div>
     
-</div>
-</body>
+  </div>
+  </body>
 </html>

@@ -11,128 +11,54 @@
   <include package="canonical.launchpad.zcml" />
   <authorizations module="canonical.launchpad.security" />
 
-  <browser:suburl
-    for="canonical.publication.RootObject"
-    name="products"
-    utility="canonical.launchpad.interfaces.IProductSet"
-    permission="zope.Public"
-    />
   <browser:url
     for="canonical.launchpad.interfaces.IProductSet"
     path_expression="string:products"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
-  <browser:suburl
-    for="canonical.publication.RootObject"
-    name="people"
-    utility="canonical.launchpad.interfaces.IPersonSet"
-    permission="zope.Public"
+  <browser:url
+    for="canonical.launchpad.interfaces.IShipItApplication"
+    path_expression="string:shipit"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
+
   <browser:url
     for="canonical.launchpad.interfaces.IPersonSet"
     path_expression="string:people"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
-  <browser:suburl
-    for="canonical.publication.RootObject"
-    name="shipitrequests"
-    utility="canonical.launchpad.interfaces.IShippingRequestSet"
-    permission="launchpad.Admin"
-    />
-  <browser:url
-    for="canonical.launchpad.interfaces.IShippingRequestSet"
-    path_expression="string:shipitrequests"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    />
-
-  <browser:suburl
-    for="canonical.publication.RootObject"
-    name="standardshipitrequests"
-    utility="canonical.launchpad.interfaces.IStandardShipItRequestSet"
-    permission="launchpad.Admin"
-    />
-  <browser:url
-    for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
-    path_expression="string:standardshipitrequests"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    />
-
-  <browser:suburl
-    for="canonical.publication.RootObject"
-    newlayer="canonical.launchpad.layers.SoyuzLayer"
-    name="distros"
-    utility="canonical.launchpad.interfaces.IDistributionSet"
-    permission="zope.Public"
-    />
   <browser:url
     for="canonical.launchpad.interfaces.IDistributionSet"
     path_expression="string:distros"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
-  <browser:suburl
-    for="canonical.publication.RootObject"
-    name="sourcepackagenames"
-    utility="canonical.launchpad.interfaces.ISourcePackageNameSet"
-    permission="zope.Public"
-    />
   <browser:url
     for="canonical.launchpad.interfaces.ISourcePackageNameSet"
     path_expression="string:sourcepackagenames"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
-  <browser:suburl
-    for="canonical.publication.RootObject"
-    name="binarypackagenames"
-    utility="canonical.launchpad.interfaces.IBinaryPackageNameSet"
-    permission="zope.Public"
-    />
   <browser:url
     for="canonical.launchpad.interfaces.IBinaryPackageNameSet"
     path_expression="string:binarypackagenames"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
-  <browser:suburl
-    for="canonical.publication.RootObject"
-    name="projects"
-    utility="canonical.launchpad.interfaces.IProjectSet"
-    permission="zope.Public"
-    />
   <browser:url
     for="canonical.launchpad.interfaces.IProjectSet"
     path_expression="string:projects"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
-  <browser:suburl
-    for="canonical.publication.RootObject"
-    name="token"
-    utility="canonical.launchpad.interfaces.ILoginTokenSet"
-    permission="zope.Public"
-    />
   <browser:url
     for="canonical.launchpad.interfaces.ILoginTokenSet"
     path_expression="string:token"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
-  <browser:suburl
-    for="canonical.publication.RootObject"
-    name="karmaaction"
-    utility="canonical.launchpad.interfaces.IKarmaActionSet"
-    permission="launchpad.Admin"
-    />
-
-  <browser:suburl
-    for="canonical.publication.RootObject"
-    name="potemplatenames"
-    utility="canonical.launchpad.interfaces.IPOTemplateNameSet"
-    permission="launchpad.Edit"
-    />
   <browser:url
     for="canonical.launchpad.interfaces.IPOTemplateNameSet"
     path_expression="string:potemplatenames"
@@ -141,7 +67,7 @@
 
   <!-- legal link -->
   <browser:page
-    for="canonical.publication.RootObject"
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
     name="legal"
     template="templates/launchpad-legal.pt"
     permission="zope.Public"
@@ -149,7 +75,7 @@
 
   <!-- feedback page -->
   <browser:page
-    for="canonical.publication.RootObject"
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
     name="feedback"
     template="templates/launchpad-feedback.pt"
     permission="zope.Public"
@@ -157,7 +83,7 @@
 
   <!-- RDF downloadable documents -->
   <browser:page
-    for="canonical.publication.RootObject"
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
     name="rdf"
     template="templates/rdf-index.pt"
     permission="zope.Public"
@@ -168,5 +94,10 @@
     directory="rdfspec" />
 
   <i18n:registerTranslations directory="locales" />
+
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="LaunchpadRootNavigation"
+      />
 
 </configure>

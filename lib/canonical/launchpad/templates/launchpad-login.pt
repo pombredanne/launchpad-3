@@ -2,10 +2,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
-
+      i18n:domain="launchpad"
+>
+  <head metal:fill-slot="head_epilogue">
+    <meta name="robots" content="noindex">
+  </head>
   <body>
-    <!--
+    <tal:comment condition="nothing">
       This page handles cases in this order:
       1.  already logged in and shouldn't be here
       2.  just logged in successfully
@@ -17,7 +20,7 @@
           5a. didn't try to register last time
           5b. just tried to register and failed.
       The usual case is 4 + 5.
-    -->
+    </tal:comment>
     <div metal:fill-slot="main">
     
       <!-- 1. already logged in and shouldn't be here: -->
@@ -30,7 +33,7 @@
         </p>
 
         <div tal:condition="not: view/login_success" tal:omit-tag>        
-          <h1>You&#8217;re Already Logged In</h1>
+          <h1>You&#8217;re already logged in</h1>
           <p>
             You are already logged in as
             <strong tal:content="request/lp:person/browsername">person
@@ -62,11 +65,11 @@
           <div tal:condition="not: view/registration_success" tal:omit-tag>
             <!-- 4a. didn't try to log in last time: -->
             <h1 tal:condition="not: view/login_error">
-              Already Registered?
+              Already registered?
             </h1>
             <!-- 4b. just tried to log in and failed: -->
             <div tal:condition="view/login_error">
-              <h1>Your Login was Unsuccessful</h1>
+              <h1>Your login was unsuccessful</h1>
               <p class="error" tal:content="view/login_error" />
             </div>
             <!-- 4. might want to log in: -->
@@ -122,14 +125,14 @@
             </form>
             <!-- 5a. didn't try to register last time: -->
             <h1 tal:condition="not: view/registration_error">
-              Not Registered Yet? 
+              Not registered yet? 
             </h1>
             <!-- 5b. just tried to register and failed: -->
             <div
               tal:condition="view/registration_error"
               tal:omit-tag
             >
-              <h1>Your Registration was Unsuccessful</h1>
+              <h1>Your registration was unsuccessful</h1>
               <p class="error"
                  tal:content="structure view/registration_error" />
             </div>

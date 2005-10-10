@@ -25,13 +25,15 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 class UnauthorizedView(SystemErrorView):
 
+    response_code = None
+
     forbidden_page = ViewPageTemplateFile(
         '../templates/launchpad-forbidden.pt')
 
     def __call__(self):
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
             if 'loggingout' in self.request.form:
-                target = '%s?loggingout=1' % self.request.URL[-1]
+                target = '%s?loggingout=1' % self.request.URL[-2]
                 self.request.response.redirect(target)
                 return ''
             if self.request.method == 'POST':
@@ -116,6 +118,9 @@ class LoginOrRegister:
         elif self.request.form.get(self.submit_registration):
             self.process_registration_form()
 
+    def get_application_url(self):
+        return self.request.getApplicationURL()
+
     def process_login_form(self):
         """Process the form data.
 
@@ -128,6 +133,7 @@ class LoginOrRegister:
             self.login_error = "Enter your email address and password."
             return
 
+        appurl = self.get_application_url()
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
         if principal is not None and principal.validate(password):
@@ -140,7 +146,6 @@ class LoginOrRegister:
                     "to confirm that it belongs to you. As soon as we have "
                     "that confirmation you'll be able to log into Launchpad."
                     % email)
-                appurl = self.request.getApplicationURL()
                 token = getUtility(ILoginTokenSet).new(
                             person, email, email, LoginTokenType.VALIDATEEMAIL)
                 token.sendEmailValidationRequest(appurl)

@@ -31,6 +31,7 @@
         schema="canonical.launchpad.interfaces.IBugAttachmentEditForm"
         for="canonical.launchpad.interfaces.IBugAttachment"
         class="canonical.launchpad.browser.BugRelatedObjectEditView"
+        facet="bugs"
         label="Change Bug Attachment Information"
         name="+edit"
         permission="launchpad.AnyPerson"
@@ -56,8 +57,9 @@
         <allow interface="canonical.launchpad.interfaces.IBugAttachmentSet" />
     </securedutility>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBugAttachmentSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BugAttachmentSetNavigation"
+        />
 
 </configure>

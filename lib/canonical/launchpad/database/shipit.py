@@ -2,7 +2,10 @@
 
 __metaclass__ = type
 __all__ = ['StandardShipItRequest', 'StandardShipItRequestSet',
-           'ShippingRequest', 'ShippingRequestSet', 'RequestedCDs']
+           'ShippingRequest', 'ShippingRequestSet', 'RequestedCDs',
+           'Shipment', 'ShipmentSet', 'ShippingRun', 'ShippingRunSet']
+
+import random
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -15,10 +18,13 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp.dbschema import (
-        ShipItDistroRelease, ShipItArchitecture, ShipItFlavour, EnumCol)
+        ShipItDistroRelease, ShipItArchitecture, ShipItFlavour, EnumCol,
+        ShippingService)
 from canonical.launchpad.interfaces import (
         IStandardShipItRequest, IStandardShipItRequestSet, IShippingRequest,
-        IRequestedCDs, IShippingRequestSet, ShippingRequestStatus)
+        IRequestedCDs, IShippingRequestSet, ShippingRequestStatus,
+        ILaunchpadCelebrities, IShipment, IShippingRun, IShippingRunSet,
+        IShipmentSet, ShippingRequestPriority)
 
 
 class RequestedCDsDescriptor:
@@ -46,13 +52,10 @@ class ShippingRequest(SQLBase):
     """See IShippingRequest"""
 
     implements(IShippingRequest)
-    _defaultOrder = 'id'
+    _defaultOrder = ['daterequested', 'id']
 
     recipient = ForeignKey(dbName='recipient', foreignKey='Person',
                            notNull=True)
-
-    shipment = ForeignKey(dbName='shipment', foreignKey='Shipment',
-                          default=None)
 
     daterequested = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
@@ -60,7 +63,7 @@ class ShippingRequest(SQLBase):
                              default=None)
 
     # None here means that it's pending approval.
-    approved = IntCol(default=None)
+    approved = BoolCol(notNull=False, default=None)
     whoapproved = ForeignKey(dbName='whoapproved', foreignKey='Person',
                              default=None)
 
@@ -69,11 +72,51 @@ class ShippingRequest(SQLBase):
                              default=None)
 
     reason = StringCol(default=None)
+    highpriority = BoolCol(notNull=True, default=False)
+
+    city = StringCol(notNull=True)
+    phone = StringCol(default=None)
+    country = ForeignKey(dbName='country', foreignKey='Country', notNull=True)
+    province = StringCol(default=None)
+    postcode = StringCol(default=None)
+    addressline1 = StringCol(notNull=True)
+    addressline2 = StringCol(default=None)
+    organization = StringCol(default=None)
+    recipientdisplayname = StringCol(notNull=True)
+
+    @property
+    def shipment(self):
+        """See IShippingRequest"""
+        return Shipment.selectOneBy(requestID=self.id)
+
+    @property
+    def countrycode(self):
+        """See IShippingRequest"""
+        return self.country.iso3166code2
+
+    @property
+    def shippingservice(self):
+        """See IShippingRequest"""
+        if self.highpriority:
+            return ShippingService.TNT
+        else:
+            return ShippingService.SPRING
 
     @property
     def totalCDs(self):
         """See IShippingRequest"""
         return self.quantityx86 + self.quantityamd64 + self.quantityppc
+
+    @property
+    def totalapprovedCDs(self):
+        """See IShippingRequest"""
+        # All approved quantities are None if the request is not approved.
+        # This is to make them consistent with self.approved, which is None if
+        # an order is not yet approved.
+        if not self.isApproved():
+            return 0
+        return (self.quantityx86approved + self.quantityamd64approved +
+                self.quantityppcapproved)
 
     def _getRequestedCDsByArch(self, arch):
         query = AND(RequestedCDs.q.requestID==self.id,
@@ -93,61 +136,12 @@ class ShippingRequest(SQLBase):
     quantityamd64 = RequestedCDsDescriptor(ShipItArchitecture.AMD64, 'quantity')
     quantityppc = RequestedCDsDescriptor(ShipItArchitecture.PPC, 'quantity')
 
-    # XXX: All the quantity* properties need to be refactored to share more
-    # code. -- GuilhermeSalgado, 2005-09-02
-#     def _get_quantityx86(self):
-#         return self._getRequestedCDsByArch(ShipItArchitecture.X86).quantity
-# 
-#     def _set_quantityx86(self, value):
-#         request = self._getRequestedCDsByArch(ShipItArchitecture.X86)
-#         request.quantity = value
-#     quantityx86 = property(_get_quantityx86, _set_quantityx86)
-# 
-#     def _get_quantityx86approved(self):
-#         request = self._getRequestedCDsByArch(ShipItArchitecture.X86)
-#         return request.quantityapproved
-# 
-#     def _set_quantityx86approved(self, value):
-#         request = self._getRequestedCDsByArch(ShipItArchitecture.X86)
-#         request.quantityapproved = value
-#     quantityx86approved = property(_get_quantityx86approved,
-#                                    _set_quantityx86approved)
-# 
-#     def _get_quantityamd64(self):
-#         return self._getRequestedCDsByArch(ShipItArchitecture.AMD64).quantity
-# 
-#     def _set_quantityamd64(self, value):
-#         request = self._getRequestedCDsByArch(ShipItArchitecture.AMD64)
-#         request.quantity = value
-#     quantityamd64 = property(_get_quantityamd64, _set_quantityamd64)
-# 
-#     def _get_quantityamd64approved(self):
-#         request = self._getRequestedCDsByArch(ShipItArchitecture.AMD64)
-#         return request.quantityapproved
-# 
-#     def _set_quantityamd64approved(self, value):
-#         request = self._getRequestedCDsByArch(ShipItArchitecture.AMD64)
-#         request.quantityapproved = value
-#     quantityamd64approved = property(_get_quantityamd64approved,
-#                                      _set_quantityamd64approved)
-# 
-#     def _get_quantityppc(self):
-#         return self._getRequestedCDsByArch(ShipItArchitecture.PPC).quantity
-# 
-#     def _set_quantityppc(self, value):
-#         request = self._getRequestedCDsByArch(ShipItArchitecture.PPC)
-#         request.quantity = value
-#     quantityppc = property(_get_quantityppc, _set_quantityppc)
-# 
-#     def _get_quantityppcapproved(self):
-#         request = self._getRequestedCDsByArch(ShipItArchitecture.PPC)
-#         return request.quantityapproved
-# 
-#     def _set_quantityppcapproved(self, value):
-#         request = self._getRequestedCDsByArch(ShipItArchitecture.PPC)
-#         request.quantityapproved = value
-#     quantityppcapproved = property(_get_quantityppcapproved,
-#                                    _set_quantityppcapproved)
+    def highlightColour(self):
+        """See IShippingRequest"""
+        if self.highpriority:
+            return "#ff6666"
+        else:
+            return None
 
     def isStandardRequest(self):
         """See IShippingRequest"""
@@ -155,37 +149,62 @@ class ShippingRequest(SQLBase):
                     self.quantityx86, self.quantityamd64, self.quantityppc)
                 is not None)
 
+    def isAwaitingApproval(self):
+        """See IShippingRequest"""
+        return self.approved is None
+
+    def isApproved(self):
+        """See IShippingRequest"""
+        return self.approved
+
+    def isDenied(self):
+        """See IShippingRequest"""
+        return self.approved == False
+
+    def deny(self):
+        """See IShippingRequest"""
+        assert not self.isDenied()
+        if self.isApproved():
+            self.clearApproval()
+        self.approved = False
+
     def clearApproval(self):
         """See IShippingRequest"""
-        assert self.approved
+        assert self.isApproved()
         self.approved = None
         self.whoapproved = None
-
-    def approve(self, whoapproved=None):
-        """See IShippingRequest"""
-        assert not self.cancelled
-        self.approved = True
-        self.whoapproved = whoapproved
-        self.quantityx86approved = self.quantityx86
-        self.quantityamd64approved = self.quantityamd64
-        self.quantityppcapproved = self.quantityppc
-
-    def cancel(self, whocancelled):
-        """See IShippingRequest"""
-        assert not self.cancelled
-        self.approved = None
-        self.whoapproved = None
-        self.cancelled = True
-        self.whocancelled = whocancelled
         self.quantityx86approved = None
         self.quantityamd64approved = None
         self.quantityppcapproved = None
 
-    def reactivate(self):
+    def approve(self, quantityx86approved, quantityamd64approved,
+                quantityppcapproved, whoapproved=None):
         """See IShippingRequest"""
-        assert self.cancelled
-        self.cancelled = False
-        self.whocancelled = None
+        assert not self.cancelled
+        assert not self.isApproved()
+        self.approved = True
+        self.whoapproved = whoapproved
+        self.setApprovedTotals(
+            quantityx86approved, quantityamd64approved, quantityppcapproved)
+
+    def setApprovedTotals(self, quantityx86approved, quantityamd64approved,
+                          quantityppcapproved):
+        """See IShippingRequest"""
+        assert self.isApproved()
+        assert quantityx86approved >= 0
+        assert quantityamd64approved >= 0
+        assert quantityppcapproved >= 0
+        self.quantityx86approved = quantityx86approved
+        self.quantityamd64approved = quantityamd64approved
+        self.quantityppcapproved = quantityppcapproved
+
+    def cancel(self, whocancelled):
+        """See IShippingRequest"""
+        assert not self.cancelled
+        if self.isApproved():
+            self.clearApproval()
+        self.cancelled = True
+        self.whocancelled = whocancelled
 
 
 class ShippingRequestSet:
@@ -197,15 +216,25 @@ class ShippingRequestSet:
         """See IShippingRequestSet"""
         try:
             return ShippingRequest.get(id)
-        except SQLObjectNotFound:
+        except (SQLObjectNotFound, ValueError):
             return default
 
     def new(self, recipient, quantityx86, quantityamd64, quantityppc,
-            reason=None, shockandawe=None):
+            recipientdisplayname, country, city, addressline1,
+            addressline2=None, province=None, postcode=None, phone=None,
+            organization=None, reason=None, shockandawe=None):
         """See IShippingRequestSet"""
-        assert recipient.currentShipItRequest() is None
-        request = ShippingRequest(recipient=recipient, reason=reason,
-                                  shockandawe=shockandawe)
+        if not recipient.inTeam(getUtility(ILaunchpadCelebrities).shipit_admin):
+            # Non shipit-admins can't place more than one order at a time
+            # neither specify a name different than their own.
+            assert recipient.currentShipItRequest() is None
+
+        request = ShippingRequest(
+            recipient=recipient, reason=reason, shockandawe=shockandawe,
+            city=city, country=country, addressline1=addressline1,
+            addressline2=addressline2, province=province, postcode=postcode,
+            recipientdisplayname=recipientdisplayname,
+            organization=organization, phone=phone)
 
         RequestedCDs(request=request, quantity=quantityx86,
                      distrorelease=ShipItDistroRelease.BREEZY,
@@ -221,6 +250,46 @@ class ShippingRequestSet:
 
         return request
 
+    def _getStatusFilter(self, status):
+        """Return the SQL to filter by the given status."""
+        if status == ShippingRequestStatus.APPROVED:
+            query = " AND ShippingRequest.approved IS TRUE"
+        elif status == ShippingRequestStatus.PENDING:
+            query = " AND ShippingRequest.approved IS NULL"
+        elif status == ShippingRequestStatus.DENIED:
+            query = " AND ShippingRequest.approved IS FALSE"
+        else:
+            # Okay, if you don't want any filtering I won't filter
+            query = ""
+        return query
+
+    def getUnshippedRequests(self, priority):
+        """See IShippingRequestSet"""
+        query = ('ShippingRequest.cancelled = false AND '
+                 'ShippingRequest.approved = true AND '
+                 'ShippingRequest.id NOT IN (SELECT request from Shipment) ')
+        if priority == ShippingRequestPriority.HIGH:
+            query += 'AND ShippingRequest.highpriority = true'
+        elif priority == ShippingRequestPriority.NORMAL:
+            query += 'AND ShippingRequest.highpriority = false'
+        else:
+            # Nothing to filter, return all unshipped requests.
+            pass
+        return ShippingRequest.select(query)
+
+    def getOldestPending(self):
+        """See IShippingRequestSet"""
+        q = AND(ShippingRequest.q.cancelled==False,
+                ShippingRequest.q.approved==None)
+        results = ShippingRequest.select(q, orderBy='daterequested', limit=1)
+        try:
+            return results[0]
+        except IndexError:
+            return None
+
+    # XXX: Must come back here and refactor these two search methods. It's
+    # probably possible to share more things between them. -- GuilhermeSalgado
+    # 2005-09-09
     def searchCustomRequests(self, status=ShippingRequestStatus.ALL,
                              omit_cancelled=True):
         """See IShippingRequestSet"""
@@ -241,14 +310,7 @@ class ShippingRequestSet:
                   StandardShipItRequest)
         """ % sqlvalues(arch.X86, arch.AMD64, arch.PPC)
 
-        if status == ShippingRequestStatus.APPROVED:
-            query += " AND ShippingRequest.approved IS TRUE"
-        elif status == ShippingRequestStatus.UNAPPROVED:
-            query += " AND ShippingRequest.approved IS NULL"
-        else:
-            # Okay, if you don't want any filtering I won't filter
-            pass
-
+        query = "%s %s" % (query, self._getStatusFilter(status))
         if omit_cancelled:
             query += " AND ShippingRequest.cancelled = FALSE"
 
@@ -291,11 +353,7 @@ class ShippingRequestSet:
             """ % (standard_type.quantityx86, standard_type.quantityamd64,
                    standard_type.quantityppc)
 
-        if status == ShippingRequestStatus.APPROVED:
-            query += " AND ShippingRequest.approved IS NOT NULL"
-        elif status == ShippingRequestStatus.UNAPPROVED:
-            query += " AND ShippingRequest.approved IS NULL"
-
+        query = "%s %s" % (query, self._getStatusFilter(status))
         if omit_cancelled:
             query += " AND ShippingRequest.cancelled = FALSE"
 
@@ -306,8 +364,6 @@ class ShippingRequestSet:
             # fail, so we need to do this little hack
             return ShippingRequest.select('1 = 2')
         return ShippingRequest.select('id in (%s)' % ids)
-
-
 
 
 class RequestedCDs(SQLBase):
@@ -365,7 +421,7 @@ class StandardShipItRequestSet:
         """See IStandardShipItRequestSet"""
         try:
             return StandardShipItRequest.get(id)
-        except SQLObjectNotFound:
+        except (SQLObjectNotFound, ValueError):
             return default
 
     def getByNumbersOfCDs(self, quantityx86, quantityamd64, quantityppc):
@@ -373,4 +429,91 @@ class StandardShipItRequestSet:
         return StandardShipItRequest.selectOneBy(quantityx86=quantityx86,
                                                  quantityamd64=quantityamd64,
                                                  quantityppc=quantityppc)
+
+class Shipment(SQLBase):
+    """See IShipment"""
+
+    implements(IShipment)
+
+    logintoken = StringCol(unique=True, notNull=True)
+    dateshipped = UtcDateTimeCol(default=None)
+    shippingservice = EnumCol(schema=ShippingService, notNull=True)
+    shippingrun = ForeignKey(dbName='shippingrun', foreignKey='ShippingRun',
+                             notNull=True)
+    request = ForeignKey(dbName='request', foreignKey='ShippingRequest',
+                         notNull=True, unique=True)
+    trackingcode = StringCol(default=None)
+
+
+class ShipmentSet:
+    """See IShipmentSet"""
+
+    implements(IShipmentSet)
+
+    def new(self, request, shippingservice, shippingrun, trackingcode=None,
+            dateshipped=None):
+        """See IShipmentSet"""
+        token = self._generateToken()
+        while self.getByToken(token):
+            token = self._generateToken()
+
+        return Shipment(
+            shippingservice=shippingservice, shippingrun=shippingrun,
+            trackingcode=trackingcode, logintoken=token,
+            dateshipped=dateshipped, request=request)
+
+    def _generateToken(self):
+        characters = '23456789bcdfghjkmnpqrstwxz'
+        length = 10
+        return ''.join([random.choice(characters) for count in range(length)])
+
+    def getByToken(self, token):
+        """See IShipmentSet"""
+        return Shipment.selectOneBy(logintoken=token)
+
+
+class ShippingRun(SQLBase):
+    """See IShippingRun"""
+
+    implements(IShippingRun)
+    _defaultOrder = ['-datecreated', 'id']
+
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    csvfile = ForeignKey(
+        dbName='csvfile', foreignKey='LibraryFileAlias', default=None)
+    sentforshipping = BoolCol(notNull=True, default=False)
+
+    @property
+    def requests(self):
+        query = ("ShippingRequest.id = Shipment.request AND "
+                 "Shipment.shippingrun = ShippingRun.id AND "
+                 "ShippingRun.id = %s" % sqlvalues(self.id))
+
+        clausetables = ['ShippingRun', 'Shipment']
+        return ShippingRequest.select(query, clauseTables=clausetables)
+
+
+class ShippingRunSet:
+    """See IShippingRunSet"""
+
+    implements(IShippingRunSet)
+
+    def new(self):
+        """See IShippingRunSet"""
+        return ShippingRun()
+
+    def get(self, id):
+        """See IShippingRunSet"""
+        try:
+            return ShippingRun.get(id)
+        except SQLObjectNotFound:
+            return None
+
+    def getUnshipped(self):
+        """See IShippingRunSet"""
+        return ShippingRun.select(ShippingRun.q.sentforshipping==False)
+
+    def getShipped(self):
+        """See IShippingRunSet"""
+        return ShippingRun.select(ShippingRun.q.sentforshipping==True)
 

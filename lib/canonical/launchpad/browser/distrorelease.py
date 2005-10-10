@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistroReleaseNavigation',
     'DistroReleaseFacets',
     'DistroReleaseView',
     'DistroReleaseBugsView',
@@ -18,19 +19,111 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 
 from canonical.launchpad import helpers
-from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.webapp import StandardLaunchpadFacets
+from canonical.launchpad.webapp import (
+    canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu,
+    enabled_with_permission, GetitemNavigation, stepthrough, stepto)
 
-from canonical.launchpad.interfaces import (IDistroReleaseLanguageSet,
-    IBugTaskSearchListingView, IDistroRelease, ICountry,
-    IDistroReleaseSet, ILaunchBag)
+from canonical.launchpad.interfaces import (
+    IDistroReleaseLanguageSet, IBugTaskSearchListingView, IDistroRelease,
+    ICountry, IDistroReleaseSet, ILaunchBag, IBuildSet, ILanguageSet,
+    NotFoundError, IPublishedPackageSet)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
+from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+
+# XXX: This import needs to go away.  SteveAlexander, 2005-10-07
+from canonical.launchpad.database import SourcePackageSet
+
+
+class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
+
+    usedfor = IDistroRelease
+
+    @stepthrough('+lang')
+    def traverse_lang(self, langcode):
+        langset = getUtility(ILanguageSet)
+        try:
+            lang = langset[langcode]
+        except IndexError:
+            # Unknown language code.
+            raise NotFoundError
+        drlang = self.context.getDistroReleaseLanguage(lang)
+        if drlang is not None:
+            return drlang
+        else:
+            drlangset = getUtility(IDistroReleaseLanguageSet)
+            return drlangset.getDummy(self.context, lang)
+
+    @stepto('+packages')
+    def packages(self):
+        return getUtility(IPublishedPackageSet)
+
+    @stepto('+sources')
+    def sources(self):
+        return SourcePackageSet(distrorelease=self.context)
+
 
 class DistroReleaseFacets(StandardLaunchpadFacets):
 
     usedfor = IDistroRelease
-    links = ['overview', 'bugs', 'specs', 'translations']
+    enable_only = ['overview', 'bugs', 'specifications', 'translations']
+
+
+class DistroReleaseOverviewMenu(ApplicationMenu):
+
+    usedfor = IDistroRelease
+    facet = 'overview'
+    links = ['edit', 'reassign', 'sources', 'packaging', 'support']
+
+    def edit(self):
+        text = 'Edit Details'
+        return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def reassign(self):
+        text = 'Change Admin'
+        return Link('+reassign', text, icon='edit')
+
+    def sources(self):
+        text = 'Source Packages'
+        return Link('+sources', text, icon='packages')
+
+    def packaging(self):
+        text = 'Upstream Links'
+        return Link('+packaging', text, icon='info')
+
+    def support(self):
+        text = 'Request Support'
+        url = canonical_url(self.context.distribution) + '/+addticket'
+        return Link(url, text, icon='add')
+
+
+class DistroReleaseBugsMenu(ApplicationMenu):
+
+    usedfor = IDistroRelease
+    facet = 'bugs'
+    links = ['new', 'cve']
+
+    def new(self):
+        return Link('+filebug', 'Report a Bug', icon='add')
+
+    def cve(self):
+        return Link('+cve', 'CVE List', icon='cve')
+
+
+class DistroReleaseSpecificationsMenu(ApplicationMenu):
+
+    usedfor = IDistroRelease
+    facet = 'specifications'
+    links = ['new', 'roadmap']
+
+    def new(self):
+        text = 'Register a New Specification'
+        return Link('+addspec', text, icon='add')
+
+    def roadmap(self):
+        text = 'Roadmap'
+        return Link('+specplan', text, icon='info')
 
 
 class DistroReleaseView:
@@ -49,7 +142,6 @@ class DistroReleaseView:
         language prefs indicate might be interesting.
         """
         drlangs = []
-        drlangset = getUtility(IDistroReleaseLanguageSet)
         for language in self.languages:
             drlang = self.context.getDistroReleaseLanguageOrDummy(language)
             drlangs.append(drlang)
@@ -107,6 +199,14 @@ class DistroReleaseView:
         """
         distro_url = canonical_url(self.context.distribution)
         return self.request.response.redirect(distro_url + "/+filebug")
+
+    def getBuilt(self):
+        """Return the last build records within the DistroRelease context.
+
+        The number of entries can also be determined in the future.
+        """
+        bset = getUtility(IBuildSet)
+        return bset.getBuiltForDistroRelease(self.context)
 
 
 class DistroReleaseBugsView(BugTaskSearchListingView):

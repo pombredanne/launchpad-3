@@ -11,10 +11,10 @@ from canonical.launchpad.interfaces import IPOTemplate, IPOFile, IPersonSet
 from canonical.launchpad.components.poparser import POParser
 from canonical.launchpad.helpers import TranslationConstants
 
-
 class OldPOImported(Exception):
     """Raised when an older PO file is imported."""
     pass
+
 
 def getLastTranslator(parser):
     """Return the person that appears as Last-Translator in a parsed PO file.
@@ -80,7 +80,13 @@ def import_po(pofile_or_potemplate, file, published=True):
         pofile = pofile_or_potemplate
         potemplate = pofile.potemplate
         # Check if we are importing a new version.
-        if pofile.isPORevisionDateNewer(parser.header):
+        if pofile.isPORevisionDateOlder(parser.header):
+            # The new imported file is older than latest one imported, we
+            # don't import it, just ignore it as it could be a mistake and
+            # would make us lose translations.
+            raise OldPOImported(
+                'Previous imported file is newer than this one.')
+        else:
             # Expire old messages
             pofile.expireAllMessages()
             # Update the header
@@ -92,10 +98,6 @@ def import_po(pofile_or_potemplate, file, published=True):
                 # the importer as the last translator.
                 last_translator = pofile.rawimporter
             is_editor = pofile.canEditTranslations(pofile.rawimporter)
-        else:
-            # The import is not done
-            raise OldPOImported(
-                'Previous imported file is newer than this one.')
     elif IPOTemplate.providedBy(pofile_or_potemplate):
         pofile = None
         potemplate = pofile_or_potemplate
@@ -106,7 +108,7 @@ def import_po(pofile_or_potemplate, file, published=True):
             potemplate.header = parser.header.msgstr
     else:
         raise TypeError(
-            'Bad argument %s, an IPOTemplate or IPOFile was expected.' % 
+            'Bad argument %s, an IPOTemplate or IPOFile was expected.' %
                 repr(pofile_or_potemplate))
 
     count = 0
@@ -124,14 +126,40 @@ def import_po(pofile_or_potemplate, file, published=True):
             potmsgset = potemplate.createMessageSetFromText(pomessage.msgid)
 
         # Add the English plural form.
-        if pomessage.msgidPlural:
+        if pomessage.msgidPlural is not None and pomessage.msgidPlural != '':
             # Check if old potmsgset had a plural form already and mark as not
             # available in the file being imported.
             msgids = list(potmsgset.messageIDs())
-            if len(msgids) >= 2:
-                potmsgsetsighting = potmsgset.getMessageIDSighting(
+            if len(msgids) > 1:
+                pomsgidsighting = potmsgset.getPOMsgIDSighting(
                     TranslationConstants.PLURAL_FORM)
-                potmsgsetsighting.inPOFile = False
+                if (pomsgidsighting.pomsgid_.msgid != pomessage.msgidPlural and
+                    pofile is not None):
+                    # The PO file wants to change the msgidPlural from the PO
+                    # template, that's broken and not usual, so we raise an
+                    # exception to log the issue and fix it manually.
+                    try:
+                        pomsgset = potmsgset.poMsgSet(pofile.language.code,
+                                                      pofile.variant)
+                    except NotFoundError:
+                        # There is no such pomsgset.
+                        pomsgset = pofile.createMessageSetFromMessageSet(potmsgset)
+                    # Add the pomsgset to the list of pomsgsets with errors.
+                    error = {
+                        'pomsgset': pomsgset,
+                        'pomessage': pomessage,
+                        'error-message': ("The msgid_Plural field has changed"
+                            " since last time this .po file was\ngenerated,"
+                            " please notify this error to rosetta@ubuntu.com")
+                    }
+
+                    errors.append(error)
+                    continue
+
+                pomsgidsighting.inlastrevision = False
+                # Sync needed to be sure that we don't have two
+                # pomsgidsightings set as in last revision
+                pomsgidsighting.sync()
 
             potmsgset.makeMessageIDSighting(
                 pomessage.msgidPlural, TranslationConstants.PLURAL_FORM,

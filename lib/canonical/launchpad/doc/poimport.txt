@@ -166,10 +166,10 @@ It has some validation errros.
     ... #, c-format
     ... msgid "Singular %d"
     ... msgid_plural "Plural %d"
-    ... msgstr[0] "Foos"
-    ... msgstr[1] "Bars"
-    ... msgstr[2] "Welsh power!"
-    ... msgstr[3] "We have four!"
+    ... msgstr[0] "Foos %d"
+    ... msgstr[1] "Bars %d"
+    ... msgstr[2] "Welsh power! %d"
+    ... msgstr[3] "We have four! %d"
     ... '''
 
 This is the dbschema that controls the validation of a translation.
@@ -237,7 +237,7 @@ Check that the plural form was imported correctly.
     >>> published.validationstatus == TranslationValidationStatus.OK
     True
     >>> messageSet.published_texts
-    [u'Foos', u'Bars', u'Welsh power!', u'We have four!']
+    [u'Foos %d', u'Bars %d', u'Welsh power! %d', u'We have four! %d']
 
 The owner for those translations should be Carlos
 
@@ -373,14 +373,105 @@ And the date should be the old one
     PO-Revision-Date: 2005-06-03 20:41+0100
     ...
 
+Check to be sure that we notify when a msgid_Plural is changed without touch
+the msgid
+
+    >>> pofile_content = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "PO-Revision-Date: 2005-06-04 20:41+0100\n"
+    ... "Last-Translator: Foo <no-priv@canonical.com>\n"
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ... "Plural-Forms: nplurals=2; plural=n==1 ? 0;\n"
+    ...
+    ... #, c-format
+    ... msgid "Singular %d"
+    ... msgid_plural "Plurals %d"
+    ... msgstr[0] ""
+    ... msgstr[1] ""
+    ... '''
+    >>> pofile.attachRawFileData(pofile_content, True, rosetta_experts)
+    >>> transaction.commit()
+    >>> pofile.doRawImport(FakeLogger())
+
+Now, is time to check the notification email.
+
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    1
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    'Translation problems - Welsh (cy) - firefox in Mozilla Firefox\n\tMilestone Releases'
+    >>> print msg.get_payload(decode=True)
+    Hello Rosetta Administrators,...
+    ...
+    0.  [msg 0]
+    "The msgid_Plural field has changed since last time this .po file was
+    generated, please notify this error to rosetta@ubuntu.com":
+    <BLANKLINE>
+    #, c-format
+    msgid "Singular %d"
+    msgid_plural "Plurals %d"
+    msgstr[0] ""
+    msgstr[1] ""
+    ...
+
 Finally, we need to test that the script is being executed without problems.
 We tested already that the functionality works. Now it's time to know if the
 cronscript has any problem.
 
-XXX: Disabled as it stalls the tests.
-    import subprocess
-    subprocess.call('cronscripts/rosetta-poimport.py -q', shell=True)
-    0
+First, remove the recently seen cache
+
+    >>> from canonical.launchpad.scripts.rosetta import ImportProcess
+    >>> import os, os.path
+    >>> if os.path.exists(ImportProcess.POIMPORT_RECENTLY_SEEN_PICKLE):
+    ...     os.unlink(ImportProcess.POIMPORT_RECENTLY_SEEN_PICKLE)
+
+    >>> potemplate.rawimportstatus = RosettaImportStatus.PENDING
+    >>> potemplate.sync()
+    >>> pofile.rawimportstatus = RosettaImportStatus.PENDING
+    >>> pofile.sync()
+    >>> transaction.commit()
+
+    >>> import subprocess, sys
+    >>> process = subprocess.Popen([
+    ...     sys.executable, 'cronscripts/rosetta-poimport.py',
+    ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.STDOUT
+    ...     )
+    >>> (output, empty) = process.communicate()
+    >>> print output
+    INFO    Importing: Template "firefox" in Mozilla Firefox Milestone Releases
+    WARNING No header found in this pofile
+    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox Milestone Releases
+    <BLANKLINE>
+
+If we run it again, the files won't import because the importer has seen
+them too recently.
+
+    >>> potemplate.rawimportstatus = RosettaImportStatus.PENDING
+    >>> potemplate.sync()
+    >>> pofile.rawimportstatus = RosettaImportStatus.PENDING
+    >>> pofile.sync()
+    >>> transaction.commit()
+
+    >>> process = subprocess.Popen([
+    ...     sys.executable, 'cronscripts/rosetta-poimport.py',
+    ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.STDOUT
+    ...     )
+    >>> (output, empty) = process.communicate()
+    >>> print output
+    <BLANKLINE>
+
+Remove the cache so it doesn't confuse anything
+
+    >>> os.unlink(ImportProcess.POIMPORT_RECENTLY_SEEN_PICKLE)
 
     >>> LibrarianTestSetup().tearDown()
     >>> LaunchpadFunctionalTestSetup().tearDown()
+
+

@@ -3,20 +3,65 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistroArchReleaseNavigation',
+    'DistroArchReleaseContextMenu',
+    'DistroArchReleaseFacets',
     'DistroArchReleaseView',
     'DistroArchReleaseBinariesView',
     ]
 
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
+from zope.component import getUtility
+
+from canonical.launchpad.webapp import (
+    canonical_url, StandardLaunchpadFacets, ContextMenu, Link,
+    GetitemNavigation)
+
+from canonical.launchpad.interfaces import (
+    IDistroArchRelease, IBuildSet)
 
 BATCH_SIZE = 40
+
+
+class DistroArchReleaseNavigation(GetitemNavigation):
+
+    usedfor = IDistroArchRelease
+
+
+class DistroArchReleaseFacets(StandardLaunchpadFacets):
+
+    usedfor = IDistroArchRelease
+    enable_only = ['overview']
+
+
+class DistroArchReleaseContextMenu(ContextMenu):
+
+    usedfor = IDistroArchRelease
+    links = ['edit', 'packagesearch']
+
+    def edit(self):
+        text = 'Edit Architecture Release Details'
+        return Link('+edit', text, icon='edit')
+
+    def packagesearch(self):
+        text = 'Search Packages'
+        return Link('+pkgsearch', text, icon='search')
+
 
 class DistroArchReleaseView:
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
+
+    def getBuilt(self):
+        """Return the last build records within the DistroArchRelease context.
+
+        The number of entries can also be determined in the future.
+        """
+        bset = getUtility(IBuildSet)
+        return bset.getBuiltForDistroArchRelease(self.context)
 
 
 class DistroArchReleaseBinariesView:

@@ -58,19 +58,8 @@ class MaloneHandler:
     """
     implements(IMailHandler)
 
-    def getMessage(self, parsed_msg, filealias):
-        messageset = getUtility(IMessageSet)
-        try:
-            message = messageset.get(parsed_msg['Message-Id'])
-        except NotFoundError:
-            message = messageset.fromEmail(
-                parsed_msg.as_string(),
-                owner=getUtility(ILaunchBag).user,
-                filealias=filealias,
-                parsed_message=parsed_msg)
-        return message
-
     def getCommands(self, signed_msg):
+        """Returns a list of all the commands found in the email."""
         commands = []
         content = get_main_body(signed_msg)
         if content is None:
@@ -117,8 +106,6 @@ class MaloneHandler:
             # Indicate that we didn't handle the mail.
             return False
 
-        message = self.getMessage(signed_msg, filealias)
-
         bug = None
         bug_event = None
         try:
@@ -130,8 +117,15 @@ class MaloneHandler:
                             notify(bug_event)
                             bug_event = None
 
-                        bug, bug_event = command.execute(message)
+                        bug, bug_event = command.execute(signed_msg, filealias)
                         if add_comment_to_bug:
+                            messageset = getUtility(IMessageSet)
+                            message = messageset.fromEmail(
+                                signed_msg.as_string(),
+                                owner=getUtility(ILaunchBag).user,
+                                filealias=filealias,
+                                parsed_message=signed_msg,
+                                fallback_parent=bug.initial_message)
                             bugmessage = bug.linkMessage(message)
                             notify(SQLObjectCreatedEvent(bugmessage))
                             add_comment_to_bug = False

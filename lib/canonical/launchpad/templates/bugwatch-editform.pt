@@ -12,9 +12,9 @@
     <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
-<metal:leftportlets fill-slot="portlets_two">
+<metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-bugtasks" />
-</metal:leftportlets>
+</metal:rightportlets>
 
     <div metal:fill-slot="main">
 
@@ -32,7 +32,7 @@
         </div>
 
       </div>
-    
+
     </div>
 
   </body>

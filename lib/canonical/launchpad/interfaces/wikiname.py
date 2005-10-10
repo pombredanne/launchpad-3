@@ -11,7 +11,7 @@ __all__ = ['UBUNTU_WIKI_URL', 'IWikiName', 'IWikiNameSet']
 # Wiki Interfaces
 #
 
-UBUNTU_WIKI_URL = 'http://www.ubuntulinux.com/wiki/'
+UBUNTU_WIKI_URL = 'https://wiki.ubuntu.com/'
 
 
 class IWikiName(Interface):

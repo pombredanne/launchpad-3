@@ -15,13 +15,14 @@
         />
     </content>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IProject"
-        function="canonical.launchpad.browser.traversers.traverse_project" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="ProjectNavigation"
+        />
 
     <browser:menus
         module="canonical.launchpad.browser.project"
-        classes="ProjectFacets" />
+        classes="ProjectFacets ProjectOverviewMenu ProjectBountiesMenu" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
@@ -44,50 +45,57 @@
         lp:url="Rosetta/projects/$Project.name">
         <browser:page
             name="+index"
+            facet="overview"
             template="../templates/project.pt"
             lp:url="/projects/$Project.name/" />
-        <browser:page name="+malone-index"
+        <browser:page
+            name="+malone-index"
+            facet="bugs"
             template="../templates/project-bugs.pt"
             lp:url="malone/projects/$Project.name/" />
         <browser:page
             name="+branches"
+            facet="overview"
             template="../templates/project-branches.pt"
             lp:url="/projects/$Project.name/+branches" />
         <browser:page
             name="+bounties"
+            facet="bounties"
             template="../templates/related-bounties.pt"
             lp:url="/projects/$Project.name/+bounties/" />
         <browser:page
             name="+rosetta-index"
+            facet="translations"
             template="../templates/project-rosetta-index.pt"
             lp:url="Rosetta/projects/$Project.name/+index" />
 
        <!-- Projects portlets -->
        <browser:page
             name="+portlet-languages"
+            facet="translations"
             template="../templates/project-portlet-languages.pt"
             lp:url="Rosetta/projects/$Project.name/+portlet-languages" />
        <browser:page
             name="+portlet-bounties"
+            facet="bounties"
             template="../templates/object-portlet-bounties.pt"
             lp:url="Rosetta/projects/$Project.name/+portlet-bounties" />
        <browser:page
             name="+portlet-trackers"
+            facet="bugs"
             template="../templates/project-portlet-trackers.pt"
             lp:url="Rosetta/projects/$Project.name/+portlet-trackers" />
        <browser:page
             name="+portlet-details"
+            facet="overview"
             template="../templates/project-portlet-details.pt"
             lp:url="Rosetta/projects/$Project.name/+portlet-details" />
-       <browser:page
-            name="+portlet-actions"
-            template="../templates/project-portlet-actions.pt"
-            lp:url="Rosetta/projects/$Project.name/+portlet-actions" />
     </browser:pages>
 
     <browser:page
         for="canonical.launchpad.interfaces.IProject"
         class="canonical.launchpad.browser.ProjectRdfView"
+        facet="overview"
         permission="zope.Public"
         name="+rdf"
         lp:url="/projects/$Project.name/+rdf"
@@ -97,6 +105,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IProject"
         permission="launchpad.Edit"
+        facet="overview"
         class="canonical.launchpad.browser.ObjectReassignmentView">
           <browser:page
               name="+reassign"
@@ -111,6 +120,7 @@
         permission="launchpad.AnyPerson"
         label="Register an External Bug Tracker"
         class="canonical.launchpad.browser.BugTrackerAddView"
+        facet="bugs"
         for="canonical.launchpad.interfaces.IProject"
         schema="canonical.launchpad.interfaces.IBugTracker"
         fields="name bugtrackertype title summary baseurl contactdetails"
@@ -128,9 +138,10 @@
         fields="name displayname title summary description homepageurl"
         content_factory="canonical.launchpad.database.Project"
         class="canonical.launchpad.browser.ProjectAddView"
+        facet="overview"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="products/+new">
+        lp:url="projects/+new">
         <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="name"
@@ -150,6 +161,7 @@
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl"
         class="canonical.launchpad.browser.ProjectEditView"
+        facet="overview"
         permission="launchpad.Edit"
         template="../templates/project-edit.pt"
         lp:url="/projects/$Project.name/+edit">
@@ -159,6 +171,7 @@
         name="+review"
         for="canonical.launchpad.interfaces.IProject"
         schema="canonical.launchpad.interfaces.IProject"
+        facet="overview"
         label="Review Upstream Project Details:"
         fields="name displayname title summary description homepageurl
                 wikiurl sourceforgeproject freshmeatproject owner active
@@ -171,6 +184,7 @@
     <browser:editform
         name="+changetranslators"
         for="canonical.launchpad.interfaces.IProject"
+        facet="overview"
         schema="canonical.launchpad.interfaces.IProject"
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
@@ -181,6 +195,7 @@
     <browser:addform
         name="+newproduct"
         for="canonical.launchpad.interfaces.IProject"
+        facet="overview"
         schema="canonical.launchpad.interfaces.IProduct"
         label="Add a Product to this Project"
         fields="name displayname title summary description homepageurl
@@ -212,6 +227,7 @@
     <browser:addform
       name="+linkbounty"
       for="canonical.launchpad.interfaces.IProject"
+      facet="bounties"
       schema="canonical.launchpad.interfaces.IProjectBounty"
       class="canonical.launchpad.browser.bounty.BountyLinkView"
       label="Link Existing Bounty"
@@ -228,6 +244,7 @@
     <browser:addform
       name="+addbounty"
       for="canonical.launchpad.interfaces.IProject"
+      facet="bounties"
       schema="canonical.launchpad.interfaces.IBounty"
       label="Register A New Bounty"
       fields="name title summary usdvalue difficulty description"
@@ -251,9 +268,10 @@
         for="canonical.launchpad.interfaces.IProjectSet"
         name="+index" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IProjectSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="ProjectSetNavigation"
+        />
     <browser:url
         for="canonical.launchpad.interfaces.IProject"
         path_expression="name"
@@ -262,6 +280,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProjectSet"
+        facet="overview"
         permission="zope.Public"
         class="canonical.launchpad.browser.ProjectSetView"
         lp:url="/projects/">
@@ -277,6 +296,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProjectSet"
+        facet="overview"
         class="canonical.launchpad.browser.ProjectSetView"
         permission="launchpad.AnyPerson">
         <browser:page
@@ -291,6 +311,7 @@
 
     <browser:pages for="canonical.launchpad.interfaces.IProjectSet"
         permission="zope.Public"
+        facet="overview"
         class="canonical.launchpad.browser.ProjectSetView">
         <browser:page name="+request"
             template="../templates/projects-request.pt"

@@ -5,6 +5,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+<facet facet="overview">
+
     <!-- KarmaSet -->
     <content class="canonical.launchpad.database.KarmaSet">
         <allow interface="canonical.launchpad.interfaces.IKarmaSet" />
@@ -70,9 +72,10 @@
         for="canonical.launchpad.interfaces.IKarmaActionSet"
         name="+index" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IKarmaActionSet"
-        getter="getByName" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="KarmaActionSetNavigation"
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IKarmaActionSet"
@@ -81,5 +84,5 @@
         class="canonical.launchpad.browser.KarmaActionSetView"
         template="../templates/karmaaction-index.pt"
         lp:url="karmaaction/$action/+index" />
-
+</facet>
 </configure>

@@ -6,16 +6,14 @@ __metaclass__ = type
 
 __all__ = [
     'IBuild',
-    'IBuilder',
     'IBuildSet',
-    'IBuildQueue',
     ]
 
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
+from zope.schema import Choice, TextLine, Bool
 
 _ = MessageIDFactory('launchpad')
-
 
 class IBuild(Interface):
     """A Build interface"""
@@ -32,35 +30,27 @@ class IBuild(Interface):
     component = Attribute("The BinaryPackage Component")
     section = Attribute("The BinaryPackage Section")
     sourcepackagerelease = Attribute("SourcePackageRelease reference")
-
-    def destroySelf():
-        """Delete this entry from the database."""
-
-class IBuilder(Interface):
-    processor = Attribute("The Builder Processor")
-    url = Attribute("The URL to the builder")
-    name = Attribute("The Builder Name")
-    title = Attribute("The Builder Title")
-    description = Attribute("The Builder Description")
-    owner = Attribute("The Builder Owner")
-    builderok = Attribute("Whether or not the builder is ok")
-    failnotes = Attribute("The reason for a builder not being ok")
-    trusted = Attribute("Whether not the builder is trusted to build packages "
-                        "under security embargo.")
-    slave = Attribute("XMLRPC Server instance for builder slave")
+    title = Attribute("Build Title")
+    distrorelease = Attribute("Direct parent needed by CanonicalURL")
 
 class IBuildSet(Interface):
     """Interface for BuildSet"""
     def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
-        """return a build for a SourcePackageRelease and an ArchTag"""
+        """Return a build for a SourcePackageRelease and an ArchTag"""
 
-class IBuildQueue(Interface):
-    """A build queue entry"""
-    build = Attribute("The build in question")
-    builder = Attribute("The builder building the build")
-    created = Attribute("The datetime that the queue entry waw created")
-    buildstart = Attribute("The datetime of the last build attempt")
-    logtail = Attribute("The current tail of the log of the build")
+    def getBuiltForDistroRelease(distrorelease, limit=10):
+        """Return build records within a DistroRelease context.
 
-    def destroySelf():
-        """Delete this entry from the database."""
+        The results are limited by 'limit'.
+        """
+
+    def getBuiltForDistroArchRelease(distroarchrelease, limit=10):
+        """Return build records within a DistroArchRelease context.
+
+        The results are limited by 'limit'.
+        """
+
+    def getBuildsForDistribution(distro, state=None):
+        """Return builds for a given distribution (optionally in the given
+        state only.
+        """

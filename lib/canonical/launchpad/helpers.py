@@ -8,7 +8,6 @@ be better as a method on an existing content object or IFooSet object.
 
 __metaclass__ = type
 
-import base64
 import email
 import gettextpo
 import os
@@ -17,7 +16,6 @@ import re
 import sha
 import tarfile
 import time
-import urllib
 import warnings
 from StringIO import StringIO
 from select import select
@@ -37,21 +35,16 @@ from zope.app.security.permission import (
 
 import canonical.base
 from canonical.database.constants import UTC_NOW
-from canonical.lp.dbschema import (RosettaImportStatus, TranslationPermission,
-                                   SourcePackageFileType, BinaryPackageFormat,
-                                   BinaryPackageFileType)
+from canonical.lp.dbschema import (
+    RosettaImportStatus, SourcePackageFileType,
+    BinaryPackageFormat, BinaryPackageFileType)
 from canonical.librarian.interfaces import (
-    ILibrarianClient, UploadFailed, DownloadFailed
-    )
+    ILibrarianClient, UploadFailed, DownloadFailed)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IOpenLaunchBag, IHasOwner, IGeoIP, IRequestPreferredLanguages,
-    ILanguageSet, IRequestLocalLanguages, RawFileAttachFailed, ITeam,
-    RawFileFetchFailed, ILoginTokenSet
-    )
+    ILaunchBag, IOpenLaunchBag, IHasOwner, IRequestPreferredLanguages,
+    IRequestLocalLanguages, RawFileAttachFailed, ITeam, RawFileFetchFailed)
 from canonical.launchpad.components.poparser import (
-    POSyntaxError, POInvalidInputError, POParser
-    )
-from canonical.launchpad.components.rosettastats import RosettaStats
+    POSyntaxError, POInvalidInputError, POParser)
 from canonical.launchpad.mail import SignedMessage
 from canonical.launchpad.mail.ftests import testmails_path
 
@@ -100,13 +93,19 @@ def text_replaced(text, replacements, _cache={}):
 
 CHARACTERS_PER_LINE = 50
 
+
+def po_message_special(text):
+    """Mark up to a piece of text as a piece of special PO message text."""
+    return  u'<span class="po-message-special">%s</span>' % text
+
+
 class TranslationConstants:
     """Set of constants used inside the context of translations."""
 
     SINGULAR_FORM = 0
     PLURAL_FORM = 1
-    SPACE_CHAR = u'<span class="po-message-special">\u2022</span>'
-    NEWLINE_CHAR = u'<span class="po-message-special">\u21b5</span><br/>\n'
+    SPACE_CHAR = po_message_special(u'\u2022')
+    NEWLINE_CHAR = po_message_special(u'\u21b5') + '<br/>\n'
 
 
 class RosettaReadTarFile:
@@ -247,10 +246,9 @@ class RosettaReadTarFile:
         # safe. # We don't support other kinds of tarballs and before calling
         # this function we did already the needed tests to be sure that
         # pot_paths follows our requirements.
-        potemplate.attachRawFileData(
-            contents=self.tarfile.extractfile(pot_paths[0]).read(),
-            published=True,
-            importer=importer)
+        contents = self.tarfile.extractfile(pot_paths[0]).read()
+        potemplate.attachRawFileData(contents=contents, published=True,
+                                     importer=importer)
         pot_base_dir = os.path.dirname(pot_paths[0])
 
         # List of .pot and .po files that were not able to be imported.
@@ -305,7 +303,7 @@ class Snapshot:
     """Provides a simple snapshot of the given object.
 
     The snapshot will have the attributes given in attributenames. It
-    will also provide the same interfaces as the original object. 
+    will also provide the same interfaces as the original object.
     """
     def __init__(self, ob, names=None, providing=None):
         if names is None and providing is None:
@@ -335,7 +333,7 @@ def get_attribute_names(ob):
 
         >>> from zope.interface import Interface, implements, Attribute
         >>> class IFoo(Interface):
-        ...     foo = Attribute('Foo') 
+        ...     foo = Attribute('Foo')
         ...     baz = Attribute('Baz')
         >>> class IBar(Interface):
         ...     bar = Attribute('Bar')
@@ -445,7 +443,8 @@ def is_maintainer(owned_object):
     owned_object provides IHasOwner.
     """
     if not IHasOwner.providedBy(owned_object):
-        raise TypeError, "Object %s doesn't provide IHasOwner" % repr(owned_object)
+        raise TypeError(
+            "Object %r doesn't provide IHasOwner" % repr(owned_object))
     launchbag = getUtility(ILaunchBag)
     if launchbag.user is not None:
         return launchbag.user.inTeam(owned_object.owner)
@@ -586,9 +585,9 @@ def contactEmailAddresses(person):
     """Return a Set of email addresses to contact this Person.
 
     If <person> has a preferred email, the Set will contain only that
-    preferred email. 
+    preferred email.
 
-    If <person> doesn't have a preferred email but implements ITeam, the 
+    If <person> doesn't have a preferred email but implements ITeam, the
     Set will contain the preferred email address of each member of <person>.
 
     Finally, if <person> doesn't have a preferred email neither implement
@@ -641,7 +640,7 @@ def convertToHtmlCode(text):
     This is usefull to avoid email harvesting, while keeping the email address
     in a form that a 'normal' person can read.
     """
-    return ''.join(map(lambda c: "&#%s;" % ord(c), text))
+    return ''.join(["&#%s;" % ord(c) for c in text])
 
 def validate_translation(original, translation, flags):
     """Check with gettext if a translation is correct or not.
@@ -1004,7 +1003,12 @@ def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
 
     # Replace newlines and tabs with their respective representations.
 
-    return expand_rosetta_tabs(newline.join(lines))
+    html = expand_rosetta_tabs(newline.join(lines))
+    html = text_replaced(html, {
+        '[tab]': po_message_special('[tab]'),
+        r'\[tab]': po_message_special(r'\[tab]')
+        })
+    return html
 
 def check_po_syntax(s):
     parser = POParser()
@@ -1049,21 +1053,21 @@ def sanitiseFingerprint(fpr):
     'C85826521A6EF6A6037BB3F79FF2583E681B6469'
     >>> sanitiseFingerprint('681B 6469')
     False
-    
+
     >>> sanitiseFingerprint('abnckjdiue')
     False
-    
-    """ 
+
+    """
     # replace the white spaces
     fpr = fpr.replace(' ', '')
 
     if not valid_fingerprint(fpr):
         return False
-    
+
     return fpr
 
 class Participation:
-    implements(IParticipation) 
+    implements(IParticipation)
 
     interaction = None
     principal = None
@@ -1073,7 +1077,7 @@ def setupInteraction(principal, login=None, participation=None):
     """Sets up a new interaction with the given principal.
 
     The login gets added to the launch bag.
-    
+
     You can optionally pass in a participation to be used.  If no
     participation is given, a Participation is used.
     """
@@ -1110,13 +1114,13 @@ def check_permission(permission_name, context):
     """
     # This will raise ValueError if the permission doesn't exist.
     check_permission_is_registered(context, permission_name)
-    
+
     # Now call Zope's checkPermission.
     return zcheckPermission(permission_name, context)
 
 
 def filenameToContentType(fname):
-    """ Return the a ContentType-like entry for arbitrary filenames 
+    """ Return the a ContentType-like entry for arbitrary filenames
 
     deb files
 
@@ -1129,7 +1133,7 @@ def filenameToContentType(fname):
     'text/plain'
 
     Not recognized format
-    
+
     >>> filenameToContentType('test.tgz')
     'application/octet-stream'
     """
@@ -1147,8 +1151,8 @@ def filenameToContentType(fname):
 
 def get_filename_from_message_id(message_id):
     """Returns a librarian filename based on the email message_id.
-    
-    It generates a file name that's not easily guessable.  
+
+    It generates a file name that's not easily guessable.
     """
     return '%s.msg' % (
             canonical.base.base(long(sha.new(message_id).hexdigest(), 16), 62))
@@ -1175,46 +1179,20 @@ def getBinaryPackageFormat(fname):
     if fname.endswith(".rpm"):
         return BinaryPackageFormat.RPM
 
-def normalize_whitespaces(template, text):
-    """Return 'text' with the same trailing and leading whitespaces
-    that 'template' has.
-
-    If any of the arguments is None, 'text' is returned without
-    changes.
-    If 'text' has only whitespaces but 'template' has other characters, the
-    empty string ('') is returned.
-    'template' and 'text' are strings.
-    """
-    if template is None or text is None:
-        return text
-
-    stripped_template = template.strip()
-    stripped_text = text.strip()
-    new_text = None
-
-    if len(stripped_template) > 0 and len(stripped_text) == 0:
-        return ''
-
-    if len(stripped_template) != len(template):
-        # There are whitespaces that we should copy to the 'text'
-        # after stripping it.
-        prefix = template[:-len(template.lstrip())]
-        postfix = template[len(template.rstrip()):]
-        new_text = '%s%s%s' % (prefix, stripped_text, postfix)
-    elif len(stripped_text) != len(text):
-        # The template does not have any whitespace, we need to remove
-        # the extra ones added to this text.
-        new_text = stripped_text
-    else:
-        # The text is not changed.
-        new_text = text
-
-    return new_text
-
 def intOrZero(value):
     """Return int(value) or 0 if the conversion fails."""
     try:
         return int(value)
     except ValueError:
         return 0
+
+def positiveIntOrZero(value):
+    """Return 0 if int(value) fails or if int(value) is less than 0.
+
+    Return int(value) otherwise.
+    """
+    value = intOrZero(value)
+    if value < 0:
+        return 0
+    return value
 

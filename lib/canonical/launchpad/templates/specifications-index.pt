@@ -10,12 +10,13 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
+  <div tal:replace="structure context/@@+portlet-overview" />
+  <div tal:replace="structure context/@@+portlet-sprints" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-  <h1>Feature Tracking in Launchpad</h1>
+  <h1>Feature tracking in Launchpad</h1>
 
   <p class="documentDescription">
     Launchpad includes a feature tracker for applications and distributions.

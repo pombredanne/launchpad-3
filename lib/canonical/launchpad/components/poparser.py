@@ -14,9 +14,7 @@ import logging
 
 from canonical.launchpad.interfaces import IPOMessage, IPOHeader, IPOParser
 from zope.interface import implements
-from zope.app.datetimeutils import SyntaxError, DateError, DateTimeError, \
-    parseDatetimetz
-
+from zope.app import datetimeutils
 
 # Exceptions and warnings
 
@@ -296,8 +294,8 @@ class POHeader(dict, POMessage):
     def finish(self):
         for attr in ('msgidPlural', 'msgstrPlurals', 'fileReferences'):
             if getattr(self, attr):
-                logging.warning(POSyntaxWarning(msg='PO file header entry should have no %s'
-                                              % attr))
+                logging.warning(POSyntaxWarning(
+                    msg='PO file header entry should have no %s' % attr))
                 setattr(self, attr, u'')
 
         for l in self.msgstr.strip().split('\n'):
@@ -315,23 +313,26 @@ class POHeader(dict, POMessage):
                 try:
                     self.__setitem__(field, value, False)
                 except ValueError:
-                    raise POInvalidInputError(msg='Malformed plural-forms header entry')
+                    raise POInvalidInputError(
+                            msg='Malformed plural-forms header entry')
             else:
                 self.__setitem__(field, value, False)
         if 'content-type' not in self:
-            logging.warning(POSyntaxWarning(msg='PO file header entry has no content-type field'))
+            logging.warning(POSyntaxWarning(
+                msg='PO file header entry has no content-type field'))
             self['Content-Type'] = 'text/plain; charset=us-ascii'
 
     def _decode(self, v):
         try:
             v = unicode(v, self.charset)
         except UnicodeError:
-            logging.warning(POSyntaxWarning(self._lineno,
-                                          'string is not in declared charset %r'
-                                          % self.charset))
+            logging.warning(POSyntaxWarning(
+                self._lineno,
+                'string is not in declared charset %r' % self.charset
+                ))
             v = unicode(v, self.charset, 'replace')
         except LookupError:
-            raise POInvalidInputError(msg='Unknown charset %s' % self.charset)
+            raise POInvalidInputError(msg='Unknown charset %r' % self.charset)
 
         return v
 
@@ -478,12 +479,24 @@ class POHeader(dict, POMessage):
             date_string = 'Missing header'
         else:
             try:
-                date = parseDatetimetz(date_string)
-            except (SyntaxError, DateError, DateTimeError, ValueError):
+                date = datetimeutils.parseDatetimetz(date_string)
+            except (datetimeutils.SyntaxError, datetimeutils.DateError,
+                    datetimeutils.DateTimeError, ValueError):
                 # invalid date format
                 date = None
 
         return (date_string, date)
+
+    def getPluralFormExpression(self):
+        """See IPOHeader."""
+        plural = self.get('Plural-Forms')
+        if not plural:
+            return None
+        parts = parse_assignments(plural)
+        if parts.has_key("plural"):
+            return parts["plural"]
+        else:
+            return None
 
 
 class POParser(object):
@@ -525,8 +538,13 @@ class POParser(object):
         if self._partial_transl:
             for message in self.messages:
                 if message.msgid == self._partial_transl['msgid']:
-                    raise POInvalidInputError('Po file: duplicate msgid ending on line %d'
-                                              % self._partial_transl['_lineno'])
+                    lineno = self._partial_transl['_lineno']
+                    # XXX: I changed the exception below to use %r
+                    # because the original %d returned "<unprintable
+                    # instance object>" in a traceback in bug 2896
+                    #    -- kiko, 2005-10-06
+                    raise POInvalidInputError('Po file: duplicate msgid '
+                                              'ending on line %r' % lineno)
             try:
                 transl = self.translation_factory(header=self.header,
                                                   **self._partial_transl)
@@ -539,7 +557,8 @@ class POParser(object):
 
     def _make_header(self):
         try:
-            self.header = self.header_factory(messages=self.messages, **self._partial_transl)
+            self.header = self.header_factory(messages=self.messages, 
+                                              **self._partial_transl)
             self.header.finish()
         except (POSyntaxError, POInvalidInputError), e:
             if e.lno is None:
@@ -555,9 +574,10 @@ class POParser(object):
             try:
                 return unicode(text, self.header.charset)
             except UnicodeError:
-                logging.warning(POSyntaxWarning(self._lineno,
-                                              'string is not in declared charset %r'
-                                              % self.header.charset))
+                logging.warning(POSyntaxWarning(
+                    self._lineno,
+                    'string is not in declared charset %r' % self.header.charset
+                    ))
                 return unicode(text, self.header.charset, 'replace')
         else:
             return text
@@ -566,18 +586,20 @@ class POParser(object):
         self._lineno += 1
         # Skip empty lines
         l = l.strip()
-        if not l:
-            return
 
         obsolete = False
         if l[:2] == '#~':
             obsolete = True
             l = l[2:].lstrip()
+
+        if not l:
+            return
         # If we get a comment line after a msgstr or a line starting with
         # msgid, this is a new entry
         # XXX: l.startswith('msgid') is needed because not all msgid/msgstr
         # pairs have a leading comment
-        if (l[0] == '#' or l.startswith('msgid')) and self._section == 'msgstr':
+        if ((l.startswith('#') or l.startswith('msgid')) and
+            self._section == 'msgstr'):
             if self._partial_transl is None:
                 # first entry - do nothing
                 pass
@@ -596,7 +618,8 @@ class POParser(object):
             l = self.to_unicode(l)
             # Record flags
             if l[:2] == '#,':
-                self._partial_transl['flags'].update([flag.strip() for flag in l[2:].split(',')])
+                new_flags = [flag.strip() for flag in l[2:].split(',')]
+                self._partial_transl['flags'].update(new_flags)
                 return
             # Record file references
             if l[:2] == '#:':
@@ -631,24 +654,25 @@ class POParser(object):
                 # plural case
                 new_plural_case, l = l[1:].split(']', 1)
                 new_plural_case = int(new_plural_case)
-                if (self._plural_case is not None) and (new_plural_case != 
-                                                        self._plural_case + 1):
+                if (self._plural_case is not None) and (
+                        new_plural_case != self._plural_case + 1):
                     logging.warning(POSyntaxWarning(self._lineno,
                                                   'bad plural case number'))
                 if new_plural_case != self._plural_case:
                     self._partial_transl['msgstrPlurals'].append('')
                     self._plural_case = new_plural_case
                 else:
-                    logging.warning(POSyntaxWarning(self._lineno,
-                                                  'msgstr[] but same plural case number'))
+                    logging.warning(POSyntaxWarning(
+                        self._lineno, 'msgstr[] but same plural case number'))
             else:
                 self._plural_case = None
 
         l = l.strip()
         if not l:
-            logging.warning(POSyntaxWarning(self._lineno,
-                                          'line has no content; this is not supported by '
-                                          'some implementations of msgfmt'))
+            logging.warning(POSyntaxWarning(
+                self._lineno,
+                'line has no content; this is not supported by '
+                'some implementations of msgfmt'))
             return
 
         # Parse a str line

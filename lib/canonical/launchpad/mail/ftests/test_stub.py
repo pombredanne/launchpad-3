@@ -4,10 +4,7 @@ __metaclass__ = type
 
 import unittest
 from zope.testing.doctest import DocTestSuite
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.functional import FunctionalTestSetup
-
-from zope.app.tests.setup import placefulSetUp, placefulTearDown
 
 import transaction
 

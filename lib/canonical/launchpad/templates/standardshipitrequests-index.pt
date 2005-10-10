@@ -1,24 +1,83 @@
+<tal:do-this-first condition="view/processForm" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 <body>
 
-<div metal:fill-slot="main">
+  <div metal:fill-slot="body">
 
-  <h1>Standard ShipIt Requests</h1>
+  <h1>Standard Request Options</h1>
 
-  <ul>
-    <li tal:repeat="request context/getAll">
-      <b tal:replace="request/description" />
-      <a tal:attributes="href request/fmt:url">[Edit]</a>
-    </li>
-  </ul>
+  <table>
+  <tbody>
+  <tr>
+  <td width="80%">
+
+  <tal:block define="alloptions context/getAll">
+
+  <tal:block condition="alloptions">
+    <p>These are the options the user can choose when placing a new
+    <em>Standard Request</em>. Only one of these should be the default option,
+    and that is the one that will be initially selected for the user.</p>
+
+    <table class="listing sortable" id="standardrequests" width="80%"
+           style="clear: both">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>PC</th>
+          <th>64-bit PC</th>
+          <th>Mac</th>
+          <th>Default option?</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="shipitrequest context/getAll">
+          <td>
+            <img src="/++resource++edit.gif">
+            <a tal:attributes="href shipitrequest/fmt:url"
+               tal:content="shipitrequest/description">description</a>
+          </td>
+          <td tal:content="shipitrequest/quantityx86" />
+          <td tal:content="shipitrequest/quantityamd64" />
+          <td tal:content="shipitrequest/quantityppc" />
+          <td tal:condition="shipitrequest/isdefault">yes</td>
+          <td tal:condition="not: shipitrequest/isdefault">no</td>
+          <td class="formControls">
+            <form action="" method="POST" name="delete" style="display: inline">
+              <input type="submit" value="Delete" 
+                     tal:attributes="name shipitrequest/id" />
+            </form>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </tal:block>
+
+  <tal:block condition="not: alloptions">
+    <p>No standard options have been created yet. This means people won't be
+    able to place new shipit orders.</p>
+  </tal:block>
 
   <br />
-  <li class="add">
-    <a href="+new">Create a new standard request</a>
-  </li>
+  <ul>
+    <li class="add">
+      <a href="/standardoptions/+new">Create a new standard option</a>
+    </li>
+  </ul>
+  </tal:block>
+
+  </td>
+  <td
+    width="20%"
+    style="vertical-align: top;"
+    tal:content="structure context/@@+portlet-navigation"
+  />
+  </tr>
+  </table>  
+  
 
 </div>
 

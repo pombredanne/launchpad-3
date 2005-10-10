@@ -1,0 +1,79 @@
+Builder View Classes and Pages
+==============================
+
+  >>> from zope.component import getUtility
+  >>> from zope.component import queryView
+  >>> from zope.publisher.browser import TestRequest
+  >>> from canonical.launchpad.interfaces import IBuilderSet
+  >>> builder = getUtility(IBuilderSet).get(1)
+
+Get a "mock" request:
+
+  >>> request = TestRequest()
+
+Let's instantiate the view for +index:
+
+  >>> builder_view = queryView(builder, "+index", request)
+
+  >>> builder_view.now().isoformat()
+  '...'
+  
+  >>> builder_view.lastBuilds().count()
+  2
+
+Let's instantiate the view for +stop:
+
+  >>> request = TestRequest(form={'BUILDERID': 1})
+
+  >>> builder_view = queryView(builder, "+stop", request)
+
+  >>> builder_view.stopBuilder()
+  '<p>Stopping (1). Not implemented yet</p>'
+
+Let's instantiate the view for +abort:
+
+  >>> request = TestRequest(form={'BUILDERID': 1})
+
+  >>> builder_view = queryView(builder, "+abort", request)
+
+  >>> builder_view.abortBuilder()
+  '<p>Aborting (1). Not implemented yet</p>'
+
+
+Let's instantiate the view for +edit:
+
+This page requires launchpad.Edit permission and the builder is owned
+by mark. we nee to log in as mark or any other member of admin team
+
+  >>> from canonical.launchpad.ftests import login
+  >>> login("foo.bar@canonical.com")
+
+Build an special request containing the fields we want to change:
+
+  >>> request = TestRequest(form={'field.processor': builder.processor.id, 
+  ...                             'field.url': builder.url,
+  ...                             'field.name': u'biscoito',
+  ...                             'field.title': builder.title,
+  ...                             'field.description': builder.description,
+  ...                             'UPDATE_SUBMIT': 'Change'})
+
+Instantiate the corrspondent view:
+
+  >>> builder_view = queryView(builder, "+edit", request)
+
+Ensure the previous name
+
+  >>> builder.id, builder.name
+  (1, u'bob')
+
+Call the update() method of the zope.app.form.EditView class
+
+  >>> builder_view.update()
+  u'Updated on ${date_time}'
+
+Voilá, we modified the buildername
+
+  >>> builder.id, builder.name
+  (1, u'biscoito')
+
+

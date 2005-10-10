@@ -77,12 +77,34 @@ COMMENT ON COLUMN BugTracker.contactdetails IS 'The contact details of the peopl
 COMMENT ON COLUMN BugTracker.baseurl IS 'The base URL for this bug tracker. Using our knowledge of the bugtrackertype, and the details in the BugWatch table we are then able to calculate relative URL\'s for relevant pages in the bug tracker based on this baseurl.';
 COMMENT ON COLUMN BugTracker.owner IS 'The person who created this bugtracker entry and who thus has permission to modify it. Ideally we would like this to be the person who coordinates the running of the actual bug tracker upstream.';
 
-/* CVERef */
 
-COMMENT ON TABLE CVERef IS 'This table stores CVE references for bugs. CVE is a way of tracking security problems across multiple vendor products.';
-COMMENT ON COLUMN CVERef.cveref IS 'This is the actual CVE number assigned to this specific problem.';
-COMMENT ON COLUMN CVERef.cvestate IS 'This is a dbschema enum which tells us the state (CVE or CAN) of the CVE problem report. It is defined in dbschema.CVEState';
-COMMENT ON COLUMN CVERef.owner IS 'This refers to the person who created the entry.';
+/* CVE */
+
+COMMENT ON TABLE CVE IS 'A CVE Entry. The formal database of CVE entries is available at http://cve.mitre.org/ and we sync that database into Launchpad on a regular basis.';
+COMMENT ON COLUMN CVE.sequence IS 'The official CVE entry number. It takes the form XXXX-XXXX where the first four digits are a year indicator, like 2004, and the latter four are the sequence number of the vulnerability in that year.';
+COMMENT ON COLUMN CVE.status IS 'The current status of the CVE. The values are documented in dbschema.CVEState, and are Entry, Candidate, and Deprecated.';
+COMMENT ON COLUMN CVE.datemodified IS 'The last time this CVE entry changed in some way - including addition or modification of references.';
+
+
+/* BugCve */
+
+COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone bug number, and a CVE entry.';
+
+
+/* CveReference */
+
+COMMENT ON TABLE CveReference IS 'A reference in the CVE system that shows what outside tracking numbers are associated with the CVE. These are tracked in the CVE database and extracted from the daily XML dump that we fetch.';
+COMMENT ON COLUMN CveReference.source IS 'The SOURCE of the CVE reference. This is a text string, like XF or BUGTRAQ or MSKB. Each string indicates a different kind of reference. The list of known types is documented on the CVE web site. At some future date we might turn this into an enum rather than a text, but for the moment we prefer to keep it fluid and just suck in what CVE gives us. This means that CVE can add new source types without us having to update our code.';
+COMMENT ON COLUMN CveReference.url IS 'The URL to this reference out there on the web, if it was present in the CVE database.';
+COMMENT ON COLUMN CveReference.content IS 'The content of the ref in the CVE database. This is sometimes a comment, sometimes a description, sometimes a bug number... it is not predictable.';
+
+
+/* CVERef OBSOLETE */
+
+COMMENT ON TABLE CVERefObsolete IS 'OBSOLETE: THIS TABLE IS PARKED AND WILL BE DELETED IN FAVOUR OF THE NEW CVE TABLE. This table stores CVE references for bugs. CVE is a way of tracking security problems across multiple vendor products.';
+COMMENT ON COLUMN CVERefObsolete.cveref IS 'This is the actual CVE number assigned to this specific problem.';
+COMMENT ON COLUMN CVERefObsolete.cvestate IS 'This is a dbschema enum which tells us the state (CVE or CAN) of the CVE problem report. It is defined in dbschema.CVEState';
+COMMENT ON COLUMN CVERefObsolete.owner IS 'This refers to the person who created the entry.';
 
 
 -- LaunchpadStatistic
@@ -91,6 +113,12 @@ or other integer values, keyed by names. The names are unique and the values
 can be any integer. Each field has a place to store the timestampt when it
 was last updated, so it is possible to know how far out of date any given
 statistic is.';
+
+
+-- DevelopmentManifest
+COMMENT ON TABLE DevelopmentManifest IS 'A table that keeps track of the "intermediate commits" during the development of a source package. A developer using HCT will make regular commits (stored locally, as Bazaar revisions). On occasion, the developer will "publish" the current state of the package. This results in the Bazaar branches being made available on a public server, and a DevelopmentManifest being created. Other people will then see the existence of the Development Manifest and know that the person is currently working on a variation of the package. When the developer believes that the page is actually ready to build, they can "release" the package. This results in a SourcePackageRelease being assembled, based on the existing development manifest.';
+COMMENT ON COLUMN DevelopmentManifest.distrorelease IS 'The distribution release for which this source package is being developed. Note that the source package may very well be built and published in other releases as well - this information is purely a starting point indicator.';
+COMMENT ON COLUMN DevelopmentManifest.sourcepackagename IS 'Again, this is just an indicator of the place the developer is primarily targeting the work. This same package may actually be uploaded under a different name somewhere else eventually.';
 
 -- Project
 COMMENT ON TABLE Project IS 'Project: A DOAP Project. This table is the core of the DOAP section of the Launchpad database. It contains details of a single open source Project and is the anchor point for products, potemplates, and translationefforts.';
@@ -335,8 +363,23 @@ COMMENT ON COLUMN POMsgSet.iscomplete IS 'This indicates if we believe that
 Rosetta has an active translation for every expected plural form of this
 message set.';
 
-/* Ticket */
 
+/* Sprint */
+COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
+COMMENT ON COLUMN Sprint.time_zone IS 'The timezone of the sprint, stored in text format from the Olsen database names, like "US/Eastern".';
+
+
+/* SprintAttendance */
+COMMENT ON TABLE SprintAttendance IS 'The record that someone will be attending a particular sprint or meeting.';
+COMMENT ON COLUMN SprintAttendance.time_starts IS 'The time from which the person will be available to participate in meetings at the sprint.';
+COMMENT ON COLUMN SprintAttendance.time_ends IS 'The time of departure from the sprint or conference - this is the last time at which the person is available for meetings during the sprint.';
+
+
+/* SprintSpecification */
+COMMENT ON TABLE SprintSpecification IS 'The link between a sprint and a specification, so that we know which specs are going to be discussed at which sprint.';
+
+
+/* Ticket */
 COMMENT ON TABLE Ticket IS 'A trouble ticket, or support request, for a distribution or for an application. Such tickets are created by end users who need support on a particular feature or package or product.';
 COMMENT ON COLUMN Ticket.assignee IS 'The person who has been assigned to resolve this support ticket. Note that there is no requirement that every ticket be assigned somebody. Anybody can chip in to help resolve a ticket, and if they think they have done so we call them the "answerer".';
 COMMENT ON COLUMN Ticket.answerer IS 'The person who last claimed to have "answered" this support ticket, giving a response that they believe should be sufficient to close the ticket. This will move the status of the ticket to "answered". Note that the only person who can actually set the status to "closed" (other than an admin) is the person who made the support request.';
@@ -516,11 +559,6 @@ COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.embargo IS 'The publishin
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
 COMMENT ON VIEW BinaryPackagePublishingHistory IS 'View on SecureBinaryPackagePublishingHistory that restricts access to embargoed entries';
 
--- PersonLanguage
-COMMENT ON TABLE PersonLanguage IS 'PersonLanguage: This table stores the preferred languages that a Person has, it''s used in Rosetta to select the languages that should be showed to be translated.';
-COMMENT ON COLUMN PersonLanguage.person IS 'This field is a reference to a Person object that has this preference.';
-COMMENT ON COLUMN PersonLanguage.language IS 'This field is a reference to a Language object that says that the Person associated to this row knows how to translate/understand this language.';
-
 -- soyuz views
 COMMENT ON VIEW VSourcePackageInDistro IS 'This view allows us to answer the question: what source packages have releases in a certain distribution. This is an interesting case of where a view can actually solve a problem that SQLObject can''t -- there is no way of doing this query (that I see at least) in regular sqlos because there is no DISTINCT and no way to filter things without iterating in
 Python (which generates N queries and we don''t want to go down that route).';
@@ -585,6 +623,14 @@ COMMENT ON COLUMN Person.name IS 'Short mneumonic name uniquely identifying this
 COMMENT ON COLUMN Person.language IS 'Preferred language for this person (unset for teams). UI should be displayed in this language wherever possible.';
 COMMENT ON COLUMN Person.calendar IS 'The calendar associated with this person.';
 COMMENT ON COLUMN Person.timezone IS 'The name of the time zone this person prefers (if unset, UTC is used).  UI should display dates and times in this time zone wherever possible.';
+COMMENT ON COLUMN Person.homepage_content IS 'A home page for this person in the Launchpad. In short, this is like a personal wiki page. The person will get to edit their own page, and it will be published on /people/foo/. Note that this is in text format, and will migrate to being in Moin format as a sort of mini-wiki-homepage.';
+COMMENT ON COLUMN Person.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem or icon whenever we are referring to that person.';
+COMMENT ON COLUMN Person.hackergotchi IS 'The library file alias of a hackergotchi image to display as the "face" of a person, on their home page.';
+
+-- PersonLanguage
+COMMENT ON TABLE PersonLanguage IS 'PersonLanguage: This table stores the preferred languages that a Person has, it''s used in Rosetta to select the languages that should be showed to be translated.';
+COMMENT ON COLUMN PersonLanguage.person IS 'This field is a reference to a Person object that has this preference.';
+COMMENT ON COLUMN PersonLanguage.language IS 'This field is a reference to a Language object that says that the Person associated to this row knows how to translate/understand this language.';
 
 -- Bounty
 COMMENT ON TABLE Bounty IS 'A set of bounties for work to be done by the open source community. These bounties will initially be offered only by Canonical, but later we will create the ability for people to offer the bounties themselves, using us as a clearing house.';
@@ -1018,6 +1064,36 @@ COMMENT ON TABLE VoteCast IS 'Here we store who has already voted in a poll, to 
 COMMENT ON COLUMN VoteCast.person IS 'The person who voted.';
 COMMENT ON COLUMN VoteCast.poll IS 'The poll in which this person voted.';
 
+-- ShippingRequest
+COMMENT ON TABLE ShippingRequest IS 'A shipping request made through ShipIt.';
+COMMENT ON COLUMN ShippingRequest.recipient IS 'The person who requested.';
+COMMENT ON COLUMN ShippingRequest.daterequested IS 'The date this request was made.';
+COMMENT ON COLUMN ShippingRequest.shockandawe IS 'The Shock and Awe program that generated this request, in case this is part of a SA program.';
+COMMENT ON COLUMN ShippingRequest.approved IS 'Is this request approved? A value of NULL means it\'s pending approval.';
+COMMENT ON COLUMN ShippingRequest.whoapproved IS 'The person who approved this.';
+COMMENT ON COLUMN ShippingRequest.cancelled IS 'Is this request cancelled?';
+COMMENT ON COLUMN ShippingRequest.whocancelled IS 'The person who cancelled this.';
+COMMENT ON COLUMN ShippingRequest.reason IS 'A comment from the requester explaining why he want the CDs.';
+COMMENT ON COLUMN ShippingRequest.highpriority IS 'Is this a high priority request?';
+COMMENT ON COLUMN ShippingRequest.city IS 'The city to which this request should be shipped.';
+COMMENT ON COLUMN ShippingRequest.phone IS 'The phone number of the requester.';
+COMMENT ON COLUMN ShippingRequest.country IS 'The country to which this request should be shipped.';
+COMMENT ON COLUMN ShippingRequest.province IS 'The province to which this request should be shipped.';
+COMMENT ON COLUMN ShippingRequest.postcode IS 'The postcode to which this request should be shipped.';
+COMMENT ON COLUMN ShippingRequest.addressline1 IS 'The address (first line) to which this request should be shipped.';
+COMMENT ON COLUMN ShippingRequest.addressline2 IS 'The address (second line) to which this request should be shipped.';
+COMMENT ON COLUMN ShippingRequest.organization IS 'The organization requesting the CDs.';
+COMMENT ON COLUMN ShippingRequest.recipientdisplayname IS 'Used as the recipient\'s name when a request is made by a ShipIt admin in behalf of someone else';
+
+-- RequestedCDs
+COMMENT ON TABLE RequestedCDs IS 'The requested CDs of a Shipping Request.';
+COMMENT ON COLUMN RequestedCDs.quantity IS 'The number of CDs.';
+COMMENT ON COLUMN RequestedCDs.quantityapproved IS 'The number of CDs that were approved for shipping, in case the request was approved.';
+COMMENT ON COLUMN RequestedCDs.request IS 'The request itself.';
+COMMENT ON COLUMN RequestedCDs.distrorelease IS 'The distrorelease of the CDs (e.g. Ubuntu Breezy).';
+COMMENT ON COLUMN RequestedCDs.architecture IS 'The architecture the CDs are meant to be installed on (e.g. x86).';
+COMMENT ON COLUMN RequestedCDs.flavour IS 'The flavour of the distrorelease (e.g. EdUbuntu).';
+
 -- StandardShipItRequest
 COMMENT ON TABLE StandardShipItRequest IS 'The Standard ShipIt Requests. This is what we want most of the people to choose, having only a few people placing custom requests.';
 COMMENT ON COLUMN StandardShipItRequest.quantityx86 IS 'The quantity of X86 CDs';
@@ -1032,3 +1108,17 @@ COMMENT ON COLUMN ShockAndAwe.name IS 'The name of the Shock And Awe program';
 COMMENT ON COLUMN ShockAndAwe.title IS 'The title of the Shock And Awe program';
 COMMENT ON COLUMN ShockAndAwe.description IS 'The description of the Shock And Awe program';
 
+-- Shipment
+COMMENT ON TABLE Shipment IS 'A shipment is the link between a ShippingRequest and a ShippingRun. When a Shipment is created for a ShippingRequest, it gets locked and can\'t be changed anymore.';
+COMMENT ON COLUMN Shipment.logintoken IS 'A unique token used to identify users that come back after receiving CDs as part of an shock and awe campaign.';
+COMMENT ON COLUMN Shipment.shippingrun IS 'The shippingrun to which this shipment belongs.';
+COMMENT ON COLUMN Shipment.request IS 'A link to the ShippingRequest table.';
+COMMENT ON COLUMN Shipment.dateshipped IS 'The date when this shipment was shipped by the shipping company.';
+COMMENT ON COLUMN Shipment.shippingservice IS 'The shipping service used for this shipment.';
+COMMENT ON COLUMN Shipment.trackingcode IS 'A code used to track the shipment after it\'s shipped.';
+
+-- ShippingRun
+COMMENT ON TABLE ShippingRun IS 'A shipping run is a set of shipments that are sent to the shipping company in the same date.';
+COMMENT ON COLUMN ShippingRun.datecreated IS 'The date this shipping run was created.';
+COMMENT ON COLUMN ShippingRun.sentforshipping IS 'The exported file was sent to the shipping company already?';
+COMMENT ON COLUMN ShippingRun.csvfile IS 'A csv file with all requests of this shipping run, to be sent to the shipping company.';

@@ -1,0 +1,32 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:leftportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-action" />
+</metal:leftportlets>
+
+  <div metal:fill-slot="main">
+    <h1><span tal:replace="context/title"/> Stop</h1>
+ 
+     <div class="portalMessage" tal:define="message view/stopBuilder"
+          tal:condition="message" tal:content="structure message"/>
+
+     <p>Are you sure ?</p> 
+
+     <form name="STOP" action="" method="POST">
+       <input name="BUILDERID" type="hidden" 
+              tal:attributes="value context/id"/>
+       <input type="submit" value="Stop Builder"/>
+     </form>
+       
+  </div>
+</body>
+</html>

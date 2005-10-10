@@ -2,18 +2,19 @@ Trying to access a private upstream bug as an anonymous user results
 in being redirecting to the login page.
 
   >>> print http(r"""
-  ... GET /malone/bugs/6 HTTP/1.1
-  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... GET /products/firefox/+bug/6 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
 
 
+XXX: Brad Bollenbach, 2005-09-30: The redirect URL below is unexpected. See
+https://launchpad.net/products/launchpad/+bug/2730
+
   >>> print http(r"""
-  ... GET /malone/bugs/7 HTTP/1.1
-  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... GET /products/firefox/+bug/7 HTTP/1.1
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/malone/bugs/7/+index/+login
+  Location: http://localhost:9000/products/firefox/+bug/7/+index/+login
   <BLANKLINE>

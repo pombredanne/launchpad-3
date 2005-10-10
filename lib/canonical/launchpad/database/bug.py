@@ -2,27 +2,26 @@
 """Launchpad bug-related database table classes."""
 
 __metaclass__ = type
-__all__ = [
-    'Bug',
-    'BugFactory',
-    'BugSet']
+__all__ = ['Bug', 'BugSet']
 
 from sets import Set
 from email.Utils import make_msgid
 
+from zope.component import getUtility
+from zope.event import notify
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
 
-from canonical.launchpad.interfaces import IBug, IBugSet
+from canonical.launchpad.interfaces import (
+    IBug, IBugSet, ICveSet, NotFoundError)
 from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.lp import dbschema
+from canonical.launchpad.database.bugcve import BugCve
 from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.message import (
     Message, MessageChunk)
@@ -31,6 +30,8 @@ from canonical.launchpad.database.bugtask import BugTask, bugtask_sort_key
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.database.maintainership import Maintainership
+from canonical.launchpad.event.sqlobjectevent import (
+    SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 
 from zope.i18n import MessageIDFactory
 _ = MessageIDFactory("launchpad")
@@ -77,7 +78,9 @@ class Bug(SQLBase):
     watches = MultipleJoin('BugWatch', joinColumn='bug')
     externalrefs = MultipleJoin(
             'BugExternalRef', joinColumn='bug', orderBy='id')
-    cverefs = MultipleJoin('CVERef', joinColumn='bug', orderBy='cveref')
+    cves = RelatedJoin('Cve', intermediateTable='BugCve',
+        orderBy='sequence', joinColumn='bug', otherColumn='cve')
+    cve_links = MultipleJoin('BugCve', joinColumn='bug', orderBy='id')
     subscriptions = MultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id')
     duplicates = MultipleJoin('Bug', joinColumn='duplicateof', orderBy='id')
@@ -89,12 +92,25 @@ class Bug(SQLBase):
         otherColumn='ticket', intermediateTable='TicketBug',
         orderBy='-datecreated')
 
+    @property
+    def displayname(self):
+        """See IBug."""
+        dn = 'Bug #%d' % self.id
+        if self.name:
+            dn += ' ('+self.name+')'
+        return dn
 
     @property
     def bugtasks(self):
         """See IBug."""
         result = BugTask.select("bug=%s" % sqlvalues(self.id))
         return sorted(result, key=bugtask_sort_key)
+
+    @property
+    def initial_message(self):
+        """See IBug."""
+        messages = sorted(self.messages, key=lambda ob: ob.id)
+        return messages[0]
 
     def followup_subject(self):
         return 'Re: '+ self.title
@@ -162,8 +178,9 @@ class Bug(SQLBase):
         """Create a new Message and link it to this ticket."""
         msg = Message(parent=parent, owner=owner,
             rfc822msgid=make_msgid('malone'), subject=subject)
-        chunk = MessageChunk(messageID=msg.id, content=content, sequence=1)
+        MessageChunk(messageID=msg.id, content=content, sequence=1)
         bugmsg = BugMessage(bug=self, message=msg)
+        notify(SQLObjectCreatedEvent(bugmsg, user=owner))
         return msg
 
     def linkMessage(self, message):
@@ -183,76 +200,26 @@ class Bug(SQLBase):
         return BugWatch(bug=self, bugtracker=bugtracker,
             remotebug=remotebug, owner=owner)
 
+    def linkCVE(self, cve, user=None):
+        """See IBug."""
+        if cve not in self.cves:
+            bugcve = BugCve(bug=self, cve=cve)
+            notify(SQLObjectCreatedEvent(bugcve, user=user))
+            return bugcve
 
-# XXX kiko 2005-07-15 should this go to BugSet.new?
-def BugFactory(addview=None, distribution=None, sourcepackagename=None,
-        binarypackagename=None, product=None, comment=None,
-        description=None, msg=None, summary=None,
-        datecreated=None, title=None, private=False, owner=None):
-    """Create a bug and return it.
+    def unlinkCVE(self, cve, user=None):
+        """See IBug."""
+        for cve_link in self.cve_links:
+            if cve_link.cve.id == cve.id:
+                notify(SQLObjectDeletedEvent(cve_link, user=user))
+                BugCve.delete(cve_link.id)
+                break
 
-    Things to note when using this factory:
-
-      * addview is not used for anything in this factory
-
-      * if no description is passed, the comment will be used as the
-        description
-
-      * if summary is not passed then the summary will be the
-        first sentence of the description
-
-      * the submitter will be subscribed to the bug
-
-      * if either product or distribution is specified, an appropiate
-        bug task will be created
-
-    """
-    # make sure that the factory has been passed enough information
-    if comment is description is msg is None:
-        raise ValueError('BugFactory requires a comment, msg, or description')
-
-    # make sure we did not get TOO MUCH information
-    assert (comment is None or msg is None), "Too much information"
-
-    # create the bug comment if one was given
-    if comment:
-        rfc822msgid = make_msgid('malonedeb')
-        msg = Message(subject=title, distribution=distribution,
-            rfc822msgid=rfc822msgid, owner=owner)
-        chunk = MessageChunk(messageID=msg.id, sequence=1,
-            content=comment, blobID=None)
-
-    # extract the details needed to create the bug and optional msg
-    if not description:
-        description = msg.contents
-
-    if not datecreated:
-        datecreated = UTC_NOW
-
-    bug = Bug(
-        title=title, summary=summary,
-        description=description, private=private,
-        owner=owner.id, datecreated=datecreated)
-
-    sub = BugSubscription(person=owner.id, bug=bug.id)
-
-    # link the bug to the message
-    bugmsg = BugMessage(bug=bug, message=msg)
-
-    # create the task on a product if one was passed
-    if product:
-        BugTask(bug=bug, product=product, owner=owner)
-
-    # create the task on a source package name if one was passed
-    if distribution:
-        task = BugTask(
-                bug=bug,
-                distribution=distribution,
-                sourcepackagename=sourcepackagename,
-                binarypackagename=binarypackagename,
-                owner=owner)
-
-    return bug
+    def findCvesInText(self, bug, text):
+        """See IBug."""
+        cves = getUtility(ICveSet).inText(text)
+        for cve in cves:
+            self.linkCVE(cve)
 
 
 class BugSet(BugSetBase):
@@ -271,9 +238,39 @@ class BugSet(BugSetBase):
             raise NotFoundError(
                 "Unable to locate bug with ID %s" % str(bugid))
 
-    def search(self, duplicateof=None):
+    def searchAsUser(self, user, duplicateof=None, orderBy=None, limit=None):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
-        return Bug.selectBy(duplicateofID=duplicateof.id)
+        where_clauses = []
+        if duplicateof:
+            where_clauses.append("Bug.duplicateof = %d" % duplicateof.id)
+
+        if user:
+            # Enforce privacy-awareness, so that the user can only see
+            # the private bugs that they're allowed to see.
+            where_clauses.append("""
+                (Bug.private = FALSE OR
+                 Bug.private = TRUE AND
+                  Bug.id in (
+                    SELECT Bug.id
+                    FROM Bug, BugSubscription, TeamParticipation
+                    WHERE Bug.id = BugSubscription.bug AND
+                          TeamParticipation.person = %(personid)s AND
+                          BugSubscription.person = TeamParticipation.team))
+                          """ % sqlvalues(personid=user.id))
+        else:
+            # Anonymous user; filter to include only public bugs in
+            # the search results.
+            where_clauses.append("Bug.private = FALSE")
+
+
+        other_params = {}
+        if orderBy:
+            other_params['orderBy'] = orderBy
+        if limit:
+            other_params['limit'] = limit
+
+        return Bug.select(
+            ' AND '.join(where_clauses), **other_params)
 
     def queryByRemoteBug(self, bugtracker, remotebug):
         """See IBugSet."""
@@ -296,11 +293,68 @@ class BugSet(BugSetBase):
         binarypackagename=None, product=None, comment=None,
         description=None, msg=None, summary=None, datecreated=None,
         title=None, private=False, owner=None):
-        return BugFactory(distribution=distribution,
-            sourcepackagename=sourcepackagename,
-            binarypackagename=binarypackagename, product=product,
-            comment=comment, description=description, msg=msg,
-            summary=summary, datecreated=datecreated, title=title,
-            private=private, owner=owner)
+        """Create a bug and return it.
+
+        Things to note when using this factory:
+
+          * if no description is passed, the comment will be used as the
+            description
+
+          * if summary is not passed then the summary will be the
+            first sentence of the description
+
+          * the submitter will be subscribed to the bug
+
+          * if either product or distribution is specified, an appropiate
+            bug task will be created
+
+        """
+        # make sure that the factory has been passed enough information
+        if comment is description is msg is None:
+            raise ValueError(
+                'createBug requires a comment, msg, or description')
+
+        # make sure we did not get TOO MUCH information
+        assert (comment is None or msg is None), "Too much information"
+
+        # create the bug comment if one was given
+        if comment:
+            rfc822msgid = make_msgid('malonedeb')
+            msg = Message(subject=title, distribution=distribution,
+                rfc822msgid=rfc822msgid, owner=owner)
+            MessageChunk(
+                messageID=msg.id, sequence=1, content=comment, blobID=None)
+
+        # extract the details needed to create the bug and optional msg
+        if not description:
+            description = msg.contents
+
+        if not datecreated:
+            datecreated = UTC_NOW
+
+        bug = Bug(
+            title=title, summary=summary,
+            description=description, private=private,
+            owner=owner.id, datecreated=datecreated)
+
+        BugSubscription(person=owner.id, bug=bug.id)
+
+        # link the bug to the message
+        BugMessage(bug=bug, message=msg)
+
+        # create the task on a product if one was passed
+        if product:
+            BugTask(bug=bug, product=product, owner=owner)
+
+        # create the task on a source package name if one was passed
+        if distribution:
+            BugTask(
+                bug=bug,
+                distribution=distribution,
+                sourcepackagename=sourcepackagename,
+                binarypackagename=binarypackagename,
+                owner=owner)
+
+        return bug
 
 

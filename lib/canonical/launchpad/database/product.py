@@ -9,7 +9,6 @@ import sets
 from warnings import warn
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 from zope.component import getUtility
 
 from sqlobject import (
@@ -22,7 +21,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, BugTaskSeverity, BugTaskStatus,
     RosettaImportStatus)
-from canonical.launchpad.database.bug import BugFactory
+from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
@@ -34,7 +33,8 @@ from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.ticket import Ticket
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
-    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner)
+    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner, NotFoundError
+    )
 
 
 class Product(SQLBase):
@@ -161,8 +161,8 @@ class Product(SQLBase):
 
     def newBug(self, owner, title, description):
         """See IBugTarget."""
-        return BugFactory(product=self, comment=description, title=title,
-            owner=owner)
+        return BugSet().createBug(
+            product=self, comment=description, title=title, owner=owner)
 
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""
@@ -348,6 +348,9 @@ class ProductSet:
         if item is None:
             raise NotFoundError(name)
         return item
+
+    def latest(self, quantity=5):
+        return Product.select(orderBy='-datecreated', limit=quantity)
 
     def get(self, productid):
         """See canonical.launchpad.interfaces.product.IProductSet."""

@@ -14,72 +14,75 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
   <div tal:replace="structure context/@@+portlet-reviewqueue" />
   <div tal:replace="structure context/@@+portlet-bugs" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-  <h1>Feature Specification</h1>
+  <h1 tal:content="context/title">Feature Specification</h1>
 
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="portalMessage">
     notice goes here
   </p>
 
-  <table class="listing">
-    <tbody>
-      <tr>
-        <td><b>Name:</b></td>
-        <td><span tal:replace="context/name">fix-widget-barfing</span>
-            [<a tal:attributes="href context/specurl">view spec</a>]</td>
-      </tr>
-      <tr>
-        <td><b>Title</b></td>
-        <td tal:content="context/title">Fix the Widgets</td>
-      </tr>
-      <tr>
-        <td><b>Status:</b></td>
-        <td tal:content="context/status/title">Approved</td>
-      </tr>
-      <tr>
-        <td><b>Priority:</b></td>
-        <td tal:content="context/priority/title">High</td>
-      </tr>
-      <tr tal:condition="context/productseries">
-        <td><b>Must Deliver For:</b></td>
-        <td><a tal:attributes="href context/productseries/fmt:url"
-               tal:content="context/productseries/title">Firefox 1.2
-            </a>
-        </td>
-      </tr>
-      <tr tal:condition="context/distrorelease">
-        <td><b>Must Deliver For:</b></td>
-        <td><a tal:attributes="href context/distrorelease/fmt:url"
-               tal:content="context/distrorelease/title">Firefox 1.2
-            </a>
-        </td>
-      </tr>
-      <tr tal:condition="context/milestone">
-        <td><b>Milestone:</b></td>
-        <td><a tal:attributes="href context/milestone/fmt:url">
-              <span tal:replace="context/target/displayname">Firefox</span>
-              <span tal:replace="context/milestone/displayname">1.0</span>
-            </a>
-        </td>
-      </tr>
-      <tr tal:condition="context/whiteboard">
-        <td><b>Whiteboard:</b></td>
-        <td tal:content="context/whiteboard">whiteboard</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <p tal:content="context/summary">
-    The feature summary will be given here.
-  </p>
-
-</div>
-</body>
+    <table>
+      <tbody>
+        <tr>
+          <th>Name:</th>
+          <td tal:content="context/name">fix-widget-barfing</td>
+        </tr>
+        <tr>
+          <th>Title:</th>
+          <td tal:content="context/title">Fix the Widgets</td>
+        </tr>
+        <tr>
+          <th>Status:</th>
+          <td tal:content="context/status/title">Approved</td>
+        </tr>
+        <tr>
+          <th>Priority:</th>
+          <td tal:content="context/priority/title">High</td>
+        </tr>
+        <tr tal:condition="context/productseries">
+          <th>Must Deliver For:</th>
+          <td><a tal:attributes="href context/productseries/fmt:url"
+                 tal:content="context/productseries/title">Firefox 1.2
+              </a>
+          </td>
+        </tr>
+        <tr tal:condition="context/distrorelease">
+          <th>Must Deliver For:</th>
+          <td><a tal:attributes="href context/distrorelease/fmt:url"
+                 tal:content="context/distrorelease/title">Firefox 1.2
+              </a>
+          </td>
+        </tr>
+        <tr tal:condition="context/milestone">
+          <th>Milestone:</th>
+          <td><a tal:attributes="href context/milestone/fmt:url">
+                <span tal:replace="context/target/displayname">Firefox</span>
+                <span tal:replace="context/milestone/displayname">1.0</span>
+              </a>
+          </td>
+        </tr>
+        <tr tal:condition="context/whiteboard">
+          <th>Whiteboard:</th>
+          <td tal:content="context/whiteboard">whiteboard</td>
+        </tr>
+      </tbody>
+    </table>
+      <p tal:content="context/summary">
+        The feature summary will be given here.
+      </p>
+      <ul>
+        <li class="download">
+          <a tal:attributes="href context/specurl">
+            Read the complete specification
+          </a>
+        </li>
+      </ul>
+    </div>
+  </body>
 </html>

@@ -6,6 +6,8 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
+<facet facet="translations">
+
     <content class="canonical.launchpad.database.POTemplate">
         <require
             permission="zope.Public"
@@ -22,9 +24,10 @@
             />
     </content>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IPOTemplate"
-        function="canonical.launchpad.browser.traversers.traverse_potemplate"
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="POTemplateNavigation POTemplateSubsetNavigation
+                 POTemplateSetNavigation"
         />
 
     <browser:defaultView
@@ -45,21 +48,17 @@
 
         <!-- Potemplate Portlets -->
         <browser:page
-            name="+portlet-actions"
-            template="../templates/potemplate-portlet-actions.pt"
-        />
-        <browser:page
             name="+portlet-details"
             template="../templates/potemplate-portlet-details.pt"
-        />
+            />
         <browser:page
             name="+portlet-relateds"
             template="../templates/potemplate-portlet-relateds.pt"
-        />
+            />
         <browser:page
             name="+portlet-for"
             template="../templates/potemplate-portlet-for.pt"
-        />
+            />
     </browser:pages>
 
     <browser:page
@@ -117,11 +116,6 @@
         <allow interface="canonical.launchpad.interfaces.IPOTemplateSet" />
     </securedutility>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IPOTemplateSet"
-        getter="__getitem__"
-        />
-
     <browser:menus
         module="canonical.launchpad.browser.potemplate"
         classes="POTemplateFacets POTemplateAppMenus"
@@ -149,11 +143,6 @@
         name="+index"
         />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IPOTemplateSubset"
-        getter="__getitem__"
-        />
-
     <browser:page
         name="+index"
         for="canonical.launchpad.interfaces.IPOTemplateSubset"
@@ -161,5 +150,7 @@
         class="canonical.launchpad.browser.POTemplateSubsetView"
         attribute="__call__"
         />
+
+</facet>
 
 </configure>

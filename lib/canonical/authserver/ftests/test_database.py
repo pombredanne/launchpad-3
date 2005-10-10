@@ -67,12 +67,46 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
 
     def test_getUserMultipleAddresses(self):
         # Getting a user with multiple addresses should return all the
-        # addresses
+        # confirmed addresses.
         storage = DatabaseUserDetailsStorage(None)
-        userDict = storage._getUserInteraction(self.cursor, 'justdave@bugzilla.org')
-        self.assertEqual('Dave Miller', userDict['displayname'])
-        self.assertEqual(['dave.miller@ubuntulinux.com',
-                          'justdave@bugzilla.org'],
+        userDict = storage._getUserInteraction(self.cursor,
+                                               'stuart.bishop@canonical.com')
+        self.assertEqual('Stuart Bishop', userDict['displayname'])
+        self.assertEqual(['stuart.bishop@canonical.com',
+                          'stuart@stuartbishop.net'],
+                         userDict['emailaddresses'])
+
+    def test_noUnconfirmedAddresses(self):
+        # Unconfirmed addresses should not be returned, so if we add a NEW
+        # address, it won't change the result.
+        storage = DatabaseUserDetailsStorage(None)
+        userDict = storage._getUserInteraction(self.cursor,
+                                               'stuart.bishop@canonical.com')
+        self.cursor.execute('''
+            INSERT INTO EmailAddress (email, person, status)
+            VALUES ('sb@example.com', %d, %d)
+            ''' % (userDict['id'], dbschema.EmailAddressStatus.NEW.value))
+        userDict2 = storage._getUserInteraction(self.cursor,
+                                                'stuart.bishop@canonical.com')
+        self.assertEqual(userDict, userDict2)
+        
+    def test_preferredEmailFirst(self):
+        # If there's a PREFERRED address, it should be first in the
+        # emailaddresses list.  Let's make stuart@stuartbishop.net PREFERRED
+        # rather than stuart.bishop@canonical.com.
+        storage = DatabaseUserDetailsStorage(None)
+        self.cursor.execute('''
+            UPDATE EmailAddress SET status = %d
+            WHERE email = 'stuart.bishop@canonical.com'
+            ''' % (dbschema.EmailAddressStatus.VALIDATED.value,))
+        self.cursor.execute('''
+            UPDATE EmailAddress SET status = %d
+            WHERE email = 'stuart@stuartbishop.net'
+            ''' % (dbschema.EmailAddressStatus.PREFERRED.value,))
+        userDict = storage._getUserInteraction(self.cursor,
+                                               'stuart.bishop@canonical.com')
+        self.assertEqual(['stuart@stuartbishop.net',
+                          'stuart.bishop@canonical.com'],
                          userDict['emailaddresses'])
 
     def test_authUserNoUser(self):
@@ -89,6 +123,19 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         ssha = SSHADigestEncryptor().encrypt('supersecret!')
         # The 'admins' user in the sample data has no password, so we use that.
         userDict = storage._authUserInteraction(self.cursor, 'admins', ssha)
+        self.assertEqual({}, userDict)
+
+    def test_authUserUnconfirmedEmail(self):
+        # Unconfirmed email addresses cannot be used to log in.
+        storage = DatabaseUserDetailsStorage(None)
+        ssha = SSHADigestEncryptor().encrypt('supersecret!')
+        self.cursor.execute('''
+            UPDATE Person SET password = '%s'
+            WHERE id = (SELECT person FROM EmailAddress WHERE email =
+                        'justdave@bugzilla.org')'''
+            % (ssha,))
+        userDict = storage._authUserInteraction(self.cursor,
+                                                'justdave@bugzilla.org', ssha)
         self.assertEqual({}, userDict)
 
 
@@ -380,6 +427,19 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         userDict2 = storage._authUserInteraction(self.cursor, 
                                                  'mark@hbd.com', 'test')
         self.assertEqual(userDict, userDict2)
+
+    def test_authUserUnconfirmedEmail(self):
+        # Unconfirmed email addresses cannot be used to log in.
+        storage = DatabaseUserDetailsStorageV2(None)
+        ssha = SSHADigestEncryptor().encrypt('supersecret!')
+        self.cursor.execute('''
+            UPDATE Person SET password = '%s'
+            WHERE id = (SELECT person FROM EmailAddress 
+                        WHERE email = 'justdave@bugzilla.org')'''
+            % (ssha,))
+        userDict = storage._authUserInteraction(
+            self.cursor, 'justdave@bugzilla.org', 'supersecret!')
+        self.assertEqual({}, userDict)
 
 
 def test_suite():

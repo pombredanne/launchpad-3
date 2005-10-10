@@ -20,7 +20,7 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad.interfaces import (
     non_duplicate_bug, IMessageTarget)
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import Title, Summary
 
 _ = MessageIDFactory('launchpad')
@@ -33,7 +33,7 @@ class BugCreationConstraintsError(Exception):
     """
 
 
-class IBug(Interface, IMessageTarget):
+class IBug(IMessageTarget):
     """The core bug entry."""
 
     id = Int(
@@ -45,7 +45,7 @@ class IBug(Interface, IMessageTarget):
         description=_("""A short and unique name for this bug.
         Add a nickname only if you often need to retype the URL
         but have trouble remembering the bug number."""),
-        constraint=valid_name)
+        constraint=name_validator)
     title = Title(
         title=_('Title'), required=True,
         description=_("""A one-line summary of the problem."""))
@@ -83,14 +83,19 @@ class IBug(Interface, IMessageTarget):
         "have subscribed anyone who needs to see this bug."),
         default=False)
 
+    displayname = TextLine(title=_("Text of the form 'Bug #X"),
+        readonly=True)
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
+    initial_message = Attribute(
+        "The message that was specified when creating the bug")
     bugtasks = Attribute('BugTasks on this bug, sorted upstream, then '
         'ubuntu, then other distroreleases.')
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
     externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
-    cverefs = Attribute('CVE references for this bug')
+    cves = Attribute('CVE entries related to this bug.')
+    cve_links = Attribute('LInks between this bug and CVE entries.')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
     duplicates = Attribute(
         'MultiJoin of the bugs which are dups of this one')
@@ -128,6 +133,20 @@ class IBug(Interface, IMessageTarget):
         tracker, owned by the person given as the owner.
         """
 
+    # CVE related methods
+    def linkCVE(cve, user=None):
+        """Ensure that this CVE is linked to this bug."""
+
+    def unlinkCVE(cve, user=None):
+        """Ensure that any links between this bug and the given CVE are
+        removed.
+        """
+
+    def findCvesInText(self, bug, text):
+        """Find any CVE references in the given text, make sure they exist
+        in the database, and are linked to this bug.
+        """
+
 
 class IBugTarget(Interface):
     """An entity on which a bug can be reported.
@@ -151,6 +170,7 @@ class IBugTarget(Interface):
         description and owner.
         """
 
+    bugtasks = Attribute("A list of BugTasks for this target.")
 
 
 class BugDistroReleaseTargetDetails:
@@ -196,12 +216,12 @@ class IBugDelta(Interface):
     bugwatch = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
         "IBugWatch's.")
-    cveref = Attribute(
-        "A dict with two keys, 'old' and 'new', or None. Key values are "
-        "ICVERef's.")
     attachment = Attribute(
         "A dict with two keys, 'old' and 'new', or None. Key values are "
         "IBugAttachment's.")
+    cve = Attribute(
+        "A dict with two keys, 'old' and 'new', or None. Key values are "
+        "ICve's")
     added_bugtasks = Attribute(
         "A list or tuple of IBugTasks, one IBugTask, or None.")
     bugtask_deltas = Attribute(
@@ -227,9 +247,6 @@ class IBugAddForm(IBug):
             title=_("Linux Distribution"), required=False,
             description=_("""Ubuntu, Debian, Gentoo, etc."""),
             vocabulary="Distribution")
-    binarypackage = Choice(
-            title=_("Binary Package"), required=False,
-            vocabulary="BinaryPackage")
     owner = Int(title=_("Owner"), required=True)
     comment = Text(title=_('Description'), required=True,
             description=_("""A detailed description of the problem you are
@@ -243,7 +260,6 @@ class IBugAddForm(IBug):
             default=False)
 
 
-# Interfaces for set
 class IBugSet(IAddFormCustomization):
     """A set of bugs."""
 
@@ -262,8 +278,12 @@ class IBugSet(IAddFormCustomization):
         raised.
         """
 
-    def search(duplicateof=None):
-        """Find bugs matching the search criteria provided."""
+    def searchAsUser(user, duplicateof=None, orderBy=None, limit=None):
+        """Find bugs matching the search criteria provided.
+
+        To search as an anonymous user, the user argument passed
+        should be None.
+        """
 
     def queryByRemoteBug(bugtracker, remotebug):
         """Find one or None bugs in Malone that have a BugWatch matching the

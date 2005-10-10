@@ -10,35 +10,29 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-  <h1>Tracking Support Requests</h1>
-
-  <p class="documentDescription">
-    Launchpad allows you to track technical support requests from the users
-    of your application or distribution.
-  </p>
-
-  <p>The latest 10 support requests made across the whole of Launchpad:</p>
-
-  <tal:block repeat="ticket context/latest_tickets">
-    <b><span tal:replace="ticket/target/title">Ticket Target
-      Title</span>:</b>
-    <br />
-    <div tal:replace="structure ticket/@@+listing-detailed" />
-  </tal:block>
-
-  <p>
-    Support requests are tracked separately for each product and for each
-    distribution, the list above just shows the very latest 10 requests made
-    across the whole system. Visit the page for a specific
-    <a href="/products/">product</a> or <a href="/distros/">distribution</a>
-    to see the support requests for that specific project.
-  </p>
-
-</div>
-</body>
+      <h1>Tech support</h1>
+      <p>
+        Launchpad&#8217;s tech support system
+        lets people request help with applications or distributions,
+        and lets anyone help resolve those requests.
+      </p>
+      <h2>Latest support requests</h2>
+      <table>
+        <tal:ticket
+          repeat="ticket context/latest_tickets"
+          content="structure ticket/@@+listing-detailed"
+        />
+      </table>
+      <p>
+        These requests are from across the whole of Launchpad.
+        To see the requests for a <a href="/products">product</a> or
+        <a href="/distros/">distribution</a>,
+        visit the page for that product or distribution.
+      </p>
+    </div>
+  </body>
 </html>

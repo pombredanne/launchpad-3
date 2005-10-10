@@ -1,13 +1,19 @@
-<tal:releasebugs define="release_bugcounts view/release_bug_counts">
-  <br />
+<div
+  class="portlet"
+  tal:define="release_bugcounts view/release_bug_counts"
+>
+
   <h4>Release Bugs:</h4>
 
-  <ul>
-    <li class="bugs" tal:repeat="release_bugcount release_bugcounts">
-      <a href=""
-         tal:content="release_bugcount/releasename"
-         tal:attributes="href release_bugcount/url">sid</a>
-      (<span tal:replace="release_bugcount/bugcount">2</span>)
-    </li>
-  </ul>
-</tal:releasebugs>
+  <div class="portletBody portletContent">
+    <ul>
+      <li class="bugs" tal:repeat="release_bugcount release_bugcounts">
+        <a href=""
+           tal:content="release_bugcount/releasename"
+           tal:attributes="href release_bugcount/url">sid</a>
+        (<span tal:replace="release_bugcount/bugcount">2</span>)
+      </li>
+    </ul>
+  </div>
+
+</div>

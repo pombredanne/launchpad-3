@@ -7,6 +7,8 @@ __metaclass__ = type
 __all__ = [
     'ISourcePackage',
     'ISourcePackageSet',
+    'IDistroSourcePackage',
+    'IDistroSourcePackageSet'
     ]
 
 from zope.interface import Interface, Attribute
@@ -108,6 +110,20 @@ class ISourcePackage(IBugTarget, ITicketTarget):
         _("Return an iterator over this distrorelease/sourcepackagename's"
           " PO templates that have the 'iscurrent' flag set'."))
 
+    def __eq__(other):
+        """Sourcepackage comparison method.
+
+        Sourcepackages compare equal only if their distrorelease and
+        sourcepackagename compare equal.
+        """
+
+    def __ne__(other):
+        """Sourcepackage comparison method.
+
+        Sourcepackages compare not equal if either of their distrorelease or
+        sourcepackagename compare not equal.
+        """
+
     def setPackaging(productseries, owner):
         """Update the existing packaging record, or create a new packaging
         record, that links the source package to the given productseries,
@@ -140,6 +156,40 @@ class ISourcePackage(IBugTarget, ITicketTarget):
         By "import" we mean sourcerer analysis resulting in a manifest and a
         set of Bazaar branches which describe the source package release.
         The attribute is True or False.""")
+
+
+class IDistroSourcePackage(IBugTarget):
+    """A distribution sourcepackage.
+
+    This object knows nothing about a specific distrorelease. This
+    object is particularly useful for, say, Malone, where most
+    distribution bugs are filed on the distribution as a whole, and
+    not a specific release.
+    """
+
+    name = Attribute("The name of the source package.")
+    displayname = Attribute("A displayname for this package")
+    title = Attribute("A title for this package")
+    distribution = Attribute("The IDistribution for this package")
+    sourcepackagename = Attribute("The ISourcePackageName of this package")
+    currentrelease = Attribute("""The latest published SourcePackageRelease
+        of a source package with this name in the distribution or
+        distrorelease, or None if no source package with that name is
+        published in this distrorelease.""")
+
+    def __eq__(other):
+        """IDistroSourcePackage comparison method.
+
+        Distro sourcepackages compare equal only if their distribution and
+        sourcepackagename compare equal.
+        """
+
+    def __ne__(other):
+        """IDistroSourcePackage comparison method.
+
+        Distro sourcepackages compare not equal if either of their distribution
+        or sourcepackagename compare not equal.
+        """
 
 
 class ISourcePackageSet(Interface):
@@ -191,3 +241,12 @@ class ISourcePackageSet(Interface):
         packages.
         """
 
+class IDistroSourcePackageSet(Interface):
+    """The set of all IDistroSourcePackages in Launchpad."""
+
+    def getPackage(distribution, sourcepackagename):
+        """Return the appropriate IDistroSourcePackage.
+
+        :distribution: The IDistribution of the package.
+        :sourcepackagename: The ISourcePackageName of the package.
+        """

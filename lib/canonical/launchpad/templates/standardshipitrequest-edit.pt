@@ -3,6 +3,11 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
+<metal:rightportlets fill-slot="portlets_two">
+  <div class="shipitPortlet"
+       tal:content="structure context/@@+portlet-navigation" />
+</metal:rightportlets>
+
 <body>
 
   <div metal:fill-slot="main">

@@ -85,6 +85,28 @@ files in the Librarian.
 >>> re.search(r'^http://localhost:58000/\d+/\d+/text.txt$', url) is not None
 True
 
+At this level we can also reverse the transactional semantics by using the
+remoteAddFile instead of the addFile method. In this case, the database
+rows are added by the Librarian, which means that the file is downloadable
+immediately and will exist even if the client transaction rolls back.
+However, the records in the database will not be visible to the client
+until it begins a new transaction.
+
+>>> url = client.remoteAddFile(
+...     'text.txt', len(data), StringIO(data), 'text/plain'
+...     )
+>>> print url
+http://localhost:58000/.../.../text.txt
+>>> from urllib2 import urlopen
+>>> urlopen(url).read()
+'This is some data'
+
+If we abort the transaction, it is still in there
+
+>>> transaction.abort()
+>>> urlopen(url).read()
+'This is some data'
+
 Buildd mechanism
 ----------------
 
@@ -143,8 +165,8 @@ Filenames with spaces in them work.
 >>> re.search(r'^http://localhost:58000/\d+/\d+/hot%20dog$', url) is not None
 True
 
-Unicode file names work.  Note that the filename in the resulting URL is encoded
-as UTF-8.
+Unicode file names work.  Note that the filename in the resulting URL
+is encoded as UTF-8.
 
 >>> aid = client.addFile(u'Yow\N{INTERROBANG}', len(data), StringIO(data),
 ...                      'text/plain')

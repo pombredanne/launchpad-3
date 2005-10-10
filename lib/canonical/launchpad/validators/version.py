@@ -63,11 +63,13 @@ def valid_debian_version(version):
     False
     >>> valid_debian_version("12:12:alpha-alpha")
     True
+    >>> valid_debian_version("build9-6")
+    True
     """
     import re
     m = re.search("""^(?ix)
         ([0-9]+:)?
-        ([0-9][a-z0-9+:.~-]*?)
+        ([0-9a-z][a-z0-9+:.~-]*?)
         (-[a-z0-9+.~]+)?
         $""", version)
     if m is None:

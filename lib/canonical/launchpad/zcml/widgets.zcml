@@ -26,6 +26,14 @@
 
     <browser:page
         for="*"
+        name="launchpad_generalform"
+        layer="canonical.launchpad.layers.LaunchpadLayer"
+        permission="zope.Public"
+        template="../templates/launchpad-generalform.pt"
+        />
+
+    <browser:page
+        for="*"
         name="launchpad_editform"
         layer="canonical.launchpad.layers.LaunchpadLayer"
         permission="zope.Public"

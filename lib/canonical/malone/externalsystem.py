@@ -43,7 +43,7 @@ class ExternalSystem(object):
         self.bugtrackertype = bugtracker.bugtrackertype
         self.remotesystem = None
         if self.bugtrackertype == BugTrackerType.BUGZILLA:
-            self.remotesystem = Bugzilla(self.bugtracker.baseurl,version)
+            self.remotesystem = Bugzilla(self.bugtracker.baseurl, version)
         if not self.remotesystem:
             raise UnknownBugTrackerTypeError(self.bugtrackertype.name,
                 self.bugtracker.name)
@@ -75,8 +75,9 @@ class Bugzilla(ExternalSystem):
             self.version = version
         else:
             self.version = self._probe_version()
-        if self.version < '2.16':
-            raise NotImplementedError()
+        if not self.version or self.version < '2.16':
+            raise NotImplementedError("Unsupported version %r for %s" 
+                                      % (self.version, baseurl))
 
     def _probe_version(self):
         #print "probing version of %s" % self.baseurl
@@ -87,9 +88,11 @@ class Bugzilla(ExternalSystem):
         ret = url.read()
         document = minidom.parseString(ret)
         bugzilla = document.getElementsByTagName("bugzilla")
+        if not bugzilla:
+            return None
         version = bugzilla[0].getAttribute("version")
         return version
-    
+
     def get_bug_status(self, bug_id):
         """
         Retrieve the bug status from a bug in a remote Bugzilla system.
@@ -110,8 +113,10 @@ class Bugzilla(ExternalSystem):
                 }
         if self.version < '2.17.1':
             data.update({'format' : 'rdf'})
+            status_tag = "bz:status"
         else:
             data.update({'ctype'  : 'rdf'})
+            status_tag = "bz:bug_status"
         # Eventually attach authentication information here if we need it
         #data.update({'Bugzilla_login'    : login,
         #             'Bugzilla_password' : password,
@@ -123,16 +128,18 @@ class Bugzilla(ExternalSystem):
         result = None
         if len(document.getElementsByTagName("bz:id")) > 0:
             try:
-                status_node = document.getElementsByTagName("bz:bug_status")[0]
+                status_node = document.getElementsByTagName(status_tag)[0]
             except IndexError:
-                log.warn('No bz:bug_status found for bug_id %s', bug_id)
+                log.warn('No status found for %s bug %s' 
+                         (self.baseurl, bug_id))
                 return None
             result = status_node.childNodes[0].data
             try:
                 resolution_node = document.getElementsByTagName(
                         "bz:resolution")[0]
             except IndexError:
-                log.warn('No bz:resolution found for bug_id %s', bug_id)
+                log.warn('No resolution found for %s bug %s',
+                         (self.baseurl, bug_id))
                 return None
             if len(resolution_node.childNodes) > 0:
                 result = "%s %s" % (result, resolution_node.childNodes[0].data)
@@ -169,7 +176,8 @@ class Bugzilla(ExternalSystem):
         elif status in ('RESOLVED','VERIFIED','CLOSED'):
             return 'closed'
         else:
-            raise NotImplementedError()
+            raise NotImplementedError("Unsupported status %s at %s" 
+                                      % (status, self.baseurl))
 
 def _test():
     import doctest, externalsystem

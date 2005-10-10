@@ -9,15 +9,14 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IAuthorization, IHasOwner, IPerson, ITeam, ITeamMembershipSubset,
-    IDistribution,
-    ITeamMembership, IProductSeriesSource, IProductSeriesSourceAdmin,
-    IMilestone, IBug, IBugTask, IUpstreamBugTask, IDistroBugTask,
-    IDistroReleaseBugTask, ITranslator, IProduct, IProductSeries,
-    IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet, ISourcePackage,
-    ILaunchpadCelebrities, IDistroRelease, IBugTracker, IBugAttachment,
-    IPoll, IPollSubset, IPollOption, IPollOptionSubset, IProductRelease,
-    IShippingRequest, IShippingRequestSet, IRequestedCDs,
-    IStandardShipItRequestSet, IStandardShipItRequest)
+    IDistribution, ITeamMembership, IProductSeriesSource,
+    IProductSeriesSourceAdmin, IMilestone, IBug, IBugTask, ITranslator,
+    IProduct, IProductSeries, IPOTemplate, IPOFile, IPOTemplateName,
+    IPOTemplateNameSet, ISourcePackage, ILaunchpadCelebrities, IDistroRelease,
+    IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
+    IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
+    IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
+    IShippingRun)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -92,6 +91,10 @@ class AdminShippingRequestByShipItAdmins(AuthorizationBase):
         return user.inTeam(shipitadmins)
 
 
+class AdminShippingRunByShipItAdmins(AdminShippingRequestByShipItAdmins):
+    usedfor = IShippingRun
+
+
 class AdminStandardShipItOrderSetByShipItAdmins(
         AdminShippingRequestByShipItAdmins):
     usedfor = IStandardShipItRequestSet
@@ -100,6 +103,11 @@ class AdminStandardShipItOrderSetByShipItAdmins(
 class AdminStandardShipItOrderByShipItAdmins(
         AdminShippingRequestByShipItAdmins):
     usedfor = IStandardShipItRequest
+
+
+class AdminShipItApplicationByShipItAdmins(
+        AdminShippingRequestByShipItAdmins):
+    usedfor = IShipItApplication
 
 
 class AdminShippingRequestSetByShipItAdmins(AdminShippingRequestByShipItAdmins):
@@ -132,14 +140,26 @@ class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
         return user.inTeam(self.obj.target.owner)
 
 
+class AdminTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = ITeam
+
+    def checkAuthenticated(self, user):
+        """Only the team owner and Launchpad admins have launchpad.Admin on a
+        team.
+        """
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(self.obj.teamowner) or user.inTeam(admins)
+
+
 class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = ITeam
 
     def checkAuthenticated(self, user):
-        """A user who is a team's owner has launchpad.Edit on that team.
+        """The team owner and all team admins have launchpad.Edit on that team.
 
-        The admin team also has launchpad.Edit on all teams.
+        The Launchpad admins also have launchpad.Edit on all teams.
         """
         admins = getUtility(ILaunchpadCelebrities).admin
         if user.inTeam(self.obj.teamowner) or user.inTeam(admins):
@@ -224,12 +244,6 @@ class EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
         return False
 
 
-class EditPollOptionSubsetByTeamOwnerOrTeamAdminsOrAdmins(
-        EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins):
-    permission = 'launchpad.Edit'
-    usedfor = IPollOptionSubset
-
-
 class AdminDistribution(AdminByAdminsTeam):
     """Soyuz involves huge chunks of data in the archive and librarian,
     so for the moment we are locking down admin and edit on distributions
@@ -278,53 +292,22 @@ class EditDistroRelease(AdminByAdminsTeam):
 #                user.inTeam(admins))
 
 
-class EditUpstreamBugTask(AuthorizationBase):
+class EditBugTask(AuthorizationBase):
+    """Permission checker for IBugTask editing.
+
+    Allow any logged-in user to edit public bugtasks. Allow only
+    explicit subscribers to edit private bugtasks.
+    """
     permission = 'launchpad.Edit'
-    usedfor = IUpstreamBugTask
-
-    def checkAuthenticated(self, user):
-        """Allow the maintainer and possible assignee to edit the task.
-
-        If the maintainer or assignee is a team, everyone belonging to the team
-        is allowed to edit the task.
-        """
-        if user.inTeam(self.obj.maintainer):
-            return True
-        elif self.obj.assignee is not None and user.inTeam(self.obj.assignee):
-            return True
-        else:
-            return False
-
-
-class EditDistroBugTask(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IDistroBugTask
+    usedfor = IBugTask
 
     def checkAuthenticated(self, user):
         """Allow all authenticated users to edit the task."""
         if not self.obj.bug.private:
-            # public bug
+            # This is a public bug.
             return True
         else:
-            # private bug
-            for subscription in self.obj.bug.subscriptions:
-                if user.inTeam(subscription.person):
-                    return True
-
-            return False
-
-
-class EditDistroReleaseBugTask(AuthorizationBase):
-    permission = 'launchpad.Edit'
-    usedfor = IDistroReleaseBugTask
-
-    def checkAuthenticated(self, user):
-        """Allow all authenticated users to edit the task."""
-        if not self.obj.bug.private:
-            # public bug
-            return True
-        else:
-            # private bug
+            # This is a private bug.
             for subscription in self.obj.bug.subscriptions:
                 if user.inTeam(subscription.person):
                     return True
@@ -466,6 +449,12 @@ class EditPOTemplateDetails(EditByOwnersOrAdmins):
 
         return (EditByOwnersOrAdmins.checkAuthenticated(self, user) or
                 user.inTeam(rosetta_experts))
+
+
+class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
+    """Permissions to edit all aspects of an IPOTemplate."""
+    permission = 'launchpad.Admin'
+    usedfor = IPOTemplate
 
 
 # XXX: Carlos Perello Marin 2005-05-24: This should be using

@@ -9,18 +9,9 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
-  <h1>Ticket Re-Opening History</h1>
-
-  <p class="documentDescription">
-    This page shows the times when this ticket was re-opened, by whom, and
-    who the previous person was who had answered or rejected the ticket.
-  </p>
+  <h1>History of this request</h1>
 
   <table class="listing">
     <thead>

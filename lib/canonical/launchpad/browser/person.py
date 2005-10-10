@@ -3,14 +3,26 @@
 __metaclass__ = type
 
 __all__ = [
+    'PersonNavigation',
+    'TeamNavigation',
+    'PersonSetNavigation',
+    'PeopleContextMenu',
+    'PersonFacets',
+    'PersonBugsMenu',
+    'PersonSpecsMenu',
+    'PersonSupportMenu',
+    'PersonCodeMenu',
+    'PersonContextMenu',
+    'TeamContextMenu',
     'BaseListView',
     'PeopleListView',
     'TeamListView',
     'UbuntiteListView',
     'FOAFSearchView',
     'PersonEditView',
+    'PersonEmblemView',
+    'PersonHackergotchiView',
     'PersonRdfView',
-    'PersonShipItView',
     'PersonView',
     'TeamJoinView',
     'TeamLeaveView',
@@ -24,11 +36,15 @@ __all__ = [
 
 import cgi
 import sets
+from StringIO import StringIO
 from datetime import datetime
 
+from zope.schema import Text, Bytes
+from zope.interface import Interface, Attribute
 from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
+from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -48,17 +64,92 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, IKarmaActionSet,
     IKarmaSet, UBUNTU_WIKI_URL, ITeamMembershipSet, IObjectReassignment,
     ITeamReassignment, IPollSubset, IPerson, ICalendarOwner,
-    BugTaskSearchParams, IStandardShipItRequestSet, IShipItCountry,
-    IShippingRequestSet)
+    BugTaskSearchParams, ITeam, valid_emblem, valid_hackergotchi,
+    ILibraryFileAliasSet, ITeamMembershipSubset, IPollSet)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.form import FormView
+from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
-        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint, intOrZero)
+        obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, DefaultLink, canonical_url)
+    StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
+    enabled_with_permission, Navigation, stepto, stepthrough)
+
+from zope.i18nmessageid import MessageIDFactory
+_ = MessageIDFactory('launchpad')
+
+
+class PersonNavigation(Navigation, CalendarTraversalMixin):
+    usedfor = IPerson
+
+    # FIXME: need to implement traversal to branch canonical url here
+    # The canonical url of a branch looks like either
+    #     $person/+branch/$product/$branch
+    # for a product branch, or
+    #     $person/+branch/+junk/$branch
+    # for a branch associated to no product.
+    #
+    # The $person/+branch/$product page should be a 404 at the moment.
+    # Eventually it could give a listing of branches from a person and for a
+    # product, but that's only nice to have, and it's not very clear how branch
+    # owners and branch authors should relate to this page.
+    #
+    # +    if name == '+branch':
+    # +        product_name = _skip_one(person, request)
+    # +        branch_name = _skip_one(person, request)
+    # +        if product_name == '+junk':
+    # +            return person.getBranch(None, branch_name)
+    # +        else:
+    # +            return person.getBranch(product_name, branch_name)
+    # -- David Allouche 2005-10-10
+
+
+class TeamNavigation(Navigation, CalendarTraversalMixin):
+
+    usedfor = ITeam
+
+    @stepto('+members')
+    def members(self):
+        return ITeamMembershipSubset(self.context)
+
+    @stepthrough('+poll')
+    def traverse_poll(self, name):
+        return getUtility(IPollSet).getByTeamAndName(self.context, name)
+
+
+class PersonSetNavigation(Navigation):
+
+    usedfor = IPersonSet
+
+    def traverse(self, name):
+        return self.context.getByName(name)
+
+
+class PeopleContextMenu(ContextMenu):
+
+    usedfor = IPersonSet
+
+    links = ['peoplelist', 'teamlist', 'ubuntitelist', 'newteam']
+
+    def peoplelist(self):
+        text = 'All People'
+        return Link('+peoplelist', text, icon='people')
+
+    def teamlist(self):
+        text = 'All Teams'
+        return Link('+teamlist', text, icon='people')
+
+    def ubuntitelist(self):
+        text = 'All Ubuntites'
+        return Link('+ubuntitelist', text, icon='people')
+
+    def newteam(self):
+        text = 'Create New Team'
+        return Link('+newteam', text, icon='add')
 
 
 class PersonFacets(StandardLaunchpadFacets):
@@ -66,13 +157,13 @@ class PersonFacets(StandardLaunchpadFacets):
 
     usedfor = IPerson
 
-    links = ['overview', 'bugs', 'tickets', 'specs', 'bounties',
-             'translations', 'code', 'calendar']
+    links = StandardLaunchpadFacets.links + ['code']
 
     def overview(self):
         target = ''
         text = 'Overview'
-        return DefaultLink(target, text)
+        summary = 'General information about %s' % self.context.browsername
+        return Link(target, text, summary)
 
     def bugs(self):
         # XXX: Soon the +assignedbugs and +reportedbugs pages of IPerson will
@@ -80,19 +171,36 @@ class PersonFacets(StandardLaunchpadFacets):
         # -- GuilhermeSalgado, 2005-07-29
         target = '+assignedbugs'
         text = 'Bugs'
-        return Link(target, text)
+        summary = (
+            'Bug reports that %s is involved with' % self.context.browsername
+        )
+        return Link(target, text, summary)
 
-    def specs(self):
-        target = '+specs'
-        text = 'Specs'
-        summary = 'Feature specifications related to %s' % \
+    def support(self):
+        target = '+tickets'
+        text = 'Support'
+        summary = (
+            'Support requests that %s is involved with' %
             self.context.browsername
+        )
+        return Link(target, text, summary)
+
+    def specifications(self):
+        target = '+specs'
+        text = 'Specifications'
+        summary = (
+            'Feature specifications that %s is involved with' %
+            self.context.browsername
+        )
         return Link(target, text, summary)
 
     def bounties(self):
         target = '+bounties'
         text = 'Bounties'
-        return Link(target, text)
+        summary = (
+            'Bounty offers that %s is involved with' % self.context.browsername
+        )
+        return Link(target, text, summary)
 
     def code(self):
         target = '+branches'
@@ -103,7 +211,11 @@ class PersonFacets(StandardLaunchpadFacets):
     def translations(self):
         target = '+translations'
         text = 'Translations'
-        return Link(target, text)
+        summary = (
+            'Software that %s is involved in translating' %
+            self.context.browsername
+        )
+        return Link(target, text, summary)
 
     def code(self):
         target = '+branches'
@@ -114,9 +226,246 @@ class PersonFacets(StandardLaunchpadFacets):
     def calendar(self):
         target = '+calendar'
         text = 'Calendar'
+        summary = (
+            u'%s\N{right single quotation mark}s scheduled events' %
+            self.context.browsername
+        )
         # only link to the calendar if it has been created
-        linked = ICalendarOwner(self.context).calendar is not None
-        return Link(target, text, linked=linked)
+        enabled = ICalendarOwner(self.context).calendar is not None
+        return Link(target, text, summary, enabled=enabled)
+
+
+class PersonBugsMenu(ApplicationMenu):
+
+    usedfor = IPerson
+
+    facet = 'bugs'
+
+    links = ['assignedbugs', 'softwarebugs', 'reportedbugs']
+
+    def assignedbugs(self):
+        text = 'Bugs Assigned'
+        return Link('+assignedbugs', text, icon='bugs')
+
+    def softwarebugs(self):
+        text = 'Bugs on Maintained Software'
+        return Link('+packagebugs', text, icon='bugs')
+
+    def reportedbugs(self):
+        text = 'Bugs Reported'
+        return Link('+reportedbugs', text, icon='bugs')
+
+
+
+class PersonSpecsMenu(ApplicationMenu):
+
+    usedfor = IPerson
+
+    facet = 'specifications'
+
+    links = ['created', 'assigned', 'drafted', 'review', 'subscribed']
+
+    def created(self):
+        text = 'Specifications Created'
+        return Link('+createdspecs', text, icon='spec')
+
+    def assigned(self):
+        text = 'Specifications Assigned'
+        return Link('+assignedspecs', text, icon='spec')
+
+    def drafted(self):
+        text = 'Specifications Drafted'
+        return Link('+draftedspecs', text, icon='spec')
+
+    def review(self):
+        text = 'Specifications To Review'
+        return Link('+reviewspecs', text, icon='spec')
+
+    def subscribed(self):
+        text = 'Subscribed Specifications'
+        return Link('+subscribedspecs', text, icon='spec')
+
+
+class PersonSupportMenu(ApplicationMenu):
+
+    usedfor = IPerson
+    facet = 'support'
+    links = ['created', 'assigned', 'answered', 'subscribed']
+
+    def created(self):
+        text = 'Tickets Created'
+        return Link('+createdtickets', text, icon='ticket')
+
+    def assigned(self):
+        text = 'Tickets Assigned'
+        return Link('+assignedtickets', text, icon='ticket')
+
+    def answered(self):
+        text = 'Tickets Answered'
+        return Link('+answeredtickets', text, icon='ticket')
+
+    def subscribed(self):
+        text = 'Tickets Subscribed'
+        return Link('+subscribedtickets', text, icon='ticket')
+
+
+class PersonCodeMenu(ApplicationMenu):
+
+    usedfor = IPerson
+    facet = 'code'
+    links = ['authored', 'registered', 'subscribed', 'add']
+
+    def authored(self):
+        text = 'Show Authored Branches'
+        return Link('+authoredbranches', text, icon='branch')
+
+    def registered(self):
+        text = 'Show Registered Branches'
+        return Link('+registeredbranches', text, icon='branch')
+
+    def subscribed(self):
+        text = 'Show Subscribed Branches'
+        return Link('+subscribedbranches', text, icon='branch')
+
+    def add(self):
+        text = 'Add Bazaar Branch'
+        return Link('+addbranch', text, icon='add')
+
+
+class CommonMenuLinks:
+
+    def common_edit(self):
+        target = '+edit'
+        text = 'Edit Details'
+        return Link(target, text, icon='edit')
+
+    def common_edithomepage(self):
+        target = '+edithomepage'
+        text = 'Edit Home Page'
+        return Link(target, text, icon='edit')
+
+    def common_edithackergotchi(self):
+        target = '+edithackergotchi'
+        text = 'Edit Hackergotchi'
+        return Link(target, text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def common_editemblem(self):
+        target = '+editemblem'
+        text = 'Edit Emblem'
+        return Link(target, text, icon='edit')
+
+    def common_packages(self):
+        target = '+packages'
+        text = 'Packages'
+        summary = 'Packages assigned to %s' % self.context.browsername
+        return Link(target, text, summary, icon='packages')
+
+
+class PersonContextMenu(ContextMenu, CommonMenuLinks):
+
+    usedfor = IPerson
+
+    links = ['common_edit', 'common_edithomepage', 'common_edithackergotchi',
+             'common_editemblem', 'karma', 'editsshkeys', 'editgpgkeys',
+             'codesofconduct', 'administer', 'common_packages']
+
+    def karma(self):
+        target = '+karma'
+        text = 'Karma'
+        summary = (
+            u'%s\N{right single quotation mark}s activities '
+            u'in Launchpad' % self.context.browsername
+        )
+        return Link(target, text, summary, icon='info')
+
+    def editsshkeys(self):
+        target = '+editsshkeys'
+        text = 'Edit SSH Keys'
+        summary = (
+            'Used if %s stores code on the Supermirror' %
+            self.context.browsername
+        )
+        return Link(target, text, summary, icon='edit')
+
+    def editgpgkeys(self):
+        target = '+editgpgkeys'
+        text = 'Edit GPG Keys'
+        summary = 'Used for the Supermirror, and when maintaining packages'
+        return Link(target, text, summary, icon='edit')
+
+    def codesofconduct(self):
+        target = '+codesofconduct'
+        text = 'Codes of Conduct'
+        summary = (
+            'Agreements to abide by the rules of a distribution or project')
+        return Link(target, text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        target = '+review'
+        text = 'Administer'
+        return Link(target, text, icon='edit')
+
+
+class TeamContextMenu(ContextMenu, CommonMenuLinks):
+
+    usedfor = ITeam
+
+    links = ['common_edit', 'common_edithomepage', 'common_edithackergotchi',
+             'common_editemblem', 'members', 'editemail', 'polls',
+             'joinleave', 'reassign', 'common_packages']
+
+    @enabled_with_permission('launchpad.Admin')
+    def reassign(self):
+        target = '+reassign'
+        text = 'Change Owner'
+        summary = 'Change the owner'
+        # alt="(Change owner)"
+        return Link(target, text, summary, icon='edit')
+
+    def members(self):
+        target = '+members'
+        text = 'Edit Members'
+        return Link(target, text, icon='people')
+
+    def polls(self):
+        target = '+polls'
+        text = 'Show Polls'
+        return Link(target, text, icon='info')
+
+    def teamhierarchy(self):
+        # XXX: removed because of bug https://launchpad.net/malone/bugs/2435
+        #      that i cannot see at the moment.
+        #      SteveAlexander / Salgado, 2005-09-21
+        target = '+teamhierarchy'
+        text = 'Team Hierarchy'
+        summary = (
+            'Which teams are members of %s, and which teams %s is a member of'
+            % (self.context.browsername, self.context.browsername)
+        )
+        return Link(target, text, summary, icon='people')
+
+    @enabled_with_permission('launchpad.Edit')
+    def editemail(self):
+        target = '+editemail'
+        text = 'Edit Contact Address'
+        summary = (
+            'The address Launchpad uses to contact %s' %
+            self.context.browsername
+        )
+        return Link(target, text, summary, icon='mail')
+
+    def joinleave(self):
+        if userIsActiveTeamMember(self.context):
+            target = '+leave'
+            text = 'Leave the team' # &#8230;
+            icon = 'remove'
+        else:
+            target = '+join'
+            text = 'Join the team' # &#8230;
+            icon = 'add'
+        return Link(target, text, icon=icon)
 
 
 ##XXX: (batch_size+global) cprov 20041003
@@ -236,6 +585,13 @@ class PersonRdfView:
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata
 
+def userIsActiveTeamMember(team):
+    """Return True if the user is an active member of this team."""
+    user = getUtility(ILaunchBag).user
+    if user is None:
+        return False
+    return user in team.activemembers
+
 
 class PersonView:
     """A View class used in almost all Person's pages."""
@@ -283,10 +639,7 @@ class PersonView:
 
     def userIsActiveMember(self):
         """Return True if the user is an active member of this team."""
-        user = getUtility(ILaunchBag).user
-        if user is None:
-            return False
-        return user in self.context.activemembers
+        return userIsActiveTeamMember(self.context)
 
     def membershipStatusDesc(self):
         tm = self._getMembershipForUser()
@@ -366,7 +719,7 @@ class PersonView:
         search_params = BugTaskSearchParams(
             assignee=self.context, user=self.user,
             status=any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
-            orderby="-dateassigned")
+            omit_dupes=True, orderby="-dateassigned")
 
         return getUtility(IBugTaskSet).search(search_params)
 
@@ -643,8 +996,8 @@ class PersonView:
         self._validateGPG(key)
 
         return ('A message has been sent to <code>%s</code>, encrypted with '
-                'the key <code>%s<code>. To confirm the key is yours, decrypt '
-                'the message and follow the link inside.'
+                'the key <code>%s</code>. To confirm the key is yours, '
+                'decrypt the message and follow the link inside.'
                 % (self.context.preferredemail.email, key.displayname))
 
     def deactivate_gpg(self):
@@ -808,13 +1161,53 @@ class PersonEditView(SQLObjectEditView):
         """Redirect to the person page.
 
         We need this because people can now change their names, and this will
-        make their canonical_url to change too. If we don't redirect them here
-        they'll get a page with all links broken and in an URL that doesn't
-        exist anymore.
+        make their canonical_url to change too.
         """
-        url = '%s/+edit?updated=%s' % (canonical_url(self.context),
-                                       datetime.utcnow().ctime())
-        self.request.response.redirect(url)
+        self.request.response.redirect(canonical_url(self.context))
+
+
+class PersonEmblemView(FormView):
+
+    schema = IPerson
+    fieldNames = ['emblem',]
+    _arguments = ['emblem',]
+
+    def process(self, emblem):
+        # XXX use Bjorn's nice file upload widget when he writes it
+        if emblem is not None:
+            filename = self.request.get('field.emblem').filename
+            content_type, encoding = guess_content_type(
+                name=filename, body=emblem)
+            self.context.emblem = getUtility(ILibraryFileAliasSet).create(
+                name=filename, size=len(emblem), file=StringIO(emblem),
+                contentType=content_type)
+        return 'Success'
+
+    def nextURL(self):
+        return canonical_url(self.context)
+
+
+class PersonHackergotchiView(FormView):
+
+    schema = IPerson
+    fieldNames = ['hackergotchi',]
+    _arguments = ['hackergotchi',]
+
+    def process(self, hackergotchi):
+        # XXX use Bjorn's nice file upload widget when he writes it
+        if hackergotchi is not None:
+            filename = self.request.get('field.hackergotchi').filename
+            content_type, encoding = guess_content_type(
+                name=filename, body=hackergotchi)
+            hkg = getUtility(ILibraryFileAliasSet).create(
+                name=filename, size=len(hackergotchi),
+                file=StringIO(hackergotchi),
+                contentType=content_type)
+            self.context.hackergotchi = hkg
+        return 'Success'
+
+    def nextURL(self):
+        return canonical_url(self.context)
 
 
 class TeamJoinView(PersonView):
@@ -1099,17 +1492,21 @@ class RequestPeopleMergeMultipleEmailsView:
         self.context = context
         self.request = request
         self.formProcessed = False
+        self.dupe = None
 
+    def processForm(self):
         dupe = self.request.form.get('dupe')
         if dupe is None:
             # We just got redirected to this page and we don't have the dupe
             # hidden field in request.form.
             dupe = self.request.get('dupe')
+            if dupe is None:
+                return
+
         self.dupe = getUtility(IPersonSet).get(int(dupe))
         emailaddrset = getUtility(IEmailAddressSet)
         self.dupeemails = emailaddrset.getByPerson(self.dupe)
 
-    def processForm(self):
         if self.request.method != "POST":
             return
 
@@ -1284,312 +1681,4 @@ class TeamReassignmentView(ObjectReassignmentView):
 
         if oldOwner not in team.inactivemembers:
             team.setMembershipStatus(oldOwner, TeamMembershipStatus.ADMIN)
-
-
-class PersonShipItView:
-    """The view for people to create/edit ShipIt requests."""
-
-    # XXX: These 2 email addresses must go into launchpad.conf
-    # -- GuilhermeSalgado 2005-09-01
-    shipit_admins = 'info@shipit.ubuntu.com'
-    from_addr = "ShipIt <noreply@ubuntu.com>"
-    mail_template = """
-The user %(recipientname)s (%(recipientemail)s) placed a new request in ShipIt.
-This request can be seen at:
-%(requesturl)s
-
-
-Th request details are as follows:
-
-  X86: %(quantityx86)d
-ADM64: %(quantityamd64)d
-  PPC: %(quantityppc)d
-Reason: %(reason)s
-"""
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        setUpWidgets(self, IShipItCountry, IInputWidget)
-        self.errorMessages = []
-        self.currentRequest = None
-        self.isCustomRequest = False
-
-    def standardShipItRequests(self):
-        """Return a list with all standard ShipIt Requests."""
-        return getUtility(IStandardShipItRequestSet).getAll()
-
-    def processForm(self):
-        """Process the ShipIt form, if it was submitted."""
-        self._loadRequestForDisplay()
-        if self.request.method != "POST":
-            return
-
-        form = self.request.form
-        if 'newrequest' in form or 'changerequest' in form:
-            self._readAndValidateRequestDetails()
-            self._readAndValidateContactDetails()
-            if not self.errorMessages:
-                self._saveContactDetails()
-                if 'newrequest' in form:
-                    self._createNewRequest()
-                elif 'changerequest' in form:
-                    assert self.currentRequest
-                    self._saveRequestDetails()
-        elif 'cancelrequest' in form:
-            assert self.currentRequest
-            self.currentRequest.cancel(getUtility(ILaunchBag).user)
-            self.currentRequest = None
-
-        flush_database_updates()
-
-    def _loadRequestForDisplay(self):
-        self.currentRequest = self.context.currentShipItRequest()
-        if self.currentRequest is None:
-            return
-
-        shipitrequest = self.currentRequest
-        standardrequestset = getUtility(IStandardShipItRequestSet)
-        standardrequest = standardrequestset.getByNumbersOfCDs(
-            shipitrequest.quantityx86, shipitrequest.quantityamd64,
-            shipitrequest.quantityppc)
-        if standardrequest is not None:
-            self.selectedRequest = standardrequest.id
-            self.reason = None
-        else:
-            self.quantityx86 = shipitrequest.quantityx86
-            self.quantityamd64 = shipitrequest.quantityamd64
-            self.quantityppc = shipitrequest.quantityppc
-            self.isCustomRequest = True
-            self.reason = shipitrequest.reason
-
-    def _notifyShipItAdmins(self, shipitrequest):
-        """Notify the shipit admins by email that there's a new request."""
-        subject = ('[ShipIt] New Custom Request for %d CDs'
-                   % shipitrequest.totalCDs)
-        recipient = shipitrequest.recipient
-        headers = {'Reply-To': recipient.preferredemail.email}
-        replacements = {'recipientname': recipient.displayname,
-                        'recipientemail': recipient.preferredemail.email,
-                        'requesturl': canonical_url(shipitrequest),
-                        'quantityx86': shipitrequest.quantityx86,
-                        'quantityamd64': shipitrequest.quantityamd64,
-                        'quantityppc': shipitrequest.quantityppc,
-                        'reason': shipitrequest.reason}
-        message = self.mail_template % replacements
-        simple_sendmail(self.from_addr, self.shipit_admins, subject, message,
-                        headers)
-
-    def _createNewRequest(self):
-        """Create and return a new ShippingRequest.
-
-        If this is a custom request, then send an email to the shipit admins
-        with the details of the request.
-        The attributes used to create this ShippingRequest are the ones stored
-        in this object by the _readAndValidateRequestDetails() method.
-        """
-        shipitrequest = getUtility(IShippingRequestSet).new(
-            self.context, self.quantityx86, self.quantityamd64,
-            self.quantityppc, self.reason)
-
-        self.currentRequest = shipitrequest
-        if self.isCustomRequest:
-            self._notifyShipItAdmins(shipitrequest)
-        else:
-            shipitrequest.approve()
-
-        return shipitrequest
-
-    def _saveContactDetails(self):
-        """Save the contact details for this user.
-
-        This method assumes the contact details are stored as attributes of
-        this object. This is obtained by calling
-        self._readAndValidateContactDetails().
-        """
-        contact_fields = ['addressline1', 'addressline2', 'postcode', 'city',
-                          'province', 'organization', 'phone']
-
-        for field in contact_fields:
-            setattr(self.context, field, getattr(self, field))
-        self.context.country = self.country
-
-    def _saveRequestDetails(self):
-        """Save the request details in the current request.
-
-        This method assumes the request details are stored as attributes of
-        this object. This is obtained by calling
-        self._readAndValidateRequestDetails().
-        """
-        shipitrequest = self.currentRequest
-        wasStandard = shipitrequest.isStandardRequest()
-        shipitrequest.quantityx86 = self.quantityx86
-        shipitrequest.quantityppc = self.quantityppc
-        shipitrequest.quantityamd64 = self.quantityamd64
-        shipitrequest.reason = self.reason
-        if shipitrequest.isStandardRequest() and not wasStandard:
-            # Changing an existing custom order to a standard one has the same
-            # effect of creating a new standard one. In other words, it's
-            # marked approved.
-            shipitrequest.approve()
-        elif not shipitrequest.isStandardRequest() and wasStandard:
-            # Changing an existing standard order into a custom one will mark
-            # it as pending approval, and sent an email notification to the
-            # shipit admins.
-            shipitrequest.clearApproval()
-            self._notifyShipItAdmins(shipitrequest)
-
-    def _readAndValidateRequestDetails(self):
-        """Read the request details from the form, do any necessary validation
-        and save them in the view."""
-        form = self.request.form
-        requesttype = form.get('requesttype')
-        if requesttype == 'standard':
-            self.isCustomRequest = False
-            self.selectedRequest = int(form.get('standardrequest'))
-            shipitrequest = getUtility(IStandardShipItRequestSet).get(
-                self.selectedRequest)
-            if shipitrequest is None:
-                msg = ('The standard request numbers have changed since you '
-                       'submitted your request; please review the new numbers '
-                       'and make a new selection.')
-                self.errorMessages.append(msg)
-                return
-            self.quantityx86 = shipitrequest.quantityx86
-            self.quantityamd64 = shipitrequest.quantityamd64
-            self.quantityppc = shipitrequest.quantityppc
-            self.reason = None
-        elif requesttype == 'custom':
-            self.isCustomRequest = True
-            self.quantityx86 = intOrZero(form.get('quantityx86'))
-            self.quantityamd64 = intOrZero(form.get('quantityamd64'))
-            self.quantityppc = intOrZero(form.get('quantityppc'))
-
-            if (self.quantityx86 < 0 or self.quantityamd64 < 0 or
-                self.quantityppc < 0):
-                self.errorMessages.append(
-                    "You requested a negative number of CDs, which doesn't "
-                    "make sense. Please correct the number below.")
-
-            if (self.quantityx86 + self.quantityamd64 + self.quantityppc) == 0:
-                self.errorMessages.append(
-                    "You have requested a total of zero CDs. An order must "
-                    "have at least one CD requested; please correct below.")
-
-            self.reason = form.get('reason')
-            if not self.reason:
-                msg = ("You've chosen to make a custom request. Please "
-                       "provide a reason to justify it.")
-                self.errorMessages.append(msg)
-
-    def _readAndValidateContactDetails(self):
-        """Read the contact details from the form, do any necesary validation
-        and save them in the view."""
-        # Mandatory fields as defined in the old shipit.
-        #   - addressline1
-        #   - city
-        #   - zip (only if in ['US', 'GB', 'FR', 'IT', 'DE', 'NO', 'SE', 'ES'])
-        validators = {'addressline1': self._validateaddressline1,
-                      'addressline2': self._validateaddressline2,
-                      'city': self._validatecity,
-                      'postcode': self._validatepostcode,
-                      'province': None,
-                      'organization': self._validateorganization,
-                      'phone': self._validatephone}
-        form = self.request.form
-        msg = None
-        self.country = self.country_widget.getInputValue()
-        for field, validator in validators.items():
-            value = form.get(field)
-            setattr(self, field, value)
-            try:
-                value.encode('ascii')
-            except UnicodeEncodeError, e:
-                first_non_ascii_char = value[e.start:e.end]
-                e_with_accute = u'\N{LATIN SMALL LETTER E WITH ACUTE}'
-                msg = ("Sorry, but non-ASCII characters (such as '%s', in the "
-                       "%s field) aren't understood by our shipping company. "
-                       "Please change these to ASCII equivalents. (For "
-                       "instance, '%s' should be changed to 'e')"
-                       % (first_non_ascii_char, field, e_with_accute))
-
-            if validator is not None:
-                validator(value)
-
-        # Add the error message only once, even if there's errors in more
-        # than one field.
-        if msg:
-            self.errorMessages.append(msg)
-
-    #
-    # Following are validator methods to make sure we follow the constraints
-    # of the shipping companies.
-    #
-
-    def _validatepostcode(self, value):
-        """Make sure postcode follows the mailing constraints.
-
-        Add an error message to self.errorMessages if it doesn't.
-        """
-        code = self.country.iso3166code2
-        if (not value and
-            code in ('US', 'GB', 'FR', 'IT', 'DE', 'NO', 'SE', 'ES')):
-            self.errorMessages.append(
-                'You must enter your postcode in the form.')
-        elif len(value) > 12:
-            self.errorMessages.append(
-                "Your postcode can't have more than 12 characters.")
-
-    def _validatecity(self, value):
-        """Make sure city follows the mailing constraints.
-
-        Add an error message to self.errorMessages if it doesn't.
-        """
-        if not value:
-            self.errorMessages.append(
-                'You must enter your city in the form.')
-        elif len(value) > 30:
-            self.errorMessages.append(
-                "Your city name can't have more than 30 characters.")
-
-    def _validateaddressline1(self, value):
-        """Make sure addressline1 follows the mailing constraints.
-
-        Add an error message to self.errorMessages if it doesn't.
-        """
-        if not value:
-            self.errorMessages.append(
-                'You must enter an address.')
-        elif len(value) > 30:
-            self.errorMessages.append(
-                "Address (first line) can't have more than 30 characters. "
-                "You should use the second line if your address is too long.")
-
-    def _validateaddressline2(self, value):
-        """Make sure addressline2 follows the mailing constraints.
-
-        Add an error message to self.errorMessages if it doesn't.
-        """
-        if value and len(value) > 30:
-            self.errorMessages.append(
-                "Address (second line) can't have more than 30 characters. "
-                "You should use the first line if your address is too long.")
-
-    def _validatephone(self, value):
-        """Make sure phone follows the mailing constraints.
-
-        Add an error message to self.errorMessages if it doesn't.
-        """
-        if value and len(value) > 16:
-            self.errorMessages.append(
-                "Your phone mumber must be less than 16 characters. Leave it "
-                "blank if it will not fit.")
-
-    def _validateorganization(self, value):
-        """Make sure organization follows the mailing constraints.
-
-        Add an error message to self.errorMessages if it doesn't.
-        """
-        if value and len(value) > 30:
-            self.errorMessages.append(
-                "Your organization can't have more than 30 characters.")
 

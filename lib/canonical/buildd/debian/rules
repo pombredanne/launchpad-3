@@ -15,9 +15,9 @@ buildd = $(topdir)/lib/canonical/buildd
 targetshare = $(target)/usr/share/launchpad-buildd
 pytarget = $(targetshare)/canonical/buildd
 
-pyfiles = debian.py slave.py utils.py __init__.py
+pyfiles = debian.py slave.py utils.py __init__.py slave_chroot_tool.py
 slavebins = unpack-chroot mount-chroot update-debian-chroot sbuild-package \
-scan-for-processes umount-chroot remove-build
+scan-for-processes umount-chroot remove-build apply-ogre-model
 
 BUILDDUID=65500
 BUILDDGID=65500
@@ -30,7 +30,9 @@ install:
 	dh_installdirs usr/bin etc usr/share/launchpad-buildd/slavebin \
 	  usr/share/launchpad-buildd/canonical/buildd \
 	  var/run/launchpad-buildd var/log/launchpad-buildd  \
-	  etc/launchpad-buildd usr/share/launchpad-buildd/canonical/launchpad/daemons
+	  etc/launchpad-buildd \
+	  usr/share/launchpad-buildd/canonical/launchpad/daemons \
+	  usr/share/doc/launchpad-buildd
 
 	# Do installs here
 	touch $(pytarget)/../launchpad/__init__.py
@@ -49,6 +51,11 @@ install:
 	install -m755 buildd-config.py $(target)/usr/bin/buildd-genconfig
 	install -m755 chapt-get $(target)/usr/bin
 	install -m644 sbuildrc $(targetshare)/sbuildrc
+	install -m644 sbuild.conf $(target)/etc/sbuild.conf
+	install -m644 example.chroot debian/launchpad-buildd/usr/share/doc/launchpad-buildd/
+	ln -sf /usr/share/launchpad-buildd/canonical/buildd/slave_chroot_tool.py debian/launchpad-buildd/usr/bin/buildd-slave-chroot-tool
+	chmod 755 $(pytarget)/slave_chroot_tool.py
+	install -m755 debian/upgrade-config $(targetshare)/upgrade-config
 	# Okay, that's installed all the slave-related files
 
 

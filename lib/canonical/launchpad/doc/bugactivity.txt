@@ -41,7 +41,6 @@ Tracking Bug Activity in Launchpad
 Before going any further--because editing a bug requires an
 authenticated user--let's login:
 
-  >>> from canonical.launchpad.ftests import login
   >>> login("test@canonical.com")
 
 Bug activity tracking is done using event subscribers. The handlers
@@ -54,11 +53,9 @@ are simple little functions.
   >>> from canonical.launchpad.event.sqlobjectevent import (
   ...     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
   >>> from canonical.launchpad.database import (
-  ...     BugFactory, BugActivity, BugPackageInfestation,
-  ...     BugProductInfestation, BugTask)
+  ...     BugPackageInfestation, BugProductInfestation)
   >>> from canonical.launchpad.interfaces import (
-  ...     IUpstreamBugTask, IDistroBugTask, IProductSet)
-  >>> from zope.publisher.browser import TestRequest
+  ...     IUpstreamBugTask, IDistroBugTask, IProductSet, IBugSet, IBugTaskSet)
 
   >>> def capture_state(obj, *fields):
   ...     class State: pass
@@ -70,12 +67,11 @@ are simple little functions.
 Here's a list of events that happen, and the resulting activity
 logged:
 
-  >>> from canonical.launchpad.database import Person
-  >>> user = Person.get(12)
+  >>> user = getUtility(ILaunchBag).user
 
 EVENT: user files a bug
 
-  >>> bug = BugFactory(
+  >>> bug = getUtility(IBugSet).createBug(
   ...     product=getUtility(IProductSet)['firefox'],
   ...     title="a test bug", summary="this is only a test bug",
   ...     comment="this is only a test bug\nplease ignore",
@@ -111,8 +107,13 @@ EVENT: bug edited
 
 EVENT: bug gets assigned to a source package
 
-  >>> source_package_assignment = BugTask(
-  ...     bug=bug, sourcepackagename=1, distribution=1, owner=user.id)
+  >>> from canonical.launchpad.interfaces import (
+  ...     ISourcePackageNameSet, IDistributionSet)
+  >>> mozilla_firefox = getUtility(ISourcePackageNameSet)['mozilla-firefox']
+  >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+  >>> source_package_assignment = getUtility(IBugTaskSet).createTask(
+  ...     bug=bug, sourcepackagename=mozilla_firefox,
+  ...     distribution=ubuntu,owner=user)
   >>> source_package_assignment_added = SQLObjectCreatedEvent(
   ...     source_package_assignment)
   >>> notify(source_package_assignment_added)
@@ -120,7 +121,7 @@ EVENT: bug gets assigned to a source package
   >>> latest_activity.whatchanged
   u'bug'
   >>> latest_activity.message
-  u'assigned to source package mozilla-firefox'
+  u'assigned to mozilla-firefox (ubuntu)'
 
 EVENT: source package assignment edited
 
@@ -146,14 +147,15 @@ EVENT: source package assignment edited
 
 EVENT: bug gets assigned to an upstream product
 
-  >>> product_assignment = BugTask(bug=bug, product=8, owner=user.id)
+  >>> product_assignment = getUtility(IBugTaskSet).createTask(
+  ...   bug=bug, product=getUtility(IProductSet)['thunderbird'], owner=user)
   >>> product_assignment_added = SQLObjectCreatedEvent(product_assignment)
   >>> notify(product_assignment_added)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
   u'bug'
   >>> latest_activity.message
-  u'assigned to upstream thunderbird'
+  u'assigned to thunderbird (upstream)'
 
 EVENT: upstream product assignment edited
 
@@ -285,7 +287,6 @@ First we have to create the file itself, and upload it to the Librarian:
   ...     name='foo.txt', size=len(filecontent),
   ...     file=StringIO(filecontent), contentType='text/plain')
 
-  >>> from canonical.launchpad.database import BugSubscription
   >>> from canonical.launchpad.interfaces import IBugAttachmentSet, IMessageSet
   >>> message = getUtility(IMessageSet).fromText(
   ...     subject="title", content="added an attachment")

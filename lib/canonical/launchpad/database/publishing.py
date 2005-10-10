@@ -14,6 +14,7 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from canonical.database.sqlbase import SQLBase
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import ( IBinaryPackagePublishing,
@@ -25,7 +26,7 @@ from canonical.launchpad.interfaces import ( IBinaryPackagePublishing,
     ISourcePackagePublishingHistory, IBinaryPackagePublishingHistory )
 
 from canonical.lp.dbschema import \
-    EnumCol, BinaryPackagePriority, PackagePublishingStatus, \
+    EnumCol, PackagePublishingPriority, PackagePublishingStatus, \
     PackagePublishingPocket
 
 from warnings import warn
@@ -42,7 +43,7 @@ class BinaryPackagePublishing(SQLBase):
                                    dbName='distroarchrelease')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
-    priority = EnumCol(dbName='priority', schema=BinaryPackagePriority)
+    priority = EnumCol(dbName='priority', schema=PackagePublishingPriority)
     status = EnumCol(dbName='status', schema=PackagePublishingStatus)
     scheduleddeletiondate = UtcDateTimeCol(default=None)
     datepublished = UtcDateTimeCol(default=None)
@@ -77,7 +78,7 @@ class SourcePackageFilePublishing(SQLBase):
                           notNull=True)
 
     sourcepackagepublishing = ForeignKey(dbName='sourcepackagepublishing',
-                                         foreignKey='SecureSourcePackagePublishingHistory')
+         foreignKey='SecureSourcePackagePublishingHistory')
 
     libraryfilealias = IntCol(dbName='libraryfilealias', unique=False,
                               default=None, notNull=True)
@@ -114,8 +115,7 @@ class BinaryPackageFilePublishing(SQLBase):
                           notNull=True, immutable=True)
 
     binarypackagepublishing = ForeignKey(dbName='binarypackagepublishing',
-                                   foreignKey='SecureBinaryPackagePublishingHistory',
-                                   immutable=True)
+        foreignKey='SecureBinaryPackagePublishingHistory', immutable=True)
 
     libraryfilealias = IntCol(dbName='libraryfilealias', unique=False,
                               default=None, notNull=True, immutable=True)
@@ -219,7 +219,7 @@ class SecureSourcePackagePublishingHistory(SQLBase):
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket,
                      default=PackagePublishingPocket.RELEASE,
                      notNull=True)
-    embargo = BoolCol(dbName='embargo', default=False)
+    embargo = BoolCol(dbName='embargo', default=False, notNull=True)
     embargolifted = UtcDateTimeCol(default=None)
 
     @classmethod
@@ -251,18 +251,18 @@ class SecureBinaryPackagePublishingHistory(SQLBase):
                                    dbName='distroarchrelease')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
-    priority = EnumCol(dbName='priority', schema=BinaryPackagePriority)
+    priority = EnumCol(dbName='priority', schema=PackagePublishingPriority)
     status = EnumCol(dbName='status', schema=PackagePublishingStatus)
     scheduleddeletiondate = UtcDateTimeCol(default=None)
     datepublished = UtcDateTimeCol(default=None)
-    datecreated = UtcDateTimeCol(default=None)
+    datecreated = UtcDateTimeCol(default=UTC_NOW)
     datesuperseded = UtcDateTimeCol(default=None)
-    supersededby = ForeignKey(foreignKey='Build',dbName='supersededby',
+    supersededby = ForeignKey(foreignKey='Build', dbName='supersededby',
                               default=None)
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
-    embargo = BoolCol(dbName='embargo', default=False)
+    embargo = BoolCol(dbName='embargo', default=False, notNull=True)
     embargolifted = UtcDateTimeCol(default=None)
 
     @classmethod
@@ -315,13 +315,13 @@ class BinaryPackagePublishingHistory(SQLBase):
                                    dbName='distroarchrelease')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
-    priority = EnumCol(dbName='priority', schema=BinaryPackagePriority)
+    priority = EnumCol(dbName='priority', schema=PackagePublishingPriority)
     status = EnumCol(dbName='status', schema=PackagePublishingStatus)
     scheduleddeletiondate = UtcDateTimeCol(default=None)
     datepublished = UtcDateTimeCol(default=None)
     datecreated = UtcDateTimeCol(default=None)
     datesuperseded = UtcDateTimeCol(default=None)
-    supersededby = ForeignKey(foreignKey='Build',dbName='supersededby',
+    supersededby = ForeignKey(foreignKey='Build', dbName='supersededby',
                               default=None)
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)

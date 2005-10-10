@@ -93,11 +93,13 @@ Add a web link to a bug:
 
 Add a CVE reference to a bug:
 
-    >>> from canonical.launchpad.interfaces import ICVERefSet
-    >>> from canonical.lp.dbschema import CVEState
-    >>> cve = getUtility(ICVERefSet).createCVERef(
-    ...     bug, "1945-6789", CVEState.CANDIDATE, "bla", foo_bar)
-    >>> event = SQLObjectCreatedEvent(cve)
+    >>> from canonical.launchpad.interfaces import ICveSet
+    >>> from canonical.launchpad.database import BugCve
+    >>> from canonical.lp.dbschema import CveStatus
+    >>> cve = getUtility(ICveSet).new('2003-1234', description="Blah blah",
+    ...     status=CveStatus.CANDIDATE)
+    >>> bugcve = BugCve(cve=cve, bug=bug)
+    >>> event = SQLObjectCreatedEvent(bugcve)
     >>> make_sure_karma_is_added('BUGCVEREFADDED', event, 15)
     True
 

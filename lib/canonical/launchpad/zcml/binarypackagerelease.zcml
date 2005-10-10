@@ -14,13 +14,15 @@
         for="canonical.launchpad.interfaces.IBinaryPackageRelease"
         name="+index" />
 
-    <browser:traverse
-        for="canonical.launchpad.database.BinaryPackageRelease" 
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BinaryPackageReleaseNavigation"
+        />
 
     <browser:pages
         for="canonical.launchpad.database.BinaryPackageRelease" 
         class="canonical.launchpad.browser.BinaryPackageView"
+        facet="overview"
         permission="zope.Public">
 
         <browser:page

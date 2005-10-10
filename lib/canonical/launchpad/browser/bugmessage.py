@@ -1,21 +1,14 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-"""View classes related to IBugMessage."""
+"""IBugMessage-related browser view classes."""
 
 __metaclass__ = type
+__all__ = ['BugMessageAddView']
 
-from zope.component import getUtility
+from canonical.launchpad.browser.message import MessageAddView
+from canonical.launchpad.interfaces.bug import IBug
 
-from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.interfaces import (
-    ILaunchBag, IBugMessageSet)
-
-class BugMessageAddView(SQLObjectAddView):
-    def create(self, *args, **kw):
-        bugmessageset = getUtility(IBugMessageSet)
-        launchbag = getUtility(ILaunchBag)
-
-        return bugmessageset.createMessage(
-            subject=kw.get('subject'), content=kw.get('content'),
-            bug=launchbag.bug, owner=launchbag.user)
-
+class BugMessageAddView(MessageAddView):
+    def __init__(self, context, request):
+        context = IBug(context)
+        MessageAddView.__init__(self, context, request)

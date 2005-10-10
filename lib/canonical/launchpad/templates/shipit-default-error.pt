@@ -1,0 +1,43 @@
+<html metal:use-macro="context/@@main_template/master">
+    <body>
+        <div metal:fill-slot="main">
+          <h1 class="exception">
+            Sorry, a system error occurred
+          </h1>
+          <p>
+            If you were just adding or changing something,
+            ShipIt probably hasn&#8217;t recorded those changes.
+          </p>
+          <h2>What you can do</h2>
+          <ul>
+            <li>
+              <p>
+                If you entered a lot of text
+                that you don&#8217;t want to lose,
+                go Back, copy the text,
+                and paste it into a text file.
+              </p>
+            </li>
+            <li>
+              <p>
+                While you&#8217;re there,
+                copy the URL of the page too.
+              </p>
+            </li>
+            <li>
+              <p>
+              <a href="https://launchpad.net/malone/products/shipit">Report the bug</a>,
+                after checking that it isn&#8217;t reported already.
+                In your bug report,
+                include the <abbr>URL</abbr> of the page you were
+                on, and what you tried to do.
+              </p>
+            </li>
+          </ul>
+          <p>
+            Thanks for helping us improve, and sorry for the inconvenience.
+          </p>
+          <tal:replace tal:replace="structure view/maybeShowTraceback" />
+        </div>
+    </body>
+</html>

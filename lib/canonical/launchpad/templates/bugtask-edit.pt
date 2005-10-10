@@ -5,11 +5,11 @@
   <body>
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/bug/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-status-details" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
+    <div tal:replace="structure context/@@+portlet-search" />
     <div tal:replace="structure context/@@+portlet-alsoreportedin" />
     <div tal:replace="structure context/target/@@+portlet-latestbugs" />
   </metal:rightportlets>
@@ -56,9 +56,38 @@
              tal:content="context/bug/summary">
              Bug summary goes here if it exists.
           </p>
-          
+
           <div class="field">
             <table>
+            <tal:distrotask condition="python:context.distribution or
+                                      context.distrorelease">
+              <tr>
+                <td colspan="0">
+                  <label tal:attributes="for view/sourcepackagename_widget/name"
+                         tal:content="view/sourcepackagename_widget/label">
+                    Source Package Name
+                  </label>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="0"
+                    tal:content="structure view/sourcepackagename_widget" nowrap />
+              </tr>
+            </tal:distrotask>
+            <tal:upstreamtask condition="python:context.product">
+              <tr>
+                <td colspan="0">
+                  <label tal:attributes="for view/product_widget/name"
+                         tal:content="view/product_widget/label">
+                    Upstream Product
+                  </label>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="0"
+                    tal:content="structure view/product_widget" nowrap />
+              </tr>
+            </tal:upstreamtask>
             <tr>
               <td>
                 <label tal:attributes="for view/status_widget/name"
@@ -90,23 +119,6 @@
               <td tal:content="structure view/severity_widget" />
               <td tal:content="structure view/priority_widget" />
               <td tal:content="structure view/milestone_widget" />
-            </tr>
-            <tr tal:condition="python:context.distribution or 
-                                      context.distrorelease">
-              <td colspan="0">
-                <label tal:attributes="for view/sourcepackagename_widget/name"
-                       tal:content="view/sourcepackagename_widget/label">
-                  Status
-                </label>
-              </td>
-            </tr>
-            <tr tal:condition="python:context.distribution or 
-                                      context.distrorelease">
-              <td colspan="0"
-                  tal:content="structure view/sourcepackagename_widget" nowrap />
-            </tr>
-            <tr>
-              <td>&nbsp;</td>
             </tr>
             <tr>
               <td colspan="2">
@@ -173,3 +185,4 @@
     </div>
   </body>
 </html>
+

@@ -14,7 +14,6 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
   <div tal:replace="structure context/target/@@+portlet-latesttickets" />
 </metal:rightportlets>
@@ -37,9 +36,11 @@
     </tbody>
   </table>
 
-  <tal:description content="structure context/description/fmt:text-to-html">
-    $Ticket.description
-  </tal:description>
+  <div class="highlighted">
+    <tal:desc replace="structure context/description/fmt:text-to-html">
+      $Ticket.description
+    </tal:desc>
+  </div>
 
   <tal:block repeat="message context/messages">
     <div class="boardComment"
@@ -68,7 +69,7 @@
 
   <tal:logged-in condition="request/lp:person">
     <fieldset class="collapsible collapsed">
-      <legend>Add comment to this ticket</legend>
+      <legend>Add comment</legend>
         <form action="+addmessage" method="post">
           <b>Subject:</b>
           <input name="field.subject" type="text" size="50" 

@@ -29,8 +29,13 @@ First, we'll set up various imports and stub objects.
 ...     {'login': 'cookie@example.com', 'personid': 23}
 ...     }
 
+>>> class Response(object):
+...     def getCookie(self, name):
+...         return None
+
 >>> class Request(object):
 ...     principal = principal
+...     response = Response()
 ...     cookies = {}
 ...     def setPrincipal(self, principal):
 ...         pass
@@ -81,3 +86,4 @@ will be cookie@example.com, as given in the session dict above.
 >>> notify(event)
 >>> print launchbag.login
 cookie@example.com
+

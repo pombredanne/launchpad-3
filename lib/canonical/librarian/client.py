@@ -7,7 +7,8 @@ import sha
 import urllib
 import urllib2
 import warnings
-from socket import socket, SOCK_STREAM, AF_INET
+import socket
+from socket import SOCK_STREAM, AF_INET
 from select import select
 from urlparse import urljoin
 
@@ -49,9 +50,12 @@ class FileUploadClient:
         host = config.librarian.upload_host
         port = config.librarian.upload_port
 
-        self.s = socket(AF_INET, SOCK_STREAM)
-        self.s.connect((host, port))
-        self.f = self.s.makefile('w+', 0)
+        try:
+            self.s = socket.socket(AF_INET, SOCK_STREAM)
+            self.s.connect((host, port))
+            self.f = self.s.makefile('w+', 0)
+        except socket.error, x:
+            raise UploadFailed(str(x))
 
     def _close(self):
         """Close connection"""
@@ -155,6 +159,52 @@ class FileUploadClient:
             return contentID, aliasID
         finally:
             self._close()
+
+    def remoteAddFile(self, name, size, file, contentType):
+        """See canonical.librarian.interfaces.ILibrarianUploadClient"""
+        if file is None:
+            raise TypeError('No data')
+        if size <= 0:
+            raise UploadFailed('No data')
+        if isinstance(name, unicode):
+            name = name.encode('utf-8')
+        self._connect()
+        try:
+            # Send command
+            self._sendLine('STORE %d %s' % (size, name))
+
+            # Send blank line
+            self._sendLine('')
+            
+            # Prepare to the upload the file
+            bytesWritten = 0
+
+            # Read in and upload the file 64kb at a time, by using the two-arg
+            # form of iter (see
+            # /usr/share/doc/python2.4/html/lib/built-in-funcs.html#l2h-42).
+            for chunk in iter(lambda: file.read(1024*64), ''):
+                self.f.write(chunk)
+                bytesWritten += len(chunk)
+            
+            assert bytesWritten == size, (
+                'size is %d, but %d were read from the file' 
+                % (size, bytesWritten))
+            self.f.flush()
+
+            # Read response
+            response = self.f.readline().strip()
+            if not response.startswith('200'):
+                raise UploadFailed, 'Server said: ' + response
+
+            status, ids = response.split()
+            contentID, aliasID = ids.split('/',1)
+
+            base = config.librarian.download_url
+            path = '/%d/%d/%s' % (int(contentID), int(aliasID), quote(name))
+            return urljoin(base, path)
+        finally:
+            self._close()
+
 
 def quote(s):
     # TODO: Perhaps filenames with / in them should be disallowed?
@@ -287,7 +337,7 @@ class FileDownloadClient:
         if row is None:
             raise DownloadFailed, 'Alias %r not found' % (aliasID,)
         contentID, filename = row
-        return '/%d/%d/%s' % (contentID, aliasID, 
+        return '/%d/%d/%s' % (contentID, aliasID,
                               quote(filename.encode('utf-8')))
 
     def getURLForAlias(self, aliasID, is_buildd=False):

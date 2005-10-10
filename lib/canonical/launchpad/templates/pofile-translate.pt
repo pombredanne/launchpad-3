@@ -13,7 +13,6 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-      <div tal:replace="structure context/@@+portlet-actions" />
       <div tal:replace="structure context/@@+portlet-translators" />
       <div tal:replace="structure context/@@+portlet-contributors" />
 </metal:rightportlets>
@@ -72,7 +71,7 @@ tal:replace="submissions_remaining">number of submissions</span> more)</tal:bloc
           href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users
           mailing list</a> with this information, preferably in the
           format described in Rosetta's
-          <a href="http://www.ubuntulinux.org/wiki/RosettaFAQ">
+          <a href="https://wiki.ubuntu.com/RosettaFAQ">
           FAQ</a>.
         <p>
           This only needs to be done once per language.

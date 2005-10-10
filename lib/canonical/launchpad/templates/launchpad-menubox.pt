@@ -1,0 +1,16 @@
+<div class="portlet portletBody portletContent">
+  <ul>
+    <tal:block repeat="link view/contextmenuitems">
+      <li metal:define-macro="renderlink"
+          tal:attributes="class link/icon">
+        <a
+          tal:attributes="href link/url; title link/summary"
+          tal:content="structure link/escapedtext"
+        >link text</a>
+      </li>
+    </tal:block>
+    <tal:block repeat="link view/applicationmenuitems">
+      <metal:use metal:use-macro="template/macros/renderlink" />
+    </tal:block>
+  </ul>
+</div>

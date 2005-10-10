@@ -4,14 +4,20 @@ __all__ = [
     'valid_webref',
     'non_duplicate_bug',
     'valid_bug_number',
+    'valid_emblem',
+    'valid_hackergotchi',
     ]
 
 import urllib
+from textwrap import dedent
+from StringIO import StringIO
+
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
-from sqlobject import SQLObjectNotFound
-from canonical.launchpad.interfaces.launchpad import ILaunchBag
 
+from canonical.launchpad import _
+from canonical.launchpad.interfaces.launchpad import ILaunchBag
+from canonical.launchpad.validators import LaunchpadValidationError
 
 def validate_url(url, valid_schemes):
     """Returns a boolean stating whether 'url' is a valid URL.
@@ -38,7 +44,7 @@ def validate_url(url, valid_schemes):
 
            >>> _validate_url('http://', ['http'])
            False
-           
+
       """
     if not url:
         return False
@@ -50,6 +56,7 @@ def validate_url(url, valid_schemes):
         return False
     return True
 
+
 def valid_webref(web_ref):
     return validate_url(web_ref, ['http', 'https'])
 
@@ -58,7 +65,8 @@ def non_duplicate_bug(value):
     """Prevent dups of dups.
 
     Returns True if the dup target is not a duplicate /and/ if the
-    current bug doesn't have any duplicates referencing it, otherwise
+    current bug doesn't have any duplicates referencing it /and/ if the
+    bug isn't a duplicate of itself, otherwise
     return False.
     """
 
@@ -66,20 +74,61 @@ def non_duplicate_bug(value):
     bugset = getUtility(IBugSet)
     duplicate = getUtility(ILaunchBag).bug
     dup_target = bugset.get(value)
-    current_bug_has_dup_refs = bugset.search(duplicateof = duplicate).count()
+    current_bug_has_dup_refs = bugset.searchAsUser(
+        user=getUtility(ILaunchBag).user,
+        duplicateof=duplicate).count()
     target_is_dup = dup_target.duplicateof
+    if duplicate == dup_target:
+        raise LaunchpadValidationError(_(dedent("""
+            You can't mark a bug as a duplicate of itself.""")))
 
     if (not target_is_dup) and (not current_bug_has_dup_refs):
         return True
     else:
-        return False
+        raise LaunchpadValidationError(_(dedent("""
+            Bug %i is already a duplicate of bug %i. You can only
+            duplicate to bugs that are not duplicates themselves.
+            """% (dup_target.id, (dup_target.duplicateof).id))))
+
 
 def valid_bug_number(value):
     from canonical.launchpad.interfaces.bug import IBugSet
     bugset = getUtility(IBugSet)
     try:
-        bug = bugset.get(value)
+        bugset.get(value)
     except NotFoundError:
         return False
     return True
 
+
+def _valid_image(image, max_size, max_dimensions):
+    """Check that the given image is under the given constraints.
+
+    :length: is the maximum size of the image, in bytes.
+    :dimensions: is a tuple of the form (width, height).
+    """
+    # No global import to avoid hard dependency on PIL being installed
+    import PIL.Image
+    if len(image) > max_size:
+        raise LaunchpadValidationError(_(dedent("""
+            This file exceeds the maximum allowed size in bytes.""")))
+    try:
+        image = PIL.Image.open(StringIO(image))
+    except IOError:
+        # cannot identify image type
+        raise LaunchpadValidationError(_(dedent("""
+            The file uploaded was not recognized as an image; please
+            check the file and retry.""")))
+    if image.size > max_dimensions:
+        raise LaunchpadValidationError(_(dedent("""
+            This image exceeds the maximum allowed width or height in
+            pixels.""")))
+    return True
+
+
+def valid_emblem(emblem):
+    return _valid_image(emblem, 6000, (16,16))
+
+
+def valid_hackergotchi(hackergotchi):
+    return _valid_image(hackergotchi, 16000, (96,96))

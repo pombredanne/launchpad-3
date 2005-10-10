@@ -1,0 +1,177 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
+__all__ = [
+    'Cve',
+    'CveSet',
+    ]
+
+import re
+from datetime import datetime
+
+# Zope
+from zope.interface import implements
+from zope.event import notify
+
+# SQL imports
+from sqlobject import (
+    ForeignKey, StringCol, RelatedJoin, MultipleJoin, SQLObjectNotFound)
+
+from canonical.launchpad.interfaces import ICve, ICveSet
+from canonical.launchpad.validators.cve import valid_cve
+
+from canonical.launchpad.event.sqlobjectevent import (
+    SQLObjectCreatedEvent, SQLObjectModifiedEvent, SQLObjectDeletedEvent)
+
+from canonical.lp.dbschema import EnumCol, CveStatus
+
+from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.database.bugcve import BugCve
+from canonical.launchpad.database.cvereference import CveReference
+
+cverefpat = re.compile(r'(CVE|CAN)-((19|20)\d{2}\-\d{4})')
+
+class Cve(SQLBase):
+    """A CVE database record."""
+
+    implements(ICve)
+
+    _table = 'Cve'
+
+    sequence = StringCol(notNull=True, alternateID=True)
+    status = EnumCol(dbName='status', schema=CveStatus, notNull=True)
+    description = StringCol(notNull=True)
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    datemodified = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+
+    # joins
+    bugs = RelatedJoin('Bug', intermediateTable='BugCve',
+        joinColumn='cve', otherColumn='bug', orderBy='id')
+    bug_links = MultipleJoin('BugCve', joinColumn='cve', orderBy='id')
+    references = MultipleJoin('CveReference', joinColumn='cve', orderBy='id')
+
+    @property
+    def url(self):
+        """See ICve."""
+        return ('http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=%s'
+                % self.sequence)
+
+    @property
+    def displayname(self):
+        return 'CVE-%s' % self.sequence
+
+    @property
+    def title(self):
+        return 'CVE-%s (%s)' % (self.sequence, self.status.title)
+
+    # CveReference's
+    def createReference(self, source, content, url=None):
+        """See ICveReference."""
+        return CveReference(cve=self, source=source, content=content,
+            url=url)
+
+    def removeReference(self, ref):
+        assert ref.cve == self
+        CveReference.delete(ref.id)
+
+    # linking to bugs
+    def linkBug(self, bug, user=None):
+        """See IBugLinkTarget."""
+        for buglink in self.bug_links:
+            if buglink.bug.id == bug.id:
+                return buglink
+        bugcve = BugCve(bug=bug, cve=self)
+        notify(SQLObjectCreatedEvent(bugcve, user=user))
+        return bugcve
+
+    def unlinkBug(self, bug, user=None):
+        """See IBugLinkTarget."""
+        # see if a relevant bug link exists, and if so, delete it
+        for buglink in self.bug_links:
+            if buglink.bug.id == bug.id:
+                notify(SQLObjectDeletedEvent(buglink, user=user))
+                BugCve.delete(buglink.id)
+                return buglink
+
+
+class CveSet:
+    """The full set of ICve's."""
+
+    implements(ICveSet)
+    table = Cve
+
+    def __init__(self, bug=None):
+        """See ICveSet."""
+        self.title = 'The Common Vulnerabilities and Exposures Database'
+
+    def __getitem__(self, sequence):
+        """See ICveSet."""
+        if sequence[:4] in ['CVE-', 'CAN-']:
+            sequence = sequence[4:]
+        if not valid_cve(sequence):
+            return None
+        try:
+            return Cve.bySequence(sequence)
+        except SQLObjectNotFound:
+            return None
+
+    def __iter__(self):
+        """See ICveSet."""
+        return iter(Cve.select())
+
+    def new(self, sequence, description, status=CveStatus.CANDIDATE):
+        """See ICveSet."""
+        return Cve(sequence=sequence, status=status,
+            description=description)
+
+    def latest(self, quantity=5):
+        """See ICveSet."""
+        return Cve.select(orderBy='-datecreated', limit=quantity)
+
+    def latest_modified(self, quantity=5):
+        """See ICveSet."""
+        return Cve.select(orderBy='-datemodified', limit=quantity)
+
+    def search(self, text):
+        """See ICveSet."""
+        query = "Cve.fti @@ ftq(%s) " % sqlvalues(text)
+        return Cve.select(query, distinct=True, orderBy='-datemodified')
+
+    def inText(self, text):
+        """See ICveSet."""
+        # let's look for matching entries
+        for match in cverefpat.finditer(text):
+            # let's get the core CVE data
+            cvestate = match[0]
+            sequence = match[1]
+            # see if there is already a matching CVE ref in the db, and if
+            # not, then create it
+            cve = self[sequence]
+            if cve is None:
+                cve = Cve(sequence=sequence, status=CveStatus.DEPRECATED,
+                    description="This CVEwas automatically created from "
+                    "a reference found in an email or other text. If you "
+                    "are reading this, then this CVE entry is probably "
+                    "erroneous, since this text should be replaced by "
+                    "the official CVE description automatically.")
+            cves.append(cve)
+
+        return sorted(cves, key=lambda a: a.sequence)
+
+    def inMessage(self, message):
+        """See ICveSet."""
+        cves = set()
+        for messagechunk in message:
+            if messagechunk.blob is not None:
+                # we don't process attachments
+                continue
+            elif messagechunk.content is not None:
+                # look for potential CVE URL's and create them as needed
+                cves = cves.union(self.inText(messagechunk.content))
+            else:
+                raise AssertionError('MessageChunk without content or blob.')
+        return sorted(cves, key=lambda a: a.sequence)
+

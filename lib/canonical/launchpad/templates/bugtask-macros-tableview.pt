@@ -4,8 +4,6 @@
       :task_batch_navigator: an IBatchNavigator
   Optional:
       :listing_columns: a list of strings specifying columns to display
-      :mass_edit_allowed: specifies whether a column for selection should
-                         be included
   </tal:comment>
 
   <table class="listing data" width="67%"
@@ -32,8 +30,6 @@
       :tasks: a list of task instances
   Optional:
       :listing_columns: a list of strings specifying columns to display
-      :mass_edit_allowed: specifies whether a column for selection should
-                         be included
   </tal:comment>
 
   <table class="sortable listing" id="bugtask-table" width="67%"
@@ -53,53 +49,16 @@
 </metal:header>
 
 <metal:header define-macro="batching-header">
-  <tr class="results" tal:define="task_batch task_batch_navigator/batch">
+  <tr class="results">
     <td
-      tal:attributes="colspan python: len(listing_columns) +
-                                      int(mass_edit_allowed|0)"
-      tal:define="startno task_batch/startNumber;
-                  endno task_batch/endNumber;
-                  total task_batch/total">
-      <div
-        class="navigation"
-        tal:define="prev_page_url task_batch_navigator/prevBatchURL;
-                    next_page_url task_batch_navigator/nextBatchURL">
-        <a tal:condition="prev_page_url"
-           tal:attributes="href prev_page_url"
-           rel="previous">
-           &laquo; previous
-        </a>
-        <span tal:omit-tag=""
-              tal:repeat="page_url task_batch_navigator/batchPageURLs">
-          <a href="."
-             tal:content="python:page_url.keys()[0]"
-             tal:condition="python:len(page_url) > 1"
-             tal:attributes="href python:page_url.values()[0]">[1]</a>
-        </span>
-        <a tal:condition="next_page_url"
-           tal:attributes="href next_page_url"
-           rel="next">
-           next &raquo;
-        </a>
-      </div>
-
-      <strong tal:content="startno">1</strong>
-      &rarr;
-      <strong tal:content="endno">10</strong>
-      of
-      <tal:comment replace="nothing">
-        XXX: The spacing in the following line is very tricky -- get it
-        wrong and tests will fail.
-      </tal:comment>
-      <span tal:replace="total">42</span> result<span
-          tal:omit-tag="" tal:condition="python: total != 1">s</span>
-    </td>
+      tal:attributes="colspan listing_columns/count:len"
+      tal:content="structure task_batch_navigator/@@+navigation-links" />
   </tr>
 </metal:header>
 
 <metal:header define-macro="sortable-header">
   <tr>
-    <th tal:condition="mass_edit_allowed|nothing">
+    <th tal:condition="python:'select' in listing_columns">
       Select
     </th>
     <th tal:condition="python:'id' in listing_columns"
@@ -151,7 +110,7 @@
 
 <metal:header define-macro="header">
   <tr>
-    <th tal:condition="mass_edit_allowed|nothing">
+    <th tal:condition="python:'select' in listing_columns">
       Select
     </th>
     <th tal:condition="python:'id' in listing_columns">
@@ -197,12 +156,12 @@
     tal:define="package_name string:${task/distribution/name|string:}
                                     ${task/distrorelease/name|string:}
                                     ${task/sourcepackagename/name|string:}">
-  <td tal:condition="mass_edit_allowed|nothing">
+  <td tal:condition="python:'select' in listing_columns">
     <input type="checkbox" name="task" value=""
            tal:attributes="value task/id" />
   </td>
   <td tal:condition="python:'id' in listing_columns">
-      <a tal:attributes="href task/bug/fmt:url"
+      <a tal:attributes="href task/fmt:url"
          tal:content="string:#${task/bug/id}"
          style="text-decoration: underline">42</a>
   </td>

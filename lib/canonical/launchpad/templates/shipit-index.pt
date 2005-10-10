@@ -1,0 +1,93 @@
+<tal:do-this-first tal:content="view/process_form" />
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+  <body>
+    <div metal:fill-slot="main">
+    
+      <tal:block condition="not: request/lp:person">
+              
+        <tal:block condition="not: view/login_success">
+
+          <tal:block condition="view/login_error">
+            <h1>Your Login was Unsuccessful</h1>
+            <p class="error" tal:content="view/login_error" />
+          </tal:block>
+
+          <tal:block condition="not: view/login_error">
+            <h1>Welcome to ShipIt</h1>
+          </tal:block>
+
+          <p>ShipIt lets you order Ubuntu 5.10 (Breezy Badger) CDs that will
+          be posted to you free of charge.</p>
+
+          <p><strong>Please note that orders placed now will not ship until
+          approximately one week after the release of Version
+          5.10.</strong></p>
+
+          <p class="portalMessage" tal:condition="view/announcement|nothing"
+             tal:content="view/announcement" />
+
+          <p>To make orders, or view or change existing orders, you need to
+          sign in using your <a href="https://launchpad.net">Launchpad</a>
+          account first. You can <a href="https://launchpad.net/+login">create
+          a new account</a> if you don't have one already.</p>
+
+          <p>If you have questions about shipments and dates please read the
+          <a href="http://www.ubuntulinux.org/support/documentation/faq/shipit/"
+          >Ubuntu Pressed CDs FAQ</a>.</p>
+          <br />
+
+          <form name="login" method="POST">
+            <table>
+              <tr>
+                <th>
+                  <label for="email">E-mail address:</label>
+                </th>
+                <td>
+                  <input type="text"
+                    name="loginpage_email"
+                    id="email"
+                    size="30"
+                    tal:attributes="value request/email | nothing"
+                  />
+                  <script>
+                  <!--
+                      document.forms['login'].loginpage_email.focus();
+                  //-->
+                  </script>
+                </td>
+              </tr>
+              <tr>
+                <th><label for="password">Password:</label></th>
+                <td> <input
+                    type="password"
+                    id="password"
+                    name="loginpage_password"
+                  />
+                </td>
+              </tr>
+              <tr>
+                <th></th>
+                <td>
+                  <div>
+                    <input
+                      type="submit"
+                      name="loginpage_submit_login"
+                      value="Log In" />
+                    [<a href="https://launchpad.net/+forgottenpassword"
+                      >Forgotten your password?</a>]
+                  </div>
+                </td>
+              </tr>
+            </table>
+            <!-- Preserve extra query parameters as hidden fields. -->
+            <tal:replacement tal:replace="structure view/preserve_query" />
+          </form>
+        </tal:block>
+      </tal:block>
+    </div>
+  </body>
+</html>

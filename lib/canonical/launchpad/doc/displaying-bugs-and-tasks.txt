@@ -121,7 +121,7 @@ Let's see some examples:
   'Filed in 3 other places'
 
   >>> low_priority_task.statuselsewhere
-  'Filed in 1 other place'
+  'Filed in 2 other places'
 
 Let's take a random task related to wontfix_priority_task, mark it
 Fixed, and see how the statuselsewhere value is affected:
@@ -134,3 +134,6 @@ Fixed, and see how the statuselsewhere value is affected:
   'Fixed in 1 of 4 places'
 
   >>> related_task.status = removeSecurityProxy(ORIGINAL_STATUS)
+
+Hmm.. XXX bradb, it looks as though this doctest is unfinished.
+

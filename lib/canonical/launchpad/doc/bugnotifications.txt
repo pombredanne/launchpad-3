@@ -14,7 +14,6 @@ Not *every* change on a bug causes a notification to be sent. This section will
 give a rundown of the things that do cause notifications to be sent. To start
 with, let's login:
 
-    >>> from canonical.launchpad.ftests import login
     >>> login("test@canonical.com")
 
 Then, let's get a handle to our mailer. This is the thing we'll examine to show
@@ -34,7 +33,6 @@ what those notifications look like.
     >>> from canonical.launchpad.event.sqlobjectevent import (
     ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent,
     ...     SQLObjectCreatedEvent)
-    >>> from canonical.launchpad.database.bug import BugFactory
     >>> from canonical.launchpad.interfaces import (
     ...     IProductSet, IPersonSet, IDistributionSet, IDistroReleaseSet,
     ...     ISourcePackageNameSet, IBugSet)
@@ -42,7 +40,7 @@ what those notifications look like.
     >>> bug_submitter = getUtility(IPersonSet).get(12)
     >>> firefox = getUtility(IProductSet).get(4)
 
-    >>> firefox_crashes = BugFactory(
+    >>> firefox_crashes = getUtility(IBugSet).createBug(
     ...     product=firefox, title="firefox crashes all the time",
     ...     comment="this is a comment", owner=bug_submitter)
     >>> notify(SQLObjectCreatedEvent(firefox_crashes))
@@ -63,12 +61,16 @@ examples throughout the rest of this document.
     2
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person via Malone <...>
+    Sample Person <test@canonical.com>
     >>> print to_addr
     ['test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
+    >>> msg["Reply-To"]
+    'Bug ... <...@bugs...>'
+    >>> msg["Sender"]
+    'bounces@canonical.com'
 
 Note that all bug notification emails include an absolute URL to the
 bug:
@@ -163,10 +165,14 @@ let's hang a bug onto the ILaunchBag utility.
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person via Malone <...>
+    Sample Person <test@canonical.com>
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
+    >>> msg["Reply-To"]
+    'Bug ... <...@bugs...>'
+    >>> msg["Sender"]
+    'bounces@canonical.com'
 
     >>> print msg.get_payload(decode=True)
     Public bug report changed:
@@ -200,10 +206,14 @@ let's hang a bug onto the ILaunchBag utility.
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person via Malone <...>
+    Sample Person <test@canonical.com>
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
+    >>> msg["Reply-To"]
+    'Bug ... <...@bugs...>'
+    >>> msg["Sender"]
+    'bounces@canonical.com'
 
     >>> print msg.get_payload(decode=True)
     Public bug report changed:
@@ -240,10 +250,14 @@ let's hang a bug onto the ILaunchBag utility.
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person via Malone <...>
+    Sample Person <test@canonical.com>
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
+    >>> msg["Reply-To"]
+    'Bug ... <...@bugs...>'
+    >>> msg["Sender"]
+    'bounces@canonical.com'
 
     >>> print msg.get_payload(decode=True)
     Public bug report changed:
@@ -276,10 +290,14 @@ let's hang a bug onto the ILaunchBag utility.
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person via Malone <...>
+    Sample Person <test@canonical.com>
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
+    >>> msg["Reply-To"]
+    'Bug ... <...@bugs...>'
+    >>> msg["Sender"]
+    'bounces@canonical.com'
 
     >>> print msg.get_payload(decode = True)
     Public bug report changed:
@@ -322,10 +340,14 @@ task Accepted, assigns himself to it, and adds a status note.
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person via Malone <...>
+    Sample Person <test@canonical.com>
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
+    >>> msg["Reply-To"]
+    'Bug ... <...@bugs...>'
+    >>> msg["Sender"]
+    'bounces@canonical.com'
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
@@ -358,10 +380,14 @@ pretending we've just added a watch to a bug.
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person via Malone <...>
+    Sample Person <test@canonical.com>
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
+    >>> msg["Reply-To"]
+    'Bug ... <...@bugs...>'
+    >>> msg["Sender"]
+    'bounces@canonical.com'
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
@@ -396,10 +422,14 @@ the changes made:
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person via Malone <...>
+    Sample Person <test@canonical.com>
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
+    >>> msg["Reply-To"]
+    'Bug ... <...@bugs...>'
+    >>> msg["Sender"]
+    'bounces@canonical.com'
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
@@ -415,13 +445,13 @@ out to the bug notification recipient list. Let's create a CVE ref and
 attach it to the firefox_crashes bug that we've been using throughout
 this document:
 
-    >>> from canonical.launchpad.interfaces import ICVERefSet
-    >>> from canonical.lp.dbschema import CVEState
-    >>> cveref = getUtility(ICVERefSet).createCVERef(
-    ...     bug = 1, cveref = "2004-0276", cvestate=CVEState.ENTRY,
-    ...     title="test", owner = 12)
-    >>> cveref_added = SQLObjectCreatedEvent(cveref)
-    >>> notify(cveref_added)
+    >>> from canonical.launchpad.interfaces import ICveSet
+    >>> from canonical.lp.dbschema import CveStatus
+    >>> cve = getUtility(ICveSet).new(sequence="2004-0276",
+    ...     description="a brief CVE description", status=CveStatus.ENTRY)
+    >>> from canonical.launchpad.database import Bug
+    >>> bug = Bug.get(1)
+    >>> bugcve = cve.linkBug(bug) # note this creates the event and notifies
 
     >>> transaction.commit()
 
@@ -435,47 +465,14 @@ this document:
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person via Malone <...>
+    Sample Person <test@canonical.com>
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
-
-    >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
-    Public bug report changed:
-    http://.../malone/bugs/1
-    ...
-
-    >>> stub.test_emails = []
-
-Next, let's take a look at what the edit notification looks like:
-
-    >>> cveref_before_modification = MockObject()
-    >>> cveref_before_modification.displayname = cveref.displayname
-    >>> cveref_before_modification.cveref = cveref.cveref
-    >>> cveref_before_modification.title = cveref.title
-    >>> cveref.title = "a much better title"
-    >>> cveref_edited = SQLObjectModifiedEvent(
-    ...     object_before_modification = cveref_before_modification,
-    ...     object = cveref,
-    ...     edited_fields = ("title",))
-    >>> notify(cveref_edited)
-
-    >>> transaction.commit()
-
-    >>> test_emails = list(stub.test_emails)
-    >>> test_emails.sort(by_to_addrs)
-    >>> len(test_emails)
-    4
-    >>> all_to_addrs = [
-    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
-    >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
-    >>> from_addr, to_addr, raw_message = test_emails.pop()
-    >>> print from_addr
-    Sample Person via Malone <...>
-    >>> msg = email.message_from_string(raw_message)
-    >>> msg["Subject"]
-    '[Bug 1] Firefox does not support SVG'
+    >>> msg["Reply-To"]
+    'Bug ... <...@bugs...>'
+    >>> msg["Sender"]
+    'bounces@canonical.com'
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
@@ -510,10 +507,14 @@ publishing an object created event.
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person via Malone <...>
+    Sample Person <test@canonical.com>
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
+    >>> msg["Reply-To"]
+    'Bug ... <...@bugs...>'
+    >>> msg["Sender"]
+    'bounces@canonical.com'
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
@@ -547,10 +548,14 @@ When a link is edited, the notification will look as follows:
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person via Malone <...>
+    Sample Person <test@canonical.com>
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
+    >>> msg["Reply-To"]
+    'Bug ... <...@bugs...>'
+    >>> msg["Sender"]
+    'bounces@canonical.com'
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
@@ -558,6 +563,64 @@ When a link is edited, the notification will look as follows:
     ...
 
     >>> stub.test_emails = []
+
+9. Marking a bug as a duplicate
+
+When someone marks a bug as a duplicate two emails are sent. One to the
+duplicate bug's subscribers, telling that the bug has been marked a
+duplicate, and one email to the subscribers of the bug that the duplicate
+bug is a duplicate of, telling which bug has been marked as a
+duplicate.
+
+    >>> from canonical.launchpad.helpers import Snapshot
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> bug_two_unmodified = Snapshot(bug_two, providing=IBug)
+    >>> bug_two.duplicateof = bug_one
+    >>> marked_duplicate = SQLObjectModifiedEvent(
+    ...     bug_two, bug_two_unmodified, edited_fields=['duplicateof'])
+    >>> notify(marked_duplicate)
+
+    >>> transaction.commit()
+
+    >>> test_emails = list(stub.test_emails)
+    >>> test_emails.sort(by_to_addrs)
+    >>> len(test_emails)
+    8
+    >>> all_to_addrs = [
+    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
+    >>> print all_to_addrs
+    [['dilys@muse.19inch.net'], ['dilys@muse.19inch.net'],
+     ['mark@hbd.com'], ['mark@hbd.com'],
+     ['support@ubuntu.com'], ['support@ubuntu.com'],
+     ['test@canonical.com'], ['test@canonical.com']]
+
+    >>> sample_person_mails = [email.message_from_string(raw_message)
+    ...                        for from_, to, raw_message in test_emails
+    ...                        if 'test@canonical.com' in to]
+    >>> sample_person_mails.sort(key=lambda msg: msg['Subject'])
+    >>> bug_one_notification = sample_person_mails[0]
+    >>> print bug_one_notification['Subject']
+    [Bug 1] Firefox does not support SVG
+    >>> body = bug_one_notification.get_payload(decode=True)
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    http://.../malone/bugs/1
+    ...
+    *** Bug 2 has been marked a duplicate of this bug ***
+
+    >>> bug_two_notification = sample_person_mails[1]
+    >>> print bug_two_notification['Subject']
+    [Bug 2] Blackhole Trash folder
+    >>> body = bug_two_notification.get_payload(decode=True)
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    Public bug report changed:
+    http://.../malone/bugs/2
+    ...
+    *** This bug has been marked a duplicate of 1 ***
+    ...
+
+    >>> stub.test_emails = []
+
 
 Implications of Bug Privacy
 ---------------------------
@@ -640,10 +703,14 @@ private, and Foo Bar is not an explicit subscriber to the bug, he will
     [['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person via Malone <...>
+    Sample Person <test@canonical.com>
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
+    >>> msg["Reply-To"]
+    'Bug ... <...@bugs...>'
+    >>> msg["Sender"]
+    'bounces@canonical.com'
 
     >>> stub.test_emails = []
 

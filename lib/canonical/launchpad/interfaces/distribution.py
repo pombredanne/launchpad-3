@@ -82,7 +82,6 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
 
     releases = Attribute("DistroReleases inside this Distributions")
     bounties = Attribute(_("The bounties that are related to this distro."))
-    bugtasks = Attribute("The bug tasks filed in this distro.")
     bugCounter = Attribute("The distro bug counter")
     milestones = Attribute(_(
         "The release milestones associated with this distribution. "
@@ -138,6 +137,9 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         None.
         """
 
+    def getDistroReleaseAndPocket(distroreleasename):
+        """Return a (distrorelease,pocket) tuple which is the given textual
+        distroreleasename in this distribution."""
 
 class IDistributionSet(Interface):
     """Interface for DistrosSet"""

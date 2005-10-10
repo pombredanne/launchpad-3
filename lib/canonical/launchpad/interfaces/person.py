@@ -16,21 +16,22 @@ __all__ = [
     'ITeamParticipation',
     'IRequestPeopleMerge',
     'IObjectReassignment',
-    'IShipItCountry',
     'ITeamReassignment',
     'ITeamCreation',
-    'NameAlreadyTaken'
+    'NameAlreadyTaken',
+    'EmailAddressAlreadyTaken'
     ]
 
 from zope.schema import (
-    List, Tuple, Choice, Datetime, Int, Text, TextLine, Password,
-    ValidationError)
+    Choice, Datetime, Int, Text, TextLine, Password, ValidationError, Bytes)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 from zope.i18nmessageid import MessageIDFactory
 
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.interfaces.validation import (
+    valid_emblem, valid_hackergotchi)
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, EmailAddressStatus)
@@ -38,10 +39,22 @@ from canonical.lp.dbschema import (
 _ = MessageIDFactory('launchpad')
 
 
+class StrippingTextLine(TextLine):
+    """A TextLine field that is always stripped."""
+
+    def fromUnicode(self, str):
+        return TextLine.fromUnicode(self, str.strip())
+
+
 class NameAlreadyTaken(ValidationError):
     __doc__ = _("""This name is already in use""")
     # XXX mpt 20050826: This should be moved out of person to be more generic.
     # (It's currently used by projects too.)
+
+
+class EmailAddressAlreadyTaken(Exception):
+    """The email address is already registered in Launchpad."""
+
 
 class PersonNameField(TextLine):
 
@@ -54,7 +67,8 @@ class PersonNameField(TextLine):
 
         person = getUtility(IPersonSet).getByName(value, ignore_merged=False)
         if person is not None:
-            raise NameAlreadyTaken(value)
+            raise NameAlreadyTaken(_(
+                "The name %s is already in use." % value))
 
 
 class IPerson(Interface):
@@ -65,13 +79,13 @@ class IPerson(Interface):
             )
     name = PersonNameField(
             title=_('Name'), required=True, readonly=False,
-            constraint=valid_name,
+            constraint=name_validator,
             description=_(
                 "A short unique name, beginning with a lower-case "
                 "letter or number, and containing only letters, "
                 "numbers, dots, hyphens, or plus signs.")
             )
-    displayname = TextLine(
+    displayname = StrippingTextLine(
             title=_('Display Name'), required=True, readonly=False,
             description=_("Your name as you would like it displayed "
             "throughout Launchpad. Most people use their full name "
@@ -96,6 +110,21 @@ class IPerson(Interface):
             title=_('Karma'), readonly=False,
             description=_('The cached karma for this person.')
             )
+    homepage_content = Text(title=_("Homepage Content"), required=False,
+        description=_("The content of your home page. Edit this and it "
+        "will be displayed for all the world to see. It is NOT a wiki "
+        "so you cannot undo changes."))
+    emblem = Bytes(
+        title=_("Emblem"), required=False, description=_("A small image, "
+        "max 16x16 pixels, that can be used to refer to this team of person."),
+        constraint=valid_emblem)
+    hackergotchi = Bytes(
+        title=_("Hackergotchi"), required=False, description=_("An image, "
+        "max 96x96 pixels, that will be displayed on your home page. "
+        "Traditionally this is a great big grinning image of your mug. "
+        "Make the most of it."),
+        constraint=valid_hackergotchi)
+
     addressline1 = TextLine(
             title=_('Address'), required=True, readonly=False,
             description=_('Your address (Line 1)')
@@ -156,9 +185,10 @@ class IPerson(Interface):
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
-    gpgkeys = Attribute("List of GPGkeys")
+    gpgkeys = Attribute("List of valid GPGkeys ordered by ID")
     pendinggpgkeys = Attribute("Set of GPG fingerprints pending validation")
-    inactivegpgkeys = Attribute("List of inactive GPG keys in LP Context")
+    inactivegpgkeys = Attribute("List of inactive GPG keys in LP Context, "
+                                "ordered by ID")
     ubuntuwiki = Attribute("The Ubuntu WikiName of this Person.")
     otherwikis = Attribute(
         "All WikiNames of this Person that are not the Ubuntu one.")
@@ -176,11 +206,12 @@ class IPerson(Interface):
         "subscribes.")
     maintainerships = Attribute("This person's Maintainerships")
     activities = Attribute("Karma")
-    memberships = Attribute("List of TeamMembership objects for Teams this "
-        "Person is a member of. Either active, inactive or proposed "
-        "member.")
-    activememberships = Attribute("List of TeamMembership objects for "
-        "people who are members in this team.")
+    myactivememberships = Attribute(
+        "List of TeamMembership objects for Teams this Person is an active "
+        "member of.")
+    activememberships = Attribute(
+        "List of TeamMembership objects for people who are active members "
+        "in this team.")
     guessedemails = Attribute("List of emails with status NEW. These email "
         "addresses probably came from a gina or POFileImporter run.")
     validatedemails = Attribute("Emails with status VALIDATED")
@@ -199,9 +230,6 @@ class IPerson(Interface):
     inactivemembers = Attribute(("List of members with EXPIRED or "
                                  "DEACTIVATED status"))
     deactivatedmembers = Attribute("List of members with DEACTIVATED status")
-    members = Attribute("The list of TeamMemberships for people who are "
-        "members or proposed members of this team, sorted by membership "
-        "state.")
     specifications = Attribute("Any specifications related to this "
         "person, either because the are a subscriber, or an assignee, or "
         "a drafter, or the creator. Sorted newest-first.")
@@ -320,6 +348,14 @@ class IPerson(Interface):
         This method is meant to be called by objects which implement either
         IPerson or ITeam, and it will return True when you ask if a Person is
         a member of himself (i.e. person1.inTeam(person1)).
+        """
+
+    def pastShipItRequests():
+        """Return the requests made by this person that can't be changed
+        anymore.
+        
+        Any request that is cancelled, denied or sent for shipping can't be
+        changed.
         """
 
     def currentShipItRequest():
@@ -453,6 +489,7 @@ class IPerson(Interface):
 
         If the given language is not present, nothing  will happen.
         """
+
 
 class ITeam(IPerson):
     """ITeam extends IPerson.
@@ -819,11 +856,4 @@ class ITeamCreation(ITeam):
             "team creation, a new message will be sent to this address with "
             "instructions on how to finish its registration."),
         constraint=valid_email)
-
-
-class IShipItCountry(Interface):
-    """This schema is only to get the Country widget."""
-
-    country = Choice(title=_('Country'), required=True, 
-                     vocabulary='CountryName')
 

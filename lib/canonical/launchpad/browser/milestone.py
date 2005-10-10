@@ -5,7 +5,9 @@
 __metaclass__ = type
 
 __all__ = [
+    'MilestoneSetNavigation',
     'MilestoneFacets',
+    'MilestoneContextMenu',
     'MilestoneAddView',
     'MilestoneEditView',
     ]
@@ -16,7 +18,13 @@ from canonical.launchpad.interfaces import (
     IProduct, IDistribution, IMilestone, IMilestoneSet)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
-from canonical.launchpad.webapp import StandardLaunchpadFacets, DefaultLink
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, ContextMenu, Link, GetitemNavigation)
+
+
+class MilestoneSetNavigation(GetitemNavigation):
+
+    usedfor = IMilestoneSet
 
 
 class MilestoneFacets(StandardLaunchpadFacets):
@@ -24,13 +32,24 @@ class MilestoneFacets(StandardLaunchpadFacets):
 
     usedfor = IMilestone
 
-    links = ['overview']
+    enable_only = ['overview']
 
     def overview(self):
         target = ''
         text = 'Overview'
         summary = 'General information about %s' % self.context.displayname
-        return DefaultLink(target, text, summary)
+        return Link(target, text, summary)
+
+
+class MilestoneContextMenu(ContextMenu):
+
+    usedfor = IMilestone
+
+    links = ['edit']
+
+    def edit(self):
+        text = 'Edit Milestone'
+        return Link('+edit', text, icon='edit')
 
 
 class MilestoneAddView:

@@ -58,11 +58,12 @@ class KarmaSet:
         If <category> is not None, return the value referent to the performed
         actions of that category, only.
         """
+        now = datetime.now(pytz.timezone('UTC'))
         catfilter = ''
         if category is not None:
             catfilter = ' AND KarmaAction.category = %s' % sqlvalues(category)
 
-        begin = datetime.now(pytz.timezone('UTC')) - timedelta(30)
+        begin = now - timedelta(30)
         q = ('Karma.action = KarmaAction.id AND Karma.person = %s '
              'AND Karma.datecreated >= %s' % sqlvalues(person.id, begin))
         q += catfilter
@@ -71,10 +72,10 @@ class KarmaSet:
         if recentpoints is None:
            recentpoints = 0
 
-        begin = datetime.now(pytz.timezone('UTC')) - timedelta(90)
+        begin = now - timedelta(90)
         end = datetime.now(pytz.timezone('UTC')) - timedelta(30)
         q = ('Karma.action = KarmaAction.id AND Karma.person = %s '
-             'AND Karma.datecreated >= %s AND Karma.datecreated < %s '
+             'AND Karma.datecreated BETWEEN %s AND %s'
              % sqlvalues(person.id, begin, end))
         q += catfilter
         results = KarmaAction.select(q, clauseTables=['Karma'])
@@ -82,9 +83,11 @@ class KarmaSet:
         if notsorecentpoints is None:
            notsorecentpoints = 0
 
-        end = datetime.now(pytz.timezone('UTC')) - timedelta(90)
+        begin = now - timedelta(365)
+        end = now - timedelta(90)
         q = ('Karma.action = KarmaAction.id AND Karma.person = %s '
-             'AND Karma.datecreated < %s' % sqlvalues(person.id, end))
+             'AND Karma.datecreated BETWEEN %s AND %s'
+             % sqlvalues(person.id, begin, end))
         q += catfilter
         results = KarmaAction.select(q, clauseTables=['Karma'])
         oldpoints = results.sum('points')

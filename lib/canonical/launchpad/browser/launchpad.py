@@ -2,27 +2,167 @@
 """Browser code for the launchpad application."""
 
 __metaclass__ = type
-__all__ = ['LoginStatus']
+__all__ = [
+    'LoginStatus',
+    'MaintenanceMessage',
+    'MenuBox',
+    'RosettaContextMenu',
+    'MaloneContextMenu',
+    'LaunchpadRootNavigation',
+    'FOAFApplicationNavigation',
+    'MaloneApplicationNavigation'
+    ]
 
 import cgi
 import urllib
+import os.path
+from datetime import timedelta, datetime
 
+from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
+from zope.app.errorservice.interfaces import ILocalErrorReportingService
 from zope.component import getUtility
+
+import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ILaunchpadRoot, IRosettaApplication)
+    ILaunchBag, ILaunchpadRoot, IRosettaApplication, IMaloneApplication,
+    IProductSet, IShipItApplication, IPersonSet, IDistributionSet,
+    ISourcePackageNameSet, IBinaryPackageNameSet, IProjectSet,
+    ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
+    IBazaarApplication, ICodeOfConductSet, IMaloneApplication,
+    IRegistryApplication, IRosettaApplication, ISpecificationSet, ISprintSet,
+    ITicketSet, IFOAFApplication, IBuilderSet, IBountySet, IBugSet,
+    IBugTrackerSet, ICveSet)
+from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ApplicationMenu, DefaultLink, Link)
+    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
+    Navigation, stepto)
+
+# XXX SteveAlexander, 2005-09-22, this is imported here because there is no
+#     general timedelta to duration format adapter available.  This should
+#     be factored out into a generally available adapter for both this
+#     code and for TALES namespace code to use.
+#     Same for MenuAPI.
+from canonical.launchpad.webapp.tales import (
+    DurationFormatterAPI, MenuAPI)
+
+
+class MaloneApplicationNavigation(Navigation):
+
+    usedfor = IMaloneApplication
+
+    newlayer = canonical.launchpad.layers.MaloneLayer
+
+    @stepto('bugs')
+    def bugs(self):
+        return getUtility(IBugSet)
+
+    @stepto('bugtrackers')
+    def bugtrackers(self):
+        return getUtility(IBugTrackerSet)
+
+    @stepto('cve')
+    def cve(self):
+        return getUtility(ICveSet)
+
+    @stepto('distros')
+    def distros(self):
+        return getUtility(IDistributionSet)
+
+    @stepto('projects')
+    def projects(self):
+        return getUtility(IProjectSet)
+
+    @stepto('products')
+    def products(self):
+        return getUtility(IProductSet)
+
+    def traverse(self, name):
+        if name.isdigit():
+            # Make /bugs/$bug.id and /malone/$bug.id Just Work
+            return getUtility(IBugSet).get(name)
+
+
+class MenuBox(LaunchpadView):
+    """View class that helps its template render the actions menu box.
+
+    Nothing at all is rendered if there are no contextmenu items and also
+    no applicationmenu items.
+
+    If there is at least one item, the template is rendered.
+    """
+
+    usedfor = dict  # Really a TALES CONTEXTS object.
+
+    def initialize(self):
+        menuapi = MenuAPI(self.context)
+        self.contextmenuitems = [
+            link for link in menuapi.context() if link.enabled]
+        self.applicationmenuitems = [
+            link for link in menuapi.application() if link.enabled]
+
+    def render(self):
+        if not self.contextmenuitems and not self.applicationmenuitems:
+            return ''
+        else:
+            return self.template()
+
+
+class MaintenanceMessage:
+    """Display a maintenance message if the control file is present and
+    it contains a valid iso format time.
+
+    The maintenance message shows the approximate time before launchpad will
+    be taken offline for maintenance.
+
+    The control file is +maintenancetime.txt in the launchpad root.
+
+    If there is no maintenance message, an empty string is returned.
+
+    If the maintenance time is too far in the future, then an empty string
+    is returned.
+
+    If the maintenance time is in the past, then the maintenance message says
+    that Launchpad will go offline "very very soon".
+
+    If the text in the maintenance message is poorly formatted, then an
+    empty string is returned, and a warning should be logged.
+    """
+
+    timelefttext = None
+
+    notmuchtime = timedelta(seconds=30)
+    toomuchtime = timedelta(seconds=1800)  # 30 minutes
+
+    def __call__(self):
+        if os.path.exists('+maintenancetime.txt'):
+            message = file('+maintenancetime.txt').read()
+            try:
+                maintenancetime = parseDatetimetz(message)
+            except DateTimeError:
+                # XXX log a warning here.
+                #     SteveAlexander, 2005-09-22
+                return ''
+            nowtz = datetime.utcnow().replace(tzinfo=tzinfo(0))
+            timeleft = maintenancetime - nowtz
+            if timeleft > self.toomuchtime:
+                return ''
+            elif timeleft < self.notmuchtime:
+                self.timelefttext = 'very very soon'
+            else:
+                self.timelefttext = 'in %s' % (
+                    DurationFormatterAPI(timeleft).approximateduration())
+            return self.index()
+        return ''
 
 
 class LaunchpadRootFacets(StandardLaunchpadFacets):
+
     usedfor = ILaunchpadRoot
-    links = ['overview', 'bugs', 'tickets', 'specs', 'bounties',
-             'translations', 'calendar']
 
     def overview(self):
         target = ''
         text = 'Overview'
-        return DefaultLink(target, text)
+        return Link(target, text)
 
     def translations(self):
         target = 'rosetta'
@@ -34,15 +174,15 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         text = 'Bugs'
         return Link(target, text)
 
-    def tickets(self):
-        target = 'tickets'
-        text = 'Tickets'
+    def support(self):
+        target = 'support'
+        text = 'Support'
         summary = 'Launchpad technical support tracker.'
         return Link(target, text, summary)
 
-    def specs(self):
+    def specifications(self):
         target = 'specs'
-        text = 'Specs'
+        text = 'Specifications'
         summary = 'Launchpad feature specification tracker.'
         return Link(target, text, summary)
 
@@ -58,15 +198,23 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
         return Link(target, text)
 
 
-class RosettaAppMenus(ApplicationMenu):
+class MaloneContextMenu(ContextMenu):
+    usedfor = IMaloneApplication
+    links = ['cvetracker']
+
+    def cvetracker(self):
+        text = 'CVE Tracker'
+        return Link('cve/', text, icon='cve')
+
+
+class RosettaContextMenu(ContextMenu):
     usedfor = IRosettaApplication
-    facet = 'translations'
     links = ['overview', 'about', 'preferences']
 
     def overview(self):
         target = ''
         text = 'Translations'
-        return DefaultLink(target, text)
+        return Link(target, text)
 
     def upload(self):
         target = '+upload'
@@ -160,3 +308,60 @@ class LoginStatus:
         if full_url.endswith(logout_url_end):
             full_url = full_url[:-len(logout_url_end)]
         return '%s/+login%s' % (full_url, query_string)
+
+
+class LaunchpadRootNavigation(Navigation):
+
+    usedfor = ILaunchpadRoot
+
+    stepto_utilities = {
+        'products': IProductSet,
+        'shipit': IShipItApplication,
+        'people': IPersonSet,
+        'distros': IDistributionSet,
+        'sourcepackagenames': ISourcePackageNameSet,
+        'binarypackagenames': IBinaryPackageNameSet,
+        'projects': IProjectSet,
+        'token': ILoginTokenSet,
+        'karmaaction': IKarmaActionSet,
+        'potemplatenames': IPOTemplateNameSet,
+        'bazaar': IBazaarApplication,
+        'codeofconduct': ICodeOfConductSet,
+        'malone': IMaloneApplication,
+        'bugs': IMaloneApplication,
+        'registry': IRegistryApplication,
+        'rosetta': IRosettaApplication,
+        'specs': ISpecificationSet,
+        'sprints': ISprintSet,
+        'support': ITicketSet,
+        'foaf': IFOAFApplication,
+        '+builds': IBuilderSet,
+        'bounties': IBountySet,
+        'errors': ILocalErrorReportingService
+        }
+
+    def traverse(self, name):
+        if name in self.stepto_utilities:
+            return getUtility(self.stepto_utilities[name])
+        else:
+            return None
+
+    @stepto('calendar')
+    def calendar(self):
+        # XXX permission=launchpad.AnyPerson
+        return MergedCalendar()
+
+
+class FOAFApplicationNavigation(Navigation):
+
+    usedfor = IFOAFApplication
+
+    @stepto('projects')
+    def projects(self):
+        # DEPRECATED
+        return getUtility(IProjectSet)
+
+    @stepto('people')
+    def people(self):
+        # DEPRECATED
+        return getUtility(IPersonSet)

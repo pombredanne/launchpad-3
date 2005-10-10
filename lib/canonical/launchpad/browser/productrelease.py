@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ProductReleaseContextMenu',
     'ProductReleaseEditView',
     'ProductReleaseAddView',
     'ProductReleaseRdfView',
@@ -23,7 +24,27 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad import helpers
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import (
+    canonical_url, ContextMenu, Link, enabled_with_permission)
+
+
+class ProductReleaseContextMenu(ContextMenu):
+
+    usedfor = IProductRelease
+    links = ['edit', 'administer', 'download']
+
+    def edit(self):
+        text = 'Edit Details'
+        return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+review', text, icon='edit')
+
+    def download(self):
+        text = 'Download RDF Metadata'
+        return Link('+rdf', text, icon='download')
 
 
 class ProductReleaseAddView(AddView):
