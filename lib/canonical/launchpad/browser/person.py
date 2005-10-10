@@ -36,10 +36,7 @@ __all__ = [
 import cgi
 import sets
 from StringIO import StringIO
-from datetime import datetime
 
-from zope.schema import Text, Bytes
-from zope.interface import Interface, Attribute
 from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
@@ -63,8 +60,8 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, IKarmaActionSet,
     IKarmaSet, UBUNTU_WIKI_URL, ITeamMembershipSet, IObjectReassignment,
     ITeamReassignment, IPollSubset, IPerson, ICalendarOwner,
-    BugTaskSearchParams, ITeam, valid_emblem, valid_hackergotchi,
-    ILibraryFileAliasSet, ITeamMembershipSubset, IPollSet)
+    BugTaskSearchParams, ITeam, ILibraryFileAliasSet, ITeamMembershipSubset,
+    IPollSet)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.form import FormView
@@ -610,21 +607,22 @@ class PersonView:
     def userCanRequestToJoin(self):
         """Return true if the user can request to join this team.
 
-        The user can request if it never asked to join this team, if it
-        already asked and the subscription status is DECLINED or if the team's
-        subscriptionpolicy is OPEN and the user is not an APPROVED or ADMIN
-        member.
+        The user can request if this is not a RESTRICTED team or if he never
+        asked to join this team, if he already asked and the subscription
+        status is DECLINED.
         """
+        if self.context.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+            return False
+
         tm = self._getMembershipForUser()
         if tm is None:
             return True
 
         adminOrApproved = [TeamMembershipStatus.APPROVED,
                            TeamMembershipStatus.ADMIN]
-        open = TeamSubscriptionPolicy.OPEN
-        if tm.status == TeamMembershipStatus.DECLINED or (
-            tm.status not in adminOrApproved and
-            tm.team.subscriptionpolicy == open):
+        if (tm.status == TeamMembershipStatus.DECLINED or
+            (tm.status not in adminOrApproved and
+             tm.team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN)):
             return True
         else:
             return False
@@ -1160,12 +1158,12 @@ class PersonHackergotchiView(FormView):
 class TeamJoinView(PersonView):
 
     def processForm(self):
-        if self.request.method != "POST" or not self.userCanRequestToJoin():
+        if self.request.method != "POST":
             # Nothing to do
             return
 
         user = getUtility(ILaunchBag).user
-        if self.request.form.get('join'):
+        if self.request.form.get('join') and self.userCanRequestToJoin():
             user.join(self.context)
             appurl = self.request.getApplicationURL()
             notify(JoinTeamRequestEvent(user, self.context, appurl))
