@@ -10,7 +10,7 @@
     </metal:leftportlets>
 
     <div metal:fill-slot="main">
-      <h2>Coming Events</h2>
+      <h1>Coming events</h1>
 
       <table class="listing" tal:condition="view/events">
         <thead>
