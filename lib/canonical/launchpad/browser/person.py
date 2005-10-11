@@ -37,10 +37,7 @@ __all__ = [
 import cgi
 import sets
 from StringIO import StringIO
-from datetime import datetime
 
-from zope.schema import Text, Bytes
-from zope.interface import Interface, Attribute
 from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
@@ -64,8 +61,8 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, IKarmaActionSet,
     IKarmaSet, UBUNTU_WIKI_URL, ITeamMembershipSet, IObjectReassignment,
     ITeamReassignment, IPollSubset, IPerson, ICalendarOwner,
-    BugTaskSearchParams, ITeam, valid_emblem, valid_hackergotchi,
-    ILibraryFileAliasSet, ITeamMembershipSubset, IPollSet)
+    BugTaskSearchParams, ITeam, ILibraryFileAliasSet, ITeamMembershipSubset,
+    IPollSet)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.form import FormView
@@ -663,21 +660,22 @@ class PersonView:
     def userCanRequestToJoin(self):
         """Return true if the user can request to join this team.
 
-        The user can request if it never asked to join this team, if it
-        already asked and the subscription status is DECLINED or if the team's
-        subscriptionpolicy is OPEN and the user is not an APPROVED or ADMIN
-        member.
+        The user can request if this is not a RESTRICTED team or if he never
+        asked to join this team, if he already asked and the subscription
+        status is DECLINED.
         """
+        if self.context.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+            return False
+
         tm = self._getMembershipForUser()
         if tm is None:
             return True
 
         adminOrApproved = [TeamMembershipStatus.APPROVED,
                            TeamMembershipStatus.ADMIN]
-        open = TeamSubscriptionPolicy.OPEN
-        if tm.status == TeamMembershipStatus.DECLINED or (
-            tm.status not in adminOrApproved and
-            tm.team.subscriptionpolicy == open):
+        if (tm.status == TeamMembershipStatus.DECLINED or
+            (tm.status not in adminOrApproved and
+             tm.team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN)):
             return True
         else:
             return False
@@ -1213,12 +1211,12 @@ class PersonHackergotchiView(FormView):
 class TeamJoinView(PersonView):
 
     def processForm(self):
-        if self.request.method != "POST" or not self.userCanRequestToJoin():
+        if self.request.method != "POST":
             # Nothing to do
             return
 
         user = getUtility(ILaunchBag).user
-        if self.request.form.get('join'):
+        if self.request.form.get('join') and self.userCanRequestToJoin():
             user.join(self.context)
             appurl = self.request.getApplicationURL()
             notify(JoinTeamRequestEvent(user, self.context, appurl))
@@ -1472,16 +1470,24 @@ class RequestPeopleMergeView(AddView):
                                   LoginTokenType.ACCOUNTMERGE)
         dupename = dupeaccount.name
         sendMergeRequestEmail(token, dupename, self.request.getApplicationURL())
-        self._nextURL = './+mergerequest-sent'
+        self._nextURL = './+mergerequest-sent?dupe=%d' % dupeaccount.id
 
 
 class FinishedPeopleMergeRequestView:
     """A simple view for a page where we only tell the user that we sent the
-    email with further instructions to complete the merge."""
+    email with further instructions to complete the merge.
+    
+    This view is used only when the dupe account has a single email address.
+    """
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    def dupe_email(self):
+        """Return the email address of the dupe account to which we sent the
+        token.
+        """
+        dupe_account = getUtility(IPersonSet).get(self.request.get('dupe'))
+        results = getUtility(IEmailAddressSet).getByPerson(dupe_account)
+        assert len(results) == 1
+        return results[0].email
 
 
 class RequestPeopleMergeMultipleEmailsView:
@@ -1493,6 +1499,7 @@ class RequestPeopleMergeMultipleEmailsView:
         self.request = request
         self.formProcessed = False
         self.dupe = None
+        self.notified_addresses = []
 
     def processForm(self):
         dupe = self.request.form.get('dupe')
@@ -1532,6 +1539,7 @@ class RequestPeopleMergeMultipleEmailsView:
                 dupename = self.dupe.name
                 url = self.request.getApplicationURL()
                 sendMergeRequestEmail(token, dupename, url)
+                self.notified_addresses.append(email.email)
 
 
 def sendMergeRequestEmail(token, dupename, appurl):
