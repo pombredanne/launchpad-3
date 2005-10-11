@@ -83,11 +83,11 @@ need to talk about distroreleases such as ubuntu/hoary-security we need some
 way to decompose that into the distrorelease and the pocket. Distribution
 can do that for us.
 
-If we ask for a totally unknown distrorelease, we raise KeyError
+If we ask for a totally unknown distrorelease, we raise NotFoundError
     >>> ubuntu.getDistroReleaseAndPocket('unknown') 
     Traceback (most recent call last):
     ...
-    KeyError: 'unknown'
+    NotFoundError: 'unknown'
 
 If we ask for a plain distrorelease, it should come back with the RELEASE
 pocket as the pocket.
@@ -106,8 +106,8 @@ on the other side.
     SECURITY
 
 If we ask for a valid distrorelease which doesn't have a given pocket it should
-raise KeyError for us
+raise NotFoundError for us
     >>> ubuntu.getDistroReleaseAndPocket('hoary-bullshit')
     Traceback (most recent call last):
     ...
-    KeyError: 'hoary-bullshit'
+    NotFoundError: 'hoary-bullshit'

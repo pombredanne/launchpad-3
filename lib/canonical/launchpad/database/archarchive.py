@@ -7,14 +7,15 @@ __all__ = ['archive_present', 'createBranch', 'Archive', 'ArchArchive',
 
 import warnings
 from canonical.database.sqlbase import quote, SQLBase
-from sqlobject import \
-    StringCol, BoolCol, ForeignKey, SQLObjectMoreThanOneResultError
+from sqlobject import (
+    StringCol, BoolCol, ForeignKey, SQLObjectMoreThanOneResultError)
 
-from canonical.launchpad.interfaces import \
-    ArchiveNotRegistered, ArchiveLocationDoublyRegistered
+from canonical.launchpad.interfaces import (
+    ArchiveNotRegistered, ArchiveLocationDoublyRegistered, NameNotAvailable)
 
 from canonical.lp.dbschema import EnumCol
 from canonical.lp.dbschema import ArchArchiveType
+
 
 def archive_present(archive_name):
     results = Archive.select('name = ' + quote(archive_name))
@@ -184,7 +185,8 @@ class ArchiveMapper:
     def insert(self, archive, title='', description=''):
         """Insert archive into the database."""
         if self.findByName(archive.name).exists():
-            raise KeyError("archive %s already exists" % archive.name)
+            raise NameNotAvailable(
+                "archive %s already exists" % archive.name)
         Archive(name=archive.name, title=title, description=description,
                 visible=True)
 

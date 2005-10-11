@@ -57,16 +57,6 @@
             lp:url="/bounties/$Bounty.name/+subscribe" />
     </browser:pages>
 
-    <browser:pages
-        for="canonical.launchpad.interfaces.IBounty"
-        class="canonical.launchpad.browser.BountyView"
-        permission="zope.Public">
-        <browser:page
-            name="+portlet-actions"
-            template="../templates/bounty-portlet-actions.pt"
-            />
-    </browser:pages>
-
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IBounty"
@@ -113,20 +103,16 @@
         <allow interface="canonical.launchpad.interfaces.IBountySet" />
     </securedutility>
 
-    <browser:suburl
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        utility="canonical.launchpad.interfaces.IBountySet"
-        name="bounties" />
-
     <browser:url
         for="canonical.launchpad.interfaces.IBountySet"
         path_expression="string:bounties"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBountySet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BountySetNavigation"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBountySet"
@@ -154,9 +140,6 @@
       <browser:page
         template="../templates/bounties-portlet-about.pt"
         name="+portlet-about" />
-      <browser:page
-        template="../templates/bounties-portlet-actions.pt"
-        name="+portlet-actions" />
       <browser:page
         template="../templates/bounties-portlet-details.pt"
         name="+portlet-details" />

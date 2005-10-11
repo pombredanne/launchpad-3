@@ -15,7 +15,8 @@ from canonical.launchpad.interfaces import (
     IPOTemplateNameSet, ISourcePackage, ILaunchpadCelebrities, IDistroRelease,
     IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
     IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
-    IStandardShipItRequestSet, IStandardShipItRequest)
+    IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
+    IShippingRun)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -90,6 +91,10 @@ class AdminShippingRequestByShipItAdmins(AuthorizationBase):
         return user.inTeam(shipitadmins)
 
 
+class AdminShippingRunByShipItAdmins(AdminShippingRequestByShipItAdmins):
+    usedfor = IShippingRun
+
+
 class AdminStandardShipItOrderSetByShipItAdmins(
         AdminShippingRequestByShipItAdmins):
     usedfor = IStandardShipItRequestSet
@@ -98,6 +103,11 @@ class AdminStandardShipItOrderSetByShipItAdmins(
 class AdminStandardShipItOrderByShipItAdmins(
         AdminShippingRequestByShipItAdmins):
     usedfor = IStandardShipItRequest
+
+
+class AdminShipItApplicationByShipItAdmins(
+        AdminShippingRequestByShipItAdmins):
+    usedfor = IShipItApplication
 
 
 class AdminShippingRequestSetByShipItAdmins(AdminShippingRequestByShipItAdmins):
@@ -439,6 +449,12 @@ class EditPOTemplateDetails(EditByOwnersOrAdmins):
 
         return (EditByOwnersOrAdmins.checkAuthenticated(self, user) or
                 user.inTeam(rosetta_experts))
+
+
+class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
+    """Permissions to edit all aspects of an IPOTemplate."""
+    permission = 'launchpad.Admin'
+    usedfor = IPOTemplate
 
 
 # XXX: Carlos Perello Marin 2005-05-24: This should be using

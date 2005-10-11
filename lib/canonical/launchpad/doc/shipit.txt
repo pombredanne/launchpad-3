@@ -11,7 +11,8 @@ these CDs are sent to the user.
   >>> from canonical.launchpad.ftests import login
   >>> from canonical.launchpad.interfaces import (
   ...    IStandardShipItRequestSet, IShippingRequestSet, IPersonSet,
-  ...    IShippingRequest, ILaunchBag, ShippingRequestStatus)
+  ...    IShippingRequest, ILaunchBag, ShippingRequestStatus, IShipmentSet,
+  ...    ShippingRequestPriority)
   >>> requestset = getUtility(IShippingRequestSet)
   >>> foobar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
 
@@ -21,16 +22,22 @@ Let's create a new request for foo.bar@canonical.com.
   >>> quantityx86 = 30
   >>> quantityamd64 = 5
   >>> quantityppc = 2
+  >>> country = 31 # Brazil
+  >>> city = 'some city'
+  >>> addressline1 = 'address1'
+  >>> name = 'the name'
   >>> reason = ("I'm going to give away some CDs in the next meeting of my "
   ...           "city's LUG.")
   >>> request = requestset.new(recipient, quantityx86, quantityamd64,
-  ...                          quantityppc, reason=reason)
+  ...                          quantityppc, name, country, city,
+  ...                          addressline1, reason=reason)
 
 We're not allowed to add a second request for the same recipient, while the
 existing one is not yet exported.
 
   >>> request = requestset.new(recipient, quantityx86, quantityamd64,
-  ...                          quantityppc, reason=reason)
+  ...                          quantityppc, name, country, city,
+  ...                          addressline1, reason=reason)
   Traceback (most recent call last):
   ...
   AssertionError
@@ -110,18 +117,29 @@ quantity*approved will be set back to None.
   True
   >>> flush_database_updates()
 
+When a request is cancelled it'll not show up as the recipient's current
+request.
+
+  >>> recipient.currentShipItRequest() is None
+  True
+
+Instead, it'll be part of the past requests of that recipient.
+
+  >>> request in recipient.pastShipItRequests()
+  True
+
 
 Searching for requests
 ----------------------
 
-We have five custom requests. Two of them are cancelled.
+We have twelve custom requests. Two of them are cancelled.
 
-  >>> [r.recipient.name 
+  >>> [r.recipient.name
   ...      for r in requestset.searchCustomRequests(omit_cancelled=False)]
-  [u'lifeless', u'cprov', u'ddaa', u'no-priv', u'name16']
+  [u'lifeless', u'cprov', u'ddaa', u'debonzi', u'kurem', u'carlos', u'daf', u'tsukimi', u'jdub', u'marilize', u'no-priv', u'name16']
 
-  >>> [r.recipient.name for r in requestset.searchCustomRequests()]
-  [u'lifeless', u'ddaa', u'no-priv']
+  > [r.recipient.name for r in requestset.searchCustomRequests()]
+  [u'lifeless', u'ddaa', u'debonzi', u'kurem', u'carlos', u'daf', u'tsukimi', u'jdub', u'marilize', u'no-priv']
 
 From the three non-cancelled, one is approved.
 
@@ -155,3 +173,33 @@ It's also possible to search for standard requests of a specific type.
   True
   >>> requests[0].quantityppc == standardrequest.quantityppc
   True
+
+When exporting requests, we'll want to get all approved requests that weren't
+approved yet, with a given priority. This is done using the
+getUnshippedRequests method of ShippingRequestSet.
+
+  >>> requestset.getUnshippedRequests(ShippingRequestPriority.NORMAL).count()
+  3
+
+Now we do an export of all normal priority orders that are ready to be
+shipped.
+
+  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+  >>> LibrarianTestSetup().setUp()
+
+  >>> import subprocess
+  >>> process = subprocess.Popen(
+  ...     'cronscripts/shipit-exports.py -q --priority=normal', shell=True,
+  ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  >>> (out, err) = process.communicate()
+  >>> out, err
+  ('', '')
+  >>> process.returncode
+  0
+
+  >>> import transaction
+  >>> transaction.commit()
+  >>> requestset.getUnshippedRequests(ShippingRequestPriority.NORMAL).count()
+  0
+
+  >>> LibrarianTestSetup().tearDown()

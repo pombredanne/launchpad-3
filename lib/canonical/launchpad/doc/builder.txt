@@ -33,7 +33,17 @@ Test 'status' property:
  >>> builder.builderok = True
  >>> builder.status
  u'BUILDING mozilla-firefox-0.9'
- 
+
+Confirm we can get the slave xmlrpc interface
+
+ >>> s = builder.slave
+
+Confirm that the urlbase is correct in that slave. (If the protocol changes,
+this may change too)
+
+ >>> s.urlbase == builder.url
+ True
+
 Check if the instace corresponds to the declared interface:
 
  >>> verifyObject(IBuilder, builder)
@@ -43,7 +53,7 @@ lastBuilds() method returns the build history, atm there is no data
 available in the database, we can just test if the call doesn't fail.
 
  >>> builder.lastBuilds().count()
- 0
+ 2
 
 Now perform the tests for the Builder ContentSet class, BuilderSet.
 

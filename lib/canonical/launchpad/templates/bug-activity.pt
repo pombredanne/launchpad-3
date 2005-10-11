@@ -6,16 +6,16 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/@@+portlet-subscribers" />
-    <div tal:replace="structure context/@@+portlet-maintainers" />
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-subscribers" />
+  <div tal:replace="structure context/@@+portlet-maintainers" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
-    <div tal:replace="structure context/@@+portlet-cve" />
-    <div tal:replace="structure context/@@+portlet-reference" />
-    <div tal:replace="structure context/@@+portlet-watch" />
+  <div tal:replace="structure context/@@+portlet-search" />
+  <div tal:replace="structure context/@@+portlet-cve" />
+  <div tal:replace="structure context/@@+portlet-reference" />
+  <div tal:replace="structure context/@@+portlet-watch" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">

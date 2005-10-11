@@ -75,8 +75,9 @@ class Bugzilla(ExternalSystem):
             self.version = version
         else:
             self.version = self._probe_version()
-        if self.version < '2.16':
-            raise NotImplementedError()
+        if not self.version or self.version < '2.16':
+            raise NotImplementedError("Unsupported version %r for %s" 
+                                      % (self.version, baseurl))
 
     def _probe_version(self):
         #print "probing version of %s" % self.baseurl
@@ -87,9 +88,11 @@ class Bugzilla(ExternalSystem):
         ret = url.read()
         document = minidom.parseString(ret)
         bugzilla = document.getElementsByTagName("bugzilla")
+        if not bugzilla:
+            return None
         version = bugzilla[0].getAttribute("version")
         return version
-    
+
     def get_bug_status(self, bug_id):
         """
         Retrieve the bug status from a bug in a remote Bugzilla system.
@@ -173,7 +176,8 @@ class Bugzilla(ExternalSystem):
         elif status in ('RESOLVED','VERIFIED','CLOSED'):
             return 'closed'
         else:
-            raise NotImplementedError()
+            raise NotImplementedError("Unsupported status %s at %s" 
+                                      % (status, self.baseurl))
 
 def _test():
     import doctest, externalsystem

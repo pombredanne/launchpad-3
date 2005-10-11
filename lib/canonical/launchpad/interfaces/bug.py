@@ -33,7 +33,7 @@ class BugCreationConstraintsError(Exception):
     """
 
 
-class IBug(Interface, IMessageTarget):
+class IBug(IMessageTarget):
     """The core bug entry."""
 
     id = Int(
@@ -170,6 +170,7 @@ class IBugTarget(Interface):
         description and owner.
         """
 
+    bugtasks = Attribute("A list of BugTasks for this target.")
 
 
 class BugDistroReleaseTargetDetails:

@@ -81,7 +81,8 @@ Renaming
 All persons have a unique name in launchpad, so to allow them to change their
 names, we must make sure that name is not already in use by someone else.
 
->>> from canonical.launchpad.interfaces.person import PersonNameField
+>>> from canonical.launchpad.interfaces.person import (
+...     PersonNameField, StrippingTextLine)
 >>> field = PersonNameField(__name__='name', title=u'Unique name',
 ...                         description=u'', readonly=False, required=True)
 >>> field = field.bind(lifeless)
@@ -98,7 +99,22 @@ But you can't use Mark's name, of course. ;)
 >>> field.validate(u'sabdfl')
 Traceback (most recent call last):
 ...
-NameAlreadyTaken: sabdfl
+NameAlreadyTaken: The name sabdfl is already in use.
+
+In the case of your displayname, the only constraint is that it can't contain
+only spaces. To ensure that, we use a StrippingTextLine in the displayname,
+which is a class that always strips the unicode string before applying any
+validation or constraints.
+>>> field = StrippingTextLine(__name__='displayname', title=u'Displayname',
+...                           description=u'', readonly=False, required=True,
+...                           missing_value=u'')
+>>> field.fromUnicode(u' foo ')
+u'foo'
+
+>>> field.fromUnicode(u'  ')
+Traceback (most recent call last):
+...
+RequiredMissing
 
 
 Merging
@@ -165,10 +181,10 @@ True
 
 A merged account gets a -merged suffix on its name.
 >>> empty.id
-57L
+58L
 >>> cur.execute("SELECT id FROM Person WHERE name='empty-merged'")
 >>> cur.fetchone()[0]
-57
+58
 
 
 >>> cur.execute("select person, team, status from teammembership where "

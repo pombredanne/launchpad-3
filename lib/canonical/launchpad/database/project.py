@@ -12,19 +12,17 @@ __all__ = [
 import sets
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
 from sqlobject import (
         ForeignKey, StringCol, BoolCol, SQLObjectNotFound,
-        MultipleJoin, RelatedJoin
-        )
+        MultipleJoin, RelatedJoin)
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.interfaces import (
     IProject, IProjectSet, IProjectBugTracker, IProjectBugTrackerSet,
-    ICalendarOwner)
+    ICalendarOwner, NotFoundError)
 
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, ImportStatus)
@@ -111,12 +109,12 @@ class ProjectSet:
     def __getitem__(self, name):
         project = Project.selectOneBy(name=name)
         if project is None:
-            raise KeyError, name
+            raise NotFoundError(name)
         return project
 
     def get(self, projectid):
         """See canonical.launchpad.interfaces.project.IProjectSet.
-        
+
         >>> getUtility(IProjectSet).get(1).name
         u'ubuntu'
         >>> getUtility(IProjectSet).get(-1)
@@ -151,7 +149,7 @@ class ProjectSet:
         u'T\xe9st'
         """
         if Project.selectBy(name=name).count():
-            raise KeyError("There is already a project named %s" % name)
+            raise NameAlreadyTaken("There is already a project named %s" % name)
 
         return Project(
             name=name,

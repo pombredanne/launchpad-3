@@ -5,6 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'ProductNavigation',
+    'ProductSetNavigation',
     'ProductFacets',
     'ProductOverviewMenu',
     'ProductBugsMenu',
@@ -28,22 +30,61 @@ from urllib import quote as urlquote
 import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
-from zope.exceptions import NotFoundError
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
     IPerson, IProduct, IProductSet, IProductSeries, ISourcePackage,
-    ICountry, IBugSet, ICalendarOwner)
+    ICountry, IBugSet, ICalendarOwner, NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
+from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission, structured)
+    enabled_with_permission, structured, GetitemNavigation, Navigation,
+    stepthrough, stepto)
+
+# XXX: this import has to go!  SteveAlexander, 2005-10-07
+from canonical.launchpad.database import ProductSeriesSet
+
+class ProductNavigation(
+    Navigation, BugTargetTraversalMixin, CalendarTraversalMixin):
+
+    usedfor = IProduct
+
+    @stepthrough('+spec')
+    def traverse_spec(self, name):
+        return self.context.getSpecification(name)
+
+    @stepto('+series')
+    def series(self):
+        return ProductSeriesSet(product=self.context)
+
+    @stepthrough('+milestone')
+    def traverse_milestone(self, name):
+        return self.context.getMilestone(name)
+
+    @stepthrough('+ticket')
+    def traverse_ticket(self, name):
+        # tickets should be ints
+        try:
+            ticket_num = int(name)
+        except ValueError:
+            raise NotFoundError
+        return self.context.getTicket(ticket_num)
+
+    def traverse(self, name):
+        return self.context.getRelease(name)
+
+
+class ProductSetNavigation(GetitemNavigation):
+
+    usedfor = IProductSet
 
 
 class ProductFacets(StandardLaunchpadFacets):

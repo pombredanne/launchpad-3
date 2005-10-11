@@ -4,16 +4,13 @@ __metaclass__ = type
 __all__ = ['Distribution', 'DistributionSet', 'DistroPackageFinder']
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
 from sqlobject import (
-    RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey,
-    MultipleJoin)
+    RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey, MultipleJoin)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.distributionbounty import \
-    DistributionBounty
+from canonical.launchpad.database.distributionbounty import DistributionBounty
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.milestone import Milestone
@@ -21,10 +18,10 @@ from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.ticket import Ticket
-from canonical.lp.dbschema import (EnumCol, BugTaskStatus,
-    DistributionReleaseStatus, TranslationPermission)
-from canonical.launchpad.interfaces import (IDistribution, IDistributionSet,
-    IDistroPackageFinder)
+from canonical.lp.dbschema import (
+    EnumCol, BugTaskStatus, DistributionReleaseStatus, TranslationPermission)
+from canonical.launchpad.interfaces import (
+    IDistribution, IDistributionSet, IDistroPackageFinder, NotFoundError)
 
 
 class Distribution(SQLBase):
@@ -123,7 +120,7 @@ class Distribution(SQLBase):
         for release in self.releases:
             if release.name == name:
                 return release
-        raise KeyError, name
+        raise NotFoundError(name)
 
     def __iter__(self):
         return iter(self.releases)
@@ -226,7 +223,8 @@ class Distribution(SQLBase):
                     # Swallow KeyError to continue round the loop
                     pass
 
-        raise KeyError(distrorelease_name)
+        raise NotFoundError(distrorelease_name)
+
 
 class DistributionSet:
     """This class is to deal with Distribution related stuff"""

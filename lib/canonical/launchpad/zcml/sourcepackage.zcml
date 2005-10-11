@@ -19,9 +19,11 @@
         layer="canonical.launchpad.layers.MaloneLayer"
         name="+bugs" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.ISourcePackage"
-        function="canonical.launchpad.browser.traverse_sourcepackage" />
+
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="SourcePackageNavigation"
+        />
 
     <browser:url
         for="canonical.launchpad.interfaces.ISourcePackage"
@@ -107,15 +109,6 @@
             lp:url="/distros/ubuntu/hoary/+sources/evolution/+portlet-details"
             />
         <browser:page
-            name="+portlet-actions"
-            facet="overview"
-            template="../templates/sourcepackage-portlet-actions.pt" />
-        <browser:page
-            name="+portlet-bugtasklist-actions"
-            facet="bugs"
-            template="../templates/sourcepackage-portlet-bugtasklist-actions.pt"
-            />
-        <browser:page
             name="+portlet-translations"
             facet="translations"
             template="../templates/sourcepackage-portlet-translations.pt"
@@ -188,9 +181,9 @@
         <allow interface="canonical.launchpad.interfaces.IDistroSourcePackage" />
     </content>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IDistroSourcePackage"
-        function="canonical.launchpad.browser.traverse_distro_sourcepackage"
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="DistroSourcePackageNavigation"
         />
 
     <browser:url
@@ -208,14 +201,6 @@
             facet="overview"
             template="../templates/sourcepackage-portlet-details.pt"
             lp:url="/distros/ubuntu/+sources/evolution/+portlet-details" />
-        <browser:page
-            name="+portlet-actions"
-            facet="overview"
-            template="../templates/sourcepackage-portlet-actions.pt" />
-        <browser:page
-            name="+portlet-bugtasklist-actions"
-            facet="bugs"
-            template="../templates/sourcepackage-portlet-bugtasklist-actions.pt" />
     </browser:pages>
 
     <browser:page
@@ -271,9 +256,9 @@
         attribute_to_parent="distrorelease"
         />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.ISourcePackageSet"
-        function="canonical.launchpad.browser.traverseSourcePackageSet"
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="SourcePackageSetNavigation"
         />
 
     <browser:defaultView

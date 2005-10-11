@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'MilestoneSetNavigation',
     'MilestoneFacets',
     'MilestoneContextMenu',
     'MilestoneAddView',
@@ -18,7 +19,12 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link)
+    StandardLaunchpadFacets, ContextMenu, Link, GetitemNavigation)
+
+
+class MilestoneSetNavigation(GetitemNavigation):
+
+    usedfor = IMilestoneSet
 
 
 class MilestoneFacets(StandardLaunchpadFacets):

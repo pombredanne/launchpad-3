@@ -19,7 +19,21 @@
         name="+portlet-latestbugs"
         permission="zope.Public"
         template="../templates/bugtarget-portlet-latestbugs.pt" />
-        
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBugTarget"
+        class="canonical.launchpad.browser.BugTaskSearchListingView"
+        permission="zope.Public"
+        >
+      <browser:page
+          name="+bugs"
+          template="../templates/bugtask-search-listing.pt" />
+      <browser:page
+          name="+portlet-bugtasklist-mybugs"
+          template="../templates/bugtasklist-portlet-mybugs.pt"
+          />
+    </browser:pages>
+
   </facet>
 
 </configure>

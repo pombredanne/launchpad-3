@@ -6,9 +6,11 @@ __all__ = ['Builder', 'BuilderSet', 'BuildQueue',
 
 from datetime import datetime
 import xmlrpclib
+import urlparse
+import urllib2
+import pytz
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
 # SQLObject/SQLBase
 from sqlobject import (
@@ -20,12 +22,24 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.database.build import Build
 
 from canonical.launchpad.interfaces import (
-    IBuilder, IBuilderSet, IBuildQueue, IBuildQueueSet)
+    IBuilder, IBuilderSet, IBuildQueue, IBuildQueueSet, NotFoundError)
 
 from canonical.lp.dbschema import EnumCol, BuildStatus
 
-import pytz
 
+class BuilderSlave(xmlrpclib.Server):
+    """Add in a few useful methods for the XMLRPC slave."""
+
+    def __init__(self, urlbase, *args, **kwargs):
+        """Initialise..."""
+        xmlrpclib.Server.__init__(self, urlparse.urljoin(urlbase,"/rpc/"),
+                                  *args, **kwargs)
+        self.urlbase = urlbase
+    
+    def getFile(self, sha_sum):
+        """Construct a file-like object to return the named file."""
+        return urllib2.urlopen(urlparse.urljoin(self.urlbase,
+                                                "/filecache/"+sha_sum))
 
 class Builder(SQLBase):
     implements(IBuilder)
@@ -51,7 +65,7 @@ class Builder(SQLBase):
     @property
     def slave(self):
         """See IBuilder"""
-        return xmlrpclib.Server(self.url, allow_none=1)
+        return BuilderSlave(self.url,allow_none=1)
 
     @property
     def status(self):

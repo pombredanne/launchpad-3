@@ -4,13 +4,13 @@ __metaclass__ = type
 __all__ = ['BugAttachment', 'BugAttachmentSet']
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
 from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
 
 from canonical.lp import dbschema
 from canonical.lp.dbschema import EnumCol
-from canonical.launchpad.interfaces import IBugAttachmentSet, IBugAttachment
+from canonical.launchpad.interfaces import (
+    IBugAttachmentSet, IBugAttachment, NotFoundError)
 from canonical.database.sqlbase import SQLBase
 
 

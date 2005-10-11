@@ -1,0 +1,81 @@
+The Build table
+^^^^^^^^^^^^^^^
+
+The build table contains the information pertaining to a given build
+of a sourcepackagerelease on a distroarchrelease.
+
+The build record may have many BinaryPackageRelease records pointing
+at it and it may reference a build log if the build was done on a
+launchpad build daemon.
+
+  >>> from canonical.launchpad.database import Build, BuildSet, DistributionSet
+  >>> from canonical.launchpad.database import DistroRelease
+
+  >>> ubuntu = DistributionSet()['ubuntu']
+  >>> warty = DistroRelease.get(6)
+  >>> hoary = DistroRelease.get(3)
+
+
+First up, can we get the builds out of the sample data?
+
+  >>> firefox_build = Build.get(2)
+  >>> pmount_build = Build.get(7)
+
+Let's check the complex properties of a build object.
+
+  >>> firefox_build.distrorelease.name
+  u'warty'
+
+  >>> firefox_build.title
+  u'mozilla-firefox-0.9'
+
+  >>> firefox_build.buildlog = 34
+  >>> firefox_build.buildlog.url
+  'http://localhost:58000/34/34/evolution-2.2-test.pot'
+
+The BuildSet class gives us some useful ways to consider the
+collection of builds.
+
+  >>> bs = BuildSet()
+
+We can find builds given a source package release and architecture tag.
+
+  >>> bs.getBuildBySRAndArchtag(20,'i386').count()
+  1
+
+We can find recent builds for a given distrorelease.
+
+  >>> bs.getBuiltForDistroRelease(hoary).count()
+  1
+
+Or for a given distroarchrelease.
+
+  >>> hoaryi386 = hoary.architectures[0]
+  >>> hoaryi386.title
+  u'The Hoary Hedgehog Release for i386 (x86)'
+  >>> bs.getBuiltForDistroArchRelease(hoaryi386).count()
+  1
+
+And we can find builds for a given distribution by type.
+
+  >>> from canonical.lp.dbschema import BuildStatus
+
+  >>> bs.getBuildsForDistribution(ubuntu).count()
+  2
+  >>> L = list(bs.getBuildsForDistribution(ubuntu, BuildStatus.FULLYBUILT))
+  >>> len(L)
+  2
+  >>> L[0].buildstate
+  <Item FULLYBUILT (1) from <class 'canonical.lp.dbschema.BuildStatus'>>
+  >>> L[1].buildstate
+  <Item FULLYBUILT (1) from <class 'canonical.lp.dbschema.BuildStatus'>>
+
+  >>> bs.getBuildsForDistribution(ubuntu, BuildStatus.NEEDSBUILD).count()
+  0
+  >>> firefox_build.buildstate = BuildStatus.NEEDSBUILD
+  >>> firefox_build.syncUpdate()
+  >>> L = list(bs.getBuildsForDistribution(ubuntu, BuildStatus.NEEDSBUILD))
+  >>> len(L)
+  1
+  >>> L[0].buildstate
+  <Item NEEDSBUILD (0) from <class 'canonical.lp.dbschema.BuildStatus'>>

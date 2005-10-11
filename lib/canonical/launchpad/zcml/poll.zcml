@@ -24,9 +24,10 @@
         for="canonical.launchpad.interfaces.IPoll"
         name="+index" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IPoll"
-        function="canonical.launchpad.browser.traverse_poll" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="PollNavigation"
+        />
 
     <browser:url
         for="canonical.launchpad.interfaces.IPoll"
@@ -55,10 +56,6 @@
             name="+portlet-details"
             template="../templates/poll-portlet-details.pt"
             lp:url="/people/$team.name/+poll/$poll.name/+portlet-details" />
-        <browser:page
-            name="+portlet-actions"
-            template="../templates/poll-portlet-actions.pt"
-            lp:url="/people/$team.name/+poll/$poll.name/+portlet-actions" />
     </browser:pages>
 
     <browser:pages

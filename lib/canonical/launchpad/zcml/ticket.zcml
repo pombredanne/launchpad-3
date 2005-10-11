@@ -43,9 +43,6 @@
       name="+listing-detailed"
       template="../templates/ticket-listing-detailed.pt" />
     <browser:page
-      name="+portlet-actions"
-      template="../templates/ticket-portlet-actions.pt" />
-    <browser:page
       name="+portlet-bugs"
       template="../templates/ticket-portlet-bugs.pt" />
     <browser:page
@@ -176,14 +173,10 @@
     <allow interface="canonical.launchpad.interfaces.ITicketSet" />
   </securedutility>
 
-  <browser:suburl
-    for="canonical.launchpad.interfaces.ILaunchpadRoot"
-    utility="canonical.launchpad.interfaces.ITicketSet"
-    name="support" />
-
-  <browser:traverse
-    for="canonical.launchpad.interfaces.ITicketSet"
-    getter="__getitem__" />
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="TicketSetNavigation"
+      />
 
   <browser:url
     for="canonical.launchpad.interfaces.ITicketSet"
@@ -201,9 +194,6 @@
     <browser:page
       name="+index"
       template="../templates/tickets-index.pt" />
-    <browser:page
-      name="+portlet-actions"
-      template="../templates/tickets-portlet-actions.pt" />
     <browser:page
       name="+portlet-details"
       template="../templates/tickets-portlet-details.pt" />

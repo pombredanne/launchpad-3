@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = ['PollContextMenu',
+           'PollNavigation',
            'BasePollView',
            'PollView',
            'PollVoteView',
@@ -14,7 +15,8 @@ from zope.component import getUtility
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 
-from canonical.launchpad.webapp import canonical_url, ContextMenu, Link
+from canonical.launchpad.webapp import (
+    canonical_url, ContextMenu, Link, Navigation, stepthrough)
 from canonical.launchpad.interfaces import (
     IPollSubset, ILaunchBag, IVoteSet, IPollOptionSet, IPoll)
 from canonical.lp.dbschema import PollAlgorithm, PollSecrecy
@@ -32,6 +34,15 @@ class PollContextMenu(ContextMenu):
     def addnew(self):
         text = 'Add New Option'
         return Link('+newoption', text, icon='add')
+
+
+class PollNavigation(Navigation):
+
+    usedfor = IPoll
+
+    @stepthrough('+option')
+    def traverse_option(self, name):
+        return getUtility(IPollOptionSet).getByPollAndId(poll, name)
 
 
 class BasePollView:

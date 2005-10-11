@@ -1,0 +1,14 @@
+Launchpad has a feedback page, that is linked to from the bottom of
+every other page on the site.
+
+    >>> print http(r"""
+    ... GET / HTTP/1.1
+    ... """)
+    HTTP/1.1 200 Ok
+    ...href="/feedback"...
+
+    >>> print http(r"""
+    ... GET /feedback HTTP/1.1
+    ... """)
+    HTTP/1.1 200 Ok
+    ...

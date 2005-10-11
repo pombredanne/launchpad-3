@@ -21,7 +21,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
-    IPublishedPackageSet)
+    IPublishedPackageSet, NotFoundError)
 
 from canonical.launchpad.database.sourcepackageindistro import (
     SourcePackageInDistro)
@@ -30,16 +30,15 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.language import Language
-from canonical.launchpad.database.distroreleaselanguage import \
-    DistroReleaseLanguage, DummyDistroReleaseLanguage
+from canonical.launchpad.database.distroreleaselanguage import (
+    DistroReleaseLanguage, DummyDistroReleaseLanguage)
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName, SourcePackageNameSet)
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.bugtask import BugTaskSet, BugTask
 from canonical.launchpad.database.binarypackagerelease import (
-        BinaryPackageRelease
-        )
+        BinaryPackageRelease)
 from canonical.launchpad.helpers import shortlist
 
 
@@ -293,8 +292,8 @@ class DistroRelease(SQLBase):
         item = DistroArchRelease.selectOneBy(
             distroreleaseID=self.id, architecturetag=arch)
         if item is None:
-            raise KeyError, 'Unknown architecture %s for %s %s' % (
-                arch, self.distribution.name, self.name )
+            raise NotFoundError('Unknown architecture %s for %s %s' % (
+                arch, self.distribution.name, self.name))
         return item
 
     def getPublishedReleases(self, sourcepackage_or_name):

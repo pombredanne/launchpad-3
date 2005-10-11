@@ -4,14 +4,14 @@ __metaclass__ = type
 __all__ = ['Language', 'LanguageSet']
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
 from sqlobject import StringCol, IntCol, BoolCol
 from sqlobject import RelatedJoin, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase
 from canonical.lp.dbschema import EnumCol, TextDirection
 
-from canonical.launchpad.interfaces import ILanguageSet, ILanguage
+from canonical.launchpad.interfaces import (
+    ILanguageSet, ILanguage, NotFoundError)
 
 
 class Language(SQLBase):

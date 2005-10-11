@@ -14,8 +14,8 @@ from zope.component import getUtility
 
 from sqlobject import SQLObjectNotFound
 
-from canonical.database.sqlbase import (quote, sqlvalues,
-    flush_database_updates)
+from canonical.database.sqlbase import (
+    quote, sqlvalues, flush_database_updates)
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
@@ -25,7 +25,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     ISourcePackage, IDistroSourcePackage, ISourcePackageSet,
-    IDistroSourcePackageSet, ILaunchpadCelebrities)
+    IDistroSourcePackageSet, ILaunchpadCelebrities, NotFoundError)
 
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
@@ -454,6 +454,17 @@ class SourcePackage:
             return None
         return ticket
 
+    def __eq__(self, other):
+        """See canonical.launchpad.interfaces.ISourcePackage."""
+        return (
+            (ISourcePackage.providedBy(other)) and
+            (self.distrorelease.id == other.distrorelease.id) and
+            (self.sourcepackagename.id == other.sourcepackagename.id))
+
+    def __ne__(self, other):
+        """See canonical.launchpad.interfaces.ISourcePackage."""
+        return not self.__eq__(other)
+
 
 class DistroSourcePackage:
     """See canonical.launchpad.interfaces.IDistroSourcePackage."""
@@ -493,6 +504,17 @@ class DistroSourcePackage:
         search_params.setSourcePackage(self)
         return BugTaskSet().search(search_params)
 
+    def __eq__(self, other):
+        """See canonical.launchpad.interfaces.IDistroSourcePackage."""
+        return (
+            (IDistroSourcePackage.providedBy(other)) and
+            (self.distribution.id == other.distribution.id) and
+            (self.sourcepackagename.id == other.sourcepackagename.id))
+
+    def __ne__(self, other):
+        """See canonical.launchpad.interfaces.IDistroSourcePackage."""
+        return not self.__eq__(other)
+
 
 class SourcePackageSet(object):
     """A set of Magic SourcePackage objects."""
@@ -521,7 +543,7 @@ class SourcePackageSet(object):
         try:
             spname = SourcePackageName.byName(name)
         except SQLObjectNotFound:
-            raise KeyError, 'No source package name %s' % name
+            raise NotFoundError(name)
         return SourcePackage(sourcepackagename=spname,
                              distrorelease=self.distrorelease)
 

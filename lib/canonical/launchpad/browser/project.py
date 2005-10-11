@@ -4,8 +4,16 @@
 
 __metaclass__ = type
 
-__all__ = ['ProjectView', 'ProjectEditView', 'ProjectAddProductView',
-           'ProjectSetView', 'ProjectAddView', 'ProjectRdfView']
+__all__ = [
+    'ProjectNavigation',
+    'ProjectSetNavigation',
+    'ProjectView',
+    'ProjectEditView',
+    'ProjectAddProductView',
+    'ProjectSetView',
+    'ProjectAddView',
+    'ProjectRdfView',
+    ]
 
 from urllib import quote as urlquote
 
@@ -21,11 +29,25 @@ from canonical.launchpad.interfaces import (
     IPerson, IProject, IProjectSet, IProductSet, ICalendarOwner)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ApplicationMenu,
-    structured)
+    structured, GetitemNavigation, Navigation)
 
 _ = MessageIDFactory('launchpad')
+
+
+class ProjectNavigation(Navigation, CalendarTraversalMixin):
+
+    usedfor = IProject
+
+    def traverse(self, name):
+        return self.context.getProduct(name)
+
+
+class ProjectSetNavigation(GetitemNavigation):
+
+    usedfor = IProjectSet
 
 
 class ProjectFacets(StandardLaunchpadFacets):
@@ -117,13 +139,13 @@ class ProjectView(object):
             return
         if not self.request.method == "POST":
             return
-        # Extract details from the form and update the Product
+        # Extract details from the form and update the project
         self.context.displayname = self.form['displayname']
         self.context.title = self.form['title']
         self.context.summary = self.form['summary']
         self.context.description = self.form['description']
         self.context.homepageurl = self.form['homepageurl']
-        # now redirect to view the product
+        # now redirect to view the project
         self.request.response.redirect(self.request.URL[-1])
 
     def hasProducts(self):

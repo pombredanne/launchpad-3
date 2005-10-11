@@ -4,11 +4,14 @@
 
 __metaclass__ = type
 
-__all__ = ['BazaarApplicationView']
+__all__ = ['BazaarApplicationView', 'BazaarApplicationNavigation']
 
 from zope.component import getUtility
-from canonical.launchpad.interfaces import IProductSeriesSet
+from canonical.launchpad.interfaces import (
+    IProductSeriesSet, IBazaarApplication, IProductSet)
 from canonical.lp.dbschema import ImportStatus
+from canonical.launchpad.webapp import Navigation, stepto
+import canonical.launchpad.layers
 
 
 class BazaarApplicationView:
@@ -49,3 +52,21 @@ class BazaarApplicationView:
                     count += 1
                     continue
         return count
+
+
+class BazaarApplicationNavigation(Navigation):
+
+    usedfor = IBazaarApplication
+
+    newlayer = canonical.launchpad.layers.BazaarLayer
+
+    @stepto('products')
+    def products(self):
+        # DEPRECATED
+        return getUtility(IProductSet)
+
+    @stepto('series')
+    def series(self):
+        # DEPRECATED
+        return getUtility(IProductSeriesSet)
+

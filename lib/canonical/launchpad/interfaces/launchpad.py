@@ -6,6 +6,7 @@ Note that these are not interfaces to application content objects.
 __metaclass__ = type
 
 from zope.interface import Interface, Attribute, implements
+import zope.exceptions
 from zope.i18nmessageid import MessageIDFactory
 import zope.app.publication.interfaces
 import zope.app.traversing.interfaces
@@ -13,24 +14,34 @@ from persistent import IPersistent
 
 _ = MessageIDFactory('launchpad')
 
-__all__ = ['ILaunchpadRoot', 'ILaunchpadApplication', 'IMaloneApplication',
-           'IRosettaApplication', 'IRegistryApplication', 'IBazaarApplication',
-           'IFOAFApplication', 'IPasswordEncryptor',
-           'IReadZODBAnnotation', 'IWriteZODBAnnotation',
-           'IZODBAnnotation', 'IAuthorization',
-           'IHasOwner', 'IHasAssignee', 'IHasProduct', 
-           'IHasProductAndAssignee', 'IOpenLaunchBag',
-           'IAging', 'IHasDateCreated',
-           'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
-           'ILinkData', 'ILink', 'IFacetLink', 'IStructuredString',
-           'IMenu', 'IMenuBase', 'IFacetMenu',
-           'IApplicationMenu', 'IContextMenu',
-           'ICanonicalUrlData', 'NoCanonicalUrl',
-           'IDBSchema', 'IDBSchemaItem', 'IAuthApplication',
-           'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
-           'IAfterTraverseEvent', 'AfterTraverseEvent',
-           'IBeforeTraverseEvent', 'BeforeTraverseEvent'
-           ]
+__all__ = [
+    'NotFoundError', 'NameNotAvailable',
+    'ILaunchpadRoot', 'ILaunchpadApplication',
+    'IMaloneApplication', 'IRosettaApplication', 'IRegistryApplication',
+    'IBazaarApplication', 'IFOAFApplication', 'IPasswordEncryptor',
+    'IReadZODBAnnotation', 'IWriteZODBAnnotation',
+    'IZODBAnnotation', 'IAuthorization',
+    'IHasOwner', 'IHasAssignee', 'IHasProduct', 
+    'IHasProductAndAssignee', 'IOpenLaunchBag',
+    'IAging', 'IHasDateCreated',
+    'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
+    'ILinkData', 'ILink', 'IFacetLink', 'IStructuredString',
+    'IMenu', 'IMenuBase', 'IFacetMenu',
+    'IApplicationMenu', 'IContextMenu',
+    'ICanonicalUrlData', 'NoCanonicalUrl',
+    'IDBSchema', 'IDBSchemaItem', 'IAuthApplication',
+    'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
+    'IAfterTraverseEvent', 'AfterTraverseEvent',
+    'IBeforeTraverseEvent', 'BeforeTraverseEvent'
+    ]
+
+
+class NotFoundError(zope.exceptions.NotFoundError):
+    """Launchpad object not found."""
+
+
+class NameNotAvailable(KeyError):
+    """You're trying to set a name, but the name you chose is not available."""
 
 
 class ILaunchpadCelebrities(Interface):

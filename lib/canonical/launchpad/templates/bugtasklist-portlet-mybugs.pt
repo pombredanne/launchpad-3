@@ -47,5 +47,11 @@
     </a>
     (<span tal:replace="view/total_count">115</span>)
   </li>
+  <li>
+    <a href="#"
+       tal:attributes="href view/advanced_url">
+       Advanced search
+    </a>
+  </li>
 </ul>
 </div>

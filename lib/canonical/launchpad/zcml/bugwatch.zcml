@@ -62,9 +62,10 @@
         for="canonical.launchpad.interfaces.IBugWatchSet"
         name="+index" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBugWatchSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BugWatchSetNavigation"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBugWatchSet"

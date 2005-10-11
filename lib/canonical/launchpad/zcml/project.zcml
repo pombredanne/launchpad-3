@@ -15,9 +15,10 @@
         />
     </content>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IProject"
-        function="canonical.launchpad.browser.traversers.traverse_project" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="ProjectNavigation"
+        />
 
     <browser:menus
         module="canonical.launchpad.browser.project"
@@ -89,11 +90,6 @@
             facet="overview"
             template="../templates/project-portlet-details.pt"
             lp:url="Rosetta/projects/$Project.name/+portlet-details" />
-       <browser:page
-            name="+portlet-actions"
-            facet="overview"
-            template="../templates/project-portlet-actions.pt"
-            lp:url="Rosetta/projects/$Project.name/+portlet-actions" />
     </browser:pages>
 
     <browser:page
@@ -145,7 +141,7 @@
         facet="overview"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="products/+new">
+        lp:url="projects/+new">
         <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="name"
@@ -272,9 +268,10 @@
         for="canonical.launchpad.interfaces.IProjectSet"
         name="+index" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IProjectSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="ProjectSetNavigation"
+        />
     <browser:url
         for="canonical.launchpad.interfaces.IProject"
         path_expression="name"

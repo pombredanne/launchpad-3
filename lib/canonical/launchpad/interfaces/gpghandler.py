@@ -1,6 +1,6 @@
 from zope.interface import Interface, Attribute
 
-__all__ = ['IGPGHandler', 'IPymeSignature', 'IPymeKey']
+__all__ = ['IGPGHandler', 'IPymeSignature', 'IPymeKey', 'IPymeUserId']
 
 class IGPGHandler(Interface):
     """Handler to perform GPG operations."""
@@ -28,6 +28,14 @@ class IGPGHandler(Interface):
         encode or decode properly.
 
         :content: public or secret key content ASCII armored
+        """
+
+    def importKeyringFile(filepath):
+        """Import the keyring filepath into the local key database.
+
+        :param filepath: the path to a keyring to import.
+
+        :returns: a list of the imported keys.
         """
 
     def encryptContent(content, fingerprint):
@@ -61,6 +69,21 @@ class IGPGHandler(Interface):
         :fingerprint: key fingerprint
         """
 
+    def checkTrustDb():
+        """Check whether the GPG trust database is up to date, and
+        rebuild the trust values if necessary.
+
+        The results will be visible in any new retrieved key objects.
+        Existing key objects will not reflect the new trust value.
+        """
+
+    def localKeys():
+        """Return an iterator of all keys locally known about by the handler.
+        """
+
+    def resetLocalState():
+        """Reset the local state (i.e. GPG keyrings, trust database etc."""
+        #FIXME RBC: this should be a zope test cleanup thing per SteveA.
 
 class IPymeSignature(Interface):
     """pyME signature container."""
@@ -77,5 +100,22 @@ class IPymeKey(Interface):
     revoked = Attribute("Key Revoked")
     keysize = Attribute("Key Size")
     keyid = Attribute("Pseudo Key ID, composed by last fingerprint 8 digits ")
-    uids = Attribute("List containing only well formed and non-revoked UIDs")
+    uids = Attribute("List of user IDs associated with this key")
+    emails = Attribute("List containing only well formed and non-revoked emails")
     displayname = Attribute("Key displayname: <size><type>/<keyid>")
+    owner_trust = Attribute("The owner trust")
+
+    def setOwnerTrust(value):
+        """Set the owner_trust value for this key."""
+
+class IPymeUserId(Interface):
+    """pyME user ID"""
+
+    revoked = Attribute("True if the user ID has been revoked")
+    invalid = Attribute("True if the user ID is invalid")
+    validity = Attribute("""A measure of the validity of the user ID,
+                         based on owner trust values and signatures.""")
+    uid = Attribute("A string identifying this user ID")
+    name = Attribute("The name portion of this user ID")
+    email = Attribute("The email portion of this user ID")
+    comment = Attribute("The comment portion of this user ID")

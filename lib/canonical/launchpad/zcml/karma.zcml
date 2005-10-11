@@ -72,9 +72,10 @@
         for="canonical.launchpad.interfaces.IKarmaActionSet"
         name="+index" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IKarmaActionSet"
-        getter="getByName" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="KarmaActionSetNavigation"
+        />
 
     <browser:page
         for="canonical.launchpad.interfaces.IKarmaActionSet"

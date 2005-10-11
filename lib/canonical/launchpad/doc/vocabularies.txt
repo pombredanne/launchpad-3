@@ -182,6 +182,10 @@ o PersonAccountToMergeVocabulary - all non-merged people. This vocabulary
 
     >>> vocab = vocabulary_registry.get(None, "PersonAccountToMerge")
 
+    >>> foobar = getUtility(IPersonSet).getByName('name16')
+    >>> foobar in vocab
+    False
+
     Searching for None returns an empty list.
     >>> vocab.search(None)
     []
@@ -203,8 +207,8 @@ o PersonAccountToMergeVocabulary - all non-merged people. This vocabulary
 
     A search using the beginning of a person's preferred email will return 
     that person's preferred email.
-    >>> [t.token for t in vocab.search('foo.bar')]
-    ['foo.bar@canonical.com']
+    >>> [t.token for t in vocab.search('test')]
+    ['test@canonical.com']
 
     A search using part of the host of an email address will not return
     anything, as we only match against the beginning of an email address.

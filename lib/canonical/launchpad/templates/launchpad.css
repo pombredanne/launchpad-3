@@ -71,6 +71,14 @@ fieldset.two-column {
   margin-right: 1em;
 }
 
+/* Visually differentiate disabled and enabled form fields. */
+select[disabled],
+textarea[disabled],
+input[disabled] {
+    border-style: dotted;
+    color: #999;
+}
+
 /* Classes for error indication in forms */
 .portalErrorMessage,
 .portalError {
@@ -430,7 +438,7 @@ ul.bugs>li, li.bugs {
 ul.build-success>li, li.build-success {
   list-style-image: url(/@@/build-success);
 }
-ul.cve>li, li.cve, {
+ul.cve>li, li.cve {
   list-style-image: url(/++resource++cve);
 }
 ul.document>li, li.document {
@@ -614,7 +622,6 @@ code {
   color: inherit;
   background: transparent;
   border: none;
-  padding: inherit;
 }
 pre, textarea {
   font-family: monospace;
@@ -715,6 +722,12 @@ button {
   border: 1px solid #8cacbb;  
   color: Black;
   background-color: white;
+}
+
+/* -- Don't give radiobuttons a square border in Opera: -- */
+
+input[type="radio"] {
+  border: none;
 }
 
 /* -- Other bugs: -- */
@@ -861,7 +874,7 @@ ul.app>li
   border-bottom: none;
   display: inline;
   list-style: none;
-  margin: 0 0 0 0.5em;
+  margin: 0 0.5em 0 0;
   padding: 0 0.5em;
 }
 ul.app a {

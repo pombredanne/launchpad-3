@@ -20,7 +20,6 @@ from sqlos.interfaces import ISQLObject
 
 import pytz
 
-from zope.exceptions import NotFoundError
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
@@ -34,9 +33,11 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
-from canonical.launchpad.interfaces import (BugTaskSearchParams,
-    IBugTask, IBugTasksReport, IBugTaskSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag)
+from canonical.launchpad.interfaces import (
+    BugTaskSearchParams, IBugTask, IBugTasksReport, IBugTaskSet,
+    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, ILaunchBag,
+    NotFoundError)
+
 
 debbugsstatusmap = {'open': BugTaskStatus.NEW,
                     'forwarded': BugTaskStatus.ACCEPTED,
@@ -110,9 +111,7 @@ class BugTask(SQLBase, BugTaskMixin):
         default=BugTaskStatus.NEW)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
     priority = EnumCol(
-        dbName='priority', notNull=True,
-        schema=BugTaskPriority,
-        default=BugTaskPriority.MEDIUM)
+        dbName='priority', notNull=False, schema=BugTaskPriority, default=None)
     severity = EnumCol(
         dbName='severity', notNull=True,
         schema=BugTaskSeverity,
@@ -137,15 +136,6 @@ class BugTask(SQLBase, BugTaskMixin):
         now = datetime.datetime.now(UTC)
 
         return now - self.datecreated
-
-    @property
-    def title(self):
-        """Generate the title for this bugtask based on the id of the bug
-        and the bugtask's targetname.  See IBugTask.
-        """
-        title = 'Bug #%s in %s: "%s"' % (
-            self.bug.id, self.targetname, self.bug.title)
-        return title
 
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
@@ -231,7 +221,7 @@ class BugTaskSet:
         try:
             task = BugTask.get(task_id)
         except SQLObjectNotFound:
-            raise KeyError, task_id
+            raise NotFoundError(task_id)
         return task
 
     def __iter__(self):

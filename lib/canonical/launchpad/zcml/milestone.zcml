@@ -14,9 +14,10 @@
             set_attributes="name dateexpected visible" />
     </content>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IMilestoneSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="MilestoneSetNavigation"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IMilestone"
@@ -39,9 +40,6 @@
       <browser:page
         name="+index"
         template="../templates/milestone-index.pt" />
-      <browser:page
-        name="+portlet-actions"
-        template="../templates/milestone-portlet-actions.pt" />
       <browser:page
         name="+portlet-details"
         template="../templates/milestone-portlet-details.pt" />

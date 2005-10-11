@@ -29,7 +29,7 @@ class Poll(SQLBase):
 
     implements(IPoll)
     _table = 'Poll'
-    _defaultOrder = 'title'
+    _defaultOrder = ['title', 'id']
 
     team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
 
@@ -293,7 +293,7 @@ class PollOption(SQLBase):
 
     implements(IPollOption)
     _table = 'PollOption'
-    _defaultOrder = 'shortname'
+    _defaultOrder = ['shortname', 'id']
 
     poll = ForeignKey(dbName='poll', foreignKey='Poll', notNull=True)
 
@@ -341,6 +341,7 @@ class VoteCast(SQLBase):
 
     implements(IVoteCast)
     _table = 'VoteCast'
+    _defaultOrder = 'id'
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
@@ -362,6 +363,7 @@ class Vote(SQLBase):
 
     implements(IVote)
     _table = 'Vote'
+    _defaultOrder = ['preference', 'id']
 
     person = ForeignKey(dbName='person', foreignKey='Person')
 

@@ -51,6 +51,9 @@
           font-size: 1em;
           font-weight: normal;
         }
+        #body {
+          margin: 1em;
+        }
         :link {
           color: #660000;
         }

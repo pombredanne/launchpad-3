@@ -57,11 +57,9 @@ from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.database import (
     Distribution, DistroRelease, Person, SourcePackageRelease,
     SourcePackageName, BinaryPackageRelease, BugWatch, Sprint,
-    BinaryPackageName, Language,
-    Milestone, Product, Project, ProductRelease,
-    ProductSeries, TranslationGroup, BugTracker,
-    POTemplateName, Schema, Bounty, Country,
-    Specification, Bug, Processor)
+    BinaryPackageName, Language, Milestone, Product, Project, ProductRelease,
+    ProductSeries, TranslationGroup, BugTracker, POTemplateName, Schema,
+    Bounty, Country, Specification, Bug, Processor, PersonSet)
 from canonical.launchpad.interfaces import (
     ILaunchBag, ITeam, ITeamMembershipSubset, IPersonSet, IEmailAddressSet)
 
@@ -391,6 +389,8 @@ class PersonAccountToMergeVocabulary(
         BasePersonVocabulary, SQLObjectVocabularyBase):
     """The set of all non-merged people with at least one email address.
 
+    The logged in user is never part of this vocabulary, because it doesn't
+    make sense to merge the user that is logged in into himself.
     This vocabulary is a very specialized one, meant to be used only to choose
     accounts to merge. You *don't* want to use it.
     """
@@ -406,7 +406,9 @@ class PersonAccountToMergeVocabulary(
         return obj in self._select()
 
     def _select(self, text=""):
-        return getUtility(IPersonSet).findPerson(text)
+        logged_in_user = Person.select(
+            Person.q.id==getUtility(ILaunchBag).user.id)
+        return PersonSet().findPerson(text).except_(logged_in_user)
 
     def search(self, text):
         """Return people whose fti or email address match :text."""
@@ -707,12 +709,12 @@ class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
                 yield self._toTerm(series)
 
 
-class MilestoneVocabulary(NamedSQLObjectVocabulary):
+class MilestoneVocabulary(SQLObjectVocabularyBase):
     _table = Milestone
     _orderBy = 'name'
 
     def _toTerm(self, obj):
-        return SimpleTerm(obj, obj.name, obj.name)
+        return SimpleTerm(obj, obj.id, obj.name)
 
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)
@@ -726,7 +728,7 @@ class MilestoneVocabulary(NamedSQLObjectVocabulary):
 
         if target is not None:
             for ms in target.milestones:
-                yield SimpleTerm(ms, ms.name, ms.name)
+                yield self._toTerm(ms)
 
 
 class SpecificationVocabulary(NamedSQLObjectVocabulary):

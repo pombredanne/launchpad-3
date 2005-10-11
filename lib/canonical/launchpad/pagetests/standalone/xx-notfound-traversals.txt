@@ -9,7 +9,7 @@ XXX: This test may be better done using a tweaked LinkChecker or other
 spider -- StuartBishop 20050822
 
 
->>> def check(valid_url, auth=False):
+>>> def check_url(valid_url, auth=False):
 ...     if auth:
 ...         get_cmd = """
 ... GET %s HTTP/1.1
@@ -17,26 +17,31 @@ spider -- StuartBishop 20050822
 ... """
 ...     else:
 ...         get_cmd = "GET %s HTTP/1.1\n"
-...     valid_rc = http(get_cmd % valid_url).getStatus()
+...     valid_output_obj = http(get_cmd % valid_url)
+...     valid_rc = valid_output_obj.getStatus()
 ...     if valid_rc not in (200, 302):
-...         return "%s returned status %s instead of success" % (
-...             valid_url, valid_rc)
+...         return "%s returned status %s instead of success\n\n%s" % (
+...             valid_url, valid_rc, str(valid_output_obj))
 ...     invalid_url = valid_url + '/wobbly'
-...     invalid_rc = http(get_cmd % invalid_url).getStatus()
+...     invalid_output = http(get_cmd % invalid_url)
+...     invalid_rc = invalid_output.getStatus()
 ...     if invalid_rc != 404:
-...         return "%s returned status %s instead of 404" % (
-...             invalid_url, invalid_rc)
+...         return "%s returned status %s instead of 404\n\n%s" % (
+...             invalid_url, invalid_rc, str(invalid_output))
 ...     # Some traversal is done by integer
 ...     invalid_url = valid_url + '/98723'
-...     invalid_rc = http(get_cmd % invalid_url).getStatus()
+...     invalid_output = http(get_cmd % invalid_url)
+...     invalid_rc = invalid_output.getStatus()
 ...     if invalid_rc != 404:
-...         return "%s returned status %s instead of 404" % (
-...             invalid_url, invalid_rc)
+...         return "%s returned status %s instead of 404\n\n%s" % (
+...             invalid_url, invalid_rc, str(invalid_output))
 
 >>> def check_not_found(url):
-...     rc = http("GET %s HTTP/1.1\n" % url).getStatus()
-...     if rc != 404:
-...         return "%s returned status %s instead of 404" % (url, rc)
+...     output = http("GET %s HTTP/1.1\n" % url)
+...     status = output.getStatus()
+...     if status != 404:
+...         return "%s returned status %s instead of 404\n\n%s" % (
+...             url, status, str(output))
 
 >>> def check_redirect(url, auth=False):
 ...     if auth:
@@ -50,8 +55,13 @@ spider -- StuartBishop 20050822
 ...     if rc != 303:
 ...         return "%s returned status %s instead of 303" % (url, rc)
 
+>>> def check(valid_url, auth=False):
+...     output = check_url(valid_url, auth)
+...     if output:
+...         print output
 
 >>> check("/")
+>>> check("/rdf")
 >>> check("/legal")
 >>> check("/feedback")
 
@@ -59,9 +69,7 @@ spider -- StuartBishop 20050822
 >>> check("/bounties/foomatic-widgets")
 
 >>> check("/codeofconduct")
->>> check("/codeofconduct/+portlet-actions")
 >>> check("/codeofconduct/1.0")
->>> check("/codeofconduct/1.0/+portlet-actions")
 >>> check("/codeofconduct/1.0/+sign", auth=True)
 
 >>> check("/projects")
@@ -132,6 +140,7 @@ spider -- StuartBishop 20050822
 
 >>> check("/malone")
 >>> check_redirect("/malone/assigned")
+>>> check_not_found("/malone/bugs/assigned")
 >>> check_redirect("/malone/bugs")
 >>> check_redirect("/malone/bugs/1")
 >>> check("/malone/distros")
@@ -146,7 +155,7 @@ Viewing a bug in the context of an upstream where the bug has already
 been reported (including checking the various pages that hang off that
 one.)
 
->>> check_not_found("/products/firefox/+bug")
+>>> check_redirect("/products/firefox/+bug")
 >>> check("/products/firefox/+bug/1", auth=True)
 >>> check("/products/firefox/+bug/1/+edit", auth=True)
 >>> check("/products/firefox/+bug/1/+secrecy", auth=True)
@@ -168,14 +177,14 @@ been reported.
 Viewing a bug in the context of a distribution where the bug has not
 yet been reported.
 
->>> check_not_found("/distros/ubuntu/+bug")
+>>> check_redirect("/distros/ubuntu/+bug")
 >>> check_not_found("/distros/ubuntu/+bug/3/+viewstatus")
 >>> check_not_found("/distros/ubuntu/+bug/3/+editstatus")
 
 Viewing a bug in the context of a distorelease where the bug has not
 yet been reported.
 
->>> check_not_found("/distros/ubuntu/warty/+bug")
+>>> check_redirect("/distros/ubuntu/warty/+bug")
 >>> check("/distros/ubuntu/warty/+bug/3")
 >>> check_not_found("/distros/ubuntu/warty/+bug/3/+viewstatus")
 >>> check_not_found("/distros/ubuntu/warty/+bug/3/+editstatus")
@@ -188,7 +197,7 @@ already been reported.
 Viewing a bug in the context of a distro source package in which it's
 not yet been reported.
 
->>> check_not_found("/distros/ubuntu/+sources/thunderbird/+bug")
+>>> check_redirect("/distros/ubuntu/+sources/thunderbird/+bug")
 >>> check("/distros/ubuntu/+sources/thunderbird/+bug/1")
 >>> check_not_found("/distros/ubuntu/+sources/thunderbird/+bug/1/+viewstatus")
 >>> check_not_found("/distros/ubuntu/+sources/thunderbird/+bug/1/+editstatus")
@@ -226,10 +235,8 @@ Test /people traversals.
 >>> check("/people/+teamlist")
 >>> check("/people/+ubuntitelist")
 >>> check("/people/+requestmerge", auth=True)
->>> check("/people/+mergerequest-sent", auth=True)
->>> check("/people/+requestmerge-multiple", auth=True)
 >>> check("/people/+portlet-about")
->>> check("/people/+portlet-actions")
+
 
 This is for a team:
 
@@ -264,11 +271,11 @@ And this is for a person:
 >>> check("/people/name16/+codesofconduct", auth=True)
 >>> check("/people/name16/+packages")
 >>> check("/people/name16/+review", auth=True)
->>> check("/people/name16/+portlet-actions")
 >>> check("/people/name16/+portlet-emails")
 >>> check("/people/name16/+portlet-details")
 >>> check("/people/name16/+portlet-editdetails")
 >>> check("/people/name16/+calendar")
+>>> check("/people/name16/+calendar/+subscribe", auth=True)
 
 # XXX: all broken, currently, because of subtraversals. See bug 2149.
 # >>> check("/people/name16/+rdf")

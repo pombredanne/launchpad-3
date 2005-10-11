@@ -31,15 +31,26 @@ class IBuild(Interface):
     section = Attribute("The BinaryPackage Section")
     sourcepackagerelease = Attribute("SourcePackageRelease reference")
     title = Attribute("Build Title")
-    buildlogURL = Attribute("Librarian Build log path")
     distrorelease = Attribute("Direct parent needed by CanonicalURL")
 
 class IBuildSet(Interface):
     """Interface for BuildSet"""
     def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
-        """return a build for a SourcePackageRelease and an ArchTag"""
+        """Return a build for a SourcePackageRelease and an ArchTag"""
 
-    def getBuiltForDistroRelease(distrorelease, size=10):     
-        """Return a given number of build recores within a DistroRelease
-        context.
+    def getBuiltForDistroRelease(distrorelease, limit=10):
+        """Return build records within a DistroRelease context.
+
+        The results are limited by 'limit'.
+        """
+
+    def getBuiltForDistroArchRelease(distroarchrelease, limit=10):
+        """Return build records within a DistroArchRelease context.
+
+        The results are limited by 'limit'.
+        """
+
+    def getBuildsForDistribution(distro, state=None):
+        """Return builds for a given distribution (optionally in the given
+        state only.
         """

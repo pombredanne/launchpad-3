@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'CveSetNavigation',
     'CveContextMenu',
     'CveSetContextMenu',
     'CveView',
@@ -17,8 +18,14 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import ICve, ICveSet, ILaunchBag, IBug
 from canonical.launchpad.validators.cve import valid_cve
-from canonical.launchpad.webapp import canonical_url, ContextMenu, Link
+from canonical.launchpad.webapp import (
+    canonical_url, ContextMenu, Link, GetitemNavigation)
 from canonical.launchpad.browser.form import FormView
+
+
+class CveSetNavigation(GetitemNavigation):
+
+    usedfor = ICveSet
 
 
 class CveContextMenu(ContextMenu):

@@ -70,6 +70,7 @@ __all__ = (
 'ShipItArchitecture',
 'ShipItDistroRelease',
 'ShipItFlavour',
+'ShippingService',
 'SourcePackageFileType',
 'SourcePackageFormat',
 'SourcePackageRelationships',
@@ -2680,6 +2681,22 @@ class TranslationValidationStatus(DBSchema):
         Unknown Error
 
         This translation has an unknown error.
+        """)
+
+
+class ShippingService(DBSchema):
+    """The Shipping company we use to ship CDs."""
+
+    TNT = Item(1, """
+        TNT
+
+        The TNT shipping company.
+        """)
+
+    SPRING = Item(2, """
+        Spring
+
+        The Spring shipping company.
         """)
 
 

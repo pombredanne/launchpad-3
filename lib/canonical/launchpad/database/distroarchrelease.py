@@ -15,8 +15,7 @@ from canonical.database.sqlbase import (
 from canonical.lp import dbschema
 
 from canonical.launchpad.interfaces import (
-    IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot
-    )
+    IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot, NotFoundError)
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
 
 __all__ = [
@@ -47,16 +46,17 @@ class DistroArchRelease(SQLBase):
                             intermediateTable='BinaryPackagePublishing',
                             otherColumn='binarypackage')
 
-    # for launchpad pages
+    @property
     def title(self):
-        title = self.distrorelease.distribution.displayname
-        title += ' ' + self.distrorelease.displayname
-        title += ' for the ' + self.architecturetag
-        title += ' ('+self.processorfamily.name+') architecture'
-        return title
-    title = property(title)
-
+        """See IDistroArchRelease """
+        return '%s for %s (%s)' % (
+            self.distrorelease.title, self.architecturetag,
+            self.processorfamily.name
+            )
+    
+    @property
     def binarycount(self):
+        """See IDistroArchRelease """
         # XXX: Needs system doc test. SteveAlexander 2005-04-24.
         query = ('BinaryPackagePublishing.distroarchrelease = %s AND '
                  'BinaryPackagePublishing.status = %s'
@@ -64,8 +64,6 @@ class DistroArchRelease(SQLBase):
                     self.id, dbschema.PackagePublishingStatus.PUBLISHED
                  ))
         return BinaryPackagePublishing.select(query).count()
-        #return len(self.packages)
-    binarycount = property(binarycount)
 
     def getChroot(self, pocket=None, default=None):
         """See IDistroArchRelease"""
@@ -96,7 +94,7 @@ class DistroArchRelease(SQLBase):
         try:
             return packages[0]
         except IndexError:
-            raise KeyError, name
+            raise NotFoundError(name)
 
 
 class PocketChroot(SQLBase):

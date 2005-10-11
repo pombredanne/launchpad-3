@@ -18,10 +18,10 @@
 
     <h1>Welcome to Rosetta!</h1>
 
-    <p class="documentDescription">
-        Rosetta is a tool for translating open source applications into
-        your language. You can read more <a href="+about" title="About Rosetta">
-        about Rosetta</a> or follow the links below to start translating.
+    <p>
+      Rosetta is a Web-based system for translating open source software into
+      any language. You can read more <a href="+about" title="About Rosetta">
+      about Rosetta</a> or follow the links below to start translating.
     </p>
 
     <h2>Translations in Ubuntu</h2>

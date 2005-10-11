@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BugSetNavigation',
     'BugView',
     'BugSetView',
     'BugEditView',
@@ -19,21 +20,34 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, structured)
+    canonical_url, ContextMenu, Link, structured, Navigation)
 from canonical.launchpad.interfaces import (
     IBug, ILaunchBag, IBugSet, IBugLinkTarget, IBugCve,
-    IDistroBugTask, IDistroReleaseBugTask)
+    IDistroBugTask, IDistroReleaseBugTask, NotFoundError)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.form import FormView
 
 
+class BugSetNavigation(Navigation):
+
+    usedfor = IBugSet
+
+    def traverse(self, name):
+        # If the bug is not found, we expect a NotFoundError. If the
+        # value of name is not a value that can be used to retrieve a
+        # specific bug, we expect a ValueError.
+        try:
+            return getUtility(IBugSet).get(name)
+        except (NotFoundError, ValueError):
+            return None
+
+
 class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = ['editdescription', 'secrecy', 'markduplicate', 'subscription',
-             'addsubscriber', 'addattachment', 'linktocve', 'addurl', 
-             'addwatch', 'filebug', 'searchbugs', 'activitylog',
-             'targetfix']
+             'addsubscriber', 'addattachment', 'linktocve', 'addwatch',
+             'filebug', 'activitylog', 'targetfix']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -82,10 +96,6 @@ class BugContextMenu(ContextMenu):
         text = 'Remove CVE link'
         return Link('+unlinkcve', text, icon='edit', enabled=enabled)
 
-    def addurl(self):
-        text = 'Link to Web Page'
-        return Link('+addurl', text, icon='add')
-
     def addwatch(self):
         text = 'Link To Other Bugtracker'
         return Link('+addwatch', text, icon='add')
@@ -95,12 +105,6 @@ class BugContextMenu(ContextMenu):
         linktarget = '%s/%s' % (canonical_url(bugtarget), '+filebug')
         text = 'Report a Bug in %s' % bugtarget.displayname
         return Link(linktarget, text, icon='add')
-
-    def searchbugs(self):
-        bugtarget = self.context.target
-        linktarget = '%s/%s' % (canonical_url(bugtarget), '+bugs')
-        text = 'Search %s Bugs' % bugtarget.displayname
-        return Link(linktarget, text, icon='bugs')
 
     def activitylog(self):
         text = 'Activity Log'

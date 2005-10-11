@@ -11,33 +11,38 @@ to download needed files for the build job.
 See more initialization details in canonical/buildd/ftests/harness.py
 
   >>> from canonical.buildd.ftests import BuilddSlaveTestSetup
-   
+  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+  >>> LibrarianTestSetup().setUp()
   >>> BuilddSlaveTestSetup().setUp()
 
 Use simple xmlrpclib client to certify the BuildSlave is running
 
   >>> import xmlrpclib
-  >>> s = xmlrpclib.Server('http://localhost:8221/')
+  >>> s = xmlrpclib.Server('http://localhost:8221/rpc/')
   >>> s.echo('Hello World')
   ['Hello World']
 
-Pass a file to the slave and ensure it gives us the correct sha1sum back
+With slave protocol v1.0new, the only way to get files to the slave is to
+put them in the librarian first...
 
-  >>> helloworld = "Hello World\n"
-  >>> sum = s.storefile(helloworld)
-  >>> sum
-  '648a6a6ffffdaa0badb23b8baf90b6168dd16b3a'
-
-Fetch the file back and verify that it is correct
-
-  >>> str(s.fetchfile(sum)) == helloworld
+  >>> from canonical.librarian.client import LibrarianClient
+  >>> from StringIO import StringIO
+  >>> from canonical.launchpad.database import LibraryFileAlias
+  >>> import transaction
+  >>> lc = LibrarianClient()
+  >>> helloworld = "Hello World"
+  >>> hw_sio = StringIO(helloworld)
+  >>> alias = lc.addFile("HelloWorld.txt",len(helloworld),hw_sio,"text/plain")
+  >>> transaction.commit()
+  >>> lf = LibraryFileAlias.get(alias)
+  >>> s.ensurepresent(lf.content.sha1, lf.url)
   True
 
-As of slave protocol version two, /filecache/SHA1SUM is an alternative way
+As of slave protocol v1.0new, /filecache/SHA1SUM is *THE* way
 to retrieve files from the slave. Verify it works...
 
   >>> from urllib2 import urlopen
-  >>> f = urlopen("http://localhost:8221/filecache/"+sum)
+  >>> f = urlopen("http://localhost:8221/filecache/"+lf.content.sha1)
   >>> hw_str = f.read()
   >>> f.close()
   >>> hw_str == helloworld
@@ -46,9 +51,44 @@ to retrieve files from the slave. Verify it works...
 Tested, time to shutdown
 
   >>> BuilddSlaveTestSetup().tearDown()
-
+  >>> LibrarianTestSetup().tearDown()
 
 # XXX cprov 20050630
 # As soon as we have better control of the environment we can try to
 # simulate the some certified build job, maybe the historical 'at'
 # that build even 'under the water'.
+
+=============================================================================
+
+What follows are "out-of-place" tests of some of the buildd slave code...
+
+  >>> import os
+  >>> from canonical.buildd import slave
+  >>> class MungedSlave(slave.BuildDSlave):
+  ...     def __init__(self):
+  ...         pass
+  ...     def cachePath(self,p):
+  ...         return os.path.join("/var/tmp/buildd/filecache", p)
+  ...     _log = True
+
+  >>> def makeLog(l):
+  ...     f = open("/var/tmp/buildd/filecache/buildlog", "w")
+  ...     f.write("x" * l)
+  ...     f.close()
+
+  >>> s = MungedSlave()
+  >>> makeLog(0)
+  >>> len(s.getLogTail())
+  0
+  >>> makeLog(1)
+  >>> len(s.getLogTail())
+  1
+  >>> makeLog(2047)
+  >>> len(s.getLogTail())
+  2047
+  >>> makeLog(2048)
+  >>> len(s.getLogTail())
+  2048
+  >>> makeLog(2049)
+  >>> len(s.getLogTail())
+  2048

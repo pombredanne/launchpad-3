@@ -14,12 +14,26 @@
 
     <!-- Bug -->
     <content class="canonical.launchpad.database.Bug">
+        <implements interface="canonical.launchpad.interfaces.IBug" />
+        <allow attributes="id private bugtasks" />
         <require
             permission="launchpad.View"
-            interface="canonical.launchpad.interfaces.IBug" />
+            attributes="datecreated name title summary description ownerID
+                        owner duplicateof communityscore communitytimestamp
+                        hits hitstimestamp activityscore activitytimestamp
+                        displayname activity initial_message 
+                        productinfestations packageinfestations watches
+                        externalrefs cves cve_links subscriptions duplicates
+                        attachments tickets specifications followup_subject
+                        subscribe unsubscribe isSubscribed messages
+                        notificationRecipientAddresses addWatch linkCVE
+                        unlinkCVE findCvesInText newMessage linkMessage" />
         <require
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.IBug" />
+            set_attributes="datecreated name title summary description ownerID
+                            owner duplicateof communityscore communitytimestamp
+                            hits hitstimestamp activityscore activitytimestamp
+                            activity initial_message private" />
     </content>
 
     <browser:defaultView
@@ -83,9 +97,6 @@
       places due to the fact that its context is now an IBugTask,
       rather than an IBug. -->
       <browser:page
-        name="+portlet-actions"
-        template="../templates/bug-portlet-actions.pt" />
-      <browser:page
           name="+portlet-watch"
           template="../templates/bug-portlet-watch.pt" />
       <browser:page
@@ -120,9 +131,17 @@
         template="../templates/bug-portlet-subscribers.pt"
         permission="zope.Public" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBugSet"
-        function="canonical.launchpad.browser.traversers.traverse_bugs" />
+    <browser:page
+        for="canonical.launchpad.interfaces.IBug"
+        class="canonical.launchpad.browser.BugTaskView"
+        name="+portlet-search"
+        template="../templates/bugtarget-portlet-search.pt"
+        permission="zope.Public" />
+
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BugSetNavigation"
+        />
 
     <browser:url
         for="canonical.launchpad.interfaces.IBugSet"

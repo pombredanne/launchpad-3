@@ -3,7 +3,9 @@
 __metaclass__ = type
 
 __all__ = [
-    'traverseSourcePackageSet',
+    'SourcePackageNavigation',
+    'DistroSourcePackageNavigation',
+    'SourcePackageSetNavigation',
     'SourcePackageFacets',
     'SourcePackageReleasePublishingView',
     'SourcePackageInDistroSetView',
@@ -27,18 +29,58 @@ from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ILaunchBag, ICountry, IBugTaskSet,
-    ISourcePackage, IBugSet)
+    ISourcePackage, IBugSet, ISourcePackageSet, IDistroSourcePackage)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.soyuz.generalapp import builddepsSet
 from canonical.launchpad.browser.addview import SQLObjectAddView
+from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu,
-    enabled_with_permission, structured)
+    enabled_with_permission, structured, Navigation, stepto)
 
 from apt_pkg import ParseSrcDepends
 
 BATCH_SIZE = 40
+
+
+class SourcePackageNavigation(Navigation, BugTargetTraversalMixin):
+
+    usedfor = ISourcePackage
+
+    @stepto('+pots')
+    def pots(self):
+        potemplateset = getUtility(IPOTemplateSet)
+        return potemplateset.getSubset(
+                   distrorelease=self.context.distrorelease,
+                   sourcepackagename=self.context.sourcepackagename)
+
+
+class DistroSourcePackageNavigation(Navigation, BugTargetTraversalMixin):
+    usedfor = IDistroSourcePackage
+
+
+class SourcePackageSetNavigation(Navigation):
+
+    usedfor = ISourcePackageSet
+
+    def traverse(self, name):
+        try:
+            return self.context[name]
+        except KeyError:
+            traversalstack = self.request.getTraversalStack()
+            if traversalstack:
+                nextstep = traversalstack[-1]
+                # If the page is one of those from ubuntu-launchpad
+                # integration, eat the rest of traversal, but make it
+                # traverse +comingsoon.
+                # This gives users of launchpad integration meus a nicer
+                # experience than getting 404 errors.
+                if nextstep == '+gethelp' or nextstep == '+translate':
+                    self.request._traversed_names.append('+comingsoon')
+                    self.request.setTraversalStack([])
+                    return queryView(self.context, "+comingsoon", self.request)
+            return None
 
 
 def linkify_changelog(changelog, sourcepkgnametxt):
@@ -58,23 +100,6 @@ def linkify_changelog(changelog, sourcepkgnametxt):
                        r'<a href="%s\1">#\1</a>' % deb_bugs,
                        changelog)
     return changelog
-
-def traverseSourcePackageSet(sourcepackageset, request, name):
-    try:
-        return sourcepackageset[name]
-    except KeyError:
-        traversalstack = request.getTraversalStack()
-        if traversalstack:
-            nextstep = traversalstack[-1]
-            # If the page is one of those from ubuntu-launchpad integration,
-            # eat the rest of traversal, but make it traverse +comingsoon.
-            # This gives users of launchpad integration meus a nicer experience
-            # than getting 404 errors.
-            if nextstep == '+gethelp' or nextstep == '+translate':
-                request._traversed_names.append('+comingsoon')
-                request.setTraversalStack([])
-                return queryView(sourcepackageset, "+comingsoon", request)
-        return None
 
 
 class SourcePackageFacets(StandardLaunchpadFacets):

@@ -21,7 +21,7 @@ execute_zcml_for_scripts()
 # setup connection to the db
 #
 from canonical.lp import initZopeless
-transactionmgr = initZopeless()
+transactionmgr = initZopeless(dbuser='launchpad')
 
 #
 # We don't really depend on everything from canonical.launchpad.database and

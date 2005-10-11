@@ -24,7 +24,9 @@ from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, OR
-from canonical.database.sqlbase import SQLBase, quote, cursor, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase, quote, cursor, sqlvalues, flush_database_updates,
+    flush_database_caches)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
@@ -36,7 +38,8 @@ from canonical.launchpad.interfaces import (
     IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IMaintainershipSet,
     IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
     ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
-    ILoginTokenSet, KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken)
+    ILoginTokenSet, KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken,
+    NotFoundError)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -272,14 +275,25 @@ class Person(SQLBase):
         """See IPerson."""
         return self.teamowner is not None
 
+    def pastShipItRequests(self):
+        """See IPerson."""
+        query = '''
+            ShippingRequest.recipient = %s AND
+            (ShippingRequest.approved = false OR
+             ShippingRequest.cancelled = true OR
+             ShippingRequest.id IN (SELECT request FROM Shipment))
+            ''' % sqlvalues(self.id)
+        return ShippingRequest.select(query)
+
     def currentShipItRequest(self):
         """See IPerson."""
-        notdenied = OR(ShippingRequest.q.approved==True,
-                       ShippingRequest.q.approved==None)
-        query = AND(ShippingRequest.q.recipientID==self.id,
-                    ShippingRequest.q.shipmentID==None,
-                    notdenied,
-                    ShippingRequest.q.cancelled==False)
+        query = '''
+            (ShippingRequest.approved = true OR
+             ShippingRequest.approved IS NULL)
+            AND ShippingRequest.recipient = %s AND
+            ShippingRequest.cancelled = false AND
+            ShippingRequest.id NOT IN (SELECT request FROM Shipment)
+            ''' % sqlvalues(self.id)
         return ShippingRequest.selectOne(query)
 
     def assignKarma(self, action_name):
@@ -538,6 +552,10 @@ class Person(SQLBase):
         """See IPerson."""
         return self.expiredmembers.union(self.deactivatedmembers)
 
+    # XXX: myactivememberships and activememberships are rather
+    # confusingly named, and I just fixed bug 2871 as a consequence of
+    # this. Is there a way to improve it?
+    #   -- kiko, 2005-10-07
     @property
     def myactivememberships(self):
         """See IPerson."""
@@ -741,7 +759,7 @@ class PersonSet:
         """See IPersonSet."""
         person = self.get(personid)
         if person is None:
-            raise KeyError(personid)
+            raise NotFoundError(personid)
         else:
             return person
 
@@ -948,6 +966,10 @@ class PersonSet:
             raise TypeError('from_person is not a person.')
         if not IPerson.providedBy(to_person):
             raise TypeError('to_person is not a person.')
+
+        # since we are doing direct SQL manipulation, make sure all
+        # changes have been flushed to the database
+        flush_database_updates()
 
         if len(getUtility(IEmailAddressSet).getByPerson(from_person)) > 0:
             raise ValueError('from_person still has email addresses.')
@@ -1233,15 +1255,20 @@ class PersonSet:
             ''' % vars())
         
         # Append a -merged suffix to the account's name.
-        name = "%s-merged" % from_person.name
-        cur.execute("SELECT id FROM Person WHERE name = '%s'" % name)
+        name = base = "%s-merged" % from_person.name.encode('ascii')
+        cur.execute("SELECT id FROM Person WHERE name = %s" % sqlvalues(name))
         i = 1
         while cur.fetchone():
-            name = "%s%d" % (name, i)
-            cur.execute("SELECT id FROM Person WHERE name = '%s'" % name)
+            name = "%s%d" % (base, i)
+            cur.execute("SELECT id FROM Person WHERE name = %s"
+                        % sqlvalues(name))
             i += 1
-        cur.execute("UPDATE Person SET name = '%s' WHERE id = %d"
-                    % (name, from_person.id))
+        cur.execute("UPDATE Person SET name = %s WHERE id = %s"
+                    % sqlvalues(name, from_person.id))
+
+        # Since we've updated the database behind SQLObject's back,
+        # flush its caches.
+        flush_database_caches()
 
 
 class EmailAddress(SQLBase):
@@ -1273,7 +1300,7 @@ class EmailAddressSet:
         """See IEmailAddressSet."""
         email = self.get(emailid)
         if email is None:
-            raise KeyError(emailid)
+            raise NotFoundError(emailid)
         else:
             return email
 

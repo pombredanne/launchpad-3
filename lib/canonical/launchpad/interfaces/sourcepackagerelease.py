@@ -50,7 +50,7 @@ class ISourcePackageRelease(Interface):
 
     # read-only properties
     name = Attribute('The sourcepackagename for this release, as text')
-    title = Attribute('The title of this sourcepackage')
+    title = Attribute('The title of this sourcepackagerelease')
     latest_build = Attribute("The latest build of this source package "
         "release, or None")
 

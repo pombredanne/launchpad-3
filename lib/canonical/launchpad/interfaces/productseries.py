@@ -17,7 +17,7 @@ from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.interfaces import ISpecificationTarget
 
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import name_validator
 
 _ = MessageIDFactory('launchpad')
 
@@ -35,7 +35,7 @@ class IProductSeries(ISpecificationTarget):
                                   'name that identifies it, being used in URLs.'
                                   'It must be all lowercase, with no special '
                                   'characters. For example, "2.0" or "trunk".'),
-                    constraint=valid_name)
+                    constraint=name_validator)
     datecreated = Datetime(title=_('Date Registered'), required=True,
                            readonly=True)
     title = Attribute('Title')

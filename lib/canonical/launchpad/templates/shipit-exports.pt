@@ -1,0 +1,87 @@
+<tal:do-this-first condition="view/process_form" />
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+<body>
+
+  <div metal:fill-slot="body">
+
+  <h1>ShipIt Exports</h1>
+
+  <table>
+  <tbody>
+  <tr>
+  <td width="80%">
+
+  <p tal:condition="view/no_exports">
+    No exports were made yet
+  </p>
+
+  <tal:block condition="view/unsent_exports">
+    <p>Requests not yet sent to the shipping company.</p>
+    <table width="60%" class="listing sortable" id="unsent_exports">
+      <thead>
+        <tr>
+          <th>date</th>
+          <th style="text-align: right">orders</th>
+          <th>csv file</th>
+          <th>sent to the shipping company?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="export view/unsent_exports">
+          <td tal:content="export/datecreated/fmt:date" />
+          <td style="text-align: right"
+              tal:content="export/requests/count:len" />
+          <td><a tal:content="export/csvfile/filename"
+                 tal:attributes="href export/csvfile/url" />
+          </td>
+          <td class="formControls" style="text-align: center">
+            <form action="" method="POST" name="sent"
+                  style="display: inline">
+                  <input type="submit" value="Yes"
+                     tal:attributes="name export/id" />
+            </form>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </tal:block>
+
+  <tal:block condition="view/sent_exports">
+    <p>Requests already sent to the shipping company.</p>
+    <table width="60%" class="listing sortable" id="sent_exports">
+      <thead>
+        <tr>
+          <th>date</th>
+          <th style="text-align: right">orders</th>
+          <th>csv file</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="export view/sent_exports">
+          <td tal:content="export/datecreated/fmt:date" />
+          <td style="text-align: right"
+              tal:content="export/requests/count:len" />
+          <td><a tal:content="export/csvfile/filename"
+                 tal:attributes="href export/csvfile/url" />
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </tal:block>
+
+  </td>
+  <td
+    width="20%"
+    style="vertical-align: top;"
+    tal:content="structure context/@@+portlet-navigation"
+  />
+  </tr>
+  </table>  
+  
+</div>
+
+</body>
+</html>
