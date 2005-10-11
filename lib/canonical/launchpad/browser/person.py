@@ -1417,16 +1417,24 @@ class RequestPeopleMergeView(AddView):
                                   LoginTokenType.ACCOUNTMERGE)
         dupename = dupeaccount.name
         sendMergeRequestEmail(token, dupename, self.request.getApplicationURL())
-        self._nextURL = './+mergerequest-sent'
+        self._nextURL = './+mergerequest-sent?dupe=%d' % dupeaccount.id
 
 
 class FinishedPeopleMergeRequestView:
     """A simple view for a page where we only tell the user that we sent the
-    email with further instructions to complete the merge."""
+    email with further instructions to complete the merge.
+    
+    This view is used only when the dupe account has a single email address.
+    """
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    def dupe_email(self):
+        """Return the email address of the dupe account to which we sent the
+        token.
+        """
+        dupe_account = getUtility(IPersonSet).get(self.request.get('dupe'))
+        results = getUtility(IEmailAddressSet).getByPerson(dupe_account)
+        assert len(results) == 1
+        return results[0].email
 
 
 class RequestPeopleMergeMultipleEmailsView:
@@ -1438,6 +1446,7 @@ class RequestPeopleMergeMultipleEmailsView:
         self.request = request
         self.formProcessed = False
         self.dupe = None
+        self.notified_addresses = []
 
     def processForm(self):
         dupe = self.request.form.get('dupe')
@@ -1477,6 +1486,7 @@ class RequestPeopleMergeMultipleEmailsView:
                 dupename = self.dupe.name
                 url = self.request.getApplicationURL()
                 sendMergeRequestEmail(token, dupename, url)
+                self.notified_addresses.append(email.email)
 
 
 def sendMergeRequestEmail(token, dupename, appurl):
