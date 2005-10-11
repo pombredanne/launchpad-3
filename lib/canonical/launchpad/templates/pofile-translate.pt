@@ -28,7 +28,7 @@
                      metal:define-slot="suggestion-title" />:</b><br />
 <tal:block repeat="submission submissions"><span
   tal:define="submissionlang submission/pomsgset/pofile/language"
-  tal:attributes="lang submissionlang/htmlcode;
+  tal:attributes="lang submissionlang/dashedcode;
                   dir  submissionlang/direction/title"
   tal:content="submission/potranslation/translation">suggestion</span> (<span
 tal:replace="submission/person/browsername">person name</span>)</tal:block></pre>
@@ -43,7 +43,7 @@ define="submissions_remaining python:len(submissions)-1" condition="submissions_
 tal:replace="submissions_remaining">number of submissions</span> more)</tal:block>:</b><br />
 <div
   tal:define="submissionlang submission/pomsgset/pofile/language"
-  tal:attributes="lang submissionlang/htmlcode;
+  tal:attributes="lang submissionlang/dashedcode;
                   dir  submissionlang/direction/title"
   tal:content="submission/potranslation/translation">suggestion</div></pre>
           </tal:block>
@@ -342,7 +342,7 @@ tal:replace="submissions_remaining">number of submissions</span> more)</tal:bloc
                               name string:set_${messageSet/id}_translation_${language_code}_${index};
                               value python:messageSet.getTranslation(index);
                               tabindex view/makeTabIndex;
-                              lang context/language/htmlcode;
+                              lang context/language/dashedcode;
                               dir context/language/direction/title;
                               " />
                           <tal:block condition="messageSet/isMultiline">
@@ -365,7 +365,7 @@ tal:replace="submissions_remaining">number of submissions</span> more)</tal:bloc
                                   name string:set_${messageSet/id}_translation_${language_code}_${index};
                                   rows messageSet/getMaxLinesCount;
                                   tabindex view/makeTabIndex;
-                                  lang context/language/htmlcode;
+                                  lang context/language/dashedcode;
                                   dir context/language/direction/title;
                                 ">
 <tal:content replace="structure python:messageSet.getTranslation(index)" /></textarea>
@@ -387,7 +387,7 @@ tal:replace="submissions_remaining">number of submissions</span> more)</tal:bloc
                                   name string:set_${messageSet/id}_translation_${language_code}_${index};
                                   rows messageSet/getMaxLinesCount;
                                   tabindex view/makeTabIndex;
-                                  lang context/language/htmlcode;
+                                  lang context/language/dashedcode;
                                   dir context/language/direction/title;
                                 "></textarea>
                             </tal:without-content>

@@ -55,7 +55,7 @@ class Language(SQLBase):
         return None
 
     @property
-    def htmlcode(self):
+    def dashedcode(self):
         """XML and HTML use a dash as the language/country separator"""
         return self.code.replace('_', '-')
 
