@@ -1122,3 +1122,14 @@ COMMENT ON TABLE ShippingRun IS 'A shipping run is a set of shipments that are s
 COMMENT ON COLUMN ShippingRun.datecreated IS 'The date this shipping run was created.';
 COMMENT ON COLUMN ShippingRun.sentforshipping IS 'The exported file was sent to the shipping company already?';
 COMMENT ON COLUMN ShippingRun.csvfile IS 'A csv file with all requests of this shipping run, to be sent to the shipping company.';
+
+
+-- Language
+COMMENT ON TABLE Language IS 'A human language.';
+COMMENT ON COLUMN Language.code IS 'The ISO 639 code for this language';
+COMMENT ON COLUMN Language.englishname IS 'The english name for this language';
+COMMENT ON COLUMN Language.nativename IS 'The name of this language in the language itself';
+COMMENT ON COLUMN Language.pluralforms IS 'The number of plural forms this language has';
+COMMENT ON COLUMN Language.pluralexpression IS 'The plural expression for this language, as used by gettext';
+COMMENT ON COLUMN Language.visible IS 'Whether this language should usually be visible or not';
+COMMENT ON COLUMN Language.direction IS 'The direction that text is written in this language';

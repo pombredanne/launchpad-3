@@ -16,19 +16,19 @@ kinds of suggestions.
   ...
   <BLANKLINE>
                                 <pre><b>Suggestions:</b><br />
-  Srprise! (non-editor) (Valentina Commissari)</pre>
+  <span lang="es" dir="ltr"> Srprise! (non-editor)</span> (Valentina Commissari)</pre>
   <BLANKLINE>
   <BLANKLINE>
   <BLANKLINE>
   <BLANKLINE>
                                 <pre><b>Currently Published Elsewhere:</b><br />
-   tarjetas (Carlos Perelló Marín)</pre>
+  <span lang="es" dir="ltr"> tarjetas</span> (Carlos Perelló Marín)</pre>
   <BLANKLINE>
   <BLANKLINE>
   <BLANKLINE>
   <BLANKLINE>
                                 <pre><b>From the Global Translation Wiki:</b><br />
-   bang bang in evo hoary (Mark Shuttleworth)</pre>
+  <span lang="es" dir="ltr"> bang bang in evo hoary</span> (Mark Shuttleworth)</pre>
   <BLANKLINE>
   ...
 
@@ -42,7 +42,7 @@ And now, a multiline suggestion:
   ...
   <BLANKLINE>
                               <pre><b>Suggestion by No Privileges Person:</b><br />
-  This is a suggestion added by a non-editor for a multiline entry.
-  It should work! :-P</pre>
+  <div lang="es" dir="ltr">This is a suggestion added by a non-editor for a multiline entry.
+  It should work! :-P</div></pre>
   <BLANKLINE>
   ...
