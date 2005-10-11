@@ -83,7 +83,7 @@ input[disabled] {
 .portalErrorMessage,
 .portalError {
     background-color: #ff9070;
-    border: 1px solid #ddb0b0;
+    border: 1px solid #998080;
     color: Black;
     margin: 0em 0em 0em 0em;
     padding: 0.3em 0.3em 0.3em 0.3em;
@@ -100,7 +100,7 @@ input[disabled] {
     background-image: url(/++resource++alert_icon.gif);
     background-repeat: no-repeat;
     background-position: 5px 50%;
-    padding: 0.5em 1em 0.5em 3em;
+    padding: 0.3em 1em 0.3em 3em;
 }
 
 
