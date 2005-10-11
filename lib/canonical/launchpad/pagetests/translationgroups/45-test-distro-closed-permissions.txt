@@ -26,8 +26,8 @@ First, we show that "evolution minicard" is not translated.
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...<input type="text"
-      name="set_137_translation_af_0" tabindex="15" />
+  ...<input type="text" lang="af"
+      dir="ltr" name="set_137_translation_af_0" tabindex="15" />
   ...
 
 Now, we need to show that it is translated after a post. Let's go ahead and
@@ -53,8 +53,8 @@ two added:
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...<input type="text"
-      name="set_137_translation_af_0"
+  ...<input type="text" lang="af"
+      dir="ltr" name="set_137_translation_af_0"
       value="evolution minikaart" tabindex="15" />
   ...
 
