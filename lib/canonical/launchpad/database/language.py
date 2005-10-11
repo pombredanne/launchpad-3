@@ -56,8 +56,18 @@ class Language(SQLBase):
 
     @property
     def dashedcode(self):
-        """XML and HTML use a dash as the language/country separator"""
+        """See ILanguage"""
         return self.code.replace('_', '-')
+
+    @property
+    def abbreviated_text_dir(self):
+        """See ILanguage"""
+        if self.direction == TextDirection.LTR:
+            return 'ltr'
+        elif self.direction == TextDirection.RTL:
+            return 'rtl'
+        else:
+            assert False, "unknown text direction"
 
 class LanguageSet:
     implements(ILanguageSet)

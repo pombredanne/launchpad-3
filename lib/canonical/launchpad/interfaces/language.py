@@ -46,7 +46,10 @@ class ILanguage(Interface):
         "language.")
 
     dashedcode = Attribute("""The language code in a form suitable for use
-        in HTML and XML files""")
+        in HTML and XML files.""")
+
+    abbreviated_text_dir = Attribute("""The abbreviated form of the text
+        direction, suitable for use in HTML files.""")
 
 class ILanguageSet(Interface):
     """The collection of languages."""

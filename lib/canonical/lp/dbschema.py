@@ -2741,17 +2741,18 @@ class ShipItDistroRelease(DBSchema):
         The Breezy Badger release.
         """)
 
+
 class TextDirection(DBSchema):
     """The base text direction for a language."""
 
     LTR = Item(0, """
-        ltr
+        Left to Right
 
         Text is normally written from left to right in this language.
         """)
 
     RTL = Item(1, """
-        rtl
+        Right to Left
 
         Text is normally written from left to right in this language.
         """)
