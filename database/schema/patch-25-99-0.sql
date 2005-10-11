@@ -67,6 +67,8 @@ ALTER TABLE Branch ADD COLUMN cache_url text;
 ALTER TABLE Branch ADD CONSTRAINT valid_cache_url
     CHECK (valid_absolute_url(cache_url));
 
+ALTER TABLE Branch ADD COLUMN started_at int;
+
 -- Migrate data
 UPDATE Branch SET
     product_locked = DEFAULT,
@@ -108,17 +110,34 @@ CREATE TABLE BranchMessage (
 
 -- Revision (nee Changeset)
 
+-- XXX: At this day, in production the archconfigentry table is empty, and no
+-- manifestentry record has non-NULL changeset. -- David Allouche 2005-10-11
+-- TODO: replace these constraints by whatever is appropriate
+-- -- David Allouche 2005-10-11
+UPDATE ManifestEntry SET changeset=NULL WHERE changeset IS NOT NULL;
+ALTER TABLE ManifestEntry DROP CONSTRAINT manifestentry_changeset_fk;
+ALTER TABLE ArchConfigEntry DROP CONSTRAINT archconfigentry_changeset_fk;
+
+-- XXX: Stuart added this, but I cannot see the purpose of it, and he says that
+-- might have been a mistake and that I should comment it and keep it that way
+-- if that works. -- David Allouche 2005-10-11
+--ALTER TABLE ManifestEntry DROP CONSTRAINT manifestentry_branch_fk;
+
 ALTER TABLE Changeset RENAME TO Revision;
 ALTER TABLE Changeset_id_seq RENAME TO revision_id_seq;
+
+DELETE FROM Revision; -- Remove everything. ImportD will repopulate it.
+
 ALTER TABLE Revision ALTER COLUMN id SET DEFAULT
     nextval('public.revision_id_seq');
 
 ALTER TABLE Revision ADD COLUMN owner int CONSTRAINT revision_owner_fk
     REFERENCES Person;
-
-ALTER TABLE Revision ADD COLUMN revision_id text;
-
+ALTER TABLE Revision ADD COLUMN revision_id text
+    CONSTRAINT revision_revision_id_unique UNIQUE;
 ALTER TABLE Revision RENAME COLUMN datecreated TO date_created;
+ALTER TABLE Revision ADD COLUMN committed_against int
+    CONSTRAINT revision_committed_against_fk REFERENCES Revision;
 
 -- NULLable? If not, what do we default it too?
 ALTER TABLE Revision ADD COLUMN revision_date timestamp WITHOUT TIME ZONE;
@@ -126,29 +145,12 @@ ALTER TABLE Revision ADD COLUMN revision_date timestamp WITHOUT TIME ZONE;
 ALTER TABLE Revision ADD COLUMN diff_adds int;
 ALTER TABLE Revision ADD COLUMN diff_deletes int;
 ALTER TABLE Revision RENAME COLUMN logmessage TO log_body;
-
 ALTER TABLE Revision RENAME COLUMN archid TO revision_author;
-
-
--- Fill in Revision.owner from archuserid.person
--- Unfortunately, this does nothing as the archuserid table is empty
-UPDATE Revision SET owner=archuserid.person
-    FROM archuserid WHERE archuserid.person = Revision.revision_author;
--- Fill in Revision.revision_id from
-UPDATE Revision SET
-    revision_id=archarchive.name || '/' || 
-    archnamespace.category || '--' || 
-    archnamespace.branch || '--' ||
-    archnamespace.version || '--' || revision.name
-    FROM Branch, ArchNamespace, ArchArchive
-    WHERE Revision.branch = Branch.id
-        AND Branch.archnamespace = ArchNamespace.id
-        AND ArchNamespace.archarchive = ArchArchive.id;
-
 ALTER TABLE Revision ALTER COLUMN owner SET NOT NULL;
 ALTER TABLE Revision ALTER COLUMN revision_id SET NOT NULL;
 
 -- Drop unwanted columns
+ALTER TABLE Revision DROP COLUMN branch;
 ALTER TABLE Revision DROP COLUMN name;
 ALTER TABLE Branch DROP COLUMN archnamespace;
 
@@ -164,11 +166,31 @@ CREATE TABLE RevisionParent (
     id serial PRIMARY KEY,
     revision int NOT NULL CONSTRAINT revisionparent_revision_fk
         REFERENCES Revision,
-    parent int NOT NULL CONSTRAINT revisionparent_parent_fk REFERENCES Revision,
-    -- TODO: This might not be wanted, as per XXX in spec
-    committed_against int 
-            CONSTRAINT revisionparent_committed_against_fk REFERENCES Revision
+    parent int NOT NULL CONSTRAINT revisionparent_parent_fk
+        REFERENCES Revision
     );
+
+CREATE TABLE RevisionNumber (
+    id serial PRIMARY KEY,
+    rev_no int NOT NULL,
+    branch int NOT NULL CONSTRAINT revisionnumber_branch_fk
+        REFERENCES Branch,
+    revision int NOT NULL CONSTRAINT revisionnumber_revision_fk
+        REFERENCES Revision
+    );
+
+ALTER TABLE RevisionNumber ADD CONSTRAINT revisionnumber_unique
+    UNIQUE (rev_no, branch, revision);
+
+ALTER TABLE Branch ADD CONSTRAINT branch_started_at_fk
+    FOREIGN KEY (started_at) REFERENCES RevisionNumber;
+
+-- add constraint so branch.started_at.branch == branch
+
+ALTER TABLE RevisionNumber ADD CONSTRAINT revisionnumber_branch_id_unique
+    UNIQUE (branch, id);
+ALTER TABLE Branch ADD CONSTRAINT branch_id_started_at_fk
+    FOREIGN KEY (id, started_at) REFERENCES RevisionNumber (branch, id);
 
 CREATE TABLE BranchSubscription (
     id serial PRIMARY KEY,
@@ -187,9 +209,6 @@ ALTER TABLE Branch DROP CONSTRAINT "$3";
 ALTER TABLE Branch ADD CONSTRAINT branch_product_fk FOREIGN KEY (product)
     REFERENCES Product;
 
-ALTER TABLE Revision DROP CONSTRAINT "$1";
-ALTER TABLE Revision ADD CONSTRAINT revision_branch_fk
-    FOREIGN KEY (branch) REFERENCES Branch; 
 ALTER TABLE Revision DROP CONSTRAINT "$2";
 ALTER TABLE Revision ADD CONSTRAINT revision_revision_author_fk
     FOREIGN KEY (revision_author) REFERENCES RevisionAuthor;
