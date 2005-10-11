@@ -72,19 +72,30 @@ we'll define one here.
     ...     def redirect(self, name):
     ...         self.redirected_to = name
 
+    >>> import canonical.launchpad.webapp.servers
+
+    >>> class StepsToGo(canonical.launchpad.webapp.servers.StepsToGo):
+    ...
+    ...     def __init__(self, stack):
+    ...         self.travstack = stack
+    ...
+    ...     @property
+    ...     def _stack(self):
+    ...         return self.travstack
+    ...
+    ...     def consume(self):
+    ...         return self.travstack.pop()
+
     >>> class Request(object):
     ...     implements(IBrowserRequest)
     ...
     ...     def __init__(self):
-    ...         self.traversal_stack = []
-    ...         self._traversed_names = []
     ...         self.response = Response()
+    ...         self.traversal_stack = []
     ...
-    ...     def getTraversalStack(self):
-    ...         return self.traversal_stack
-    ...
-    ...     def setTraversalStack(self, stack):
-    ...         self.traversal_stack = stack
+    ...     @property
+    ...     def stepstogo(self):
+    ...         return StepsToGo(self.traversal_stack)
 
     >>> request = Request()
 
@@ -287,8 +298,6 @@ Check that the request's state is as it should be.
 
     >>> request.traversal_stack
     ['prince']
-    >>> request._traversed_names
-    ['charming']
 
 
 == redirection ==
@@ -456,3 +465,7 @@ Check those from ThingSetNavigation4:
     >>> instance_of_dupenames.publishTraverse(request, 'bar')
     'bar'
 
+The doit() method still works though.
+
+    >>> instance_of_dupenames.doit()
+    'bar'

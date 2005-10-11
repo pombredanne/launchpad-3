@@ -43,6 +43,7 @@ class DecoratorAdvisor:
     def __call__(self, fn):
         self.fn = fn
         addClassAdvisor(self.advise)
+        return fn
 
     def advise(self, cls):
         assert self.magic_class_attribute is not None, (
@@ -57,7 +58,7 @@ class DecoratorAdvisor:
 
 class stepthrough(DecoratorAdvisor):
 
-    magic_class_attribute = '__namespace_traversals__'
+    magic_class_attribute = '__stepthrough_traversals__'
 
 
 class stepto(DecoratorAdvisor):
@@ -319,14 +320,12 @@ class Navigation:
         # dispatch to the appropriate function.  We can optimise by changing
         # the order of these checks around a bit.
         namespace_traversals = self._combined_class_info(
-            '__namespace_traversals__')
+            '__stepthrough_traversals__')
         if namespace_traversals is not None:
             if name in namespace_traversals:
-                traversalstack = request.getTraversalStack()
-                if len(traversalstack) > 0:
-                    nextstep = traversalstack.pop()
-                    request._traversed_names.append(nextstep)
-                    request.setTraversalStack(traversalstack)
+                stepstogo = request.stepstogo
+                if stepstogo:
+                    nextstep = stepstogo.consume()
                     handler = namespace_traversals[name]
                     return handler(self, nextstep)
 
