@@ -227,3 +227,33 @@
   <BLANKLINE>
                   </p>
   ...
+
+
+  Logged in as mark@hbd.com (which is a member of name17), go to a public
+  condorcet-style poll that's still open and get redirected to a page where
+  it's possible to vote (and see the current vote).
+
+  >>> print http(r"""
+  ... GET /people/name17/+poll/never-closes3 HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/people/name17/+poll/never-closes3/+vote-condorcet
+  ...
+
+
+  And here we'll see the form which says you haven't voted yet and allows you
+  to vote.
+
+  >>> print http(r"""
+  ... GET /people/name17/+poll/never-closes3/+vote-condorcet HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...Your current vote...
+  ...You have not yet voted in this poll...
+  ...Rank options in order of preference...
+  ...
+
