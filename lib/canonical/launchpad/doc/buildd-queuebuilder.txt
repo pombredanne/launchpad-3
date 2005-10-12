@@ -41,16 +41,24 @@ Now we have satisfied all needs for BuildMaster, let's instantiate it.
   >>> bm = BuilddMaster(logging.getLogger(), transaction)
 
 Emulates a PocketChroot entry to validate the distroarchrelese 
-Ubuntu/Warty/i386/RELEASE:
+Ubuntu/Warty/i386/RELEASE and Debian/Woody/i386/RELEASE:
 
-  >>> dr = DistroRelease.selectOneBy(name='warty')
-  >>> dar = DistroArchRelease.selectOneBy(distroreleaseID=dr.id,
-  ...                                     architecturetag='i386')
+  >>> warty = DistroRelease.selectOneBy(name='warty')
+  >>> warty_dar = DistroArchRelease.selectOneBy(distroreleaseID=warty.id,
+  ...                                           architecturetag='i386')
+
+  >>> woody = DistroRelease.selectOneBy(name='woody')
+  >>> woody_dar = DistroArchRelease.selectOneBy(distroreleaseID=woody.id,
+  ...                                           architecturetag='i386')
+
 
 Pick up any existent librarian file as chroot.
 
-  >>> pocket = PocketChroot(distroarchreleaseID=dar.id, 
+  >>> pocket = PocketChroot(distroarchreleaseID=warty_dar.id, 
   ...                       chroot=1) 
+
+  >>> pocket = PocketChroot(distroarchreleaseID=woody_dar.id, 
+  ...                       chroot=2) 
 
 Produce a set of available DistroArchRelease, for which the 
 build jobs will be created. 
@@ -60,12 +68,12 @@ build jobs will be created.
   ...     distroreleases.add(dar.distrorelease)
   ...     bm.addDistroArchRelease(dar)
   ...
-  WARNING:root:Disabling: No CHROOT found for pocket 'Release'
+  WARNING:root:Disabling: No CHROOT found for The Hoary Hedgehog Release for i386 (x86) pocket 'Release'
 
-Only Ubuntu/Warty/i386 has an available CHROOT, it's the only one supported. 
+Only Ubuntu/Warty/i386 and Debian/Woody/i386 have an available CHROOT. 
 
-  >>> [arch.architecturetag for arch in bm._archreleases]
-  [u'i386']
+  >>> [(arch.distrorelease.name, arch.architecturetag) for arch in bm._archreleases]
+  [(u'woody', u'i386'), (u'warty', u'i386')]
 
 Adding a new dummy sourcepackagerelease and publish it in Ubuntu/Warty/i386:
 
@@ -97,7 +105,7 @@ added by the current sample data and so on)
   >>> release_pocket = PackagePublishingPocket.RELEASE
   >>> p = SecureSourcePackagePublishingHistory(
   ...                                    sourcepackagerelease=srcpkgrel.id,
-  ...                                    distroreleaseID=dr.id, 
+  ...                                    distroreleaseID=warty.id, 
   ...                                    status=published,
   ...                                    pocket=release_pocket,
   ...                                    component=srcpkgrel.component, 
@@ -111,10 +119,12 @@ Verify how many Build entries we have from sampledata:
 
 Create missing builds (packages w/o build entry) for those distroreleases.
 As we just insert a new sourcepackagerelease in run-time we expect to
-have a new build for it:
+have a new build for the sane Warty and a warning about the
+absence of nominatedarchindep field for Woody:
 
   >>> for dr in distroreleases:
   ...      bm.createMissingBuilds(dr)
+  WARNING:root:No Nominated Architecture Independent, skipping distrorelease WOODY
 
 Check if we create a new Build entry for just added sourcepackagerelease:
 
@@ -122,8 +132,8 @@ Check if we create a new Build entry for just added sourcepackagerelease:
   3
 
   >>> b = Build.selectOneBy(sourcepackagereleaseID=srcpkgrel.id)
-  >>> b.sourcepackagerelease.name
-  u'test-buildd'
+  >>> (b.sourcepackagerelease.name, b.distroarchrelease.distrorelease.name)
+  (u'test-buildd', u'warty')
 
 Now we have Build table properly set and probably with some entries
 marked as NEEDSBUILD we can create BuildQueue entries for it 

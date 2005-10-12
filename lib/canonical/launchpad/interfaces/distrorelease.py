@@ -76,6 +76,9 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
     architecturecount = Attribute("The number of architectures in this "
         "release.")
     architectures = Attribute("The Architecture-specific Releases")
+    nominatedarchindep = Attribute(
+        "Distroarchrelease designed to build architeture independent "
+        "packages whithin this distrorelease context.")
     messagecount = Attribute("The total number of translatable items in "
         "this distribution release.")
     distroreleaselanguages = Attribute("The set of dr-languages in this "

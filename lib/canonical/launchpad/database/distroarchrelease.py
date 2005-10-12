@@ -65,6 +65,12 @@ class DistroArchRelease(SQLBase):
                  ))
         return BinaryPackagePublishing.select(query).count()
 
+    @property
+    def isNominatedArchIndep(self):
+        """See IDistroArchRelease"""
+        return (self.distrorelease.nominatedarchindep and
+                self.id == self.distrorelease.nominatedarchindep.id)
+    
     def getChroot(self, pocket=None, default=None):
         """See IDistroArchRelease"""
         if not pocket:
@@ -77,8 +83,7 @@ class DistroArchRelease(SQLBase):
             return pchroot.chroot
 
         return default
-        
-        
+                
     def findPackagesByName(self, pattern, fti=False):
         """Search BinaryPackages matching pattern and archtag"""
         binset = getUtility(IBinaryPackageReleaseSet)

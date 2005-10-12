@@ -130,12 +130,20 @@ class BuildQueue(SQLBase):
     lastscore = IntCol(dbName='lastscore', default=0)
 
     @property
+    def archrelease(self):
+        return self.build.distroarchrelease
+
+    @property
     def urgency(self):
         return self.build.sourcepackagerelease.urgency
     
     @property
     def component_name(self):
         return self.build.sourcepackagerelease.component.name
+
+    @property
+    def archhintlist(self):
+        return self.build.sourcepackagerelease.archhintlist
     
     @property
     def name(self):

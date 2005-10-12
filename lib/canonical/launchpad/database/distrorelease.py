@@ -73,6 +73,9 @@ class DistroRelease(SQLBase):
     architectures = MultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease',
         orderBy='architecturetag')
+    nominatedarchindep = ForeignKey(
+        dbName='nominatedarchindep',foreignKey='DistroArchRelease',
+        notNull=False, default=None)
     specifications = MultipleJoin('Specification',
         joinColumn='distrorelease', orderBy='-datecreated')
     datelastlangpack = UtcDateTimeCol(dbName='datelastlangpack', notNull=False,
