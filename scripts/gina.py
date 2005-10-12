@@ -181,7 +181,8 @@ def import_sourcepackages(packages_map, kdb, package_root,
         if options.countdown > 0 and count > options.countdown:
             count = 0
             log.warn('Countdown %i sourcepackages' % npacks)
-            importer_handler.commit()
+        # Commit often or hold locks in the database!
+        importer_handler.commit()
 
 
 def import_binarypackages(pocket, packages_map, kdb, package_root,
@@ -240,7 +241,8 @@ def import_binarypackages(pocket, packages_map, kdb, package_root,
             if options.countdown > 0 and count >= options.countdown:
                 count = 0
                 log.warn('Countdown %i binary packages' % countdown)
-                importer_handler.commit()
+            # Commit often or hold locks open in the database
+            importer_handler.commit()
             countdown -= 1
         if nosource:
             log.warn('%i Sources Not Found' % nosource)
@@ -274,7 +276,7 @@ if __name__ == "__main__":
         target.getSectionName() for target in config.gina.target
         ]
 
-    if options.all: 
+    if options.all:
         targets = possible_targets[:]
     else:
         if not targets:
