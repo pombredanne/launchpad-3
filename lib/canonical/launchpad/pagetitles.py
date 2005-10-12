@@ -667,6 +667,8 @@ shipit_myrequest = "Your ShipIt Order"
 
 shipitrequests_index = 'ShipIt Requests'
 
+shipitrequests_search = 'Search ShipIt Requests'
+
 shipitrequest_edit = 'Edit ShipIt Request'
 
 shipit_notfound = 'Page Not Found'

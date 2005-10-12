@@ -6,9 +6,10 @@ __all__ = [
     'StandardShipItRequestAddView', 'ShippingRequestAdminView',
     'ShippingRequestsView', 'ShipItLoginView', 'ShipItRequestView',
     'ShipItUnauthorizedView', 'StandardShipItRequestsView',
-    'ShippingRequestURL', 'StandardShipItRequestURL',
-    'ShipItExportsView', 'ShipItNavigation',
+    'ShippingRequestURL', 'StandardShipItRequestURL', 'ShipItExportsView',
+    'ShipItNavigation', 'RedirectToOldestPendingRequest',
     'StandardShipItRequestSetNavigation', 'ShippingRequestSetNavigation']
+    
 
 from zope.event import notify
 from zope.component import getUtility
@@ -515,15 +516,23 @@ Reason:
                 "Your organization can't have more than 30 characters."))
 
 
+class RedirectToOldestPendingRequest:
+    """A simple view to redirect to the oldest pending request."""
+
+    def __call__(self):
+        oldest_pending = getUtility(IShippingRequestSet).getOldestPending()
+        self.request.response.redirect(canonical_url(oldest_pending))
+
+
 BATCH_SIZE = 50
 
 class ShippingRequestsView:
     """The view to list ShippingRequests that match a given criteria."""
 
     submitted = False
-    results = None
     selectedStatus = 'pending'
     selectedType = 'custom'
+    recipient_text = ''
 
     def standardShipItRequests(self):
         """Return a list with all standard ShipIt Requests."""
@@ -532,12 +541,12 @@ class ShippingRequestsView:
     def processForm(self):
         """Process the form, if it was submitted."""
         request = self.request
-        status = request.get('statusfilter')
-        if not status:
+        if not request.get('show'):
             self.batchNavigator = self._getBatchNavigator([])
             return
 
         self.submitted = True
+        status = request.get('statusfilter')
         self.selectedStatus = status
         if status == 'pending':
             status = ShippingRequestStatus.PENDING
@@ -549,21 +558,26 @@ class ShippingRequestsView:
             status = ShippingRequestStatus.ALL
 
         requestset = getUtility(IShippingRequestSet)
-        type = request.get('typefilter')
-        self.selectedType = type
-        if type == 'custom':
-            results = requestset.searchCustomRequests(status=status)
-        elif type == 'standard':
-            results = requestset.searchStandardRequests(status=status)
+        self.selectedType = request.get('typefilter')
+        # self.selectedType may be one of 'custom', 'standard', 'any' or the
+        # id of a StandardShipItRequest.
+        if self.selectedType in ('custom', 'standard', 'any'):
+            # The user didn't select any specific standard type
+            standard_type = None
+            request_type = self.selectedType
         else:
-            # Must cast self.selectedType to an int so we can compare with the
-            # value of standardrequest.id in the template to see if it must be
-            # the selected option or not.
+            # In this case the user selected a specific standard type, which
+            # means self.selectedType is the id of a StandardShipItRequest.
+            assert self.selectedType.isdigit()
             self.selectedType = int(self.selectedType)
-            type = getUtility(IStandardShipItRequestSet).get(type)
-            results = requestset.searchStandardRequests(
-                status=status, standard_type=type)
+            standard_type = getUtility(IStandardShipItRequestSet).get(
+                self.selectedType)
+            request_type = 'standard'
 
+        self.recipient_text = request.get('recipient_text')
+        results = requestset.search(
+            request_type=request_type, standard_type=standard_type,
+            status=status, recipient_text=self.recipient_text)
         self.batchNavigator = self._getBatchNavigator(results)
 
     def _getBatchNavigator(self, list):

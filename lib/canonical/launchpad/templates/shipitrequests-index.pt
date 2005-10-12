@@ -48,6 +48,9 @@
           <option value="custom" 
                   tal:attributes="selected python: view.selectedType == 'custom'">
             Custom quantities</option>
+          <option value="any" 
+                  tal:attributes="selected python: view.selectedType == 'any'">
+            Any quantities</option>
           <option value="standard"
                   tal:attributes="selected python: view.selectedType == 'standard'">
             All standard quantities</option>
@@ -59,9 +62,17 @@
       </td>
     </tr>
     <tr>
+      <td align="right"><label>from:</label></td>
+      <td>
+        <input type="text" name="recipient_text"
+               tal:attributes="value view/recipient_text" />
+        <span class="formHelp">(optional)</span>
+      </td>
+    </tr>
+    <tr>
       <td></td>
       <td>
-        <input type="submit" value="Show" name="CHANGE" />
+        <input type="submit" value="Show" name="show" />
       </td>
     </tr>
   </table>
@@ -74,11 +85,12 @@
                      next_url bn/nextBatchURL;
                      currentBatch bn/currentBatch">
 
-    <p tal:condition="not: currentBatch">
-      No results were found
+    <p tal:condition="not: bn/currentBatch">
+      No requests were found
     </p>
-    <tal:block condition="currentBatch">
-      <table width="80%" class="listing sortable" id="results">
+
+    <tal:block condition="bn/currentBatch">
+      <table width="80%" class="listing data" id="results">
         <thead>
           <tr>
             <th>id</th>
@@ -118,51 +130,17 @@
           </tal:block>
         </tbody>
       </table>
-      <table width="80%" class="listing sortable">
+      <table width="80%" class="listing">
         <tbody>
-          <tr class="results" style="background: #f7ebd6" tal:define="batch bn/batch">
-            <td tal:define="startno batch/startNumber;
-                            endno batch/endNumber;
-                            total batch/total">
-              <div
-                class="navigation"
-                tal:define="prev_page_url bn/prevBatchURL;
-                            next_page_url bn/nextBatchURL">
-                <a tal:condition="prev_page_url"
-                   tal:attributes="href prev_page_url"
-                   rel="previous">
-                   &laquo; previous</a>&nbsp;
-                <span tal:repeat="page_url bn/batchPageURLs">
-                  <a href="."
-                     tal:content="python:page_url.keys()[0]"
-                     tal:condition="python:len(page_url) > 1"
-                     tal:attributes="href python:page_url.values()[0]">[1]</a>
-                </span>
-                &nbsp;<a tal:condition="next_page_url"
-                   tal:attributes="href next_page_url"
-                   rel="next">
-                   next &raquo;</a>
-                <span tal:condition="not: next_page_url" tal:omit-tag>
-                  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-                </span>
-              </div>
-
-              <strong tal:content="startno">1</strong>
-              &rarr;
-              <strong tal:content="endno">10</strong>
-              of
-              <tal:comment replace="nothing">
-                XXX: The spacing in the following line is very tricky -- get it
-                wrong and tests will fail.
-              </tal:comment>
-              <span tal:replace="total">42</span> result<span
-                  tal:omit-tag="" tal:condition="python: total != 1">s</span>
+          <tr class="results" style="background: #f7ebd6">
+            <td> 
+              <tal:navigation replace="structure bn/@@+navigation-links" />
             </td>
           </tr>
         </tbody>
       </table>
-
     </tal:block>
+
   </tal:block>
 
   </td>
