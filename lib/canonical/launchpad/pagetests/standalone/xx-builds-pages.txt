@@ -2,6 +2,14 @@
 Those pages still empty, but, at least, they don't return any error. 
 
   >>> print http(r"""
+  ... GET /distros/ubuntu/+builds HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...
+
+
+  >>> print http(r"""
   ... GET /distros/ubuntu/hoary/+builds HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok

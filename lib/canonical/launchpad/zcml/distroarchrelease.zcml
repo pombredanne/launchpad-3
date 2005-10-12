@@ -10,6 +10,7 @@
     <!-- DistroArchRelease -->
     <content class="canonical.launchpad.database.DistroArchRelease">
         <allow interface="canonical.launchpad.interfaces.IDistroArchRelease"/>
+        <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     </content>
 
     <browser:defaultView
@@ -35,20 +36,22 @@
         for="canonical.launchpad.database.DistroArchRelease" 
         permission="zope.Public"
         class="canonical.launchpad.browser.DistroArchReleaseView">
-
       <browser:page
-            name="+index"
-            template="../templates/distroarchrelease-index.pt"
-            lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+index"/>
-
+          name="+index"
+          template="../templates/distroarchrelease-index.pt"
+          lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+index"/>
       <browser:page
-            name="+portlet-details"
-            template="../templates/distroarchrelease-portlet-details.pt" />
-
+          name="+portlet-details"
+          template="../templates/distroarchrelease-portlet-details.pt"
+          lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+portlets-details"/>
       <browser:page
-            name="+builds"
-            template="../templates/distroarchrelease-builds.pt" />
-
+          name="+builds"
+          template="../templates/distroarchrelease-builds.pt"
+          lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+builds"/>
+      <browser:page
+          name="+builds-list"
+          template="../templates/builds-list.pt"
+          lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+builds-list"/>
     </browser:pages>
 
     <browser:page

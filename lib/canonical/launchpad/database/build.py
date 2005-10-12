@@ -83,32 +83,3 @@ class BuildSet:
 
         return Build.select(query, clauseTables=clauseTables)
 
-    def getBuiltForDistroRelease(self, distrorelease, limit=10):
-        """See IBuildSet"""
-        arch_ids = ''.join(['%d,' % arch.id for arch in
-                            distrorelease.architectures])[:-1]
-
-        return Build.select("distroarchrelease IN (%s)" % arch_ids,
-                            limit=limit, orderBy="-datebuilt")
-
-    def getBuiltForDistroArchRelease(self, distroarchrelease, limit=10):
-        """See IBuildSet"""
-        return Build.select(
-            "distroarchrelease=%s" % sqlvalues(distroarchrelease.id),
-            limit=limit, orderBy="-datebuilt"
-            )
-
-    def getBuildsForDistribution(self, distro, state=None):
-        """See IBuilderSet."""
-        # XXX: stevea: 20051004: Once sqlvalues() can take a proxied
-        # value, change this back to distro from distro.id
-        # https://launchpad.net/products/launchpad/+bug/2836
-        clause = ("build.sourcepackagerelease = sourcepackagerelease.id AND "
-                  "sourcepackagepublishing.sourcepackagerelease=sourcepackagerelease.id AND "
-                  "sourcepackagepublishing.distrorelease = distrorelease.id "
-                  "AND distrorelease.distribution = %s" % sqlvalues(distro.id))
-        if state is not None:
-            clause += " AND build.buildstate = %s" % sqlvalues(state)
-        return Build.select(clause, clauseTables=['SourcePackageRelease',
-                                                  'SourcePackagePublishing',
-                                                  'DistroRelease'])

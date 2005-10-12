@@ -18,15 +18,17 @@ from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.ticket import Ticket
+from canonical.launchpad.database.build import Build
 from canonical.lp.dbschema import (
     EnumCol, BugTaskStatus, DistributionReleaseStatus, TranslationPermission)
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, IDistroPackageFinder, NotFoundError)
+    IDistribution, IDistributionSet, IDistroPackageFinder, IHasBuildRecords,
+    NotFoundError)
 
 
 class Distribution(SQLBase):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
-    implements(IDistribution)
+    implements(IDistribution, IHasBuildRecords)
 
     _defaultOrder = 'name'
 
@@ -231,6 +233,27 @@ class Distribution(SQLBase):
         raise NotFoundError(distrorelease_name)
 
 
+    def getWorkedBuildRecords(self, status=None, limit=10):
+        """See IHasBuildRecords"""
+        status_clause = ''
+        if status:
+            status_clause = "AND buildstate=%s" % sqlvalues(status)
+
+        ids_list = []
+        for release in self.releases:
+            ids = ','.join(
+                '%d' % arch.id for arch in release.architectures)
+            if ids:
+                ids_list.append(ids)
+
+        arch_ids = ','.join(ids_list)
+
+        return Build.select(
+            "builder is not NULL AND "
+            "distroarchrelease IN (%s) %s" % (arch_ids, status_clause), 
+            limit=limit, orderBy="-datebuilt")
+
+
 class DistributionSet:
     """This class is to deal with Distribution related stuff"""
 
@@ -247,7 +270,7 @@ class DistributionSet:
             return Distribution.byName(name)
         except SQLObjectNotFound:
             raise NotFoundError(name)
-
+        
     def get(self, distributionid):
         """See canonical.launchpad.interfaces.IDistributionSet."""
         return Distribution.get(distributionid)

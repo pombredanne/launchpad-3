@@ -115,7 +115,7 @@ added by the current sample data and so on)
 Verify how many Build entries we have from sampledata:
 
   >>> Build.select().count()
-  2
+  4
 
 Create missing builds (packages w/o build entry) for those distroreleases.
 As we just insert a new sourcepackagerelease in run-time we expect to
@@ -129,7 +129,7 @@ absence of nominatedarchindep field for Woody:
 Check if we create a new Build entry for just added sourcepackagerelease:
 
   >>> Build.select().count()
-  3
+  5
 
   >>> b = Build.selectOneBy(sourcepackagereleaseID=srcpkgrel.id)
   >>> (b.sourcepackagerelease.name, b.distroarchrelease.distrorelease.name)

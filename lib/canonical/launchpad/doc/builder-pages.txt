@@ -19,7 +19,7 @@ Let's instantiate the view for +index:
   '...'
   
   >>> builder_view.lastBuilds().count()
-  2
+  3
 
 Let's instantiate the view for +stop:
 

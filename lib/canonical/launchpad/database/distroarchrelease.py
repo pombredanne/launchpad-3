@@ -15,8 +15,11 @@ from canonical.database.sqlbase import (
 from canonical.lp import dbschema
 
 from canonical.launchpad.interfaces import (
-    IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot, NotFoundError)
+    IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot,
+    IHasBuildRecords, NotFoundError)
+
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
+from canonical.launchpad.database.build import Build
 
 __all__ = [
     'DistroArchRelease',
@@ -26,7 +29,7 @@ __all__ = [
 
 class DistroArchRelease(SQLBase):
 
-    implements(IDistroArchRelease)
+    implements(IDistroArchRelease, IHasBuildRecords)
 
     _table = 'DistroArchRelease'
 
@@ -100,6 +103,18 @@ class DistroArchRelease(SQLBase):
             return packages[0]
         except IndexError:
             raise NotFoundError(name)
+
+    def getWorkedBuildRecords(self, status=None, limit=10):
+        """See IHasBuildRecords"""
+        status_clause = ''
+        if status:
+            status_clause = "AND buildstate=%s" % sqlvalues(status)
+
+        return Build.select(
+            "builder is not NULL AND "
+            "distroarchrelease=%s %s" % (self.id, status_clause),
+            limit=limit, orderBy="-datebuilt"
+            )
 
 
 class PocketChroot(SQLBase):
