@@ -111,3 +111,21 @@ raise NotFoundError for us
     Traceback (most recent call last):
     ...
     NotFoundError: 'hoary-bullshit'
+
+
+
+Upload related stuff
+--------------------
+
+When uploading to a distribution we need to query its uploaders. Each
+uploader record is in fact a DistroComponentUploader record which
+tells us what component is uploadable to by what person or group of
+people.
+
+   >>> for dcu in ubuntu.uploaders:
+   ...     assert dcu.distribution == ubuntu
+   ...     print dcu.component.name
+   ...     print dcu.uploader.displayname
+   main
+   Ubuntu Team
+

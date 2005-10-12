@@ -425,6 +425,15 @@
             attribute="jobs" required="no" />
     </sectiontype>
 
+    <sectiontype name="uploader">
+        <key name="dbuser" datatype="string" required="yes" />
+        <key name="default_recipient_name" datatype="string" required="yes" />
+        <key name="default_sender_name" datatype="string" required="yes" />
+        <key name="default_recipient_address" datatype="string" 
+             required="yes" />
+        <key name="default_sender_address" datatype="string" required="yes" />
+    </sectiontype>
+
     <sectiontype name="canonical">
         <key name="dbhost" datatype="ipaddr-or-hostname" required="no" />
         <key name="dbname" datatype="string" required="yes" />
@@ -454,6 +463,7 @@
             attribute="karmacacheupdater" />
         <section name="*" type="cveupdater" attribute="cveupdater" />
         <section name="*" type="buildsequencer" attribute="buildsequencer" />
+        <section name="*" type="uploader" attribute="uploader" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file

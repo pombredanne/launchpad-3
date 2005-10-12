@@ -56,6 +56,11 @@ class Distribution(SQLBase):
     tickets = MultipleJoin('Ticket', joinColumn='distribution',
         orderBy=['-datecreated', 'id'])
 
+    uploadsender = StringCol(notNull=False, default=None)
+    uploadadmin = StringCol(notNull=False, default=None)
+
+    uploaders = MultipleJoin('DistroComponentUploader',
+                             joinColumn='distribution')
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""

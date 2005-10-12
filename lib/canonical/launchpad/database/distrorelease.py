@@ -69,6 +69,7 @@ class DistroRelease(SQLBase):
     owner = ForeignKey(
         dbName='owner', foreignKey='Person', notNull=True)
     lucilleconfig = StringCol(notNull=False, default=None)
+    changeslist = StringCol(notNull=False, default=None)
     architectures = MultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease',
         orderBy='architecturetag')

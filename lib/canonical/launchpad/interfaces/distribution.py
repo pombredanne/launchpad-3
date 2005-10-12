@@ -88,7 +88,12 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         "Release milestones are primarily used by the QA team to assign "
         "specific bugs for fixing by specific milestones."))
 
+    uploadsender = Attribute(_("The default upload processor sender name."))
+    uploadadmin = Attribute(_("The distribution's upload admin."))
 
+    uploaders = Attribute(_(
+        "DistroComponentUploader records associated with this distribution."))
+    
     # properties
     currentrelease = Attribute(
         "The current development release of this distribution. Note that "
