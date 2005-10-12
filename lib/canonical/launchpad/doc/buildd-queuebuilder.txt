@@ -158,12 +158,12 @@ And we grant some score depending on: time pending on the buildqueue,
 component the package belongs to, and the urgency of the upload.
 There is still some work to do here, for further information see the
 launchpad/scripts/builddmaster.py code. The job presented should won
-exactly ** 5 ** points last turn (1 for the default urgency 'LOW' and 
-4 for the 'Main' component, further tests for scoring are in
+exactly ** 101 ** points last turn (1 for the default urgency 'LOW' and 
+100 for the 'Main' component, further tests for scoring are in
 buildd-scoring.txt)
 
   >>> job.lastscore
-  5
+  101
    
 
 

@@ -41,9 +41,9 @@ Let's start the run-time tests:
 
   >>> bq0 = MockBuildQueue('Null', SourcePackageUrgency.HIGH, 'main')
 
-So we expect lastscore of 7 points, since the initial value was 0:
+So we expect lastscore of 103 points, since the initial value was 0:
 
- * 4 points for component 'main', 
+ * 100 points for component 'main', 
  * and 3 points for urgency HIGH.
 
 see the tables in launchpad/scripts/builddmaster.py at
@@ -51,60 +51,60 @@ scoreBuildQueueEntry() method.
 
   >>> bm.scoreBuildQueueEntry(bq0)
   >>> bq0.name, bq0.lastscore
-  ('Null', 7)
+  ('Null', 103)
 
 
-We expect lastscore of 5 points, where :
+We expect lastscore of 101 points, where :
 
- * 4 points for main components
+ * 100 points for main components
  * 1 point for priority LOW
 
   >>> bq1 = MockBuildQueue('Eins', SourcePackageUrgency.LOW, 'main')
   >>> bm.scoreBuildQueueEntry(bq1)
   >>> bq1.name, bq1.lastscore
-  ('Eins', 5)
+  ('Eins', 101)
 
 
-We expect lastscore of 5 points, where:
+We expect lastscore of 53 points, where:
 
-* 2 points for universe component
+* 50 points for universe component
 * 3 points for priority HIGH
 
   >>> bq2 = MockBuildQueue('Zwei', SourcePackageUrgency.HIGH, 'universe')
   >>> bm.scoreBuildQueueEntry(bq2)
   >>> bq2.name, bq2.lastscore
-  ('Zwei', 5)
+  ('Zwei', 53)
 
 
-We expect lastscore of 3 points, where:
+We expect lastscore of 22 points, where:
 
-* 1 point for component multiverse
+* 22 point for component multiverse
 * 2 points for MEDIUM priority
 
   >>> bq3 = MockBuildQueue('Drei', SourcePackageUrgency.MEDIUM, 
   ...                      'multiverse')
   >>> bm.scoreBuildQueueEntry(bq3)
   >>> bq3.name, bq3.lastscore
-  ('Drei', 3)
+  ('Drei', 22)
 
 
-We expect lastscore of 8 points, where:
+We expect lastscore of 104 points, where:
 
-* 4 points for main component
+* 100 points for main component
 * 4 points for EMERGENCY priority
 
   >>> bq4 = MockBuildQueue('Vier', SourcePackageUrgency.EMERGENCY, 'main')
   >>> bm.scoreBuildQueueEntry(bq4)
   >>> bq4.name, bq4.lastscore
-  ('Vier', 8)
+  ('Vier', 104)
 
 
-We expect lastscore of 4 points, where:
+We expect lastscore of 81 points, where:
 
-* 3 point for restricted component
+* 80 point for restricted component
 * 1 point for LOW priority
 
   >>> bq5 = MockBuildQueue('Funf', SourcePackageUrgency.LOW, 'restricted')
   >>> bm.scoreBuildQueueEntry(bq5)
   >>> bq5.name, bq5.lastscore
-  ('Funf', 4)
+  ('Funf', 81)

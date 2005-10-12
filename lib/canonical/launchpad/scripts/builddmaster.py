@@ -897,10 +897,10 @@ class BuilddMaster:
         * sourcepackagerelease urgency
         """        
         score_componentname = {
-            'multiverse': 1,
-            'universe': 2,
-            'restricted': 3,
-            'main': 4,
+            'multiverse': 20,
+            'universe': 50,
+            'restricted': 80,
+            'main': 100,
             }
 
         score_urgency = {
