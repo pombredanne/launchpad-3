@@ -565,6 +565,11 @@ class PersonView:
             self.context.subscribedBounties or
             self.context.claimedBounties)
 
+    def redirectToAssignedBugs(self):
+        """Redirect to the +assignedbugs report."""
+        self.request.response.redirect(
+            canonical_url(self.context) + "/+assignedbugs")
+
     def activeMembersCount(self):
         return len(self.context.activemembers)
 
