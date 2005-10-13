@@ -285,17 +285,17 @@ class ShippingRequestSet:
                 request_type, standard_type=standard_type)
             queries.append('ShippingRequest.id IN (%s)' % type_based_query)
 
-        if recipient_text is not None:
+        if recipient_text:
             recipient_text = recipient_text.lower()
             queries.append("""
-                ((Person.id = ShippingRequest.recipient AND
-                  Person.fti @@ ftq(%s))
-                 OR (EmailAddress.person = ShippingRequest.recipient AND
-                     lower(EmailAddress.email) LIKE %s)
-                 OR (ShippingRequest.fti @@ ftq(%s))
+                (Person.id = ShippingRequest.recipient AND
+                 Emailaddress.person = ShippingRequest.recipient AND
+                 (Person.fti @@ ftq(%s) OR
+                  ShippingRequest.fti @@ ftq(%s) OR
+                  lower(EmailAddress.email) LIKE %s)
                 )
-                """ % sqlvalues(recipient_text, recipient_text + '%%',
-                                recipient_text))
+                """ % sqlvalues(recipient_text, recipient_text,
+                                recipient_text + '%%'))
             clauseTables = ['Person', 'EmailAddress']
 
         if omit_cancelled:
