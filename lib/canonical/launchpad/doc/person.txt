@@ -181,10 +181,10 @@ True
 
 A merged account gets a -merged suffix on its name.
 >>> empty.id
-58L
+59L
 >>> cur.execute("SELECT id FROM Person WHERE name='empty-merged'")
 >>> cur.fetchone()[0]
-58
+59
 
 
 >>> cur.execute("select person, team, status from teammembership where "
