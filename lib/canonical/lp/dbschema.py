@@ -46,7 +46,6 @@ __all__ = (
 'DistributionReleaseStatus',
 'EmailAddressStatus',
 'GPGKeyAlgorithm',
-'HashAlgorithm',
 'ImportTestStatus',
 'ImportStatus',
 'KarmaActionCategory',
@@ -898,32 +897,6 @@ class TeamSubscriptionPolicy(DBSchema):
         Restricted Team
 
         New members can only be added by one of the team's administrators.
-        """)
-
-
-class HashAlgorithm(DBSchema):
-    """Hash Algorithms
-
-    We use "hash" or "digest" cryptographic algorithms in a number of
-    places in Launchpad. Usually these are a way of verifying the
-    integrity of a file, but they can also be used to check if a file
-    has been seen before.
-    """
-
-    MD5 = Item(0, """
-        The MD5 Digest Algorithm
-
-        A widely-used cryptographic hash function with a 128-bit hash value. As
-        an Internet standard (RFC 1321), MD5 has been employed in a wide
-        variety of security applications.
-        """)
-
-    SHA1 = Item(1, """
-        The SHA-1 Digest Algorithm
-
-        This algorithm is specified by the US-NIST and is used as part
-        of TLS and other common cryptographic protocols. It is a 168-bit
-        digest algorithm.
         """)
 
 
