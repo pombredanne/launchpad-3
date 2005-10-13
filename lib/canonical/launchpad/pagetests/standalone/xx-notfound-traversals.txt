@@ -270,6 +270,8 @@ And this is for a person:
 >>> check("/people/name16/+editwikinames", auth=True)
 >>> check("/people/name16/+editjabberids", auth=True)
 >>> check("/people/name16/+codesofconduct", auth=True)
+>>> check("/people/name16/+edithomepage", auth=True)
+>>> check("/people/name16/+edithackergotchi", auth=True)
 >>> check("/people/name16/+packages")
 >>> check("/people/name16/+review", auth=True)
 >>> check("/people/name16/+portlet-emails")
