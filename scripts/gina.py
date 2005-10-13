@@ -160,6 +160,10 @@ def import_sourcepackages(packages_map, kdb, package_root,
             # to make it better and have tested include.
             log.exception("Unable to create SourcePackageData")
             continue
+        except psycopg.Error:
+            log.exception("Database error. Unable to create SourcePackageData")
+            importer_handler.abort()
+            continue
 
         log.debug('Check Sourcepackage %s Version %s before process it' % (
             source_data.package, source_data.version
@@ -215,6 +219,11 @@ def import_binarypackages(pocket, packages_map, kdb, package_root,
                 # rewrited to try to make it better and have tests included.
                 log.exception("Failed to create BinaryPackageData")
                 continue
+            except psycopg.Error:
+                log.exception(
+                        "Database error. Failed to create BinaryPackageData"
+                        )
+                importer_handler.abort()
 
             if not binary_data.process_package(kdb, package_root,
                                                keyrings):
@@ -237,6 +246,9 @@ def import_binarypackages(pocket, packages_map, kdb, package_root,
                     nosource += 1
             except (AttributeError, ValueError, TypeError):
                 log.exception("Failed to import_binarypackage")
+            except psycopg.Error:
+                log.exception("Database error. Failed to import_binarypackage")
+                importer_handler.abort()
 
             if options.countdown > 0 and count >= options.countdown:
                 count = 0
@@ -269,6 +281,11 @@ if __name__ == "__main__":
             default=0, dest="countdown", metavar="COUNT",
             help="Log a status message (as WARNING) every COUNT imports",
             )
+    parser.add_option(
+            "-l", "--lockfile", default="/var/lock/launchpad-gina.lock",
+            help="Ensure only one process is running that locks LOCKFILE",
+            metavar="LOCKFILE"
+            )
 
     (options, targets) = parser.parse_args()
 
@@ -286,20 +303,18 @@ if __name__ == "__main__":
             if target not in possible_targets:
                 parser.error("No Gina target %s in config file" % target)
 
-    for target in targets:
-        target_section = [
-            section for section in config.gina.target
-                if section.getSectionName() == target][0]
-        lockfile = LockFile('/var/lock/gina-%s.lock' % target)
-        try:
-            lockfile.acquire()
-        except OSError:
-            log.error(
-                    'Gina already running with section %s. Skipping.' % target
-                    )
-        else:
-            try:
-                main(options, target_section)
-            finally:
-                lockfile.release()
+    lockfile = LockFile(options.lockfile, log)
+    try:
+        lockfile.acquire()
+    except OSError:
+        parser.error('Lockfile %s already locked. Exiting.' % options.lockfile)
+
+    try:
+        for target in targets:
+            target_section = [
+                section for section in config.gina.target
+                    if section.getSectionName() == target][0]
+            main(options, target_section)
+    finally:
+        lockfile.release()
 
