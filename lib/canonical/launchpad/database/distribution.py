@@ -9,12 +9,11 @@ from sqlobject import (
     RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey, MultipleJoin)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
-from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.bug import BugSet
+from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.distributionbounty import DistributionBounty
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.sourcepackage import SourcePackage
-from canonical.launchpad.database.milestone import Milestone
-from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.ticket import Ticket
@@ -68,6 +67,11 @@ class Distribution(SQLBase):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setDistribution(self)
         return BugTaskSet().search(search_params)
+
+    def newBug(self, owner, title, description):
+        """See IBugTarget."""
+        return BugSet().createBug(
+            distribution=self, comment=description, title=title, owner=owner)
 
     @property
     def open_cve_bugtasks(self):

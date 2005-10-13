@@ -35,3 +35,22 @@ bugs.
   HTTP/1.1 200 Ok
   ...Thank you! Bug...created...
 
+
+It works with distribution tickets as well.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+ticket/5/+makebug HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+ticket/5/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 18
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... makebug=Create+Bug+Report""")
+  HTTP/1.1 200 Ok
+  ...Thank you! Bug...created...
