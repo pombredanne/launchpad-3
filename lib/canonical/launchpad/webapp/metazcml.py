@@ -34,7 +34,7 @@ from zope.app.publisher.browser.metaconfigure import (
 
 from canonical.launchpad.interfaces import (
     IAuthorization, ICanonicalUrlData, IFacetMenu, IApplicationMenu,
-    IContextMenu)
+    IContextMenu, IBreadcrumb)
 
 try:
     from zope.publisher.interfaces.browser import IDefaultBrowserLayer
@@ -250,12 +250,15 @@ def navigation(_context, module, classes):
     for navclassname in classes:
         navclass = getattr(module, navclassname)
 
+        # These are used for the various ways we register a navigation
+        # component.
         factory = [navclass]
+        for_ = [navclass.usedfor]
+
+        # Register the navigation as the traversal component.
         layer = IDefaultBrowserLayer
         provides = IBrowserPublisher
         name = ''
-        for_ = [navclass.usedfor]
-
         view(_context, factory, layer, name, for_, permission=PublicPermission,
              provides=provides)
 

@@ -38,6 +38,9 @@ class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     usedfor = IDistribution
 
+    def breadcrumb(self):
+        return self.context.displayname
+
     @stepto('+packages')
     def packages(self):
         return getUtility(IPublishedPackageSet)
@@ -83,6 +86,9 @@ class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
 class DistributionSetNavigation(GetitemNavigation):
 
     usedfor = IDistributionSet
+
+    def breadcrumb(self):
+        return 'Distributions'
 
 
 class DistributionFacets(StandardLaunchpadFacets):

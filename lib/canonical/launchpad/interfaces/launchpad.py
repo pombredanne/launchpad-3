@@ -9,6 +9,7 @@ from zope.interface import Interface, Attribute, implements
 import zope.exceptions
 from zope.i18nmessageid import MessageIDFactory
 import zope.app.publication.interfaces
+import zope.publisher.interfaces.browser
 import zope.app.traversing.interfaces
 from persistent import IPersistent
 
@@ -32,7 +33,8 @@ __all__ = [
     'IDBSchema', 'IDBSchemaItem', 'IAuthApplication',
     'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
     'IAfterTraverseEvent', 'AfterTraverseEvent',
-    'IBeforeTraverseEvent', 'BeforeTraverseEvent'
+    'IBeforeTraverseEvent', 'BeforeTraverseEvent',
+    'IBreadcrumb', 'ILaunchpadBrowserApplicationRequest'
     ]
 
 
@@ -523,3 +525,25 @@ class BeforeTraverseEvent(zope.app.publication.interfaces.BeforeTraverseEvent):
 #     def __init__(self, ob, request):
 #         self.object = ob
 #         self.request = request
+
+class ILaunchpadBrowserApplicationRequest(
+    zope.publisher.interfaces.browser.IBrowserApplicationRequest):
+    """The request interface to the application for launchpad browser requests.
+    """
+
+    stepstogo = Attribute(
+        'The StepsToGo object for this request, allowing you to inspect and'
+        ' alter the remaining traversal steps.')
+
+    breadcrumbs = Attribute(
+        'List of IBreadcrumb objects.  This is appended to during traversal'
+        ' so that a page can render appropriate breadcrumbs.')
+
+
+class IBreadcrumb(Interface):
+    """A breadcrumb link.  IBreadcrumbs get put into request.breadcrumbs."""
+
+    url = Attribute('Absolute url of this breadcrumb.')
+
+    text = Attribute('Text of this breadcrumb.')
+

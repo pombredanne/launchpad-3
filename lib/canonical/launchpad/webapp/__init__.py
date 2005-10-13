@@ -8,8 +8,10 @@ __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'nearest_menu', 'canonical_url', 'nearest', 'structured',
            'StandardLaunchpadFacets', 'enabled_with_permission',
            'LaunchpadView', 'Navigation', 'stepthrough', 'redirection',
-           'stepto', 'GetitemNavigation', 'LaunchpadBrowserRequest']
+           'stepto', 'GetitemNavigation', 'LaunchpadBrowserRequest',
+           'smartquote']
 
+import re
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.menu import (
@@ -20,6 +22,28 @@ from canonical.launchpad.webapp.publisher import (
     redirection, stepto)
 from canonical.launchpad.webapp.servers import LaunchpadBrowserRequest
 from canonical.launchpad.interfaces import ILaunchBag
+
+
+def smartquote(str):
+    """Return a copy of the string provided, with smartquoting applied.
+
+    >>> smartquote('')
+    u''
+    >>> smartquote('foo "bar" baz')
+    u'foo \u201cbar\u201d baz'
+    >>> smartquote('foo "bar baz')
+    u'foo \u201cbar baz'
+    >>> smartquote('foo bar" baz')
+    u'foo bar\u201d baz'
+    >>> smartquote('""foo " bar "" baz""')
+    u'""foo " bar "" baz""'
+    >>> smartquote('" foo "')
+    u'" foo "'
+    """
+    str = unicode(str)
+    str = re.compile(u'(^| )(")([^" ])').sub(u'\\1\u201c\\3', str)
+    str = re.compile(u'([^ "])(")($| )').sub(u'\\1\u201d\\3', str)
+    return str
 
 
 class GetitemNavigation(Navigation):

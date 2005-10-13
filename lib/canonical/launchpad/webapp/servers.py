@@ -13,6 +13,7 @@ from canonical.publication import LaunchpadBrowserPublication
 from zope.publisher.browser import BrowserRequest
 #from zope.publisher.http import HTTPRequest
 import zope.publisher.publish
+from canonical.launchpad.interfaces import ILaunchpadBrowserApplicationRequest
 
 
 class StepsToGo:
@@ -93,6 +94,15 @@ class StepsToGo:
 
 
 class LaunchpadBrowserRequest(BrowserRequest):
+
+    implements(ILaunchpadBrowserApplicationRequest)
+
+    __slots__ = ('__provides__', 'breadcrumbs')
+
+    def __init__(self, body_instream, outstream, environ, response=None):
+        self.breadcrumbs = []
+        super(LaunchpadBrowserRequest, self).__init__(
+            body_instream, outstream, environ, response)
 
     @property
     def stepstogo(self):

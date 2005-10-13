@@ -73,19 +73,26 @@ from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission, Navigation, stepto, stepthrough)
+    enabled_with_permission, Navigation, stepto, stepthrough, smartquote)
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 
 class PersonNavigation(Navigation, CalendarTraversalMixin):
+
     usedfor = IPerson
+
+    def breadcrumb(self):
+        return self.context.displayname
 
 
 class TeamNavigation(Navigation, CalendarTraversalMixin):
 
     usedfor = ITeam
+
+    def breadcrumb(self):
+        return smartquote('"%s" team') % self.context.displayname
 
     @stepto('+members')
     def members(self):
@@ -99,6 +106,9 @@ class TeamNavigation(Navigation, CalendarTraversalMixin):
 class PersonSetNavigation(Navigation):
 
     usedfor = IPersonSet
+
+    def breadcrumb(self):
+        return 'People'
 
     def traverse(self, name):
         return self.context.getByName(name)

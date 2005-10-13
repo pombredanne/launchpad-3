@@ -40,6 +40,9 @@ class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     usedfor = IDistroRelease
 
+    def breadcrumb(self):
+        return self.context.version
+
     @stepthrough('+lang')
     def traverse_lang(self, langcode):
         langset = getUtility(ILanguageSet)

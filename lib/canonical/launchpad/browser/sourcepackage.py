@@ -48,6 +48,9 @@ class SourcePackageNavigation(Navigation, BugTargetTraversalMixin):
 
     usedfor = ISourcePackage
 
+    def breadcrumb(self):
+        return self.context.name
+
     @stepto('+pots')
     def pots(self):
         potemplateset = getUtility(IPOTemplateSet)
@@ -63,6 +66,9 @@ class DistroSourcePackageNavigation(Navigation, BugTargetTraversalMixin):
 class SourcePackageSetNavigation(Navigation):
 
     usedfor = ISourcePackageSet
+
+    def breadcrumb(self):
+        return 'Packages'
 
     def traverse(self, name):
         try:
