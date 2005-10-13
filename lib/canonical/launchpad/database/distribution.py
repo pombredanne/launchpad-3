@@ -17,6 +17,9 @@ from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.ticket import Ticket
+from canonical.launchpad.database.publishing import (
+    SourcePackageFilePublishing, BinaryPackageFilePublishing)
+from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.build import Build
 from canonical.lp.dbschema import (
     EnumCol, BugTaskStatus, DistributionReleaseStatus, TranslationPermission)
@@ -235,6 +238,24 @@ class Distribution(SQLBase):
                     pass
 
         raise NotFoundError(distrorelease_name)
+
+    def getFileByName(self, filename, source=True, binary=True):
+        """See IDistribution."""
+        assert (source or binary), "searching in an explicitly empty " \
+               "space is pointless"
+        if source:
+            candidate = SourcePackageFilePublishing.selectOneBy(
+                distribution=self.id,
+                libraryfilealiasfilename=filename)
+            if candidate is not None:
+                return LibraryFileAlias.get(candidate.libraryfilealias)
+        if binary:
+            candidate = BinaryPackageFilePublishing.selectOneBy(
+                distribution=self.id,
+                libraryfilealiasfilename=filename)
+            if candidate is not None:
+                return LibraryFileAlias.get(candidate.libraryfilealias)
+        raise NotFoundError(filename)
 
 
     def getWorkedBuildRecords(self, status=None, limit=10):

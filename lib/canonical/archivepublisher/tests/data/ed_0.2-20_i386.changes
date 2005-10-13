@@ -47,14 +47,14 @@ Changes:
      out on errors.  Thanks to Joel Baker <fenton@debian.org>.
      Closes: #130327
 Files: 
- 5963369d8874785077ca0b8773167ad0 530 editors important ed_0.2-20.dsc
+ 22beb6b9d1fe984cd3a20571a4e958ac 522 editors important ed_0.2-20.dsc
  f9e1e5f13725f581919e9bfd62272a05 8506 editors important ed_0.2-20.diff.gz
  0c466ce6a160c62fa558fbbb46a4ea45 44718 editors important ed_0.2-20_i386.deb
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.1 (GNU/Linux)
 
-iD8DBQFDS85XK8hAFiBoeJURAtoMAKCDvi34xQcgOgiBayBnIzK50lgjzwCbBf4K
-UqQ6Y21P8m3vu7MI3R1vcW4=
-=NuDO
+iD8DBQFDTWC+K8hAFiBoeJURAnA7AJ9i9ZjWjtqUQ+nFJfPnsjOmfUq6DQCffPZZ
+nwN7DFh8fuhURm3VCzcwIGc=
+=jANz
 -----END PGP SIGNATURE-----

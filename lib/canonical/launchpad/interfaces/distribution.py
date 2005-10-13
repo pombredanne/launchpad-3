@@ -146,6 +146,20 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         """Return a (distrorelease,pocket) tuple which is the given textual
         distroreleasename in this distribution."""
 
+    def getFileByName(filename, source=True, binary=True):
+        """Find and return a LibraryFileAlias for the filename supplied.
+
+        The file returned will be one of those published in the distribution.
+
+        If searching both source and binary, and the file is found in the
+        source packages it'll return that over a file for a binary package.
+
+        At least one of source and binary must be true.
+
+        Raises NotFoundError if it fails to find the named file.
+        """
+        
+
 class IDistributionSet(Interface):
     """Interface for DistrosSet"""
 
