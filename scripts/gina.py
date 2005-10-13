@@ -16,6 +16,7 @@ import sys
 import psycopg
 from string import split
 from optparse import OptionParser
+from datetime import timedelta
 
 from canonical.launchpad.scripts.gina.database import Katie
 from canonical.launchpad.scripts.gina.archive import (ArchiveComponentItems,
@@ -305,11 +306,12 @@ if __name__ == "__main__":
             if target not in possible_targets:
                 parser.error("No Gina target %s in config file" % target)
 
-    lockfile = LockFile(options.lockfile, log)
+    lockfile = LockFile(options.lockfile, timeout=timedelta(days=1), logger=log)
     try:
         lockfile.acquire()
     except OSError:
-        parser.error('Lockfile %s already locked. Exiting.' % options.lockfile)
+        log.info('Lockfile %s already locked. Exiting.', options.lockfile)
+        sys.exit(1)
 
     try:
         for target in targets:
