@@ -19,6 +19,7 @@ from canonical.launchpad.validators.version import valid_debian_version
 class ISourcePackageRelease(Interface):
     """A source package release, e.g. apache-utils 2.0.48-3"""
 
+    id = Attribute("SourcePackageRelease identifier")
     creator = Attribute("Person that created this release")
     version = TextLine(
             title=_("A version string"),

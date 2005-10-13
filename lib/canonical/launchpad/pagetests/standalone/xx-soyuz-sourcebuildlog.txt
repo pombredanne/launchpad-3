@@ -11,7 +11,10 @@
     <p>pmount - 0.1-1</p>
       <ul>
         <li>
-         <a href="http://localhost:58000/1/1/netapplet-1.0.0.tar.gz">netapplet-1.0.0.tar.gz</a>
+          <a href="http://localhost:58000/1/1/netapplet-1.0.0.tar.gz">netapplet-1.0.0.tar.gz</a>
+        </li>
+        <li>
+          <a href="http://localhost:58000/1/1/netapplet-1.0.0.tar.gz">netapplet-1.0.0.tar.gz</a>
         </li>
       </ul>
     </li>

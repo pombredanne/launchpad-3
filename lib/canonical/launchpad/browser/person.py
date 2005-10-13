@@ -12,8 +12,8 @@ __all__ = [
     'PersonSpecsMenu',
     'PersonSupportMenu',
     'PersonCodeMenu',
-    'PersonContextMenu',
-    'TeamContextMenu',
+    'PersonOverviewMenu',
+    'TeamOverviewMenu',
     'BaseListView',
     'PeopleListView',
     'TeamListView',
@@ -359,10 +359,10 @@ class CommonMenuLinks:
         return Link(target, text, summary, icon='packages')
 
 
-class PersonContextMenu(ContextMenu, CommonMenuLinks):
+class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = IPerson
-
+    facet = 'overview'
     links = ['common_edit', 'common_edithomepage', 'common_edithackergotchi',
              'common_editemblem', 'karma', 'editsshkeys', 'editgpgkeys',
              'codesofconduct', 'administer', 'common_packages']
@@ -405,10 +405,10 @@ class PersonContextMenu(ContextMenu, CommonMenuLinks):
         return Link(target, text, icon='edit')
 
 
-class TeamContextMenu(ContextMenu, CommonMenuLinks):
+class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
-
+    facet = 'overview'
     links = ['common_edit', 'common_edithomepage', 'common_edithackergotchi',
              'common_editemblem', 'members', 'editemail', 'polls',
              'joinleave', 'reassign', 'common_packages']
@@ -417,7 +417,7 @@ class TeamContextMenu(ContextMenu, CommonMenuLinks):
     def reassign(self):
         target = '+reassign'
         text = 'Change Owner'
-        summary = 'Change the owner'
+        summary = 'Change the owner of the team'
         # alt="(Change owner)"
         return Link(target, text, summary, icon='edit')
 
@@ -617,6 +617,11 @@ class PersonView:
             self.context.reviewerBounties or
             self.context.subscribedBounties or
             self.context.claimedBounties)
+
+    def redirectToAssignedBugs(self):
+        """Redirect to the +assignedbugs report."""
+        self.request.response.redirect(
+            canonical_url(self.context) + "/+assignedbugs")
 
     def activeMembersCount(self):
         return len(self.context.activemembers)

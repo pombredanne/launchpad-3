@@ -305,19 +305,21 @@ class Job:
         aTaxi = taxi.Taxi(self)
         aTaxi.logger = logger
         aTaxi.txnManager = util.getTxnManager()
-        aTaxi.importVersion()
+        aTaxi.importBranch()
 
     def makeArchiveManager(self):
-        """Factory Method, create an ArchiveManager for this job.
+        """Factory method to create an ArchiveManager for this job.
 
-        That is useful for tests.
+        By overriding this method, tests can use a different ArchiveManager
+        class.
         """
         return ArchiveManager(self)
 
     def nukeTargets(self, dir='.', logger=None):
         """Remove the working tree and master archive.
 
-        That is useful when running an import for the second time.
+        This is used to clean up the remains of a failed import before running
+        the import a second time.
         """
         logger.info('nuking working tree')
         shutil.rmtree(self.getWorkingDir(dir), ignore_errors=True)

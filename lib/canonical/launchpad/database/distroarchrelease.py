@@ -15,8 +15,11 @@ from canonical.database.sqlbase import (
 from canonical.lp import dbschema
 
 from canonical.launchpad.interfaces import (
-    IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot, NotFoundError)
+    IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot,
+    IHasBuildRecords, NotFoundError)
+
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
+from canonical.launchpad.database.build import Build
 
 __all__ = [
     'DistroArchRelease',
@@ -26,7 +29,7 @@ __all__ = [
 
 class DistroArchRelease(SQLBase):
 
-    implements(IDistroArchRelease)
+    implements(IDistroArchRelease, IHasBuildRecords)
 
     _table = 'DistroArchRelease'
 
@@ -65,6 +68,12 @@ class DistroArchRelease(SQLBase):
                  ))
         return BinaryPackagePublishing.select(query).count()
 
+    @property
+    def isNominatedArchIndep(self):
+        """See IDistroArchRelease"""
+        return (self.distrorelease.nominatedarchindep and
+                self.id == self.distrorelease.nominatedarchindep.id)
+    
     def getChroot(self, pocket=None, default=None):
         """See IDistroArchRelease"""
         if not pocket:
@@ -77,8 +86,7 @@ class DistroArchRelease(SQLBase):
             return pchroot.chroot
 
         return default
-        
-        
+                
     def findPackagesByName(self, pattern, fti=False):
         """Search BinaryPackages matching pattern and archtag"""
         binset = getUtility(IBinaryPackageReleaseSet)
@@ -95,6 +103,19 @@ class DistroArchRelease(SQLBase):
             return packages[0]
         except IndexError:
             raise NotFoundError(name)
+
+    def getWorkedBuildRecords(self, status=None, limit=10):
+        """See IHasBuildRecords"""
+        # specific status or simply touched.
+        if status:
+            status_clause = "buildstate=%s" % sqlvalues(status)
+        else:
+            status_clause = "builder is not NULL"
+            
+        return Build.select(
+            "distroarchrelease=%s AND %s" % (self.id, status_clause),
+            limit=limit, orderBy="-datebuilt"
+            )
 
 
 class PocketChroot(SQLBase):

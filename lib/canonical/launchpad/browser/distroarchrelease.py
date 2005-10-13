@@ -18,8 +18,7 @@ from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, ContextMenu, Link,
     GetitemNavigation)
 
-from canonical.launchpad.interfaces import (
-    IDistroArchRelease, IBuildSet)
+from canonical.launchpad.interfaces import IDistroArchRelease
 
 BATCH_SIZE = 40
 
@@ -56,12 +55,8 @@ class DistroArchReleaseView:
         self.request = request
 
     def getBuilt(self):
-        """Return the last build records within the DistroArchRelease context.
-
-        The number of entries can also be determined in the future.
-        """
-        bset = getUtility(IBuildSet)
-        return bset.getBuiltForDistroArchRelease(self.context)
+        """Return the last build records for the DistroArchRelease context."""
+        return self.context.getWorkedBuildRecords()
 
 
 class DistroArchReleaseBinariesView:

@@ -72,10 +72,11 @@ def initZopeless(debug=False, dbname=None, dbhost=None, dbuser=None,
         # Nothing calling initZopeless should be connecting as the
         # 'launchpad' user, which is the default.
         # StuartBishop 20050923
-        warnings.warn(
-                "Passing dbuser parameter to initZopeless will soon "
-                "be mandatory", DeprecationWarning, stacklevel=2
-                )
+        #warnings.warn(
+        #        "Passing dbuser parameter to initZopeless will soon "
+        #        "be mandatory", DeprecationWarning, stacklevel=2
+        #        )
+        pass # Disabled. Bug#3050
     if dbname is None:
         dbname = globals()['dbname']
     if dbhost is None:

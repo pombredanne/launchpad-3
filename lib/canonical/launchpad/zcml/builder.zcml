@@ -105,7 +105,7 @@
         <browser:page
             template="../templates/portlet-builder-details.pt"
             name="+portlet-details"
-            lp:url="+builds/$name/+portlet-details" />
+            lp:url="+builds/$buildername/+portlet-details" />
     </browser:pages>
 
     <browser:editform

@@ -250,19 +250,6 @@ class ShippingRequestSet:
 
         return request
 
-    def _getStatusFilter(self, status):
-        """Return the SQL to filter by the given status."""
-        if status == ShippingRequestStatus.APPROVED:
-            query = " AND ShippingRequest.approved IS TRUE"
-        elif status == ShippingRequestStatus.PENDING:
-            query = " AND ShippingRequest.approved IS NULL"
-        elif status == ShippingRequestStatus.DENIED:
-            query = " AND ShippingRequest.approved IS FALSE"
-        else:
-            # Okay, if you don't want any filtering I won't filter
-            query = ""
-        return query
-
     def getUnshippedRequests(self, priority):
         """See IShippingRequestSet"""
         query = ('ShippingRequest.cancelled = false AND '
@@ -287,44 +274,54 @@ class ShippingRequestSet:
         except IndexError:
             return None
 
-    # XXX: Must come back here and refactor these two search methods. It's
-    # probably possible to share more things between them. -- GuilhermeSalgado
-    # 2005-09-09
-    def searchCustomRequests(self, status=ShippingRequestStatus.ALL,
-                             omit_cancelled=True):
+    def search(self, request_type='any', standard_type=None,
+               status=ShippingRequestStatus.ALL, recipient_text=None, 
+               omit_cancelled=True, orderBy=ShippingRequest._defaultOrder):
         """See IShippingRequestSet"""
-        arch = ShipItArchitecture
-        query = """
-            SELECT ShippingRequest.id FROM ShippingRequest,
-                                           RequestedCDs as ReqX86,
-                                           RequestedCDs as ReqAMD64,
-                                           RequestedCDs as ReqPPC
-            WHERE ReqX86.architecture = %s AND
-                  ReqAMD64.architecture = %s AND
-                  ReqPPC.architecture = %s AND
-                  ReqX86.request = ShippingRequest.id AND
-                  ReqAMD64.request = ShippingRequest.id AND
-                  ReqPPC.request = ShippingRequest.id AND
-                  (ReqX86.quantity, ReqAMD64.quantity, ReqPPC.quantity) NOT IN
-                  (SELECT quantityx86, quantityamd64, quantityppc FROM
-                  StandardShipItRequest)
-        """ % sqlvalues(arch.X86, arch.AMD64, arch.PPC)
+        queries = []
+        clauseTables = []
+        if request_type != 'any':
+            type_based_query = self._getTypeBasedQuery(
+                request_type, standard_type=standard_type)
+            queries.append('ShippingRequest.id IN (%s)' % type_based_query)
 
-        query = "%s %s" % (query, self._getStatusFilter(status))
+        if recipient_text is not None:
+            recipient_text = recipient_text.lower()
+            queries.append("""
+                ((Person.id = ShippingRequest.recipient AND
+                  Person.fti @@ ftq(%s))
+                 OR (EmailAddress.person = ShippingRequest.recipient AND
+                     lower(EmailAddress.email) LIKE %s)
+                 OR (ShippingRequest.fti @@ ftq(%s))
+                )
+                """ % sqlvalues(recipient_text, recipient_text + '%%',
+                                recipient_text))
+            clauseTables = ['Person', 'EmailAddress']
+
         if omit_cancelled:
-            query += " AND ShippingRequest.cancelled = FALSE"
+            queries.append("ShippingRequest.cancelled = FALSE")
 
-        results = ShippingRequest._connection.queryAll(query)
-        ids = ', '.join([str(id) for [id]in results])
-        if not ids:
-            # Doing a 'SELECT id FROM ShippingRequest WHERE id IN ()' will
-            # fail, so we need to do this little hack
-            return ShippingRequest.select('1 = 2')
-        return ShippingRequest.select('id in (%s)' % ids)
+        if status == ShippingRequestStatus.APPROVED:
+            queries.append("ShippingRequest.approved IS TRUE")
+        elif status == ShippingRequestStatus.PENDING:
+            queries.append("ShippingRequest.approved IS NULL")
+        elif status == ShippingRequestStatus.DENIED:
+            queries.append("ShippingRequest.approved IS FALSE")
+        else:
+            # Okay, if you don't want any filtering I won't filter
+            pass
 
-    def searchStandardRequests(self, status=ShippingRequestStatus.ALL,
-                               omit_cancelled=True, standard_type=None):
-        """See IShippingRequestSet"""
+        query = " AND ".join(queries)
+        return ShippingRequest.select(
+            query, distinct=True, clauseTables=clauseTables, orderBy=orderBy)
+
+    def _getTypeBasedQuery(self, request_type, standard_type=None):
+        """Return the SQL query to get all requests of a given type.
+
+        The type must be either 'custom', 'standard' or 'any'.
+        If the type is 'standard', then standard_type can be any of the
+        StandardShipItRequests.
+        """
         arch = ShipItArchitecture
         query = """
             SELECT ShippingRequest.id FROM ShippingRequest,
@@ -339,31 +336,30 @@ class ShippingRequestSet:
                   ReqPPC.request = ShippingRequest.id
         """ % sqlvalues(arch.X86, arch.AMD64, arch.PPC)
 
-        if standard_type is None:
+        if request_type == 'custom':
+            if standard_type is not None:
+                raise AssertionError(
+                    'standard_type must be None if request_type is custom.')
             query += """
-                  AND (ReqX86.quantity, ReqAMD64.quantity, ReqPPC.quantity)
-                  IN (SELECT quantityx86, quantityamd64, quantityppc 
-                      FROM StandardShipItRequest)
-            """
+                AND (ReqX86.quantity, ReqAMD64.quantity, ReqPPC.quantity)
+                NOT IN (SELECT quantityx86, quantityamd64, quantityppc
+                            FROM StandardShipItRequest)
+                """
+        elif request_type == 'standard' and standard_type is None:
+            query += """
+                AND (ReqX86.quantity, ReqAMD64.quantity, ReqPPC.quantity)
+                IN (SELECT quantityx86, quantityamd64, quantityppc 
+                        FROM StandardShipItRequest)
+                """
         else:
             query += """
-                  AND ReqX86.quantity = %d AND
-                  ReqAMD64.quantity = %d AND
-                  ReqPPC.quantity = %d
-            """ % (standard_type.quantityx86, standard_type.quantityamd64,
-                   standard_type.quantityppc)
+                AND ReqX86.quantity = %d AND
+                ReqAMD64.quantity = %d AND
+                ReqPPC.quantity = %d
+                """ % (standard_type.quantityx86, standard_type.quantityamd64,
+                       standard_type.quantityppc)
 
-        query = "%s %s" % (query, self._getStatusFilter(status))
-        if omit_cancelled:
-            query += " AND ShippingRequest.cancelled = FALSE"
-
-        results = ShippingRequest._connection.queryAll(query)
-        ids = ', '.join([str(id) for [id]in results])
-        if not ids:
-            # Doing a 'SELECT id FROM ShippingRequest WHERE id IN ()' will
-            # fail, so we need to do this little hack
-            return ShippingRequest.select('1 = 2')
-        return ShippingRequest.select('id in (%s)' % ids)
+        return query
 
 
 class RequestedCDs(SQLBase):

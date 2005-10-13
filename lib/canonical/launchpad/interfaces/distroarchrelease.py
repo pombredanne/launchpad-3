@@ -32,6 +32,8 @@ class IDistroArchRelease(IHasOwner):
 
     # useful attributes
     binarycount = Attribute('Count of Binary Packages')
+    isNominatedArchIndep = Attribute(
+        'True if this distroarchrelease is the NominatedArchIndep one.')
 
     def getChroot(pocket=None, default=None):
         """Return the librarian file alias of the chroot for a given Pocket.

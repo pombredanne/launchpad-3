@@ -55,13 +55,13 @@ class Taxi(object):
         else:
             return (version[r], True)
 
-    def importVersion(self):
+    def importBranch(self):
         """Import a version."""
         archive_manager = self.archive_manager
         version = archive_manager.version
 
         self.txnManager.begin()
-        db_archive = self.dbArchive(version.archive)
+        db_archive = self.getBrokeredArchive(version.archive)
         db_version = self._insertVersion(version, db_archive)
         branch = db_version._sqlobject_branch
         branch.productID = self.job.product_id
@@ -69,8 +69,8 @@ class Taxi(object):
             branch.description = self.job.description
         if not branch.title:
             branch.title = str(version)
-        mirror_location = archive_manager._mirror()
-        db_mirror = self.dbMirror(db_archive, mirror_location.url)
+        mirror_location = archive_manager._mirror
+        db_mirror = self.getBrokeredMirror(db_archive, mirror_location.url)
         self.txnManager.commit()
 
         old_revisions, new_revisions = archive_manager.compareMasterToMirror()
@@ -90,7 +90,10 @@ class Taxi(object):
             self.logger.warning("Refreshed revisions up to %s" %
                                 (old_revisions[-1].patchlevel,))
 
-    def dbArchive(self, archive):
+    def getBrokeredArchive(self, archive):
+        # TODO: The arch.broker must die. please rewrite that to use plain
+        # sqlobject while doing the fixing for BranchDataStorage.
+        # -- David Allouche 2005-10-12
         archives = broker.Archives()
         db_archive = archives[archive.name]
         if db_archive.exists():
@@ -98,7 +101,10 @@ class Taxi(object):
         else:
             return archives.create(archive.name)
 
-    def dbMirror(self, db_archive, mirror_url):
+    def getBrokeredMirror(self, db_archive, mirror_url):
+        # TODO: The arch.broker must die. please rewrite that to use plain
+        # sqlobject while doing the fixing for BranchDataStorage.
+        # -- David Allouche 2005-10-12
         num_mirrors = len(db_archive.location.getMirrorTargetLocations())
         self.logger.warning("has %d registered mirrors", num_mirrors)
         # FIXME: handle multiple mirrors -- David Allouche 2005-02-08

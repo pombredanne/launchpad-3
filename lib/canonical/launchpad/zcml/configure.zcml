@@ -36,6 +36,7 @@
     <include file="cvereference.zcml" />
     <include file="datetime.zcml" />
     <include file="distribution.zcml" />
+    <include file="distrocomponentuploader.zcml" />
     <include file="distrorelease.zcml" />
     <include file="distroreleaselanguage.zcml" />
     <include file="distroarchrelease.zcml" />

@@ -21,7 +21,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
-    IPublishedPackageSet, NotFoundError)
+    IPublishedPackageSet, IHasBuildRecords, NotFoundError)
 
 from canonical.launchpad.database.sourcepackageindistro import (
     SourcePackageInDistro)
@@ -36,6 +36,7 @@ from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName, SourcePackageNameSet)
 from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.bugtask import BugTaskSet, BugTask
 from canonical.launchpad.database.binarypackagerelease import (
         BinaryPackageRelease)
@@ -44,7 +45,7 @@ from canonical.launchpad.helpers import shortlist
 
 class DistroRelease(SQLBase):
     """A particular release of a distribution."""
-    implements(IDistroRelease)
+    implements(IDistroRelease, IHasBuildRecords)
 
     _table = 'DistroRelease'
     _defaultOrder = ['distribution', 'version']
@@ -69,9 +70,13 @@ class DistroRelease(SQLBase):
     owner = ForeignKey(
         dbName='owner', foreignKey='Person', notNull=True)
     lucilleconfig = StringCol(notNull=False, default=None)
+    changeslist = StringCol(notNull=False, default=None)
     architectures = MultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease',
         orderBy='architecturetag')
+    nominatedarchindep = ForeignKey(
+        dbName='nominatedarchindep',foreignKey='DistroArchRelease',
+        notNull=False, default=None)
     specifications = MultipleJoin('Specification',
         joinColumn='distrorelease', orderBy='-datecreated')
     datelastlangpack = UtcDateTimeCol(dbName='datelastlangpack', notNull=False,
@@ -323,6 +328,25 @@ class DistroRelease(SQLBase):
         return [BinaryPackageRelease.get(pubrecord.binarypackagerelease)
                 for pubrecord in result]
 
+    def getWorkedBuildRecords(self, status=None, limit=10):
+        """See IHasBuildRecords"""
+        # find out the distroarchrelease in question
+        arch_ids = ','.join(
+            '%d' % arch.id for arch in self.architectures)
+
+        # if no distroarchrelease was found return None
+        if not arch_ids:
+            return None
+
+        # specific status or simply worked 
+        if status:
+            status_clause = "buildstate=%s" % sqlvalues(status)
+        else:
+            status_clause = "builder is not NULL"
+
+        return Build.select(
+            "distroarchrelease IN (%s) AND %s" % (arch_ids, status_clause),
+            limit=limit, orderBy="-datebuilt")
 
 class DistroReleaseSet:
     implements(IDistroReleaseSet)

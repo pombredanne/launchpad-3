@@ -191,7 +191,7 @@ class PollVoteView(BasePollView):
 
     def processForm(self):
         """Process the form, if it was submitted."""
-        if not self.isSecret():
+        if not self.isSecret() and self.userVoted():
             # For non-secret polls, the user's vote is always displayed
             self.setUpTokenAndVotesForNonSecretPolls()
 

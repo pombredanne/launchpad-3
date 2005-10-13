@@ -17,6 +17,7 @@ from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
     IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget)
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.interfaces.validation import valid_webref
 
 _ = MessageIDFactory('launchpad')
 
@@ -82,23 +83,29 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
     homepageurl = TextLine(
         title=_('Homepage URL'),
         required=False,
+        constraint=valid_webref,
         description=_("""The product home page. Please include 
             the http://"""))
 
     wikiurl = TextLine(
         title=_('Wiki URL'),
         required=False,
-        description=_("""The URL of this product's wiki, if it has one.
+        constraint=valid_webref,
+        description=_("""The full URL of this product's wiki, if it has one.
             Please include the http://"""))
 
     screenshotsurl = TextLine(
         title=_('Screenshots URL'),
         required=False,
-        description=_("""The location of screenshots of this product.
-            Please include the http://"""))
+        constraint=valid_webref,
+        description=_("""The full URL for screenshots of this product,
+            if available. Please include the http://"""))
 
     downloadurl = TextLine(
         title=_('Download URL'),
+        description=_("""The full URL where downloads for this product
+            are located, if available. Please include the http://"""),
+        constraint=valid_webref,
         required=False)
 
     programminglang = TextLine(
@@ -210,6 +217,8 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
         "that applies to translations in this product, based on the "
         "permissions that apply to the product as well as its project.")
 
+    # XXX: shouldn't this be validated with valid_webref?
+    #   -- kiko, 2005-10-11
     releaseroot = Text(title=_("The URL of the root directory for the product "
         "used when the series doesn't supply one."))
 

@@ -212,6 +212,10 @@ class DistributionTranslationsMenu(ApplicationMenu):
 class DistributionView:
     """Default Distribution view class."""
 
+    def getBuilt(self):
+        """Return the last build records within the Distribution context."""
+        return self.context.getWorkedBuildRecords()
+
 
 class DistributionBugsView(BugTaskSearchListingView):
 

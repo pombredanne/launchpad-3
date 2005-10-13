@@ -91,4 +91,5 @@ from canonical.launchpad.database.ticketmessage import *
 from canonical.launchpad.database.ticketreopening import *
 from canonical.launchpad.database.ticketsubscription import *
 from canonical.launchpad.database.poexportrequest import *
+from canonical.launchpad.database.distrocomponentuploader import *
 from canonical.launchpad.database.revision import *

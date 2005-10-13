@@ -102,7 +102,8 @@ class FormView(BrowserView):
             data = getWidgetsData(self, self.schema, names=self.fieldNames)
         except WidgetsError, errors:
             self.errors = errors
-            self.process_status = _("An error occured.")
+            self.process_status = _(
+                "Please fix the problems below and try again.")
             get_transaction().abort()
             return self.process_status
 

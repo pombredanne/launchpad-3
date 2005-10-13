@@ -28,17 +28,17 @@ class TestArchiveCreation(helpers.ArchiveManagerTestCase):
         helpers.ArchiveManagerTestCase.setUp(self)
         self.sandbox_path = self.sandbox_helper.sandbox_path
         self.archive_name = self.job_helper.makeJob().archivename
-        self.master = self.archive_manager._master()
-        self.mirror = self.archive_manager._mirror()
+        self.master = self.archive_manager._master
+        self.mirror = self.archive_manager._mirror
 
     def testMasterUrl(self):
-        """ArchiveManager._master().url is the expected value."""
+        """ArchiveManager._master.url is the expected value."""
         master_path = os.path.join(
             self.sandbox_path, 'archives', self.archive_name)
         self.assertEqual(self.master.url, master_path)
 
     def testMirrorUrl(self):
-        """ArchiveManager._mirror().url is the expected value."""
+        """ArchiveManager._mirror.url is the expected value."""
         mirror_path = os.path.join(
             self.sandbox_path, 'mirrors', self.archive_name)
         self.assertEqual(self.mirror.url, mirror_path)
@@ -75,11 +75,11 @@ class TestNukeMaster(helpers.BazTreeTestCase):
 
     def setUp(self):
         helpers.BazTreeTestCase.setUp(self)
-        self.master = self.archive_manager._master()
+        self.master = self.archive_manager._master
         self.version = self.archive_manager_helper.makeVersion()
 
     def masterVersions(self):
-        master = self.archive_manager._master()
+        master = self.archive_manager._master
         versions = self.version.archive.iter_location_versions(master)
         return list(versions)
 
@@ -154,16 +154,16 @@ class TestRollbackToMirror(helpers.BazTreeTestCase):
         self.baz_tree_helper.cleanUpTree()
 
     def setUpEmptyMirrorVersion(self):
-        mirror = self.archive_manager._mirror()
+        mirror = self.archive_manager._mirror
         os.mkdir(os.path.join(mirror.url, self.version.nonarch))
 
     def masterVersions(self):
-        master = self.archive_manager._master()
+        master = self.archive_manager._master
         versions = self.version.archive.iter_location_versions(master)
         return list(versions)
 
     def removeMasterBranch(self):
-        archive_path = self.archive_manager._master().url
+        archive_path = self.archive_manager._master.url
         branch_path = os.path.join(archive_path, self.version.nonarch)
         shutil.rmtree(branch_path)
 
@@ -173,7 +173,7 @@ class TestRollbackToMirror(helpers.BazTreeTestCase):
     def rollbackToLevels(self, patchlevels):
         saved_method = self.archive_manager._locationPatchlevels
         def override_method(location):
-            if location == self.archive_manager._mirror():
+            if location == self.archive_manager._mirror:
                 return patchlevels
             else:
                 return saved_method(location)
@@ -365,16 +365,16 @@ class TestMirrorIsEmpty(helpers.BazTreeTestCase):
         self.archive_manager.createMaster()
 
     def mirrorIsRegistered(self):
-        mirror = self.archive_manager._mirror()
+        mirror = self.archive_manager._mirror
         return mirror.is_registered()
 
     def mirrorVersions(self):
-        mirror = self.archive_manager._mirror()
+        mirror = self.archive_manager._mirror
         versions = self.version.archive.iter_location_versions(mirror)
         return list(versions)
 
     def setUpEmptyMirrorVersion(self):
-        mirror = self.archive_manager._mirror()
+        mirror = self.archive_manager._mirror
         os.mkdir(os.path.join(mirror.url, self.version.nonarch))
 
     def testMirrorNotRegistered(self):

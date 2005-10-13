@@ -3,9 +3,10 @@
   style="padding: 1em; border: 1px solid #5b4832; background-color: #f6eecc;"
 >
   <ul><base href="">
-    <li class="info"><a href="/requests">See Current Requests</a></li>
-    <li class="info"><a href="/exports">See Generated Exports</a></li>
+    <li class="search"><a href="/requests">Search Requests</a></li>
+    <li class="edit"><a href="/requests/+oldestpending">Oldest Pending Request</a></li>
     <li class="add"><a href="/myrequest">Create new Request</a></li>
-    <li class="edit"><a href="/standardoptions">Edit Standard Options</a></li>
+    <li class="info"><a href="/exports">Generated Exports</a></li>
+    <li class="info"><a href="/standardoptions">Standard Options</a></li>
   </ul>
 </div>

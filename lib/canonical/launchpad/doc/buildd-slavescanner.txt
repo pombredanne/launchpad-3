@@ -387,14 +387,16 @@ is able to build stuff properly for that one
   ...         bm.setupBuilders(dar)
   ...     except KeyError, e:
   ...         print ("Unable to setup builder for %s/%s/%s."
-  ...		     % (dar.distrorelease.distribution.name,
+  ...                % (dar.distrorelease.distribution.name,
   ...                   dar.distrorelease.name,
   ...                   dar.architecturetag))
-  WARNING:root:Disabling: No CHROOT found for pocket 'Release'
+  WARNING:root:Disabling: No CHROOT found for The Warty Warthog Release for i386 (x86) pocket 'Release'
   Unable to setup builder for ubuntu/warty/i386.
-  WARNING:root:Disabling: No CHROOT found for pocket 'Release'
+  WARNING:root:Disabling: No CHROOT found for The Hoary Hedgehog Release for i386 (x86) pocket 'Release'
   Unable to setup builder for ubuntu/hoary/i386.
-                
+  WARNING:root:Disabling: No CHROOT found for WOODY for i386 (x86) pocket 'Release'
+  Unable to setup builder for debian/woody/i386.              
+
 Since we don't have any builder available yet and the ETA to have
 seems to be a little far, the next output are boring.
 

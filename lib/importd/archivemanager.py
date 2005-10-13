@@ -1,5 +1,4 @@
-# Copyright (c) 2005 Canonical Limited
-# Licence to be determined
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 # Author: David Allouche <david@allouche.net>
 
 import os
@@ -11,6 +10,8 @@ __all__ = [
     'ArchiveManager',
     'RevisionLibraryPresentError',
     'MirrorMoreUpToDateError',
+    'MirrorButNoMasterError',
+    'NukeMirroredMasterError',
     ]
 
 
@@ -23,8 +24,8 @@ class RevisionLibraryPresentError(Exception):
 
 
 class MirrorMoreUpToDateError(Exception):
-    """Raised by rollbackToMirror if mirror is more up to date than master.
-    """
+    """Raised by rollbackToMirror if mirror is more up to date than master."""
+
     def __init__(self, mirror, version):
         Exception.__init__(
             self, "Mirror is more up to date than master: %s/%s"
@@ -34,10 +35,12 @@ class MirrorMoreUpToDateError(Exception):
 class MirrorButNoMasterError(Exception):
     """Raised by rollbackToMirror if mirror has the branch but master does not.
     """
+
     def __init__(self, mirror, version):
         Exception.__init__(
             self, "Branch present in mirror but not in master: %s/%s"
             % (mirror.url, version.nonarch))
+
 
 class NukeMirroredMasterError(Exception):
     """Raised by nukeMaster if the mirror branch is not empty."""
@@ -58,28 +61,22 @@ class ArchiveManager(object):
         # master and mirror locations are cached to leverage the memoisation in
         # ArchiveLocation.archive.
         master_url = os.path.join(self.master_dir, self.archive.name)
-        self.__master = arch.ArchiveLocation(master_url)
+        self._master = arch.ArchiveLocation(master_url)
         mirror_url = os.path.join(self.mirror_dir, self.archive.name)
-        self.__mirror = arch.ArchiveLocation(mirror_url)
+        self._mirror = arch.ArchiveLocation(mirror_url)
 
     def createMaster(self):
-        if not self._master().is_registered():
+        if not self._master.is_registered():
             params = arch.ArchiveLocationParams()
             params.signed = True
-            self._master().create_master(self.archive, params)
-
-    def _master(self):
-        return self.__master
+            self._master.create_master(self.archive, params)
 
     def createMirror(self):
-        if not self._mirror().is_registered():
+        if not self._mirror.is_registered():
             params = arch.ArchiveLocationParams()
             params.signed = True
             params.listing = True
-            self._mirror().create_mirror(self.archive, params)
-
-    def _mirror(self):
-        return self.__mirror
+            self._mirror.create_mirror(self.archive, params)
 
     def nukeMaster(self):
         """Remove the master branch.
@@ -87,8 +84,8 @@ class ArchiveManager(object):
         Fail with RuntimeError if the mirror branch is not empty.
         """
         if not self.mirrorIsEmpty():
-            raise NukeMirroredMasterError(self._mirror(), self.version)
-        master = self._master()
+            raise NukeMirroredMasterError(self._mirror, self.version)
+        master = self._master
         branch_url = self._versionUrl(master)
         if os.path.exists(branch_url):
             shutil.rmtree(branch_url)
@@ -98,19 +95,19 @@ class ArchiveManager(object):
         """
         if list(arch.iter_revision_libraries()):
             raise RevisionLibraryPresentError()
-        exists_on_master = self._versionExistsInLocation(self._master())
-        exists_on_mirror = self._versionExistsInLocation(self._mirror())
+        exists_on_master = self._versionExistsInLocation(self._master)
+        exists_on_mirror = self._versionExistsInLocation(self._mirror)
         if not exists_on_master and not exists_on_mirror:
             return
         if exists_on_master and not exists_on_mirror:
-            shutil.rmtree(self._versionUrl(self._master()))
+            shutil.rmtree(self._versionUrl(self._master))
             return
         if not exists_on_master and exists_on_mirror:
-            raise MirrorButNoMasterError(self._mirror(), self.version)
-        mirror_levels = self._locationPatchlevels(self._mirror())
-        master_levels = self._locationPatchlevels(self._master())
+            raise MirrorButNoMasterError(self._mirror, self.version)
+        mirror_levels = self._locationPatchlevels(self._mirror)
+        master_levels = self._locationPatchlevels(self._master)
         if len(mirror_levels) > len(master_levels):
-            raise MirrorMoreUpToDateError(self._mirror(), self.version)
+            raise MirrorMoreUpToDateError(self._mirror, self.version)
         if mirror_levels != []:
             os.rename(self._masterLockUrl(master_levels[-1]),
                       self._masterLockUrl(mirror_levels[-1]))
@@ -119,7 +116,7 @@ class ArchiveManager(object):
         for level in reverse_master_levels:
             if level in mirror_levels:
                 break
-            shutil.rmtree(self._revisionUrl(self._master(), level))
+            shutil.rmtree(self._revisionUrl(self._master, level))
 
     def _versionExistsInLocation(self, location):
         versions = self.archive.iter_location_versions(location)
@@ -139,7 +136,7 @@ class ArchiveManager(object):
         return "/".join((self._versionUrl(location), level))
 
     def _masterLockUrl(self, level):
-        return "/".join((self._revisionUrl(self._master(), level),
+        return "/".join((self._revisionUrl(self._master, level),
                          '++revision-lock'))
 
     def compareMasterToMirror(self):
@@ -148,8 +145,8 @@ class ArchiveManager(object):
         :return: Two lists, the first is mirrored (old) revisions, the second
             is unmirorrered (new) revisions.
         """
-        master = self._master()
-        mirror = self._mirror()
+        master = self._master
+        mirror = self._mirror
         if self._versionExistsInLocation(mirror):
             mirror_levels = self._locationPatchlevels(mirror)
             last_mirror_level = mirror_levels[-1]
@@ -172,7 +169,7 @@ class ArchiveManager(object):
         return old_revisions, new_revisions
 
     def mirrorRevision(self, revision):
-        mirrorer = self._master().make_mirrorer(self._mirror())
+        mirrorer = self._master.make_mirrorer(self._mirror)
         mirrorer.mirror(revision)
 
     def mirrorIsEmpty(self):
@@ -180,7 +177,7 @@ class ArchiveManager(object):
 
         :rtype: bool
         """
-        mirror = self._mirror()
+        mirror = self._mirror
         if not mirror.is_registered():
             return True
         elif not self._versionExistsInLocation(mirror):

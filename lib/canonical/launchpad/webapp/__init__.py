@@ -8,7 +8,7 @@ __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'nearest_menu', 'canonical_url', 'nearest', 'structured',
            'StandardLaunchpadFacets', 'enabled_with_permission',
            'LaunchpadView', 'Navigation', 'stepthrough', 'redirection',
-           'stepto', 'GetitemNavigation']
+           'stepto', 'GetitemNavigation', 'LaunchpadBrowserRequest']
 
 from zope.component import getUtility
 
@@ -18,6 +18,7 @@ from canonical.launchpad.webapp.menu import (
 from canonical.launchpad.webapp.publisher import (
     canonical_url, nearest, LaunchpadView, Navigation, stepthrough,
     redirection, stepto)
+from canonical.launchpad.webapp.servers import LaunchpadBrowserRequest
 from canonical.launchpad.interfaces import ILaunchBag
 
 

@@ -299,7 +299,7 @@ class ArchiveManagerTestCase(unittest.TestCase):
 
     def masterPatchlevels(self):
         """List of patchlevels in the master branch."""
-        master = self.archive_manager._master()
+        master = self.archive_manager._master
         levels = [revision.patchlevel for revision
                   in self.version.iter_location_revisions(master)]
         return levels
@@ -314,7 +314,7 @@ class ArchiveManagerTestCase(unittest.TestCase):
 
     def mirrorPatchlevels(self):
         """List of patchlevels in the mirror branch."""
-        mirror = self.archive_manager._mirror()
+        mirror = self.archive_manager._mirror
         levels = [revision.patchlevel for revision
                   in self.version.iter_location_revisions(mirror)]
         return levels
@@ -324,7 +324,7 @@ class ArchiveManagerTestCase(unittest.TestCase):
 
         A missing mirror branch is treated the same as empty.
         """
-        mirror = self.archive_manager._mirror()
+        mirror = self.archive_manager._mirror
         if self.version in self.version.archive.iter_location_versions(mirror):
             levels = self.mirrorPatchlevels()
         else:
@@ -333,8 +333,8 @@ class ArchiveManagerTestCase(unittest.TestCase):
 
     def mirrorBranch(self):
         """Mirror the branch of the ArchiveManager.""" 
-        master = self.archive_manager._master()
-        mirror = self.archive_manager._mirror()
+        master = self.archive_manager._master
+        mirror = self.archive_manager._mirror
         master.make_mirrorer(mirror).mirror(limit=self.version)
 
 

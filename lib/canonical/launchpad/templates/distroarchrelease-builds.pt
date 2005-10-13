@@ -11,73 +11,8 @@
   <div tal:replace="structure context/distrorelease/@@+portlet-details" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
-
-<div metal:fill-slot="main"
-     tal:define="distrorelease context/distrorelease;
-                 distro distrorelease/distribution">
-
-  <h1><span tal:replace="context/title"/> Builds</h1> 
-
-    <h2>Pending Build</h2>    
-
-     <table class="listing">
-        <tr class="thead">
-            <th>Source Package</th>
-            <th>Created</th>
-            <th>Started</th>
-        </tr>
-      </table>
-
-
-    <h2>Recently Built</h2>
-
-     <table class="listing">
-        <tr class="thead">
-            <th>Source Package</th>
-            <th>Created</th>
-            <th>Built</th>
-            <th>Builder</th>
-            <th colspan="2">Result</th>
-        </tr>
-        <tr tal:repeat="build view/getBuilt">
-            <td>
-              <a tal:attributes="href build/fmt:url">
-                 <img alt="[package]" src="/++resource++package-binary" />
-                 <span tal:replace="build/title">NAME</span>
-              </a>
-            </td>
-            <td tal:content="build/datecreated/fmt:datetime">CREATED</td>
-            <td tal:content="build/datebuilt/fmt:datetime">BUILT</td>
-            <td>
-              <a tal:content="build/builder/title"
-                 tal:attributes="href build/builder/fmt:url"
-                 title="To show the Builder, click here."/>
-            </td>
-            <td>
-              <img
-                tal:condition="build/buildstate/value"
-                alt="Fully built after "
-                src="/++resource++build-success"
-              />
-              <img
-                tal:condition="not: build/buildstate/value"
-                alt="Failed after "
-                src="/++resource++build-success"
-              />
-              <a tal:attributes="href build/buildlog/url">
-                <span tal:replace="build/buildduration/fmt:approximateduration"
-                >4 minutes</span>
-              </a>
-            </td>
-            <td>
-              <input alt="(Retry)" type="image" src="/++resource++retry" />
-            </td>
-        </tr>
-      </table>
-
- 
+<div metal:fill-slot="main">
+  <div tal:replace="structure context/@@+builds-list"/>    
 </div>
 
 </body>

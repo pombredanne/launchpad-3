@@ -1,5 +1,5 @@
-# Copyright (c) 2005 Canonical Ltd.
 #!/usr/bin/env python
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 # Author: Robert Collins <robertc@robertcollins.net>
 #         David Allouche <david@allouche.net>
 

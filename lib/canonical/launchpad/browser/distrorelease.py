@@ -27,6 +27,7 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseLanguageSet, IBugTaskSearchListingView, IDistroRelease,
     ICountry, IDistroReleaseSet, ILaunchBag, IBuildSet, ILanguageSet,
     NotFoundError, IPublishedPackageSet)
+
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
@@ -201,12 +202,8 @@ class DistroReleaseView:
         return self.request.response.redirect(distro_url + "/+filebug")
 
     def getBuilt(self):
-        """Return the last build records within the DistroRelease context.
-
-        The number of entries can also be determined in the future.
-        """
-        bset = getUtility(IBuildSet)
-        return bset.getBuiltForDistroRelease(self.context)
+        """Return the last build records within the DistroRelease context."""
+        return self.context.getWorkedBuildRecords()
 
 
 class DistroReleaseBugsView(BugTaskSearchListingView):

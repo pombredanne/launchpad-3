@@ -290,6 +290,8 @@ distribution_search = 'Locate Distributions in Launchpad'
 
 distribution_index = ContextTitle('%s in Launchpad')
 
+distribution_builds = ContextTitle('%s Builds')
+
 distro_add = 'Adding New Distribution'
 
 distro_edit = 'Create a new Distribution in Launchpad'
@@ -674,6 +676,8 @@ shipit_exports = 'ShipIt Exports'
 shipit_myrequest = "Your ShipIt Order"
 
 shipitrequests_index = 'ShipIt Requests'
+
+shipitrequests_search = 'Search ShipIt Requests'
 
 shipitrequest_edit = 'Edit ShipIt Request'
 

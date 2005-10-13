@@ -425,6 +425,10 @@ class SourcePackageView:
 
         return sorted(potemplatenames, key=lambda item: item.name)
 
+    def getBuilt(self):
+        """Return the last build records for a SourcePackage."""
+        return self.context.getWorkedBuildRecords()
+
 
 class SourcePackageBugsView:
 

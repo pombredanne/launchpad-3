@@ -30,13 +30,13 @@ class TestImportVersion(helpers.TaxiTestCase):
         return self.zopeless_helper.txn
 
     def mirror_location(self):
-        return self.archive_manager._mirror()
+        return self.archive_manager._mirror
 
-    def importVersion(self):
+    def importBranch(self):
         aTaxi = taxi.Taxi(self.job)
         aTaxi.logger = TestUtil.makeSilentLogger()
         aTaxi.txnManager = self.transactionManager()
-        aTaxi.importVersion()
+        aTaxi.importBranch()
 
     def assertDatabaseLevels(self, exist, not_exist):
         version = self.version
@@ -61,38 +61,38 @@ class TestImportVersion(helpers.TaxiTestCase):
         self.failIf(db_archive.exists())
 
     def test_initial_sync(self):
-        """Taxi.importVersion works for an initial sync."""
+        """Taxi.importBranch works for an initial sync."""
         self.assertArchiveNotInDatabase()
         self.setUpPatch()
-        self.importVersion()
+        self.importBranch()
         self.assertDatabaseLevels(['base-0', 'patch-1'], ['patch-2'])
         self.assertMirrorPatchlevels(['base-0', 'patch-1'])
 
     def test_idempotent_sync(self):
-        """Taxi.importVersion works for a second sync WITHOUT no new data."""
+        """Taxi.importBranch works for a second sync WITHOUT no new data."""
         self.test_initial_sync()
-        self.importVersion()
+        self.importBranch()
         self.assertDatabaseLevels(['base-0', 'patch-1'], ['patch-2'])
         self.assertMirrorPatchlevels(['base-0', 'patch-1'])
 
     def test_second_sync(self):
-        """Taxi.importVersion works for a second sync WITH new data."""
+        """Taxi.importBranch works for a second sync WITH new data."""
         self.assertArchiveNotInDatabase()
-        self.importVersion()
+        self.importBranch()
         self.assertDatabaseLevels(['base-0'], ['patch-1'])
         self.assertMirrorPatchlevels(['base-0'])
         self.setUpPatch()
-        self.importVersion()
+        self.importBranch()
         self.assertDatabaseLevels(['base-0', 'patch-1'], ['patch-2'])
         self.assertMirrorPatchlevels(['base-0', 'patch-1'])
 
     def test_refresh_sync(self):
-        """Taxi.importVersion refreshes a mirrored revision correctly."""
+        """Taxi.importBranch refreshes a mirrored revision correctly."""
         self.mirrorBranch() # make database out of date
         self.assertArchiveNotInDatabase()
         self.assertMirrorPatchlevels(['base-0'])
         self.setUpPatch()
-        self.importVersion()
+        self.importBranch()
         self.assertDatabaseLevels(['base-0', 'patch-1'], ['patch-2'])
         self.assertMirrorPatchlevels(['base-0', 'patch-1'])
 

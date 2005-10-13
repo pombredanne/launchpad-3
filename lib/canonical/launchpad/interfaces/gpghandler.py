@@ -1,20 +1,42 @@
 from zope.interface import Interface, Attribute
 
-__all__ = ['IGPGHandler', 'IPymeSignature', 'IPymeKey', 'IPymeUserId']
+__all__ = ['IGPGHandler', 'IPymeSignature', 'IPymeKey', 'IPymeUserId',
+           'GPGVerificationError']
+
+
+class GPGVerificationError(Exception):
+    """GPG verification error."""
 
 class IGPGHandler(Interface):
     """Handler to perform GPG operations."""
 
     def verifySignature(content, signature=None):
-        """Returns a PymeSignature objet if content is correctly signed
+        """Returns a PymeSignature object if content is correctly signed
         or None. 
         
         If signature is None, we assume content is clearsigned. Otherwise
         it stores the detached signature and content should contain the
         plain text in question.
 
-        content and signature must traditional strings. It's up to the caller
-        to encode or decode properly.
+        content and signature must be 8-bit encoded str objects. It's up to
+        the caller to encode or decode as appropriate.
+    
+        :content: The content to be verified
+        :signature: The signature (or None if content is clearsigned)
+        """
+
+    def getVerifiedSignature(content, signature=None):
+        """Returns a PymeSignature object if content is correctly signed
+        or else raise an exception.
+        
+        If signature is None, we assume content is clearsigned. Otherwise
+        it stores the detached signature and content should contain the
+        plain text in question.
+
+        content and signature must be 8-bit encoded str objects. It's up to
+        the caller to encode or decode as appropriate.
+
+        The only exception likely to be propogated out is GPGVerificationError
     
         :content: The content to be verified
         :signature: The signature (or None if content is clearsigned)
@@ -105,8 +127,14 @@ class IPymeKey(Interface):
     displayname = Attribute("Key displayname: <size><type>/<keyid>")
     owner_trust = Attribute("The owner trust")
 
+    can_encrypt = Attribute("Whether the key can be used for encrypting")
+    can_sign = Attribute("Whether the key can be used for signing")
+    can_certify = Attribute("Whether the key can be used for certification")
+    can_authenticate = Attribute("Whether the key can be used for authentication")
+
     def setOwnerTrust(value):
         """Set the owner_trust value for this key."""
+
 
 class IPymeUserId(Interface):
     """pyME user ID"""

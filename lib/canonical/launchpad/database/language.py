@@ -8,6 +8,7 @@ from zope.interface import implements
 from sqlobject import StringCol, IntCol, BoolCol
 from sqlobject import RelatedJoin, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase
+from canonical.lp.dbschema import EnumCol, TextDirection
 
 from canonical.launchpad.interfaces import (
     ILanguageSet, ILanguage, NotFoundError)
@@ -25,6 +26,8 @@ class Language(SQLBase):
     pluralforms = IntCol(dbName='pluralforms')
     pluralexpression = StringCol(dbName='pluralexpression')
     visible = BoolCol(dbName='visible', notNull=True)
+    direction = EnumCol(dbName='direction', notNull=True,
+                        schema=TextDirection, default=TextDirection.LTR)
 
     translators = RelatedJoin('Person', joinColumn='language',
         otherColumn='person', intermediateTable='PersonLanguage')
@@ -50,6 +53,21 @@ class Language(SQLBase):
         if len(codes) == 2:
             return Language.byCode(codes[0])
         return None
+
+    @property
+    def dashedcode(self):
+        """See ILanguage"""
+        return self.code.replace('_', '-')
+
+    @property
+    def abbreviated_text_dir(self):
+        """See ILanguage"""
+        if self.direction == TextDirection.LTR:
+            return 'ltr'
+        elif self.direction == TextDirection.RTL:
+            return 'rtl'
+        else:
+            assert False, "unknown text direction"
 
 class LanguageSet:
     implements(ILanguageSet)
