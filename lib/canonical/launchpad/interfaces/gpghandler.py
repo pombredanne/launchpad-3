@@ -105,8 +105,14 @@ class IPymeKey(Interface):
     displayname = Attribute("Key displayname: <size><type>/<keyid>")
     owner_trust = Attribute("The owner trust")
 
+    can_encrypt = Attribute("Whether the key can be used for encrypting")
+    can_sign = Attribute("Whether the key can be used for signing")
+    can_certify = Attribute("Whether the key can be used for certification")
+    can_authenticate = Attribute("Whether the key can be used for authentication")
+
     def setOwnerTrust(value):
         """Set the owner_trust value for this key."""
+
 
 class IPymeUserId(Interface):
     """pyME user ID"""

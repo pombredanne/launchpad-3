@@ -6,6 +6,16 @@
     <include file="servers.zcml" />
     <include file="errorlog.zcml" />
 
+    <content class="canonical.launchpad.webapp.LaunchpadBrowserRequest">
+      <allow
+        interface="
+          zope.publisher.interfaces.browser.IBrowserApplicationRequest"
+        attributes="response locale __str__"
+        />
+      <allow
+        interface="zope.component.interfaces.IPresentationRequest" />
+    </content>
+
     <content class="canonical.launchpad.webapp.publisher.RedirectionView">
       <allow attributes="browserDefault __call__" />
     </content>

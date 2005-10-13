@@ -70,7 +70,7 @@
                 alt="Failed after "
                 src="/++resource++build-success"
               />
-              <a tal:attributes="href build/buildlogURL">
+              <a tal:attributes="href build/buildlog/url">
                 <span tal:replace="build/buildduration/fmt:approximateduration"
                 >4 minutes</span>
               </a>

@@ -451,6 +451,12 @@ class EditPOTemplateDetails(EditByOwnersOrAdmins):
                 user.inTeam(rosetta_experts))
 
 
+class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
+    """Permissions to edit all aspects of an IPOTemplate."""
+    permission = 'launchpad.Admin'
+    usedfor = IPOTemplate
+
+
 # XXX: Carlos Perello Marin 2005-05-24: This should be using
 # SuperSpecialPermissions when implemented.
 # See: https://launchpad.ubuntu.com/malone/bugs/753/

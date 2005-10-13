@@ -21,7 +21,7 @@
   </metal:macro>
   <metal:macro define-macro="comment">
     <tr>
-      <td style="text-align: right">Comment:</td>
+      <th>Comment:</td>
       <td><textarea cols="40" name="comment" 
                     tal:content="request/comment|context/reviewercomment|nothing">
           </textarea></td>
@@ -58,12 +58,12 @@
         <form action="" method="POST" name="editactive">
           <table>
           <tr>
-            <td style="text-align: right">Member since:</td>
+            <th>Member since:</td>
             <td tal:content="context/datejoined/fmt:date" />
           </tr>
 
           <tr>
-            <td style="text-align: right">Administrator:</td>
+            <th>Administrator:</td>
             <td>
 
               <tal:can-change condition="view/userIsTeamOwnerOrLPAdmin">
@@ -91,7 +91,7 @@
 
           <metal:error use-macro="template/macros/error" />
           <tr>
-            <td style="text-align: right">Subscription expires:</td>
+            <th>Subscription expires:</td>
             <td tal:condition="view/canChangeExpirationDate">
               <metal:radios use-macro="template/macros/expiry-radios" />
               <span tal:replace="structure view/dateChooserWithCurrentExpirationSelected" />
@@ -106,11 +106,10 @@
           <metal:comment use-macro="template/macros/comment" />
 
           <tr>
-            <td align="left">
-              <input type="submit" value="Deactivate" name="editactive" />
-            </td>
-            <td align="right">
+            <th />
+            <td>
               <input type="submit" value="Change" name="editactive" />
+              <input type="submit" value="Deactivate" name="editactive" />
             </td>
           </tr>
         </table>
@@ -136,19 +135,19 @@
         <form action="" method="POST" name="editinactive">
           <table>
           <tr>
-            <td style="text-align: right">Became member in:</td>
+            <th>Became member in:</td>
             <td tal:content="context/datejoined/fmt:date" />
           </tr>
 
           <tal:expired condition="view/isExpired">
             <tr>
-              <td style="text-align: right">Subscription expired in:</td>
+              <th>Subscription expired in:</td>
               <td tal:content="context/dateexpires/fmt:date"></td>
             </tr>
 
             <metal:error use-macro="template/macros/error" />
             <tr>
-              <td style="text-align: right">Expiration:</td>
+              <th>Expiration:</td>
               <td>
                 <label for="leave">
                   <input checked="checked"
@@ -165,7 +164,7 @@
             <metal:error use-macro="template/macros/error" />
             <tr><td colspan="2">&nbsp;</td></tr>
             <tr>
-              <td style="text-align: right">Subscription expires:</td>
+              <th>Subscription expires:</td>
               <td>
                 <metal:radios use-macro="template/macros/expiry-radios" />
                 <span tal:replace="structure view/dateChooserWithCurrentExpirationSelected" />
@@ -193,20 +192,19 @@
         <h1>Proposed Member</h1>
         <p>
           <metal:person use-macro="template/macros/person" />
-          has requested to join this team. Use the form below to approve
-          or decline the membership request.
+          has requested to join this team.
         </p>
 
         <form action="" method="POST" name="editproposed">
           <table>
             <tr>
-              <td style="text-align: right">Requested on:</td>
+              <th>Membership applied for:</td>
               <td tal:content="context/datejoined/fmt:date" />
             </tr>
 
             <metal:error use-macro="template/macros/error" />
             <tr>
-              <td style="text-align: right">Subscription expires:</td>
+              <th>Subscription expires:</td>
               <td>
                 <metal:radios use-macro="template/macros/expiry-radios" />
                 <span tal:replace="structure view/dateChooserForProposedMembers" />
@@ -216,11 +214,10 @@
             <metal:comment use-macro="template/macros/comment" />
 
             <tr>
-              <td align="left">
-                <input type="submit" value="Decline" name="editproposed" />
-              </td>
-              <td align="right">
+              <th />
+              <td>
                 <input type="submit" value="Approve" name="editproposed" />
+                <input type="submit" value="Decline" name="editproposed" />
               </td>
             </tr>
           </table>

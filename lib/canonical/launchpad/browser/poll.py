@@ -82,7 +82,7 @@ class BasePollView:
 
     def setUpTokenAndVotesForSecretPolls(self):
         """Get the votes with the token provided in the form.
-        
+
         Set the votes, together with the token in instance variables. Also
         set self.gotTokenAndVotes to True, so the templates know they can
         display the vote.
@@ -202,11 +202,11 @@ class PollVoteView(BasePollView):
             if not self.setUpTokenAndVotesForSecretPolls():
                 # Not possible to get the votes. Probably the token was wrong.
                 return
-            
+
         if 'showvote' in self.request.form:
             # The user only wants to see the vote.
             return
-        
+
         if not self.context.isOpen():
             self.feedback = "This poll is not open. You can't vote anymore."
 

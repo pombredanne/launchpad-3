@@ -31,7 +31,6 @@ class IBuild(Interface):
     section = Attribute("The BinaryPackage Section")
     sourcepackagerelease = Attribute("SourcePackageRelease reference")
     title = Attribute("Build Title")
-    buildlogURL = Attribute("Librarian Build log path")
     distrorelease = Attribute("Direct parent needed by CanonicalURL")
 
 class IBuildSet(Interface):

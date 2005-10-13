@@ -49,9 +49,14 @@
     <tal:block tal:condition="view/formProcessed">
       <h1>Merge User Accounts</h1>
 
-      <p>An email message was sent to each email address you selected. Please
-      follow the instructions on each of those messages to complete the
-      merge.</p>
+      <p>Individual email messages were sent to
+        <tal:block repeat="email view/notified_addresses">
+          <strong tal:content="email"
+            /><span tal:condition="not: repeat/email/end">, </span>
+        </tal:block>.
+        Please follow the instructions on each of those messages to complete
+        the merge.
+      </p>
     </tal:block>
 
   </tal:block>

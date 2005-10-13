@@ -144,11 +144,17 @@
         permission="zope.Public" />
 
     <!-- Some more IBugTask portlets that use different view classes -->
-    <browser:page
-        for="canonical.launchpad.interfaces.IBugTask"
-        name="+portlet-status-details"
-        template="../templates/bugtask-status-portlet-details.pt"
-        permission="zope.Public" />
+    <browser:pages
+       for="canonical.launchpad.interfaces.IBugTask"
+       class="canonical.launchpad.browser.BugTaskView"
+       permission="zope.Public">
+      <browser:page
+         name="+portlet-status-details"
+         template="../templates/bugtask-status-portlet-details.pt" />
+      <browser:page
+          name="+portlet-search"
+          template="../templates/bugtarget-portlet-search.pt" />
+    </browser:pages>
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugTask"

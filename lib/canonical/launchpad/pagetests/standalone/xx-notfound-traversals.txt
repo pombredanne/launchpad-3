@@ -235,8 +235,6 @@ Test /people traversals.
 >>> check("/people/+teamlist")
 >>> check("/people/+ubuntitelist")
 >>> check("/people/+requestmerge", auth=True)
->>> check("/people/+mergerequest-sent", auth=True)
->>> check("/people/+requestmerge-multiple", auth=True)
 >>> check("/people/+portlet-about")
 
 

@@ -82,6 +82,25 @@ specific release.
   >>> taskids
   [4, 5, 6]
 
+Searching
+---------
+
+The SourcePackageBugsView methods are search aware.
+
+  >>> request = TestRequest(
+  ...     form={'field.searchtext': 'test', 'search': 'Search'})
+  >>> sourcepackage_bugs_view = getView(context, "+bugs", request)
+  >>> [task.bug.id for task in sourcepackage_bugs_view.unresolved_release_bugs]
+  [3]
+  >>> other_releases_bugs = sourcepackage_bugs_view.other_releases_unresolved_bugs
+  >>> other_releases_bugs.keys()
+  [u'woody']
+  >>> woody_bugs = other_releases_bugs['woody']
+  >>> [task.bug.id for task in woody_bugs]
+  [3]
+  >>> [task.bug.id for task in sourcepackage_bugs_view.general_unresolved_bugs]
+  [3]
+
 Listing Columns
 ---------------
 

@@ -218,7 +218,11 @@ class GPGHandler:
             key = c.get_key(fingerprint.encode('ascii'), 0)
         except pyme.errors.GPGMEError:
             return None
-        
+
+        if not key.can_encrypt:
+            raise ValueError('key %s can not be used for encryption'
+                             % fingerprint)
+
         # encrypt content
         c.op_encrypt([key], 1, plain, cipher)
         cipher.seek(0,0)
@@ -399,9 +403,13 @@ class PymeKey:
         self.fingerprint = key.subkeys.fpr
         self.keyid = key.subkeys.fpr[-8:]
         self.algorithm = GPGKeyAlgorithm.items[key.subkeys.pubkey_algo].title
-        self.revoked = key.subkeys.revoked
+        self.revoked = bool(key.subkeys.revoked)
         self.keysize = key.subkeys.length
         self.owner_trust = key.owner_trust
+        self.can_encrypt = bool(key.can_encrypt)
+        self.can_sign = bool(key.can_sign)
+        self.can_certify = bool(key.can_certify)
+        self.can_authenticate = bool(key.can_authenticate)
 
         # copy the UIDs 
         self.uids = []

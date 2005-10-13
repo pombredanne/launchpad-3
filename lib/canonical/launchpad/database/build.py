@@ -67,16 +67,6 @@ class Build(SQLBase):
     def title(self):
         return '%s-%s' % (self.sourcepackagerelease.name,
                           self.sourcepackagerelease.version)
-    @property
-    def buildlogURL(self):
-        downloader = getUtility(ILibrarianClient)
-        try:
-            url = downloader.getURLForAlias(self.buildlog.id)
-        except URLError:
-            # Librarian not running or file not available.
-            pass
-        else:
-            return url
 
 
 class BuildSet:

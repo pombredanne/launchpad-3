@@ -9,6 +9,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-attachments" />
+  <div tal:replace="structure context/@@+portlet-search" />
 </metal:rightportlets>
 
 <body>

@@ -30,7 +30,7 @@ Let's check the complex properties of a build object.
   u'mozilla-firefox-0.9'
 
   >>> firefox_build.buildlog = 34
-  >>> firefox_build.buildlogURL
+  >>> firefox_build.buildlog.url
   'http://localhost:58000/34/34/evolution-2.2-test.pot'
 
 The BuildSet class gives us some useful ways to consider the
