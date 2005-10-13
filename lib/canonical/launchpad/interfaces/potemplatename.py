@@ -62,8 +62,8 @@ class IPOTemplateName(Interface):
     title = TextLine(
         title=_("PO Template Name Title"),
         description=_(
-            "The title to use while rendering a page related only with this"
-            " template name."),
+            "The title to use while rendering a page related only with this "
+            "template name."),
         required=True)
 
     description = Text(
@@ -74,9 +74,8 @@ class IPOTemplateName(Interface):
     translationdomain = TextLine(
         title=_("PO Template Translation Domain"),
         description=_(
-            "Used by gettext to get translations from the related templates."
-            " Usually the same as the name."
-            ),
+            "Used by gettext to get translations from the related templates. "
+            "Usually the same as the name."),
         required=True)
 
     potemplates = Attribute("The list of PO templates that have this name.")

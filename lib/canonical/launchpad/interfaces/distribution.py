@@ -39,7 +39,7 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
     summary = Summary(
         title=_("Summary"),
         description=_(
-            "The distribution summary. A short paragraph"
+            "The distribution summary. A short paragraph "
             "describing the goals and highlights of the distro."),
         required=True)
     description = Description(
@@ -99,8 +99,7 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         "The current development release of this distribution. Note that "
         "all maintainerships refer to the current release. When people ask "
         "about the state of packages in the distribution, we should "
-        "interpret that query in the context of the currentrelease."
-        )
+        "interpret that query in the context of the currentrelease.")
 
     open_cve_bugtasks = Attribute(
         "Any bugtasks on this distribution that are for bugs with "

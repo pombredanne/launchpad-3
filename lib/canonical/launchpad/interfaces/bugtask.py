@@ -99,7 +99,7 @@ class IBugTask(IHasDateCreated):
     related_tasks = Attribute("IBugTasks related to this one, namely other "
                               "IBugTasks on the same IBug.")
     statusdisplayhtml = Attribute(
-        "A HTML representation of the status. This field produces"
+        "A HTML representation of the status. This field produces "
         "its value from the status, assignee and milestone values.")
     statuselsewhere = Attribute(
         "A human-readable representation of the status of this IBugTask's bug "

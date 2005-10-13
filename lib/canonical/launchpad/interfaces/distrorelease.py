@@ -71,8 +71,8 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
     sourcecount = Attribute("Source Packages Counter")
     binarycount = Attribute("Binary Packages Counter")
     potemplates = Attribute("The set of potemplates in the release")
-    currentpotemplates = Attribute("The set of potemplates in the release"
-        " with the iscurrent flag set")
+    currentpotemplates = Attribute("The set of potemplates in the release "
+        "with the iscurrent flag set")
     architecturecount = Attribute("The number of architectures in this "
         "release.")
     architectures = Attribute("The Architecture-specific Releases")

@@ -54,16 +54,18 @@ class IPOMsgSet(Interface):
         specific text being translated per po-file.""")
 
     def selection(pluralform):
-        "Returns the POSelection for this po msgset and "
-        "plural form or None if there is no selection."
+        """Returns the POSelection for this po msgset and
+        plural form or None if there is no selection."""
 
     def activeSubmission(pluralform):
-        "Returns the published translation submission for this po msgset and "
-        "plural form or None if there is no currently active submission."
+        """Returns the published translation submission for this po
+        msgset and plural form or None if there is no currently
+        active submission."""
 
     def publishedSubmission(pluralform):
-        "Returns the published translation submission for this po msgset and "
-        "plural form or None if there is no currently published submission."
+        """Returns the published translation submission for this po
+        msgset and plural form or None if there is no currently
+        published submission."""
 
     def getSuggestedTexts(pluralform):
         """Return an iterator over any suggestions Rosetta might have for

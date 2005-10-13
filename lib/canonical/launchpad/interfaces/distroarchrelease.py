@@ -37,8 +37,8 @@ class IDistroArchRelease(IHasOwner):
 
     def getChroot(pocket=None, default=None):
         """Return the librarian file alias of the chroot for a given Pocket.
-         
-        The pocket defaults to the "RELEASE" pocket and if not found returns
+
+        The pocket defaults to the RELEASE pocket and if not found returns
         'default'.
         """
 
