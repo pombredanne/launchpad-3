@@ -11,7 +11,9 @@ other classes and instances.
 
 import _pythonpath
 
-import os, sys
+import os
+import sys
+import psycopg
 from string import split
 from optparse import OptionParser
 
