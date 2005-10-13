@@ -251,20 +251,29 @@ class BuilderGroup:
         builder.slave.build(buildid, buildtype, chroot, filemap, args)
 
     def getLogFromSlave(self, slave, buildid, librarian):
+        """Get last buildlog from slave.
+
+        Invoke getFileFromSlave method with 'buildlog' identifier.
+        """
         return self.getFileFromSlave(slave, "log-for-%s.txt" % buildid,
                                      'buildlog', librarian)
 
     def getFileFromSlave(self, slave, filename, sha1sum, librarian):
-        """Request a file from Slave by passing a digest and store it in
-        Librarian with correspondent filename.
+        """Request a file from Slave.
+
+        Receive a file identifier (sha1sum) a MIME header filename and a
+        librarian instance. Store the incomming file in Librarian and return
+        the file alias_id, if it failed return None. 'buildlog' string is a
+        special indentifier which recover the raw last slave buildlog, 
+        compress it locally using gzip and finally store the compressed
+        copy in librarian.
         """
         aliasid = None
-        # figure out the MIME content-type
-        ftype = filenameToContentType(filename)
         # Protocol version 1.0new or higher provides /filecache/
         # which allows us to be clever in large file transfer
         out_file_fd, out_file_name = tempfile.mkstemp()
         out_file = os.fdopen(out_file_fd, "r+")
+
         try:
             slave_file = slave.getFile(sha1sum)
 
@@ -279,6 +288,28 @@ class BuilderGroup:
             slave_file.close()
             out_file.seek(0)
 
+            # if the requested file is the 'buildlog' compress it using gzip
+            # before storing in Librarian
+            if sha1sum == 'buildlog':
+                out_file.close()
+                # XXX cprov 20051010:
+                # python.gzip presented weird errors at this point, most
+                # related to incomplete file storage, the compressed file
+                # was prematurely finished in a 0x00. Using system call for
+                # while -> bug # 3111
+                os.system('gzip -9 %s' % out_file_name)
+                # modify the local and header filename
+                filename += '.gz'
+                out_file_name += '.gz'
+                # repopen the currently compressed file, seeks its end
+                # position and return to begin, ready for Librarian
+                out_file = open(out_file_name)
+                out_file.seek(0,2)
+                bytes_written = out_file.tell()
+                out_file.seek(0)
+
+            # figure out the MIME content-type
+            ftype = filenameToContentType(filename)
             # upload it to the librarian...
             aliasid = librarian.addFile(filename, bytes_written,
                                         out_file,

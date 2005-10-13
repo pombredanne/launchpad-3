@@ -144,7 +144,7 @@ An UploadFailed will be raised if you try to create a file with no content
 >>> client.addFile('test.txt', 0, StringIO('hello'), 'text/plain')
 Traceback (most recent call last):
     [...]
-UploadFailed: No data
+UploadFailed: Invalid length: 0
 
 An AssertionError will be raised if the number of bytes that could be read
 from the file don't match the declared size.
