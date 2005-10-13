@@ -49,6 +49,9 @@ class IBranch(IHasOwner):
         description=_('Any notes on the status of this branch you would '
         'like to make. This field is a general whiteboard, your changes '
         'will override the previous version.'))
+    started_at = Int(title=_('Started At'), required=False,
+        description=_("The number of the first revision"
+                      " to display on that branch."))
 
     # People attributes
     owner = Int(title=_('Owner'), required=True)
@@ -118,7 +121,7 @@ class IBranch(IHasOwner):
     cache_url = Attribute("Private mirror of the branch, for internal use.")
 
     # Joins
-    revisions = Attribute("The sequence of revisions in that branch.")
+    revision_history = Attribute("The sequence of revisions in that branch.")
     revision_count = Attribute("The number of revisions in that branch.")
     subscriptions = Attribute("BranchSubscriptions associated to this branch.")
     subscribers = Attribute("Persons subscribed to this branch.")

@@ -19,7 +19,7 @@ from canonical.lp.dbschema import (
 
 
 class Branch(SQLBase):
-    """An ordered revision sequence in arch"""
+    """A sequence of ordered revisions in Bazaar."""
 
     implements(IBranch)
 
@@ -29,6 +29,8 @@ class Branch(SQLBase):
     summary = StringCol(notNull=True)
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
+    started_at = ForeignKey(
+        dbName='started_at', foreignKey='RevisionNumber', default=None)
 
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     author = ForeignKey(dbName='author', foreignKey='Person', default=None)
@@ -62,13 +64,8 @@ class Branch(SQLBase):
 
     cache_url = StringCol(default=None)
 
-    revisions = MultipleJoin('Revision', joinColumn='branch',
-        orderBy='-id')
-    # XXX: changesets is a compatibility attribute, must be removed before
-    # landing, if you are a reviewer, it is your duty to prevent that from
-    # landing -- David Allouche 2005-09-05
-    changesets = MultipleJoin('Revision', joinColumn='branch',
-        orderBy='-id')
+    revision_history = MultipleJoin('RevisionNumber', joinColumn='branch',
+        orderBy='-rev_no')
 
     subjectRelations = MultipleJoin('BranchRelationship', joinColumn='subject')
     objectRelations = MultipleJoin('BranchRelationship', joinColumn='object')
@@ -89,8 +86,8 @@ class Branch(SQLBase):
         return Revision.selectBy(branchID=self.id).count()
 
     def latest_revisions(self, quantity=10):
-        return Revision.selectBy(
-            branchID=self.id, orderBy='-id').limit(quantity)
+        return RevisionNumber.selectBy(
+            branchID=self.id, orderBy='-rev_no').limit(quantity)
 
     def createRelationship(self, branch, relationship):
         BranchRelationship(subject=self, object=branch, label=relationship)

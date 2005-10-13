@@ -20,7 +20,6 @@ class IRevision(IHasOwner):
 
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
-    branch = Attribute("The branch this revision belongs to.")
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
     log_body = Attribute("The revision log message.")
@@ -30,6 +29,8 @@ class IRevision(IHasOwner):
     revision_date = Datetime(
         title=_("The date the revision was committed."),
         required=True, readonly=True)
+    committed_against = Attribute(
+        "Parent this revision was committed against.")
     diff_adds = Attribute("Number of lines added by the revision.")
     diff_deletes = Attribute("Number of lines removed by the revision.")
 

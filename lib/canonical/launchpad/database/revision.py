@@ -19,8 +19,6 @@ class Revision(SQLBase):
     implements(IRevision)
 
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-    branch = ForeignKey(
-        dbName='branch', foreignKey='Branch', notNull=True, default=None)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     log_body = StringCol(notNull=True)
     revision_author = ForeignKey(
@@ -28,6 +26,8 @@ class Revision(SQLBase):
     gpgkey = ForeignKey(dbName='gpgkey', foreignKey='GPGKey', default=None)
     revision_id = StringCol(notNull=True)
     revision_date = UtcDateTimeCol(notNull=False)
+    committed_against = ForeignKey(
+        dbName='committed_against', foreignKey='Revision', default=None)
     diff_adds = IntCol()
     diff_deletes = IntCol()
 
