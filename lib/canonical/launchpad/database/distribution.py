@@ -235,22 +235,29 @@ class Distribution(SQLBase):
 
     def getWorkedBuildRecords(self, status=None, limit=10):
         """See IHasBuildRecords"""
-        status_clause = ''
-        if status:
-            status_clause = "AND buildstate=%s" % sqlvalues(status)
-
+        # find out the distroarchreleases in question
         ids_list = []
         for release in self.releases:
             ids = ','.join(
                 '%d' % arch.id for arch in release.architectures)
+            # do not mess pgsql sintaxe with empty chuncks 
             if ids:
                 ids_list.append(ids)
-
+        
         arch_ids = ','.join(ids_list)
 
+        # if not distroarchrelease was found return None
+        if not arch_ids:
+            return None
+
+        # specific status or simply touched by a builder
+        if status:
+            status_clause = "buildstate=%s" % sqlvalues(status)
+        else:
+            status_clause = "builder is not NULL"
+
         return Build.select(
-            "builder is not NULL AND "
-            "distroarchrelease IN (%s) %s" % (arch_ids, status_clause), 
+            "distroarchrelease IN (%s) AND %s" % (arch_ids, status_clause), 
             limit=limit, orderBy="-datebuilt")
 
 

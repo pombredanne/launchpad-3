@@ -469,16 +469,19 @@ class SourcePackage:
 
     def getWorkedBuildRecords(self, status=None, limit=10):
         """See IHasBuildRecords"""
-        status_clause = ''
         if status:
-            status_clause = "AND buildstate=%s" % sqlvalues(status)
+            status_clause = "buildstate=%s" % sqlvalues(status)
+        else:
+            status_clause = "builder is not NULL"
 
         rel_ids = ','.join(
             '%d' % release.id for release in self.releases)
+
+        # we assume we have at least one sourcepackagerelease because
+        # of sourcepackage magic behaviour.
         
         return Build.select(
-            "builder is not NULL AND "
-            "sourcepackagerelease IN (%s) %s" % (rel_ids, status_clause),
+            "sourcepackagerelease IN (%s) AND %s" % (rel_ids, status_clause),
             limit=limit, orderBy="-datebuilt")
     
 

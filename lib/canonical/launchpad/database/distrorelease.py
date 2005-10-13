@@ -330,16 +330,22 @@ class DistroRelease(SQLBase):
 
     def getWorkedBuildRecords(self, status=None, limit=10):
         """See IHasBuildRecords"""
-        status_clause = ''
-        if status:
-            status_clause = "AND buildstate=%s" % sqlvalues(status)
-
+        # find out the distroarchrelease in question
         arch_ids = ','.join(
             '%d' % arch.id for arch in self.architectures)
-        
+
+        # if no distroarchrelease was found return None
+        if not arch_ids:
+            return None
+
+        # specific status or simply worked 
+        if status:
+            status_clause = "buildstate=%s" % sqlvalues(status)
+        else:
+            status_clause = "builder is not NULL"
+
         return Build.select(
-            "builder is not NULL AND "
-            "distroarchrelease IN (%s) %s" % (arch_ids, status_clause),
+            "distroarchrelease IN (%s) AND %s" % (arch_ids, status_clause),
             limit=limit, orderBy="-datebuilt")
 
 class DistroReleaseSet:
