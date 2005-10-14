@@ -119,4 +119,18 @@
 	lp:url="+builds/$name/+edit">
     </browser:editform>
 
+
+    <!-- BuildQueue -->
+    <content class="canonical.launchpad.database.BuildQueue">
+       <allow interface="canonical.launchpad.interfaces.IBuildQueue"/>
+    </content>
+
+    <!-- BuildQueueSet -->
+    <securedutility
+        class="canonical.launchpad.database.BuildQueueSet"
+        provides="canonical.launchpad.interfaces.IBuildQueueSet">
+        <allow interface="canonical.launchpad.interfaces.IBuildQueueSet" />
+    </securedutility>
+
+
 </configure>

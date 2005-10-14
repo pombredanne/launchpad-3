@@ -36,16 +36,21 @@ class IBuild(Interface):
 
 class IBuildSet(Interface):
     """Interface for BuildSet"""
+
     def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
         """Return a build for a SourcePackageRelease and an ArchTag"""
 
 
 class IHasBuildRecords(Interface):
-    """An Object which has build records"""
+    """An Object that has build records"""
 
-    def getWorkedBuildRecords(status=None, limit=10):
-        """Return worked build records owned by the object.
+    def getBuildRecords(status=None, limit=10):
+        """Return build records owned by the object.
 
-        'worked' is defined by 'once touched by a builder, i.e., 'builder
-        is not NULL'. The results are limited by 'limit'.
+        The optional 'status' argument selects build records in a specific
+        state. If the 'status' argument is omitted, it returns the "worked"
+        entries. A "worked" entry is one that has been touched by a builder.
+        That is, where 'builder is not NULL'.
+
+        At most 'limit' results are returned.
         """

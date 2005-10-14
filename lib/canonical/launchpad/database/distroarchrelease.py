@@ -104,7 +104,7 @@ class DistroArchRelease(SQLBase):
         except IndexError:
             raise NotFoundError(name)
 
-    def getWorkedBuildRecords(self, status=None, limit=10):
+    def getBuildRecords(self, status=None, limit=10):
         """See IHasBuildRecords"""
         # specific status or simply touched.
         if status:

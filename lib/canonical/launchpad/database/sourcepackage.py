@@ -467,7 +467,7 @@ class SourcePackage:
         """See canonical.launchpad.interfaces.ISourcePackage."""
         return not self.__eq__(other)
 
-    def getWorkedBuildRecords(self, status=None, limit=10):
+    def getBuildRecords(self, status=None, limit=10):
         """See IHasBuildRecords"""
         if status:
             status_clause = "buildstate=%s" % sqlvalues(status)
@@ -477,8 +477,8 @@ class SourcePackage:
         rel_ids = ','.join(
             '%d' % release.id for release in self.releases)
 
-        # we assume we have at least one sourcepackagerelease because
-        # of sourcepackage magic behaviour.
+        if not rel_ids:
+            return None
         
         return Build.select(
             "sourcepackagerelease IN (%s) AND %s" % (rel_ids, status_clause),

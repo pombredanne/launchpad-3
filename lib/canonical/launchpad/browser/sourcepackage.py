@@ -34,6 +34,7 @@ from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.soyuz.generalapp import builddepsSet
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.build import BuildRecordsView
 
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu,
@@ -311,7 +312,7 @@ class SourcePackageInDistroSetView:
         return BatchNavigator(batch=batch, request=self.request)
 
 
-class SourcePackageView:
+class SourcePackageView(BuildRecordsView):
 
     def __init__(self, context, request):
         self.context = context
@@ -430,10 +431,6 @@ class SourcePackageView:
         potemplatenames = list(S)
 
         return sorted(potemplatenames, key=lambda item: item.name)
-
-    def getBuilt(self):
-        """Return the last build records for a SourcePackage."""
-        return self.context.getWorkedBuildRecords()
 
 
 class SourcePackageBugsView:

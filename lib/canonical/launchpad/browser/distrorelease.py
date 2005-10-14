@@ -25,12 +25,13 @@ from canonical.launchpad.webapp import (
 
 from canonical.launchpad.interfaces import (
     IDistroReleaseLanguageSet, IBugTaskSearchListingView, IDistroRelease,
-    ICountry, IDistroReleaseSet, ILaunchBag, IBuildSet, ILanguageSet,
-    NotFoundError, IPublishedPackageSet)
+    ICountry, IDistroReleaseSet, ILaunchBag, ILanguageSet,NotFoundError,
+    IPublishedPackageSet)
 
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.build import BuildRecordsView
 
 # XXX: This import needs to go away.  SteveAlexander, 2005-10-07
 from canonical.launchpad.database import SourcePackageSet
@@ -130,7 +131,7 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
         return Link('+specplan', text, icon='info')
 
 
-class DistroReleaseView:
+class DistroReleaseView(BuildRecordsView):
 
     def __init__(self, context, request):
         self.context = context
@@ -203,10 +204,6 @@ class DistroReleaseView:
         """
         distro_url = canonical_url(self.context.distribution)
         return self.request.response.redirect(distro_url + "/+filebug")
-
-    def getBuilt(self):
-        """Return the last build records within the DistroRelease context."""
-        return self.context.getWorkedBuildRecords()
 
 
 class DistroReleaseBugsView(BugTaskSearchListingView):

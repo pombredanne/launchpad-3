@@ -12,11 +12,11 @@ __all__ = [
 
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
-from zope.component import getUtility
 
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, ContextMenu, Link,
     GetitemNavigation)
+from canonical.launchpad.browser.build import BuildRecordsView
 
 from canonical.launchpad.interfaces import IDistroArchRelease
 
@@ -48,15 +48,12 @@ class DistroArchReleaseContextMenu(ContextMenu):
         return Link('+pkgsearch', text, icon='search')
 
 
-class DistroArchReleaseView:
+class DistroArchReleaseView(BuildRecordsView):
+    """Default DistroArchRelease view class."""
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
-
-    def getBuilt(self):
-        """Return the last build records for the DistroArchRelease context."""
-        return self.context.getWorkedBuildRecords()
 
 
 class DistroArchReleaseBinariesView:

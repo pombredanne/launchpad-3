@@ -258,7 +258,7 @@ class Distribution(SQLBase):
         raise NotFoundError(filename)
 
 
-    def getWorkedBuildRecords(self, status=None, limit=10):
+    def getBuildRecords(self, status=None, limit=10):
         """See IHasBuildRecords"""
         # find out the distroarchreleases in question
         ids_list = []

@@ -328,7 +328,7 @@ class DistroRelease(SQLBase):
         return [BinaryPackageRelease.get(pubrecord.binarypackagerelease)
                 for pubrecord in result]
 
-    def getWorkedBuildRecords(self, status=None, limit=10):
+    def getBuildRecords(self, status=None, limit=10):
         """See IHasBuildRecords"""
         # find out the distroarchrelease in question
         arch_ids = ','.join(
