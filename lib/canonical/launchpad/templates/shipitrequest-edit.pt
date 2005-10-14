@@ -35,7 +35,8 @@
         <span tal:replace="context/whocancelled/displayname" />.
       </p>
       <p tal:condition="context/shipment" 
-         class="portalMessage">This request was already shipped.
+         class="portalMessage">This request is being processed by the shipping
+         company.
       </p>
     </tal:block>
 
