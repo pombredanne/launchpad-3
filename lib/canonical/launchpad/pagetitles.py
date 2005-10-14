@@ -908,6 +908,8 @@ template_new = 'EXAMPLE NEW TITLE'
 translationgroup = ContextTitle('Rosetta Translation Group: %s')
 translationgroups = 'Rosetta Translation Groups'
 
+translationimportqueueset_index = 'Translation Import Queue'
+
 ubuntite_list = 'FOAF: Ubuntite List'
 
 # ul_main_template is probably obselete

@@ -308,6 +308,7 @@ COMMENT ON COLUMN POFile.daterawimport IS 'The date when the raw file was attach
 COMMENT ON COLUMN POFile.rawimportstatus IS 'The status of the import. See the RosettaImportStatus schema.';
 COMMENT ON COLUMN POFile.exportfile IS 'The Library file alias of an export of this PO file.';
 COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by exportfile was generated.';
+COMMENT ON COLUMN POFile.path IS 'The path (included the filename) inside the tree from where the content was imported.';
 
 -- POSelection
 COMMENT ON TABLE POSelection IS 'This table captures the full set
@@ -1109,3 +1110,13 @@ COMMENT ON COLUMN ShockAndAwe.name IS 'The name of the Shock And Awe program';
 COMMENT ON COLUMN ShockAndAwe.title IS 'The title of the Shock And Awe program';
 COMMENT ON COLUMN ShockAndAwe.description IS 'The description of the Shock And Awe program';
 
+-- TranslationImportQueue
+COMMENT ON TABLE TranslationImportQueue IS 'Queue with translatable resources pending to be imported into Rosetta.';
+COMMENT ON COLUMN TranslationImportQueue.path IS 'The path (included the filename) where this file was stored when we imported it.';
+COMMENT ON COLUMN TranslationImportQueue.content IS 'The file content that is being imported.';
+COMMENT ON COLUMN TranslationImportQueue.importer IS 'The person that did the import.';
+COMMENT ON COLUMN TranslationImportQueue.dateimport IS 'The timestamp when the import was done.';
+COMMENT ON COLUMN TranslationImportQueue.distrorelease IS 'The distribution release related to this import.';
+COMMENT ON COLUMN TranslationImportQueue.sourcepackagename IS 'The source package name related to this import.';
+COMMENT ON COLUMN TranslationImportQueue.productseries IS 'The product series related to this import.';
+COMMENT ON COLUMN TranslationImportQueue.ignore IS 'If this flag is set, the row should be ignored and not imported.';

@@ -1,0 +1,87 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:zope="http://namespaces.zope.org/zope"
+    xmlns:lp="http://launchpad.canonical.com"
+    i18n_domain="launchpad">
+
+<facet facet="translations">
+
+    <content class="canonical.launchpad.database.TranslationImportQueue">
+        <require
+            permission="launchpad.Edit"
+            interface="canonical.launchpad.interfaces.ITranslationImportQueue"
+            set_attributes="path importer productseries distrorelease
+                            sourcepackagename ignore"
+            />
+    </content>
+
+<!--
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ITranslationImportQueue"
+        name="+index"
+        />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.ITranslationImportQueue"
+        class="canonical.launchpad.browser.TranslationImportQueueView"
+        permission="zope.Public">
+        <browser:page
+            name="+index"
+            template="../templates/translationimportqueue-index.pt" />
+    </browser:pages>
+
+    <browser:editform
+        name="+edit"
+        schema="canonical.launchpad.interfaces.ITranslationImportQueue"
+        class="canonical.launchpad.browser.TranslationImportQueueView"
+        label="Administer Translation Import Queue"
+        permission="launchpad.Admin"
+        template="../templates/translationimportqueue-edit.pt"
+        fields="path importer productseries distrorelease sourcepackagename
+                ignore"
+        />
+-->
+    <!-- TranslationImportQueueSet -->
+    <securedutility
+        class="canonical.launchpad.database.TranslationImportQueueSet"
+        provides="canonical.launchpad.interfaces.ITranslationImportQueueSet">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationImportQueueSet"
+            />
+    </securedutility>
+
+    <browser:suburl
+        for="canonical.launchpad.interfaces.IRosettaApplication"
+        utility="canonical.launchpad.interfaces.ITranslationImportQueueSet"
+        name="imports" />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.ITranslationImportQueueSet"
+        path_expression="string:imports"
+        parent_utility="canonical.launchpad.interfaces.IRosettaApplication"
+        />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.ITranslationImportQueueSet"
+        function="canonical.launchpad.browser.traverse_translation_import_queue_set"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ITranslationImportQueueSet"
+        name="+index"
+        />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.ITranslationImportQueueSet"
+        class="canonical.launchpad.browser.TranslationImportQueueSetView"
+        permission="zope.Public">
+        <browser:page
+            name="+index"
+            template="../templates/translationimportqueueset-index.pt" />
+    </browser:pages>
+
+</facet>
+
+</configure>

@@ -9,8 +9,8 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 
 from canonical.config import config
 from canonical.lp import initZopeless
-from canonical.launchpad.scripts import (execute_zcml_for_scripts,
-    logger_options, logger)
+from canonical.launchpad.scripts import (execute_zcml_for_scripts, logger,
+    logger_options)
 from canonical.launchpad.scripts.rosetta import ImportProcess
 
 default_lock = '/var/lock/launchpad-poimport.lock'
@@ -45,7 +45,7 @@ def main(argv):
     except LockAlreadyAcquired:
         logger_object.info("lock %s already exists, exiting",
                            options.lockfile)
-        return 0
+        return
 
     try:
         # Setup zcml machinery to be able to use getUtility

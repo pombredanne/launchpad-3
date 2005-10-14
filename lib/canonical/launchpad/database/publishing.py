@@ -104,6 +104,7 @@ class SourcePackageFilePublishing(SQLBase):
                      default=None, notNull=True,
                      schema=PackagePublishingPocket)
 
+
 class BinaryPackageFilePublishing(SQLBase):
     """A binary package file which needs publishing"""
 
@@ -167,7 +168,6 @@ class SourcePackagePublishingView(SQLBase):
     pocket = EnumCol(dbName='pocket', unique=False, default=None,
                      notNull=True, immutable=True,
                      schema=PackagePublishingPocket)
-
 
 
 class BinaryPackagePublishingView(SQLBase):
@@ -239,6 +239,39 @@ class SecureSourcePackagePublishingHistory(SQLBase):
         return super(SecureSourcePackagePublishingHistory,
                      cls).selectBy(*args, **kwargs)
 
+    def attachTranslationFiles(self, tarball_alias, is_published,
+        importer=None):
+        """See ISecureSourcePackagePublishingHistory."""
+        client = getUtility(ILibrarianClient)
+
+        try:
+            tarball_file = client.getFileByAlias(tarball_alias)
+        except DownloadFailed, e:
+            return
+
+        tarball = tarfile.open('', 'r', tarball_file)
+
+        # Get the list of files to attach.
+        files = []
+        for name in tarball.getnames():
+            if name.startswith('source/') or name.startswith('./source/'):
+                if name.endswith('.pot') or name.endswith('.po'):
+                    files.append(name)
+
+        if importer is None:
+            importer = getUtility(ILaunchpadCelebrities).rosetta_expert
+
+        translation_import_queue_set = getUtility(ITranslationImportQueueSet)
+
+        # Attach all files
+        for file in files:
+            # Fetch the file
+            content = tarball.extractfile(file).read()
+            # Add it to the queue.
+            translation_import_queue_set.addOrUpdateEntry(
+                file, content, is_published, importer,
+                securesourcepackagepublishinghistory=self)
+
 
 class SecureBinaryPackagePublishingHistory(SQLBase):
     """A binary package publishing record."""
@@ -281,7 +314,8 @@ class SecureBinaryPackagePublishingHistory(SQLBase):
     def selectByWithEmbargoedEntries(cls, *args, **kwargs):
         return super(SecureBinaryPackagePublishingHistory,
                      cls).selectBy(*args, **kwargs)
-    
+
+
 class SourcePackagePublishingHistory(SQLBase):
     """A source package release publishing record. (excluding embargoed stuff)"""
 
@@ -303,6 +337,7 @@ class SourcePackagePublishingHistory(SQLBase):
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
+
 
 class BinaryPackagePublishingHistory(SQLBase):
     """A binary package publishing record. (excluding embargoed packages)"""

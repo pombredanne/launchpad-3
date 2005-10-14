@@ -17,7 +17,8 @@ __all__ = [
     'traverse_team',
     'traverse_bugtask',
     'traverse_bugs',
-    'traverse_poll'
+    'traverse_poll',
+    'traverse_translation_import_queue_set'
     ]
 
 from zope.component import getUtility, getView
@@ -404,3 +405,11 @@ def traverse_poll(poll, request, name):
         return option
 
     return None
+
+def traverse_translation_import_queue_set(translation_import_queue, request,
+    name):
+    """Traverse an ITranslationImportQueue."""
+    try:
+        return translation_import_queue.get(name)
+    except (NotFoundError, ValueError):
+        return None
