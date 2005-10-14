@@ -11,7 +11,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import IBranch, IBranchSet
-from canonical.launchpad.database.revision import Revision
+from canonical.launchpad.database.revisionnumber import RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 
 from canonical.lp.dbschema import (
@@ -83,7 +83,7 @@ class Branch(SQLBase):
         return self.product.name
 
     def revision_count(self):
-        return Revision.selectBy(branchID=self.id).count()
+        return RevisionNumber.selectBy(branchID=self.id).count()
 
     def latest_revisions(self, quantity=10):
         return RevisionNumber.selectBy(
