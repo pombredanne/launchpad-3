@@ -92,7 +92,6 @@ class ProductFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProduct."""
 
     usedfor = IProduct
-
     links = StandardLaunchpadFacets.links + ['code']
 
     def overview(self):
@@ -152,7 +151,7 @@ class ProductOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'reassign', 'distributions', 'packages', 'series_add',
-        'milestone_add', 'launchpad_usage', 'rdf', 'administer'
+        'branch_add', 'milestone_add', 'launchpad_usage', 'rdf', 'administer'
         ]
 
     def edit(self):
@@ -174,6 +173,10 @@ class ProductOverviewMenu(ApplicationMenu):
     def series_add(self):
         text = 'Add Release Series'
         return Link('+addseries', text, icon='add')
+
+    def branch_add(self):
+        text = 'Add Branch'
+        return Link('+addbranch', text, icon='add')
 
     def milestone_add(self):
         text = 'Add Milestone'

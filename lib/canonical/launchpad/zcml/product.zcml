@@ -130,6 +130,7 @@
 	permission="zope.Public">
 	<browser:page
 	    name="+branches"
+            facet="code"
 	    template="../templates/branchtarget-branches.pt" />
     </browser:pages>
 
