@@ -41,7 +41,7 @@ class Schema(SQLBase):
         StringCol(name='title', dbName='title', notNull=True),
         StringCol(name='description', dbName='description', notNull=True),
         #BoolCol(name='extensible', dbName='extensible', notNull=True),
-    ]
+        ]
 
     _labelsJoin = MultipleJoin('Label', joinColumn='schema')
 

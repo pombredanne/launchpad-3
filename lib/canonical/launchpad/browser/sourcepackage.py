@@ -34,6 +34,7 @@ from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.soyuz.generalapp import builddepsSet
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.build import BuildRecordsView
 
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu,
@@ -47,6 +48,9 @@ BATCH_SIZE = 40
 class SourcePackageNavigation(Navigation, BugTargetTraversalMixin):
 
     usedfor = ISourcePackage
+
+    def breadcrumb(self):
+        return self.context.name
 
     @stepto('+pots')
     def pots(self):
@@ -63,6 +67,9 @@ class DistroSourcePackageNavigation(Navigation, BugTargetTraversalMixin):
 class SourcePackageSetNavigation(Navigation):
 
     usedfor = ISourcePackageSet
+
+    def breadcrumb(self):
+        return 'Packages'
 
     def traverse(self, name):
         try:
@@ -305,7 +312,7 @@ class SourcePackageInDistroSetView:
         return BatchNavigator(batch=batch, request=self.request)
 
 
-class SourcePackageView:
+class SourcePackageView(BuildRecordsView):
 
     def __init__(self, context, request):
         self.context = context

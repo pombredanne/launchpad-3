@@ -58,8 +58,16 @@ def validate_url(url, valid_schemes):
 
 
 def valid_webref(web_ref):
-    return validate_url(web_ref, ['http', 'https'])
-
+    if validate_url(web_ref, ['http', 'https', 'ftp']):
+        # Allow ftp so valid_webref can be used for download_url, and so
+        # it doesn't lock out weird projects where the site or
+        # screenshots are kept on ftp.
+        return True
+    else:
+        raise LaunchpadValidationError(_(dedent("""
+            Not a valid URL. Please enter the full URL, including the
+            scheme (for instance, http:// for a web URL), and ensure the
+            URL uses either http, https or ftp.""")))
 
 def non_duplicate_bug(value):
     """Prevent dups of dups.

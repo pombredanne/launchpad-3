@@ -107,8 +107,8 @@ class ITicket(IHasOwner, IMessageTarget):
 
         Depending on whether this is the requestor (owner) or someone else,
         it will affect the status in different ways. When the owner says it
-        is resolved, we mark it as "closed". When someone else says it is
-        resolved, we mark it as "answered."
+        is resolved, we mark it as 'closed'. When someone else says it is
+        resolved, we mark it as 'answered.'
         """
 
     def accept():

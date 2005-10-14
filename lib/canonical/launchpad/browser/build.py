@@ -3,23 +3,43 @@
 """Browser views for builds."""
 
 __metaclass__ = type
-__all__ = ['BuiltItemUrl']
+__all__ = ['BuildRecordsView']
 
-import zope.security.interfaces
-from zope.component import getUtility
+from canonical.lp.dbschema import BuildStatus
 
-from canonical.lp import dbschema
-
-from canonical.launchpad.interfaces import (
-    IPerson, IBuilderSet, IBuilder
-    )
+from canonical.launchpad.interfaces import IHasBuildRecords
 
 
-class BuildView:
-    __used_for__ = IBuild
+class BuildRecordsView:
+    __used_for__ = IHasBuildRecords
 
-    def BuiltItemUrl(self):
-        """Return the URL of the thing being built."""
-        url = '/distros/'
-        url += self.distrorelease
-        return url
+    def getBuilt(self):
+        """Return the build entries built within the context object."""
+        return self.context.getBuildRecords(status=BuildStatus.FULLYBUILT)
+
+    @property
+    def number_built(self):
+        """Return the number of build entries built for context object.
+
+        If no result is available return None.
+        """
+        result = self.getBuilt()
+        if result:
+            return result.count()
+        return None
+
+    def getPending(self):
+        """Return the builds entries pending build for the context object."""
+        return self.context.getBuildRecords(status=BuildStatus.NEEDSBUILD)
+
+    @property
+    def number_pending(self):
+        """Return the number of build entries pending for the context object.
+
+        If no result is available return None.
+        """
+        result = self.getPending()
+        if result:
+            return result.count()
+        return None
+

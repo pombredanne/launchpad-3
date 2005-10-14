@@ -96,7 +96,7 @@ class ICalendarSubscriptionSubset(Interface):
         """Get the colour used to display events from this calendar"""
 
     def setColour(calendar, colour):
-        """Set the colour used to display events from this calendar"""        
+        """Set the colour used to display events from this calendar"""
 
 
 class ICalendarRange(Interface):

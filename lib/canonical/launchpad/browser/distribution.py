@@ -28,15 +28,18 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser import BugTaskSearchListingView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, GetitemNavigation, stepthrough, stepto)
 
-
 class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     usedfor = IDistribution
+
+    def breadcrumb(self):
+        return self.context.displayname
 
     @stepto('+packages')
     def packages(self):
@@ -83,6 +86,9 @@ class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
 class DistributionSetNavigation(GetitemNavigation):
 
     usedfor = IDistributionSet
+
+    def breadcrumb(self):
+        return 'Distributions'
 
 
 class DistributionFacets(StandardLaunchpadFacets):
@@ -209,8 +215,12 @@ class DistributionTranslationsMenu(ApplicationMenu):
         return Link('+changetranslators', text, icon='edit')
 
 
-class DistributionView:
+class DistributionView(BuildRecordsView):
     """Default Distribution view class."""
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
 
 
 class DistributionBugsView(BugTaskSearchListingView):

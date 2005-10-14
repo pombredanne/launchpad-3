@@ -9,7 +9,7 @@
     <content class="canonical.launchpad.webapp.LaunchpadBrowserRequest">
       <allow
         interface="
-          zope.publisher.interfaces.browser.IBrowserApplicationRequest"
+          canonical.launchpad.interfaces.ILaunchpadBrowserApplicationRequest"
         attributes="response locale __str__"
         />
       <allow
@@ -132,12 +132,6 @@
         />
 
     <!-- TALES fmt: namespace -->
-    <adapter
-        for="zope.publisher.interfaces.browser.IBrowserApplicationRequest"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.RequestFormatterAPI"
-        name="fmt"
-        />
 
     <!-- The next directive is registered for all dicts, but we really only
          want it to apply to the page template's CONTEXTS dict.

@@ -57,6 +57,9 @@ class ProductNavigation(
 
     usedfor = IProduct
 
+    def breadcrumb(self):
+        return self.context.displayname
+
     @stepthrough('+spec')
     def traverse_spec(self, name):
         return self.context.getSpecification(name)
@@ -85,6 +88,9 @@ class ProductNavigation(
 class ProductSetNavigation(GetitemNavigation):
 
     usedfor = IProductSet
+
+    def breadcrumb(self):
+        return 'Products'
 
 
 class ProductFacets(StandardLaunchpadFacets):

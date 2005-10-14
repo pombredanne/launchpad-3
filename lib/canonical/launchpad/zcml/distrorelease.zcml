@@ -7,6 +7,7 @@
 
   <content class="canonical.launchpad.database.DistroRelease">
     <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
+    <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <require
         permission="launchpad.Edit"
         set_attributes="displayname title summary description version
@@ -94,6 +95,10 @@
             template="../templates/distrorelease-builds.pt"
             lp:url="/distros/$distribution/$distrorelease/+builds"
             />
+        <browser:page
+            name="+builds-list"
+            template="../templates/builds-list.pt"
+            lp:url="/distros/$distribution/$distrorelease/+builds-list"/>
         <browser:page
             name="+portlet-details"
             facet="overview"

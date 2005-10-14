@@ -9,6 +9,7 @@ from zope.interface import Interface, Attribute, implements
 import zope.exceptions
 from zope.i18nmessageid import MessageIDFactory
 import zope.app.publication.interfaces
+import zope.publisher.interfaces.browser
 import zope.app.traversing.interfaces
 from persistent import IPersistent
 
@@ -32,7 +33,8 @@ __all__ = [
     'IDBSchema', 'IDBSchemaItem', 'IAuthApplication',
     'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
     'IAfterTraverseEvent', 'AfterTraverseEvent',
-    'IBeforeTraverseEvent', 'BeforeTraverseEvent'
+    'IBeforeTraverseEvent', 'BeforeTraverseEvent',
+    'IBreadcrumb', 'ILaunchpadBrowserApplicationRequest'
     ]
 
 
@@ -53,6 +55,7 @@ class ILaunchpadCelebrities(Interface):
     rosetta_expert = Attribute("The Rosetta Experts team.")
     debbugs = Attribute("The Debian Bug Tracker")
     shipit_admin = Attribute("The ShipIt Administrators.")
+    launchpad_developers = Attribute("The Launchpad development team.")
 
 
 class ICrowd(Interface):
@@ -60,7 +63,7 @@ class ICrowd(Interface):
     def __contains__(person_or_team_or_anything):
         """Return True if the given person_or_team_or_anything is in the crowd.
 
-        Note that a particular crowd can choose to answer "True" to this
+        Note that a particular crowd can choose to answer 'True' to this
         question, if that is what it is supposed to do.  So, crowds that
         contain other crowds will want to allow the other crowds the
         opportunity to answer __contains__ before that crowd does.
@@ -355,9 +358,9 @@ class ILink(ILinkData):
         "None before it is set.")
 
     linked = Attribute(
-        "A boolean value saying whether this link should appear as a clickable"
-        " link in the UI.  The general rule is that a link to the current"
-        " page should not be shown linked.  Defaults to True.")
+        "A boolean value saying whether this link should appear as a "
+        "clickable link in the UI.  The general rule is that a link to "
+        "the current page should not be shown linked.  Defaults to True.")
 
     enabled = Attribute(
         "Boolean to say whether this link is enabled.  Can be read and set.")
@@ -523,3 +526,25 @@ class BeforeTraverseEvent(zope.app.publication.interfaces.BeforeTraverseEvent):
 #     def __init__(self, ob, request):
 #         self.object = ob
 #         self.request = request
+
+class ILaunchpadBrowserApplicationRequest(
+    zope.publisher.interfaces.browser.IBrowserApplicationRequest):
+    """The request interface to the application for launchpad browser requests.
+    """
+
+    stepstogo = Attribute(
+        'The StepsToGo object for this request, allowing you to inspect and'
+        ' alter the remaining traversal steps.')
+
+    breadcrumbs = Attribute(
+        'List of IBreadcrumb objects.  This is appended to during traversal'
+        ' so that a page can render appropriate breadcrumbs.')
+
+
+class IBreadcrumb(Interface):
+    """A breadcrumb link.  IBreadcrumbs get put into request.breadcrumbs."""
+
+    url = Attribute('Absolute url of this breadcrumb.')
+
+    text = Attribute('Text of this breadcrumb.')
+

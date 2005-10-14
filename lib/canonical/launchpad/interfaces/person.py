@@ -260,8 +260,8 @@ class IPerson(Interface):
 
     preferredemail_sha1 = TextLine(title=_("SHA-1 Hash of Preferred Email"),
             description=_("The SHA-1 hash of the preferred email address as "
-                "a hexadecimal string. This is used as a key by FOAF RDF spec"
-                ), readonly=True)
+                "a hexadecimal string. This is used as a key by FOAF RDF "
+                "spec"), readonly=True)
 
     defaultmembershipperiod = Int(
             title=_('Number of days a subscription lasts'), required=False,
@@ -295,19 +295,19 @@ class IPerson(Interface):
             required=True, vocabulary='TeamSubscriptionPolicy',
             default=TeamSubscriptionPolicy.MODERATED,
             description=_(
-                '"Moderated" means all subscriptions must be '
-                'approved. "Open" means any user can join '
-                'without approval. "Restricted" means new '
-                'members can be added only by a team '
-                'administrator.')
+                "'Moderated' means all subscriptions must be "
+                "approved. 'Open' means any user can join "
+                "without approval. 'Restricted' means new "
+                "members can be added only by a team "
+                "administrator.")
             )
 
     merged = Int(title=_('Merged Into'), required=False, readonly=True,
             description=_(
-                'When a Person is merged into another Person, this attribute '
-                'is set on the Person referencing the destination Person. If '
-                'this is set to None, then this Person has not been merged '
-                'into another and is still valid')
+                "When a Person is merged into another Person, this attribute "
+                "is set on the Person referencing the destination Person. If "
+                "this is set to None, then this Person has not been merged "
+                "into another and is still valid")
                 )
 
     touched_pofiles = Attribute("The set of pofiles which the person has "
@@ -388,7 +388,7 @@ class IPerson(Interface):
         <team> or False if that wasn't possible.
 
         Teams cannot call this method because they're not allowed to
-        login and thus can't "join" another team. Instead, they're added
+        login and thus can't 'join' another team. Instead, they're added
         as a member (using the addMember() method) by a team administrator.
         """
 
@@ -400,7 +400,7 @@ class IPerson(Interface):
         DEACTIVATED and remove the relevant entries in teamparticipation.
 
         Teams cannot call this method because they're not allowed to
-        login and thus can't "leave" another team. Instead, they have their
+        login and thus can't 'leave' another team. Instead, they have their
         subscription deactivated (using the setMembershipStatus() method) by
         a team administrator.
         """
@@ -438,8 +438,8 @@ class IPerson(Interface):
             Rosetta pt Translators
                 Rosetta pt_BR Translators
 
-        In this case, both "Rosetta pt Translators" and "Rosetta pt_BR
-        Translators" are subteams of the "Rosetta Translators" team, and all
+        In this case, both 'Rosetta pt Translators' and 'Rosetta pt_BR
+        Translators' are subteams of the 'Rosetta Translators' team, and all
         members of both subteams are considered members of "Rosetta
         Translators".
         """
@@ -455,8 +455,8 @@ class IPerson(Interface):
             Rosetta pt Translators
                 Rosetta pt_BR Translators
 
-        In this case, we will return both "Rosetta pt Translators" and
-        "Rosetta Translators", because we are member of both of them.
+        In this case, we will return both 'Rosetta pt Translators' and
+        'Rosetta Translators', because we are member of both of them.
         """
 
     def addLanguage(language):

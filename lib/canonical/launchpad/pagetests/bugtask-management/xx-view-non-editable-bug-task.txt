@@ -1,5 +1,5 @@
-If someone views a bug task without logging in,
-they should see the task but not be able to edit it.
+If someone views a bug task without logging in, they should see the task but not
+be able to edit it.
 
   >>> print http(r"""
   ... GET /products/firefox/+bug/6/+viewstatus HTTP/1.1
@@ -11,3 +11,12 @@ they should see the task but not be able to edit it.
   ...you must be logged in...
   ...
 
+  >>> print http(r"""
+  ... GET /products/evolution/+bug/7/+viewstatus HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... """)
+  HTTP/1.1 200 Ok
+  ...A test bug...
+  ...To <a href="+editstatus">change the information below</a>,
+  ...you must be logged in...
+  ...

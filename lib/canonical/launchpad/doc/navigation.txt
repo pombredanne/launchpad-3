@@ -9,7 +9,7 @@ canonical.launchpad.webapp.Navigation.
 
     >>> from canonical.launchpad.webapp import Navigation
 
-When you write a navigation class, you can do four kinds of things.
+When you write a navigation class, you can talk about four kinds of traversal.
 
  - Say what object is stepped to when a particular name is the next step.
    Example, for the root object:
@@ -43,6 +43,30 @@ through some name, then you name the method 'traverse_name' as in
 'traverse_bug' above.  This is because the method takes a 'name' argument
 and you're saying how traversal is interpreted.  This is similar to the
 catch-all 'traverse()' method.
+
+You can also say that a new browser UI layer applies for this object.
+
+  newlayer = MaloneLayer
+
+You can also say how the breadcrumb will look for this object, if it has one.
+
+  def breadcrumb(self):
+      return 'This is the %s object' % self.context.name
+
+The text of the breadcrumb is html-escaped before being rendered on the web
+page.  You can return None to say that the object has no breadcrumb.  The
+default is to have no breadcrumb.
+
+You can associate a special breadcrumb with a stepthrough traversal too.  You
+do this by writing a breadcrumb method, and then making a reference to that
+when you define the stepthrough traversal method.
+
+   def breadcrumb_source(self):
+       return 'Packages for %s' % self.context.displayname
+
+   @stepthrough('+source', breadcrumb_source)
+   def traverse_source(self, name):
+       return self.context.getSourcePackage(name)
 
 
 == Demonstrating a navigation class ==
@@ -92,10 +116,20 @@ we'll define one here.
     ...     def __init__(self):
     ...         self.response = Response()
     ...         self.traversal_stack = []
+    ...         self.breadcrumbs = []
     ...
     ...     @property
     ...     def stepstogo(self):
     ...         return StepsToGo(self.traversal_stack)
+    ...
+    ...     def getAndClearBreadcrumbs(self):
+    ...         old_breadcrumbs = self.breadcrumbs
+    ...         self.breadcrumbs = []
+    ...         return [(breadcrumb.url, breadcrumb.text)
+    ...                 for breadcrumb in old_breadcrumbs]
+    ...
+    ...     def getURL(self, idx=None):
+    ...         return 'URL %s' % idx
 
     >>> request = Request()
 
@@ -164,6 +198,9 @@ in Python we usually aim for having just one way to do something, often we're
 dealing with traversing content objects using a variety of methods, some of
 which return None to indicate 'not found' and some that raise NotFoundError.
 
+We'll also add a simple breadcrumb.
+
+
     >>> class ThingSetNavigation(Navigation):
     ...
     ...     usedfor = IThingSet
@@ -172,6 +209,9 @@ which return None to indicate 'not found' and some that raise NotFoundError.
     ...
     ...     def traverse(self, name):
     ...         return self.context.getThing(name)
+    ...
+    ...     def breadcrumb(self):
+    ...         return 'Breadcrumb for <<the thingset>>'
 
     >>> navigation = ThingSetNavigation(thingset, request)
 
@@ -184,6 +224,11 @@ The name doesn't begin with a 't', so it isn't found.
     ...
     NotFound: ...ThingSet...name: 'xxx'
 
+Note that the breadcrumb is set in the request, even though we got an error.
+
+    >>> request.getAndClearBreadcrumbs()
+    [('URL 1', 'Breadcrumb for <<the thingset>>')]
+
 Also, note that the request has been put onto the INewLayer layer.
 
     >>> INewLayer.providedBy(request)
@@ -194,10 +239,20 @@ The name begins with a 't', so the thing's value is TTT.
     >>> navigation.publishTraverse(request, 'ttt')
     Thing 'TTT'
 
+The request.breadcrumbs looks like this:
+
+    >>> request.getAndClearBreadcrumbs()
+    [('URL 1', 'Breadcrumb for <<the thingset>>')]
+
 The name begins with a 't', so the thing's value is THINGVIEW.
 
     >>> navigation.publishTraverse(request, 'thingview')
     Thing 'THINGVIEW'
+
+The request.breadcrumbs looks like this:
+
+    >>> request.getAndClearBreadcrumbs()
+    [('URL 1', 'Breadcrumb for <<the thingset>>')]
 
 
 == ZCML for browser:navigation ==
@@ -240,6 +295,7 @@ This time, we get the view object for the page that was registered.
     >>> navigation.publishTraverse(request, 'thingview')()
     'a view on a thingset'
 
+
 == stepto traversals ==
 
 You can say that there is a traversal to a fixed name that is handled by
@@ -249,15 +305,29 @@ This is step two:
 
     2. See if the name is registered as a 'stepto' traversal.  If so, do it.
 
+A stepto traversal can return None or raise NotFoundError to indicate that
+the traversal actually failed.  If this happens, then the whole traversal
+will have failed.  No further steps, including default traversal, will be
+tried.
+
 Let's create a subclass of ThingSetNavigation, and add a 'stepto'.
 
     >>> from canonical.launchpad.webapp import stepto
+    >>> from canonical.launchpad.interfaces import NotFoundError
 
     >>> class ThingSetNavigation2(ThingSetNavigation):
     ...
     ...     @stepto('thistle')
     ...     def thistle(self):
     ...         return 'A little thistle'
+    ...
+    ...     @stepto('neverthere')
+    ...     def neverthere(self):
+    ...         return None
+    ...
+    ...     @stepto('neverthere2')
+    ...     def neverthere2(self):
+    ...         raise NotFoundError
 
     >>> navigation2 = ThingSetNavigation2(thingset, request)
 
@@ -267,12 +337,25 @@ Let's create a subclass of ThingSetNavigation, and add a 'stepto'.
     'a view on a thingset'
     >>> navigation2.publishTraverse(request, 'thistle')
     'A little thistle'
+    >>> navigation2.publishTraverse(request, 'neverthere')
+    Traceback (most recent call last):
+    ...
+    NotFound: ...ThingSet..., name: 'neverthere'
+    >>> navigation2.publishTraverse(request, 'neverthere2')
+    Traceback (most recent call last):
+    ...
+    NotFound: ...ThingSet..., name: 'neverthere2'
 
 
 == stepthrough traversals ==
 
 You can say that there is a traversal to particular subobjects that occurs
 through a particular "namespace", such as '+bug' or '+language'.
+
+A stepthrough traversal can return None or raise NotFoundError to indicate that
+the traversal actually failed.  If this happens, then the whole traversal
+will have failed.  No further steps, including default traversal, will be
+tried.
 
 This is step three:
 
@@ -288,16 +371,57 @@ Let's create another subclass and add a stepthrough.
     ...     @stepthrough('toad')
     ...     def traverse_toad(self, name):
     ...         return 'the toad called %s' % name
+    ...
+    ...     @stepthrough('neverland')
+    ...     def traverse_neverland(self, name):
+    ...         return None
+    ...
+    ...     @stepthrough('neverland2')
+    ...     def traverse_neverland2(self, name):
+    ...         raise NotFoundError
 
     >>> request.traversal_stack = ['prince', 'charming']
     >>> navigation3 = ThingSetNavigation3(thingset, request)
     >>> navigation3.publishTraverse(request, 'toad')
     'the toad called charming'
+    >>> request.traversal_stack = ['prince', 'charming']
+    >>> navigation3 = ThingSetNavigation3(thingset, request)
+    >>> navigation3.publishTraverse(request, 'neverland')
+    Traceback (most recent call last):
+    ...
+    NotFound: ...ThingSet..., name: 'charming'
+    >>> request.traversal_stack = ['prince', 'charming']
+    >>> navigation3 = ThingSetNavigation3(thingset, request)
+    >>> navigation3.publishTraverse(request, 'neverland2')
+    Traceback (most recent call last):
+    ...
+    NotFound: ...ThingSet..., name: 'charming'
+
 
 Check that the request's state is as it should be.
 
     >>> request.traversal_stack
     ['prince']
+
+We need to test it with a breadcrumb too.
+
+    >>> class ThingSetNavigation3WithBreadcrumb(ThingSetNavigation):
+    ...
+    ...     def breadcrumb_toad(self):
+    ...         return 'A Toad'
+    ...
+    ...     @stepthrough('toad', breadcrumb=breadcrumb_toad)
+    ...     def traverse_toad(self, name):
+    ...         return 'the toad called %s' % name
+
+    >>> request.traversal_stack = ['prince', 'charming']
+    >>> request.breadcrumbs = []
+    >>> navigation3b = ThingSetNavigation3WithBreadcrumb(thingset, request)
+    >>> navigation3b.publishTraverse(request, 'toad')
+    'the toad called charming'
+
+    >>> request.getAndClearBreadcrumbs()
+    [('URL 1', 'Breadcrumb for <<the thingset>>'), ('URL 1', 'A Toad')]
 
 
 == redirection ==
@@ -309,6 +433,10 @@ This is step five:
 
     5. If a redirection is registered for that name, do the redirection.
 
+
+You can also return redirection('urlpath') from a traversal method to cause
+a redirect when you traverse that name.
+
 Let's make another navigation class to test redirection.
 
     >>> from canonical.launchpad.webapp import redirection
@@ -317,6 +445,13 @@ Let's make another navigation class to test redirection.
     ...
     ...     redirection('tree', 'trees')
     ...     redirection('toad', 'toads')
+    ...
+    ...     def traverse(self, name):
+    ...         return redirection('/another/place')
+    ...
+    ...     @stepthrough('outerspace')
+    ...     def traverse_outerspace(self, name):
+    ...         return redirection('/siberia/%s' % name)
 
     >>> navigation4 = ThingSetNavigation4(thingset, request)
     >>> navigation4.publishTraverse(request, 'tree')
@@ -330,6 +465,18 @@ Let's make another navigation class to test redirection.
     ''
     >>> request.response.redirected_to
     'toads'
+
+    >>> navigation4.publishTraverse(request, 'something')()
+    ''
+    >>> request.response.redirected_to
+    '/another/place'
+
+    >>> request.traversal_stack = ['tundra']
+    >>> navigation4.publishTraverse(request, 'outerspace')()
+    ''
+    >>> request.response.redirected_to
+    '/siberia/tundra'
+
 
 Make a clean request.
 
@@ -372,9 +519,7 @@ Check out the traversals defined directly.
     'some teeth'
 
     >>> ubernav.publishTraverse(request, 'diplodocus')
-    Traceback (most recent call last):
-    ...
-    NotFound: ...ThingSet...name: 'diplodocus'
+    <...RedirectionView...>
 
     >>> request.traversal_stack = ['frank']
     >>> ubernav.publishTraverse(request, 'diplodocus')
@@ -386,9 +531,6 @@ Check out the traversals defined directly.
     'topologies'
 
 Check those from ThingSetNavigation, implicitly:
-
-    >>> ubernav.publishTraverse(request, 'ttt')
-    Thing 'TTT'
 
     >>> ubernav.publishTraverse(request, 'thingview')()
     'a view on a thingset'
@@ -418,6 +560,12 @@ Check those from ThingSetNavigation4:
     >>> request.response.redirected_to
     'toads'
 
+    >>> ubernav.publishTraverse(request, 'ttt')()
+    ''
+    >>> request.response.redirected_to
+    '/another/place'
+
+
 == Testing that multiple inheritence involving decorator advisors works ==
 
     >>> class A:
@@ -425,6 +573,10 @@ Check those from ThingSetNavigation4:
     ...     @stepto('foo')
     ...     def traverse_foo(self):
     ...         return 'foo'
+    ...
+    ...     @stepto('foo2')
+    ...     def traverse_foo2(self):
+    ...         return 'foo2'
 
     >>> class B:
     ...
@@ -437,6 +589,10 @@ Check those from ThingSetNavigation4:
     ...     @stepto('baz')
     ...     def traverse_baz(self):
     ...         return 'baz'
+    ...
+    ...     @stepto('foo2')
+    ...     def traverse_another_foo(self):
+    ...         return 'foo2 from C'
 
     >>> instance_of_c = C(thingset, request)
     >>> instance_of_c.publishTraverse(request, 'foo')
@@ -445,6 +601,8 @@ Check those from ThingSetNavigation4:
     'bar'
     >>> instance_of_c.publishTraverse(request, 'baz')
     'baz'
+    >>> instance_of_c.publishTraverse(request, 'foo2')
+    'foo2 from C'
 
 
 == Showing that the name of the function really doesn't matter ==
@@ -469,3 +627,4 @@ The doit() method still works though.
 
     >>> instance_of_dupenames.doit()
     'bar'
+

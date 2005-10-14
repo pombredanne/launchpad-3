@@ -87,6 +87,10 @@ ALL_FTI = [
             ('description', D),
             ]),
 
+    ('shippingrequest', [
+            ('recipientdisplayname', A),
+            ]),
+
     ('ticket', [
             ('title', A),
             ('description', B),
@@ -386,7 +390,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
     #
     # Set the default schema search path so this stuff can be found
     #execute(con, 'ALTER DATABASE %s SET search_path = public,ts2;' % dbname)
-    #con.commit()
+    con.commit()
 
 
 def main():

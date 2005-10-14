@@ -34,16 +34,15 @@ from canonical.launchpad.interfaces import (
     IBugTrackerSet, ICveSet)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
-    Navigation, stepto)
+    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
+    stepto)
 
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
 #     be factored out into a generally available adapter for both this
 #     code and for TALES namespace code to use.
 #     Same for MenuAPI.
-from canonical.launchpad.webapp.tales import (
-    DurationFormatterAPI, MenuAPI)
+from canonical.launchpad.webapp.tales import DurationFormatterAPI, MenuAPI
 
 
 class MaloneApplicationNavigation(Navigation):
@@ -105,6 +104,30 @@ class MenuBox(LaunchpadView):
             return ''
         else:
             return self.template()
+
+
+class Breadcrumbs(LaunchpadView):
+    """Page fragment to display the breadcrumbs text."""
+
+    def render(self):
+        """Render the breadcrumbs text.
+
+        The breadcrumbs are taken from the request.breadcrumbs list.
+        For each breadcrumb, breadcrumb.text is cgi escaped.  The last
+        breadcrumb is made <strong>.
+        """
+        breadcrumbs = self.request.breadcrumbs
+        if not breadcrumbs:
+            return ''
+        sep = '<span class="breadcrumbSeparator"> &raquo; </span>'
+        crumbhtml = '<a href="%s">%s</a>'
+        all_but_last = [
+            crumbhtml % (breadcrumb.url, cgi.escape(breadcrumb.text))
+            for breadcrumb in breadcrumbs[:-1]]
+        lastcrumb = breadcrumbs[-1]
+        last_htmltext = crumbhtml % (lastcrumb.url, cgi.escape(lastcrumb.text))
+        last_htmltext = '<strong>%s</strong>' % last_htmltext
+        return sep.join(all_but_last + [last_htmltext])
 
 
 class MaintenanceMessage:
@@ -313,6 +336,9 @@ class LoginStatus:
 class LaunchpadRootNavigation(Navigation):
 
     usedfor = ILaunchpadRoot
+
+    def breadcrumb(self):
+        return 'Launchpad'
 
     stepto_utilities = {
         'products': IProductSet,

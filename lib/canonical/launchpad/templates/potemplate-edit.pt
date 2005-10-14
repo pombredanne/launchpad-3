@@ -9,12 +9,6 @@
   <div metal:fill-slot="main">
 
     <div metal:use-macro="context/@@launchpad_editform/editform">
-
-      <legend metal:fill-slot="editform_legend">
-        Template details
-      </legend>
-
-
     </div>
 
   </div>

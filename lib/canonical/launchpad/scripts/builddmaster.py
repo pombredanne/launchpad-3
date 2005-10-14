@@ -233,8 +233,7 @@ class BuilderGroup:
         pocket and return the Librarian file identifier for it, return None
         if it wasn't found or wasn't able to calculate.
         """
-        archrelease = build_candidate.build.distroarchrelease
-        chroot = archrelease.getChroot(pocket)
+        chroot = build_candidate.archrelease.getChroot(pocket)
         if chroot:
             return chroot.content.sha1        
 
@@ -252,20 +251,29 @@ class BuilderGroup:
         builder.slave.build(buildid, buildtype, chroot, filemap, args)
 
     def getLogFromSlave(self, slave, buildid, librarian):
+        """Get last buildlog from slave.
+
+        Invoke getFileFromSlave method with 'buildlog' identifier.
+        """
         return self.getFileFromSlave(slave, "log-for-%s.txt" % buildid,
                                      'buildlog', librarian)
 
     def getFileFromSlave(self, slave, filename, sha1sum, librarian):
-        """Request a file from Slave by passing a digest and store it in
-        Librarian with correspondent filename.
+        """Request a file from Slave.
+
+        Receive a file identifier (sha1sum) a MIME header filename and a
+        librarian instance. Store the incomming file in Librarian and return
+        the file alias_id, if it failed return None. 'buildlog' string is a
+        special indentifier which recover the raw last slave buildlog, 
+        compress it locally using gzip and finally store the compressed
+        copy in librarian.
         """
         aliasid = None
-        # figure out the MIME content-type
-        ftype = filenameToContentType(filename)
         # Protocol version 1.0new or higher provides /filecache/
         # which allows us to be clever in large file transfer
         out_file_fd, out_file_name = tempfile.mkstemp()
         out_file = os.fdopen(out_file_fd, "r+")
+
         try:
             slave_file = slave.getFile(sha1sum)
 
@@ -280,6 +288,28 @@ class BuilderGroup:
             slave_file.close()
             out_file.seek(0)
 
+            # if the requested file is the 'buildlog' compress it using gzip
+            # before storing in Librarian
+            if sha1sum == 'buildlog':
+                out_file.close()
+                # XXX cprov 20051010:
+                # python.gzip presented weird errors at this point, most
+                # related to incomplete file storage, the compressed file
+                # was prematurely finished in a 0x00. Using system call for
+                # while -> bug # 3111
+                os.system('gzip -9 %s' % out_file_name)
+                # modify the local and header filename
+                filename += '.gz'
+                out_file_name += '.gz'
+                # repopen the currently compressed file, seeks its end
+                # position and return to begin, ready for Librarian
+                out_file = open(out_file_name)
+                out_file.seek(0,2)
+                bytes_written = out_file.tell()
+                out_file.seek(0)
+
+            # figure out the MIME content-type
+            ftype = filenameToContentType(filename)
             # upload it to the librarian...
             aliasid = librarian.addFile(filename, bytes_written,
                                         out_file,
@@ -642,8 +672,8 @@ class BuilddMaster:
                              archrelease.architecturetag, pocket))
         # ensure ARCHRELEASE has a pocket
         if not archrelease.getChroot(pocket):
-            self._logger.warn("Disabling: No CHROOT found for pocket '%s'"
-                              % pocket.title)
+            self._logger.warn("Disabling: No CHROOT found for %s pocket '%s'"
+                              % (archrelease.title, pocket.title))
             return
         
         # Fill out the contents
@@ -715,6 +745,13 @@ class BuilddMaster:
 
         self._logger.info("Found %d Sources to build.", len(releases))
         
+        # Do not create builds for distroreleases with no nominatedarchindep
+        # they can't build architecture independent packages properly.
+        if not distrorelease.nominatedarchindep:
+            self._logger.warn("No Nominated Architecture Independent, skipping"
+                              " distrorelease %s", distrorelease.title)
+            return
+
         # 2. Determine the set of distroarchreleases we care about in this
         # cycle
         archs = set(arch for arch in distrorelease.architectures
@@ -725,14 +762,14 @@ class BuilddMaster:
         # one supported  architecture. Entering in it with no supported
         # architecture results in a corruption of the persistent DBNotes
         # instance for self._archreleases, it ends up empty.
-        if len(archs) == 0:
+        if not archs:
             self._logger.info("No Supported Architectures found, skipping "
                               "distrorelease %s", distrorelease.title)
             return
         
         # 3. For each of the sourcepackagereleases, find its builds...
         for release in releases:
-            header = ("Build Record for %s-%s for '%s' " %
+            header = ("Build Record %s-%s for '%s' " %
                       (release.name, release.version,
                        release.architecturehintlist))
 
@@ -752,18 +789,13 @@ class BuilddMaster:
                 if Build.selectBy(sourcepackagereleaseID=release.id).count():
                     self._logger.debug(header + "SKIPPING ALL")
                     continue
-
                 
-                # packages with an architecture hint of "all" ar
+                # packages with an architecture hint of "all" are
                 # architecture independent.  Therefore we only need
-                # to build on one architecture.
-                proposed_arch = list(archs)[0]
-
-                # XXX cprov 20050831
-                # Pick up the processor from the publishing history
-                # or simply do it in i386 box
+                # to build on one architecture, the distrorelease.
+                # nominatedarchindep
                 Build(processor=1,
-                      distroarchrelease=proposed_arch.id,
+                      distroarchreleaseID=distrorelease.nominatedarchindep.id,
                       buildstate=dbschema.BuildStatus.NEEDSBUILD,
                       sourcepackagerelease=release.id)
                 self._logger.debug(header + "CREATING ALL")
@@ -799,9 +831,9 @@ class BuilddMaster:
                         orderBy='id')[0]
                     
                     Build(processor=processor.id,
-                          distroarchrelease=arch.id,
+                          distroarchreleaseID=arch.id,
                           buildstate=dbschema.BuildStatus.NEEDSBUILD,
-                          sourcepackagerelease=release.id,
+                          sourcepackagereleaseID=release.id,
                           )
 
                     self._logger.debug(header + "CREATING %s" %
@@ -848,7 +880,7 @@ class BuilddMaster:
                                "build(s) to check" % queueItems.count())
 
         for job in queueItems:
-            proc = job.build.distroarchrelease.processorfamily
+            proc = job.archrelease.processorfamily
             try:
                 builders = notes[proc]["builders"]
             except KeyError:
@@ -897,10 +929,10 @@ class BuilddMaster:
         * sourcepackagerelease urgency
         """        
         score_componentname = {
-            'multiverse': 1,
-            'universe': 2,
-            'restricted': 3,
-            'main': 4,
+            'multiverse': 20,
+            'universe': 50,
+            'restricted': 80,
+            'main': 100,
             }
 
         score_urgency = {
@@ -935,9 +967,9 @@ class BuilddMaster:
                 jobs.append(job)
                 self.scoreBuildQueueEntry(job)
             else:
-                distro = job.build.distroarchrelease.distrorelease.distribution
-                distrorelease = job.build.distroarchrelease.distrorelease
-                archtag = job.build.distroarchrelease.architecturetag
+                distro = job.archrelease.distrorelease.distribution
+                distrorelease = job.archrelease.distrorelease
+                archtag = job.archrelease.architecturetag
                 # remove this entry from the database.
                 job.destroySelf()
                 self._logger.debug("Eliminating build of %s/%s/%s/%s/%s due "
@@ -965,7 +997,7 @@ class BuilddMaster:
         result = {}
 
         for job in candidates:
-            job_proc = job.build.distroarchrelease.processorfamily
+            job_proc = job.archrelease.processorfamily
             result.setdefault(job_proc, []).append(job)
 
         for job_proc in result:
@@ -993,14 +1025,14 @@ class BuilddMaster:
         # XXX: this method is not tested; there was a trivial attribute
         # error in the first line. Test it.
         #   -- kiko, 2005-09-23
-        archrelease = queueItem.build.distroarchrelease
-
+        build = queueItem.build
+        
         self.getLogger().debug("startBuild(%s, %s, %s, %s)"
                                % (builder.url, queueItem.name,
                                   queueItem.version, pocket.title))
 
         # ensure build has the need chroot
-        chroot = archrelease.getChroot(pocket)
+        chroot = queueItem.archrelease.getChroot(pocket)
 
         try:
             builders.giveToBuilder(builder, chroot, self.librarian)
@@ -1017,14 +1049,15 @@ class BuilddMaster:
                 filemap[fname] = f.libraryfile.content.sha1
                 builders.giveToBuilder(builder, f.libraryfile, self.librarian)
 
-            build = queueItem.build
             args = {
-                "ogrecomponent": build.sourcepackagerelease.component.name,
-                # XXX: dsilvers: 20051003: This is not ideal.
-                # For now, always request archindep. This needs altering so
-                # that we only request archindep when we need it.
-                "arch_indep": True
+                "ogrecomponent": queueItem.component_name,
                 }
+            # turn 'arch_indep' ON only if build is archindep or if
+            # the specific architecture is the nominatedarchindep for
+            # this distrorelease (in case it requires any archindep source)
+            args['arch_indep'] = (queueItem.archhintlist == 'all' or
+                                  queueItem.archrelease.isNominatedArchIndep)
+                
             builders.startBuild(builder, queueItem, filemap,
                                 "debian", pocket, args)
         self.commit()

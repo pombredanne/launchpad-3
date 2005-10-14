@@ -140,6 +140,13 @@ class LibrarianWebTestCase(unittest.TestCase):
         self.failUnlessEqual(client.getFileByAlias(id1).read(), 'sample')
         self.failUnlessEqual(client.getFileByAlias(id2).read(), 'sample')
                     
+    def test_robotsTxt(self):
+        url = 'http://%s:%d/robots.txt' % (
+            config.librarian.download_host, config.librarian.download_port)
+        f = urlopen(url)
+        self.failUnless('Disallow: /' in f.read())
+        
+        
 
 class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
     def setUp(self):

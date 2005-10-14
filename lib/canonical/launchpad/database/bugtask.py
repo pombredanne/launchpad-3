@@ -36,7 +36,7 @@ from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTasksReport, IBugTaskSet,
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, ILaunchBag,
-    NotFoundError)
+    NotFoundError, ILaunchpadCelebrities)
 
 
 debbugsstatusmap = {'open': BugTaskStatus.NEW,
@@ -393,28 +393,39 @@ class BugTaskSet:
             showclosed = (
                 ' AND BugTask.status < %s' % sqlvalues(BugTaskStatus.FIXED))
 
-        prioAndSevFilter = ""
+        priority_severity_filter = ""
         if minpriority is not None:
-            prioAndSevFilter = (
+            priority_severity_filter = (
                 ' AND BugTask.priority >= %s' % sqlvalues(minpriority))
         if minseverity is not None:
-            prioAndSevFilter += (
+            priority_severity_filter += (
                 ' AND BugTask.severity >= %s' % sqlvalues(minseverity))
 
-        privatenessFilter = ' AND '
-        if user is not None:
-            privatenessFilter += ('''
-                (BugTask.bug = Bug.id AND
-                (Bug.private = FALSE OR
-                 Bug.id in (
-                   SELECT Bug.id FROM Bug, BugSubscription
-                   WHERE (Bug.id = BugSubscription.bug) AND
-                         (BugSubscription.person = TeamParticipation.team) AND
-                         (TeamParticipation.person = %d))))''' % user.id)
+        admin_team = getUtility(ILaunchpadCelebrities).admin
+        privacy_filter = None
+        if user:
+            if user.inTeam(admin_team):
+                # No privacy filtering for admin needed, so just insert the SQL
+                # needed to do a proper join.
+                privacy_filter = " AND BugTask.bug = Bug.id"
+            else:
+                # Include privacy filtering.
+                privacy_filter = " AND "
+                privacy_filter += ("""
+                    (BugTask.bug = Bug.id AND
+                    (Bug.private = FALSE OR
+                     Bug.id in (
+                       SELECT Bug.id FROM Bug, BugSubscription
+                       WHERE (Bug.id = BugSubscription.bug) AND
+                             (BugSubscription.person = TeamParticipation.team) AND
+                             (TeamParticipation.person = %d))))""" % user.id)
         else:
-            privatenessFilter += 'BugTask.bug = Bug.id AND Bug.private = FALSE'
+            # Anonymous user, therefore filter to only return public bugs.
+            privacy_filter = " AND BugTask.bug = Bug.id AND Bug.private = FALSE"
 
-        filters = prioAndSevFilter + showclosed + privatenessFilter
+        filters = priority_severity_filter + showclosed
+        if privacy_filter is not None:
+            filters += privacy_filter
 
         # Don't show duplicate bug reports.
         filters += ' AND Bug.duplicateof IS NULL'

@@ -103,10 +103,14 @@
                 </span>
               </td>
               <td>
-                <span tal:content="context/priority/title"
+                <span tal:condition="context/priority"
+                      tal:content="context/priority/title"
                       tal:attributes="class
                       string:priority${context/priority/title}">
                   Wontfix
+                </span>
+                <span tal:condition="not:context/priority">
+                  &mdash;
                 </span>
               </td>
               <td tal:condition="context/milestone"

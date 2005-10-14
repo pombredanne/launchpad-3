@@ -105,7 +105,7 @@
         <browser:page
             template="../templates/portlet-builder-details.pt"
             name="+portlet-details"
-            lp:url="+builds/$name/+portlet-details" />
+            lp:url="+builds/$buildername/+portlet-details" />
     </browser:pages>
 
     <browser:editform
@@ -118,5 +118,19 @@
         template="../templates/builder-edit.pt"
 	lp:url="+builds/$name/+edit">
     </browser:editform>
+
+
+    <!-- BuildQueue -->
+    <content class="canonical.launchpad.database.BuildQueue">
+       <allow interface="canonical.launchpad.interfaces.IBuildQueue"/>
+    </content>
+
+    <!-- BuildQueueSet -->
+    <securedutility
+        class="canonical.launchpad.database.BuildQueueSet"
+        provides="canonical.launchpad.interfaces.IBuildQueueSet">
+        <allow interface="canonical.launchpad.interfaces.IBuildQueueSet" />
+    </securedutility>
+
 
 </configure>

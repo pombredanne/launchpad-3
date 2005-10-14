@@ -29,7 +29,7 @@ from zope.component import getUtility
 
 # interface
 from canonical.launchpad.interfaces import (
-    IGPGHandler, IPymeSignature, IPymeKey, IPymeUserId)
+    IGPGHandler, IPymeSignature, IPymeKey, IPymeUserId, GPGVerificationError)
 
 # pyme
 import pyme.core
@@ -40,6 +40,8 @@ from pyme.constants import validity
 # this constant should also be exported in the pyme.constants.import module,
 # but said module can not be imported, due to it's name being a keyword ...
 from pyme._gpgme import GPGME_IMPORT_SECRET
+
+from pyme.gpgme import gpgme_strerror
 
 
 class GPGHandler:
@@ -92,12 +94,19 @@ class GPGHandler:
 
     def verifySignature(self, content, signature=None):
         """See IGPGHandler."""
+        try:
+            return self.getVerifiedSignature(content, signature)
+        except GPGVerificationError:
+            # Swallow GPG Verification Errors
+            pass
+        return None
 
-        if isinstance(content, unicode):
-            raise TypeError('Content cannot be Unicode.')
 
-        if isinstance(signature, unicode):
-            raise TypeError('Content cannot be Unicode.')
+    def getVerifiedSignature(self, content, signature=None):
+        """See IGPGHandler."""
+
+        assert not isinstance(content, unicode)
+        assert not isinstance(signature, unicode)
 
         c = pyme.core.Context()
 
@@ -118,8 +127,8 @@ class GPGHandler:
             # process it
             try:
                 c.op_verify(sig, plain, None)
-            except pyme.errors.GPGMEError:
-                return None
+            except pyme.errors.GPGMEError, e:
+                raise GPGVerificationError(str(e))
         else:
             # store clearsigned signature
             sig = pyme.core.Data(content)
@@ -128,8 +137,8 @@ class GPGHandler:
             # process it
             try:
                 c.op_verify(sig, None, plain)
-            except pyme.errors.GPGMEError:
-                return None
+            except pyme.errors.GPGMEError, e:
+                raise GPGVerificationError(str(e))
         
         result = c.op_verify_result()
 
@@ -139,21 +148,21 @@ class GPGHandler:
 
         # signature.status == 0 means "Ok"
         if signature.status != 0:
-            return None
+            raise GPGVerificationError(gpgme_strerror(signature.status))
 
         # supporting subkeys by retriving the full key from the
         # keyserver and use the master key fingerprint.
         result, key = self.retrieveKey(signature.fpr)
         if not result:
-            return None
+            raise GPGVerificationError("Unable to map subkey")
         
         plain.seek(0, 0)
         plain_data = plain.read()
 
+
         # return the signature container
         return PymeSignature(fingerprint=key.fingerprint,
                              plain_data=plain_data)
-
 
     def importKey(self, content):
         """See IGPGHandler."""        

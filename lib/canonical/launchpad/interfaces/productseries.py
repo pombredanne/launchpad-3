@@ -22,7 +22,7 @@ from canonical.launchpad.validators.name import name_validator
 _ = MessageIDFactory('launchpad')
 
 class IProductSeries(ISpecificationTarget):
-    """A series of releases. For example "2.0" or "1.3" or "dev"."""
+    """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     # XXX Mark Shuttleworth 14/10/04 would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
     # instead of using object.id.
@@ -31,21 +31,20 @@ class IProductSeries(ISpecificationTarget):
     product = Choice(title=_('Product'), required=True,
                      vocabulary='Product')
     name = TextLine(title=_('Name'), required=True, 
-                    description=_('The name of the series is a short, unique '
-                                  'name that identifies it, being used in URLs.'
-                                  'It must be all lowercase, with no special '
-                                  'characters. For example, "2.0" or "trunk".'),
+                    description=_("The name of the series is a short, "
+                        "unique name that identifies it, being used in "
+                        "URLs. It must be all lowercase, with no special "
+                        "characters. For example, '2.0' or 'trunk'."),
                     constraint=name_validator)
     datecreated = Datetime(title=_('Date Registered'), required=True,
                            readonly=True)
     title = Attribute('Title')
     displayname = TextLine(title=_('Display Name'),
-                           description=_('The "display name" of the Series is '
-                                         'a short, capitalized name. It should '
-                                         'make sense as part of a paragraph of '
-                                         'text. For example, "2.0 (Stable)" or '
-                                         '"MAIN (development)" or "1.3 '
-                                         '(Obsolete)".'),
+                           description=_("The 'display name' of the "
+                               "Series is a short, capitalized name. It "
+                               "should make sense as part of a paragraph "
+                               "of text. For example, '2.0 (Stable)' or "
+                               "'MAIN (development)' or '1.3 (Obsolete)'."),
                            required=True)
     summary = Text(title=_("Summary"), 
                    description=_('A single paragraph introduction or overview '
@@ -62,8 +61,8 @@ class IProductSeries(ISpecificationTarget):
     potemplates = Attribute(
         _("Return an iterator over this productrelease's PO templates."))
     currentpotemplates = Attribute(
-        _("Return an iterator over this productrelease's PO templates that"
-          " have the 'iscurrent' flag set'."))
+        _("Return an iterator over this productrelease's PO templates that "
+          "have the 'iscurrent' flag set'."))
     packagings = Attribute("An iterator over the Packaging entries "
         "for this product series.")
     specifications = Attribute("The specifications targeted to this "

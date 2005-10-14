@@ -22,7 +22,7 @@ class ICanAttachRawFileData(Interface):
         The content is parsed first with the PO parser. If it has any problem
         a POSyntaxError or POInvalidInputError exeption will be raised.
 
-        The "published" flag indicates whether or not this attachment is an
+        The 'published' flag indicates whether or not this attachment is an
         upload by a translator of their own translations, or the published
         PO file. setting published=False on a POTemplate will cause a
         POInvalidInputError.
@@ -44,8 +44,8 @@ class IRawFileData(Interface):
         "published version, or just translations from an editor.")
 
     rawimportstatus = Attribute(
-        "The status of the import. See RosettaImportStatus for allowable"
-        " values.")
+        "The status of the import. See RosettaImportStatus for allowable "
+        "values.")
 
     def doRawImport(logger=None):
         """Execute the import of the rawfile field, if it's needed.

@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'IBuild',
     'IBuildSet',
+    'IHasBuildRecords'
     ]
 
 from zope.interface import Interface, Attribute
@@ -35,22 +36,21 @@ class IBuild(Interface):
 
 class IBuildSet(Interface):
     """Interface for BuildSet"""
+
     def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
         """Return a build for a SourcePackageRelease and an ArchTag"""
 
-    def getBuiltForDistroRelease(distrorelease, limit=10):
-        """Return build records within a DistroRelease context.
 
-        The results are limited by 'limit'.
-        """
+class IHasBuildRecords(Interface):
+    """An Object that has build records"""
 
-    def getBuiltForDistroArchRelease(distroarchrelease, limit=10):
-        """Return build records within a DistroArchRelease context.
+    def getBuildRecords(status=None, limit=10):
+        """Return build records owned by the object.
 
-        The results are limited by 'limit'.
-        """
+        The optional 'status' argument selects build records in a specific
+        state. If the 'status' argument is omitted, it returns the "worked"
+        entries. A "worked" entry is one that has been touched by a builder.
+        That is, where 'builder is not NULL'.
 
-    def getBuildsForDistribution(distro, state=None):
-        """Return builds for a given distribution (optionally in the given
-        state only.
+        At most 'limit' results are returned.
         """

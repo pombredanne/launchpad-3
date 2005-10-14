@@ -397,12 +397,6 @@ class Archive(NamespaceObject, CategoryIterable):
         mapper.insert(category)
         return category
 
-    def mirror_revision(self, revision):
-        """Mirror revision to my mirror"""
-        source_archive = arch.Archive(self.name)
-        source_archive.mirror(limit=[revision.nonarch],
-                              fromto=(self.name, self.name + "-MIRROR"))
-
 
 class MissingArchive(Archive):
     """I am a Special Case for missing archives"""
@@ -686,14 +680,6 @@ class Revision(VersionItem):
 
     name = property(name)
 
-    def add_file(self, name, data, checksums):
-        """Insert a file into the database"""
-        database.RevisionMapper().insert_file(self, name, data, checksums)
-
-    def clone_files(self, iterator):
-        """iterate over files, insert them"""
-        for file in iterator:
-            self.add_file(file.name, file.data, file.checksums)
 
 class MissingRevision(Revision):
     def __init__(self, name, version):

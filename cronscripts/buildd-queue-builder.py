@@ -40,7 +40,7 @@ def rebuildQueue(logger, tm):
     # interested in
     for distrorelease in distroreleases:
         buildMaster.createMissingBuilds(distrorelease)
-    
+
     # For each build record in NEEDSBUILD, ensure it has a
     #buildqueue entry
     buildMaster.addMissingBuildQueueEntries()

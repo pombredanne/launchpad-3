@@ -28,8 +28,9 @@
 
   <browser:menus
       module="canonical.launchpad.browser.person"
-      classes="PersonFacets PersonBugsMenu PersonSpecsMenu PersonSupportMenu
-               PersonContextMenu TeamContextMenu PeopleContextMenu" />
+      classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
+          PersonSpecsMenu PersonSupportMenu PeopleContextMenu"
+      />
 
   <browser:url
       for="canonical.launchpad.interfaces.IPerson"
@@ -102,6 +103,13 @@
     template="../templates/person-images.pt"
     >
   </browser:page>
+
+  <browser:page
+     name="+bugs"
+     for="canonical.launchpad.interfaces.IPerson"
+     permission="zope.Public"
+     class="canonical.launchpad.browser.PersonView"
+     attribute="redirectToAssignedBugs" />
 
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"

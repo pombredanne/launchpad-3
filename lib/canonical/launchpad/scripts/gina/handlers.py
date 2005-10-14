@@ -95,12 +95,15 @@ class ImporterHandler:
         # Create a binarypackage handler
         self.bphandler = BinaryPackageHandler(self.sphandler)
         
-
-
     def commit(self):
         """Commit to the database."""
         if not self.dry_run:
             self.ztm.commit()
+
+    def abort(self):
+        """Rollback changes to the database."""
+        if not self.dry_run:
+            self.ztm.abort()
     
     #
     # Distro Stuff: Should go to DistroHandler
