@@ -15,7 +15,7 @@ _ = MessageIDFactory('launchpad')
 
 class ITicketTarget(Interface):
     """An object that has tickets attached to it.
-    
+
     Initially, only Products and Distributions can have tickets.
     """
 
@@ -23,14 +23,15 @@ class ITicketTarget(Interface):
         "target, sorted newest first.")
 
     def newTicket(owner, title, description):
-        """Create a new support request, or trouble ticket, for the
-        specified person, with the given title and description. All tickets
-        are created with status NEW and priority NORMAL, so these values are
-        not specified.
+        """Create a new support request, or trouble ticket.
+
+        All tickets are created with status NEW and priority NORMAL, so
+        these values are not specified.
         """
 
     def getTicket(ticket_num):
-        """Return the ticket number, if it is applicable to this target, or
-        None, if there is no such ticket number for this target.
+        """Return the ticket number, if it is applicable to this target.
+
+        If there is no such ticket number for this target, return None
         """
 

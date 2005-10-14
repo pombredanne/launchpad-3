@@ -2,7 +2,60 @@
 Ticket Tracking System
 ======================
 
-Launchpad includes a tech support ticket tracker.
+Launchpad includes a tech support ticket tracker. Tickets can be
+currently be created on products, distributions, and on source
+packages. To indicate that tickets can be created on something,
+ITicketTarget is used.
+
+    >>> from canonical.launchpad.interfaces import ITicketTarget
+
+Let's check that the current ticket targets provide the necessary
+interface, methods and attributes.
+
+Product
+-------
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> firefox = getUtility(IProductSet)['firefox']
+    >>> verifyObject(ITicketTarget, firefox)
+    True
+
+Create a ticket:
+
+    >>> login('test@canonical.com')
+    >>> sample_person = getUtility(ILaunchBag).user
+    >>> firefox_ticket = firefox.newTicket(
+    ...     sample_person, "Firefox ticket", "Unable to use Firefox")
+    >>> firefox_ticket.target == firefox
+    True
+
+See all the tickets:
+
+    >>> [(ticket.id, ticket.title) for ticket in firefox.tickets]
+    [(6L, u'Firefox ticket'),
+     (4, u'Firefox loses focus and gets stuck'),
+     (2, u'Problem showing the SVG demo on W3C site'),
+     (1, u'Firefox cannot render Bank Site')]
+
+Get an existing ticket:
+
+    >>> ticket_four = firefox.getTicket(4)
+    >>> ticket_four.title
+    u'Firefox loses focus and gets stuck'
+
+Get a non-existing ticket, or a ticket for another target:
+
+    >>> firefox.getTicket(12345) is None
+    True
+
+    >>> firefox.getTicket(3) is None
+    True
+
+
+Distribution
+------------
+
 
 We should be able to get a ticket for a distribution, or a source package,
 or a product, by ticket number. If there is no such ticket, we should get a
