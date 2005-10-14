@@ -10,10 +10,6 @@
   <div tal:replace="structure context/@@+portlet-subscribers" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <p tal:repeat="notice view/notices" tal:content="notice"
@@ -50,14 +46,16 @@
   <table class="listing">
     <thead>
       <tr>
+        <td></td>
         <th>Date</th>
         <th>Message</th>
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="revision context/latest_revisions">
-        <td tal:content="revision/revision_date/fmt:date">2005-10-05</td>
-        <td tal:content="revision/log_body">The revision commit message.</td>
+      <tr tal:repeat="rev_no context/latest_revisions">
+        <td tal:content="rev_no/rev_no">1</td>
+        <td tal:content="rev_no/revision/revision_date/fmt:date">2005-10-05</td>
+        <td tal:content="rev_no/revision/log_body">The revision commit message.</td>
       </tr>
     </tbody>
   </table>

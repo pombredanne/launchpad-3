@@ -133,7 +133,6 @@
 	    template="../templates/branchtarget-branches.pt" />
     </browser:pages>
 
-
     <browser:page
         for="canonical.launchpad.interfaces.IProduct"
         permission="zope.Public"

@@ -62,7 +62,7 @@ from canonical.launchpad.interfaces import (
     IKarmaSet, UBUNTU_WIKI_URL, ITeamMembershipSet, IObjectReassignment,
     ITeamReassignment, IPollSubset, IPerson, ICalendarOwner,
     BugTaskSearchParams, ITeam, ILibraryFileAliasSet, ITeamMembershipSubset,
-    IPollSet)
+    IPollSet, NotFoundError)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.form import FormView
@@ -83,26 +83,17 @@ _ = MessageIDFactory('launchpad')
 class PersonNavigation(Navigation, CalendarTraversalMixin):
     usedfor = IPerson
 
-    # FIXME: need to implement traversal to branch canonical url here
-    # The canonical url of a branch looks like either
-    #     $person/+branch/$product/$branch
-    # for a product branch, or
-    #     $person/+branch/+junk/$branch
-    # for a branch associated to no product.
-    #
-    # The $person/+branch/$product page should be a 404 at the moment.
-    # Eventually it could give a listing of branches from a person and for a
-    # product, but that's only nice to have, and it's not very clear how branch
-    # owners and branch authors should relate to this page.
-    #
-    # +    if name == '+branch':
-    # +        product_name = _skip_one(person, request)
-    # +        branch_name = _skip_one(person, request)
-    # +        if product_name == '+junk':
-    # +            return person.getBranch(None, branch_name)
-    # +        else:
-    # +            return person.getBranch(product_name, branch_name)
-    # -- David Allouche 2005-10-10
+    @stepto('+branch')
+    def traverse_branch(self):
+        stepstogo = self.request.stepstogo
+        product_name = stepstogo.consume()
+        branch_name = stepstogo.consume()
+        if product_name is not None and branch_name is not None:
+            if product_name == '+junk':
+                return self.context.getBranch(None, branch_name)
+            else:
+                return self.context.getBranch(product_name, branch_name)
+        raise NotFoundError
 
 
 class TeamNavigation(Navigation, CalendarTraversalMixin):

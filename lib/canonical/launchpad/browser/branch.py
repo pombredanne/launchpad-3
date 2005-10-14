@@ -11,12 +11,56 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import (
+    canonical_url, ContextMenu, Link, enabled_with_permission)
 
 __all__ = [
+    'BranchContextMenu',
     'BranchView',
     'BranchEditView',
     'BranchAddView',
     ]
+
+
+class BranchContextMenu(ContextMenu):
+    """Context menu for branches."""
+
+    usedfor = IBranch
+    links = ['edit', 'lifecycle', 'subscription', 'administer']
+
+    def edit(self):
+        text = 'Edit Branch Details'
+        return Link('+edit', text, icon='edit')
+
+    def lifecycle(self):
+        text = 'Set Branch Status'
+        return Link('+lifecycle', text, icon='edit')
+
+    def subscription(self):
+        user = self.user
+        if user is not None and has_branch_subscription(user, self.context):
+            text = 'Unsubscribe'
+        else:
+            text = 'Subscribe'
+        return Link('+subscribe', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+admin', text, icon='edit')
+
+
+def has_branch_subscription(person, branch):
+    """Return whether the person has a subscription to the branch.
+
+    XXX: Refactor this to a method on IBranch.
+         DavidAllouche, 2005-09-26
+    """
+    assert person is not None
+    for subscription in branch.subscriptions:
+        if subscription.person.id == person.id:
+            return True
+    return False
 
 
 class BranchView:
