@@ -2,7 +2,7 @@ The no-privs user cannot access task #16, because it's filed on a private bug on
 which the no-privs is not an explicit subscriber.
 
   >>> print http(r"""
-  ... GET /products/firefox/+bug/7/+editstatus HTTP/1.1
+  ... GET /products/firefox/+bug/8/+editstatus HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)

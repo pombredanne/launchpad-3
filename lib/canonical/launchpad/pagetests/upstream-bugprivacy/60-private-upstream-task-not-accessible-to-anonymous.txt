@@ -5,10 +5,10 @@ XXX: Brad Bollenbach, 2005-09-13: This redirect is going to the wrong
 URL. See https://launchpad.net/malone/bugs/2265.
 
   >>> print http(r"""
-  ... GET /products/firefox/+bug/7/+editstatus HTTP/1.1
+  ... GET /products/firefox/+bug/8/+editstatus HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/products/firefox/+bug/7/+editstatus/+login
+  Location: http://localhost:9000/products/firefox/+bug/8/+editstatus/+login
   <BLANKLINE>

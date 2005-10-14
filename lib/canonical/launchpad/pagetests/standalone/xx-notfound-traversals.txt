@@ -146,7 +146,6 @@ spider -- StuartBishop 20050822
 >>> check("/malone/distros")
 >>> check("/malone/distros/ubuntu")
 >>> check("/malone/projects")
->>> check("/malone/projects/gnome")
 >>> check("/malone/products")
 >>> check("/malone/products/firefox")
 >>> check("/malone/bugtrackers")
