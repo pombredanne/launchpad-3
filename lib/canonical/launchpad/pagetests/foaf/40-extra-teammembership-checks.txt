@@ -42,7 +42,6 @@ as an admin, and he has expires=date checked.
 
   >>> print http(r"""
   ... POST /people/name17/+members/kamion/+index HTTP/1.1
-  ... Content-Length: 70
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ...
@@ -89,7 +88,6 @@ Now complete the change to Kamion's subscription successfully.
 
   >>> print http(r"""
   ... POST /people/name17/+members/kamion/+index HTTP/1.1
-  ... Content-Length: 79
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... 
@@ -125,7 +123,6 @@ And now change it to expire in the past.
 
   >>> print http(r"""
   ... POST /people/name17/+members/jdub HTTP/1.1
-  ... Content-Length: 89
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 

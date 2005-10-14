@@ -21,7 +21,7 @@
   </metal:macro>
   <metal:macro define-macro="comment">
     <tr>
-      <th>Comment:</td>
+      <th>Comment:</th>
       <td><textarea cols="40" name="comment" 
                     tal:content="request/comment|context/reviewercomment|nothing">
           </textarea></td>
@@ -58,15 +58,14 @@
         <form action="" method="POST" name="editactive">
           <table>
           <tr>
-            <th>Member since:</td>
+            <th>Member since:</th>
             <td tal:content="context/datejoined/fmt:date" />
           </tr>
 
           <tr>
-            <th>Administrator:</td>
+            <th>Administrator:</th>
             <td>
-
-              <tal:can-change condition="view/userIsTeamOwnerOrLPAdmin">
+              <tal:can-change condition="view/allowChangeAdmin">
                 <label for="admin">
                   <input tal:attributes="checked python:view.adminIsSelected()
                                                  and 'checked' or ''"
@@ -80,18 +79,17 @@
                   No
                 </label>
               </tal:can-change>
-
-              <tal:cant-change condition="not: view/userIsTeamOwnerOrLPAdmin">
+              <tal:cant-change condition="not: view/allowChangeAdmin">
                 <span tal:condition="view/isAdmin">Yes</span>
                 <span tal:condition="not: view/isAdmin">No</span>
               </tal:cant-change>
-
             </td>
           </tr>
 
           <metal:error use-macro="template/macros/error" />
+
           <tr>
-            <th>Subscription expires:</td>
+            <th>Subscription expires:</th>
             <td tal:condition="view/canChangeExpirationDate">
               <metal:radios use-macro="template/macros/expiry-radios" />
               <span tal:replace="structure view/dateChooserWithCurrentExpirationSelected" />
@@ -135,19 +133,20 @@
         <form action="" method="POST" name="editinactive">
           <table>
           <tr>
-            <th>Became member in:</td>
+            <th>Became member in:</th>
             <td tal:content="context/datejoined/fmt:date" />
           </tr>
 
           <tal:expired condition="view/isExpired">
             <tr>
-              <th>Subscription expired in:</td>
+              <th>Subscription expired in:</th>
               <td tal:content="context/dateexpires/fmt:date"></td>
             </tr>
 
             <metal:error use-macro="template/macros/error" />
+
             <tr>
-              <th>Expiration:</td>
+              <th>Expiration:</th>
               <td>
                 <label for="leave">
                   <input checked="checked"
@@ -164,7 +163,7 @@
             <metal:error use-macro="template/macros/error" />
             <tr><td colspan="2">&nbsp;</td></tr>
             <tr>
-              <th>Subscription expires:</td>
+              <th>Subscription expires:</th>
               <td>
                 <metal:radios use-macro="template/macros/expiry-radios" />
                 <span tal:replace="structure view/dateChooserWithCurrentExpirationSelected" />
@@ -198,13 +197,14 @@
         <form action="" method="POST" name="editproposed">
           <table>
             <tr>
-              <th>Membership applied for:</td>
+              <th>Membership applied for:</th>
               <td tal:content="context/datejoined/fmt:date" />
             </tr>
 
             <metal:error use-macro="template/macros/error" />
+
             <tr>
-              <th>Subscription expires:</td>
+              <th>Subscription expires:</th>
               <td>
                 <metal:radios use-macro="template/macros/expiry-radios" />
                 <span tal:replace="structure view/dateChooserForProposedMembers" />

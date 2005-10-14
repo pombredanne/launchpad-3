@@ -20,12 +20,12 @@ from zope.i18nmessageid import MessageIDFactory
 from canonical.lp.dbschema import TeamMembershipStatus
 from canonical.database.sqlbase import flush_database_updates
 
+from canonical.launchpad import _
 from canonical.launchpad.webapp import Navigation
 from canonical.launchpad.interfaces import (
     IPersonSet, ILaunchBag, ITeamMembershipSet, ITeamMembershipSubset,
     ILaunchpadCelebrities)
 
-_ = MessageIDFactory('launchpad')
 
 class TeamMembershipSubsetNavigation(Navigation):
 
@@ -131,6 +131,9 @@ class TeamMembershipEditView:
         return (self.user.inTeam(self.context.team.teamowner) or
                 self.user.inTeam(getUtility(ILaunchpadCelebrities).admin))
 
+    def allowChangeAdmin(self):
+        return self.userIsTeamOwnerOrLPAdmin() or self.isAdmin()
+
     def isActive(self):
         return self.context.status in [TeamMembershipStatus.APPROVED,
                                        TeamMembershipStatus.ADMIN]
@@ -203,7 +206,7 @@ class TeamMembershipEditView:
             return True
 
     def processForm(self):
-        if not self.request.method == 'POST':
+        if self.request.method != 'POST':
             return
 
         if self.request.form.get('editactive'):
@@ -235,16 +238,19 @@ class TeamMembershipEditView:
         # self.context.status is security proxied.
         status = TeamMembershipStatus.items[self.context.status.value]
 
-        if self.userIsTeamOwnerOrLPAdmin():
+        if (self.context.status == TeamMembershipStatus.ADMIN
+            and self.request.form.get('admin') == 'no'):
+            status = TeamMembershipStatus.APPROVED
+        elif (self.context.status == TeamMembershipStatus.APPROVED
+              and self.userIsTeamOwnerOrLPAdmin()
+              and self.request.form.get('admin') == 'yes'):
             # XXX: salgado, 2005-03-15: This is a hack to make sure only
             # the teamowner can promote a given member to admin, while
             # we don't have a specific permission setup for this.
-            if self.context.status == TeamMembershipStatus.ADMIN:
-                if self.request.form.get('admin') == 'no':
-                    status = TeamMembershipStatus.APPROVED
-            else:
-                if self.request.form.get('admin') == 'yes':
-                    status = TeamMembershipStatus.ADMIN
+            status = TeamMembershipStatus.ADMIN
+        else:
+            # A form reload or race happened, but it's harmless
+            pass
 
         if self._setMembershipData(status):
             self.request.response.redirect('../')
@@ -301,6 +307,9 @@ class TeamMembershipEditView:
 
         Get all data from the form, together with the given status and set
         them for this TeamMembership object.
+
+        Returns True if we successfully set the data, False otherwise.
+        Callsites should not commit the transaction if we return False.
         """
         team = self.context.team
         member = self.context.person

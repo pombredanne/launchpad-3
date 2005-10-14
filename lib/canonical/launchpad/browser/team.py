@@ -18,14 +18,13 @@ from canonical.config import config
 from canonical.lp.dbschema import LoginTokenType
 from canonical.database.sqlbase import flush_database_updates
 
+from canonical.launchpad import _
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
     IPersonSet, ILaunchBag, IEmailAddressSet, ILoginTokenSet)
-
-_ = MessageIDFactory('launchpad')
 
 
 class TeamEditView(SQLObjectEditView):
