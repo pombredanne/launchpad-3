@@ -78,6 +78,27 @@ Traceback (most recent call last):
     ...
 RuntimeError: An Exception
 
+Note that we also need to remain informative with dud exceptions, such as
+those with a non-ASCII string representation or no string representation
+at all
+
+>>> librarian_log, librarian_out = make_logger(LibrarianFormatter)
+>>> class Dud(Exception):
+...     pass
+>>> try:
+...     raise Dud()
+... except Dud:
+...     librarian_log.exception('Dud1')
+>>> try:
+...     raise Dud(u'\N{BIOHAZARD SIGN}'.encode('utf8'))
+... except Dud:
+...     librarian_log.exception('Dud2')
+>>> print librarian_out.getvalue()
+ERROR Dud1
+ -> http://localhost:58000/...txt (Dud)
+ERROR Dud2
+ -> http://localhost:58000/...txt (Dud)
+<BLANKLINE>
 
 The end result of this is to not have scripts display exceptions to
 stderr, instead reporting URLs and greatly reducing the verbosity.
