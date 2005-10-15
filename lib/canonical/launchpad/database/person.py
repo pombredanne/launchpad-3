@@ -765,16 +765,7 @@ class PersonSet:
 
     def topPeople(self):
         """See IPersonSet."""
-        query = """
-            Person.password IS NOT NULL AND
-            Person.merged IS NULL AND
-            EmailAddress.person = Person.id AND 
-            EmailAddress.status = %s
-            """ % sqlvalues(EmailAddressStatus.PREFERRED)
-
-        return Person.select(
-            query, orderBy=['-karma', 'name'],
-            clauseTables=['EmailAddress'])[:5]
+        return self.getAllValidPersons(orderBy=['-karma', 'name'])[:5]
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
