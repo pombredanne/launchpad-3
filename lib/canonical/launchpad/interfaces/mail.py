@@ -22,15 +22,15 @@ class ISignedMessage(Interface):
     def __getitem__(name):
         """Returns the message header with the given name."""
 
-    signedMessage = Attribute("The part that was signed, represented"
-                              " as an email.Message.")
+    signedMessage = Attribute("The part that was signed, represented "
+                              "as an email.Message.")
 
     signedContent = ASCII(title=_("Signed Content"),
                           description=_("The text that was signed."))
 
     signature = ASCII(title=_("Signature"),
-                      description=_("The GPG signature used to sign"
-                                    " the email"))
+                      description=_("The GPG signature used to sign "
+                                    "the email"))
 
 
 class IMailHandler(Interface):

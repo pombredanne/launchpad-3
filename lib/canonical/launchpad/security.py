@@ -15,7 +15,8 @@ from canonical.launchpad.interfaces import (
     IPOTemplateNameSet, ISourcePackage, ILaunchpadCelebrities, IDistroRelease,
     IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
     IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
-    IStandardShipItRequestSet, IStandardShipItRequest)
+    IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
+    IShippingRun)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -90,6 +91,10 @@ class AdminShippingRequestByShipItAdmins(AuthorizationBase):
         return user.inTeam(shipitadmins)
 
 
+class AdminShippingRunByShipItAdmins(AdminShippingRequestByShipItAdmins):
+    usedfor = IShippingRun
+
+
 class AdminStandardShipItOrderSetByShipItAdmins(
         AdminShippingRequestByShipItAdmins):
     usedfor = IStandardShipItRequestSet
@@ -98,6 +103,11 @@ class AdminStandardShipItOrderSetByShipItAdmins(
 class AdminStandardShipItOrderByShipItAdmins(
         AdminShippingRequestByShipItAdmins):
     usedfor = IStandardShipItRequest
+
+
+class AdminShipItApplicationByShipItAdmins(
+        AdminShippingRequestByShipItAdmins):
+    usedfor = IShipItApplication
 
 
 class AdminShippingRequestSetByShipItAdmins(AdminShippingRequestByShipItAdmins):
@@ -292,12 +302,21 @@ class EditBugTask(AuthorizationBase):
     usedfor = IBugTask
 
     def checkAuthenticated(self, user):
-        """Allow all authenticated users to edit the task."""
+        """Check whether the user has permissions to edit this IBugTask."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+
+        if user.inTeam(admins):
+            # Admins can always edit bugtasks, whether they're reported on a
+            # private bug or not.
+            return True
+
         if not self.obj.bug.private:
-            # This is a public bug.
+            # This is a public bug, so anyone can edit it.
             return True
         else:
-            # This is a private bug.
+            # This is a private bug, and we know the user isn't an admin, so
+            # we'll only allow editing if the user is explicitly subscribed to
+            # this bug.
             for subscription in self.obj.bug.subscriptions:
                 if user.inTeam(subscription.person):
                     return True
@@ -310,14 +329,19 @@ class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
     usedfor = IBugTask
 
     def checkAuthenticated(self, user):
-        """Allow any user to see non-private bugs, but only explicit
-        subscribers to see private bugs.
-        """
+        """Check whether the user has permissions to view this IBugTask."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+
+        if user.inTeam(admins):
+            # Admins can always edit bugtasks, whether they're reported on a
+            # private bug or not.
+            return True
+
         if not self.obj.bug.private:
-            # public bug
+            # This is a public bug.
             return True
         else:
-            # private bug
+            # This is a private bug
             for subscription in self.obj.bug.subscriptions:
                 if user.inTeam(subscription.person):
                     return True
@@ -338,11 +362,15 @@ class EditPublicByLoggedInUserAndPrivateByExplicitSubscribers(
         """Allow any logged in user to edit a public bug, and only
         explicit subscribers to edit private bugs.
         """
+        admins = getUtility(ILaunchpadCelebrities).admin
         if not self.obj.private:
-            # public bug
+            # This is a public bug.
+            return True
+        elif user.inTeam(admins):
+            # Admins can edit all bugs.
             return True
         else:
-            # private bug
+            # This is a private bug. Only explicit subscribers may edit it.
             for subscription in self.obj.subscriptions:
                 if user.inTeam(subscription.person):
                     return True
@@ -362,11 +390,15 @@ class PublicToAllOrPrivateToExplicitSubscribersForBug(AuthorizationBase):
         """Allow any user to see non-private bugs, but only explicit
         subscribers to see private bugs.
         """
+        admins = getUtility(ILaunchpadCelebrities).admin
         if not self.obj.private:
-            # public bug
+            # This is a public bug.
+            return True
+        elif user.inTeam(admins):
+            # Admins can view all bugs.
             return True
         else:
-            # private bug
+            # This is a private bug. Only explicit subscribers may view it.
             for subscription in self.obj.subscriptions:
                 if user.inTeam(subscription.person):
                     return True
@@ -439,6 +471,12 @@ class EditPOTemplateDetails(EditByOwnersOrAdmins):
 
         return (EditByOwnersOrAdmins.checkAuthenticated(self, user) or
                 user.inTeam(rosetta_experts))
+
+
+class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
+    """Permissions to edit all aspects of an IPOTemplate."""
+    permission = 'launchpad.Admin'
+    usedfor = IPOTemplate
 
 
 # XXX: Carlos Perello Marin 2005-05-24: This should be using

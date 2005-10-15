@@ -11,26 +11,27 @@ import os.path
 # Zope interfaces
 from zope.interface import implements, providedBy
 from zope.component import getUtility
-from zope.exceptions import NotFoundError
 from zope.event import notify
 
-from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
-    SQLObjectNotFound)
+from sqlobject import (
+    ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound)
 
-from canonical.database.sqlbase import (SQLBase, flush_database_updates,
-    sqlvalues)
+from canonical.database.sqlbase import (
+    SQLBase, flush_database_updates, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 
-from canonical.lp.dbschema import (EnumCol, RosettaImportStatus,
-    TranslationPermission, TranslationValidationStatus)
+from canonical.lp.dbschema import (
+    EnumCol, RosettaImportStatus, TranslationPermission,
+    TranslationValidationStatus)
 
 import canonical.launchpad
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.interfaces import (IPOFileSet, IPOFile,
-    IRawFileData, IPOTemplateExporter, ZeroLengthPOExportError,
-    ILibraryFileAliasSet, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces import (
+    IPOFileSet, IPOFile, IRawFileData, IPOTemplateExporter,
+    ZeroLengthPOExportError, ILibraryFileAliasSet, ILaunchpadCelebrities,
+    NotFoundError)
 
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -38,9 +39,10 @@ from canonical.launchpad.database.pomsgset import POMsgSet
 
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po, OldPOImported
-from canonical.launchpad.components.poparser import (POSyntaxError,
-    POHeader, POInvalidInputError)
+from canonical.launchpad.components.poparser import (
+    POSyntaxError, POHeader, POInvalidInputError)
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
+
 
 class POFile(SQLBase, RosettaStats):
     implements(IPOFile, IRawFileData)
@@ -522,16 +524,16 @@ class POFile(SQLBase, RosettaStats):
         old_header.finish()
 
         # Get the old and new PO-Revision-Date entries as datetime objects.
-        # That's the second argument from the tuple that getPORevisionDate
+        # That's the second element from the tuple that getPORevisionDate
         # returns.
         (old_date_string, old_date) = old_header.getPORevisionDate()
         (new_date_string, new_date) = header.getPORevisionDate()
 
-        # Check whether or no the date is older.
+        # Check whether or not the date is older.
         if old_date is None or new_date is None or old_date <= new_date:
             # If one of the headers, or both headers, has a missing or wrong
-            # PO-Revision-Date, then they cannot be compared, so the new
-            # header is taken as beeing newer.
+            # PO-Revision-Date, then they cannot be compared, so we consider
+            # the new header to be the most recent.
             return False
         elif old_date > new_date:
             return True

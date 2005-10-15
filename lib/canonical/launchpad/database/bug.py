@@ -10,13 +10,13 @@ from email.Utils import make_msgid
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
 
-from canonical.launchpad.interfaces import IBug, IBugSet, ICveSet
+from canonical.launchpad.interfaces import (
+    IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities)
 from canonical.launchpad.helpers import contactEmailAddresses
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
@@ -244,24 +244,24 @@ class BugSet(BugSetBase):
         if duplicateof:
             where_clauses.append("Bug.duplicateof = %d" % duplicateof.id)
 
+        admins = getUtility(ILaunchpadCelebrities).admin
         if user:
-            # Enforce privacy-awareness, so that the user can only see
-            # the private bugs that they're allowed to see.
-            where_clauses.append("""
-                (Bug.private = FALSE OR
-                 Bug.private = TRUE AND
-                  Bug.id in (
-                    SELECT Bug.id
-                    FROM Bug, BugSubscription, TeamParticipation
-                    WHERE Bug.id = BugSubscription.bug AND
-                          TeamParticipation.person = %(personid)s AND
-                          BugSubscription.person = TeamParticipation.team))
-                          """ % sqlvalues(personid=user.id))
+            if not user.inTeam(admins):
+                # Enforce privacy-awareness for logged-in, non-admin users, so that
+                # they can only see the private bugs that they're allowed to see.
+                where_clauses.append("""
+                    (Bug.private = FALSE OR
+                      Bug.id in (
+                        SELECT Bug.id
+                        FROM Bug, BugSubscription, TeamParticipation
+                        WHERE Bug.id = BugSubscription.bug AND
+                              TeamParticipation.person = %(personid)s AND
+                              BugSubscription.person = TeamParticipation.team))
+                              """ % sqlvalues(personid=user.id))
         else:
             # Anonymous user; filter to include only public bugs in
             # the search results.
             where_clauses.append("Bug.private = FALSE")
-
 
         other_params = {}
         if orderBy:
@@ -269,8 +269,16 @@ class BugSet(BugSetBase):
         if limit:
             other_params['limit'] = limit
 
-        return Bug.select(
-            ' AND '.join(where_clauses), **other_params)
+        # XXX, Brad Bollenbach, 2005-10-12: The following if/else appears to be
+        # necessary due to sqlobject appearing to generate crap SQL when an
+        # empty WHERE clause arg is passed. Filed the bug here:
+        #
+        # https://launchpad.net/products/launchpad/+bug/3096
+        if where_clauses:
+            return Bug.select(
+                ' AND '.join(where_clauses), **other_params)
+        else:
+            return Bug.select(**other_params)
 
     def queryByRemoteBug(self, bugtracker, remotebug):
         """See IBugSet."""

@@ -103,12 +103,26 @@ class ISourcePackage(IBugTarget, ITicketTarget):
         "as a key, and a list of source package releases as the value.")
 
     potemplates = Attribute(
-        _("Return an iterator over this distrorelease/sourcepackagename's"
-          " PO templates."))
+        _("Return an iterator over this distrorelease/sourcepackagename's "
+          "PO templates."))
 
     currentpotemplates = Attribute(
-        _("Return an iterator over this distrorelease/sourcepackagename's"
-          " PO templates that have the 'iscurrent' flag set'."))
+        _("Return an iterator over this distrorelease/sourcepackagename's "
+          "PO templates that have the 'iscurrent' flag set'."))
+
+    def __eq__(other):
+        """Sourcepackage comparison method.
+
+        Sourcepackages compare equal only if their distrorelease and
+        sourcepackagename compare equal.
+        """
+
+    def __ne__(other):
+        """Sourcepackage comparison method.
+
+        Sourcepackages compare not equal if either of their distrorelease or
+        sourcepackagename compare not equal.
+        """
 
     def setPackaging(productseries, owner):
         """Update the existing packaging record, or create a new packaging
@@ -139,7 +153,7 @@ class ISourcePackage(IBugTarget, ITicketTarget):
         """
 
     shouldimport = Attribute("""Whether we should import this or not.
-        By "import" we mean sourcerer analysis resulting in a manifest and a
+        By 'import' we mean sourcerer analysis resulting in a manifest and a
         set of Bazaar branches which describe the source package release.
         The attribute is True or False.""")
 
@@ -162,6 +176,20 @@ class IDistroSourcePackage(IBugTarget):
         of a source package with this name in the distribution or
         distrorelease, or None if no source package with that name is
         published in this distrorelease.""")
+
+    def __eq__(other):
+        """IDistroSourcePackage comparison method.
+
+        Distro sourcepackages compare equal only if their distribution and
+        sourcepackagename compare equal.
+        """
+
+    def __ne__(other):
+        """IDistroSourcePackage comparison method.
+
+        Distro sourcepackages compare not equal if either of their distribution
+        or sourcepackagename compare not equal.
+        """
 
 
 class ISourcePackageSet(Interface):

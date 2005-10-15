@@ -33,12 +33,26 @@
 
     <!-- IBugTask -->
     <content class="canonical.launchpad.database.BugTask">
+        <allow attributes="id bug target" />
         <require
             permission="launchpad.View"
-            interface="canonical.launchpad.interfaces.IBugTask" />
+            attributes="product sourcepackagename distribution
+                        distrorelease milestone status statusexplanation
+                        priority severity assignee binarypackagename
+                        bugwatch dateassigned datecreated age owner
+                        maintainer maintainer_displayname targetname
+                        title related_tasks statusdisplayhtml statuselsewhere
+                        setStatusFromDebbugs setSeverityFromDebbugs" />
         <require
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.IBugTask" />
+            set_attributes="product sourcepackagename distribution
+                            distrorelease milestone status statusexplanation
+                            priority severity assignee binarypackagename
+                            bugwatch dateassigned datecreated age owner
+                            maintainer maintainer_displayname targetname
+                            title related_tasks statusdisplayhtml
+                            statuselsewhere setStatusFromDebbugs
+                            setSeverityFromDebbugs" />
     </content>
 
     <browser:defaultView
@@ -50,9 +64,10 @@
         path_expression="string:+bug/${bug/id}"
         attribute_to_parent="target" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBugTask"
-        function="canonical.launchpad.browser.traversers.traverse_bugtask" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BugTaskNavigation BugTaskSetNavigation"
+        />
 
     <adapter
         for="canonical.launchpad.interfaces.IBugTask"
@@ -63,9 +78,6 @@
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugTaskView"
         permission="zope.Public">
-      <browser:page
-        name="+portlet-status-actions"
-        template="../templates/bugtask-status-portlet-actions.pt" />
       <browser:page
         name="+index"
         template="../templates/bugtask-index.pt" />
@@ -96,9 +108,6 @@
       <!-- BugTask Portlets (Note: These are Bug portlets. These
       registrations are duplicated in bug.zcml, so that they can work
       on pages where IBug is the context.) -->
-      <browser:page
-        name="+portlet-actions"
-        template="../templates/bug-portlet-actions.pt" />
       <browser:page
           name="+portlet-watch"
           template="../templates/bug-portlet-watch.pt" />
@@ -135,11 +144,17 @@
         permission="zope.Public" />
 
     <!-- Some more IBugTask portlets that use different view classes -->
-    <browser:page
-        for="canonical.launchpad.interfaces.IBugTask"
-        name="+portlet-status-details"
-        template="../templates/bugtask-status-portlet-details.pt"
-        permission="zope.Public" />
+    <browser:pages
+       for="canonical.launchpad.interfaces.IBugTask"
+       class="canonical.launchpad.browser.BugTaskView"
+       permission="zope.Public">
+      <browser:page
+         name="+portlet-status-details"
+         template="../templates/bugtask-status-portlet-details.pt" />
+      <browser:page
+          name="+portlet-search"
+          template="../templates/bugtarget-portlet-search.pt" />
+    </browser:pages>
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugTask"
@@ -213,10 +228,6 @@
         class="canonical.launchpad.database.BugTaskSet">
         <allow interface="canonical.launchpad.interfaces.IBugTaskSet" />
     </securedutility>
-
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBugTaskSet"
-        getter="__getitem__" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugTaskSet"
@@ -305,7 +316,8 @@
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         fields="maintainer_displayname milestone status priority
-                severity assignee bugwatch statusexplanation"
+                severity assignee bugwatch statusexplanation
+                product"
         label="Edit Product Bug Task"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt"

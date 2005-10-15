@@ -1,0 +1,22 @@
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/pmount/+buildlog HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  <BLANKLINE>
+  ...
+    <ul>
+    <li>
+    <p>pmount - 0.1-1</p>
+      <ul>
+        <li>
+          <a href="http://localhost:58000/1/1/netapplet-1.0.0.tar.gz">netapplet-1.0.0.tar.gz</a>
+        </li>
+        <li>
+          <a href="http://localhost:58000/1/1/netapplet-1.0.0.tar.gz">netapplet-1.0.0.tar.gz</a>
+        </li>
+      </ul>
+    </li>
+    ...
+

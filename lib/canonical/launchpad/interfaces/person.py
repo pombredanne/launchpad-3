@@ -16,7 +16,6 @@ __all__ = [
     'ITeamParticipation',
     'IRequestPeopleMerge',
     'IObjectReassignment',
-    'IShipItCountry',
     'ITeamReassignment',
     'ITeamCreation',
     'NameAlreadyTaken',
@@ -24,15 +23,13 @@ __all__ = [
     ]
 
 from zope.schema import (
-    List, Tuple, Choice, Datetime, Int, Text, TextLine, Password, Object,
-    ValidationError, Bytes)
+    Choice, Datetime, Int, Text, TextLine, Password, ValidationError, Bytes)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 from zope.i18nmessageid import MessageIDFactory
 
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.validation import (
     valid_emblem, valid_hackergotchi)
 
@@ -40,6 +37,13 @@ from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, EmailAddressStatus)
 
 _ = MessageIDFactory('launchpad')
+
+
+class StrippingTextLine(TextLine):
+    """A TextLine field that is always stripped."""
+
+    def fromUnicode(self, str):
+        return TextLine.fromUnicode(self, str.strip())
 
 
 class NameAlreadyTaken(ValidationError):
@@ -63,7 +67,8 @@ class PersonNameField(TextLine):
 
         person = getUtility(IPersonSet).getByName(value, ignore_merged=False)
         if person is not None:
-            raise NameAlreadyTaken(value)
+            raise NameAlreadyTaken(_(
+                "The name %s is already in use." % value))
 
 
 class IPerson(Interface):
@@ -74,13 +79,13 @@ class IPerson(Interface):
             )
     name = PersonNameField(
             title=_('Name'), required=True, readonly=False,
-            constraint=valid_name,
+            constraint=name_validator,
             description=_(
                 "A short unique name, beginning with a lower-case "
                 "letter or number, and containing only letters, "
                 "numbers, dots, hyphens, or plus signs.")
             )
-    displayname = TextLine(
+    displayname = StrippingTextLine(
             title=_('Display Name'), required=True, readonly=False,
             description=_("Your name as you would like it displayed "
             "throughout Launchpad. Most people use their full name "
@@ -111,11 +116,11 @@ class IPerson(Interface):
         "so you cannot undo changes."))
     emblem = Bytes(
         title=_("Emblem"), required=False, description=_("A small image, "
-        "max 16x16, that can be used to refer to this team of person."),
+        "max 16x16 pixels, that can be used to refer to this team of person."),
         constraint=valid_emblem)
     hackergotchi = Bytes(
         title=_("Hackergotchi"), required=False, description=_("An image, "
-        "max size 96x96, that will be displayed on your home page. "
+        "max 96x96 pixels, that will be displayed on your home page. "
         "Traditionally this is a great big grinning image of your mug. "
         "Make the most of it."),
         constraint=valid_hackergotchi)
@@ -255,8 +260,8 @@ class IPerson(Interface):
 
     preferredemail_sha1 = TextLine(title=_("SHA-1 Hash of Preferred Email"),
             description=_("The SHA-1 hash of the preferred email address as "
-                "a hexadecimal string. This is used as a key by FOAF RDF spec"
-                ), readonly=True)
+                "a hexadecimal string. This is used as a key by FOAF RDF "
+                "spec"), readonly=True)
 
     defaultmembershipperiod = Int(
             title=_('Number of days a subscription lasts'), required=False,
@@ -290,19 +295,19 @@ class IPerson(Interface):
             required=True, vocabulary='TeamSubscriptionPolicy',
             default=TeamSubscriptionPolicy.MODERATED,
             description=_(
-                '"Moderated" means all subscriptions must be '
-                'approved. "Open" means any user can join '
-                'without approval. "Restricted" means new '
-                'members can be added only by a team '
-                'administrator.')
+                "'Moderated' means all subscriptions must be "
+                "approved. 'Open' means any user can join "
+                "without approval. 'Restricted' means new "
+                "members can be added only by a team "
+                "administrator.")
             )
 
     merged = Int(title=_('Merged Into'), required=False, readonly=True,
             description=_(
-                'When a Person is merged into another Person, this attribute '
-                'is set on the Person referencing the destination Person. If '
-                'this is set to None, then this Person has not been merged '
-                'into another and is still valid')
+                "When a Person is merged into another Person, this attribute "
+                "is set on the Person referencing the destination Person. If "
+                "this is set to None, then this Person has not been merged "
+                "into another and is still valid")
                 )
 
     touched_pofiles = Attribute("The set of pofiles which the person has "
@@ -330,6 +335,14 @@ class IPerson(Interface):
         This method is meant to be called by objects which implement either
         IPerson or ITeam, and it will return True when you ask if a Person is
         a member of himself (i.e. person1.inTeam(person1)).
+        """
+
+    def pastShipItRequests():
+        """Return the requests made by this person that can't be changed
+        anymore.
+        
+        Any request that is cancelled, denied or sent for shipping can't be
+        changed.
         """
 
     def currentShipItRequest():
@@ -375,7 +388,7 @@ class IPerson(Interface):
         <team> or False if that wasn't possible.
 
         Teams cannot call this method because they're not allowed to
-        login and thus can't "join" another team. Instead, they're added
+        login and thus can't 'join' another team. Instead, they're added
         as a member (using the addMember() method) by a team administrator.
         """
 
@@ -387,7 +400,7 @@ class IPerson(Interface):
         DEACTIVATED and remove the relevant entries in teamparticipation.
 
         Teams cannot call this method because they're not allowed to
-        login and thus can't "leave" another team. Instead, they have their
+        login and thus can't 'leave' another team. Instead, they have their
         subscription deactivated (using the setMembershipStatus() method) by
         a team administrator.
         """
@@ -425,8 +438,8 @@ class IPerson(Interface):
             Rosetta pt Translators
                 Rosetta pt_BR Translators
 
-        In this case, both "Rosetta pt Translators" and "Rosetta pt_BR
-        Translators" are subteams of the "Rosetta Translators" team, and all
+        In this case, both 'Rosetta pt Translators' and 'Rosetta pt_BR
+        Translators' are subteams of the 'Rosetta Translators' team, and all
         members of both subteams are considered members of "Rosetta
         Translators".
         """
@@ -442,8 +455,8 @@ class IPerson(Interface):
             Rosetta pt Translators
                 Rosetta pt_BR Translators
 
-        In this case, we will return both "Rosetta pt Translators" and
-        "Rosetta Translators", because we are member of both of them.
+        In this case, we will return both 'Rosetta pt Translators' and
+        'Rosetta Translators', because we are member of both of them.
         """
 
     def addLanguage(language):
@@ -830,11 +843,4 @@ class ITeamCreation(ITeam):
             "team creation, a new message will be sent to this address with "
             "instructions on how to finish its registration."),
         constraint=valid_email)
-
-
-class IShipItCountry(Interface):
-    """This schema is only to get the Country widget."""
-
-    country = Choice(title=_('Country'), required=True, 
-                     vocabulary='CountryName')
 

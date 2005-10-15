@@ -56,7 +56,7 @@ Let's take a look at what the notification email looks like:
     Public bug reported:
     http://.../malone/bugs/4
     <BLANKLINE>
-    Affects: upstream firefox
+    Affects: firefox (upstream)
            Severity: Normal
            Priority: Medium
              Status: New
@@ -120,9 +120,10 @@ returns the subject and body of the email, as a tuple.
     Title changed to:
         the new title
     Description changed to:
-        a new description that is quite long. but the nice thing is that the edit
-        notification email generator knows how to indent and wrap descriptions, so
-        this will appear quite nice in the actual email that gets sent.
+        a new description that is quite long. but the nice thing is that the
+        edit notification email generator knows how to indent and wrap
+        descriptions, so this will appear quite nice in the actual email
+        that gets sent.
     <BLANKLINE>
         it's also smart enough to preserve whitespace, finally!
     <BLANKLINE>
@@ -144,8 +145,8 @@ Another edit, this time the summary:
     http://www.example.com/bugs/2
     <BLANKLINE>
     Summary changed to:
-        this summary isn't particularly short is it? after all, what kind of summary
-        is so long that it needs to be wrapped?
+        this summary isn't particularly short is it? after all, what kind of
+        summary is so long that it needs to be wrapped?
     <BLANKLINE>
 
 Let's set the bug private (for demo purposes, we need to switch logins
@@ -192,7 +193,7 @@ pretend we had just added task five:
    Private bug report changed:
    http://.../bugs/2
    <BLANKLINE>
-   Also affects: mozilla-firefox (Debian)
+   Also affects: mozilla-firefox (debian)
           Severity: Minor
           Priority: High
           Assignee: name12 <test@canonical.com>
@@ -232,8 +233,8 @@ bugmail when a bug task is edited.
     Changed in: Ubuntu (upstream)
            Assignee: (unassigned) => Sample Person
              Status: New => Accepted
-        Explanation: i'm just babbling here to ensure line wrapping works in the
-                     explanation.
+        Explanation: i'm just babbling here to ensure line wrapping works in
+                     the explanation.
     <BLANKLINE>
 
 Adding and editing web links

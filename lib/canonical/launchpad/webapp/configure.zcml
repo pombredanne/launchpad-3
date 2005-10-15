@@ -6,6 +6,20 @@
     <include file="servers.zcml" />
     <include file="errorlog.zcml" />
 
+    <content class="canonical.launchpad.webapp.LaunchpadBrowserRequest">
+      <allow
+        interface="
+          canonical.launchpad.interfaces.ILaunchpadBrowserApplicationRequest"
+        attributes="response locale __str__"
+        />
+      <allow
+        interface="zope.component.interfaces.IPresentationRequest" />
+    </content>
+
+    <content class="canonical.launchpad.webapp.publisher.RedirectionView">
+      <allow attributes="browserDefault __call__" />
+    </content>
+
     <!-- links -->
     <content class="canonical.launchpad.webapp.menu.LinkData">
       <allow interface="canonical.launchpad.interfaces.ILinkData" />
@@ -118,12 +132,6 @@
         />
 
     <!-- TALES fmt: namespace -->
-    <adapter
-        for="zope.publisher.interfaces.browser.IBrowserApplicationRequest"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.RequestFormatterAPI"
-        name="fmt"
-        />
 
     <!-- The next directive is registered for all dicts, but we really only
          want it to apply to the page template's CONTEXTS dict.
@@ -276,7 +284,7 @@
 
 
     <!-- Default favicon -->
-    <browser:favicon for="*" file="../images/defaultFavicon.gif" />
+    <browser:favicon for="*" file="../images/launchpad_favicon.png" />
 
     <!-- LaunchBag Utility -->
     <utility

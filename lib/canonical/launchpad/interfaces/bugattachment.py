@@ -88,9 +88,9 @@ class IBugAttachmentEditForm(Interface):
     contenttype = TextLine(
         title=u'Content Type',
         description=(
-            u"The content type is only settable if the attachment isn't"
-            " a patch. If it's a patch, the content type will be set to"
-            " text/plain"),
+            u"The content type is only settable if the attachment isn't "
+            "a patch. If it's a patch, the content type will be set to "
+            "text/plain"),
         required=True)
     patch = Bool(
         title=u"Patch",

@@ -2,8 +2,16 @@
 """Browser code for the launchpad application."""
 
 __metaclass__ = type
-__all__ = ['LoginStatus', 'MaintenanceMessage', 'MenuBox',
-           'RosettaContextMenu', 'MaloneContextMenu']
+__all__ = [
+    'LoginStatus',
+    'MaintenanceMessage',
+    'MenuBox',
+    'RosettaContextMenu',
+    'MaloneContextMenu',
+    'LaunchpadRootNavigation',
+    'FOAFApplicationNavigation',
+    'MaloneApplicationNavigation'
+    ]
 
 import cgi
 import urllib
@@ -11,19 +19,66 @@ import os.path
 from datetime import timedelta, datetime
 
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
+from zope.app.errorservice.interfaces import ILocalErrorReportingService
 from zope.component import getUtility
+
+import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ILaunchpadRoot, IRosettaApplication, IMaloneApplication)
+    ILaunchBag, ILaunchpadRoot, IRosettaApplication, IMaloneApplication,
+    IProductSet, IShipItApplication, IPersonSet, IDistributionSet,
+    ISourcePackageNameSet, IBinaryPackageNameSet, IProjectSet,
+    ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
+    IBazaarApplication, ICodeOfConductSet, IMaloneApplication,
+    IRegistryApplication, IRosettaApplication, ISpecificationSet, ISprintSet,
+    ITicketSet, IFOAFApplication, IBuilderSet, IBountySet, IBugSet,
+    IBugTrackerSet, ICveSet)
+from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView)
+    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
+    stepto)
 
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
 #     be factored out into a generally available adapter for both this
 #     code and for TALES namespace code to use.
 #     Same for MenuAPI.
-from canonical.launchpad.webapp.tales import (
-    DurationFormatterAPI, MenuAPI)
+from canonical.launchpad.webapp.tales import DurationFormatterAPI, MenuAPI
+
+
+class MaloneApplicationNavigation(Navigation):
+
+    usedfor = IMaloneApplication
+
+    newlayer = canonical.launchpad.layers.MaloneLayer
+
+    @stepto('bugs')
+    def bugs(self):
+        return getUtility(IBugSet)
+
+    @stepto('bugtrackers')
+    def bugtrackers(self):
+        return getUtility(IBugTrackerSet)
+
+    @stepto('cve')
+    def cve(self):
+        return getUtility(ICveSet)
+
+    @stepto('distros')
+    def distros(self):
+        return getUtility(IDistributionSet)
+
+    @stepto('projects')
+    def projects(self):
+        return getUtility(IProjectSet)
+
+    @stepto('products')
+    def products(self):
+        return getUtility(IProductSet)
+
+    def traverse(self, name):
+        if name.isdigit():
+            # Make /bugs/$bug.id and /malone/$bug.id Just Work
+            return getUtility(IBugSet).get(name)
 
 
 class MenuBox(LaunchpadView):
@@ -49,6 +104,30 @@ class MenuBox(LaunchpadView):
             return ''
         else:
             return self.template()
+
+
+class Breadcrumbs(LaunchpadView):
+    """Page fragment to display the breadcrumbs text."""
+
+    def render(self):
+        """Render the breadcrumbs text.
+
+        The breadcrumbs are taken from the request.breadcrumbs list.
+        For each breadcrumb, breadcrumb.text is cgi escaped.  The last
+        breadcrumb is made <strong>.
+        """
+        breadcrumbs = self.request.breadcrumbs
+        if not breadcrumbs:
+            return ''
+        sep = '<span class="breadcrumbSeparator"> &raquo; </span>'
+        crumbhtml = '<a href="%s">%s</a>'
+        all_but_last = [
+            crumbhtml % (breadcrumb.url, cgi.escape(breadcrumb.text))
+            for breadcrumb in breadcrumbs[:-1]]
+        lastcrumb = breadcrumbs[-1]
+        last_htmltext = crumbhtml % (lastcrumb.url, cgi.escape(lastcrumb.text))
+        last_htmltext = '<strong>%s</strong>' % last_htmltext
+        return sep.join(all_but_last + [last_htmltext])
 
 
 class MaintenanceMessage:
@@ -100,6 +179,7 @@ class MaintenanceMessage:
 
 
 class LaunchpadRootFacets(StandardLaunchpadFacets):
+
     usedfor = ILaunchpadRoot
 
     def overview(self):
@@ -147,7 +227,7 @@ class MaloneContextMenu(ContextMenu):
 
     def cvetracker(self):
         text = 'CVE Tracker'
-        return Link('cve/', text, icon='info')
+        return Link('cve/', text, icon='cve')
 
 
 class RosettaContextMenu(ContextMenu):
@@ -251,3 +331,63 @@ class LoginStatus:
         if full_url.endswith(logout_url_end):
             full_url = full_url[:-len(logout_url_end)]
         return '%s/+login%s' % (full_url, query_string)
+
+
+class LaunchpadRootNavigation(Navigation):
+
+    usedfor = ILaunchpadRoot
+
+    def breadcrumb(self):
+        return 'Launchpad'
+
+    stepto_utilities = {
+        'products': IProductSet,
+        'shipit': IShipItApplication,
+        'people': IPersonSet,
+        'distros': IDistributionSet,
+        'sourcepackagenames': ISourcePackageNameSet,
+        'binarypackagenames': IBinaryPackageNameSet,
+        'projects': IProjectSet,
+        'token': ILoginTokenSet,
+        'karmaaction': IKarmaActionSet,
+        'potemplatenames': IPOTemplateNameSet,
+        'bazaar': IBazaarApplication,
+        'codeofconduct': ICodeOfConductSet,
+        'malone': IMaloneApplication,
+        'bugs': IMaloneApplication,
+        'registry': IRegistryApplication,
+        'rosetta': IRosettaApplication,
+        'specs': ISpecificationSet,
+        'sprints': ISprintSet,
+        'support': ITicketSet,
+        'foaf': IFOAFApplication,
+        '+builds': IBuilderSet,
+        'bounties': IBountySet,
+        'errors': ILocalErrorReportingService
+        }
+
+    def traverse(self, name):
+        if name in self.stepto_utilities:
+            return getUtility(self.stepto_utilities[name])
+        else:
+            return None
+
+    @stepto('calendar')
+    def calendar(self):
+        # XXX permission=launchpad.AnyPerson
+        return MergedCalendar()
+
+
+class FOAFApplicationNavigation(Navigation):
+
+    usedfor = IFOAFApplication
+
+    @stepto('projects')
+    def projects(self):
+        # DEPRECATED
+        return getUtility(IProjectSet)
+
+    @stepto('people')
+    def people(self):
+        # DEPRECATED
+        return getUtility(IPersonSet)

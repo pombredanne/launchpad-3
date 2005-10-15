@@ -33,7 +33,7 @@ class BugCreationConstraintsError(Exception):
     """
 
 
-class IBug(Interface, IMessageTarget):
+class IBug(IMessageTarget):
     """The core bug entry."""
 
     id = Int(
@@ -170,6 +170,7 @@ class IBugTarget(Interface):
         description and owner.
         """
 
+    bugtasks = Attribute("A list of BugTasks for this target.")
 
 
 class BugDistroReleaseTargetDetails:
@@ -243,7 +244,7 @@ class IBugAddForm(IBug):
             emerge or similar."""),
             vocabulary="SourcePackageName")
     distribution = Choice(
-            title=_("Linux Distribution"), required=False,
+            title=_("Linux Distribution"), required=True,
             description=_("""Ubuntu, Debian, Gentoo, etc."""),
             vocabulary="Distribution")
     owner = Int(title=_("Owner"), required=True)

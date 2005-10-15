@@ -58,7 +58,7 @@ def start_librarian():
         os.makedirs(config.librarian.server.root, 0700)
 
     pidfile = pidfile_path('librarian')
-    logfile =config.librarian.server.logfile
+    logfile = config.librarian.server.logfile
     tacfile = os.path.abspath(os.path.join(
         os.path.dirname(__file__), 'daemons', 'librarian.tac'
         ))
@@ -151,6 +151,59 @@ def start_trebuchet():
     atexit.register(stop_trebuchet)
 
 
+def start_buildsequencer():
+    # Imported here as path is not set fully on module load
+    from canonical.config import config
+    from canonical.pidfile import make_pidfile, pidfile_path
+
+    # Don't run the sequencer if it wasn't asked for. We only want it
+    # started up developer boxes and dogfood really, as the production
+    # sequencer doesn't use this startup script.
+    
+    if not config.buildsequencer.launch:
+        return
+
+    pidfile = pidfile_path('buildsequencer')
+    logfile = config.buildsequencer.logfile
+    tacfile = os.path.abspath(os.path.join(
+        os.path.dirname(__file__), 'daemons', 'buildd-sequencer.tac'
+        ))
+
+    ver = '%d.%d' % sys.version_info[:2]
+    args = [
+        "twistd%s" % ver,
+        "--no_save",
+        "--nodaemon",
+        "--python", tacfile,
+        "--pidfile", pidfile,
+        "--prefix", "Librarian",
+        "--logfile", logfile,
+        ]
+
+    if config.buildsequencer.spew:
+        args.append("--spew")
+
+    # Note that startup tracebacks and evil programmers using 'print'
+    # will cause output to our stdout. However, we don't want to have
+    # twisted log to stdout and redirect it ourselves because we then
+    # lose the ability to cycle the log files by sending a signal to the
+    # twisted process.
+    sequencer_process = subprocess.Popen(args, stdin=subprocess.PIPE)
+    sequencer_process.stdin.close()
+    # I've left this off - we still check at termination and we can
+    # avoid the startup delay. -- StuartBishop 20050525
+    #time.sleep(1)
+    #if sequencer_process.poll() != None:
+    #    raise RuntimeError(
+    #            "Sequencer did not start: %d" % sequencer_process.returncode
+    #            )
+    def stop_sequencer():
+        if sequencer_process.poll() is None:
+            os.kill(sequencer_process.pid, signal.SIGTERM)
+            sequencer_process.wait()
+    atexit.register(stop_sequencer)
+
+
 def run(argv=list(sys.argv)):
 
     # Sort ZCML overrides for our current config
@@ -171,6 +224,7 @@ def run(argv=list(sys.argv)):
     # However, this should last us until this is developed
     start_librarian()
     start_trebuchet()
+    start_buildsequencer()
 
     # Store our process id somewhere
     make_pidfile('launchpad')

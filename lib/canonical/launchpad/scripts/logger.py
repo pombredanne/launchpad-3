@@ -45,12 +45,13 @@ class LibrarianFormatter(logging.Formatter):
         except LookupError:
             return traceback
 
+        exception_string = ''
         try:
             exception_string = str(ei[1]).encode('ascii')
         except:
-            # If the exceptions __str__ method raised an exception
-            # or it wasn't ascii
-            exception_string = '[Bad exception!]'
+            pass
+        if not exception_string:
+            exception_string = str(ei[0]).split('.')[-1]
    
         try:
             filename = base(

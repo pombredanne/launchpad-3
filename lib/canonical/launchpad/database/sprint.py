@@ -9,12 +9,11 @@ __all__ = [
 import datetime
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, MultipleJoin, RelatedJoin)
 
-from canonical.launchpad.interfaces import ISprint, ISprintSet
+from canonical.launchpad.interfaces import ISprint, ISprintSet, NotFoundError
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT, UTC_NOW

@@ -121,7 +121,7 @@ EVENT: bug gets assigned to a source package
   >>> latest_activity.whatchanged
   u'bug'
   >>> latest_activity.message
-  u'assigned to source package mozilla-firefox'
+  u'assigned to mozilla-firefox (ubuntu)'
 
 EVENT: source package assignment edited
 
@@ -155,7 +155,7 @@ EVENT: bug gets assigned to an upstream product
   >>> latest_activity.whatchanged
   u'bug'
   >>> latest_activity.message
-  u'assigned to upstream thunderbird'
+  u'assigned to thunderbird (upstream)'
 
 EVENT: upstream product assignment edited
 

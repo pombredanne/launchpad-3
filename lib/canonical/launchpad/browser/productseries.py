@@ -2,8 +2,9 @@
 
 __metaclass__ = type
 
-__all__ = ['ProductSeriesContextMenu',
-           'traverseProductSeries',
+__all__ = ['ProductSeriesNavigation',
+           'ProductSeriesSetNavigation',
+           'ProductSeriesContextMenu',
            'ProductSeriesView',
            'ProductSeriesRdfView',
            'ProductSeriesSourceSetView']
@@ -25,10 +26,29 @@ from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 from canonical.launchpad.helpers import request_languages, browserLanguages
 from canonical.launchpad.interfaces import (
     IPerson, ICountry, IPOTemplateSet, ILaunchpadCelebrities, ILaunchBag,
-    ISourcePackageNameSet, validate_url, IProductSeries)
+    ISourcePackageNameSet, validate_url, IProductSeries, IProductSeriesSet)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.webapp import (
-    ContextMenu, Link, enabled_with_permission)
+    ContextMenu, Link, enabled_with_permission, Navigation, GetitemNavigation,
+    stepto)
+
+
+class ProductSeriesNavigation(Navigation):
+
+    usedfor = IProductSeries
+
+    @stepto('+pots')
+    def pots(self):
+        potemplateset = getUtility(IPOTemplateSet)
+        return potemplateset.getSubset(productseries=self.context)
+
+    def traverse(self, name):
+        return self.context.getRelease(name)
+
+
+class ProductSeriesSetNavigation(GetitemNavigation):
+
+    usedfor = IProductSeriesSet
 
 
 class ProductSeriesContextMenu(ContextMenu):
@@ -80,15 +100,6 @@ class ProductSeriesContextMenu(ContextMenu):
         text = 'Review Series Details'
         return Link('+review', text, icon='edit')
 
-
-def traverseProductSeries(series, request, name):
-    if name == '+pots':
-        potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(productseries=series)
-    try:
-        return series.getRelease(name)
-    except NotFoundError:
-        return None
 
 def validate_cvs_root(cvsroot, cvsmodule):
     try:

@@ -6,6 +6,7 @@
 
     <!-- Content class configuration -->
     <include file="archuserid.zcml" />
+    <include file="batchnavigator.zcml" />
     <include file="binarypackagerelease.zcml" />
     <include file="binarypackagename.zcml" />
     <include file="bountysubscription.zcml" />
@@ -35,6 +36,7 @@
     <include file="cvereference.zcml" />
     <include file="datetime.zcml" />
     <include file="distribution.zcml" />
+    <include file="distrocomponentuploader.zcml" />
     <include file="distrorelease.zcml" />
     <include file="distroreleaselanguage.zcml" />
     <include file="distroarchrelease.zcml" />

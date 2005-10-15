@@ -2,7 +2,10 @@
 
 __metaclass__ = type
 __all__ = ['StandardShipItRequest', 'StandardShipItRequestSet',
-           'ShippingRequest', 'ShippingRequestSet', 'RequestedCDs']
+           'ShippingRequest', 'ShippingRequestSet', 'RequestedCDs',
+           'Shipment', 'ShipmentSet', 'ShippingRun', 'ShippingRunSet']
+
+import random
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -15,11 +18,13 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp.dbschema import (
-        ShipItDistroRelease, ShipItArchitecture, ShipItFlavour, EnumCol)
+        ShipItDistroRelease, ShipItArchitecture, ShipItFlavour, EnumCol,
+        ShippingService)
 from canonical.launchpad.interfaces import (
         IStandardShipItRequest, IStandardShipItRequestSet, IShippingRequest,
         IRequestedCDs, IShippingRequestSet, ShippingRequestStatus,
-        ILaunchpadCelebrities)
+        ILaunchpadCelebrities, IShipment, IShippingRun, IShippingRunSet,
+        IShipmentSet, ShippingRequestPriority)
 
 
 class RequestedCDsDescriptor:
@@ -47,13 +52,10 @@ class ShippingRequest(SQLBase):
     """See IShippingRequest"""
 
     implements(IShippingRequest)
-    _defaultOrder = 'daterequested'
+    _defaultOrder = ['daterequested', 'id']
 
     recipient = ForeignKey(dbName='recipient', foreignKey='Person',
                            notNull=True)
-
-    shipment = ForeignKey(dbName='shipment', foreignKey='Shipment',
-                          default=None)
 
     daterequested = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
@@ -72,23 +74,33 @@ class ShippingRequest(SQLBase):
     reason = StringCol(default=None)
     highpriority = BoolCol(notNull=True, default=False)
 
-    city = StringCol(default=None)
+    city = StringCol(notNull=True)
     phone = StringCol(default=None)
-    country = ForeignKey(dbName='country', foreignKey='Country', default=None)
+    country = ForeignKey(dbName='country', foreignKey='Country', notNull=True)
     province = StringCol(default=None)
     postcode = StringCol(default=None)
-    addressline1 = StringCol(default=None)
+    addressline1 = StringCol(notNull=True)
     addressline2 = StringCol(default=None)
     organization = StringCol(default=None)
-    recipientdisplayname = StringCol(default=None)
+    recipientdisplayname = StringCol(notNull=True)
 
     @property
-    def recipientname(self):
+    def shipment(self):
         """See IShippingRequest"""
-        if self.recipientdisplayname:
-            return self.recipientdisplayname
+        return Shipment.selectOneBy(requestID=self.id)
+
+    @property
+    def countrycode(self):
+        """See IShippingRequest"""
+        return self.country.iso3166code2
+
+    @property
+    def shippingservice(self):
+        """See IShippingRequest"""
+        if self.highpriority:
+            return ShippingService.TNT
         else:
-            return self.recipient.displayname
+            return ShippingService.SPRING
 
     @property
     def totalCDs(self):
@@ -208,17 +220,21 @@ class ShippingRequestSet:
             return default
 
     def new(self, recipient, quantityx86, quantityamd64, quantityppc,
-            reason=None, shockandawe=None, recipientdisplayname=None):
+            recipientdisplayname, country, city, addressline1,
+            addressline2=None, province=None, postcode=None, phone=None,
+            organization=None, reason=None, shockandawe=None):
         """See IShippingRequestSet"""
         if not recipient.inTeam(getUtility(ILaunchpadCelebrities).shipit_admin):
             # Non shipit-admins can't place more than one order at a time
             # neither specify a name different than their own.
             assert recipient.currentShipItRequest() is None
-            assert recipientdisplayname is None
 
-        request = ShippingRequest(recipient=recipient, reason=reason,
-                                  shockandawe=shockandawe,
-                                  recipientdisplayname=recipientdisplayname)
+        request = ShippingRequest(
+            recipient=recipient, reason=reason, shockandawe=shockandawe,
+            city=city, country=country, addressline1=addressline1,
+            addressline2=addressline2, province=province, postcode=postcode,
+            recipientdisplayname=recipientdisplayname,
+            organization=organization, phone=phone)
 
         RequestedCDs(request=request, quantity=quantityx86,
                      distrorelease=ShipItDistroRelease.BREEZY,
@@ -234,18 +250,19 @@ class ShippingRequestSet:
 
         return request
 
-    def _getStatusFilter(self, status):
-        """Return the SQL to filter by the given status."""
-        if status == ShippingRequestStatus.APPROVED:
-            query = " AND ShippingRequest.approved IS TRUE"
-        elif status == ShippingRequestStatus.PENDING:
-            query = " AND ShippingRequest.approved IS NULL"
-        elif status == ShippingRequestStatus.DENIED:
-            query = " AND ShippingRequest.approved IS FALSE"
+    def getUnshippedRequests(self, priority):
+        """See IShippingRequestSet"""
+        query = ('ShippingRequest.cancelled = false AND '
+                 'ShippingRequest.approved = true AND '
+                 'ShippingRequest.id NOT IN (SELECT request from Shipment) ')
+        if priority == ShippingRequestPriority.HIGH:
+            query += 'AND ShippingRequest.highpriority = true'
+        elif priority == ShippingRequestPriority.NORMAL:
+            query += 'AND ShippingRequest.highpriority = false'
         else:
-            # Okay, if you don't want any filtering I won't filter
-            query = ""
-        return query
+            # Nothing to filter, return all unshipped requests.
+            pass
+        return ShippingRequest.select(query)
 
     def getOldestPending(self):
         """See IShippingRequestSet"""
@@ -257,44 +274,54 @@ class ShippingRequestSet:
         except IndexError:
             return None
 
-    # XXX: Must come back here and refactor these two search methods. It's
-    # probably possible to share more things between them. -- GuilhermeSalgado
-    # 2005-09-09
-    def searchCustomRequests(self, status=ShippingRequestStatus.ALL,
-                             omit_cancelled=True):
+    def search(self, request_type='any', standard_type=None,
+               status=ShippingRequestStatus.ALL, recipient_text=None, 
+               omit_cancelled=True, orderBy=ShippingRequest._defaultOrder):
         """See IShippingRequestSet"""
-        arch = ShipItArchitecture
-        query = """
-            SELECT ShippingRequest.id FROM ShippingRequest,
-                                           RequestedCDs as ReqX86,
-                                           RequestedCDs as ReqAMD64,
-                                           RequestedCDs as ReqPPC
-            WHERE ReqX86.architecture = %s AND
-                  ReqAMD64.architecture = %s AND
-                  ReqPPC.architecture = %s AND
-                  ReqX86.request = ShippingRequest.id AND
-                  ReqAMD64.request = ShippingRequest.id AND
-                  ReqPPC.request = ShippingRequest.id AND
-                  (ReqX86.quantity, ReqAMD64.quantity, ReqPPC.quantity) NOT IN
-                  (SELECT quantityx86, quantityamd64, quantityppc FROM
-                  StandardShipItRequest)
-        """ % sqlvalues(arch.X86, arch.AMD64, arch.PPC)
+        queries = []
+        clauseTables = []
+        if request_type != 'any':
+            type_based_query = self._getTypeBasedQuery(
+                request_type, standard_type=standard_type)
+            queries.append('ShippingRequest.id IN (%s)' % type_based_query)
 
-        query = "%s %s" % (query, self._getStatusFilter(status))
+        if recipient_text:
+            recipient_text = recipient_text.lower()
+            queries.append("""
+                (Person.id = ShippingRequest.recipient AND
+                 Emailaddress.person = ShippingRequest.recipient AND
+                 (Person.fti @@ ftq(%s) OR
+                  ShippingRequest.fti @@ ftq(%s) OR
+                  lower(EmailAddress.email) LIKE %s)
+                )
+                """ % sqlvalues(recipient_text, recipient_text,
+                                recipient_text + '%%'))
+            clauseTables = ['Person', 'EmailAddress']
+
         if omit_cancelled:
-            query += " AND ShippingRequest.cancelled = FALSE"
+            queries.append("ShippingRequest.cancelled = FALSE")
 
-        results = ShippingRequest._connection.queryAll(query)
-        ids = ', '.join([str(id) for [id]in results])
-        if not ids:
-            # Doing a 'SELECT id FROM ShippingRequest WHERE id IN ()' will
-            # fail, so we need to do this little hack
-            return ShippingRequest.select('1 = 2')
-        return ShippingRequest.select('id in (%s)' % ids)
+        if status == ShippingRequestStatus.APPROVED:
+            queries.append("ShippingRequest.approved IS TRUE")
+        elif status == ShippingRequestStatus.PENDING:
+            queries.append("ShippingRequest.approved IS NULL")
+        elif status == ShippingRequestStatus.DENIED:
+            queries.append("ShippingRequest.approved IS FALSE")
+        else:
+            # Okay, if you don't want any filtering I won't filter
+            pass
 
-    def searchStandardRequests(self, status=ShippingRequestStatus.ALL,
-                               omit_cancelled=True, standard_type=None):
-        """See IShippingRequestSet"""
+        query = " AND ".join(queries)
+        return ShippingRequest.select(
+            query, distinct=True, clauseTables=clauseTables, orderBy=orderBy)
+
+    def _getTypeBasedQuery(self, request_type, standard_type=None):
+        """Return the SQL query to get all requests of a given type.
+
+        The type must be either 'custom', 'standard' or 'any'.
+        If the type is 'standard', then standard_type can be any of the
+        StandardShipItRequests.
+        """
         arch = ShipItArchitecture
         query = """
             SELECT ShippingRequest.id FROM ShippingRequest,
@@ -309,31 +336,30 @@ class ShippingRequestSet:
                   ReqPPC.request = ShippingRequest.id
         """ % sqlvalues(arch.X86, arch.AMD64, arch.PPC)
 
-        if standard_type is None:
+        if request_type == 'custom':
+            if standard_type is not None:
+                raise AssertionError(
+                    'standard_type must be None if request_type is custom.')
             query += """
-                  AND (ReqX86.quantity, ReqAMD64.quantity, ReqPPC.quantity)
-                  IN (SELECT quantityx86, quantityamd64, quantityppc 
-                      FROM StandardShipItRequest)
-            """
+                AND (ReqX86.quantity, ReqAMD64.quantity, ReqPPC.quantity)
+                NOT IN (SELECT quantityx86, quantityamd64, quantityppc
+                            FROM StandardShipItRequest)
+                """
+        elif request_type == 'standard' and standard_type is None:
+            query += """
+                AND (ReqX86.quantity, ReqAMD64.quantity, ReqPPC.quantity)
+                IN (SELECT quantityx86, quantityamd64, quantityppc 
+                        FROM StandardShipItRequest)
+                """
         else:
             query += """
-                  AND ReqX86.quantity = %d AND
-                  ReqAMD64.quantity = %d AND
-                  ReqPPC.quantity = %d
-            """ % (standard_type.quantityx86, standard_type.quantityamd64,
-                   standard_type.quantityppc)
+                AND ReqX86.quantity = %d AND
+                ReqAMD64.quantity = %d AND
+                ReqPPC.quantity = %d
+                """ % (standard_type.quantityx86, standard_type.quantityamd64,
+                       standard_type.quantityppc)
 
-        query = "%s %s" % (query, self._getStatusFilter(status))
-        if omit_cancelled:
-            query += " AND ShippingRequest.cancelled = FALSE"
-
-        results = ShippingRequest._connection.queryAll(query)
-        ids = ', '.join([str(id) for [id]in results])
-        if not ids:
-            # Doing a 'SELECT id FROM ShippingRequest WHERE id IN ()' will
-            # fail, so we need to do this little hack
-            return ShippingRequest.select('1 = 2')
-        return ShippingRequest.select('id in (%s)' % ids)
+        return query
 
 
 class RequestedCDs(SQLBase):
@@ -399,4 +425,91 @@ class StandardShipItRequestSet:
         return StandardShipItRequest.selectOneBy(quantityx86=quantityx86,
                                                  quantityamd64=quantityamd64,
                                                  quantityppc=quantityppc)
+
+class Shipment(SQLBase):
+    """See IShipment"""
+
+    implements(IShipment)
+
+    logintoken = StringCol(unique=True, notNull=True)
+    dateshipped = UtcDateTimeCol(default=None)
+    shippingservice = EnumCol(schema=ShippingService, notNull=True)
+    shippingrun = ForeignKey(dbName='shippingrun', foreignKey='ShippingRun',
+                             notNull=True)
+    request = ForeignKey(dbName='request', foreignKey='ShippingRequest',
+                         notNull=True, unique=True)
+    trackingcode = StringCol(default=None)
+
+
+class ShipmentSet:
+    """See IShipmentSet"""
+
+    implements(IShipmentSet)
+
+    def new(self, request, shippingservice, shippingrun, trackingcode=None,
+            dateshipped=None):
+        """See IShipmentSet"""
+        token = self._generateToken()
+        while self.getByToken(token):
+            token = self._generateToken()
+
+        return Shipment(
+            shippingservice=shippingservice, shippingrun=shippingrun,
+            trackingcode=trackingcode, logintoken=token,
+            dateshipped=dateshipped, request=request)
+
+    def _generateToken(self):
+        characters = '23456789bcdfghjkmnpqrstwxz'
+        length = 10
+        return ''.join([random.choice(characters) for count in range(length)])
+
+    def getByToken(self, token):
+        """See IShipmentSet"""
+        return Shipment.selectOneBy(logintoken=token)
+
+
+class ShippingRun(SQLBase):
+    """See IShippingRun"""
+
+    implements(IShippingRun)
+    _defaultOrder = ['-datecreated', 'id']
+
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    csvfile = ForeignKey(
+        dbName='csvfile', foreignKey='LibraryFileAlias', default=None)
+    sentforshipping = BoolCol(notNull=True, default=False)
+
+    @property
+    def requests(self):
+        query = ("ShippingRequest.id = Shipment.request AND "
+                 "Shipment.shippingrun = ShippingRun.id AND "
+                 "ShippingRun.id = %s" % sqlvalues(self.id))
+
+        clausetables = ['ShippingRun', 'Shipment']
+        return ShippingRequest.select(query, clauseTables=clausetables)
+
+
+class ShippingRunSet:
+    """See IShippingRunSet"""
+
+    implements(IShippingRunSet)
+
+    def new(self):
+        """See IShippingRunSet"""
+        return ShippingRun()
+
+    def get(self, id):
+        """See IShippingRunSet"""
+        try:
+            return ShippingRun.get(id)
+        except SQLObjectNotFound:
+            return None
+
+    def getUnshipped(self):
+        """See IShippingRunSet"""
+        return ShippingRun.select(ShippingRun.q.sentforshipping==False)
+
+    def getShipped(self):
+        """See IShippingRunSet"""
+        return ShippingRun.select(ShippingRun.q.sentforshipping==True)
 

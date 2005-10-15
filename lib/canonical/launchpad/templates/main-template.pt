@@ -14,7 +14,7 @@
     <!-- Launchpad JS code -->
     <script type="text/javascript" src="/@@/launchpad.js"></script>
     <script type="text/javascript" src="/@@/sorttable.js"></script>
-    <link rel="shortcut icon" href="/@@/defaultFavicon.gif" />
+    <link rel="shortcut icon" href="/@@/launchpad_favicon.png" />
 
     <metal:block define-slot="head_epilogue"></metal:block>
 </head>
@@ -24,7 +24,7 @@
       <tr>
         <td
           class="hierarchy"
-          tal:content="structure request/fmt:breadcrumbs"
+          tal:content="structure context/@@+breadcrumbs"
         />
         <td
           class="login"
@@ -89,7 +89,6 @@
         </tal:facet>
       </tal:facetmenu>
       </tal:condition>
-      &nbsp;
     </ul>
 
     <!-- Menus -->

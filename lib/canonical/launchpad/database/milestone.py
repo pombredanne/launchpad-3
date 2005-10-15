@@ -4,13 +4,13 @@ __metaclass__ = type
 __all__ = ['Milestone', 'MilestoneSet']
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
 from sqlobject import (
     ForeignKey, StringCol, AND, SQLObjectNotFound, BoolCol, DateCol,
     MultipleJoin)
 
-from canonical.launchpad.interfaces.milestone import IMilestone, IMilestoneSet
+from canonical.launchpad.interfaces import (
+    IMilestone, IMilestoneSet, NotFoundError)
 from canonical.database.sqlbase import SQLBase
 
 

@@ -10,8 +10,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import ISourcePackageReleasePublishing
 
-from canonical.launchpad.database.sourcepackagerelease import \
-     SourcePackageRelease
+from canonical.launchpad.database.sourcepackagerelease import (
+     SourcePackageRelease)
 
 from canonical.lp.dbschema import EnumCol
 from canonical.lp.dbschema import PackagePublishingStatus

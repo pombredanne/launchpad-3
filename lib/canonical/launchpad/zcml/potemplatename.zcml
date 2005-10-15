@@ -54,9 +54,10 @@
         for="canonical.launchpad.interfaces.IPOTemplateNameSet"
         name="+index" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IPOTemplateNameSet"
-        function="canonical.launchpad.browser.traversePOTemplateNames" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="POTemplateNameSetNavigation"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IPOTemplateNameSet"

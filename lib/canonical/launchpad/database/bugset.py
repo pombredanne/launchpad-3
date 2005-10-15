@@ -17,7 +17,7 @@ class BugSetBase:
     def __getitem__(self, id):
         item = self.table.selectOne(self.table.q.id == id)
         if item is None:
-            raise KeyError, id
+            raise NotFoundError(id)
         return item
 
     def __iter__(self):

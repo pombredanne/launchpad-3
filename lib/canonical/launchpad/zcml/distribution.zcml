@@ -8,6 +8,7 @@
     <!-- Distribution -->
     <content class="canonical.launchpad.database.Distribution">
         <allow interface="canonical.launchpad.interfaces.IDistribution"/>
+        <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
         <require
             permission="launchpad.Edit"
             set_attributes="displayname title summary description
@@ -25,9 +26,9 @@
         layer="canonical.launchpad.layers.MaloneLayer"
         name="+bugs" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IDistribution"
-        function="canonical.launchpad.browser.traversers.traverse_distribution"
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="DistributionNavigation"
         />
 
     <browser:url
@@ -41,14 +42,6 @@
         class="canonical.launchpad.browser.BugTaskSearchListingView"
         facet="bugs"
         permission="zope.Public">
-        <browser:page
-            name="+bugs"
-            lp:url="/distros/$Distribution.name/+bugs"
-            template="../templates/bugs-for-context.pt" />
-        <browser:page
-            name="+portlet-bugtasklist-mybugs"
-            template="../templates/bugtasklist-portlet-mybugs.pt"
-            lp:url="/distros/$Distribution.name/+portlet-bugtasklist-mybugs" />
         <browser:page
             name="+portlet-bugtasklist-releasebugs"
             template="../templates/bugtask-portlet-releasebugs.pt"
@@ -83,16 +76,19 @@
             name="+translations"
             facet="translations"
             template="../templates/distribution-translations.pt" />
+        <browser:page
+            name="+builds"
+            template="../templates/distribution-builds.pt"
+            lp:url="/distros/$distribution/+builds"/>
+        <browser:page
+            name="+builds-list"
+            template="../templates/builds-list.pt"
+            lp:url="/distros/$distribution/+builds-list"/>
     </browser:pages>
     
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
         permission="zope.Public" >
-        <browser:page
-            name="+portlet-actions"
-            facet="overview"
-            template="../templates/distribution-portlet-actions.pt"
-            lp:url="/distros/$Distribution.name/+portlet-actions" />
         <browser:page
             name="+portlet-details"
             facet="overview"
@@ -269,9 +265,10 @@
         layer="canonical.launchpad.layers.MaloneLayer"
         name="+bugs" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IDistributionSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="DistributionSetNavigation"
+        />
     <browser:url
         for="canonical.launchpad.interfaces.IDistribution"
         path_expression="name"

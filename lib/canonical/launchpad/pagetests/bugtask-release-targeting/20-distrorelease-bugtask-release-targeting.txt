@@ -4,7 +4,7 @@ targeted.
 
   >>> print http(r"""
   ... GET /distros/debian/woody/+sources/mozilla-firefox/+bug/1/+target HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -14,7 +14,7 @@ release.
 
   >>> print http(r"""
   ... POST /distros/debian/woody/+sources/mozilla-firefox/+bug/1/+target HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 70
   ... Content-Type: application/x-www-form-urlencoded
   ... 
@@ -28,11 +28,11 @@ shown in the "also reported in" portlet.
   >>> print http(r"""
   ... GET /distros/debian/woody/+sources/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Cookie: launchpad=2RlITCZlIZAagraDp8iQ-00xVfInmZ8u45u9mbE2n1S0ApJdWxVP.0
   ... """)
   HTTP/1.1 200 Ok
   ...
   ...Also reported in:...
-  ...debian sid mozilla-firefox...
+  ...mozilla-firefox (Debian Sid)...
   ...

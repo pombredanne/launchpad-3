@@ -178,13 +178,13 @@ task. It concatenates the display names of the distribution,
 
     >>> bugtask = bugtaskset.get(1)
     >>> bugtask.targetname
-    u'upstream ubuntu'
+    u'ubuntu (upstream)'
 
 distro release, or product;
 
     >>> bugtask = bugtaskset.get(2)
     >>> bugtask.targetname
-    u'upstream firefox'
+    u'firefox (upstream)'
 
 the name of the source package (if any); and the name of the binary
 package (but only if it's named differently from the source
@@ -209,6 +209,7 @@ it in isolation.
     ...     def __init__(self, name):
     ...         self.name = '[%s.name]' % name
     ...         self.displayname = '[%s.displayname]' % name
+    ...         self.fullreleasename = '[%s.fullreleasename]' % name
 
 When all the important attributes are None, then the bugtask is in an invalid
 state.
@@ -223,7 +224,7 @@ Product alone:
 
     >>> bugtask.product = NamedThing('product')
     >>> bugtask.targetname()
-    'upstream [product.name]'
+    '[product.name] (upstream)'
 
 Put things back the way they were.
 
@@ -239,13 +240,13 @@ Distribution and sourcepackagename.
 
     >>> bugtask.sourcepackagename = NamedThing('spn')
     >>> bugtask.targetname()
-    '[distribution.displayname] [spn.name]'
+    '[spn.name] ([distribution.displayname])'
 
 Distribution and sourcepackagename and binarypackagename.
 
     >>> bugtask.binarypackagename = NamedThing('bpn')
     >>> bugtask.targetname()
-    '[distribution.displayname] [spn.name] [bpn.name]'
+    '[spn.name] [bpn.name] ([distribution.displayname])'
 
 Reset the state of our bugtask.
 
@@ -258,19 +259,19 @@ Just a distrorelease.
     >>> bugtask.distrorelease = NamedThing('distrorelease')
     >>> bugtask.distrorelease.distribution = NamedThing('distribution')
     >>> bugtask.targetname()
-    '[distribution.displayname] [distrorelease.displayname]'
+    '[distrorelease.fullreleasename]'
 
 Distrorelease and sourcepackagename.
 
     >>> bugtask.sourcepackagename = NamedThing('spn')
     >>> bugtask.targetname()
-    '[distribution.displayname] [distrorelease.displayname] [spn.name]'
+    '[spn.name] ([distrorelease.fullreleasename])'
 
 Distrorelease, sourcepackagename and binarypackagename.
 
     >>> bugtask.binarypackagename = NamedThing('bpn')
     >>> bugtask.targetname()
-    '[distribution.displayname] [distrorelease.displayname] [spn.name] [bpn.name]'
+    '[spn.name] [bpn.name] ([distrorelease.fullreleasename])'
 
 Note that we haven't tested any combinations that shouldn't occur, except
 for the case when everything is None.
@@ -333,7 +334,7 @@ It's also possible to iterate over all the bug tasks:
 
     >>> bugtasks = [bugtask for bugtasks in bugtaskset]
     >>> len(bugtasks)
-    17
+    18
 
 Bug Task Maintainers
 --------------------
@@ -433,6 +434,8 @@ like these, use the NullBugTask object.
 
     >>> null_bugtask.id is None
     True
+    >>> null_bugtask.title == 'Bug #1 in netapplet (upstream): "Firefox does not support SVG"'
+    True
     >>> null_bugtask.product is netapplet
     True
     >>> null_bugtask.bug == bug_one
@@ -474,7 +477,7 @@ like these, use the NullBugTask object.
     >>> null_bugtask.target == netapplet
     True
     >>> null_bugtask.targetname
-    u'upstream netapplet'
+    u'netapplet (upstream)'
     >>> expected_related_task_ids = [
     ...     task.id for task in null_bugtask.related_tasks]
     >>> actual_related_task_ids = [task.id for task in bug_one.bugtasks]
@@ -483,7 +486,7 @@ like these, use the NullBugTask object.
     >>> expected_related_task_ids == actual_related_task_ids
     True
     >>> null_bugtask.statusdisplayhtml
-    u'Not reported in upstream netapplet'
+    u'Not reported in netapplet (upstream)'
     >>> null_bugtask.statuselsewhere
     'Fixed in 2 of 7 places'
 
@@ -502,14 +505,17 @@ two more examples:
 Bug Privacy
 ===========
 
-A bug is either private or public. Private bugs are only visible (e.g. in
-search listings) to explicit subscribers. Public bugs are visible to
-anyone.
+A bug is either private or public. Private bugs are only visible (e.g. in search
+listings) to explicit subscribers and Launchpad admins. Public bugs are visible
+to anyone.
 
     >>> from zope.event import notify
     >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.event.sqlobjectevent import (
     ...     SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
+
+Privacy and Unpriviledged Users
+-------------------------------
 
 Let's log in as the user Foo Bar (to be allowed to edit bugs):
 
@@ -518,9 +524,9 @@ Let's log in as the user Foo Bar (to be allowed to edit bugs):
 
 and mark one of the Firefox bugs private:
 
-    >>> bug_firefox_no_svg_support = bugtaskset.get(2)
+    >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
     >>> notify(SQLObjectToBeModifiedEvent(
-    ...     bug_firefox_no_svg_support.bug, {'private' : True}))
+    ...     bug_upstream_firefox_no_svg_support.bug, {'private' : True}))
 
     >>> def capture_state(obj, *fields):
     ...     class State: pass
@@ -529,19 +535,76 @@ and mark one of the Firefox bugs private:
     ...         setattr(state, field, getattr(obj, field))
     ...     return state
     >>> old_state = capture_state(
-    ...     bug_firefox_no_svg_support.bug, "id", "title",
+    ...     bug_upstream_firefox_no_svg_support.bug, "id", "title",
     ...     "summary", "description", "private", "name",
     ...     "duplicateof")
-    >>> bug_firefox_no_svg_support.bug.private = True
+    >>> bug_upstream_firefox_no_svg_support.bug.private = True
     >>> bug_set_private = SQLObjectModifiedEvent(
-    ...     bug_firefox_no_svg_support.bug, old_state,
+    ...     bug_upstream_firefox_no_svg_support.bug, old_state,
     ...     ["id", "title", "private"])
     >>> notify(bug_set_private)
     >>> transaction.commit()
 
-Because Foo Bar is a member of the Ubuntu Team, and the Ubuntu Team is
-one of the maintainers on this bug report, Foo Bar will see the bug in
-searches:
+If we now login as someone who was neither implicitly nor explicitly subscribed
+to this bug, e.g. No Privileges Person, they will not be able to access or set
+properties of the bugtask.
+
+    >>> login("no-priv@canonical.com")
+    >>> mr_no_privs = getUtility(ILaunchBag).user
+
+    >>> bug_upstream_firefox_no_svg_support.status
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('status', 'launchpad.View')
+
+    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.FIXED
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('status', 'launchpad.Edit')
+
+The private bugs will be invisible to No Privileges Person in the search
+results:
+
+    >>> params = BugTaskSearchParams(
+    ...     status=any(STATUS_NEW, STATUS_ACCEPTED),
+    ...     orderby="id", user=mr_no_privs)
+    >>> bugtasks = upstream_mozilla.searchTasks(params)
+    >>> print bugtasks.count()
+    3
+    >>> bug_ids = [bt.bug.id for bt in bugtasks]
+    >>> print sorted(bug_ids)
+    [4, 5, 6]
+
+Likewise when the No Privileges Person tries to do a search on tasks
+maintained by Foo Bar.
+
+    >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
+    ...     foobar, user=mr_no_privs)
+    >>> [bugtask.bug.id for bugtask in foobar_maintained_tasks]
+    [2]
+
+Privacy and Priviledged Users
+-----------------------------
+
+Now, we'll log in as Scott James Remnant, who was assigned to this bug when it
+was marked private:
+
+    >>> login("scott.james.remnant@ubuntulinux.com")
+
+And note that he can access and set the bugtask attributes:
+
+    >>> bug_upstream_firefox_no_svg_support.status.title
+    'New'
+
+    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.NEW
+
+Privacy and Team Awareness
+--------------------------
+
+Foo Bar is a member of the Ubuntu Team, which is one of the maintainers on this
+bug report. Therefore, Foo Bar is still able to access the private bug.
+
+    >>> login("foo.bar@canonical.com")
 
     >>> firefox = productset.get(4)
     >>> params = BugTaskSearchParams(status=any(STATUS_NEW,
@@ -551,115 +614,87 @@ searches:
     >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
     [1, 4, 5, 6]
 
-If logged in as Foo Bar we query for all bugtasks reported on all
-packages/products he maintains, we'll see that bug 1 is there (we'll
-not see it if we query logged in as a user who can't see that bug).
+If we query for all bugtasks reported on all packages/products that Foo Bar
+maintains, we'll see that bug 1 is there (we'll not see it if we query logged in
+as a user who can't see that bug).
 
     >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
     ...     foobar, user=foobar)
     >>> [bugtask.bug.id for bugtask in foobar_maintained_tasks]
     [1, 2]
 
-Now, if we log in as David Allouche:
+Privacy and Launchpad Admins
+----------------------------
+
+Let's log in as David Allouche:
 
     >>> login("david.allouche@canonical.com")
     >>> ddaa = getUtility(ILaunchBag).user
 
-The same search as above yields only three bugs, because David
-Allouche can't see the private bug.
+The same search as above yields the same result, because David Allouche is an
+administrator.
 
+    >>> firefox = productset.get(4)
     >>> params = BugTaskSearchParams(status=any(STATUS_NEW,
     ...                                         STATUS_ACCEPTED),
-    ...                              orderby="id", user=ddaa)
-    >>> bugtasks = upstream_mozilla.searchTasks(params)
-    >>> print bugtasks.count()
-    3
-    >>> bugtask_ids = [bt.id for bt in bugtasks]
-    >>> print bugtask_ids
-    [13, 14, 15]
+    ...                              user=foobar)
+    >>> firefox_bugtasks = firefox.searchTasks(params)
+    >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
+    [1, 4, 5, 6]
 
-If logged in as David Allouche we query for all bugtasks reported on
-packages/products Foo Bar is the maintainer, we'll not see bug 1 there
-because it's a private bug.
+If, still logged in as David Allouche, we query for all bugtasks reported on
+packages/products for which Foo Bar is the maintainer, we'll also see bug 1
+again in the results, even though it's private.
 
     >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
     ...     foobar, user=ddaa)
     >>> [bugtask.bug.id for bugtask in foobar_maintained_tasks]
-    [2]
+    [1, 2]
 
 Trying to retrieve the bug directly will work fine:
 
-    >>> bug_firefox_no_svg_support = bugtaskset.get(2)
+    >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
 
-But attribute access on the IBugTask will raise an authorization
-exception:
+As will attribute access:
 
-    >>> bug_firefox_no_svg_support.bug
-    Traceback (most recent call last):
-      ...
-    Unauthorized: ('bug', 'launchpad.View')
+    >>> bug_upstream_firefox_no_svg_support.status.title
+    'New'
 
-Logging in as a member of the illustrious Launchpad admin team will
-still not allow viewing of this private bug:
+And attribute setting:
 
-    >>> login("carlos@canonical.com")
+    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.FIXED
+    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.NEW
 
-    >>> bug_firefox_no_svg_support.bug
-    Traceback (most recent call last):
-      ...
-    Unauthorized: ('bug', 'launchpad.View')
+It's all good.
 
-The same is true for carlos trying to edit an upstream task, e.g. the
-one we created earlier on:
+Privacy and Maintainers
+-----------------------
 
-    >>> upstream_task.status = STATUS_ACCEPTED
-    Traceback (most recent call last):
-      ...
-    Unauthorized: ('status', 'launchpad.Edit')
-
-Trying to edit a distro task as David Allouche will raise an
-Unauthorized exception:
-
-    >>> login("david.allouche@canonical.com")
-
-    >>> bug_debian_firefox_no_svg_support = bugtaskset.get(4)
-    >>> bug_debian_firefox_no_svg_support.status = BugTaskStatus.FIXED
-    Traceback (most recent call last):
-      ...
-    Unauthorized: ('status', 'launchpad.Edit')
-
-Same, again, for an LP admin:
-
-    >>> login("carlos@canonical.com")
-
-    >>> bug_debian_firefox_no_svg_support.status = BugTaskStatus.FIXED
-    Traceback (most recent call last):
-      ...
-    Unauthorized: ('status', 'launchpad.Edit')
-
-But, logged in as the Firefox maintainer:
+Then logged in as the Firefox maintainer:
 
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user
 
-We'll find all four IBugTasks that match the search criteria, as the maintainer
-is also an explicit subscriber in this case.
+We'll find all four IBugTasks that match the search criteria. The maintainer is
+also an explicit subscriber in this case.
 
-    >>> params = BugTaskSearchParams(status=any(STATUS_NEW,
-    ...                                         STATUS_ACCEPTED),
-    ...                              orderby="id", user=sample_person)
+    >>> params = BugTaskSearchParams(
+    ...     status=any(STATUS_NEW, STATUS_ACCEPTED),
+    ...     orderby="id", user=sample_person)
     >>> bugtasks = upstream_mozilla.searchTasks(params)
     >>> print bugtasks.count()
     4
-    >>> bugtask_ids = [bt.id for bt in bugtasks]
-    >>> print bugtask_ids
-    [2, 13, 14, 15]
+    >>> bug_ids = [bt.bug.id for bt in bugtasks]
+    >>> print sorted(bug_ids)
+    [1, 4, 5, 6]
 
 And, as you would expect, we'll also be able to access it directly:
 
-    >>> bug_firefox_no_svg_support = bugtaskset.get(2)
-    >>> bug_firefox_no_svg_support.bug.title
+    >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
+    >>> bug_upstream_firefox_no_svg_support.bug.title
     u'Firefox does not support SVG'
+
+    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.NEW
 
 Sorting Bug Tasks
 -----------------
@@ -677,13 +712,13 @@ Let's just make sure that the tasks on bug_one sort correctly.
     >>> tasks = bug_one.bugtasks
     >>> for task in tasks:
     ...     print task.targetname
-    upstream evolution
-    upstream firefox
-    upstream ubuntu
+    evolution (upstream)
+    firefox (upstream)
+    ubuntu (upstream)
     ubuntu
-    ubuntu mozilla-firefox
-    ubuntu hoary
-    debian mozilla-firefox
+    mozilla-firefox (ubuntu)
+    Ubuntu Hoary
+    mozilla-firefox (debian)
 
 BugTask Adaptation
 ------------------

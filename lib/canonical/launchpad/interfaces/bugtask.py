@@ -61,8 +61,7 @@ class IBugTask(IHasDateCreated):
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     priority = Choice(
-        title=_('Priority'), vocabulary='BugTaskPriority',
-        default=dbschema.BugTaskPriority.MEDIUM)
+        title=_('Priority'), vocabulary='BugTaskPriority', required=False)
     severity = Choice(
         title=_('Severity'), vocabulary='BugTaskSeverity',
         default=dbschema.BugTaskSeverity.NORMAL)
@@ -100,7 +99,7 @@ class IBugTask(IHasDateCreated):
     related_tasks = Attribute("IBugTasks related to this one, namely other "
                               "IBugTasks on the same IBug.")
     statusdisplayhtml = Attribute(
-        "A HTML representation of the status. This field produces"
+        "A HTML representation of the status. This field produces "
         "its value from the status, assignee and milestone values.")
     statuselsewhere = Attribute(
         "A human-readable representation of the status of this IBugTask's bug "
@@ -220,6 +219,12 @@ class IBugTaskSearchListingView(IView):
 
     def search():
         """Return an IBatchNavigator for the POSTed search criteria."""
+
+    def shouldShowPackageName():
+        """Should the source package name be displayed in the list results?
+
+        This is mainly useful for the listview.
+        """
 
 
 class IBugTaskDelta(Interface):

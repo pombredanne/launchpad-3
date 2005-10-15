@@ -46,9 +46,10 @@ class IPOTMsgSet(Interface):
         The maximum number of items this iterator returns is 2.
         """
 
-    def getMessageIDSighting(pluralForm):
-        """Return the message ID sighting that is current and has the
-        plural form provided."""
+    def getPOMsgIDSighting(pluralForm):
+        """Return the IPOMsgIDSighting that is current and has the plural
+        form provided.
+        """
 
     def translationsForLanguage(language):
         """Return an iterator over the active translation strings for this
@@ -69,7 +70,7 @@ class IPOTMsgSet(Interface):
         """Return a new message ID sighting that points back to us.
 
         If one already exists, behaviour depends on 'update'; if update
-        is allowed, the existing one is "touched" and returned.  If it
+        is allowed, the existing one is 'touched' and returned.  If it
         is not, then a KeyError is raised.
         """
 

@@ -16,7 +16,7 @@
     </table>
     <ul>
       <li class="edit">
-        <a href="/calendar/+subscriptions">
+        <a tal:attributes="href string:${context/fmt:url}/+subscriptions">
           Manage Subscriptions
         </a>
       </li>

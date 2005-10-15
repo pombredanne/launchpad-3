@@ -24,9 +24,10 @@
         for="canonical.launchpad.interfaces.ITeamMembershipSubset"
         name="+index" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.ITeamMembershipSubset"
-        getter="getByPersonName" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="TeamMembershipSubsetNavigation"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.ITeamMembershipSubset"

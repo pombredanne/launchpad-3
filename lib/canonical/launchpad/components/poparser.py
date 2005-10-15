@@ -332,7 +332,7 @@ class POHeader(dict, POMessage):
                 ))
             v = unicode(v, self.charset, 'replace')
         except LookupError:
-            raise POInvalidInputError(msg='Unknown charset %s' % self.charset)
+            raise POInvalidInputError(msg='Unknown charset %r' % self.charset)
 
         return v
 
@@ -539,8 +539,12 @@ class POParser(object):
             for message in self.messages:
                 if message.msgid == self._partial_transl['msgid']:
                     lineno = self._partial_transl['_lineno']
+                    # XXX: I changed the exception below to use %r
+                    # because the original %d returned "<unprintable
+                    # instance object>" in a traceback in bug 2896
+                    #    -- kiko, 2005-10-06
                     raise POInvalidInputError('Po file: duplicate msgid '
-                                              'ending on line %d' % lineno)
+                                              'ending on line %r' % lineno)
             try:
                 transl = self.translation_factory(header=self.header,
                                                   **self._partial_transl)

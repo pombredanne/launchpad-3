@@ -3,6 +3,11 @@
 """Browser code for translation groups."""
 
 __metaclass__ = type
+__all__ = ['TranslationGroupNavigation',
+           'TranslationGroupSetNavigation',
+           'TranslationGroupView',
+           'TranslationGroupAddTranslatorView',
+           'TranslationGroupSetAddView']
 
 import operator
 
@@ -15,10 +20,18 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     ITranslationGroup, ITranslationGroupSet, ILanguageSet,
     IPersonSet, ILaunchBag)
+from canonical.launchpad.webapp import GetitemNavigation
 
-__all__ = ['TranslationGroupView',
-           'TranslationGroupAddTranslatorView',
-           'TranslationGroupSetAddView']
+
+class TranslationGroupNavigation(GetitemNavigation):
+
+    usedfor = ITranslationGroup
+
+
+class TranslationGroupSetNavigation(GetitemNavigation):
+
+    usedfor = ITranslationGroupSet
+
 
 class TranslationGroupView:
 

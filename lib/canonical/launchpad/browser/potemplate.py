@@ -6,9 +6,11 @@ __metaclass__ = type
 
 __all__ = [
     'POTemplateSubsetView', 'POTemplateView', 'POTemplateEditView',
-    'POTemplateAdminView', 'POTemplateAddView', 'BaseExportView',
-    'POTemplateExportView', 'POTemplateTranslateView',
-    'POTemplateSubsetURL', 'POTemplateURL']
+    'POTemplateAdminView', 'POTemplateAddView', 'POTemplateExportView',
+    'POTemplateTranslateView', 'POTemplateSubsetURL', 'POTemplateURL',
+    'POTemplateSetNavigation', 'POTemplateSubsetNavigation',
+    'POTemplateNavigation'
+    ]
 
 from sets import Set
 from datetime import datetime
@@ -24,12 +26,27 @@ from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, IPOTemplateNameSet, IPOExportRequestSet,
     IPersonSet, RawFileAttachFailed, ICanonicalUrlData, ILaunchpadCelebrities,
-    ILaunchBag, IPOFileSet)
+    ILaunchBag, IPOFileSet, IPOTemplateSubset)
 from canonical.launchpad.browser.pofile import (
     POFileView, BaseExportView, POFileAppMenus)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission)
+    StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
+    GetitemNavigation, Navigation)
+
+
+class POTemplateNavigation(Navigation):
+
+    usedfor = IPOTemplate
+
+    def traverse(self, name):
+        user = getUtility(ILaunchBag).user
+        if self.request.method in ['GET', 'HEAD']:
+            return self.context.getPOFileOrDummy(name, owner=user)
+        elif self.request.method == 'POST':
+            return self.context.getOrCreatePOFile(name, owner=user)
+        else:
+            raise AssertionError('We only know about GET, HEAD, and POST')
 
 
 class POTemplateFacets(StandardLaunchpadFacets):
@@ -450,4 +467,14 @@ class POTemplateURL:
     @property
     def inside(self):
         return self.potemplatesubset
+
+
+class POTemplateSetNavigation(GetitemNavigation):
+
+    usedfor = IPOTemplateSet
+
+
+class POTemplateSubsetNavigation(GetitemNavigation):
+
+    usedfor = IPOTemplateSubset
 

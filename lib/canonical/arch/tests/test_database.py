@@ -516,18 +516,6 @@ class RevisionMapper(DatabaseTestCase):
         mapper = RevisionMapper()
         self.assertEqual(expected_id, mapper._getId(revision))
 
-    def test_insert_file(self):
-        """test we can insert a file into the database"""
-        from canonical.launchpad.database import ChangesetFile
-        from canonical.launchpad.database import ChangesetFileName
-        from canonical.launchpad.database import ChangesetFileHash
-        version = self.getTestVersion()
-        revision = version.create_revision("base-0")
-        revision.add_file("foo", "baaaz", {"md5": "1234"})
-        self.assertEqual(ChangesetFile.select().count(), 1)
-        self.assertEqual(ChangesetFileName.select().count(), 1)
-        self.assertEqual(ChangesetFileHash.select().count(), 1)
-
 
 import framework
 framework.register(__name__)

@@ -46,7 +46,6 @@ __all__ = (
 'DistributionReleaseStatus',
 'EmailAddressStatus',
 'GPGKeyAlgorithm',
-'HashAlgorithm',
 'ImportTestStatus',
 'ImportStatus',
 'KarmaActionCategory',
@@ -70,6 +69,7 @@ __all__ = (
 'ShipItArchitecture',
 'ShipItDistroRelease',
 'ShipItFlavour',
+'ShippingService',
 'SourcePackageFileType',
 'SourcePackageFormat',
 'SourcePackageRelationships',
@@ -77,6 +77,7 @@ __all__ = (
 'SpecificationPriority',
 'SpecificationStatus',
 'SSHKeyType',
+'TextDirection',
 'TicketPriority',
 'TicketStatus',
 'TeamMembershipStatus',
@@ -896,32 +897,6 @@ class TeamSubscriptionPolicy(DBSchema):
         Restricted Team
 
         New members can only be added by one of the team's administrators.
-        """)
-
-
-class HashAlgorithm(DBSchema):
-    """Hash Algorithms
-
-    We use "hash" or "digest" cryptographic algorithms in a number of
-    places in Launchpad. Usually these are a way of verifying the
-    integrity of a file, but they can also be used to check if a file
-    has been seen before.
-    """
-
-    MD5 = Item(0, """
-        The MD5 Digest Algorithm
-
-        A widely-used cryptographic hash function with a 128-bit hash value. As
-        an Internet standard (RFC 1321), MD5 has been employed in a wide
-        variety of security applications.
-        """)
-
-    SHA1 = Item(1, """
-        The SHA-1 Digest Algorithm
-
-        This algorithm is specified by the US-NIST and is used as part
-        of TLS and other common cryptographic protocols. It is a 168-bit
-        digest algorithm.
         """)
 
 
@@ -2682,6 +2657,22 @@ class TranslationValidationStatus(DBSchema):
         """)
 
 
+class ShippingService(DBSchema):
+    """The Shipping company we use to ship CDs."""
+
+    TNT = Item(1, """
+        TNT
+
+        The TNT shipping company.
+        """)
+
+    SPRING = Item(2, """
+        Spring
+
+        The Spring shipping company.
+        """)
+
+
 class ShipItFlavour(DBSchema):
     """The Distro Flavour, used only to link with ShippingRequest."""
 
@@ -2723,3 +2714,18 @@ class ShipItDistroRelease(DBSchema):
         The Breezy Badger release.
         """)
 
+
+class TextDirection(DBSchema):
+    """The base text direction for a language."""
+
+    LTR = Item(0, """
+        Left to Right
+
+        Text is normally written from left to right in this language.
+        """)
+
+    RTL = Item(1, """
+        Right to Left
+
+        Text is normally written from left to right in this language.
+        """)

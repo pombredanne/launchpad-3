@@ -7,18 +7,19 @@ import sets
 
 from zope.interface import implements
 from zope.component import getUtility
-from zope.exceptions import NotFoundError
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 
-from canonical.launchpad.interfaces import IPOTMsgSet, ILanguageSet
+from canonical.launchpad.interfaces import (
+    IPOTMsgSet, ILanguageSet, NotFoundError, NameNotAvailable)
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.pomsgset import POMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
 from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
+
 
 class POTMsgSet(SQLBase):
     implements(IPOTMsgSet)
@@ -111,22 +112,14 @@ class POTMsgSet(SQLBase):
         for pomsgid in results:
             yield pomsgid
 
-    # XXX: Carlos Perello Marin 15/10/04: Review, not sure it's correct...
-    def getMessageIDSighting(self, pluralForm, allowOld=False):
-        """Return the message ID sighting that is current and has the
-        plural form provided.
-        """
-        if allowOld:
-            sighting = POMsgIDSighting.selectOneBy(
-                potmsgsetID=self.id,
-                pluralform=pluralForm)
-        else:
-            sighting = POMsgIDSighting.selectOneBy(
-                potmsgsetID=self.id,
-                pluralform=pluralForm,
-                inlastrevision=True)
+    def getPOMsgIDSighting(self, pluralForm):
+        """See IPOTMsgSet."""
+        sighting = POMsgIDSighting.selectOneBy(
+            potmsgsetID=self.id,
+            pluralform=pluralForm,
+            inlastrevision=True)
         if sighting is None:
-            raise KeyError, pluralForm
+            raise NotFoundError(pluralForm)
         else:
             return sighting
 
@@ -213,7 +206,7 @@ class POTMsgSet(SQLBase):
                 pluralform=pluralForm)
         else:
             if not update:
-                raise KeyError(
+                raise NameNotAvailable(
                     "There is already a message ID sighting for this "
                     "message set, text, and plural form")
             existing.set(datelastseen=UTC_NOW, inlastrevision=True)

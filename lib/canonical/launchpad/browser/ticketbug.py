@@ -5,11 +5,9 @@
 __metaclass__ = type
 
 from zope.component import getUtility
-
 from zope.app.form.browser.add import AddView
 
 from canonical.launchpad.interfaces import ITicketBug, IBugSet
-
 from canonical.launchpad.webapp import canonical_url
 
 

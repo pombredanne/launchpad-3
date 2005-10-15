@@ -4,15 +4,14 @@ __metaclass__ = type
 __all__ = ['SourcePackageName', 'SourcePackageNameSet']
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
 from sqlobject import SQLObjectNotFound
 from sqlobject import StringCol, MultipleJoin
 
 from canonical.database.sqlbase import SQLBase, quote
 
-from canonical.launchpad.interfaces import ISourcePackageName
-from canonical.launchpad.interfaces import ISourcePackageNameSet
+from canonical.launchpad.interfaces import (
+    ISourcePackageName, ISourcePackageNameSet, NotFoundError)
 
 
 class SourcePackageName(SQLBase):

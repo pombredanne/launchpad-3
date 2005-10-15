@@ -17,7 +17,7 @@ set -e
 
 exec 2>&1
 
-set -x
+echo "Removing build $BUILDID"
 
 cd $HOME
 

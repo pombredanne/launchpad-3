@@ -35,10 +35,6 @@
             template="../templates/codeofconduct-index.pt"
             name="+index"
             lp:url="codeofconduct/$CoC.version/+index" />
-        <browser:page
-            template="../templates/portlet-codeofconduct-actions.pt"
-            name="+portlet-actions"
-            lp:url="codeofconduct/$CoC.version/+portlet-actions" />
     </browser:pages>
 
     <browser:page 
@@ -77,20 +73,12 @@
         <allow interface="canonical.launchpad.interfaces.ICodeOfConductSet" />
     </securedutility>
 
-    <!-- This view registers 'codeofconduct' as a suburl of ILaunchpadRoot. -->
-    <browser:suburl
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        utility="canonical.launchpad.interfaces.ICodeOfConductSet"
-        name="codeofconduct" />
     <browser:url
         for="canonical.launchpad.interfaces.ICodeOfConductSet"
         path_expression="string:codeofconduct"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.ICodeOfConductSet"
-        getter="__getitem__" />
     <browser:url
         for="canonical.launchpad.interfaces.ICodeOfConduct"
         parent_utility="canonical.launchpad.interfaces.ICodeOfConductSet"
@@ -109,10 +97,6 @@
             template="../templates/codeofconduct-list.pt"
             name="+index"
             lp:url="codeofconduct/+index" />
-        <browser:page
-            template="../templates/portlet-codeofconductset-actions.pt"
-            name="+portlet-actions"
-            lp:url="codeofconduct/+portlet-actions" />
     </browser:pages>
 
 
@@ -136,10 +120,6 @@
             template="../templates/signedcodeofconduct-index.pt"
             name="+index"
             lp:url="codeofconduct/console/$signed.id/+index" />
-        <browser:page
-            template="../templates/signedcodeofconduct-portlet-actions.pt"
-            name="+portlet-actions"
-            lp:url="codeofconduct/console/$signed.id/+portlet-actions" />
     </browser:pages>
 
     <browser:editform
@@ -190,9 +170,10 @@
         parent_utility="canonical.launchpad.interfaces.ISignedCodeOfConductSet"
         />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.ISignedCodeOfConductSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="SignedCodeOfConductSetNavigation CodeOfConductSetNavigation"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ISignedCodeOfConductSet"
@@ -206,10 +187,6 @@
             template="../templates/codeofconduct-admin.pt"
             name="+index"
             lp:url="codeofconduct/console/+index" />
-        <browser:page
-            template="../templates/portlet-signedcodeofconductset-actions.pt"
-            name="+portlet-actions"
-            lp:url="codeofconduct/console/+portlet-actions" />
     </browser:pages>
 
 

@@ -65,9 +65,10 @@
       Here we are going to put all the emblems from teams this person
       belongs to.
     </tal:comment>
-    <tal:memberships repeat="membership context/activememberships">
+    <tal:memberships repeat="membership context/myactivememberships">
       <img tal:condition="membership/team/emblem"
-           tal:attributes="src membership/team/emblem/url" />
+           tal:attributes="src membership/team/emblem/url;
+                           title string:Emblem of ${membership/team/name}" />
     </tal:memberships>
     
   </div>

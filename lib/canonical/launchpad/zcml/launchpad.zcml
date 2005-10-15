@@ -3,6 +3,44 @@
   xmlns:browser="http://namespaces.zope.org/browser"
   i18n_domain="canonical.launchpad">
 
+<!-- Error pages -->
+  <!-- System Errors -->
+  <browser:page
+      for="zope.interface.common.interfaces.IException"
+      name="index.html"
+      template="../templates/launchpad-oops.pt"
+      permission="zope.Public"
+      class="canonical.launchpad.webapp.error.SystemErrorView"
+      />
+
+  <!-- Unauthorized -->
+  <browser:page
+      for="zope.exceptions.IUnauthorized"
+      name="index.html"
+      permission="zope.Public"
+      class="canonical.launchpad.webapp.login.UnauthorizedView"
+      attribute="__call__"
+      />
+
+  <!-- NotFound -->
+  <browser:page
+      for="zope.publisher.interfaces.NotFound"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-notfound.pt"
+      class="canonical.launchpad.webapp.error.NotFoundView"
+      />
+
+  <!-- RequestExpired -->
+  <browser:page
+      for="canonical.database.interfaces.IRequestExpired"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-requestexpired.pt"
+      class="canonical.launchpad.webapp.error.SystemErrorView"
+      />
+
+
 <facet facet="overview">
 
   <utility
@@ -69,7 +107,6 @@
       />
 
   <!-- Declare robots.txt file for the root -->
-
   <browser:page
       for="canonical.launchpad.interfaces.ILaunchpadRoot"
       name="robots.txt"
@@ -78,7 +115,6 @@
       />
 
   <!-- Common menus -->
-
   <browser:menus
       module="canonical.launchpad.browser.launchpad"
       classes="LaunchpadRootFacets RosettaContextMenu MaloneContextMenu"
@@ -93,8 +129,16 @@
       permission="zope.Public"
       />
 
-  <!-- Menus debug page. -->
+  <!-- breadcrumbs -->
+  <browser:page
+      for="zope.interface.Interface"
+      name="+breadcrumbs"
+      class="canonical.launchpad.browser.launchpad.Breadcrumbs"
+      attribute="__call__"
+      permission="zope.Public"
+      />
 
+  <!-- Menus debug page. -->
   <browser:page
       for="zope.interface.Interface"
       name="+debug-menus"

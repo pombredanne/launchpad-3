@@ -15,9 +15,10 @@
         for="canonical.launchpad.interfaces.ISourcePackageInDistroSet"
         name="+index" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.ISourcePackageInDistroSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="SourcePackageInDistroSetNavigation"
+        />
 
     <content class="canonical.launchpad.database.SourcePackageInDistroSet">
         <allow

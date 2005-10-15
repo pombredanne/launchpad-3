@@ -19,6 +19,10 @@ standard output with noisely output.
 
   >>> import logging
 
+We use StringIO later to simulate bits of the build slave file retrieval
+
+  >>> from StringIO import StringIO
+
 First let's test a essencial part of the BuilddMaster class, the
 BuildersGroup() class.
 
@@ -33,14 +37,113 @@ Create an empty BuilderGroup object
   >>> from canonical.launchpad.scripts.builddmaster import BuilderGroup
   >>> buildergroup = BuilderGroup(logging.getLogger(), transaction)
   
-Mock Builders objects
+Mock Builder, a class to emulate the Builder behaviour:
 
   >>> class MockBuilder:
   ...     def __init__(self, name, slave):
   ...         self.slave = slave 
   ...         self.builderok = True
   ...         self.url = 'http://fake:0000'
+  ...         slave.urlbase = self.url
   ...         self.name = name
+
+Let's play with a BuilderGroup method designed to rescue build slaves
+that are processing unknown jobs. In real conditions, this situation
+only happens if the slave is processing deleted or modified BuildQueue 
+entry, since Build entries are never removed. It might be caused by
+exceptions in slavescanner or queuebuilder scripts. 
+
+When we figured this situation out, the procedure to rescue is to
+request the slave XMLRPC method 'clean', reseting the slave completely. 
+
+We figured out if the building information is correct and sane by
+checking the job identifier field from status message information,
+which consists of "<Build.id>-<BuildQueue.id>".
+
+First let's emulate a sane and a lost slave. The SaneSlave returns a
+job identifier that exists in our sampledata, but the LostSlave
+returns a completly bogus one. 
+
+The the mock slave.clean() method is modified to print a message for
+testing purposes.  
+
+Initializing the sane_builder. It was not rescued, since the job
+identifier is sane (Build.id == 2 and BuildQueue.id == 1 exist): 
+
+  >>> class SaneBuildingSlave:
+  ...     def status(self):
+  ...         return ('BuilderStatus.BUILDING', '2-1')
+  ...     def clean(self):
+  ...         print 'Rescuing SaneSlave'
+
+  >>> sanebuilding_builder = MockBuilder('Sane Building Slave', 
+  ...                                    SaneBuildingSlave())
+
+  >>> assert buildergroup.rescueBuilderIfLost(sanebuilding_builder) is None
+
+A sane WAITING slave:
+
+  >>> class SaneWaitingSlave:
+  ...     def status(self):
+  ...         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '2-1')
+  ...     def clean(self):
+  ...         print 'Rescuing SaneSlave'
+
+  >>> sanewaiting_builder = MockBuilder('Sane Waiting Slave', 
+  ...                                   SaneWaitingSlave())
+
+  >>> assert buildergroup.rescueBuilderIfLost(sanewaiting_builder) is None
+
+A sane WAITING slave but with wrong BuildQueue/Build relation:
+
+  >>> class SaneWaitingSlave:
+  ...     def status(self):
+  ...         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '7-1')
+  ...     def clean(self):
+  ...         pass
+
+  >>> sanewaiting_builder = MockBuilder('Sane Waiting Slave', 
+  ...                                   SaneWaitingSlave())
+
+  >>> buildergroup.rescueBuilderIfLost(sanewaiting_builder)
+  WARNING:root:Builder 'Sane Waiting Slave' rescued from '7-1: Job build entry mismatch'
+
+It was rescued because the BuildQueue.id == 1 isn't related to
+Build.id == 7, so this pair relation is wrong.
+
+Let's test slaves with job identifier pointing non-existent
+Build/BuildQueue entries. first a lost slave in status 'BUILDING':
+
+  >>> class LostBuildingSlave:
+  ...     def status(self):
+  ...         return ('BuilderStatus.BUILDING', '1000-10000')
+  ...     def clean(self):
+  ...         pass
+
+  >>> lostbuilding_builder = MockBuilder('Lost Building Slave', 
+  ...                                    LostBuildingSlave())
+
+  >>> buildergroup.rescueBuilderIfLost(lostbuilding_builder)
+  WARNING:root:Builder 'Lost Building Slave' rescued from '1000-10000: The object Build by the ID 1000 does not exist'
+
+Then a lost slave in status 'WAITING':
+
+  >>> class LostWaitingSlave:
+  ...     def status(self):
+  ...         return ('BuilderStatus.WAITING', 'BuildStatus.OK', '1000-10000')
+  ...     def clean(self):
+  ...         pass
+
+  >>> lostwaiting_builder = MockBuilder('Lost Waiting Slave', 
+  ...                                    LostWaitingSlave())
+
+  >>> buildergroup.rescueBuilderIfLost(lostwaiting_builder)
+  WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000: The object Build by the ID 1000 does not exist'
+
+Both got rescued, as expected.
+
+
+Let's create a bunch of mock slaves for testing the Builder State Handler:
 
   >>> class BrokenSlave:
   ...     def status(self):
@@ -52,7 +155,12 @@ Mock Builders objects
 
   >>> class BuildingSlave:
   ...     def status(self):
-  ...         return ('BuilderStatus.BUILDING', '1-1', 'building something')
+  ...         return ('BuilderStatus.BUILDING', '1-1', "This is a build log")
+  ...     def getFile(self, sum):
+  ...         if sum == "buildlog":
+  ...             s = StringIO("This is a build log")
+  ...             s.headers={'content-length':19}
+  ...             return s
 
   >>> class AbortedSlave:
   ...     def status(self):
@@ -66,11 +174,16 @@ Mock Builders objects
   ...     def __init__(self, state):
   ...         self.state = state
   ...     def status(self):
-  ...         return ('BuilderStatus.WAITING', self.state, '1-1')
+  ...         return ('BuilderStatus.WAITING', self.state, '1-1', {})
   ...     def fetchlogtail(self, amount=None):
   ...         return 'BOGUS'
   ...     def clean(self):
   ...         pass
+  ...     def getFile(self, sum):
+  ...         if sum == "buildlog":
+  ...             s = StringIO("This is a build log")
+  ...             s.headers={'content-length':19}
+  ...             return s
 
   >>> class AbortingSlave:
   ...     def status(self):
@@ -133,7 +246,8 @@ Mock Builders objects
   ...         self.build = build
   ...         self.buildstart = datetime.datetime(2005, 1, 1, 8, 0, 0, 
   ...                                             tzinfo=UTC)
-  ...     def destroySelf():
+  ...         self.name = "unimportant-name"
+  ...     def destroySelf(self):
   ...         pass
 
 
@@ -174,7 +288,6 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
 
   >>> bqItem3 = MockBuildQueue(1, builder3, MockBuild())
   >>> buildergroup.updateBuild(bqItem3, librarian)
-  CRITICAL:root:Received wrong number of args in response.
   >>> assert bqItem3.build.builder is not None
   >>> assert bqItem3.build.datebuilt is not None
   >>> assert bqItem3.build.buildduration is not None
@@ -188,7 +301,6 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   >>> bqItem4 = MockBuildQueue(1, builder4, MockBuild())
   >>> buildergroup.updateBuild(bqItem4, librarian)
   CRITICAL:root:***** Missed Dependency build is MANUALDEPWAIT *****
-  CRITICAL:root:Received wrong number of args in response.
   >>> assert bqItem4.build.builder is not None
   >>> assert bqItem4.build.datebuilt is not None
   >>> assert bqItem4.build.buildduration is not None
@@ -202,7 +314,6 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   >>> bqItem5 = MockBuildQueue(1, builder5, MockBuild())
   >>> buildergroup.updateBuild(bqItem5, librarian)
   CRITICAL:root:***** Bad CHROOT is CHROOTWAIT *****
-  CRITICAL:root:Received wrong number of args in response.
   >>> assert bqItem5.build.builder is not None
   >>> assert bqItem5.build.datebuilt is not None
   >>> assert bqItem5.build.buildduration is not None
@@ -227,7 +338,7 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   >>> bqItem7.builder.name
   'I am busy'
   >>> bqItem7.logtail
-  u'building something'
+  u'This is a build log'
 
   ABORTED -> builder was aborted, release builder and reset job for
   the next build round:
@@ -247,14 +358,13 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   'I am trying to terminate the child process'
   >>> buildergroup.updateBuild(bqItem9, librarian)
   >>> bqItem9.logtail
-  'Waiting slave process to be terminated'
+  'Waiting for slave process to be terminated'
 
   WAITING - OK -> builder has finished the job and is waiting for
   master to collect its results
 
   >>> bqItem10 = MockBuildQueue(1, builder10, MockBuild())
   >>> buildergroup.updateBuild(bqItem10, librarian)
-  CRITICAL:root:Received wrong number of args in response.
   >>> assert bqItem10.build.builder is not None
   >>> assert bqItem10.build.datebuilt is not None
   >>> assert bqItem10.build.buildduration is not None
@@ -262,7 +372,53 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   >>> bqItem10.build.buildstate.title
   'Fully built'
 
-Now, goes throught BuilddMaster class itself.
+
+The buildlog is collected and compressed locally using gzip algorithm,
+let's see how this method works:
+
+  >>> logfile_alias = buildergroup.getLogFromSlave(builder10.slave, 
+  ...                                              "1-1", librarian)
+  
+  >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+
+  >>> logfile = getUtility(ILibraryFileAliasSet)[logfile_alias]
+
+  >>> logfile.filename, logfile.mimetype
+  (u'log-for-1-1.txt.gz', u'application/octet-stream')
+
+  Force Librarian to write down the stuff
+  XXX cprov 20051010: is this a bug on librarian_client API ?
+  >>> transaction.commit()
+ 
+Since LibrarianFileAlias does not implement required attributes for
+gzip.open() (like tell() or seek()) we are obligated to read it again
+in our filesystem.
+
+  >>> import gzip, tempfile, os
+  >>> fd, fname = tempfile.mkstemp()
+  >>> tmp = open(fname, 'wb')
+  >>> tmp.write(logfile.read())
+  >>> tmp.close()
+  >>> assert gzip.open(fname).read() == builder10.slave.getFile('buildlog').read()
+
+The happens with urllib instance, we need to download it to the
+filesystem before uncompress.
+
+  >>> import urllib
+  >>> from_web = urllib.urlopen(logfile.url)
+  >>> tmp = open(fname, 'wb')
+  >>> tmp.write(from_web.read())
+  >>> tmp.close()
+  >>> assert gzip.open(fname).read() == builder10.slave.getFile('buildlog').read()
+
+  Both access methods work as expected.
+
+  Remove the temporary file used here.
+
+  >>> os.remove(fname)
+
+
+BuilddMaster class:
 
   >>> bm = BuilddMaster(logging.getLogger(), transaction)
   
@@ -276,14 +432,16 @@ is able to build stuff properly for that one
   ...         bm.setupBuilders(dar)
   ...     except KeyError, e:
   ...         print ("Unable to setup builder for %s/%s/%s."
-  ...		     % (dar.distrorelease.distribution.name,
+  ...                % (dar.distrorelease.distribution.name,
   ...                   dar.distrorelease.name,
   ...                   dar.architecturetag))
-  WARNING:root:Disabling: No CHROOT found for pocket 'Release'
+  WARNING:root:Disabling: No CHROOT found for The Warty Warthog Release for i386 (x86) pocket 'Release'
   Unable to setup builder for ubuntu/warty/i386.
-  WARNING:root:Disabling: No CHROOT found for pocket 'Release'
+  WARNING:root:Disabling: No CHROOT found for The Hoary Hedgehog Release for i386 (x86) pocket 'Release'
   Unable to setup builder for ubuntu/hoary/i386.
-                
+  WARNING:root:Disabling: No CHROOT found for WOODY for i386 (x86) pocket 'Release'
+  Unable to setup builder for debian/woody/i386.              
+
 Since we don't have any builder available yet and the ETA to have
 seems to be a little far, the next output are boring.
 

@@ -12,10 +12,6 @@
     <div tal:replace="structure context/@@+portlet-milestones" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
-</metal:rightportlets>
-
   <!-- This page uses the launchpad-addform.pt METAL -->
 
     <div metal:fill-slot="main">

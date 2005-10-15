@@ -47,7 +47,6 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         description=_("The version string for this release."))
     distribution = Int(title=_("Distribution"), required=True,
         description=_("The distribution for which this is a release."))
-    bugtasks = Attribute("The bug tasks filed specifically on this release.")
     components = Choice(
         title=_("Components"),
         description=_("The release components."), required=True,
@@ -68,14 +67,18 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
     state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")
     lucilleconfig = Attribute("Lucille Configuration Field")
+    changeslist = Attribute("The changes list address for the distrorelease.")
     sourcecount = Attribute("Source Packages Counter")
     binarycount = Attribute("Binary Packages Counter")
     potemplates = Attribute("The set of potemplates in the release")
-    currentpotemplates = Attribute("The set of potemplates in the release"
-        " with the iscurrent flag set")
+    currentpotemplates = Attribute("The set of potemplates in the release "
+        "with the iscurrent flag set")
     architecturecount = Attribute("The number of architectures in this "
         "release.")
     architectures = Attribute("The Architecture-specific Releases")
+    nominatedarchindep = Attribute(
+        "Distroarchrelease designed to build architeture independent "
+        "packages whithin this distrorelease context.")
     messagecount = Attribute("The total number of translatable items in "
         "this distribution release.")
     distroreleaselanguages = Attribute("The set of dr-languages in this "

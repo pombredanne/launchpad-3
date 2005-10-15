@@ -38,9 +38,6 @@
       name="+listing-detailed"
       template="../templates/sprint-listing-detailed.pt" />
     <browser:page
-      name="+portlet-actions"
-      template="../templates/sprint-portlet-actions.pt" />
-    <browser:page
       name="+portlet-details"
       template="../templates/sprint-portlet-details.pt" />
     <browser:page
@@ -75,12 +72,6 @@
       <allow interface="canonical.launchpad.interfaces.ISprintSet" />
   </securedutility>
 
-  <browser:suburl
-    for="canonical.launchpad.interfaces.ILaunchpadRoot"
-    utility="canonical.launchpad.interfaces.ISprintSet"
-    name="sprints"
-    />
-
   <browser:url
     for="canonical.launchpad.interfaces.ISprintSet"
     path_expression="string:sprints"
@@ -91,10 +82,10 @@
     for="canonical.launchpad.interfaces.ISprintSet"
     name="+index" />
 
-  <browser:traverse
-    for="canonical.launchpad.interfaces.ISprintSet"
-    getter="__getitem__"
-    />
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="SprintSetNavigation"
+      />
 
   <browser:pages
     for="canonical.launchpad.interfaces.ISprintSet"
@@ -102,9 +93,6 @@
     <browser:page
       name="+index"
       template="../templates/sprints-index.pt" />
-    <browser:page
-      name="+portlet-actions"
-      template="../templates/sprints-portlet-actions.pt" />
     <browser:page
       name="+portlet-details"
       template="../templates/sprints-portlet-details.pt" />

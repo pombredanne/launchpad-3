@@ -97,9 +97,9 @@ class FileUploadClient:
                     DeprecationWarning, stacklevel=2
                     )
         if file is None:
-            raise TypeError('No data')
+            raise TypeError('Bad File Descriptor: %s' % repr(file))
         if size <= 0:
-            raise UploadFailed('No data')
+            raise UploadFailed('Invalid length: %d' % size)
 
         if isinstance(name, unicode):
             name = name.encode('utf-8')

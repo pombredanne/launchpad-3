@@ -16,8 +16,8 @@ CREATE TABLE TranslationImportQueue(
   CONSTRAINT        valid_link CHECK (
                  (((productseries IS NULL) <> (distrorelease IS NULL)) AND
                   ((distrorelease IS NULL) = (sourcepackagename IS NULL)))),
-  CONSTRAINT        UNIQUE (importer, distrorelease, sourcepackagename,
-                            productseries)
+  CONSTRAINT        unique_entry_per_importer UNIQUE (importer, distrorelease,
+                        sourcepackagename, productseries)
 );
 
 ALTER TABLE POFile RENAME COLUMN filename TO path;

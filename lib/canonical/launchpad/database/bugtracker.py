@@ -13,7 +13,8 @@ from canonical.lp.dbschema import EnumCol, BugTrackerType
 from canonical.database.sqlbase import (SQLBase, flush_database_updates,
     quote)
 
-from canonical.launchpad.interfaces import IBugTracker, IBugTrackerSet
+from canonical.launchpad.interfaces import (
+    IBugTracker, IBugTrackerSet, NotFoundError)
 
 
 
@@ -65,7 +66,7 @@ class BugTrackerSet:
     def __getitem__(self, name):
         item = self.table.selectOne(self.table.q.name == name)
         if item is None:
-            raise KeyError, id
+            raise NotFoundError(name)
         else:
             return item
 

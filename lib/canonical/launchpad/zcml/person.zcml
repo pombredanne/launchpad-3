@@ -9,9 +9,10 @@
 
   <!-- Person -->
 
-  <browser:traverse
-      for="canonical.launchpad.interfaces.IPerson"
-      function="canonical.launchpad.browser.traversers.traverse_person" />
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="TeamNavigation PersonNavigation"
+      />
 
   <content class="canonical.launchpad.database.Person">
       <allow interface="canonical.launchpad.interfaces.IPerson" />
@@ -27,8 +28,9 @@
 
   <browser:menus
       module="canonical.launchpad.browser.person"
-      classes="PersonFacets PersonBugsMenu PersonSpecsMenu PersonSupportMenu
-               PersonContextMenu TeamContextMenu PeopleContextMenu" />
+      classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
+          PersonSpecsMenu PersonSupportMenu PeopleContextMenu"
+      />
 
   <browser:url
       for="canonical.launchpad.interfaces.IPerson"
@@ -97,10 +99,17 @@
     name="+edithackergotchi"
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonHackergotchiView"
-    permission="launchpad.Admin"
+    permission="launchpad.Edit"
     template="../templates/person-images.pt"
     >
   </browser:page>
+
+  <browser:page
+     name="+bugs"
+     for="canonical.launchpad.interfaces.IPerson"
+     permission="zope.Public"
+     class="canonical.launchpad.browser.PersonView"
+     attribute="redirectToAssignedBugs" />
 
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"
@@ -151,10 +160,6 @@
           facet="bounties"
           template="../templates/person-bounties.pt"
           lp:url="/people/$Person.name/+bounties" />
-      <browser:page
-          name="+portlet-actions"
-          template="../templates/person-portlet-actions.pt"
-          lp:url="/people/$Person.name/+portlet-actions" />
       <browser:page
           name="+portlet-emails"
           template="../templates/person-portlet-emails.pt"
@@ -297,9 +302,6 @@
   </browser:pages>
 
   <!-- Team Views -->
-  <browser:traverse
-      for="canonical.launchpad.interfaces.ITeam"
-      function="canonical.launchpad.browser.traverse_team" />
 
   <browser:pages
       for="canonical.launchpad.interfaces.ITeam"
@@ -401,9 +403,10 @@
       for="canonical.launchpad.interfaces.IPersonSet"
       name="+index" />
 
-  <browser:traverse
-      for="canonical.launchpad.interfaces.IPersonSet"
-      getter="getByName" />
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="PersonSetNavigation"
+      />
 
   <browser:addform
       name="+newteam"
@@ -503,9 +506,6 @@
       <browser:page
         name="+portlet-about"
         template="../templates/people-portlet-about.pt" />
-      <browser:page
-        name="+portlet-actions"
-        template="../templates/people-portlet-actions.pt" />
   </browser:pages>
 </facet>
 </configure>

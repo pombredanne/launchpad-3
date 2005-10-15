@@ -2,7 +2,7 @@
     <h4>Translating Applications:</h4>
 
     <div class="portletBody portletContent" i18n:translate="rosetta-blurb">
-      <img src="/++resource++languages.gif" />
+      <img alt="" src="/++resource++languages.gif" />
       <a i18n:attributes="title" title="Rosetta"
          href="rosetta" i18n:translate="">Rosetta</a> is a
       <b>web-based translation portal</b>.

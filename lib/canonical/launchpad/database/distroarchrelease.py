@@ -15,9 +15,11 @@ from canonical.database.sqlbase import (
 from canonical.lp import dbschema
 
 from canonical.launchpad.interfaces import (
-    IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot
-    )
+    IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot,
+    IHasBuildRecords, NotFoundError)
+
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
+from canonical.launchpad.database.build import Build
 
 __all__ = [
     'DistroArchRelease',
@@ -27,7 +29,7 @@ __all__ = [
 
 class DistroArchRelease(SQLBase):
 
-    implements(IDistroArchRelease)
+    implements(IDistroArchRelease, IHasBuildRecords)
 
     _table = 'DistroArchRelease'
 
@@ -47,16 +49,17 @@ class DistroArchRelease(SQLBase):
                             intermediateTable='BinaryPackagePublishing',
                             otherColumn='binarypackage')
 
-    # for launchpad pages
+    @property
     def title(self):
-        title = self.distrorelease.distribution.displayname
-        title += ' ' + self.distrorelease.displayname
-        title += ' for the ' + self.architecturetag
-        title += ' ('+self.processorfamily.name+') architecture'
-        return title
-    title = property(title)
-
+        """See IDistroArchRelease """
+        return '%s for %s (%s)' % (
+            self.distrorelease.title, self.architecturetag,
+            self.processorfamily.name
+            )
+    
+    @property
     def binarycount(self):
+        """See IDistroArchRelease """
         # XXX: Needs system doc test. SteveAlexander 2005-04-24.
         query = ('BinaryPackagePublishing.distroarchrelease = %s AND '
                  'BinaryPackagePublishing.status = %s'
@@ -64,9 +67,13 @@ class DistroArchRelease(SQLBase):
                     self.id, dbschema.PackagePublishingStatus.PUBLISHED
                  ))
         return BinaryPackagePublishing.select(query).count()
-        #return len(self.packages)
-    binarycount = property(binarycount)
 
+    @property
+    def isNominatedArchIndep(self):
+        """See IDistroArchRelease"""
+        return (self.distrorelease.nominatedarchindep and
+                self.id == self.distrorelease.nominatedarchindep.id)
+    
     def getChroot(self, pocket=None, default=None):
         """See IDistroArchRelease"""
         if not pocket:
@@ -79,8 +86,7 @@ class DistroArchRelease(SQLBase):
             return pchroot.chroot
 
         return default
-        
-        
+                
     def findPackagesByName(self, pattern, fti=False):
         """Search BinaryPackages matching pattern and archtag"""
         binset = getUtility(IBinaryPackageReleaseSet)
@@ -96,7 +102,20 @@ class DistroArchRelease(SQLBase):
         try:
             return packages[0]
         except IndexError:
-            raise KeyError, name
+            raise NotFoundError(name)
+
+    def getBuildRecords(self, status=None, limit=10):
+        """See IHasBuildRecords"""
+        # specific status or simply touched.
+        if status:
+            status_clause = "buildstate=%s" % sqlvalues(status)
+        else:
+            status_clause = "builder is not NULL"
+            
+        return Build.select(
+            "distroarchrelease=%s AND %s" % (self.id, status_clause),
+            limit=limit, orderBy="-datebuilt"
+            )
 
 
 class PocketChroot(SQLBase):

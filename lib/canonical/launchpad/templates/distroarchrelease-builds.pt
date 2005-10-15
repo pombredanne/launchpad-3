@@ -11,17 +11,11 @@
   <div tal:replace="structure context/distrorelease/@@+portlet-details" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
+<div metal:fill-slot="main">
 
-<div metal:fill-slot="main"
-     tal:define="distrorelease context/distrorelease;
-                 distro distrorelease/distribution">
+  <h1><span tal:replace="context/title"/> Builds</h1>
 
-  <h1><span tal:replace="distrorelease/displayname"/> 
-      <span tal:replace="context/architecturetag"/> Builds</h1> 
-
- 
+  <div tal:replace="structure context/@@+builds-list"/>    
 </div>
 
 </body>

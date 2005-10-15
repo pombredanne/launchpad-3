@@ -48,15 +48,15 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     header = Text(
         title=_('Header'),
         description=_(
-            "The standard template header as gettext creates it. It's used to"
-            " get some default values when creating a new PO file."),
+            "The standard template header as gettext creates it. It's used "
+            "to get some default values when creating a new PO file."),
         required=True)
 
     iscurrent = Bool(
         title=_("Accept translations?"),
         description=_(
-            "If unchecked, people can no longer change the template's"
-            " translations."),
+            "If unchecked, people can no longer change the template's "
+            "translations."),
         required=True,
         default=True)
 
@@ -94,15 +94,15 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     binarypackagename = Choice(
         title=_("Binary Package"),
         description=_(
-            "The package in which this template's translations are installed."
-            ),
+            "The package in which this template's translations are "
+            "installed."),
         required=False,
         vocabulary="BinaryPackageName")
 
     languagepack = Bool(
         title=_("Include translations for this template in language packs?"),
         description=_(
-            "Check this box if this template is part of a language pack so"
+            "Check this box if this template is part of a language pack so "
             "its translations should be exported that way."),
         required=True,
         default=False)

@@ -8,7 +8,6 @@ import datetime
 
 # Zope interfaces
 from zope.interface import implements, providedBy
-from zope.exceptions import NotFoundError
 from zope.event import notify
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
@@ -24,7 +23,7 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IEditPOTemplate, IPOTemplateSet, IPOTemplateSubset, IRawFileData,
-    LanguageNotFound)
+    LanguageNotFound, NotFoundError, NameNotAvailable)
 
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -330,14 +329,14 @@ class POTemplate(SQLBase, RosettaStats):
                    quote(language_code)),
             clauseTables=['Language'])
         if pofile is None:
-            raise KeyError(language_code)
+            raise NotFoundError(language_code)
         return pofile
 
     def queryPOFileByLang(self, language_code, variant=None):
         try:
             pofile = self.getPOFileByLang(language_code, variant)
             return pofile
-        except KeyError:
+        except NotFoundError:
             return None
 
     def messageCount(self):
@@ -346,19 +345,19 @@ class POTemplate(SQLBase, RosettaStats):
     def currentCount(self, language):
         try:
             return self.getPOFileByLang(language).currentCount()
-        except KeyError:
+        except NotFoundError:
             return 0
 
     def updatesCount(self, language):
         try:
             return self.getPOFileByLang(language).updatesCount()
-        except KeyError:
+        except NotFoundError:
             return 0
 
     def rosettaCount(self, language):
         try:
             return self.getPOFileByLang(language).rosettaCount()
-        except KeyError:
+        except NotFoundError:
             return 0
 
     def hasMessageID(self, messageID):
@@ -482,13 +481,7 @@ class POTemplate(SQLBase, RosettaStats):
             pluralform=0)
 
     def createMessageSetFromMessageID(self, messageID):
-        """Creates in the database a new message set.
-
-        As a side-effect, creates a message ID sighting in the database for the
-        new set's prime message ID.
-
-        Returns that message set.
-        """
+        """See IPOTemplate."""
         messageSet = POTMsgSet(
             primemsgid_=messageID,
             sequence=0,
@@ -505,8 +498,9 @@ class POTemplate(SQLBase, RosettaStats):
         try:
             messageID = POMsgID.byMsgid(text)
             if self.hasMessageID(messageID):
-                raise KeyError("There is already a message set for this "
-                               "template, file and primary msgid")
+                raise NameNotAvailable(
+                    "There is already a message set for this template, file "
+                    "and primary msgid")
         except SQLObjectNotFound:
             # If there are no existing message ids, create a new one.
             # We do not need to check whether there is already a message set

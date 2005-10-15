@@ -7,6 +7,7 @@
 
   <content class="canonical.launchpad.database.DistroRelease">
     <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
+    <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <require
         permission="launchpad.Edit"
         set_attributes="displayname title summary description version
@@ -20,9 +21,10 @@
     <allow interface="canonical.launchpad.interfaces.IDistroReleaseSet" />
   </securedutility>
 
-  <browser:traverse
-    for="canonical.launchpad.interfaces.IDistroRelease"
-    function="canonical.launchpad.browser.traversers.traverse_distrorelease" />
+  <browser:navigation
+    module="canonical.launchpad.browser"
+    classes="DistroReleaseNavigation"
+    />
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistroRelease"
@@ -48,15 +50,6 @@
         class="canonical.launchpad.browser.BugTaskSearchListingView"
         facet="bugs"
         permission="zope.Public">
-        <browser:page
-            name="+bugs"
-            lp:url="/distros/$DistroRelease.name/+bugs"
-            template="../templates/bugs-for-context.pt" />
-        <browser:page
-            name="+portlet-bugtasklist-mybugs"
-            template="../templates/bugtasklist-portlet-mybugs.pt"
-            lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-mybugs"
-            />
         <browser:page
             name="+portlet-bugtasklist-releasebugs"
             template="../templates/bugtask-portlet-releasebugs.pt"
@@ -103,13 +96,13 @@
             lp:url="/distros/$distribution/$distrorelease/+builds"
             />
         <browser:page
+            name="+builds-list"
+            template="../templates/builds-list.pt"
+            lp:url="/distros/$distribution/$distrorelease/+builds-list"/>
+        <browser:page
             name="+portlet-details"
             facet="overview"
             template="../templates/distrorelease-portlet-details.pt" />
-        <browser:page
-            name="+portlet-actions"
-            facet="overview"
-            template="../templates/distrorelease-portlet-actions.pt" />
         <browser:page
             name="+portlet-translations"
             facet="translations"

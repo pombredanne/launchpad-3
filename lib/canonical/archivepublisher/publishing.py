@@ -16,6 +16,7 @@ from canonical.database.constants import nowUTC
 
 from md5 import md5
 from sha import sha
+from datetime import datetime
 
 __all__ = [ 'Publisher', 'pocketsuffix', 'suffixpocket' ]
 
@@ -27,7 +28,6 @@ pocketsuffix = {
     }
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 
-from datetime import datetime
 
 class Publisher(object):
     """Publisher is the class used to provide the facility to publish
@@ -196,6 +196,7 @@ class Publisher(object):
                 #   -- kiko, 2005-09-23
                 f = open("%s/override.%s.%s" % (self._config.overrideroot,
                                                 distrorelease, component), "w")
+                overrides[distrorelease][component]['bin'].sort()
                 for tup in overrides[distrorelease][component]['bin']:
                     if tup[2].endswith("debian-installer"):
                         # Note in _di_release_components that this
@@ -221,6 +222,7 @@ class Publisher(object):
                     f = open("%s/override.%s.%s.debian-installer" % (
                         self._config.overrideroot, distrorelease, component),
                              "w")
+                    di_overrides.sort()
                     for tup in di_overrides:
                         f.write("\t".join(tup))
                         f.write("\n")
@@ -231,6 +233,7 @@ class Publisher(object):
                 f = open("%s/override.%s.%s.src" % (self._config.overrideroot,
                                                     distrorelease,
                                                     component), "w")
+                overrides[distrorelease][component]['src'].sort()
                 for tup in overrides[distrorelease][component]['src']:
                     f.write("\t".join(tup))
                     f.write("\n")
@@ -283,6 +286,7 @@ class Publisher(object):
             for component, architectures in components.items():
                 for architecture, file_names in architectures.items():
                     di_files = []
+                    files = []
                     f = open(os.path.join(self._config.overrideroot,
                                           "%s_%s_%s" % (distrorelease,
                                                         component,
@@ -296,7 +300,10 @@ class Publisher(object):
                             # And note the name for output later
                             di_files.append(name)
                         else:
-                            f.write("%s\n" % name)
+                            files.append(name)
+                    files.sort(key=os.path.basename)
+                    f.write("\n".join(files))
+                    f.write("\n")
                     f.close()
                     # Record this distrorelease/component/arch as needing a
                     # Release file.
@@ -312,6 +319,7 @@ class Publisher(object):
                         f = open("%s/%s_%s_debian-installer_%s" % (
                             self._config.overrideroot, distrorelease,
                             component, architecture), "w")
+                        di_files.sort(key=os.path.basename)
                         f.write("\n".join(di_files))
                         f.write("\n")
                         f.close()

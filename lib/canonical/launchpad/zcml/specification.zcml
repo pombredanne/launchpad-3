@@ -43,9 +43,6 @@
       name="+listing-detailed"
       template="../templates/specification-listing-detailed.pt" />
     <browser:page
-      name="+portlet-actions"
-      template="../templates/specification-portlet-actions.pt" />
-    <browser:page
       name="+portlet-details"
       template="../templates/specification-portlet-details.pt" />
     <browser:page
@@ -89,6 +86,10 @@
       field="whiteboard"
       class="zope.app.form.browser.TextAreaWidget"
       height="5" />
+    <browser:widget
+      field="specurl"
+      class="zope.app.form.browser.TextWidget"
+      displayWidth="60" />
   </browser:editform>
 
   <browser:editform
@@ -261,11 +262,6 @@
     provides="canonical.launchpad.interfaces.ISpecificationSet" >
       <allow interface="canonical.launchpad.interfaces.ISpecificationSet" />
   </securedutility>
-
-  <browser:suburl
-    for="canonical.launchpad.interfaces.ILaunchpadRoot"
-    utility="canonical.launchpad.interfaces.ISpecificationSet"
-    name="specs" />
 
   <browser:url
     for="canonical.launchpad.interfaces.ISpecificationSet"

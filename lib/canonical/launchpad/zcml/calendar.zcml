@@ -105,9 +105,10 @@
       attribute="__call__"
       lp:url="$obj/calendar/+icalendar" />
 
-  <browser:traverse
-      for="schoolbell.interfaces.ICalendar"
-      function="canonical.launchpad.browser.traverseCalendar" />
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="CalendarNavigation CalendarEventSetNavigation"
+      />
 
   <browser:page
       name="+subscribe"
@@ -116,17 +117,6 @@
       class="canonical.launchpad.browser.CalendarSubscribeView"
       template="../templates/calendar-subscribe.pt"
       lp:url="$obj/calendar/+subscribe" />
-
-  <browser:page
-      for="canonical.launchpad.interfaces.ILaunchpadCalendar"
-      name="+portlet-actions"
-      permission="zope.Public"
-      template="../templates/calendar-portlet-actions.pt"
-      lp:url="/$Calendar/+portlet-actions" />
-
-  <browser:traverse
-      for="canonical.launchpad.interfaces.ICalendarEventSet"
-      getter="__getitem__" />
 
   <browser:url
       for="canonical.launchpad.interfaces.ICalendarRange"
@@ -301,20 +291,13 @@
 
   <!-- MergedCalendar -->
 
-  <browser:suburl
-      for="canonical.launchpad.interfaces.ILaunchpadRoot"
-      class="canonical.launchpad.components.cal.MergedCalendar"
-      name="calendar"
-      permission="launchpad.AnyPerson"
-      lp:url="/calendar/" />
-
   <browser:url
       for="canonical.launchpad.components.cal.MergedCalendar"
       path_expression="string:calendar"
       parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot" />
 
   <browser:pages
-      for="canonical.launchpad.interfaces.ILaunchpadMergedCalendar"
+      for="canonical.launchpad.interfaces.ILaunchpadCalendar"
       permission="launchpad.AnyPerson"
       class="canonical.launchpad.browser.CalendarSubscriptionsView">
     <browser:page

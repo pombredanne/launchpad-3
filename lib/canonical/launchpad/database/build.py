@@ -67,23 +67,13 @@ class Build(SQLBase):
     def title(self):
         return '%s-%s' % (self.sourcepackagerelease.name,
                           self.sourcepackagerelease.version)
-    @property
-    def buildlogURL(self):
-        downloader = getUtility(ILibrarianClient)
-        try:
-            url = downloader.getURLForAlias(self.buildlog.id)
-        except URLError:
-            # Librarian not running or file not available.
-            pass
-        else:
-            return url
 
 
 class BuildSet:
     implements(IBuildSet)
 
     def getBuildBySRAndArchtag(self, sourcepackagereleaseID, archtag):
-        """See IBuilderSet"""
+        """See IBuildSet"""
         clauseTables = ['DistroArchRelease']
         query = ('Build.sourcepackagerelease = %s '
                  'AND Build.distroarchrelease = DistroArchRelease.id '
@@ -92,14 +82,4 @@ class BuildSet:
                  )
 
         return Build.select(query, clauseTables=clauseTables)
-
-    def getBuiltForDistroRelease(self, distrorelease, size=10):
-        """See IBuilderSet"""
-        # XXX: what is size useful for? Nothing, it appears!
-        #   -- kiko, 2005-09-23
-
-        arch_ids = ''.join(['%d,' % arch.id for arch in
-                            distrorelease.architectures])[:-1]
-
-        return Build.select("distroarchrelease IN (%s)" % arch_ids)
 

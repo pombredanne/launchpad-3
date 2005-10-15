@@ -3,8 +3,7 @@
     <h4>Also reported in:</h4>
 
     <div class="portletBody"
-         tal:define="bug_url context/fmt:url;
-                     other_occurrences view/alsoReportedIn;">
+         tal:define="other_occurrences view/alsoReportedIn;">
       <div class="portletContent odd">
 
         <tal:block condition="not:other_occurrences">
@@ -22,7 +21,7 @@
                  tal:content="task/targetname"
                  style="text-decoration: underline">Firefox</a><a href="#"
                  tal:condition="task/required:launchpad.Edit"
-                 tal:attributes="href string:${task/fmt:url}/+edit"
+                 tal:attributes="href string:${task/fmt:url}/+editstatus"
                  tal:content="task/targetname"
                  style="text-decoration: underline">Firefox</a>
                  <br />

@@ -9,12 +9,8 @@
       <div tal:replace="structure context/@@+portlet-subscriptions|nothing" />
     </metal:leftportlets>
 
-    <metal:rightportlets fill-slot="portlets_two">
-      <div tal:replace="structure context/@@+portlet-actions" />
-    </metal:rightportlets>
-
     <div metal:fill-slot="main">
-      <h2>Coming Events</h2>
+      <h1>Coming events</h1>
 
       <table class="listing" tal:condition="view/events">
         <thead>
