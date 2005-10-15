@@ -48,6 +48,7 @@ class ISourcePackageRelease(Interface):
     sourcepackagename = Attribute("SourcePackageName table reference")
     uploaddistrorelease = Attribute("The distrorelease in which this package "
                                     "was first uploaded in Launchpad")
+    manifest = Attribute("Manifest of branches imported for this release")
 
     # read-only properties
     name = Attribute('The sourcepackagename for this release, as text')
