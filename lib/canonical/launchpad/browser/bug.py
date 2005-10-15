@@ -69,7 +69,9 @@ class BugContextMenu(ContextMenu):
     def subscription(self):
         user = getUtility(ILaunchBag).user
         
-        if user is not None and self.context.bug.isSubscribed(user):
+        if user is None:
+            text = 'Subscribe/Unsubscribe'
+        elif user is not None and self.context.bug.isSubscribed(user):
             text = 'Unsubscribe'
         else:
             text = 'Subscribe'

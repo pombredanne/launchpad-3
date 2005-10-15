@@ -662,13 +662,13 @@ class GetManifestFrom(DatabaseScaffold):
         manifest = get_manifest_from(db_Manifest.byUuid(uuid))
         self.assertEquals(manifest[0].dirname, None)
 
-    def testManifestEntryPatchOn(self):
-        """get_manifest_from correctly maps patch_on to sequence."""
+    def testManifestEntryParent(self):
+        """get_manifest_from correctly maps parent to sequence."""
         from canonical.launchpad.database import Manifest as db_Manifest
         from canonical.launchpad.hctapi import get_manifest_from
         uuid = "2a18a3f1-eec5-4b72-b23c-fb46c8c12a88"
         manifest = get_manifest_from(db_Manifest.byUuid(uuid))
-        self.assertEquals(manifest[1].patch_on, manifest[0])
+        self.assertEquals(manifest[1].parent, manifest[0])
 
     def testManifestEntryBranch(self):
         """get_manifest_from returns a manifest entry with a branch."""
@@ -1221,23 +1221,23 @@ class PutManifest(DatabaseScaffold):
         obj = get_object("lp:///products/netapplet/1.0").manifest
         self.assertEquals(obj.entries[0].dirname, None)
 
-    def testEntryWithPatchOn(self):
-        """put_manifest creates entries with a patchon."""
+    def testEntryWithParent(self):
+        """put_manifest creates entries with a parent."""
         from hct.manifest import Manifest, ManifestTarEntry, ManifestPatchEntry
         manifest = Manifest()
         manifest.append(ManifestTarEntry("foo.tar.gz"))
         manifest.append(ManifestPatchEntry("foo.patch.gz"))
-        manifest[-1].patch_on = manifest[0]
+        manifest[-1].parent = manifest[0]
 
         from canonical.launchpad.hctapi import put_manifest, get_object
         put_manifest("lp:///products/netapplet/1.0", manifest)
 
         from canonical.launchpad.database import Manifest as db_Manifest
         obj = get_object("lp:///products/netapplet/1.0").manifest
-        self.assertEquals(obj.entries[-1].patchon, 1)
+        self.assertEquals(obj.entries[-1].parent, 1)
 
-    def testEntryWithoutPatchOn(self):
-        """put_manifest creates entries without a patchon."""
+    def testEntryWithoutParent(self):
+        """put_manifest creates entries without a parent."""
         from hct.manifest import Manifest, ManifestTarEntry
         manifest = Manifest()
         manifest.append(ManifestTarEntry("foo.tar.gz"))
@@ -1247,7 +1247,7 @@ class PutManifest(DatabaseScaffold):
 
         from canonical.launchpad.database import Manifest as db_Manifest
         obj = get_object("lp:///products/netapplet/1.0").manifest
-        self.assertEquals(obj.entries[0].patchon, None)
+        self.assertEquals(obj.entries[0].parent, None)
 
     def testCreatesDirEntry(self):
         """put_manifest creates a dir entry."""

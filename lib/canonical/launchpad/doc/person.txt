@@ -212,6 +212,20 @@ merged accounts from lists etc.
 >>> cur.fetchone()[0] is None
 True
 
+After the merging we could test the topPeople() method of the PersonSet
+class. This methods returns a sliced list (actually it's a object that
+behaves like a list) of 5 people ordered by karma.
+The criteria to select those people are: Only non merged valid accounts(
+accounts with a password and preferred e-mail).
+
+>>> list =  personset.topPeople()
+>>> for person in list:
+...     print person.name, person.karma
+sabdfl 500
+marilize 450
+name12 450
+lifeless 2
+carlos 0
 
 People can have karma in Launchpad
 ----------------------------------

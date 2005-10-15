@@ -765,7 +765,7 @@ class PersonSet:
 
     def topPeople(self):
         """See IPersonSet."""
-        return Person.select('password IS NOT NULL', orderBy='-karma')[:5]
+        return self.getAllValidPersons(orderBy=['-karma', 'name'])[:5]
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
