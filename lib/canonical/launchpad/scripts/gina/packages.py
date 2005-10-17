@@ -47,7 +47,7 @@ def get_person_by_key(self, keyrings, key):
             algochar = GPGALGOS[algo]
         else:
             algochar = "?" % algo
-## STRIPED GPGID Support by cprov 20041004
+## STRIPPED GPGID Support by cprov 20041004
 ##          id = line[2] + algochar + "/" + line[4][-8:]
         id = line[4][-8:]
         algorithm = algo
@@ -95,7 +95,7 @@ class AbstractPackageData:
 
     def do_package(self, dir, package_root):
         raise NotImplementedError
-    
+
     def do_katie(self, kdb, keyrings):
         raise NotImplementedError
 
@@ -171,7 +171,7 @@ class SourcePackageData(AbstractPackageData):
         missing = [attr for attr in self._required if not hasattr(self, attr)]
         if missing:
             raise MissingRequiredArguments(missing)
-                
+
     def _setDefaults(self):
         log.info("Damn, I had to assume 'misc'")
         self.section = 'misc'
@@ -188,7 +188,7 @@ class SourcePackageData(AbstractPackageData):
 
         os.chdir(dir)
         call("dpkg-source -sn -x %s" % fullpath)
-        
+
         version = re.sub("-[^-]+$", "", version)
         filename = "%s-%s" % (self.package, version)
         fullpath = os.path.join(filename, "debian", "changelog")
@@ -220,7 +220,7 @@ class SourcePackageData(AbstractPackageData):
         if not kdb:
             self.date_uploaded = nowUTC
             return True
-            
+
         data = kdb.getSourcePackageRelease(self.package, self.version)
         if not data:
             self.date_uploaded = nowUTC
@@ -240,9 +240,6 @@ class SourcePackageData(AbstractPackageData):
 ##             get_person_by_key(keyrings, self.dsc_signing_key)
         return True
 
-#
-#
-#
 
 class BinaryPackageData(AbstractPackageData):
     """This Class holds important data to a given binarypackage."""
@@ -294,7 +291,7 @@ class BinaryPackageData(AbstractPackageData):
             if match:
                 self.source = match.group(1)
                 self.source_version = match.group(2)
-                
+
         if not hasattr(self, 'section'):
             log.info("Binary package %s lacks a section... assuming misc" %
                      self.package)
@@ -304,12 +301,9 @@ class BinaryPackageData(AbstractPackageData):
         missing = [attr for attr in self._required if not hasattr(self, attr)]
         if missing:
             raise MissingRequiredArguments(missing)
- 
+
     def do_package(self, dir, package_root):
-        """
-        Grab the shared library info from the package on archive if exists.
-        
-        """
+        """Grab shared library info from package in archive if it exists."""
         self.package_root = package_root
         cwd = os.getcwd()
         fullpath = os.path.join(package_root, self.filename)
@@ -326,7 +320,7 @@ class BinaryPackageData(AbstractPackageData):
                 ))
             self.shlibs = open(shlibfile).read().strip()
         os.chdir(cwd)
-    
+
     def do_katie(self, kdb, keyrings):
         if not kdb:
             return True
@@ -347,3 +341,4 @@ class BinaryPackageData(AbstractPackageData):
         self.gpg_signing_key_owner = \
             get_person_by_key(keyrings, self.gpg_signing_key)
         return True
+
