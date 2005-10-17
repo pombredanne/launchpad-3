@@ -663,7 +663,7 @@ class SourcePackageReleaseHandler:
         spr = SourcePackageRelease.selectOne(
             """
             sourcepackagerelease.sourcepackagename = %s AND
-            sourcepackagerelease.version = %s AND
+            sourcepackagerelease.version = '%s' AND
             sourcepackagepublishing.sourcepackagerelease = 
                 sourcepackagerelease.id AND
             sourcepackagepublishing.distrorelease = distrorelease.id AND
