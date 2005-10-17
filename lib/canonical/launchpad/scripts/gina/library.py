@@ -39,7 +39,7 @@ def getLibraryAlias(root, filename):
     size = os.stat(fname).st_size
     alias = librarian(filename, size, fobj,
                       contentType=_libType(filename))
-                                 
+
     fobj.close()
     return alias
 
