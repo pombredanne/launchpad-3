@@ -9,6 +9,7 @@
     <include file="batchnavigator.zcml" />
     <include file="binarypackagerelease.zcml" />
     <include file="binarypackagename.zcml" />
+    <include file="binarypackagepublishing.zcml" />
     <include file="bountysubscription.zcml" />
     <include file="bounty.zcml" />
     <include file="branch.zcml" />
@@ -83,6 +84,7 @@
     <include file="sourcepackagename.zcml" />
     <include file="sourcepackagerelease.zcml" />
     <include file="sourcepackagereleaseindistro.zcml" />
+    <include file="sourcepackagepublishing.zcml" />
     <include file="specification.zcml" />
     <include file="specificationdependency.zcml" />
     <include file="specificationreview.zcml" />

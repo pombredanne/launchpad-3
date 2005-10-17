@@ -55,6 +55,12 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         title=_("Section"),
         description=_("The release sections."), required=True,
         vocabulary='Schema')
+    # XXX: dsilvers: 20051013: These should be renamed and the above removed
+    # in the future when we have time. Uploader and Queue systems will need
+    # fixing to cope.
+    # Bug 3256
+    real_components = Attribute("The release's components.")
+    real_sections = Attribute("The release's sections.")
     releasestatus = Attribute(
         "The release's status, such as FROZEN or DEVELOPMENT, as "
         "specified in the DistributionReleaseStatus enum.")
@@ -115,8 +121,10 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         special URL items, like +sources or +packages, then goes on to
         traverse using __getitem__."""
 
-    def __getitem__(arch):
-        """Return a Set of Binary Packages in this distroarchrelease."""
+    def __getitem__(archtag):
+        """Return the distroarchrelease for this distrorelease with the
+        given architecturetag.
+        """
 
     def updateStatistics(self):
         """Update all the Rosetta stats for this distro release."""
@@ -136,9 +144,11 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         """Return an iterator over binary packages with a name that matches
         this one."""
 
-    def getPublishedReleases(sourcepackage_or_name):
+    def getPublishedReleases(sourcepackage_or_name, pocket=None):
         """Given a SourcePackageName, return a list of the currently
         published SourcePackageReleases as SourcePackagePublishing records.
+
+        If pocket is not specified, we look in all pockets.
         """
 
     def publishedBinaryPackages(component=None):

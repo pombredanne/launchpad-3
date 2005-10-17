@@ -45,6 +45,15 @@ class IDistroArchRelease(IHasOwner):
     def findPackagesByName(pattern):
         """Search BinaryPackages matching pattern"""
 
+    def getReleasedPackages(name, pocket=None):
+        """Get the publishing records for the given binary package name.
+
+        The 'name' passed in should either be a BinaryPackageName instance
+        or else a string which will be looked up as a BinaryPackageName.
+
+        If pocket is not specified, we look in all pockets.
+        """
+
     def findPackagesByArchtagName(pattern, fti=False):
         """Search BinaryPackages matching pattern and archtag"""
 

@@ -16,10 +16,12 @@ from canonical.lp import dbschema
 
 from canonical.launchpad.interfaces import (
     IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot,
-    IHasBuildRecords, NotFoundError)
+    IHasBuildRecords, NotFoundError, IBinaryPackageName)
 
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
 from canonical.launchpad.database.build import Build
+from canonical.launchpad.database.binarypackagename import BinaryPackageName
+from canonical.launchpad.helpers import shortlist
 
 __all__ = [
     'DistroArchRelease',
@@ -117,6 +119,25 @@ class DistroArchRelease(SQLBase):
             limit=limit, orderBy="-datebuilt"
             )
 
+    def getReleasedPackages(self, name, pocket=None):
+        """See IDistroArchRelease."""
+        if not IBinaryPackageName.providedBy(name):
+            name = BinaryPackageName.byName(name)
+        pocketclause = ""
+        if pocket is not None:
+            pocketclause = "AND pocket=%s" % sqlvalues(pocket.value)
+        published = BinaryPackagePublishing.select((
+            """
+            distroarchrelease = %s AND
+            status = %s AND
+            binarypackagerelease = binarypackagerelease.id AND
+            binarypackagerelease.binarypackagename = %s
+            """ % sqlvalues(self.id,
+                            dbschema.PackagePublishingStatus.PUBLISHED,
+                            name.id))+pocketclause,
+            clauseTables = ['BinaryPackageRelease'])
+        return shortlist(published)
+        
 
 class PocketChroot(SQLBase):
     implements(IPocketChroot)

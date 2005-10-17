@@ -12,7 +12,7 @@ __all__ = [
 from zope.interface import implements
 from zope.component import getUtility
 
-from sqlobject import StringCol, ForeignKey, MultipleJoin, IntCol
+from sqlobject import StringCol, ForeignKey, MultipleJoin, IntCol, RelatedJoin
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -82,6 +82,15 @@ class DistroRelease(SQLBase):
     datelastlangpack = UtcDateTimeCol(dbName='datelastlangpack', notNull=False,
                                    default=None)
     messagecount = IntCol(notNull=True, default=0)
+
+    # XXX: dsilvers: 20051013: At some point, get rid of components/sections
+    # from above and rename these and fix up the uploader and queue stuff.
+    real_components = RelatedJoin(
+        'Component', joinColumn='distrorelease', otherColumn='component',
+        intermediateTable='ComponentSelection')
+    real_sections = RelatedJoin(
+        'Section', joinColumn='distrorelease', otherColumn='section',
+        intermediateTable='SectionSelection')
 
     @property
     def packagings(self):
@@ -292,22 +301,25 @@ class DistroRelease(SQLBase):
 
         return SourcePackage(sourcepackagename=name, distrorelease=self)
 
-    def __getitem__(self, arch):
-        """Get SourcePackages in a DistroRelease with BugTask"""
+    def __getitem__(self, archtag):
+        """See IDistroRelease."""
         item = DistroArchRelease.selectOneBy(
-            distroreleaseID=self.id, architecturetag=arch)
+            distroreleaseID=self.id, architecturetag=archtag)
         if item is None:
             raise NotFoundError('Unknown architecture %s for %s %s' % (
-                arch, self.distribution.name, self.name))
+                archtag, self.distribution.name, self.name))
         return item
 
-    def getPublishedReleases(self, sourcepackage_or_name):
+    def getPublishedReleases(self, sourcepackage_or_name, pocket=None):
         """See IDistroRelease."""
         if ISourcePackageName.providedBy(sourcepackage_or_name):
             sourcepackage = sourcepackage_or_name
         else:
             sourcepackage = sourcepackage_or_name.name
-        published = SourcePackagePublishing.select(
+        pocketclause = ""
+        if pocket is not None:
+            pocketclause = "AND pocket=%s" % sqlvalues(pocket.value)
+        published = SourcePackagePublishing.select((
             """
             distrorelease = %s AND
             status = %s AND
@@ -315,7 +327,7 @@ class DistroRelease(SQLBase):
             sourcepackagerelease.sourcepackagename = %s
             """ % sqlvalues(self.id,
                             PackagePublishingStatus.PUBLISHED,
-                            sourcepackage.id),
+                            sourcepackage.id))+pocketclause,
             clauseTables = ['SourcePackageRelease'])
         return shortlist(published)
 
