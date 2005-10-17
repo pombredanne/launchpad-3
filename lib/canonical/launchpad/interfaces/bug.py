@@ -244,7 +244,7 @@ class IBugAddForm(IBug):
             emerge or similar."""),
             vocabulary="SourcePackageName")
     distribution = Choice(
-            title=_("Linux Distribution"), required=False,
+            title=_("Linux Distribution"), required=True,
             description=_("""Ubuntu, Debian, Gentoo, etc."""),
             vocabulary="Distribution")
     owner = Int(title=_("Owner"), required=True)

@@ -3,13 +3,11 @@
 __metaclass__ = type
 
 import inspect
-from zope.interface import Interface, Attribute, implements
-from zope.interface.interfaces import IInterface
-from zope.component import queryView, queryMultiView, getDefaultViewName
+from zope.interface import Interface, implements
 from zope.component import getUtility
 import zope.component.servicenames
 from zope.component.interfaces import IDefaultViewName
-from zope.schema import TextLine, Id
+from zope.schema import TextLine
 from zope.configuration.fields import (
     GlobalObject, PythonIdentifier, Path, Tokens)
 
@@ -17,19 +15,16 @@ from zope.security.checker import CheckerPublic, Checker
 from zope.security.proxy import ProxyFactory
 from zope.publisher.interfaces.browser import (
     IBrowserPublisher, IBrowserRequest)
-from zope.publisher.interfaces import NotFound
 from zope.app.component.metaconfigure import (
     handler, adapter, utility, view, PublicPermission)
 
 from zope.app.component.contentdirective import ContentDirective
 from zope.app.component.interface import provideInterface
-from zope.app.security.fields import Permission
 from zope.app.pagetemplate.engine import Engine
 from zope.app.component.fields import LayerField
 from zope.app.file.image import Image
 import zope.app.publisher.browser.metadirectives
 import zope.app.form.browser.metaconfigure
-import zope.app.form.browser.metadirectives
 from zope.app.publisher.browser.viewmeta import (
     pages as original_pages,
     page as original_page)
@@ -37,10 +32,9 @@ from zope.app.publisher.browser.viewmeta import (
 from zope.app.publisher.browser.metaconfigure import (
     defaultView as original_defaultView)
 
-from canonical.launchpad.layers import setAdditionalLayer, setFirstLayer
 from canonical.launchpad.interfaces import (
-    IAuthorization, IOpenLaunchBag, ICanonicalUrlData,
-    IFacetMenu, IApplicationMenu, IContextMenu)
+    IAuthorization, ICanonicalUrlData, IFacetMenu, IApplicationMenu,
+    IContextMenu, IBreadcrumb)
 
 try:
     from zope.publisher.interfaces.browser import IDefaultBrowserLayer
@@ -140,40 +134,6 @@ class IDefaultViewDirective(
         )
 
 
-class ITraverseDirective(Interface):
-
-    for_ = GlobalObject(
-        title=u"Specification of the object that is traversed",
-        required=True
-        )
-
-    permission = Permission(
-        title=u"Permission",
-        required=False
-        )
-
-    getter = PythonIdentifier(
-        title=u"Name of the getter method to use",
-        required=False
-        )
-
-    function = GlobalObject(
-        title=u"function of the form func(obj, request, name) that traverses"
-               " the object by the name, and returns the object traversed to.",
-        required=False
-        )
-
-    adaptwith = GlobalObject(
-        title=u"Adapter factory to use",
-        required=False
-        )
-
-    layer = LayerField(
-        title=u"The layer that this traversal applies to",
-        required=False
-        )
-
-
 class IURLDirective(Interface):
     """Say how to compute canonical urls."""
 
@@ -248,72 +208,6 @@ class IFaviconDirective(Interface):
         )
 
 
-class URLTraverse:
-    """Use the operation named by _getter to traverse an app component."""
-
-    implements(IBrowserPublisher)
-
-    _getter = '__getitem__'
-    _adaptwith = None
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def publishTraverse(self, request, name):
-        view = queryView(self.context, name, request)
-        if view is None:
-            try:
-                traversed_to = getattr(self.context, self._getter)(name)
-            except KeyError:
-                raise NotFound(self.context, name)
-            else:
-                if self._adaptwith is not None:
-                    traversed_to = self._adaptwith(traversed_to)
-                getUtility(IOpenLaunchBag).add(traversed_to)
-                return traversed_to
-        else:
-            return view
-
-    def browserDefault(self, request):
-        view_name = getDefaultViewName(self.context, request)
-        return self.context, (view_name,)
-
-
-class URLTraverseByFunction:
-    """Use the function in _function to traverse an app component.
-
-    _function should have the signature (obj, request, name) and should return
-    None to indicate NotFound.
-    """
-
-    implements(IBrowserPublisher)
-
-    _function = None
-    _adaptwith = None
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def publishTraverse(self, request, name):
-        view = queryView(self.context, name, request)
-        if view is None:
-            traversed_to = self._function(self.context, request, name)
-            if traversed_to is None:
-                raise NotFound(self.context, name)
-            else:
-                if self._adaptwith is not None:
-                    traversed_to = self._adaptwith(traversed_to)
-                getUtility(IOpenLaunchBag).add(traversed_to)
-                return traversed_to
-        else:
-            return view
-
-    def browserDefault(self, request):
-        view_name = getDefaultViewName(self.context, request)
-        return self.context, (view_name,)
-
 def menus(_context, module, classes):
     """Handler for the IMenusDirective."""
     if not inspect.ismodule(module):
@@ -356,44 +250,17 @@ def navigation(_context, module, classes):
     for navclassname in classes:
         navclass = getattr(module, navclassname)
 
+        # These are used for the various ways we register a navigation
+        # component.
         factory = [navclass]
+        for_ = [navclass.usedfor]
+
+        # Register the navigation as the traversal component.
         layer = IDefaultBrowserLayer
         provides = IBrowserPublisher
         name = ''
-        for_ = [navclass.usedfor]
-
         view(_context, factory, layer, name, for_, permission=PublicPermission,
              provides=provides)
-
-
-def traverse(_context, for_, getter=None, function=None, permission=None,
-             adaptwith=None, layer=IDefaultBrowserLayer):
-    if getter is not None and function is not None:
-        raise TypeError("Cannot specify both getter and function")
-    if getter is None and function is None:
-        raise TypeError("Must specify either getter or function")
-
-    name = ''
-    provides = IBrowserPublisher
-
-    if getter:
-        class URLTraverseGetter(URLTraverse):
-            __used_for__ = for_
-            _getter = getter
-            _adaptwith = adaptwith
-
-        factory = [URLTraverseGetter]
-
-    if function:
-        class URLTraverseFunction(URLTraverseByFunction):
-            __used_for__ = for_
-            _function = staticmethod(function)
-            _adaptwith = adaptwith
-
-        factory = [URLTraverseFunction]
-
-    view(_context, factory, layer, name, [for_], permission=permission,
-         provides=provides)
 
 
 class InterfaceInstanceDispatcher:

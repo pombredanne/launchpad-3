@@ -38,7 +38,8 @@ from canonical.launchpad.interfaces import (
     IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IMaintainershipSet,
     IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
     ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
-    ILoginTokenSet, KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken)
+    ILoginTokenSet, KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken,
+    NotFoundError)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -551,6 +552,10 @@ class Person(SQLBase):
         """See IPerson."""
         return self.expiredmembers.union(self.deactivatedmembers)
 
+    # XXX: myactivememberships and activememberships are rather
+    # confusingly named, and I just fixed bug 2871 as a consequence of
+    # this. Is there a way to improve it?
+    #   -- kiko, 2005-10-07
     @property
     def myactivememberships(self):
         """See IPerson."""
@@ -754,13 +759,13 @@ class PersonSet:
         """See IPersonSet."""
         person = self.get(personid)
         if person is None:
-            raise KeyError(personid)
+            raise NotFoundError(personid)
         else:
             return person
 
     def topPeople(self):
         """See IPersonSet."""
-        return Person.select('password IS NOT NULL', orderBy='-karma')[:5]
+        return self.getAllValidPersons(orderBy=['-karma', 'name'])[:5]
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
@@ -1295,7 +1300,7 @@ class EmailAddressSet:
         """See IEmailAddressSet."""
         email = self.get(emailid)
         if email is None:
-            raise KeyError(emailid)
+            raise NotFoundError(emailid)
         else:
             return email
 

@@ -14,8 +14,8 @@ from zope.component import getUtility
 
 from sqlobject import SQLObjectNotFound
 
-from canonical.database.sqlbase import (quote, sqlvalues,
-    flush_database_updates)
+from canonical.database.sqlbase import (
+    quote, sqlvalues, flush_database_updates)
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
@@ -25,7 +25,8 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     ISourcePackage, IDistroSourcePackage, ISourcePackageSet,
-    IDistroSourcePackageSet, ILaunchpadCelebrities)
+    IDistroSourcePackageSet, ILaunchpadCelebrities, IHasBuildRecords,
+    NotFoundError)
 
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
@@ -42,6 +43,7 @@ from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.ticket import Ticket
+from canonical.launchpad.database.build import Build
 from canonical.launchpad.validators.name import valid_name
 from sourcerer.deb.version import Version
 
@@ -59,7 +61,7 @@ class SourcePackage:
     should work as expected.
     """
 
-    implements(ISourcePackage)
+    implements(ISourcePackage, IHasBuildRecords)
 
     def __init__(self, sourcepackagename, distrorelease=None,
                  distribution=None):
@@ -465,6 +467,23 @@ class SourcePackage:
         """See canonical.launchpad.interfaces.ISourcePackage."""
         return not self.__eq__(other)
 
+    def getBuildRecords(self, status=None, limit=10):
+        """See IHasBuildRecords"""
+        if status:
+            status_clause = "buildstate=%s" % sqlvalues(status)
+        else:
+            status_clause = "builder is not NULL"
+
+        rel_ids = ','.join(
+            '%d' % release.id for release in self.releases)
+
+        if not rel_ids:
+            return None
+        
+        return Build.select(
+            "sourcepackagerelease IN (%s) AND %s" % (rel_ids, status_clause),
+            limit=limit, orderBy="-datebuilt")
+    
 
 class DistroSourcePackage:
     """See canonical.launchpad.interfaces.IDistroSourcePackage."""
@@ -543,7 +562,7 @@ class SourcePackageSet(object):
         try:
             spname = SourcePackageName.byName(name)
         except SQLObjectNotFound:
-            raise KeyError, 'No source package name %s' % name
+            raise NotFoundError(name)
         return SourcePackage(sourcepackagename=spname,
                              distrorelease=self.distrorelease)
 

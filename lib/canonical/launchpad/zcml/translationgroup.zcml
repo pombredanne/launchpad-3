@@ -14,9 +14,10 @@
             set_schema="canonical.launchpad.interfaces.ITranslationGroup" />
     </content>
 
-    <browser:traverse
-      for="canonical.launchpad.interfaces.ITranslationGroup"
-      getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="TranslationGroupNavigation TranslationGroupSetNavigation"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITranslationGroup"
@@ -98,10 +99,6 @@
         path_expression="string:groups"
         parent_utility="canonical.launchpad.interfaces.IRosettaApplication"
         />
-
-    <browser:traverse
-      for="canonical.launchpad.interfaces.ITranslationGroupSet"
-      getter="__getitem__" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITranslationGroupSet"

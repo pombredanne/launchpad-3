@@ -8,6 +8,7 @@
     <!-- SourcePackage -->
     <content class="canonical.launchpad.database.SourcePackage">
         <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
+        <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     </content>
 
     <browser:defaultView
@@ -94,7 +95,11 @@
         <browser:page
             name="+builds"
             template="../templates/sourcepackage-builds.pt"
-            lp:url="/distros/$distribution/$distrorelease/+sources/$sourcepackagename/+buildlog" />
+            lp:url="/distros/$distribution/$distrorelease/+sources/$sourcepackagename/+builds" />
+        <browser:page
+            name="+builds-list"
+            template="../templates/builds-list.pt"
+            lp:url="/distros/$distribution/$distrorelease/+sources/$sourcepackagename/+builds-list" />
         <browser:page
             name="+potlist"
             facet="translations"
@@ -256,9 +261,9 @@
         attribute_to_parent="distrorelease"
         />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.ISourcePackageSet"
-        function="canonical.launchpad.browser.traverseSourcePackageSet"
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="SourcePackageSetNavigation"
         />
 
     <browser:defaultView

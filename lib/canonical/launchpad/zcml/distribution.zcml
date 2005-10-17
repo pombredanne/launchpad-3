@@ -8,6 +8,7 @@
     <!-- Distribution -->
     <content class="canonical.launchpad.database.Distribution">
         <allow interface="canonical.launchpad.interfaces.IDistribution"/>
+        <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
         <require
             permission="launchpad.Edit"
             set_attributes="displayname title summary description
@@ -75,6 +76,14 @@
             name="+translations"
             facet="translations"
             template="../templates/distribution-translations.pt" />
+        <browser:page
+            name="+builds"
+            template="../templates/distribution-builds.pt"
+            lp:url="/distros/$distribution/+builds"/>
+        <browser:page
+            name="+builds-list"
+            template="../templates/builds-list.pt"
+            lp:url="/distros/$distribution/+builds-list"/>
     </browser:pages>
     
     <browser:pages
@@ -256,9 +265,10 @@
         layer="canonical.launchpad.layers.MaloneLayer"
         name="+bugs" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IDistributionSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="DistributionSetNavigation"
+        />
     <browser:url
         for="canonical.launchpad.interfaces.IDistribution"
         path_expression="name"

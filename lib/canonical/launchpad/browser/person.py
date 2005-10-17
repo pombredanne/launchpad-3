@@ -3,13 +3,16 @@
 __metaclass__ = type
 
 __all__ = [
+    'PersonNavigation',
+    'TeamNavigation',
+    'PersonSetNavigation',
     'PeopleContextMenu',
     'PersonFacets',
     'PersonBugsMenu',
     'PersonSpecsMenu',
     'PersonSupportMenu',
-    'PersonContextMenu',
-    'TeamContextMenu',
+    'PersonOverviewMenu',
+    'TeamOverviewMenu',
     'BaseListView',
     'PeopleListView',
     'TeamListView',
@@ -33,10 +36,7 @@ __all__ = [
 import cgi
 import sets
 from StringIO import StringIO
-from datetime import datetime
 
-from zope.schema import Text, Bytes
-from zope.interface import Interface, Attribute
 from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
@@ -60,11 +60,12 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, IKarmaActionSet,
     IKarmaSet, UBUNTU_WIKI_URL, ITeamMembershipSet, IObjectReassignment,
     ITeamReassignment, IPollSubset, IPerson, ICalendarOwner,
-    BugTaskSearchParams, ITeam, valid_emblem, valid_hackergotchi,
-    ILibraryFileAliasSet)
+    BugTaskSearchParams, ITeam, ILibraryFileAliasSet, ITeamMembershipSubset,
+    IPollSet)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.form import FormView
+from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
@@ -72,10 +73,45 @@ from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission)
+    enabled_with_permission, Navigation, stepto, stepthrough, smartquote)
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
+
+
+class PersonNavigation(Navigation, CalendarTraversalMixin):
+
+    usedfor = IPerson
+
+    def breadcrumb(self):
+        return self.context.displayname
+
+
+class TeamNavigation(Navigation, CalendarTraversalMixin):
+
+    usedfor = ITeam
+
+    def breadcrumb(self):
+        return smartquote('"%s" team') % self.context.displayname
+
+    @stepto('+members')
+    def members(self):
+        return ITeamMembershipSubset(self.context)
+
+    @stepthrough('+poll')
+    def traverse_poll(self, name):
+        return getUtility(IPollSet).getByTeamAndName(self.context, name)
+
+
+class PersonSetNavigation(Navigation):
+
+    usedfor = IPersonSet
+
+    def breadcrumb(self):
+        return 'People'
+
+    def traverse(self, name):
+        return self.context.getByName(name)
 
 
 class PeopleContextMenu(ContextMenu):
@@ -280,10 +316,10 @@ class CommonMenuLinks:
         return Link(target, text, summary, icon='packages')
 
 
-class PersonContextMenu(ContextMenu, CommonMenuLinks):
+class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = IPerson
-
+    facet = 'overview'
     links = ['common_edit', 'common_edithomepage', 'common_edithackergotchi',
              'common_editemblem', 'karma', 'editsshkeys', 'editgpgkeys',
              'codesofconduct', 'administer', 'common_packages']
@@ -326,10 +362,10 @@ class PersonContextMenu(ContextMenu, CommonMenuLinks):
         return Link(target, text, icon='edit')
 
 
-class TeamContextMenu(ContextMenu, CommonMenuLinks):
+class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
-
+    facet = 'overview'
     links = ['common_edit', 'common_edithomepage', 'common_edithackergotchi',
              'common_editemblem', 'members', 'editemail', 'polls',
              'joinleave', 'reassign', 'common_packages']
@@ -338,7 +374,7 @@ class TeamContextMenu(ContextMenu, CommonMenuLinks):
     def reassign(self):
         target = '+reassign'
         text = 'Change Owner'
-        summary = 'Change the owner'
+        summary = 'Change the owner of the team'
         # alt="(Change owner)"
         return Link(target, text, summary, icon='edit')
 
@@ -539,6 +575,11 @@ class PersonView:
             self.context.subscribedBounties or
             self.context.claimedBounties)
 
+    def redirectToAssignedBugs(self):
+        """Redirect to the +assignedbugs report."""
+        self.request.response.redirect(
+            canonical_url(self.context) + "/+assignedbugs")
+
     def activeMembersCount(self):
         return len(self.context.activemembers)
 
@@ -581,21 +622,22 @@ class PersonView:
     def userCanRequestToJoin(self):
         """Return true if the user can request to join this team.
 
-        The user can request if it never asked to join this team, if it
-        already asked and the subscription status is DECLINED or if the team's
-        subscriptionpolicy is OPEN and the user is not an APPROVED or ADMIN
-        member.
+        The user can request if this is not a RESTRICTED team or if he never
+        asked to join this team, if he already asked and the subscription
+        status is DECLINED.
         """
+        if self.context.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+            return False
+
         tm = self._getMembershipForUser()
         if tm is None:
             return True
 
         adminOrApproved = [TeamMembershipStatus.APPROVED,
                            TeamMembershipStatus.ADMIN]
-        open = TeamSubscriptionPolicy.OPEN
-        if tm.status == TeamMembershipStatus.DECLINED or (
-            tm.status not in adminOrApproved and
-            tm.team.subscriptionpolicy == open):
+        if (tm.status == TeamMembershipStatus.DECLINED or
+            (tm.status not in adminOrApproved and
+             tm.team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN)):
             return True
         else:
             return False
@@ -1131,12 +1173,12 @@ class PersonHackergotchiView(FormView):
 class TeamJoinView(PersonView):
 
     def processForm(self):
-        if self.request.method != "POST" or not self.userCanRequestToJoin():
+        if self.request.method != "POST":
             # Nothing to do
             return
 
         user = getUtility(ILaunchBag).user
-        if self.request.form.get('join'):
+        if self.request.form.get('join') and self.userCanRequestToJoin():
             user.join(self.context)
             appurl = self.request.getApplicationURL()
             notify(JoinTeamRequestEvent(user, self.context, appurl))
@@ -1390,16 +1432,24 @@ class RequestPeopleMergeView(AddView):
                                   LoginTokenType.ACCOUNTMERGE)
         dupename = dupeaccount.name
         sendMergeRequestEmail(token, dupename, self.request.getApplicationURL())
-        self._nextURL = './+mergerequest-sent'
+        self._nextURL = './+mergerequest-sent?dupe=%d' % dupeaccount.id
 
 
 class FinishedPeopleMergeRequestView:
     """A simple view for a page where we only tell the user that we sent the
-    email with further instructions to complete the merge."""
+    email with further instructions to complete the merge.
+    
+    This view is used only when the dupe account has a single email address.
+    """
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    def dupe_email(self):
+        """Return the email address of the dupe account to which we sent the
+        token.
+        """
+        dupe_account = getUtility(IPersonSet).get(self.request.get('dupe'))
+        results = getUtility(IEmailAddressSet).getByPerson(dupe_account)
+        assert len(results) == 1
+        return results[0].email
 
 
 class RequestPeopleMergeMultipleEmailsView:
@@ -1411,6 +1461,7 @@ class RequestPeopleMergeMultipleEmailsView:
         self.request = request
         self.formProcessed = False
         self.dupe = None
+        self.notified_addresses = []
 
     def processForm(self):
         dupe = self.request.form.get('dupe')
@@ -1450,6 +1501,7 @@ class RequestPeopleMergeMultipleEmailsView:
                 dupename = self.dupe.name
                 url = self.request.getApplicationURL()
                 sendMergeRequestEmail(token, dupename, url)
+                self.notified_addresses.append(email.email)
 
 
 def sendMergeRequestEmail(token, dupename, appurl):

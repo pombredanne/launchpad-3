@@ -19,6 +19,21 @@
     </span>
   </h1>
 
+  <form name="bugtask_search" action="" method="GET">
+    <p>
+      <label tal:content="view/searchtext_widget/label">
+        Bug id or text:
+      </label>
+      <tal:searchtext content="structure view/searchtext_widget" />
+      <input type="submit" name="search" value="Search" />
+  </form>
+
+  <script>
+  <!--
+  document.forms[0].elements['field.searchtext'].focus();
+  //-->
+  </script>
+
   <table id="sourcepackagebugs">
     <tr>
       <td colspan="3">

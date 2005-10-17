@@ -19,6 +19,7 @@ from canonical.launchpad.validators.version import valid_debian_version
 class ISourcePackageRelease(Interface):
     """A source package release, e.g. apache-utils 2.0.48-3"""
 
+    id = Attribute("SourcePackageRelease identifier")
     creator = Attribute("Person that created this release")
     version = TextLine(
             title=_("A version string"),
@@ -47,10 +48,11 @@ class ISourcePackageRelease(Interface):
     sourcepackagename = Attribute("SourcePackageName table reference")
     uploaddistrorelease = Attribute("The distrorelease in which this package "
                                     "was first uploaded in Launchpad")
+    manifest = Attribute("Manifest of branches imported for this release")
 
     # read-only properties
     name = Attribute('The sourcepackagename for this release, as text')
-    title = Attribute('The title of this sourcepackage')
+    title = Attribute('The title of this sourcepackagerelease')
     latest_build = Attribute("The latest build of this source package "
         "release, or None")
 

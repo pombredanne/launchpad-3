@@ -40,7 +40,13 @@
       Only a team administrator can add new members.
     </p>
 
-    <p><a href="./">Back to <span tal:replace="context/browsername" /></a></p>
+    <form name="join" action="" method="POST">
+    <table width="100%">
+      <tr><td>
+        <input type="submit" name="goback" value="Back to team" />
+      </td></tr>
+    </table>
+    </form>
   </tal:block>
 
 </div> 

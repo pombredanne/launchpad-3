@@ -103,12 +103,12 @@ class ISourcePackage(IBugTarget, ITicketTarget):
         "as a key, and a list of source package releases as the value.")
 
     potemplates = Attribute(
-        _("Return an iterator over this distrorelease/sourcepackagename's"
-          " PO templates."))
+        _("Return an iterator over this distrorelease/sourcepackagename's "
+          "PO templates."))
 
     currentpotemplates = Attribute(
-        _("Return an iterator over this distrorelease/sourcepackagename's"
-          " PO templates that have the 'iscurrent' flag set'."))
+        _("Return an iterator over this distrorelease/sourcepackagename's "
+          "PO templates that have the 'iscurrent' flag set'."))
 
     def __eq__(other):
         """Sourcepackage comparison method.
@@ -153,7 +153,7 @@ class ISourcePackage(IBugTarget, ITicketTarget):
         """
 
     shouldimport = Attribute("""Whether we should import this or not.
-        By "import" we mean sourcerer analysis resulting in a manifest and a
+        By 'import' we mean sourcerer analysis resulting in a manifest and a
         set of Bazaar branches which describe the source package release.
         The attribute is True or False.""")
 

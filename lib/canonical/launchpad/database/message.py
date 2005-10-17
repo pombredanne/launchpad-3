@@ -16,7 +16,6 @@ from zope.component import getUtility
 # XXX: do we really need this?
 #   -- kiko, 2005-09-23
 from zope.security.proxy import isinstance
-from zope.exceptions import NotFoundError
 
 from sqlobject import ForeignKey, StringCol, IntCol
 from sqlobject import MultipleJoin, RelatedJoin
@@ -27,7 +26,7 @@ from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
 from canonical.launchpad.interfaces import (
     IMessage, IMessageSet, IMessageChunk, IPersonSet, ILibraryFileAliasSet, 
-    UnknownSender, InvalidEmailMessage)
+    UnknownSender, InvalidEmailMessage, NotFoundError)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW

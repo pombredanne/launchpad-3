@@ -354,9 +354,10 @@
         for="canonical.launchpad.interfaces.IProductSet"
         name="+index" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IProductSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="ProductSetNavigation"
+        />
 
     <browser:url
         for="canonical.launchpad.interfaces.IProductSet"

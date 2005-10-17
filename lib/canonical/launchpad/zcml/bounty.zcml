@@ -109,9 +109,10 @@
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBountySet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BountySetNavigation"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBountySet"

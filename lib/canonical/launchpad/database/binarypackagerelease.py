@@ -5,14 +5,13 @@ __all__ = ['BinaryPackageRelease', 'BinaryPackageReleaseSet']
 
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
 
 from canonical.launchpad.interfaces import (
-    IBinaryPackageRelease, IBinaryPackageReleaseSet )
+    IBinaryPackageRelease, IBinaryPackageReleaseSet, NotFoundError)
 
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
 

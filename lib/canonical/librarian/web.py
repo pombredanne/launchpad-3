@@ -144,6 +144,13 @@ class DigestSearchResource(resource.Resource):
         request.finish()
 
 
+# Ask robots not to index or archive anything in the librarian.
+robotsTxt = static.Data("""
+User-agent: *
+Disallow: /
+""", type='text/plain')
+
+
 def _eb(failure, request):
     """Generic errback for failures during a render_GET."""
     request.processingFailed(failure)

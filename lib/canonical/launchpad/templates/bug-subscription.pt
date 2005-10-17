@@ -7,11 +7,15 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-subscribers" />
-  <div tal:replace="structure context/@@+portlet-maintainers" />
-</metal:leftportlets>
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-subscribers" />
+    <div tal:replace="structure context/@@+portlet-maintainers" />
+  </metal:leftportlets>
+
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-search" />
+  </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
@@ -24,7 +28,7 @@
     well as notification of any changes to the status of the bug upstream
     and in different distributions.
   </p>
-  
+
   <p tal:condition="not: view/subscription">
     Choose "Subscribe" to become a subscriber to this bug, or "Cancel" to
     return to the bug page.
@@ -34,7 +38,7 @@
     Choose "Unsubscribe" to unsubscribe from this bug, or "Cancel" to
     return to the bug page.
   </p>
-  
+
   <form action="." method="POST">
 
     <div class="actions">

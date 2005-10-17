@@ -9,7 +9,7 @@ __all__ = [
     'POTemplateNameView',
     'POTemplateNameEditView',
     'POTemplateNameAddView',
-    'traversePOTemplateNames',
+    'POTemplateNameSetNavigation'
     ]
 
 from datetime import datetime
@@ -18,7 +18,7 @@ from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, Navigation
 from canonical.launchpad.interfaces import IPOTemplateNameSet
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
@@ -45,8 +45,15 @@ class POTemplateNameSetView:
         return self.results
 
 
-def traversePOTemplateNames(potemplatenamecontainer, request, name):
-    return getUtility(IPOTemplateNameSet).get(int(name))
+class POTemplateNameSetNavigation(Navigation):
+
+    usedfor = IPOTemplateNameSet
+
+    def traverse(self, name):
+        if name.isdigit():
+            return self.context.get(int(name))
+        else:
+            return None
 
 
 # A View Class for POTemplateName

@@ -13,7 +13,6 @@ __all__ = [
 from sets import Set
 
 from zope.component import getUtility
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
     ILanguageSet, ILaunchBag, IRequestPreferredLanguages, ICountry,

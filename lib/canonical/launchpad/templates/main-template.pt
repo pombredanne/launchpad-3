@@ -24,7 +24,7 @@
       <tr>
         <td
           class="hierarchy"
-          tal:content="structure request/fmt:breadcrumbs"
+          tal:content="structure context/@@+breadcrumbs"
         />
         <td
           class="login"

@@ -243,17 +243,19 @@ class IShippingRequestSet(Interface):
         Return the default value if there's no ShippingRequest with this id.
         """
 
-    def searchCustomRequests(status=ShippingRequestStatus.ALL,
-                             omit_cancelled=True):
-        """Search for custom requests and return the ones that match."""
-
-    def searchStandardRequests(status=ShippingRequestStatus.ALL,
-                               omit_cancelled=True, standard_type=None):
-        """Search for standard requests and return the ones that match.
+    def getRequestsByType(request_type, standard_type=None,
+                          status=ShippingRequestStatus.ALL,
+                          omit_cancelled=True):
+        """Return all requests of the given type with the given status.
         
-        :standard_type: Either None or a StandardShipItRequest object. If it's
-                        not None, the search is restricted to requests of that
-                        StandardShipItRequest only.
+        :request_type: Either 'custom' or 'standard'
+        If request_type is 'standard', then standard_type can be any of the
+        StandardShipItRequests or None.
+        """
+
+    def search(recipient_name):
+        """Search for requests made by any recipient whose name or email
+        address match <recipient_name>.
         """
 
 

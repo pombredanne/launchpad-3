@@ -3,8 +3,9 @@
 
 __metaclass__ = type
 __all__ = [
-   'BugAttachmentAddView',
-   'BugAttachmentEdit']
+    'BugAttachmentSetNavigation',
+    'BugAttachmentAddView',
+    'BugAttachmentEdit']
 
 from cStringIO import StringIO
 
@@ -14,13 +15,19 @@ from zope.app.content_types import guess_content_type
 
 from canonical.lp import Passthrough
 from canonical.lp.dbschema import BugAttachmentType
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, GetitemNavigation
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.interfaces import (
     IBugAttachment, IBugAttachmentSet, ILibraryFileAlias, IBug,
     ILibraryFileAliasSet, ILaunchBag, IBugMessageSet, IBugAttachmentAddForm,
     IBugAttachmentEditForm)
+
+
+class BugAttachmentSetNavigation(GetitemNavigation):
+
+    usedfor = IBugAttachmentSet
+
 
 class BugAttachmentAddView(SQLObjectAddView):
     """Add view for bug attachments."""

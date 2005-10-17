@@ -3,6 +3,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistributionNavigation',
+    'DistributionSetNavigation',
     'DistributionFacets',
     'DistributionView',
     'DistributionBugsView',
@@ -21,13 +23,72 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPerson, IBugTaskSearchListingView,
-    IBugSet)
+    IBugSet, IPublishedPackageSet, ISourcePackageNameSet, NotFoundError,
+    IDistroSourcePackageSet)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser import BugTaskSearchListingView
+from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission)
+    enabled_with_permission, GetitemNavigation, stepthrough, stepto)
+
+class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
+
+    usedfor = IDistribution
+
+    def breadcrumb(self):
+        return self.context.displayname
+
+    @stepto('+packages')
+    def packages(self):
+        return getUtility(IPublishedPackageSet)
+
+    @stepthrough('+sources')
+    def traverse_sources(self, name):
+        # XXX: Brad Bollenbach, 2005-09-12: There is not yet an
+        # interface for $distro/+sources; for now, this code's only
+        # promise is that it will return the correct
+        # IDistroSourcePackage for a URL path like:
+        #
+        # /distros/ubuntu/+sources/mozilla-firefox
+        #
+        # Obviously, there needs to be a simple page designed for a
+        # bare +sources. Here's the bug report to track that task:
+        #
+        # https://launchpad.net/malone/bugs/2230
+        sourcepackagenameset = getUtility(ISourcePackageNameSet)
+        srcpackagename = sourcepackagenameset.queryByName(name)
+        if not srcpackagename:
+            raise NotFoundError
+        return getUtility(IDistroSourcePackageSet).getPackage(
+            distribution=self.context, sourcepackagename=srcpackagename)
+
+    @stepthrough('+milestone')
+    def traverse_milestone(self, name):
+        return self.context.getMilestone(name)
+
+    @stepthrough('+spec')
+    def traverse_spec(self, name):
+        return self.context.getSpecification(name)
+
+    @stepthrough('+ticket')
+    def traverse_ticket(self, name):
+        # tickets should be ints
+        try:
+            ticket_num = int(name)
+        except ValueError:
+            raise NotFoundError
+        return self.context.getTicket(ticket_num)
+
+
+class DistributionSetNavigation(GetitemNavigation):
+
+    usedfor = IDistributionSet
+
+    def breadcrumb(self):
+        return 'Distributions'
 
 
 class DistributionFacets(StandardLaunchpadFacets):
@@ -154,8 +215,12 @@ class DistributionTranslationsMenu(ApplicationMenu):
         return Link('+changetranslators', text, icon='edit')
 
 
-class DistributionView:
+class DistributionView(BuildRecordsView):
     """Default Distribution view class."""
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
 
 
 class DistributionBugsView(BugTaskSearchListingView):

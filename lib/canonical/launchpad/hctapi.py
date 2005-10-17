@@ -534,7 +534,7 @@ def get_manifest_from(obj):
     manifest = Manifest(ancestor=str(obj.uuid))
 
     sequence_map = {}
-    patch_on_map = []
+    parent_map = []
 
     for obj_entry in obj.entries:
         type_map = dict(MANIFEST_ENTRY_TYPE_MAP)
@@ -561,18 +561,18 @@ def get_manifest_from(obj):
         entry.changeset = get_changeset_from(obj_entry.changeset)
         manifest.append(entry)
 
-        # Keep track of sequence numbers and patch_on settings
+        # Keep track of sequence numbers and parent settings
         sequence_map[obj_entry.sequence] = entry
-        if obj_entry.patchon is not None:
-            patch_on_map.append((obj_entry.patchon, entry))
+        if obj_entry.parent is not None:
+            parent_map.append((obj_entry.parent, entry))
 
-    # Map patch_on to sequence numbers
-    for patch_on, entry in patch_on_map:
-        if patch_on not in sequence_map:
+    # Map parent to sequence numbers
+    for parent, entry in parent_map:
+        if parent not in sequence_map:
             raise LaunchpadError("Manifest entry parent not in sequence: '%s'"
                                  % entry.path)
 
-        entry.patch_on = sequence_map[patch_on]
+        entry.parent = sequence_map[parent]
 
     return manifest
 
@@ -781,7 +781,7 @@ def put_manifest(url, manifest):
 
         sequence = 0
         sequence_map = {}
-        patch_on_map = []
+        parent_map = []
 
         obj.manifest = Manifest(uuid=commands.getoutput('uuidgen'))
         try:
@@ -822,7 +822,7 @@ def put_manifest(url, manifest):
                                       path=entry.path,
                                       branchID=None,
                                       changesetID=None,
-                                      patchon=None,
+                                      parent=None,
                                       dirname=entry.dirname)
             if entry.hint is not None:
                 obj_entry.hint = hint_map[entry.hint]
@@ -873,21 +873,21 @@ def put_manifest(url, manifest):
 
                 obj_entry.changeset = changeset
 
-            # Keep track of sequence numbers and patchon settings
+            # Keep track of sequence numbers and parent settings
             sequence_map[entry] = sequence
-            if hasattr(entry, "patch_on") and entry.patch_on is not None:
-                patch_on_map.append((entry.patch_on, obj_entry))
+            if entry.parent is not None:
+                parent_map.append((entry.parent, obj_entry))
 
-        # Map patch_on to sequence numbers
-        for patch_on, obj_entry in patch_on_map:
-            if patch_on not in sequence_map:
+        # Map parent to sequence numbers
+        for parent, obj_entry in parent_map:
+            if parent not in sequence_map:
                 raise LaunchpadError(
                         "Manifest entry parent not in sequence: '%s'" % (
                             obj_entry.path,
                             )
                         )
 
-            obj_entry.patchon = sequence_map[patch_on]
+            obj_entry.parent = sequence_map[parent]
 
         success = True
     finally:

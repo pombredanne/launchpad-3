@@ -105,9 +105,10 @@
       attribute="__call__"
       lp:url="$obj/calendar/+icalendar" />
 
-  <browser:traverse
-      for="schoolbell.interfaces.ICalendar"
-      function="canonical.launchpad.browser.traverseCalendar" />
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="CalendarNavigation CalendarEventSetNavigation"
+      />
 
   <browser:page
       name="+subscribe"
@@ -116,10 +117,6 @@
       class="canonical.launchpad.browser.CalendarSubscribeView"
       template="../templates/calendar-subscribe.pt"
       lp:url="$obj/calendar/+subscribe" />
-
-  <browser:traverse
-      for="canonical.launchpad.interfaces.ICalendarEventSet"
-      getter="__getitem__" />
 
   <browser:url
       for="canonical.launchpad.interfaces.ICalendarRange"

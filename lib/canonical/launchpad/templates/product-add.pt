@@ -22,9 +22,6 @@
             translations) for this product immediately.
         </div>
 
-        <legend metal:fill-slot="addform_legend">Upstream
-        Product Details</legend>
-
       </div>
 
     </div>

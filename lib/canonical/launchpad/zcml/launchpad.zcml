@@ -129,8 +129,16 @@
       permission="zope.Public"
       />
 
-  <!-- Menus debug page. -->
+  <!-- breadcrumbs -->
+  <browser:page
+      for="zope.interface.Interface"
+      name="+breadcrumbs"
+      class="canonical.launchpad.browser.launchpad.Breadcrumbs"
+      attribute="__call__"
+      permission="zope.Public"
+      />
 
+  <!-- Menus debug page. -->
   <browser:page
       for="zope.interface.Interface"
       name="+debug-menus"

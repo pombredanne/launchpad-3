@@ -15,7 +15,6 @@ from datetime import datetime
 
 from zope.interface import implements
 from zope.component import getUtility
-from zope.exceptions import NotFoundError
 
 from sqlobject import ForeignKey, StringCol, BoolCol
 
@@ -27,8 +26,8 @@ from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.interfaces import (
     ICodeOfConduct, ICodeOfConductSet, ICodeOfConductConf,
     ISignedCodeOfConduct, ISignedCodeOfConductSet, IGPGHandler,
-    IGPGKeySet
-    )
+    IGPGKeySet, NotFoundError)
+
 
 class CodeOfConduct:
     """CoC class model.

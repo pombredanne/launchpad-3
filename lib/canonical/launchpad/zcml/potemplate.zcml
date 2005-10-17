@@ -26,7 +26,8 @@
 
     <browser:navigation
         module="canonical.launchpad.browser"
-        classes="POTemplateNavigation"
+        classes="POTemplateNavigation POTemplateSubsetNavigation
+                 POTemplateSetNavigation"
         />
 
     <browser:defaultView
@@ -115,11 +116,6 @@
         <allow interface="canonical.launchpad.interfaces.IPOTemplateSet" />
     </securedutility>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IPOTemplateSet"
-        getter="__getitem__"
-        />
-
     <browser:menus
         module="canonical.launchpad.browser.potemplate"
         classes="POTemplateFacets POTemplateAppMenus"
@@ -145,11 +141,6 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IPOTemplateSubset"
         name="+index"
-        />
-
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IPOTemplateSubset"
-        getter="__getitem__"
         />
 
     <browser:page

@@ -104,7 +104,7 @@ We can look up events by their unique IDs:
   >>> cal.find('e3')
   Traceback (most recent call last):
     ...
-  KeyError: 'e3'
+  NotFoundError: 'e3'
 
 Calendar events implement the ICalendarEvent interface:
 

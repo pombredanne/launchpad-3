@@ -23,21 +23,25 @@ spider -- StuartBishop 20050822
 ...         return "%s returned status %s instead of success\n\n%s" % (
 ...             valid_url, valid_rc, str(valid_output_obj))
 ...     invalid_url = valid_url + '/wobbly'
-...     invalid_rc = http(get_cmd % invalid_url).getStatus()
+...     invalid_output = http(get_cmd % invalid_url)
+...     invalid_rc = invalid_output.getStatus()
 ...     if invalid_rc != 404:
-...         return "%s returned status %s instead of 404" % (
-...             invalid_url, invalid_rc)
+...         return "%s returned status %s instead of 404\n\n%s" % (
+...             invalid_url, invalid_rc, str(invalid_output))
 ...     # Some traversal is done by integer
 ...     invalid_url = valid_url + '/98723'
-...     invalid_rc = http(get_cmd % invalid_url).getStatus()
+...     invalid_output = http(get_cmd % invalid_url)
+...     invalid_rc = invalid_output.getStatus()
 ...     if invalid_rc != 404:
-...         return "%s returned status %s instead of 404" % (
-...             invalid_url, invalid_rc)
+...         return "%s returned status %s instead of 404\n\n%s" % (
+...             invalid_url, invalid_rc, str(invalid_output))
 
 >>> def check_not_found(url):
-...     rc = http("GET %s HTTP/1.1\n" % url).getStatus()
-...     if rc != 404:
-...         return "%s returned status %s instead of 404" % (url, rc)
+...     output = http("GET %s HTTP/1.1\n" % url)
+...     status = output.getStatus()
+...     if status != 404:
+...         return "%s returned status %s instead of 404\n\n%s" % (
+...             url, status, str(output))
 
 >>> def check_redirect(url, auth=False):
 ...     if auth:
@@ -136,12 +140,12 @@ spider -- StuartBishop 20050822
 
 >>> check("/malone")
 >>> check_redirect("/malone/assigned")
+>>> check_not_found("/malone/bugs/assigned")
 >>> check_redirect("/malone/bugs")
 >>> check_redirect("/malone/bugs/1")
 >>> check("/malone/distros")
 >>> check("/malone/distros/ubuntu")
 >>> check("/malone/projects")
->>> check("/malone/projects/gnome")
 >>> check("/malone/products")
 >>> check("/malone/products/firefox")
 >>> check("/malone/bugtrackers")
@@ -230,8 +234,6 @@ Test /people traversals.
 >>> check("/people/+teamlist")
 >>> check("/people/+ubuntitelist")
 >>> check("/people/+requestmerge", auth=True)
->>> check("/people/+mergerequest-sent", auth=True)
->>> check("/people/+requestmerge-multiple", auth=True)
 >>> check("/people/+portlet-about")
 
 
@@ -258,6 +260,7 @@ And this is for a person:
 >>> check("/people/name16/+edit", auth=True)
 >>> check("/people/name16/+branches")
 >>> check("/people/name16/+karma")
+>>> check_redirect("/people/name16/+bugs")
 >>> check("/people/name16/+reportedbugs")
 >>> check("/people/name16/+assignedbugs")
 >>> check("/people/name16/+packagebugs")
@@ -266,6 +269,8 @@ And this is for a person:
 >>> check("/people/name16/+editwikinames", auth=True)
 >>> check("/people/name16/+editjabberids", auth=True)
 >>> check("/people/name16/+codesofconduct", auth=True)
+>>> check("/people/name16/+edithomepage", auth=True)
+>>> check("/people/name16/+edithackergotchi", auth=True)
 >>> check("/people/name16/+packages")
 >>> check("/people/name16/+review", auth=True)
 >>> check("/people/name16/+portlet-emails")

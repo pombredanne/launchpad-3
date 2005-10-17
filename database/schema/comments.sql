@@ -485,6 +485,7 @@ COMMENT ON COLUMN DistroRelease.datelastlangpack IS
 update packs for this release will only include translations added after that
 date.';
 COMMENT ON COLUMN DistroRelease.messagecount IS 'This is a cached value and may be a few hours out of sync with reality. It should, however, be in sync with the values in DistroReleaseLanguage, and should never be updated separately. The total number of translation messages in this distro release, as per IRosettaStats.';
+COMMENT ON COLUMN DistroRelease.nominatedarchindep IS 'This is the DistroArchRelease nominated to build architecture independent packages within this DistroRelase, it is mandatory for buildable distroreleases, i.e., Auto Build System will avoid to create build jobs for a DistroRelease with no nominatedarchindep, but the database model allow us to do it (for non-buildable DistroReleases). See further info in NominatedArchIndep specification.';
 
 /* ArchArchive */
 
@@ -821,6 +822,8 @@ COMMENT ON COLUMN Distribution.title IS 'The title of the distribution. More a "
 COMMENT ON COLUMN Distribution.description IS 'A description of the distribution. More detailed than the title, this column may also contain information about the project this distribution is run by.';
 COMMENT ON COLUMN Distribution.domainname IS 'The domain name of the distribution. This may be used both for linking to the distribution and for context-related stuff.';
 COMMENT ON COLUMN Distribution.owner IS 'The person in launchpad who is in ultimate-charge of this distribution within launchpad.';
+COMMENT ON COLUMN Distribution.uploadsender IS 'The email address (and name) of the default sender used by the upload processor. If NULL, we fall back to the default sender in the launchpad config.';
+COMMENT ON COLUMN Distribution.uploadadmin IS 'The email address (and name) of the default recipient used by the upload processor. This is essentially the upload admin for the distribution. If NULL, we fall back to the default recipient in the launchpad config.';
 
 -- DistroRelease
 
@@ -836,12 +839,19 @@ COMMENT ON COLUMN DistroRelease.releasestatus IS 'The current release status of 
 COMMENT ON COLUMN DistroRelease.datereleased IS 'The date on which this distrorelease was released. (obviously only valid for released distributions)';
 COMMENT ON COLUMN DistroRelease.parentrelease IS 'The parent release on which this distribution is based. This is related to the inheritance stuff.';
 COMMENT ON COLUMN DistroRelease.owner IS 'The ultimate owner of this distrorelease.';
+COMMENT ON COLUMN DistroRelease.changeslist IS 'The email address (name name) of the changes announcement list for this distrorelease. If NULL, no announcement mail will be sent.';
 
 -- DistroArchRelease
 
 COMMENT ON TABLE DistroArchRelease IS 'DistroArchRelease: A soyuz distribution release for a given architecture. A distrorelease runs on various architectures. The distroarchrelease groups that architecture-specific stuff.';
 COMMENT ON COLUMN DistroArchRelease.distrorelease IS 'The distribution which this distroarchrelease is part of.';
 
+-- DistroComponentUploader
+
+COMMENT ON TABLE DistroComponentUploader IS 'DistroComponentUploader: A record of who can upload what to where. Distributions are permitted to have multiple components. Those components are often subject to different uploader constraints. This table represents those variable constraints by linking a team to a distribution,component tuple.';
+COMMENT ON COLUMN DistroComponentUploader.distribution IS 'The distribution to which this upload permission applies.';
+COMMENT ON COLUMN DistroComponentUploader.component IS 'The component to which this upload permission applies.';
+COMMENT ON COLUMN DIstroComponentUploader.uploader IS 'The uploader(s) permitted to upload to the given component in the given distribution. This is commonly a team but may be a single person in the case of a simple distribution.';
 
 -- LibraryFileContent
 
@@ -1122,3 +1132,14 @@ COMMENT ON TABLE ShippingRun IS 'A shipping run is a set of shipments that are s
 COMMENT ON COLUMN ShippingRun.datecreated IS 'The date this shipping run was created.';
 COMMENT ON COLUMN ShippingRun.sentforshipping IS 'The exported file was sent to the shipping company already?';
 COMMENT ON COLUMN ShippingRun.csvfile IS 'A csv file with all requests of this shipping run, to be sent to the shipping company.';
+
+
+-- Language
+COMMENT ON TABLE Language IS 'A human language.';
+COMMENT ON COLUMN Language.code IS 'The ISO 639 code for this language';
+COMMENT ON COLUMN Language.englishname IS 'The english name for this language';
+COMMENT ON COLUMN Language.nativename IS 'The name of this language in the language itself';
+COMMENT ON COLUMN Language.pluralforms IS 'The number of plural forms this language has';
+COMMENT ON COLUMN Language.pluralexpression IS 'The plural expression for this language, as used by gettext';
+COMMENT ON COLUMN Language.visible IS 'Whether this language should usually be visible or not';
+COMMENT ON COLUMN Language.direction IS 'The direction that text is written in this language';

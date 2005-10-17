@@ -18,10 +18,7 @@
                                  (${context/person/name})"></a>
           is an <em>Active Member</em> of 
           <span tal:replace="context/team/browsername" />.
-          In this page you can change the expiration date for this subscription,
-          promote/demote the member to/from the Administrator status, and you
-          can also Deactivate this subscription. You can also leave a comment
-          explaining why you're taking a given action for this subscription.</p>
+        </p>
 
         <p class="portalMessage" tal:condition="view/errormessage"
            tal:content="view/errormessage" />
@@ -29,12 +26,12 @@
         <form action="" method="POST" name="editactive">
           <table>
           <tr>
-            <td style="text-align: right">Member since:</td>
+            <th>Member since:</th>
             <td tal:content="context/datejoined/fmt:date" />
           </tr>
 
           <tr>
-            <td style="text-align: right">Administrator:</td>
+            <th>Administrator:</th>
             <td>
               <tal:block tal:condition="view/isAdmin">
                 <label for="admin">
@@ -67,7 +64,7 @@
 
           <tr><td colspan="2">&nbsp;</td></tr>
           <tr>
-            <td style="text-align: right">Subscription expires:</td>
+            <th>Subscription expires:</th>
             <td tal:condition="view/canChangeExpirationDate">
               <label for="never">
                 <input tal:condition="not: view/membershipExpires" checked 
@@ -93,17 +90,16 @@
           </tr>
 
           <tr>
-            <td style="text-align: right">Comment:</td>
+            <th>Comment:</th>
             <td><textarea cols="40" name="comment" tal:content="request/comment|nothing">
                 </textarea></td>
           </tr>
 
           <tr>
-            <td align="left">
-              <input type="submit" value="Deactivate" name="editactive" />
-            </td>
-            <td align="right">
+            <th />
+            <td>
               <input type="submit" value="Change" name="editactive" />
+              <input type="submit" value="Deactivate" name="editactive" />
             </td>
           </tr>
         </table>
@@ -143,19 +139,19 @@
         <form action="" method="POST" name="editinactive">
           <table>
           <tr>
-            <td style="text-align: right">Became member in:</td>
+            <th>Became member in:</th>
             <td tal:content="context/datejoined/fmt:date" />
           </tr>
 
           <tal:block tal:condition="view/isExpired">
           <tr>
-            <td style="text-align: right">Subscription expired in:</td>
+            <th>Subscription expired in:</th>
             <td tal:content="context/dateexpires/fmt:date"></td>
           </tr>
 
           <tr><td colspan="2">&nbsp;</td></tr>
           <tr>
-            <td style="text-align: right">New expiration date:</td>
+            <th>New expiration date:</th>
             <td>
               <label for="never">
                 <input tal:condition="not: view/membershipExpires" checked 
@@ -179,7 +175,7 @@
           <tal:block tal:condition="not: view/isExpired">
           <tr><td colspan="2">&nbsp;</td></tr>
           <tr>
-            <td style="text-align: right">Subscription expires:</td>
+            <th>Subscription expires:</th>
             <td>
               <label for="never">
                 <input tal:condition="not: view/membershipExpires" checked 
@@ -201,7 +197,7 @@
           </tal:block>
 
           <tr>
-            <td style="text-align: right">Comment:</td>
+            <th>Comment:</th>
             <td><textarea cols="40" name="comment" tal:content="request/comment|nothing">
                 </textarea></td>
           </tr>
@@ -238,25 +234,21 @@
           <a tal:attributes="href string:/people/${context/person/name}"
             tal:content="string: ${context/person/browsername}
                                  (${context/person/name})"></a>
-        wants to join this team but its subscription must be
-        approved first. Just select the date you want this subscription to
-        expire and click on Approve if you want this user as a member of 
-        this team. Otherwise, if you think this user should not be made 
-        a member of this team, just click on Decline.</p>
-
+          wants to join this team.
+        </p>
         <p class="portalMessage" tal:condition="view/errormessage"
            tal:content="view/errormessage" />
 
         <form action="" method="POST" name="editproposed">
           <table>
           <tr>
-            <td style="text-align: right">Join requested in:</td>
+            <th>Membership applied for:</th>
             <td tal:content="context/datejoined/fmt:date" />
           </tr>
 
           <tr><td colspan="2">&nbsp;</td></tr>
           <tr>
-            <td style="text-align: right">Subscription expires:</td>
+            <th>Subscription expires:</th>
             <td>
               <label for="never">
                 <input tal:condition="not: view/membershipExpires" checked 
@@ -277,17 +269,16 @@
           </tr>
 
           <tr>
-            <td style="text-align: right">Comment:</td>
+            <th>Comment:</th>
             <td><textarea cols="40" name="comment" tal:content="request/comment|nothing">
                 </textarea></td>
           </tr>
 
           <tr>
-            <td align="left">
-              <input type="submit" value="Decline" name="editproposed" />
-            </td>
-            <td align="right">
+            <th />
+            <td>
               <input type="submit" value="Approve" name="editproposed" />
+              <input type="submit" value="Decline" name="editproposed" />
             </td>
           </tr>
         </table>

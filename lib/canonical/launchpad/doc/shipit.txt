@@ -135,36 +135,37 @@ Searching for requests
 We have twelve custom requests. Two of them are cancelled.
 
   >>> [r.recipient.name 
-  ...      for r in requestset.searchCustomRequests(omit_cancelled=False)]
-  [u'lifeless', u'cprov', u'ddaa', u'debonzi', u'kurem', u'carlos', u'daf', u'tsukimi', u'jdub', u'marilize', u'no-priv', u'name16']
+  ...  for r in requestset.search(request_type='custom', omit_cancelled=False)]
+  [u'lifeless', u'cprov', u'ddaa', u'debonzi', u'kurem', u'carlos', u'daf', u'tsukimi', u'jdub', u'marilize', u'jblack', u'no-priv', u'name16']
 
-  >>> [r.recipient.name for r in requestset.searchCustomRequests()]
-  [u'lifeless', u'ddaa', u'debonzi', u'kurem', u'carlos', u'daf', u'tsukimi', u'jdub', u'marilize', u'no-priv']
+  >>> [r.recipient.name for r in requestset.search(request_type='custom')]
+  [u'lifeless', u'ddaa', u'debonzi', u'kurem', u'carlos', u'daf', u'tsukimi', u'jdub', u'marilize', u'jblack', u'no-priv']
 
-From the three non-cancelled, one is approved.
+From the ten non-cancelled, one is approved.
 
   >>> approved = status=ShippingRequestStatus.APPROVED
   >>> [r.recipient.name 
-  ...       for r in requestset.searchCustomRequests(status=approved)]
-  [u'no-priv']
+  ...  for r in requestset.search(request_type='custom', status=approved)]
+  [u'jblack', u'no-priv']
 
 We have also two non-cancelled standard requests:
 
   >>> [r.recipient.name for r in
-  ...       requestset.searchStandardRequests(omit_cancelled=False)]
+  ...  requestset.search(request_type='standard', omit_cancelled=False)]
   [u'kreutzm', u'stub']
 
 And all standard requests are approved automatically.
 
   >>> [r.recipient.name for r in
-  ...       requestset.searchStandardRequests(status=approved)]
+  ...       requestset.search(request_type='standard', status=approved)]
   [u'kreutzm', u'stub']
 
 
 It's also possible to search for standard requests of a specific type.
 
   >>> standardrequest = getUtility(IStandardShipItRequestSet).get(3)
-  >>> requests = requestset.searchStandardRequests(standard_type=standardrequest)
+  >>> requests = requestset.search(request_type='standard',
+  ...                              standard_type=standardrequest)
   >>> requests.count()
   1
   >>> requests[0].quantityx86 == standardrequest.quantityx86
@@ -173,6 +174,21 @@ It's also possible to search for standard requests of a specific type.
   True
   >>> requests[0].quantityppc == standardrequest.quantityppc
   True
+
+Another way of searching is by using any part of the recipient's name or the
+beginning of his email address.
+
+  >>> [r.recipient.displayname 
+  ...  for r in requestset.search(recipient_text='Kreutzmann')]
+  [u'Helge Kreutzmann']
+
+  >>> [r.recipient.preferredemail.email
+  ...  for r in requestset.search(recipient_text='Stuart.Bishop')]
+  [u'stuart.bishop@canonical.com']
+
+
+Exporting requests
+------------------
 
 When exporting requests, we'll want to get all approved requests that weren't
 approved yet, with a given priority. This is done using the

@@ -89,9 +89,10 @@
     parent_utility="canonical.launchpad.interfaces.IMaloneApplication"
     />
 
-  <browser:traverse
-    for="canonical.launchpad.interfaces.ICveSet"
-    getter="__getitem__" />
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="CveSetNavigation"
+      />
 
   <browser:pages
     for="canonical.launchpad.interfaces.ICveSet"

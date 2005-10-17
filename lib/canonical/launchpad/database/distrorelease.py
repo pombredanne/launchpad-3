@@ -12,7 +12,7 @@ __all__ = [
 from zope.interface import implements
 from zope.component import getUtility
 
-from sqlobject import StringCol, ForeignKey, MultipleJoin, IntCol
+from sqlobject import StringCol, ForeignKey, MultipleJoin, IntCol, RelatedJoin
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -21,7 +21,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
-    IPublishedPackageSet)
+    IPublishedPackageSet, IHasBuildRecords, NotFoundError)
 
 from canonical.launchpad.database.sourcepackageindistro import (
     SourcePackageInDistro)
@@ -30,22 +30,22 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.language import Language
-from canonical.launchpad.database.distroreleaselanguage import \
-    DistroReleaseLanguage, DummyDistroReleaseLanguage
+from canonical.launchpad.database.distroreleaselanguage import (
+    DistroReleaseLanguage, DummyDistroReleaseLanguage)
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName, SourcePackageNameSet)
 from canonical.launchpad.database.packaging import Packaging
+from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.bugtask import BugTaskSet, BugTask
 from canonical.launchpad.database.binarypackagerelease import (
-        BinaryPackageRelease
-        )
+        BinaryPackageRelease)
 from canonical.launchpad.helpers import shortlist
 
 
 class DistroRelease(SQLBase):
     """A particular release of a distribution."""
-    implements(IDistroRelease)
+    implements(IDistroRelease, IHasBuildRecords)
 
     _table = 'DistroRelease'
     _defaultOrder = ['distribution', 'version']
@@ -70,14 +70,27 @@ class DistroRelease(SQLBase):
     owner = ForeignKey(
         dbName='owner', foreignKey='Person', notNull=True)
     lucilleconfig = StringCol(notNull=False, default=None)
+    changeslist = StringCol(notNull=False, default=None)
     architectures = MultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease',
         orderBy='architecturetag')
+    nominatedarchindep = ForeignKey(
+        dbName='nominatedarchindep',foreignKey='DistroArchRelease',
+        notNull=False, default=None)
     specifications = MultipleJoin('Specification',
         joinColumn='distrorelease', orderBy='-datecreated')
     datelastlangpack = UtcDateTimeCol(dbName='datelastlangpack', notNull=False,
                                    default=None)
     messagecount = IntCol(notNull=True, default=0)
+
+    # XXX: dsilvers: 20051013: At some point, get rid of components/sections
+    # from above and rename these and fix up the uploader and queue stuff.
+    real_components = RelatedJoin(
+        'Component', joinColumn='distrorelease', otherColumn='component',
+        intermediateTable='ComponentSelection')
+    real_sections = RelatedJoin(
+        'Section', joinColumn='distrorelease', otherColumn='section',
+        intermediateTable='SectionSelection')
 
     @property
     def packagings(self):
@@ -288,22 +301,25 @@ class DistroRelease(SQLBase):
 
         return SourcePackage(sourcepackagename=name, distrorelease=self)
 
-    def __getitem__(self, arch):
-        """Get SourcePackages in a DistroRelease with BugTask"""
+    def __getitem__(self, archtag):
+        """See IDistroRelease."""
         item = DistroArchRelease.selectOneBy(
-            distroreleaseID=self.id, architecturetag=arch)
+            distroreleaseID=self.id, architecturetag=archtag)
         if item is None:
-            raise KeyError, 'Unknown architecture %s for %s %s' % (
-                arch, self.distribution.name, self.name )
+            raise NotFoundError('Unknown architecture %s for %s %s' % (
+                archtag, self.distribution.name, self.name))
         return item
 
-    def getPublishedReleases(self, sourcepackage_or_name):
+    def getPublishedReleases(self, sourcepackage_or_name, pocket=None):
         """See IDistroRelease."""
         if ISourcePackageName.providedBy(sourcepackage_or_name):
             sourcepackage = sourcepackage_or_name
         else:
             sourcepackage = sourcepackage_or_name.name
-        published = SourcePackagePublishing.select(
+        pocketclause = ""
+        if pocket is not None:
+            pocketclause = "AND pocket=%s" % sqlvalues(pocket.value)
+        published = SourcePackagePublishing.select((
             """
             distrorelease = %s AND
             status = %s AND
@@ -311,7 +327,7 @@ class DistroRelease(SQLBase):
             sourcepackagerelease.sourcepackagename = %s
             """ % sqlvalues(self.id,
                             PackagePublishingStatus.PUBLISHED,
-                            sourcepackage.id),
+                            sourcepackage.id))+pocketclause,
             clauseTables = ['SourcePackageRelease'])
         return shortlist(published)
 
@@ -324,6 +340,25 @@ class DistroRelease(SQLBase):
         return [BinaryPackageRelease.get(pubrecord.binarypackagerelease)
                 for pubrecord in result]
 
+    def getBuildRecords(self, status=None, limit=10):
+        """See IHasBuildRecords"""
+        # find out the distroarchrelease in question
+        arch_ids = ','.join(
+            '%d' % arch.id for arch in self.architectures)
+
+        # if no distroarchrelease was found return None
+        if not arch_ids:
+            return None
+
+        # specific status or simply worked 
+        if status:
+            status_clause = "buildstate=%s" % sqlvalues(status)
+        else:
+            status_clause = "builder is not NULL"
+
+        return Build.select(
+            "distroarchrelease IN (%s) AND %s" % (arch_ids, status_clause),
+            limit=limit, orderBy="-datebuilt")
 
 class DistroReleaseSet:
     implements(IDistroReleaseSet)

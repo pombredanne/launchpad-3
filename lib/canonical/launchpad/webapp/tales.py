@@ -536,38 +536,6 @@ def clean_path_segments(request):
     return clean_path_split
 
 
-class RequestFormatterAPI:
-    """Launchpad fmt:... namespace, available for IBrowserApplicationRequest.
-    """
-
-    def __init__(self, request):
-        self.request = request
-
-    def breadcrumbs(self):
-        # XXX stevea 7/7/05 let's replace this in due course with something
-        # better thought through
-        unclickable = set(['+lang'])
-        path_info = self.request.get('PATH_INFO')
-        last_path_info_segment = path_info.split('/')[-1]
-        clean_path_split = clean_path_segments(self.request)
-        last_clean_path_segment = clean_path_split[-1]
-        last_clean_path_index = len(clean_path_split) - 1
-        if last_clean_path_segment != last_path_info_segment:
-            clean_path_split = clean_path_split[:-1]
-        L = []
-        for index, segment in enumerate(clean_path_split):
-            if not (segment.startswith('++vh++') or segment == '++'):
-                if not (index == last_clean_path_index
-                        and last_path_info_segment == last_clean_path_index):
-                    if not segment:
-                        segment = 'Launchpad'
-                    if segment not in unclickable:
-                        L.append('<a rel="parent" href="%s">%s</a>' %
-                            (self.request.URL[index], segment))
-        sep = '<span class="breadcrumbSeparator"> &raquo; </span>'
-        return sep.join(L)
-
-
 class PageTemplateContextsAPI:
     """Adapter from page tempate's CONTEXTS object to fmt:pagetitle.
 

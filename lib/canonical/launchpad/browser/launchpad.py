@@ -2,9 +2,16 @@
 """Browser code for the launchpad application."""
 
 __metaclass__ = type
-__all__ = ['LoginStatus', 'MaintenanceMessage', 'MenuBox',
-           'RosettaContextMenu', 'MaloneContextMenu',
-           'LaunchpadRootNavigation', 'FOAFApplicationNavigation']
+__all__ = [
+    'LoginStatus',
+    'MaintenanceMessage',
+    'MenuBox',
+    'RosettaContextMenu',
+    'MaloneContextMenu',
+    'LaunchpadRootNavigation',
+    'FOAFApplicationNavigation',
+    'MaloneApplicationNavigation'
+    ]
 
 import cgi
 import urllib
@@ -14,6 +21,8 @@ from datetime import timedelta, datetime
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
 from zope.app.errorservice.interfaces import ILocalErrorReportingService
 from zope.component import getUtility
+
+import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
     ILaunchBag, ILaunchpadRoot, IRosettaApplication, IMaloneApplication,
     IProductSet, IShipItApplication, IPersonSet, IDistributionSet,
@@ -21,19 +30,55 @@ from canonical.launchpad.interfaces import (
     ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
     IBazaarApplication, ICodeOfConductSet, IMaloneApplication,
     IRegistryApplication, IRosettaApplication, ISpecificationSet, ISprintSet,
-    ITicketSet, IFOAFApplication, IBuilderSet, IBountySet)
+    ITicketSet, IFOAFApplication, IBuilderSet, IBountySet, IBugSet,
+    IBugTrackerSet, ICveSet)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
-    Navigation, stepto, stepthrough)
+    StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
+    stepto)
 
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
 #     be factored out into a generally available adapter for both this
 #     code and for TALES namespace code to use.
 #     Same for MenuAPI.
-from canonical.launchpad.webapp.tales import (
-    DurationFormatterAPI, MenuAPI)
+from canonical.launchpad.webapp.tales import DurationFormatterAPI, MenuAPI
+
+
+class MaloneApplicationNavigation(Navigation):
+
+    usedfor = IMaloneApplication
+
+    newlayer = canonical.launchpad.layers.MaloneLayer
+
+    @stepto('bugs')
+    def bugs(self):
+        return getUtility(IBugSet)
+
+    @stepto('bugtrackers')
+    def bugtrackers(self):
+        return getUtility(IBugTrackerSet)
+
+    @stepto('cve')
+    def cve(self):
+        return getUtility(ICveSet)
+
+    @stepto('distros')
+    def distros(self):
+        return getUtility(IDistributionSet)
+
+    @stepto('projects')
+    def projects(self):
+        return getUtility(IProjectSet)
+
+    @stepto('products')
+    def products(self):
+        return getUtility(IProductSet)
+
+    def traverse(self, name):
+        if name.isdigit():
+            # Make /bugs/$bug.id and /malone/$bug.id Just Work
+            return getUtility(IBugSet).get(name)
 
 
 class MenuBox(LaunchpadView):
@@ -59,6 +104,30 @@ class MenuBox(LaunchpadView):
             return ''
         else:
             return self.template()
+
+
+class Breadcrumbs(LaunchpadView):
+    """Page fragment to display the breadcrumbs text."""
+
+    def render(self):
+        """Render the breadcrumbs text.
+
+        The breadcrumbs are taken from the request.breadcrumbs list.
+        For each breadcrumb, breadcrumb.text is cgi escaped.  The last
+        breadcrumb is made <strong>.
+        """
+        breadcrumbs = self.request.breadcrumbs
+        if not breadcrumbs:
+            return ''
+        sep = '<span class="breadcrumbSeparator"> &raquo; </span>'
+        crumbhtml = '<a href="%s">%s</a>'
+        all_but_last = [
+            crumbhtml % (breadcrumb.url, cgi.escape(breadcrumb.text))
+            for breadcrumb in breadcrumbs[:-1]]
+        lastcrumb = breadcrumbs[-1]
+        last_htmltext = crumbhtml % (lastcrumb.url, cgi.escape(lastcrumb.text))
+        last_htmltext = '<strong>%s</strong>' % last_htmltext
+        return sep.join(all_but_last + [last_htmltext])
 
 
 class MaintenanceMessage:
@@ -267,6 +336,9 @@ class LoginStatus:
 class LaunchpadRootNavigation(Navigation):
 
     usedfor = ILaunchpadRoot
+
+    def breadcrumb(self):
+        return 'Launchpad'
 
     stepto_utilities = {
         'products': IProductSet,

@@ -14,7 +14,7 @@ from sqlobject import ForeignKey, IntCol, StringCol, IntervalCol
 from sqlobject import CurrencyCol
 from sqlobject import MultipleJoin, RelatedJoin
 
-from canonical.launchpad.interfaces import IBounty, IBountySet
+from canonical.launchpad.interfaces import IBounty, IBountySet, NotFoundError
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
@@ -122,7 +122,7 @@ class BountySet:
     def __getitem__(self, name):
         bounty = Bounty.selectOneBy(name=name)
         if bounty is None:
-            raise KeyError, name
+            raise NotFoundError(name)
         return bounty
 
     def __iter__(self):

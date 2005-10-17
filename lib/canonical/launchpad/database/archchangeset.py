@@ -1,8 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Changeset', 'ChangesetFileName', 'ChangesetFileHash',
-           'ChangesetFile', 'RevisionMapper']
+__all__ = ['Changeset', 'RevisionMapper']
 
 from canonical.database.sqlbase import quote, SQLBase
 from canonical.database.constants import UTC_NOW
@@ -13,8 +12,6 @@ from canonical.launchpad.interfaces import RevisionNotRegistered
 from canonical.launchpad.interfaces import RevisionAlreadyRegistered
 
 from canonical.launchpad.database.archbranch import VersionMapper
-from canonical.lp.dbschema import EnumCol
-from canonical.lp.dbschema import HashAlgorithm
 
 
 class Changeset(SQLBase):
@@ -38,35 +35,6 @@ class Changeset(SQLBase):
         packagename = self.branch.getPackageName()
         packagename += "--" + self.name
         return packagename
-
-class ChangesetFileName(SQLBase):
-    """A filename from a changeset."""
-
-    _table = 'ChangeSetFileName'
-    _columns = [
-        StringCol('filename', dbName='filename', notNull=True, unique=True)
-        ]
-
-class ChangesetFile(SQLBase):
-    _table = 'ChangesetFile'
-    _columns = [
-        ForeignKey(name='changeset', foreignKey='Changeset', 
-                   dbName='changeset', notNull=True),
-        ForeignKey(name='changesetfilename', foreignKey='ChangesetFileName', 
-                   dbName='changesetfilename', notNull=True),
-        StringCol('filecontents', dbName='filecontents', notNull=True),
-        IntCol('filesize', dbName='filesize', notNull=True),
-        ]
-
-class ChangesetFileHash(SQLBase):
-    _table = 'ChangesetFileHash'
-    _columns = [
-        ForeignKey(name='changesetfile', foreignKey='ChangesetFile',
-                   dbName='changesetfile', notNull=True),
-        EnumCol('hashalg', dbName='hashalg', notNull=True,
-                schema=HashAlgorithm),
-        StringCol('hash', dbName='hash', notNull=True),
-        ]
 
 class RevisionMapper:
     """Map revisions in and out of the db."""
@@ -122,27 +90,3 @@ class RevisionMapper:
             raise RevisionNotRegistered(revision.fullname)
         else:
             return changeset.id
-
-    def insert_file(self, revision, filename, data, checksums):
-        """Insert a file into the database."""
-        size = len(data)
-        name = ChangesetFileName.selectOne('filename = %s' % quote(filename))
-        if name is None:
-            name = ChangesetFileName(filename=filename)
-
-        #print "CSET = %s (named %s)" % (revision.changeset, revision.fullname)
-        #revision.get_changeset()
-        #print "CSET = %s" % revision.changeset
-
-        f = ChangesetFile(changeset=revision.changeset.id,
-                          changesetfilename=name.id,
-                          filecontents="",
-                          filesize=size)
-        for hashalg, hashval in checksums.items():
-            hash_mapping = {"md5": HashAlgorithm.MD5,
-                            "sha1": HashAlgorithm.SHA1}
-            hashid = hash_mapping[hashalg]
-            hasha = ChangesetFileHash(changesetfile=f.id,
-                                      hashalg=hashid,
-                                      hash=hashval)
-

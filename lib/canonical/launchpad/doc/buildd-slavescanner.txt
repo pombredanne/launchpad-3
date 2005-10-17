@@ -373,7 +373,52 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   'Fully built'
 
 
-Now, goes throught BuilddMaster class itself.
+The buildlog is collected and compressed locally using gzip algorithm,
+let's see how this method works:
+
+  >>> logfile_alias = buildergroup.getLogFromSlave(builder10.slave, 
+  ...                                              "1-1", librarian)
+  
+  >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+
+  >>> logfile = getUtility(ILibraryFileAliasSet)[logfile_alias]
+
+  >>> logfile.filename, logfile.mimetype
+  (u'log-for-1-1.txt.gz', u'application/octet-stream')
+
+  Force Librarian to write down the stuff
+  XXX cprov 20051010: is this a bug on librarian_client API ?
+  >>> transaction.commit()
+ 
+Since LibrarianFileAlias does not implement required attributes for
+gzip.open() (like tell() or seek()) we are obligated to read it again
+in our filesystem.
+
+  >>> import gzip, tempfile, os
+  >>> fd, fname = tempfile.mkstemp()
+  >>> tmp = open(fname, 'wb')
+  >>> tmp.write(logfile.read())
+  >>> tmp.close()
+  >>> assert gzip.open(fname).read() == builder10.slave.getFile('buildlog').read()
+
+The happens with urllib instance, we need to download it to the
+filesystem before uncompress.
+
+  >>> import urllib
+  >>> from_web = urllib.urlopen(logfile.url)
+  >>> tmp = open(fname, 'wb')
+  >>> tmp.write(from_web.read())
+  >>> tmp.close()
+  >>> assert gzip.open(fname).read() == builder10.slave.getFile('buildlog').read()
+
+  Both access methods work as expected.
+
+  Remove the temporary file used here.
+
+  >>> os.remove(fname)
+
+
+BuilddMaster class:
 
   >>> bm = BuilddMaster(logging.getLogger(), transaction)
   
@@ -387,14 +432,16 @@ is able to build stuff properly for that one
   ...         bm.setupBuilders(dar)
   ...     except KeyError, e:
   ...         print ("Unable to setup builder for %s/%s/%s."
-  ...		     % (dar.distrorelease.distribution.name,
+  ...                % (dar.distrorelease.distribution.name,
   ...                   dar.distrorelease.name,
   ...                   dar.architecturetag))
-  WARNING:root:Disabling: No CHROOT found for pocket 'Release'
+  WARNING:root:Disabling: No CHROOT found for The Warty Warthog Release for i386 (x86) pocket 'Release'
   Unable to setup builder for ubuntu/warty/i386.
-  WARNING:root:Disabling: No CHROOT found for pocket 'Release'
+  WARNING:root:Disabling: No CHROOT found for The Hoary Hedgehog Release for i386 (x86) pocket 'Release'
   Unable to setup builder for ubuntu/hoary/i386.
-                
+  WARNING:root:Disabling: No CHROOT found for WOODY for i386 (x86) pocket 'Release'
+  Unable to setup builder for debian/woody/i386.              
+
 Since we don't have any builder available yet and the ETA to have
 seems to be a little far, the next output are boring.
 

@@ -58,6 +58,10 @@ Production Database Upgrades
 First get a copy of the Launchpad source built and ready on emperor, readable
 by the postgres user.
 
+Then, before you do anything else, inform #canonical, #launchpad and
+#ubuntu-devel that Launchpad and the Wiki authentication systems will be
+offline for 30 minutes (or longer if there is data migration to do).
+
 Stop PostgreSQL:
 
     % pg_ctl -m fast stop
@@ -76,9 +80,12 @@ update.py using the --partial option to ensure that changes will be rolled
 back on failure.
 
     % cd dists/launchpad/database/schema
-    % env LPCONFIG=production python upgrade.py -d launchpad_prod -U postgres
-    % env LPCONFIG=production python fti.py -d launchpad_prod -U postgres
-    % env LPCONFIG=production python security.py -d launchpad_prod -U postgres
+    % env LPCONFIG=production \
+        python upgrade.py -d launchpad_prod -U postgres -H ''
+    % env LPCONFIG=production \
+        python fti.py -d launchpad_prod -U postgres -H ''
+    % env LPCONFIG=production \
+        python security.py -d launchpad_prod -U postgres -H ''
 
 Restart PostgreSQL with external connections
 

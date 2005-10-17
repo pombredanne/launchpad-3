@@ -32,16 +32,27 @@ class IDistroArchRelease(IHasOwner):
 
     # useful attributes
     binarycount = Attribute('Count of Binary Packages')
+    isNominatedArchIndep = Attribute(
+        'True if this distroarchrelease is the NominatedArchIndep one.')
 
     def getChroot(pocket=None, default=None):
         """Return the librarian file alias of the chroot for a given Pocket.
-         
-        The pocket defaults to the "RELEASE" pocket and if not found returns
+
+        The pocket defaults to the RELEASE pocket and if not found returns
         'default'.
         """
 
     def findPackagesByName(pattern):
         """Search BinaryPackages matching pattern"""
+
+    def getReleasedPackages(name, pocket=None):
+        """Get the publishing records for the given binary package name.
+
+        The 'name' passed in should either be a BinaryPackageName instance
+        or else a string which will be looked up as a BinaryPackageName.
+
+        If pocket is not specified, we look in all pockets.
+        """
 
     def findPackagesByArchtagName(pattern, fti=False):
         """Search BinaryPackages matching pattern and archtag"""

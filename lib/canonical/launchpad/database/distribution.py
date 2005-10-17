@@ -4,32 +4,33 @@ __metaclass__ = type
 __all__ = ['Distribution', 'DistributionSet', 'DistroPackageFinder']
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
 from sqlobject import (
-    RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey,
-    MultipleJoin)
+    RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey, MultipleJoin)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
-from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.distributionbounty import \
-    DistributionBounty
+from canonical.launchpad.database.bug import BugSet
+from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.distributionbounty import DistributionBounty
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.milestone import Milestone
-from canonical.launchpad.database.bugtask import BugTaskSet
-from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.ticket import Ticket
-from canonical.lp.dbschema import (EnumCol, BugTaskStatus,
-    DistributionReleaseStatus, TranslationPermission)
-from canonical.launchpad.interfaces import (IDistribution, IDistributionSet,
-    IDistroPackageFinder)
+from canonical.launchpad.database.publishing import (
+    SourcePackageFilePublishing, BinaryPackageFilePublishing)
+from canonical.launchpad.database.librarian import LibraryFileAlias
+from canonical.launchpad.database.build import Build
+from canonical.lp.dbschema import (
+    EnumCol, BugTaskStatus, DistributionReleaseStatus, TranslationPermission)
+from canonical.launchpad.interfaces import (
+    IDistribution, IDistributionSet, IDistroPackageFinder, IHasBuildRecords,
+    NotFoundError)
 
 
 class Distribution(SQLBase):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
-    implements(IDistribution)
+    implements(IDistribution, IHasBuildRecords)
 
     _defaultOrder = 'name'
 
@@ -59,11 +60,21 @@ class Distribution(SQLBase):
     tickets = MultipleJoin('Ticket', joinColumn='distribution',
         orderBy=['-datecreated', 'id'])
 
+    uploadsender = StringCol(notNull=False, default=None)
+    uploadadmin = StringCol(notNull=False, default=None)
+
+    uploaders = MultipleJoin('DistroComponentUploader',
+                             joinColumn='distribution')
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setDistribution(self)
         return BugTaskSet().search(search_params)
+
+    def newBug(self, owner, title, description):
+        """See IBugTarget."""
+        return BugSet().createBug(
+            distribution=self, comment=description, title=title, owner=owner)
 
     @property
     def open_cve_bugtasks(self):
@@ -123,7 +134,7 @@ class Distribution(SQLBase):
         for release in self.releases:
             if release.name == name:
                 return release
-        raise KeyError, name
+        raise NotFoundError(name)
 
     def __iter__(self):
         return iter(self.releases)
@@ -226,7 +237,54 @@ class Distribution(SQLBase):
                     # Swallow KeyError to continue round the loop
                     pass
 
-        raise KeyError(distrorelease_name)
+        raise NotFoundError(distrorelease_name)
+
+    def getFileByName(self, filename, source=True, binary=True):
+        """See IDistribution."""
+        assert (source or binary), "searching in an explicitly empty " \
+               "space is pointless"
+        if source:
+            candidate = SourcePackageFilePublishing.selectOneBy(
+                distribution=self.id,
+                libraryfilealiasfilename=filename)
+            if candidate is not None:
+                return LibraryFileAlias.get(candidate.libraryfilealias)
+        if binary:
+            candidate = BinaryPackageFilePublishing.selectOneBy(
+                distribution=self.id,
+                libraryfilealiasfilename=filename)
+            if candidate is not None:
+                return LibraryFileAlias.get(candidate.libraryfilealias)
+        raise NotFoundError(filename)
+
+
+    def getBuildRecords(self, status=None, limit=10):
+        """See IHasBuildRecords"""
+        # find out the distroarchreleases in question
+        ids_list = []
+        for release in self.releases:
+            ids = ','.join(
+                '%d' % arch.id for arch in release.architectures)
+            # do not mess pgsql sintaxe with empty chuncks 
+            if ids:
+                ids_list.append(ids)
+        
+        arch_ids = ','.join(ids_list)
+
+        # if not distroarchrelease was found return None
+        if not arch_ids:
+            return None
+
+        # specific status or simply touched by a builder
+        if status:
+            status_clause = "buildstate=%s" % sqlvalues(status)
+        else:
+            status_clause = "builder is not NULL"
+
+        return Build.select(
+            "distroarchrelease IN (%s) AND %s" % (arch_ids, status_clause), 
+            limit=limit, orderBy="-datebuilt")
+
 
 class DistributionSet:
     """This class is to deal with Distribution related stuff"""
@@ -244,7 +302,7 @@ class DistributionSet:
             return Distribution.byName(name)
         except SQLObjectNotFound:
             raise NotFoundError(name)
-
+        
     def get(self, distributionid):
         """See canonical.launchpad.interfaces.IDistributionSet."""
         return Distribution.get(distributionid)

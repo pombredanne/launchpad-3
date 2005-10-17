@@ -197,11 +197,16 @@
       tal:attributes="class string:severity${task/severity/title}">
       Medium
   </td>
-  <td tal:condition="python:'priority' in listing_columns"
-      tal:content="task/priority/title"
-      tal:attributes="class string:priority${task/priority/title}">
+  <tal:priority condition="python:'priority' in listing_columns">
+    <td tal:condition="task/priority"
+        tal:content="task/priority/title"
+        tal:attributes="class string:priority${task/priority/title}">
       High
-  </td>
+    </td>
+    <td tal:condition="not:task/priority">
+      &mdash;
+    </td>
+  </tal:priority>
   <td tal:condition="python:'assignedto' in listing_columns">
     <a tal:condition="task/assignee"
        tal:attributes="href task/assignee/fmt:url"

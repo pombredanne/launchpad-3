@@ -55,6 +55,12 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         title=_("Section"),
         description=_("The release sections."), required=True,
         vocabulary='Schema')
+    # XXX: dsilvers: 20051013: These should be renamed and the above removed
+    # in the future when we have time. Uploader and Queue systems will need
+    # fixing to cope.
+    # Bug 3256
+    real_components = Attribute("The release's components.")
+    real_sections = Attribute("The release's sections.")
     releasestatus = Attribute(
         "The release's status, such as FROZEN or DEVELOPMENT, as "
         "specified in the DistributionReleaseStatus enum.")
@@ -67,14 +73,18 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
     state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")
     lucilleconfig = Attribute("Lucille Configuration Field")
+    changeslist = Attribute("The changes list address for the distrorelease.")
     sourcecount = Attribute("Source Packages Counter")
     binarycount = Attribute("Binary Packages Counter")
     potemplates = Attribute("The set of potemplates in the release")
-    currentpotemplates = Attribute("The set of potemplates in the release"
-        " with the iscurrent flag set")
+    currentpotemplates = Attribute("The set of potemplates in the release "
+        "with the iscurrent flag set")
     architecturecount = Attribute("The number of architectures in this "
         "release.")
     architectures = Attribute("The Architecture-specific Releases")
+    nominatedarchindep = Attribute(
+        "Distroarchrelease designed to build architeture independent "
+        "packages whithin this distrorelease context.")
     messagecount = Attribute("The total number of translatable items in "
         "this distribution release.")
     distroreleaselanguages = Attribute("The set of dr-languages in this "
@@ -111,8 +121,10 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         special URL items, like +sources or +packages, then goes on to
         traverse using __getitem__."""
 
-    def __getitem__(arch):
-        """Return a Set of Binary Packages in this distroarchrelease."""
+    def __getitem__(archtag):
+        """Return the distroarchrelease for this distrorelease with the
+        given architecturetag.
+        """
 
     def updateStatistics(self):
         """Update all the Rosetta stats for this distro release."""
@@ -132,9 +144,11 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         """Return an iterator over binary packages with a name that matches
         this one."""
 
-    def getPublishedReleases(sourcepackage_or_name):
+    def getPublishedReleases(sourcepackage_or_name, pocket=None):
         """Given a SourcePackageName, return a list of the currently
         published SourcePackageReleases as SourcePackagePublishing records.
+
+        If pocket is not specified, we look in all pockets.
         """
 
     def publishedBinaryPackages(component=None):

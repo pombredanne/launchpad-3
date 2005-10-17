@@ -107,6 +107,7 @@
         permission="launchpad.Admin" 
         template="../templates/shipit-exports.pt" />
 
+
     <!-- ShippingRequest -->
     <content class="canonical.launchpad.database.ShippingRequest">
         <allow interface="canonical.launchpad.interfaces.IShippingRequest" />
@@ -164,6 +165,14 @@
         name="+index"
         template="../templates/shipitrequests-index.pt"
         lp:url="shipitrequests/+index">
+    </browser:page>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShippingRequestSet"
+        permission="launchpad.Admin"
+        class="canonical.launchpad.browser.RedirectToOldestPendingRequest"
+        attribute="__call__"
+        name="+oldestpending">
     </browser:page>
 
     <browser:page

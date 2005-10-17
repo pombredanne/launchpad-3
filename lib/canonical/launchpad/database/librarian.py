@@ -37,10 +37,10 @@ class LibraryFileAlias(SQLBase):
     filename = StringCol(notNull=True)
     mimetype = StringCol(notNull=True)
 
+    @property
     def url(self):
         """See ILibraryFileAlias.url"""
         return getUtility(ILibrarianClient).getURLForAlias(self.id)
-    url = property(url)
 
     _datafile = None
 
