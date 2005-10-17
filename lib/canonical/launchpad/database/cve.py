@@ -143,6 +143,7 @@ class CveSet:
     def inText(self, text):
         """See ICveSet."""
         # let's look for matching entries
+        cves = set()
         for match in cverefpat.finditer(text):
             # let's get the core CVE data
             cvestate = match[0]
@@ -157,7 +158,7 @@ class CveSet:
                     "are reading this, then this CVE entry is probably "
                     "erroneous, since this text should be replaced by "
                     "the official CVE description automatically.")
-            cves.append(cve)
+            cves.add(cve)
 
         return sorted(cves, key=lambda a: a.sequence)
 
@@ -170,7 +171,7 @@ class CveSet:
                 continue
             elif messagechunk.content is not None:
                 # look for potential CVE URL's and create them as needed
-                cves = cves.union(self.inText(messagechunk.content))
+                cves.update(self.inText(messagechunk.content))
             else:
                 raise AssertionError('MessageChunk without content or blob.')
         return sorted(cves, key=lambda a: a.sequence)

@@ -215,7 +215,7 @@ class Bug(SQLBase):
                 BugCve.delete(cve_link.id)
                 break
 
-    def findCvesInText(self, bug, text):
+    def findCvesInText(self, text):
         """See IBug."""
         cves = getUtility(ICveSet).inText(text)
         for cve in cves:

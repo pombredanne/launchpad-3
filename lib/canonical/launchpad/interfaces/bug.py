@@ -142,7 +142,7 @@ class IBug(IMessageTarget):
         removed.
         """
 
-    def findCvesInText(self, bug, text):
+    def findCvesInText(self, text):
         """Find any CVE references in the given text, make sure they exist
         in the database, and are linked to this bug.
         """
