@@ -6,7 +6,7 @@ __metaclass__ = type
 
 Class to handle and query the katie db properly.
 """
-__all__ = ['SQLThing', 'Katie']
+__all__ = ['Katie']
 
 import re
 from sets import Set
@@ -15,12 +15,17 @@ import psycopg
 from canonical.launchpad.scripts import log
 from canonical.database.sqlbase import connect
 
-class SQLThing:
-    def __init__(self, dbname, dry_run):
+class Katie:
+    def __init__(self, dbname, suite, dry_run):
+        self.suite = suite
         self.dbname = dbname
         self.dry_run = dry_run
         log.info("Connecting to %s as %s" % (dbname, config.gina.dbuser))
         self.db = connect(config.gina.dbuser, dbname=dbname)
+
+    #
+    # Database convenience methods
+    #
 
     def ensure_string_format(self, name):
         assert isinstance(name, basestring), repr(name)
@@ -41,7 +46,7 @@ class SQLThing:
             return
         log.debug("Committing")
         return self.db.commit()
-    
+
     def close(self):
         log.info("Closing connection")
         return self.db.close()
@@ -83,11 +88,9 @@ class SQLThing:
         cursor.execute(query, args or [])
         return cursor
 
-class Katie(SQLThing):
-
-    def __init__(self, bar, suite, dry_run):
-        SQLThing.__init__(self, bar, dry_run)
-        self.suite = suite
+    #
+    # Katie domain-specific bits
+    #
 
     def getSourcePackageRelease(self, name, version):
         log.debug("Hunting for release %s / %s" % (name,version))
@@ -104,7 +107,8 @@ class Katie(SQLThing):
         return self._query_to_dict("""SELECT * FROM source, fingerprint
                                       WHERE  source = %s 
                                       AND    source.sig_fpr = fingerprint.id
-                                      AND    version like '%subuntu%s'""" % ("%s", version, "%"), name)
+                                      AND    version like '%subuntu%s'""" % 
+                                      ("%s", version, "%"), name)
         
     
     def getBinaryPackageRelease(self, name, version, arch):  
