@@ -37,14 +37,6 @@
       style="float: left;"
       src="/@@/launchpad.png"
       alt=""
-      />
-    </tr>
-  </table>
-  <h2 class="lpcontext">
-    <img
-      style="float: left;"
-      src="/@@/launchpad.png"
-      alt=""
     />
     <metal:block
       define-slot="titleheader"
