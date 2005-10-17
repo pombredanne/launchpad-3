@@ -17,7 +17,7 @@ import psycopg
 from optparse import OptionParser
 from datetime import timedelta
 
-from canonical.launchpad.scripts.gina.database import Katie
+from canonical.launchpad.scripts.gina.katie import Katie
 from canonical.launchpad.scripts.gina.archive import (ArchiveComponentItems,
                                                       PackagesMap)
 
