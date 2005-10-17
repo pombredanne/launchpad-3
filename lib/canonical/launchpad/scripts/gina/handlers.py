@@ -45,27 +45,29 @@ from canonical.archivepublisher import Poolifier, parse_tagfile
 
 priomap = {
     "low": SourcePackageUrgency.LOW,
-    "medium": SourcePackageUrgency.LOW,
-    "high": SourcePackageUrgency.LOW,
-    "emergency": SourcePackageUrgency.LOW
-    # FUCK_PEP8 -- Fuck it right in the ear
+    "medium": SourcePackageUrgency.MEDIUM,
+    "high": SourcePackageUrgency.HIGH,
+    "emergency": SourcePackageUrgency.EMERGENCY,
     }
 
 prioritymap = {
-"required": PackagePublishingPriority.REQUIRED,
-"important": PackagePublishingPriority.IMPORTANT,
-"standard": PackagePublishingPriority.STANDARD,
-"optional": PackagePublishingPriority.OPTIONAL,
-"extra": PackagePublishingPriority.EXTRA,
-"source": PackagePublishingPriority.EXTRA #Some binarypackages ended up
-                                           #with priority source.
+    "required": PackagePublishingPriority.REQUIRED,
+    "important": PackagePublishingPriority.IMPORTANT,
+    "standard": PackagePublishingPriority.STANDARD,
+    "optional": PackagePublishingPriority.OPTIONAL,
+    "extra": PackagePublishingPriority.EXTRA,
+    # Some binarypackages ended up with priority source, apparently
+    # because of a bug in dak.
+    "source": PackagePublishingPriority.EXTRA,
 }
+
 
 class DisplaynameDecodingError(Exception):
     """Not valid unicode displayname"""
     def __init__(self, displayname):
         message = "Could not decode %s" % (displayname)
         Exception.__init__(self, message)
+
 
 class ImporterHandler:
     """ Import Handler class
@@ -318,15 +320,18 @@ class BinaryPackageHandler:
                      )
         else:
             query = ("Build.distroarchrelease = distroarchrelease.id AND "
-                     "DistroArchRelease.id = %s AND "
+                     "DistroArchRelease.distrorelease = %s AND "
                      "%s" %
                      (distroarchinfo['distroarchrelease'].distrorelease.id,
                       query)
                      )
             clauseTables.append('DistroArchRelease')
 
-        return BinaryPackageRelease.selectOne(query, clauseTables=clauseTables)
-
+        bpr = BinaryPackageRelease.selectOne(query, clauseTables=clauseTables)
+        if bpr is None:
+            log.debug('BPR not found: %s %s %s, query=%s' % (
+                binaryname, version, architecture, query))
+        return bpr
 
     def createBinaryPackage(self, bin, srcpkg, distroarchinfo):
         """Create a new binarypackage."""
@@ -571,7 +576,7 @@ class SourcePackageReleaseHandler:
             # aah well, failed...
             return None
 
-        dsc_contents = parse_tagfile(sp_path)
+        dsc_contents = parse_tagfile(sp_path, allow_unsigned=True)
 
         # Since the dsc doesn't know, we add in the sub-path, package,
         # component etc.
@@ -580,6 +585,9 @@ class SourcePackageReleaseHandler:
         dsc_contents['component'] = sp_component
 
         # Also, the dsc doesn't list itself so we'll add it ourselves
+        if 'files' not in dsc_contents:
+            log.error('Problem parsing %s: %r' % (dsc_name, dsc_contents))
+            return None
         if not dsc_contents['files'].endswith("\n"):
             dsc_contents['files'] += "\n"
         dsc_contents['files'] += "xxx 000 %s" % dsc_name
