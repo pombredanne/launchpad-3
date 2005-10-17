@@ -87,7 +87,7 @@ dp.scan()
 
 debug("Preparing publisher...")
 
-pub = Publisher(logging.getLogger("Publisher"), pubconf, dp)
+pub = Publisher(logging.getLogger("Publisher"), pubconf, dp, distro)
 
 try:
     # main publishing section
@@ -167,7 +167,7 @@ try:
     debug("Doing apt-ftparchive work...")
     fn = os.tmpnam()
     f = file(fn,"w")
-    f.write(pub.generateAptFTPConfig())
+    f.write(pub.generateAptFTPConfig(fullpublish=careful))
     f.close()
     print fn
 
@@ -182,7 +182,7 @@ except:
 try:
     # Generate the Release files...
     debug("Generating Release files...")
-    pub.writeReleaseFiles(distro)
+    pub.writeReleaseFiles()
     
 except:
     logging.getLogger().exception("Bad muju while doing release files")
