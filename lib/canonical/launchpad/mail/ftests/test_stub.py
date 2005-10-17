@@ -66,7 +66,7 @@ def test_simple_sendmail():
     >>> if from_addr == 'nobody1@example.com':
     ...     from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> from_addr
-    'nobody@example.com'
+    'bounces@canonical.com'
     >>> to_addrs
     ['nobody2@example.com']
 

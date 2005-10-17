@@ -76,8 +76,10 @@ notification:
     >>> from_addr, to_addrs, raw_message = sent_emails[-1]
 
     >>> print from_addr
-    Foo Bar <foo.bar@canonical.com>
+    bounces@canonical.com
     >>> msg = email.message_from_string(raw_message)
+    >>> msg["From"]
+    'Foo Bar <foo.bar@canonical.com>'
     >>> msg["Subject"]
     '[Bug 2] Blackhole Trash folder'
 
@@ -103,8 +105,10 @@ notification:
     >>> from_addr, to_addrs, raw_message = sent_emails[0]
 
     >>> print from_addr
-    Foo Bar <foo.bar@canonical.com>
+    bounces@canonical.com
     >>> msg = email.message_from_string(raw_message)
+    >>> msg["From"]
+    'Foo Bar <foo.bar@canonical.com>'
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
 
