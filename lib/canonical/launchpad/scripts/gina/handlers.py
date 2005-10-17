@@ -11,7 +11,6 @@ __all__ = ['ImporterHandler', 'BinaryPackageHandler', 'BinaryPackagePublisher',
 'PersonHandler']
 
 import os
-from string import split
 
 from sqlobject import SQLObjectNotFound
 
@@ -70,7 +69,7 @@ class DisplaynameDecodingError(Exception):
 
 class ImporterHandler:
     """ Import Handler class
-    
+
     This class is used to handle the import process.
     """
     def __init__(self, distro_name, distrorelease_name, dry_run,
@@ -83,10 +82,10 @@ class ImporterHandler:
         self.dry_run = dry_run
 
         # Info about architectures.
-        self.archinfo_cache ={}
-        
+        self.archinfo_cache = {}
+
         self.imported_sources = []
-        self.imported_bins ={}
+        self.imported_bins = {}
 
         # Create a sourcepackagerelease handler
         self.sphandler = SourcePackageReleaseHandler(ktdb, poolroot,
@@ -94,7 +93,7 @@ class ImporterHandler:
 
         # Create a binarypackage handler
         self.bphandler = BinaryPackageHandler(self.sphandler)
-        
+
     def commit(self):
         """Commit to the database."""
         if not self.dry_run:
@@ -104,7 +103,7 @@ class ImporterHandler:
         """Rollback changes to the database."""
         if not self.dry_run:
             self.ztm.abort()
-    
+
     #
     # Distro Stuff: Should go to DistroHandler
     #
@@ -134,7 +133,7 @@ class ImporterHandler:
                   ("Error finding distroarchrelease for %s/%s"
                    % (self.distrorelease.name, archtag)
                    )
-        
+
         processor = Processor.selectOneBy(familyID=dar.processorfamily.id)
         if not processor:
             raise ValueError, \
@@ -143,12 +142,12 @@ class ImporterHandler:
                    % (self.distrorelease.name, archtag))
 
         return {'distroarchrelease': dar, 'processor': processor}
-            
-        
+
+
     #
     # Distro Stuff
     #
-        
+
 
     def _cache_sprelease(self, sourcepackagerelease):
         """Append to the sourcepackagerelease imported list."""
@@ -158,7 +157,7 @@ class ImporterHandler:
     def _cache_binaries(self, binarypackage, archtag):
         """Append to the binarypackage imported list."""
         if archtag not in self.imported_bins.keys():
-            self.imported_bins[archtag]=[]
+            self.imported_bins[archtag] = []
 
         self.imported_bins[archtag].append(binarypackage)
 
@@ -166,9 +165,9 @@ class ImporterHandler:
         """Append retrived distroarchrelease info to a cache."""
         if archtag in self.archinfo_cache.keys():
             return
-        
+
         info = self._get_distroarchrelease_info(archtag)
-        self.archinfo_cache[archtag]=info
+        self.archinfo_cache[archtag] = info
 
 
     def preimport_sourcecheck(self, sourcepackagedata):
@@ -229,14 +228,14 @@ class ImporterHandler:
         sourcepackage = self.sphandler.getSourceToBinary(
             binarypackagedata,
             distroarchinfo['distroarchrelease'].distrorelease)
-        
+
         if not sourcepackage:
             # We couldn't find a sourcepackagerelease in the database.
             # Perhaps we can opportunistically pick one out of the archive.
             sourcepackage = self.sphandler.findAndImportUnlistedSourcePackage(
                 binarypackagedata,
                 distroarchinfo['distroarchrelease'].distrorelease)
-            
+
         if not sourcepackage:
             # If the sourcepackagerelease is not imported, not way to import
             # this binarypackage. Warn and giveup.
@@ -277,6 +276,7 @@ class ImporterHandler:
                 publisher.publish(binary, pocket)
         log.debug('Pushing done...')
 
+
 class BinaryPackageHandler:
     """Handler to deal with binarypackages."""
     def __init__(self, sphandler):
@@ -300,7 +300,7 @@ class BinaryPackageHandler:
     def _getBinary(self, binaryname, version, architecture, distroarchinfo):
         """Returns a binarypackage if it exists."""
 
-        clauseTables=["BinaryPackageRelease","Build"]
+        clauseTables = ["BinaryPackageRelease", "Build"]
         query = ("BinaryPackageRelease.binarypackagename=%s AND "
                  "BinaryPackageRelease.version=%s AND "
                  "Build.id = BinaryPackageRelease.build"
@@ -324,10 +324,10 @@ class BinaryPackageHandler:
                       query)
                      )
             clauseTables.append('DistroArchRelease')
-            
+
         return BinaryPackageRelease.selectOne(query, clauseTables=clauseTables)
-            
-        
+
+
     def createBinaryPackage(self, bin, srcpkg, distroarchinfo):
         """Create a new binarypackage."""
 
@@ -339,7 +339,7 @@ class BinaryPackageHandler:
         if not build:
             # Create build fealure. Return to make it keep going.
             return
-               
+
         # Get binarypackage the description.
         description = encoding.guess(bin.description)
 
@@ -359,7 +359,7 @@ class BinaryPackageHandler:
         componentID = self.distro_handler.getComponentByName(bin.component).id
         sectionID = self.distro_handler.ensureSection(bin.section).id
 
-        
+
         # Check the architecture.
         architecturespecific = (bin.architecture == "all")
 
@@ -433,7 +433,7 @@ class BinaryPackageHandler:
         """Ensure a build record."""
         distroarchrelease = distroarchinfo['distroarchrelease']
         processor = distroarchinfo['processor']
-        
+
         # XXX: Check it later -- Debonzi 20050516
 ##         if bin.gpg_signing_key_owner:
 ##             key = self.getGPGKey(bin.gpg_signing_key, 
@@ -466,8 +466,9 @@ class BinaryPackageHandler:
                       builder=None,
                       changes=None,
                       datebuilt=None)
-        
+
         return build
+
 
 class BinaryPackagePublisher:
     """Binarypackage publisher class."""
@@ -489,7 +490,7 @@ class BinaryPackagePublisher:
                 binpkg_publishinghistory.status.title,
                 ))
             return
-        
+
 
         # Create the Publishing entry with status PENDING.
         SecureBinaryPackagePublishingHistory(
@@ -586,7 +587,7 @@ class SourcePackageReleaseHandler:
         # By capitalising the first letters of the keys we can create
         # a new dict which SourcePackageData will accept...
         capitalised_dsc = {}
-        for k,v in dsc_contents.items():
+        for k, v in dsc_contents.items():
             capitalised_dsc[k.capitalize()] = v
 
         # Generate an sp_data object for the dsc
@@ -596,7 +597,7 @@ class SourcePackageReleaseHandler:
         sp_data.process_package(self.ktdb,
                                 os.path.join(self.archiveroot, "pool"),
                                 self.keyrings)
-        
+
         # Attempt to construct a sourcepackagerelease against the
         # provided dsc_contents...
 
@@ -631,7 +632,7 @@ class SourcePackageReleaseHandler:
         return self._getSource(spname,
                                binarypackagedata.source_version,
                                distrorelease)
-        
+
 
     def checkSource(self, sourcepackagedata, distrorelease):
         """Check if a sourcepackagerelease is already on lp db.
@@ -648,7 +649,7 @@ class SourcePackageReleaseHandler:
         return self._getSource(spname,
                                sourcepackagedata.version,
                                distrorelease)
-        
+
 
     def _getSource(self, sourcepackagename, version, distrorelease):
         """Returns a sourcepackagerelease by its name and version."""
@@ -661,7 +662,7 @@ class SourcePackageReleaseHandler:
 
     def createSourcePackageRelease(self, src, distrorelease):
         """Create a SourcePackagerelease and db dependencies if needed.
-        
+
         Returns the created SourcePackageRelease, or None if it failed.
         """
 
@@ -681,7 +682,7 @@ class SourcePackageReleaseHandler:
 ##         else:
 ##             key = None
  
-        key=None # FIXIT
+        key = None # FIXIT
         dsc = encoding.guess(src.dsc)
 
         try:
@@ -722,13 +723,13 @@ class SourcePackageReleaseHandler:
                                    section=sectionID,
                                    manifest=None,
                                    uploaddistrorelease=distrorelease.id)
-        
+
 
         # Insert file into the library and create the
         # SourcePackageReleaseFile entry on lp db.
         for i in src.files:
             fname = i[-1]
-            path = "%s/%s" %(src.package_root, src.directory)
+            path = "%s/%s" % (src.package_root, src.directory)
             try:
                 alias = getLibraryAlias(path, fname)
             except IOError:
@@ -750,6 +751,7 @@ class SourcePackageReleaseHandler:
     def ensureSourcePackageName(self, name):
         return SourcePackageName.ensure(name)
 
+
 class SourcePublisher:
     """Class to handle the sourcepackagerelease publishing process."""
 
@@ -766,14 +768,14 @@ class SourcePublisher:
 
         # Check if the sprelease is already published and if yes,
         # just report it.
-        souce_publishinghistory = self._checkPublishing(
+        source_publishinghistory = self._checkPublishing(
             sourcepackagerelease, self.distrorelease)
-        if souce_publishinghistory:
+        if source_publishinghistory:
             log.debug('SourcePackageRelease already published as %s' % (
-                souce_publishinghistory.status.title
+                source_publishinghistory.status.title
                 ))
             return
-        
+
         # Create the Publishing entry with status PENDING.
         SecureSourcePackagePublishingHistory(
             distrorelease=self.distrorelease.id,
@@ -796,6 +798,7 @@ class SourcePublisher:
         return SecureSourcePackagePublishingHistory.selectOneBy(
             sourcepackagereleaseID=sourcepackagerelease.id,
             distroreleaseID=distrorelease.id)
+
 
 class DistroHandler:
     """Class handler some distro related informations."""
@@ -840,7 +843,7 @@ class DistroHandler:
         log.info("Section %s is %s" % (section, self.sectcache[section].id))
         return ret
 
-    
+
 class PersonHandler:
     """Class to handle person."""
 
@@ -866,7 +869,7 @@ class PersonHandler:
         except UnicodeDecodeError:
             raise DisplaynameDecodingError(displayname)
 
-        givenname = split(displayname)[0]
+        givenname = displayname.split()[0]
 
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email=emailaddress, displayname=displayname, givenname=givenname)
