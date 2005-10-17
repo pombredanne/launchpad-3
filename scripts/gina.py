@@ -14,7 +14,6 @@ import _pythonpath
 import os
 import sys
 import psycopg
-from string import split
 from optparse import OptionParser
 from datetime import timedelta
 
@@ -30,7 +29,7 @@ from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
 
 from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.config import config
-from canonical.launchpad.scripts import logger_options, logger, log
+from canonical.launchpad.scripts import logger_options, log
 from canonical.launchpad.scripts.lockfile import LockFile
 
 def main(options, target_section):
@@ -65,10 +64,10 @@ def main(options, target_section):
 
     LIBRHOST = config.librarian.upload_host
     LIBRPORT = config.librarian.upload_port
-        
+
     log.debug("Packages read from: %s" % package_root)
     log.debug("Keyrings read from: %s" % keyrings_root)
-    log.info("Archive to read: %s/%s" % (distro,distrorelease))
+    log.info("Archive to read: %s/%s" % (distro, distrorelease))
     log.info("Destine DistroRelease/Pocket: %s/%s" % (
         pocket_distrorelease, pocket.title.lower()
         ))
@@ -78,17 +77,17 @@ def main(options, target_section):
     log.debug("Launchpad database host: %s" % LPDB_HOST)
     log.debug("Launchpad database user: %s" % LPDB_USER)
     log.info("Katie database: %s" % KTDB)
-    log.info("SourcePackage Only: %s" %source_only)
-    log.info("SourcePackageName Only: %s" %spnames_only)
-    log.debug("Librarian: %s:%s" % (LIBRHOST,LIBRPORT))
+    log.info("SourcePackage Only: %s" % source_only)
+    log.info("SourcePackageName Only: %s" % spnames_only)
+    log.debug("Librarian: %s:%s" % (LIBRHOST, LIBRPORT))
     log.info("Dry run: %s" % (dry_run))
-    
+
     kdb = None
     if KTDB:
         kdb = Katie(KTDB, distrorelease, dry_run)
 
     keyrings = _get_keyring(keyrings_root)
-        
+
     # Create the ArchComponent Items object
     arch_component_items = ArchiveComponentItems(package_root,
                                                  distrorelease,
@@ -101,7 +100,6 @@ def main(options, target_section):
     importer_handler = ImporterHandler(distro, pocket_distrorelease,
                                        dry_run, kdb, package_root, keyrings,
                                        pocket)
-    
 
     import_sourcepackages(packages_map, kdb, package_root,
                           keyrings, importer_handler, spnames_only)
@@ -129,7 +127,7 @@ def _get_keyring(keyrings_root):
         path = os.path.join(keyrings_root, keyring)
         keyrings += " --keyring=%s" % path
     if not keyrings:
-        raise AttributeError, "Keyrings not found in ./keyrings/"
+        raise AttributeError("Keyrings not found in ./keyrings/")
     return keyrings
 
 
@@ -141,7 +139,7 @@ def import_sourcepackages(packages_map, kdb, package_root,
     count = 0
     npacks = len(packages_map.src_map)
     log.info('%i SourcePackages to be imported' % npacks)
-    
+
     for source in packages_map.src_map.itervalues():
 
         # If spnames flag is true, do it as fast as you can.
@@ -155,13 +153,13 @@ def import_sourcepackages(packages_map, kdb, package_root,
         except MissingRequiredArguments:
             # Required attributes for this instance was not found.
             log.exception( ("Unable to create SourcePackageData. "
-                            "Required attributs not found.") )
-        except (AttributeError,KeyError,ValueError,TypeError):
+                            "Required attributes not found.") )
+        except (AttributeError,KeyError,ValueError,TypeError), e:
             # XXX: Debonzi 20050720
             # Catch all common exception since they are not predictable ATM.
             # SourcePackageData class should be refactored or rewrited to try
             # to make it better and have tested include.
-            log.exception("Unable to create SourcePackageData")
+            log.exception("Unable to create SourcePackageData: %s" % e)
             continue
         except psycopg.Error:
             log.exception("Database error. Unable to create SourcePackageData")
@@ -215,12 +213,12 @@ def import_binarypackages(pocket, packages_map, kdb, package_root,
                 # Required attributes for this instance was not found.
                 log.exception( ("Unable to create BinaryPackageData. "
                                 "Required attributs not found.") )
-            except (AttributeError, ValueError, KeyError, TypeError):
+            except (AttributeError, ValueError, KeyError, TypeError), e:
                 # XXX: Debonzi 20050720
                 # Catch all common exception since they are not predictable
                 # ATM. BinaryPackageData class should be refactored or
                 # rewrited to try to make it better and have tests included.
-                log.exception("Failed to create BinaryPackageData")
+                log.exception("Failed to create BinaryPackageData: %s" % e)
                 continue
             except psycopg.Error:
                 log.exception(
