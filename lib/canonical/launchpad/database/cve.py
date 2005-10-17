@@ -146,8 +146,8 @@ class CveSet:
         cves = set()
         for match in cverefpat.finditer(text):
             # let's get the core CVE data
-            cvestate = match[0]
-            sequence = match[1]
+            cvestate = match.group(1)
+            sequence = match.group(2)
             # see if there is already a matching CVE ref in the db, and if
             # not, then create it
             cve = self[sequence]
