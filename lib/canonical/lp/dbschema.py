@@ -2528,6 +2528,7 @@ class BuildStatus(DBSchema):
         has been fixed.
         """)
 
+
 class MirrorFreshness(DBSchema):
     """ Mirror Freshness
 

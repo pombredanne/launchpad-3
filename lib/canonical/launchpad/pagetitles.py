@@ -219,9 +219,9 @@ builder_edit = ContextTitle('Editing %s details')
 
 builder_index = ContextTitle('%s Overview')
 
-builder_abort = ContextTitle('%s Abort')
+builder_cancel = ContextTitle('Cancel %s Job')
 
-builder_stop = ContextTitle('%s Stop')
+builder_mode = ContextTitle('Change %s Mode')
 
 calendar = ContextTitle('%s')
 

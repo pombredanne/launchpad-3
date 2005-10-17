@@ -5,24 +5,14 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
-
-
-<metal:leftportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-action" />
-</metal:leftportlets>
-
-
   <div metal:fill-slot="main">
-    <h1><span tal:replace="context/title"/> Abort</h1>
+    <h1><span tal:replace="context/title"/> Cancel</h1>
  
     <tal:block define="job context/currentjob">
 
     <div tal:condition="job">
 
-    <div class="portalMessage" tal:define="message view/abortBuilder"
+    <div class="portalMessage" tal:define="message view/cancelBuildJob"
          tal:condition="message" tal:content="structure message"/>
 
     <p><dfn tal:content="context/title">BUILDER</dfn> is processing:</p>
@@ -50,19 +40,17 @@
 
      <p>Are you sure ?</p> 
 
-     <form name="ABORT" action="" method="POST">
+     <form name="CANCEL" action="" method="POST">
        <input name="BUILDERID" type="hidden" 
               tal:attributes="value context/id"/>
-       <input type="submit" value="Abort Builder"/>
+       <input type="submit" value="Cancel Current Job"/>
      </form>
        
     </div>
 
     <div tal:condition="not:job">
-    <h3>
-      <dfn tal:content="context/title">BUILDER</dfn> is IDLE, no need
-    to abort !
-    </h3>
+    <h3><dfn tal:content="context/title">BUILDER</dfn> is IDLE, no need
+        to cancel.</h3>
     </div>
 
     </tal:block>

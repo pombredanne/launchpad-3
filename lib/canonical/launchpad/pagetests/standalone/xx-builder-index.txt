@@ -73,7 +73,9 @@
                 &hellip;
               </td>
               <td style="text-align: right;">
-                <input alt="(Cancel)" type="image" src="/++resource++stop" />
+                <a href="+cancel">
+                   <input alt="(Cancel)" type="image" src="/++resource++stop" />
+                </a>
               </td>
             </tr>
   <BLANKLINE>

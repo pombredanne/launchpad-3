@@ -71,11 +71,11 @@
               </a>
             </td>
             <td tal:define="archrelease job/build/distroarchrelease">
-	     <a tal:content="archrelease/distrorelease/distribution/title"
+             <a tal:content="archrelease/distrorelease/distribution/title"
                 tal:attributes="href 
                     archrelease/distrorelease/distribution/fmt:url"
                 title="To show the Distribution, click here."/> /
-	     <a tal:content="archrelease/distrorelease/title"
+             <a tal:content="archrelease/distrorelease/title"
                 tal:attributes="href archrelease/distrorelease/fmt:url"
                 title="To show the Distribution Release, click here."/>
             </td>
@@ -86,7 +86,9 @@
               <span tal:replace="job/buildduration/fmt:approximateduration" />&hellip;
             </td>
             <td style="text-align: right;">
-              <input alt="(Cancel)" type="image" src="/++resource++stop" />
+              <a href="+cancel">
+                 <input alt="(Cancel)" type="image" src="/++resource++stop" />
+              </a>
             </td>
           </tr>
           <tr tal:condition="not: job">
@@ -97,7 +99,7 @@
             <td>&#8212;</td>
             <td>
               <img alt="/++resource++idle" />
-	      <span tal:replace="context/status">STATUS</span>
+              <span tal:replace="context/status">STATUS</span>
             </td>
           </tr>
           <tal:block condition="job">
@@ -112,10 +114,14 @@
         <tr>
           <td colspan="6">
             <div style="text-align: right;">
-              <button>
-                Stop <span tal:replace="context/name" /> completely
-                <img alt="" src="/++resource++stop" />
-              </button>
+              <a href="+mode">
+                Change <span tal:replace="context/name" /> Mode
+                <!-- XXX cprov 20051013 we should have MANUAL/AUTO icons -->
+                <img tal:condition="context/manual" alt="" 
+                     src="/++resource++stop" />
+                <img tal:condition="not:context/manual" alt="" 
+                     src="/++resource++stop" />
+              </a>
             </div>
             <h2>Recently completed</h2>
           </td>
@@ -135,14 +141,14 @@
               </a>
             </td>
             <td tal:define="archrelease build/distroarchrelease">
-	     <a tal:content="archrelease/distrorelease/distribution/title"
+             <a tal:content="archrelease/distrorelease/distribution/title"
                 tal:attributes="href 
                     archrelease/distrorelease/distribution/fmt:url"
                 title="To show the Distribution, click here."/> /
-	     <a tal:content="archrelease/distrorelease/title"
+             <a tal:content="archrelease/distrorelease/title"
                 tal:attributes="href archrelease/distrorelease/fmt:url"
                 title="To show the Distribution Release, click here."/> /
-	     <a tal:content="archrelease/title"
+             <a tal:content="archrelease/title"
                 tal:attributes="href archrelease/fmt:url"
                 title="To show the Distribution Architecture Release, click here."/>
             </td>
