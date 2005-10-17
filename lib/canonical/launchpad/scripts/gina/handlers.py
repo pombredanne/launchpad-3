@@ -302,34 +302,31 @@ class BinaryPackageHandler:
     def _getBinary(self, binaryname, version, architecture, distroarchinfo):
         """Returns a binarypackage if it exists."""
 
-        clauseTables = ["BinaryPackageRelease", "Build"]
+        clauseTables = ["BinaryPackageRelease", "Build", "DistroArchRelease"]
+
         query = ("BinaryPackageRelease.binarypackagename=%s AND "
                  "BinaryPackageRelease.version=%s AND "
                  "Build.id = BinaryPackageRelease.build"
                  % (binaryname.id,
-                    quote(version)
-                    )
-                 )
+                    quote(version)))
 
         if architecture != "all":
-            query = ("Build.Processor=%s AND "
-                     "Build.distroarchrelease=%s AND "
-                     "%s" % (distroarchinfo['processor'].id,
-                             distroarchinfo['distroarchrelease'].id,
-                             query)
-                     )
-        else:
-            query = ("Build.distroarchrelease = distroarchrelease.id AND "
-                     "DistroArchRelease.distrorelease = %s AND "
-                     "%s" %
-                     (distroarchinfo['distroarchrelease'].distrorelease.id,
-                      query)
-                     )
-            clauseTables.append('DistroArchRelease')
+            query = ("Build.Processor = %s AND %s" %
+                     (distroarchinfo['processor'].id, query))
+
+        # When looking for binaries, we need to remember that they are
+        # shared between distribution releases, so match on the
+        # distribution they were built for.
+        distroarchrelease = distroarchinfo['distroarchrelease']
+        query = ("Build.distroarchrelease = distroarchrelease.id AND "
+                 "DistroArchRelease.distrorelease = DistroRelease.id AND "
+                 "DistroRelease.distribution = %d"
+                 "%s" %
+                 (distroarchrelease.distrorelease.distribution.id, query))
 
         bpr = BinaryPackageRelease.selectOne(query, clauseTables=clauseTables)
         if bpr is None:
-            log.debug('BPR not found: %s %s %s, query=%s' % (
+            log.debug('BPR not found: %r %r %r, query=%s' % (
                 binaryname, version, architecture, query))
         return bpr
 
@@ -342,7 +339,7 @@ class BinaryPackageHandler:
         # Ensure a build record for this binarypackage.
         build = self.ensureBuild(bin, srcpkg, distroarchinfo)
         if not build:
-            # Create build fealure. Return to make it keep going.
+            # Create build failure. Return to make it keep going.
             return
 
         # Get binarypackage the description.
@@ -662,10 +659,19 @@ class SourcePackageReleaseHandler:
     def _getSource(self, sourcepackagename, version, distrorelease):
         """Returns a sourcepackagerelease by its name and version."""
 
-        return SourcePackageRelease.selectOneBy(
-                            sourcepackagenameID=sourcepackagename.id,
-                            version=version,
-                            uploaddistroreleaseID=distrorelease.id)
+        distributionID=distrorelease.distribution.id
+        spr = SourcePackageRelease.selectOne(
+            """
+            sourcepackagerelease.sourcepackagename = %s AND
+            sourcepackagerelease.version = %s AND
+            sourcepackagepublishing.sourcepackagerelease = 
+                sourcepackagerelease.id AND
+            sourcepackagepublishing.distrorelease = distrorelease.id AND
+            distrorelease.distribution = %s
+            """ % (sourcepackagename.id, version, distributionID),
+            clauseTables=['SourcePackagePublishing', 'DistroRelease'])
+        return spr
+
 
 
     def createSourcePackageRelease(self, src, distrorelease):
