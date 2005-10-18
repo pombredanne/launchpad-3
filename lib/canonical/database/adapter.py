@@ -129,7 +129,8 @@ class CursorWrapper:
                 self._cur.execute('break this transaction')
             except psycopg.DatabaseError:
                 pass
-            raise RequestExpired('The current request has expired')
+            raise RequestExpired(
+                'The current request has expired', args, kwargs)
         return self._cur.execute(*args, **kwargs)
 
     def __getattr__(self, attr):
