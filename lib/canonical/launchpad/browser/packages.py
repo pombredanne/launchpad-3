@@ -25,6 +25,7 @@ from canonical.launchpad.interfaces import (
     ILaunchBag, IBugTaskSearch, BugTaskSearchParams, IBugSet,
     UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.searchbuilder import any
+from canonical.launchpad.browser.bugtask import get_sortorder_from_request
 
 # XXX: Daniel Debonzi
 # Importing stuff from Soyuz directory
