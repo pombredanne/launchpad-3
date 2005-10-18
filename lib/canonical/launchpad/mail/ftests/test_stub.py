@@ -24,10 +24,6 @@ def tearDown(junk):
 def test_simple_sendmail():
     r"""
     Send an email (faked by TestMailer - no actual email is sent)
-    """
-    # XXX: SteveAlexander 2005-10-18, temporarily disabling this test, as it
-    #      as soem kind of intermittent failure problem.
-    notadoctest = """
 
     >>> body = 'The email body'
     >>> subject = 'The email subject'
@@ -66,9 +62,17 @@ def test_simple_sendmail():
 
     We have two emails, but we have no idea what order they are in!
 
-    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
-    >>> if from_addr == 'nobody1@example.com':
-    ...     from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    Let's sort them, and verify that the first one is the one we want
+    because only the first one contains the string 'nobody@example.com'
+    in its raw message.
+
+    >>> sorted_test_emails = sorted(list(stub.test_emails))
+    >>> for from_addr, to_addrs, raw_message in sorted_test_emails:
+    ...     print from_addr, to_addrs, 'nobody@example.com' in raw_message
+    bounces@canonical.com ['nobody2@example.com'] True
+    bounces@canonical.com ['nobody2@example.com'] False
+
+    >>> from_addr, to_addrs, raw_message = sorted_test_emails[0]
     >>> from_addr
     'bounces@canonical.com'
     >>> to_addrs
