@@ -4,14 +4,17 @@
 
 __metaclass__ = type
 
+from cStringIO import StringIO
 import datetime
 import pytz
+
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IPersonSet, IDistributionSet, ISourcePackageSet, IBugSet, IBugTrackerSet,
-    IBugExternalRefSet, IMessageSet, ICveSet, NotFoundError)
+    IPersonSet, IDistributionSet, ISourcePackageSet, IBugSet,
+    IBugTrackerSet, IBugExternalRefSet, IBugAttachmentSet,
+    IMessageSet, ILibraryFileAliasSet, ICveSet, NotFoundError)
 from canonical.lp.dbschema import (
-    BugTaskSeverity, BugTaskStatus, BugTaskPriority)
+    BugTaskSeverity, BugTaskStatus, BugTaskPriority, BugAttachmentType)
 
 def add_tz(dt):
     """Convert a naiive datetime value to a UTC datetime value."""
@@ -84,6 +87,7 @@ class Bug:
 
         self._ccs = None
         self._comments = None
+        self._attachments = None
 
     @property
     def ccs(self):
@@ -108,6 +112,23 @@ class Bug:
         for row in self.cursor.fetchall():
             self._comments.append((row[0], add_tz(row[1]), row[2]))
         return self._comments
+
+    @property
+    def attachments(self):
+        """Return the attachments for this bug"""
+        if self._attachments is not None: return self._attachments
+
+        self.cursor.execute('SELECT attach_id, creation_ts, description, '
+                            '    mimetype, ispatch, filename, thedata, '
+                            '    submitter_id '
+                            '  FROM attachments '
+                            '  WHERE bug_id = %d '
+                            '  ORDER BY attach_id' % self.bug_id)
+        self._attachments = []
+        for row in self.cursor.fetchall():
+            self._attachments.append((row[0], add_tz(row[1]), row[2], row[3],
+                                      bool(row[4]), row[5], row[6], row[7]))
+        return self._attachments
 
     def map_severity(self, bugtask):
         bugtask.severity = {
@@ -245,5 +266,35 @@ class Bugzilla:
 
         # XXX: translate milestone linkage
 
+        # import attachments
+        for (attach_id, creation_ts, description, mimetype, ispatch,
+             filename, thedata, submitter_id) in bug.attachments:
+            if ispatch:
+                attach_type = BugAttachmentType.PATCH
+                mimetype = 'text/plain'
+            else:
+                attach_type = BugAttachmentType.UNSPECIFIED
 
-        # XXX: handle attachments
+            # look for a message starting with "Created an attachment (id=XXX)
+            for msg in lp_bug.messages:
+                print repr(msg.contents[:300])
+                if msg.contents.startswith('Created an attachment (id=%d)'
+                                           % attach_id):
+                    break
+            else:
+                # could not find the add message, so create one:
+                msg = msgset.fromText(description,
+                                      'Created attachment %s' % filename,
+                                      self.people.get(submitter_id),
+                                      creation_ts)
+                lp_bug.linkMessage(msg)
+
+            filealias = getUtility(ILibraryFileAliasSet).create(
+                name=filename,
+                size=len(thedata),
+                file=StringIO(thedata),
+                contentType=mimetype)
+
+            getUtility(IBugAttachmentSet).create(
+                bug=lp_bug, filealias=filealias, attach_type=attach_type,
+                title=description, message=msg)
