@@ -133,12 +133,10 @@ def _get_keyring(keyrings_root):
 
 def import_sourcepackages(packages_map, kdb, package_root,
                           keyrings, importer_handler, spnames_only):
-    """SourcePackages Import"""
-
     # Goes over src_map importing the sourcepackages packages.
     count = 0
     npacks = len(packages_map.src_map)
-    log.info('%i SourcePackages to be imported' % npacks)
+    log.info('%i Source Packages to be imported' % npacks)
 
     for source in packages_map.src_map.itervalues():
 
@@ -152,9 +150,9 @@ def import_sourcepackages(packages_map, kdb, package_root,
             source_data = SourcePackageData(kdb, **source)
         except MissingRequiredArguments:
             # Required attributes for this instance was not found.
-            log.exception( ("Unable to create SourcePackageData. "
-                            "Required attributes not found.") )
-        except (AttributeError,KeyError,ValueError,TypeError), e:
+            log.exception("Unable to create SourcePackageData. "
+                          "Required attributes not found.")
+        except (AttributeError, KeyError, ValueError, TypeError), e:
             # XXX: Debonzi 20050720
             # Catch all common exception since they are not predictable ATM.
             # SourcePackageData class should be refactored or rewrited to try
@@ -162,38 +160,39 @@ def import_sourcepackages(packages_map, kdb, package_root,
             log.exception("Unable to create SourcePackageData: %s" % e)
             continue
         except psycopg.Error:
-            log.exception("Database error. Unable to create SourcePackageData")
+            log.exception("Database error: unable to create SourcePackageData")
             importer_handler.abort()
             continue
 
-        log.debug('Check Sourcepackage %s Version %s before process it' % (
-            source_data.package, source_data.version
-            ))
-
+        # XXX: wtf is the preimport_sourcecheck useful for? Is it just
+        # to avoid Katie processing twice? importer_handler already
+        # checks if it exists anyway..
+        #   -- kiko, 2005-10-18
+        log.debug('Checking package %s (%s) before processing it' % 
+                  (source_data.package, source_data.version))
         if importer_handler.preimport_sourcecheck(source_data):
             log.debug('%s already exists' % source_data.package)
-        else:
-            if not source_data.process_package(kdb, package_root,
-                                       keyrings):
-                # Problems with katie db stuff of opening files
-                log.error('Failed to import %s' % source_data.package)
-                npacks -= 1
-                continue
+        elif not source_data.process_package(kdb, package_root, keyrings):
+            # Problems with katie db stuff of opening files
+            log.error('Failed to import %s' % source_data.package)
+            npacks -= 1
+            continue
+        # XXX: should this be an else:? We are checking twice to see if
+        # it exists now :-(
+        importer_handler.import_sourcepackage(source_data)
 
-            importer_handler.import_sourcepackage(source_data)
         count += 1
         npacks -= 1
         if options.countdown > 0 and count > options.countdown:
             count = 0
             log.warn('Countdown %i sourcepackages' % npacks)
+
         # Commit often or hold locks in the database!
         importer_handler.commit()
 
 
 def import_binarypackages(pocket, packages_map, kdb, package_root,
                           keyrings, importer_handler):
-    """Binaries Import"""
-
     nosource = 0
     messages = []
     count = 0
@@ -201,33 +200,30 @@ def import_binarypackages(pocket, packages_map, kdb, package_root,
     # Runs over all the architectures we have
     for arch in packages_map.bin_map.keys():
         countdown = len(packages_map.bin_map[arch])
-        log.info('%i Binarypackage to be imported for %s' % (
-            countdown, arch
-            ))
-        # Goes over the binarypackages map importing them
-        # for this architecture.
+        log.info('%i Binary Packages to be imported for %s' % 
+                 (countdown, arch))
+        # Go over the binarypackages map importing them for this architecture
         for binary in packages_map.bin_map[arch].itervalues():
             try:
                 binary_data = BinaryPackageData(**binary)
             except MissingRequiredArguments:
                 # Required attributes for this instance was not found.
-                log.exception( ("Unable to create BinaryPackageData. "
-                                "Required attributs not found.") )
+                log.exception("Unable to create BinaryPackageData: "
+                              "required attributes missing.")
             except (AttributeError, ValueError, KeyError, TypeError), e:
                 # XXX: Debonzi 20050720
-                # Catch all common exception since they are not predictable
-                # ATM. BinaryPackageData class should be refactored or
-                # rewrited to try to make it better and have tests included.
+                # Catch all common exception since they are not
+                # predictable ATM. BinaryPackageData class should be
+                # refactored or rewritten to try to make it better and
+                # have tests included.
                 log.exception("Failed to create BinaryPackageData: %s" % e)
                 continue
             except psycopg.Error:
-                log.exception(
-                        "Database error. Failed to create BinaryPackageData"
-                        )
+                log.exception("Database error: unable to create "
+                              "BinaryPackageData")
                 importer_handler.abort()
 
-            if not binary_data.process_package(kdb, package_root,
-                                               keyrings):
+            if not binary_data.process_package(kdb, package_root, keyrings):
                 # Problems with katie db stuff of opening files
                 log.error('Failed to import %s' % binary_data.package)
                 countdown -= 1
@@ -239,14 +235,13 @@ def import_binarypackages(pocket, packages_map, kdb, package_root,
                 if not importer_handler.import_binarypackage(arch, binary_data):
                     msg = 'Sourcepackage %s (%s) not found for %s (%s)' % (
                             binary_data.source, binary_data.source_version,
-                            binary_data.package, binary_data.version,
-                            )
+                            binary_data.package, binary_data.version,)
 
                     log.info(msg)
                     messages.append(msg)
                     nosource += 1
-            except (AttributeError, ValueError, TypeError):
-                log.exception("Failed to import_binarypackage")
+            except (AttributeError, ValueError, TypeError), e:
+                log.exception("Failed to import_binarypackage: %s" % e)
             except psycopg.Error:
                 log.exception("Database error. Failed to import_binarypackage")
                 importer_handler.abort()
@@ -262,6 +257,7 @@ def import_binarypackages(pocket, packages_map, kdb, package_root,
             for pkg in messages:
                 log.warn(pkg)
         importer_handler.commit()
+
     importer_handler.publish_binarypackages(pocket)
     importer_handler.commit()
 
@@ -290,9 +286,8 @@ if __name__ == "__main__":
 
     (options, targets) = parser.parse_args()
 
-    possible_targets = [
-        target.getSectionName() for target in config.gina.target
-        ]
+    possible_targets = [target.getSectionName() for target
+                        in config.gina.target]
 
     if options.all:
         targets = possible_targets[:]
@@ -304,7 +299,8 @@ if __name__ == "__main__":
             if target not in possible_targets:
                 parser.error("No Gina target %s in config file" % target)
 
-    lockfile = LockFile(options.lockfile, timeout=timedelta(days=1), logger=log)
+    lockfile = LockFile(options.lockfile, timeout=timedelta(days=1),
+                        logger=log)
     try:
         lockfile.acquire()
     except OSError:
@@ -313,9 +309,10 @@ if __name__ == "__main__":
 
     try:
         for target in targets:
-            target_section = [
-                section for section in config.gina.target
-                    if section.getSectionName() == target][0]
+            # XXX: what happens when the list comp below returns []?
+            #   -- kiko, 2005-10-18
+            target_section = [section for section in config.gina.target
+                              if section.getSectionName() == target][0]
             main(options, target_section)
     finally:
         lockfile.release()

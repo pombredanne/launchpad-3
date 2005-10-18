@@ -217,9 +217,8 @@ class ImporterHandler:
                                                 distroarchinfo)
         if binarypackage:
             # Already imported, so return it.
-            log.debug('Binarypackage %s version %s already exists for %s' % (
-                binarypackagedata.package, binarypackagedata.version, archtag
-                ))
+            log.debug('Binary package %s version %s already exists for %s' % (
+                binarypackagedata.package, binarypackagedata.version, archtag))
             self._cache_binaries(binarypackage, archtag)
             return binarypackage
 
@@ -299,7 +298,7 @@ class BinaryPackageHandler:
     def _getBinary(self, binaryname, version, architecture, distroarchinfo):
         """Returns a binarypackage -- if it exists."""
 
-        clauseTables = ["inaryPackageRelease", "Build",
+        clauseTables = ["BinaryPackageRelease", "Build",
                         "DistroRelease", "DistroArchRelease"]
 
         query = ("BinaryPackageRelease.binarypackagename=%s AND "
@@ -318,8 +317,7 @@ class BinaryPackageHandler:
         distroarchrelease = distroarchinfo['distroarchrelease']
         query = ("Build.distroarchrelease = distroarchrelease.id AND "
                  "DistroArchRelease.distrorelease = DistroRelease.id AND "
-                 "DistroRelease.distribution = %d"
-                 "%s" %
+                 "DistroRelease.distribution = %d AND %s" %
                  (distroarchrelease.distrorelease.distribution.id, query))
 
         bpr = BinaryPackageRelease.selectOne(query, clauseTables=clauseTables)
@@ -584,6 +582,7 @@ class SourcePackageReleaseHandler:
             return None
         if not dsc_contents['files'].endswith("\n"):
             dsc_contents['files'] += "\n"
+        # XXX: wtf is this? -- kiko, 2005-10-18
         dsc_contents['files'] += "xxx 000 %s" % dsc_name
 
         # By capitalising the first letters of the keys we can create
@@ -602,7 +601,6 @@ class SourcePackageReleaseHandler:
 
         # Attempt to construct a sourcepackagerelease against the
         # provided dsc_contents...
-
         spr = self.createSourcePackageRelease(sp_data, distrorelease)
 
         if not spr:
