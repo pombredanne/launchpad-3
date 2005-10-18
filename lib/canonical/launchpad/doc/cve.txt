@@ -61,3 +61,12 @@ Ah, but that was a bad idea. Let's unlink it.
     >>> len(b.cves)
     1
 
+Alternatively, we can link CVEs to bugs by looking for CVEs in a
+string of text:
+
+    >>> b.findCvesInText('''
+    ...     This bug is related to CVE-2004-0276
+    ... ''')
+    >>> cve in b.cves
+    True
+    >>> b.unlinkCVE(cve)
