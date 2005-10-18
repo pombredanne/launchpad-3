@@ -826,12 +826,19 @@ class BugTaskSearchListingView:
                                    "illegal context")
 
         releases = getUtility(IDistroReleaseSet).search(
-            distribution=distribution, isreleased=True, orderBy="-datereleased")
+            distribution=distribution, orderBy="-datereleased")
 
         release_bugs = []
         for release in releases:
-            bugcount = self._countTasks(user=self.user, status=STATUS_OPEN, 
-                                        omit_dupes=True)
+            # XXX: Brad Bollenbach, 2005-10-18: Re-instantiating search_params
+            # in the loop every time is evil, but doing so *outside* the loop
+            # raises an AssertionError. See:
+            #
+            # https://launchpad.net/products/malone/+bug/3333
+            search_params = BugTaskSearchParams(
+                status=STATUS_OPEN, omit_dupes=True, user=self.user)
+            release_tasks = release.searchTasks(search_params)
+            bugcount = release_tasks.count()
             release_bugs.append({
                 "releasename" : release.displayname,
                 "bugcount" : bugcount,
