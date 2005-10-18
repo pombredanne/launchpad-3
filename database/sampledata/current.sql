@@ -3232,7 +3232,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (435, 'uk', 'Ukrainian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (436, 'umb', 'Umbundu', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (437, 'und', 'Undetermined', NULL, NULL, NULL, true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (438, 'urd', 'Urdu', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (438, 'urd', 'Urdu', NULL, 2, 'n != 1', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (439, 'uz', 'Uzbek', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (440, 'vai', 'Vai', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (441, 've', 'Venda', NULL, NULL, NULL, true, 0);
