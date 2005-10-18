@@ -43,6 +43,18 @@
   ...
 
 
+  If a non-member (Sample Person) guesses the voting URL and tries to vote,
+  he won't be allowed.
+
+  >>> print http(r"""
+  ... GET /people/name17/+poll/never-closes/+vote-simple HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...You cannot vote in this poll because you're not...
+  ...a member of Ubuntu Team...
+
+
   Now we go to a condorcet-style poll (which is still open) and see that apart
   from seeing our vote we can also change it.
 
@@ -67,6 +79,18 @@
   ...were given when you voted. To view or change your vote you must enter...
   ...your key:...
   ...
+
+
+  If a non-member (Sample Person) guesses the voting URL and tries to vote,
+  he won't be allowed.
+
+  >>> print http(r"""
+  ... GET /people/name17/+poll/never-closes2/+vote-condorcet HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...You cannot vote in this poll because you're not...
+  ...a member of Ubuntu Team...
 
 
   By providing the token we will be able to see our current vote.

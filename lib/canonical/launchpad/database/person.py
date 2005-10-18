@@ -60,7 +60,8 @@ class Person(SQLBase):
 
     implements(IPerson, ICalendarOwner)
 
-    _defaultOrder = ['displayname', 'familyname', 'givenname', 'name']
+    sortingColumns = ['displayname', 'familyname', 'givenname', 'name']
+    _defaultOrder = sortingColumns
 
     name = StringCol(dbName='name', alternateID=True, notNull=True)
     karma = IntCol(dbName='karma', notNull=True, default=0)
@@ -750,7 +751,7 @@ class PersonSet:
     """The set of persons."""
     implements(IPersonSet)
 
-    _defaultOrder = Person._defaultOrder
+    _defaultOrder = Person.sortingColumns
 
     def __init__(self):
         self.title = 'Launchpad People'
@@ -1592,7 +1593,7 @@ class TeamMembershipSet:
 
     implements(ITeamMembershipSet)
 
-    _defaultOrder = 'Person.displayname'
+    _defaultOrder = ['Person.displayname', 'Person.name']
 
     def getByPersonAndTeam(self, personID, teamID, default=None):
         result = TeamMembership.selectOneBy(personID=personID, teamID=teamID)

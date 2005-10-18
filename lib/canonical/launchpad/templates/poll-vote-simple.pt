@@ -14,6 +14,7 @@
 
     <h1 tal:content="context/proposition" />
 
+    <tal:can-vote condition="view/userCanVote">
     <p class="portalMessage" tal:condition="view/feedback"
        tal:content="view/feedback" />
 
@@ -106,6 +107,12 @@
       </tr>
     </table>
     </form>
+    </tal:can-vote>
+
+    <tal:cannot-vote condition="not: view/userCanVote">
+      <p class="portalMessage">You cannot vote in this poll because you're not
+      a member of <span tal:replace="context/team/browsername" />.</p>
+    </tal:cannot-vote>
 
   </div>
 
