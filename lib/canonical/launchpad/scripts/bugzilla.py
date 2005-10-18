@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 from cStringIO import StringIO
+import logging
 import datetime
 import pytz
 
@@ -16,12 +17,15 @@ from canonical.launchpad.interfaces import (
 from canonical.lp.dbschema import (
     BugTaskSeverity, BugTaskStatus, BugTaskPriority, BugAttachmentType)
 
+logger = logging.getLogger('canonical.launchpad.scripts.bugzilla')
+
 def add_tz(dt):
     """Convert a naiive datetime value to a UTC datetime value."""
     assert dt.tzinfo is None, 'add_tz() only accepts naiive datetime values'
     return datetime.datetime(dt.year, dt.month, dt.day,
                              dt.hour, dt.minute, dt.second,
                              dt.microsecond, tzinfo=pytz.timezone('UTC'))
+
 
 class PersonMapping:
     """A class to keep track of a mapping from Bugzilla people to
@@ -169,8 +173,12 @@ class Bug:
 
         # add the status to the notes section, to account for any lost
         # information
-        bugzilla_status = 'Bugzilla status: %s %s' % (self.bug_status,
-                                                      self.resolution)
+        bugzilla_status = 'Bugzilla status=%s' % self.bug_status
+        if self.resolution:
+            bugzilla_status += ' %s' % self.resolution
+        bugzilla_status += ', product=%s' % self.product
+        bugzilla_status += ', component=%s' % self.component
+
         if bugtask.statusexplanation:
             bugtask.statusexplanation = '%s (%s)' % (bugtask.statusexplanation,
                                                      bugzilla_status)
@@ -196,6 +204,9 @@ class Bugzilla:
         """Returns a dictionary of arguments to createBug() that correspond
         to the given bugzilla bug.
         """
+        # we currently only support mapping Ubuntu bugs ...
+        assert bug.product == 'Ubuntu'
+        
         ubuntu = getUtility(IDistributionSet)['ubuntu']
         srcpkgset = getUtility(ISourcePackageSet)
         try:
@@ -209,13 +220,19 @@ class Bugzilla:
             'binarypackagename': binpkg
             }
 
-    def handle_bug(self, bug):
+    def handle_bug(self, bug_id):
+        logger.info('Handling Bugzilla bug %d', bug_id)
+        
         # is there a bug watch on the bug?
-        lp_bug = self.bugset.queryByRemoteBug(self.bugtracker, bug.bug_id)
+        lp_bug = self.bugset.queryByRemoteBug(self.bugtracker, bug_id)
 
         # if we already have an associated bug, don't add a new one.
         if lp_bug is not None:
-            return
+            logger.info('Bugzilla bug %d is already being watched by '
+                        'Launchpad bug %d', bug_id, lp_bug.id)
+            return lp_bug
+
+        bug = Bug(self.conn, bug_id)
 
         comments = bug.comments[:]
 
@@ -269,15 +286,16 @@ class Bugzilla:
         # import attachments
         for (attach_id, creation_ts, description, mimetype, ispatch,
              filename, thedata, submitter_id) in bug.attachments:
+            logger.debug('Creating attachment %s for bug %d',
+                         filename, bug.bug_id)
             if ispatch:
                 attach_type = BugAttachmentType.PATCH
                 mimetype = 'text/plain'
             else:
                 attach_type = BugAttachmentType.UNSPECIFIED
 
-            # look for a message starting with "Created an attachment (id=XXX)
+            # look for a message starting with "Created an attachment (id=NN)"
             for msg in lp_bug.messages:
-                print repr(msg.contents[:300])
                 if msg.contents.startswith('Created an attachment (id=%d)'
                                            % attach_id):
                     break
