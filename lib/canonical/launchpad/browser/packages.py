@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = [
     'DistroSourcesView',
     'DistrosReleaseBinariesSearchView',
-    'DistroSourcePackageBugsView',
     'SourcePackageBugsView',
     'BinaryPackageView',
     ]
@@ -194,39 +193,6 @@ class SourcePackageBugsView:
         else:
             # The user did not press the "Search" button
             return None
-
-
-class DistroSourcePackageBugsView(SourcePackageBugsView):
-    """View class for the buglist for an IDistroSourcePackage."""
-    DEFAULT_ORDER = ['-priority', '-severity']
-
-    def showTableView(self):
-        """Should the search results be displayed as a table?"""
-        return False
-
-    def showListView(self):
-        """Should the search results be displayed as a list?"""
-        return True
-
-    @property
-    def open_bugs(self):
-        """Return a list of unresolved bugs open on this package."""
-        # Query for open tasks for mydistribution
-        searchtext = None
-        if self.request.form.get("search"):
-            searchtext = getWidgetsData(self, IBugTaskSearch).get("searchtext")
-
-        search_params = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES),
-            searchtext=searchtext,
-            orderby=self.DEFAULT_ORDER)
-        return self.context.searchTasks(search_params)
-
-    @property
-    def listing_columns(self):
-        """Return the columns that should be displayed in the bug listing."""
-        return ["assignedto", "id", "priority", "severity", "status", "title"]
 
 
 class BinaryPackageView:

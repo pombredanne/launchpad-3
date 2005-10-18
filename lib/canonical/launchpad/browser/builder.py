@@ -10,6 +10,8 @@ __all__ = ['BuilderSetNavigation', 'BuildFarmFacets', 'BuilderFacets',
 import datetime
 import pytz
 
+from sqlobject import SQLObjectNotFound
+
 import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
@@ -24,12 +26,23 @@ from canonical.launchpad.interfaces import (
     )
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, GetitemNavigation)
+    StandardLaunchpadFacets, Link, GetitemNavigation, stepthrough)
 
 
 class BuilderSetNavigation(GetitemNavigation):
 
     usedfor = IBuilderSet
+
+    @stepthrough('+build')
+    def traverse_build(self, name):
+        try:
+            build_id = int(name)
+        except ValueError:
+            return None
+        try:
+            return self.context.getBuild(build_id)
+        except SQLObjectNotFound:
+            return None
 
 
 class BuildFarmFacets(StandardLaunchpadFacets):

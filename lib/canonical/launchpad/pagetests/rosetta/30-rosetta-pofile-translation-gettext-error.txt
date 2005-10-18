@@ -7,7 +7,7 @@ Test to check that Rosetta is able to get translation errors.
   ...     'pagetests/rosetta/30-rosetta-pofile-translation-gettext-error.data')
   >>> data = open(data_file_name)
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=20 HTTP/1.1
+  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?offset=20 HTTP/1.1
   ... Content-Length: 8159
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
@@ -23,7 +23,7 @@ Test to check that Rosetta is able to get translation errors.
 Check that the previous submit was not saved.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=20 HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?offset=20 HTTP/1.1
   ... Accept-Language: en-gb,en;q=0.5
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)

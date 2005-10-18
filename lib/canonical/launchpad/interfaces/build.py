@@ -18,9 +18,10 @@ _ = MessageIDFactory('launchpad')
 
 class IBuild(Interface):
     """A Build interface"""
+    id = Attribute("The build ID.")
     datecreated = Attribute("Date of BinPackage Creation")
     processor = Attribute("BinaryPackage Processor")
-    distroarchrelease = Attribute("The Ditro Arch Release")
+    distroarchrelease = Attribute("The Distro Arch Release")
     buildstate = Attribute("BinaryBuild State")
     datebuilt = Attribute("Binary Date of Built")
     buildduration = Attribute("Build Duration Interval")
@@ -31,8 +32,26 @@ class IBuild(Interface):
     component = Attribute("The BinaryPackage Component")
     section = Attribute("The BinaryPackage Section")
     sourcepackagerelease = Attribute("SourcePackageRelease reference")
-    title = Attribute("Build Title")
     distrorelease = Attribute("Direct parent needed by CanonicalURL")
+
+    title = Attribute("Build Title")
+
+    # useful properties
+    distribution = Attribute("Shortcut for its distribution.")
+    distributionsourcepackagerelease = Attribute("The page showing the "
+        "details for this sourcepackagerelease in this distribution.")
+    binarypackages = Attribute("A list of binary packages that resulted "
+        "from this build.")
+
+    def __getitem__(name):
+        """Mapped to getBinaryPackageRelease."""
+
+    def getBinaryPackageRelease(name):
+        """Return the binary package from this build with the given name, or
+        raise IndexError if no such package exists.
+        """
+
+
 
 class IBuildSet(Interface):
     """Interface for BuildSet"""

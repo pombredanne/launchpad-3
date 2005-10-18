@@ -25,9 +25,15 @@ from canonical.launchpad.browser.cal import *
 from canonical.launchpad.browser.codeofconduct import *
 from canonical.launchpad.browser.cve import *
 from canonical.launchpad.browser.distribution import *
+from canonical.launchpad.browser.distributionsourcepackage import *
+from canonical.launchpad.browser.distributionsourcepackagerelease import *
 from canonical.launchpad.browser.distroarchrelease import *
+from canonical.launchpad.browser.distroarchreleasebinarypackage import *
+from canonical.launchpad.browser.distroarchreleasebinarypackagerelease import *
 from canonical.launchpad.browser.distrorelease import *
+from canonical.launchpad.browser.distroreleasebinarypackage import *
 from canonical.launchpad.browser.distroreleaselanguage import *
+from canonical.launchpad.browser.distroreleasesourcepackagerelease import *
 from canonical.launchpad.browser.karma import *
 from canonical.launchpad.browser.launchpad import *
 from canonical.launchpad.browser.logintoken import *
@@ -50,7 +56,6 @@ from canonical.launchpad.browser.rosetta import *
 from canonical.launchpad.browser.shipit import *
 from canonical.launchpad.browser.sourcepackage import *
 from canonical.launchpad.browser.sourcepackagename import *
-from canonical.launchpad.browser.sourcepackagereleaseindistro import *
 from canonical.launchpad.browser.specification import *
 from canonical.launchpad.browser.specificationbug import *
 from canonical.launchpad.browser.specificationdependency import *
@@ -63,8 +68,8 @@ from canonical.launchpad.browser.ticketbug import *
 from canonical.launchpad.browser.tickettarget import *
 from canonical.launchpad.browser.team import *
 from canonical.launchpad.browser.teammembership import *
-from canonical.launchpad.browser.builder import *
 from canonical.launchpad.browser.build import *
+from canonical.launchpad.browser.builder import *
 from canonical.launchpad.browser.translationgroup import *
 from canonical.launchpad.browser.translator import *
 from canonical.launchpad.browser.widgets import *

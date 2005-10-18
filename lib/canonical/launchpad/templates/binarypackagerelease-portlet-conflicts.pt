@@ -1,0 +1,19 @@
+<div class="portlet">
+
+  <h4>Conflicts:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li tal:repeat="binconflicts view/conflicts">
+        <a tal:content="binconflicts/name"
+           tal:attributes="href string:../../binconflicts/name}"/> 
+          <tal:dummy condition="binconflicts/signal">
+            (<span tal:replace="binconflicts/signal" /> 
+              <span tal:replace="binconflicts/version" />)
+          </tal:dummy> 
+      </li>
+    </ul>
+  </div>
+
+</div>

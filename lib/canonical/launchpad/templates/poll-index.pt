@@ -10,151 +10,159 @@
     <div tal:replace="structure context/team/@@+portlet-details" />
   </metal:leftportlets>
 
-  <div metal:fill-slot="main">
+<div metal:fill-slot="main">
 
-    <h1 tal:content="context/proposition" />
+  <h1>Poll Overview</h1>
 
-    <h2>Options</h2>
-
-    <tal:block condition="context/getActiveOptions">
-      <ul>
-        <li tal:repeat="option context/getActiveOptions">
-          <span tal:replace="option/name" />
-        </li>
-      </ul>
-    </tal:block>
-
-    <tal:block condition="not: context/getActiveOptions">
-      <p>This poll doesn't have any options for people to vote on.</p>
-    </tal:block>
-
-    <tal:block condition="context/isClosed">
-      <h2>Voting has closed</h2>
-
-      <p>The voting is closed since 
-        <span tal:replace="context/datecloses/fmt:date" />.
-      </p>
-
-      <tal:block condition="view/userVoted">
-        <tal:block condition="view/isSecret">
-          <tal:block condition="not: view/gotTokenAndVotes">
-            <p>
-              This was a secret poll: your vote is identified only by the key
-              you were given when you voted. To view your vote you must enter
-              your key:
-            </p>
-            <form action="" method="POST">
-              <input type="text" name="token" />
-              <input type="submit" value="Show My Vote" name="showvote" />
-            </form>
-          </tal:block>
-        </tal:block>
-
-        <tal:block condition="view/gotTokenAndVotes">
-          <tal:block condition="view/isSimple">
-            <p>Your vote was for
-              <b tal:condition="not: view/currentVote/option">
-                none of the options.
-              </b>
-              <b tal:condition="view/currentVote/option" 
-                 tal:content="view/currentVote/option/name" />
-          </tal:block>
-
-          <tal:block condition="view/isCondorcet">
-            <tal:block condition="view/currentVotes">
-              <p>Your vote was as follows:</p>
-              <p tal:repeat="vote view/currentVotes">
-                <tal:block tal:condition="vote/preference">
-                  <b tal:content="vote/preference" />. 
-                  <span tal:replace="vote/option/name" />
-                </tal:block>
-              </p>
-            </tal:block>
-
-            <tal:block condition="not: view/currentVotes">
-              <p>You haven't manifested preference for any of the existing
-              options.</p> 
-            </tal:block>
-          </tal:block>
-
-        </tal:block>
-      </tal:block>
-
-      <h2>Results</h2>
-
-      <tal:block condition="view/isSimple">
-        <tal:block define="winners context/getWinners">
-          <p tal:condition="winners">The winner(s) of this poll is(are) 
-            <tal:block repeat="winner winners">
-              <b tal:content="winner/shortname"
-                /><span tal:condition="not: repeat/winner/end">,</span>
-            </tal:block>
-          </p>
-
-          <p tal:condition="not: winners">This poll has no winner(s).</p>
-        </tal:block>
-
-        <p>Here are the number of votes each option received.</p>
-        <table class="listing">
-          <thead>
-            <tr>
-              <th>Option</th>
-              <th>Votes</th>
-            </tr>
-          </thead>
-
-          <tr tal:repeat="option context/getAllOptions">
-            <tal:block define="votes python: view.getVotesByOption(option)">
-            <td>
-              <span tal:replace="option/shortname" />
-              <tal:block tal:condition="not: option/active">
-                (Inactive)
-              </tal:block>
-            </td>
-            <td tal:content="votes">
-            </td>
-            </tal:block>
-          </tr>
-        </table>
-      </tal:block>
-
-      <tal:block condition="view/isCondorcet">
-        <p>This is the pairwise matrix for this poll.</p>
-
-        <table border="2"
-               tal:define="pairwise_matrix view/getPairwiseMatrixWithHeaders">
-          <tr tal:repeat="row pairwise_matrix">
-            <tal:block repeat="column pairwise_matrix">
-              <tal:block tal:define="x repeat/row/index; y repeat/column/index">
-                <td tal:condition="python: x == y" 
-                    style="background-color: black" />
-
-                <tal:block condition="python: x != y">
-                  <td tal:condition="python: x != 0 and y != 0"
-                      style="text-align: right">
-                    <span tal:replace="python: pairwise_matrix[x][y]" />
-                  </td>
-                  <td tal:condition="python: x == 0 or y == 0">
-                    <span tal:replace="python: pairwise_matrix[x][y]" />
-                  </td>
-                </tal:block>
-              </tal:block>
-            </tal:block>
-          </tr>
-        </table>
-      </tal:block>
-
-    </tal:block>
-
-    <tal:block condition="context/isNotYetOpened">
-      <h2>Voting hasn't opened yet</h2>
-
-      <p>The voting will be opened on 
-        <span tal:replace="context/dateopens/fmt:date" />.
-      </p>
-    </tal:block>
-
+  <div class="highlighted" style="font-size: 80%;">
+    <tal:proposition replace="structure context/proposition/fmt:text-to-html">
+       The proposition goes here.
+    </tal:proposition>
   </div>
+
+  <h2>Options</h2>
+
+  <tal:block condition="context/getActiveOptions">
+    <ul>
+      <li tal:repeat="option context/getActiveOptions">
+        <span tal:replace="option/name" />
+      </li>
+    </ul>
+  </tal:block>
+
+  <tal:block condition="not: context/getActiveOptions">
+    <p>This poll does not yet have any voting options. Please <a
+    href="+newoption">add an option</a>. Note, you need more than one option
+    for a real poll, of course :-)</p>
+  </tal:block>
+
+  <tal:block condition="context/isClosed">
+    <h2>Voting has closed</h2>
+
+    <p>The voting is closed since 
+      <span tal:replace="context/datecloses/fmt:date" />.
+    </p>
+
+    <tal:block condition="view/userVoted">
+      <tal:block condition="view/isSecret">
+        <tal:block condition="not: view/gotTokenAndVotes">
+          <p>
+            This was a secret poll: your vote is identified only by the key
+            you were given when you voted. To view your vote you must enter
+            your key:
+          </p>
+          <form action="" method="POST">
+            <input type="text" name="token" />
+            <input type="submit" value="Show My Vote" name="showvote" />
+          </form>
+        </tal:block>
+      </tal:block>
+
+      <tal:block condition="view/gotTokenAndVotes">
+        <tal:block condition="view/isSimple">
+          <p>Your vote was for
+            <b tal:condition="not: view/currentVote/option">
+              none of the options.
+            </b>
+            <b tal:condition="view/currentVote/option" 
+               tal:content="view/currentVote/option/name" />
+        </tal:block>
+
+        <tal:block condition="view/isCondorcet">
+          <tal:block condition="view/currentVotes">
+            <p>Your vote was as follows:</p>
+            <p tal:repeat="vote view/currentVotes">
+              <tal:block tal:condition="vote/preference">
+                <b tal:content="vote/preference" />. 
+                <span tal:replace="vote/option/name" />
+              </tal:block>
+            </p>
+          </tal:block>
+
+          <tal:block condition="not: view/currentVotes">
+            <p>You haven't manifested preference for any of the existing
+            options.</p> 
+          </tal:block>
+        </tal:block>
+
+      </tal:block>
+    </tal:block>
+
+    <h2>Results</h2>
+
+    <tal:block condition="view/isSimple">
+      <tal:block define="winners context/getWinners">
+        <p tal:condition="winners">The winner(s) of this poll is(are) 
+          <tal:block repeat="winner winners">
+            <b tal:content="winner/shortname"
+              /><span tal:condition="not: repeat/winner/end">,</span>
+          </tal:block>
+        </p>
+
+        <p tal:condition="not: winners">This poll has no winner(s).</p>
+      </tal:block>
+
+      <p>Here are the number of votes each option received.</p>
+      <table class="listing">
+        <thead>
+          <tr>
+            <th>Option</th>
+            <th>Votes</th>
+          </tr>
+        </thead>
+
+        <tr tal:repeat="option context/getAllOptions">
+          <tal:block define="votes python: view.getVotesByOption(option)">
+          <td>
+            <span tal:replace="option/shortname" />
+            <tal:block tal:condition="not: option/active">
+              (Inactive)
+            </tal:block>
+          </td>
+          <td tal:content="votes">
+          </td>
+          </tal:block>
+        </tr>
+      </table>
+    </tal:block>
+
+    <tal:block condition="view/isCondorcet">
+      <p>This is the pairwise matrix for this poll.</p>
+
+      <table border="2"
+             tal:define="pairwise_matrix view/getPairwiseMatrixWithHeaders">
+        <tr tal:repeat="row pairwise_matrix">
+          <tal:block repeat="column pairwise_matrix">
+            <tal:block tal:define="x repeat/row/index; y repeat/column/index">
+              <td tal:condition="python: x == y" 
+                  style="background-color: black" />
+
+              <tal:block condition="python: x != y">
+                <td tal:condition="python: x != 0 and y != 0"
+                    style="text-align: right">
+                  <span tal:replace="python: pairwise_matrix[x][y]" />
+                </td>
+                <td tal:condition="python: x == 0 or y == 0">
+                  <span tal:replace="python: pairwise_matrix[x][y]" />
+                </td>
+              </tal:block>
+            </tal:block>
+          </tal:block>
+        </tr>
+      </table>
+    </tal:block>
+
+  </tal:block>
+
+  <tal:block condition="context/isNotYetOpened">
+    <h2>Voting hasn't opened yet</h2>
+
+    <p>The voting will be opened on 
+      <span tal:replace="context/dateopens/fmt:date" />.
+    </p>
+  </tal:block>
+
+</div>
 
 </body>
 </html>

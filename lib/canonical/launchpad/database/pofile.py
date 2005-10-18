@@ -773,7 +773,8 @@ class DummyPOFile(RosettaStats):
     """
     implements(IPOFile)
 
-    def __init__(self, potemplate, language, owner=None, header=''):
+    def __init__(self, potemplate, language, owner=None,
+        header='Content-Type: text/plain; charset=us-ascii'):
         self.potemplate = potemplate
         self.language = language
         self.owner = owner

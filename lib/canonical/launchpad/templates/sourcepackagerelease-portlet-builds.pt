@@ -1,0 +1,25 @@
+<div class="portlet">
+
+  <h4>Builds of <span tal:replace="context/title">apache2 2.0.54 (source) in
+  Ubuntu</span>:</h4>
+
+  <div class="portletBody portletContent">
+
+  <ul>
+    <li tal:repeat="build context/builds">
+      <a tal:attributes="href build/fmt:url">
+        <span tal:replace="build/distroarchrelease/distrorelease/name">
+          hoary
+        </span>
+        <span tal:content="build/distroarchrelease/architecturetag">i386</span>
+      </a>
+      <span tal:replace="build/buildstate/title">Failure</span>
+    </li>
+    <li tal:condition="not: context/builds"
+        class="alert">
+      <i>No builds recorded.</i>
+    </li>
+
+  </div>
+
+</div>

@@ -262,14 +262,15 @@ class Person(SQLBase):
         ret = sorted(ret, reverse=True, key=lambda a: a.datecreated)
         return ret
 
-    @property
-    def tickets(self):
+    def tickets(self, quantity=None):
         ret = set(self.created_tickets)
         ret = ret.union(self.answered_tickets)
         ret = ret.union(self.assigned_tickets)
         ret = ret.union(self.subscribed_tickets)
         ret = sorted(ret, key=lambda a: a.datecreated)
         ret.reverse()
+        if quantity is not None:
+            return ret[:quantity]
         return ret
 
     def isTeam(self):
@@ -547,6 +548,11 @@ class Person(SQLBase):
     def activemembers(self):
         """See IPerson."""
         return self.approvedmembers.union(self.administrators)
+
+    @property
+    def active_member_count(self):
+        """See IPerson."""
+        return len(self.activemembers)
 
     @property
     def inactivemembers(self):
@@ -1584,6 +1590,10 @@ class TeamMembership(SQLBase):
     @property
     def statusname(self):
         return self.status.title
+
+    @property
+    def is_admin(self):
+        return self.status in [TeamMembershipStatus.ADMIN]
 
     def isExpired(self):
         return self.status == TeamMembershipStatus.EXPIRED

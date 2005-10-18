@@ -36,7 +36,7 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseSet, ISourcePackageNameSet, BugTaskSearchParams,
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask,
     INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
-    NotFoundError, IDistroSourcePackage, ISourcePackage)
+    NotFoundError, IDistributionSourcePackage, ISourcePackage)
 from canonical.launchpad.interfaces import IBugTaskSearchListingView
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
@@ -73,8 +73,8 @@ class BugTargetTraversalMixin:
         Raises NotFoundError if no bug with the given name is found.
 
         If the context type does provide IProduct, IDistribution,
-        IDistroRelease, ISourcePackage or IDistroSourcePackage a TypeError
-        is raised.
+        IDistroRelease, ISourcePackage or IDistributionSourcePackage
+        a TypeError is raised.
         """
         context = self.context
         # Raises NotFoundError if no bug with that ID exists.
@@ -98,7 +98,7 @@ class BugTargetTraversalMixin:
             null_bugtask = NullBugTask(bug=bug, product=context)
         elif IDistribution.providedBy(context):
             null_bugtask = NullBugTask(bug=bug, distribution=context)
-        elif IDistroSourcePackage.providedBy(context):
+        elif IDistributionSourcePackage.providedBy(context):
             null_bugtask = NullBugTask(
                 bug=bug, distribution=context.distribution,
                 sourcepackagename=context.sourcepackagename)
@@ -405,7 +405,7 @@ class BugTaskReleaseTargetingView:
         sourcepackagename = bugtask.sourcepackagename
         for possible_target in distribution.releases:
             if sourcepackagename is not None:
-                sourcepackage = possible_target.getSourcePackageByName(
+                sourcepackage = possible_target.getSourcePackage(
                     sourcepackagename)
             else:
                 sourcepackage = None

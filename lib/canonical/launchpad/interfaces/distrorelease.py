@@ -113,9 +113,6 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         "Any bugtasks on this distrorelease that are for bugs with "
         "CVE references, and are resolved.")
 
-    def getBugSourcePackages():
-        """Get SourcePackages in a DistroRelease with BugTask"""
-
     def traverse(name):
         """Traverse across a distrorelease in Launchpad. This looks for
         special URL items, like +sources or +packages, then goes on to
@@ -133,11 +130,17 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         """Return an iterator over source packages with a name that matches
         this one."""
 
-    def getSourcePackageByName(name):
+    def getSourcePackage(name):
         """Return a source package in this distro release by name.
 
         The name given may be a string or an ISourcePackageName-providing
         object.
+        """
+
+    def getBinaryPackage(name):
+        """Return a DistroReleaseBinaryPackage for this name.
+
+        The name given may be an IBinaryPackageName or a string.
         """
 
     def findBinariesByName(name):
@@ -167,6 +170,25 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         """Return the DistroReleaseLanguage for this distrorelease and the
         given language, or a DummyDistroReleaseLanguage.
         """
+
+    def removeOldCacheItems():
+        """Delete any records that are no longer applicable."""
+
+    def updateCompletePackageCache():
+        """Update the package cache for all binary package names published
+        in this distro release.
+        """
+
+    def updatePackageCache(name):
+        """Update the package cache for the binary packages with the given
+        name.
+        """
+
+    def searchPackages(text):
+        """Search through the packge cache for this distrorelease and return
+        DistroReleaseBinaryPackage objects that match the given text.
+        """
+
 
 
 class IDistroReleaseSet(Interface):

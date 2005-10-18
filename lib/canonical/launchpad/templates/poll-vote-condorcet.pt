@@ -12,11 +12,17 @@
 
   <div metal:fill-slot="main">
 
-    <h1 tal:content="context/proposition" />
+    <h1>Condorcet Poll</h1>
 
     <tal:can-vote condition="view/userCanVote">
     <p class="portalMessage" tal:condition="view/feedback"
        tal:content="view/feedback" />
+
+    <div class="highlighted" style="font-size: 80%;">
+      <tal:proposition replace="structure context/proposition/fmt:text-to-html">
+         The proposition goes here.
+      </tal:proposition>
+    </div>
 
     <form action="" method="POST">
 
@@ -38,7 +44,7 @@
     <table cols="2">
       <tr>
         <td>
-          <h3>Your current vote</h3>
+          <h2>Current vote</h2>
           <tal:block condition="not: view/userVoted">
             <p>You have not yet voted in this poll.</p>
           </tal:block>
@@ -71,11 +77,11 @@
         </td>
         <td>
           <tal:block condition="not: view/userVoted">
-            <h3>Rank options in order of preference</h3>
+            <h2>Rank Options Here</h2>
           </tal:block>
 
           <tal:block condition="view/userVoted">
-            <h3>Change your vote</h3>
+            <h2>Change Your Vote</h2>
           </tal:block>
 
           <p>Enter 1 next to your most preferred option, 2 next to your second

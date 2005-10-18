@@ -28,9 +28,23 @@
     you can see the state of binary packages for this architecture.
   </p>
 
-  <p>
+  <h2>Search Binary Packages</h2>
+
+  <form name="search" action="+pkgsearch" method="GET">
+  
+    <input type="text"
+      name="name"
+      size="35"
+      tal:attributes="value request/name|nothing" />
+
+    <input type="submit" value="Search"/>
+
+  </form>
+
+  <p class="discreet">
     This archive currently contains
-    <span tal:replace="context/binarycount" /> software packages. 
+    <span tal:replace="context/binarycount" /> software packages. Search
+    them now to find a specific package that meets your needs.
   </p>
 
 </div>

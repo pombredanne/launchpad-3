@@ -1,0 +1,35 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>All Source Packages</h1>
+
+  <p class="documentDescription">
+    This is complete list of the source packages currently published in
+    <span tal:replace="context/displayname">Ubuntu</span>.
+  </p>
+
+  <tal:per_item repeat="cache context/source_package_caches">
+    <tal:pkg define="package cache/distributionsourcepackage">
+      <img src="/++resource++package-source" />
+      <a tal:content="context/name"
+         tal:attributes="href package/fmt:url">apache2</a>
+      <br />
+    </tal:pkg>
+  </tal:per_item>
+
+</div>
+</body>
+</html>

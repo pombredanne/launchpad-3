@@ -9,7 +9,7 @@ __all__ = [
     'IBinaryPackageReleaseSet',
     ]
 
-from zope.schema import Bool, Int, Text, TextLine
+from zope.schema import Bool, Int, Text, TextLine, Datetime
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
@@ -20,7 +20,6 @@ from canonical.launchpad.validators.version import valid_debian_version
 
 class IBinaryPackageRelease(Interface):
     id = Int(title=_('ID'), required=True)
-    #sourcepackagerelease = Int(required=True)
     binarypackagename = Int(required=True)
     version = TextLine(required=True, constraint=valid_debian_version)
     summary = Text(required=True)
@@ -42,12 +41,17 @@ class IBinaryPackageRelease(Interface):
     copyright = Text(required=False)
     licence = Text(required=False)
     architecturespecific = Bool(required=True)
+    datecreated = Datetime(required=True, readonly=True)
 
     files = Attribute("Related list of IBinaryPackageFile entries")
 
     title = TextLine(required=True, readonly=True)
     name = Attribute("Binary Package Name")
-    status = Attribute("The BinaryPackageStatus Title")
+
+    # properties
+    distributionsourcepackagerelease = Attribute("The sourcepackage "
+        "release in this distribution from which this binary was "
+        "built.")
 
     def current(distroRelease):
         """Get the current BinaryPackage in a distrorelease"""

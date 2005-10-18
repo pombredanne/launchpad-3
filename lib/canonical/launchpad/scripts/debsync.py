@@ -20,7 +20,7 @@ from canonical.database.sqlbase import flush_database_updates
 
 from canonical.launchpad.interfaces import (
     IBugSet, IMessageSet, ILaunchpadCelebrities, UnknownSender, 
-    IBugTaskSet, IBugWatchSet, ISourcePackageSet, ICveSet,
+    IBugTaskSet, IBugWatchSet, ICveSet,
     InvalidEmailMessage)
 
 from canonical.encoding import guess as ensure_unicode
@@ -118,6 +118,7 @@ def import_bug(debian_bug, logger):
     msg = None
     messageset = getUtility(IMessageSet)
     debian = getUtility(ILaunchpadCelebrities).debian
+    ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     try:
         msg = messageset.fromEmail(email_txt, distribution=debian,
             create_missing_persons=True)
@@ -138,11 +139,10 @@ def import_bug(debian_bug, logger):
     # debian_bug.packagelist[0] is going to be a single package name for
     # sure. we work through the package list, try to find one we can
     # work with, otherwise give up
-    srcpkgset = getUtility(ISourcePackageSet)
     srcpkg = binpkg = pkgname = None
     for pkgname in debian_bug.packagelist():
         try:
-            srcpkg, binpkg = srcpkgset.getPackageNames(pkgname)
+            srcpkg, binpkg = ubuntu.getPackageNames(pkgname)
         except ValueError:
             logger.error(sys.exc_value)
     if srcpkg is None:

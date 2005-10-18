@@ -2,7 +2,7 @@ A source package bug task describes where in a given distro a bug
 needs to be fixed.
 
   >>> print http(r"""
-  ... GET /distros/debian/+sources/mozilla-firefox/+bug/3/+editstatus HTTP/1.1
+  ... GET /distros/debian/+source/mozilla-firefox/+bug/3/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -13,7 +13,7 @@ needs to be fixed.
 Any authenticated user can edit a source package bug task.
 
   >>> print http(r"""
-  ... POST /distros/debian/+sources/mozilla-firefox/+bug/3/+editstatus HTTP/1.1
+  ... POST /distros/debian/+source/mozilla-firefox/+bug/3/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1316
   ... Content-Type: multipart/form-data; boundary=---------------------------89019536856698512711194452
@@ -64,20 +64,20 @@ Any authenticated user can edit a source package bug task.
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  Location: http://.../distros/debian/+sources/mozilla-firefox/+bug/3
+  Location: http://.../distros/debian/+source/mozilla-firefox/+bug/3
   <BLANKLINE>
   ...
 
 
   >>> print http(r"""
-  ... GET /distros/debian/+sources/mozilla-firefox/+bug/3/+editstatus HTTP/1.1
+  ... GET /distros/debian/+source/mozilla-firefox/+bug/3/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...<option selected="selected" value="Medium">Medium</option>...
 
   >>> print http(r"""
-  ... POST /distros/debian/+sources/mozilla-firefox/+bug/3/+editstatus HTTP/1.1
+  ... POST /distros/debian/+source/mozilla-firefox/+bug/3/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1346
   ... Content-Type: multipart/form-data; boundary=---------------------------16131040782095479517127443199
@@ -128,12 +128,12 @@ Any authenticated user can edit a source package bug task.
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  Location: http://.../distros/debian/+sources/mozilla-firefox/+bug/3
+  Location: http://.../distros/debian/+source/mozilla-firefox/+bug/3
   <BLANKLINE>
   ...
 
   >>> print http(r"""
-  ... GET /distros/debian/+sources/mozilla-firefox/+bug/3/+editstatus HTTP/1.1
+  ... GET /distros/debian/+source/mozilla-firefox/+bug/3/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

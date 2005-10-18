@@ -124,6 +124,9 @@ class IBuilderSet(Interface):
     def getBuilders():
         """Return all configured builders."""
 
+    def getBuild(id):
+        """Return a specific build by ID."""
+
 
 class IBuildQueue(Interface):
     """A launchpad Auto Build queue entry"""

@@ -1,0 +1,20 @@
+<div class="portlet">
+
+  <h4>Replaces:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li tal:repeat="binreplaces view/replaces">
+        <a tal:content="binreplaces/name"
+           tal:attributes="href string:../../${binreplaces/name}"/>  
+          <tal:dummy condition="binreplaces/signal">
+           (<span tal:replace="binreplaces/signal" /> 
+            <span tal:replace="binreplaces/version" />)
+          </tal:dummy> 
+      </li>
+    </ul>
+
+  </div>
+
+</div>

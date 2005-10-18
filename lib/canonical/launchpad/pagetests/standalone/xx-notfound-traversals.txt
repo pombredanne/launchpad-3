@@ -94,7 +94,6 @@ spider -- StuartBishop 20050822
 >>> check("/products/firefox/+branches")
 
 >>> check("/distros")
->>> check("/distros/+search")
 >>> check("/distros/+bugs")
 >>> check("/distros/+add", auth=True)
 
@@ -111,10 +110,9 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/+linkbounty", auth=True)
 >>> check("/distros/ubuntu/+addbounty", auth=True)
 >>> check("/distros/ubuntu/+addspec", auth=True)
->>> check("/distros/ubuntu/+sources/evolution/+bugs")
+>>> check("/distros/ubuntu/+source/evolution/+bugs")
 
 >>> check("/distros/ubuntu/hoary")
->>> check("/distros/ubuntu/hoary/+sources")
 >>> check("/distros/ubuntu/hoary/+edit", auth=True)
 >>> check("/distros/ubuntu/hoary/+specs")
 >>> check("/distros/ubuntu/hoary/+reassign", auth=True)
@@ -125,17 +123,17 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/hoary/i386")
 >>> check("/distros/ubuntu/hoary/i386/+pkgsearch")
 
->>> check("/distros/ubuntu/hoary/+sources/mozilla-firefox")
->>> check("/distros/ubuntu/hoary/+sources/evolution/")
->>> check("/distros/ubuntu/hoary/+sources/evolution/+bugs")
->>> check("/distros/ubuntu/hoary/+sources/evolution/+hctstatus")
->>> check("/distros/ubuntu/hoary/+sources/evolution/+changelog")
->>> check("/distros/ubuntu/hoary/+sources/evolution/+buildlog")
->>> check("/distros/ubuntu/hoary/+sources/evolution/+packaging", auth=True)
->>> check("/distros/ubuntu/hoary/+sources/evolution/+gethelp")
->>> check("/distros/ubuntu/hoary/+sources/evolution/+translate")
->>> check_redirect("/distros/ubuntu/hoary/+sources/mozilla-firefox/+pots")
->>> check("/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+export",
+>>> check("/distros/ubuntu/hoary/+source/mozilla-firefox")
+>>> check("/distros/ubuntu/hoary/+source/evolution/")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+bugs")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+hctstatus")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+changelog")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+buildlog")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+packaging", auth=True)
+>>> check("/distros/ubuntu/hoary/+source/evolution/+gethelp")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+translate")
+>>> check_redirect("/distros/ubuntu/hoary/+source/mozilla-firefox/+pots")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export",
 ...       auth=True)
 
 >>> check("/malone")
@@ -191,34 +189,34 @@ yet been reported.
 Viewing a bug in the context of a distro source package in which it's
 already been reported.
 
->>> check("/distros/ubuntu/+sources/mozilla-firefox/+bug/1")
+>>> check("/distros/ubuntu/+source/mozilla-firefox/+bug/1")
 
 Viewing a bug in the context of a distro source package in which it's
 not yet been reported.
 
->>> check_redirect("/distros/ubuntu/+sources/thunderbird/+bug")
->>> check("/distros/ubuntu/+sources/thunderbird/+bug/1")
->>> check_not_found("/distros/ubuntu/+sources/thunderbird/+bug/1/+viewstatus")
->>> check_not_found("/distros/ubuntu/+sources/thunderbird/+bug/1/+editstatus")
+>>> check_redirect("/distros/ubuntu/+source/thunderbird/+bug")
+>>> check("/distros/ubuntu/+source/thunderbird/+bug/1")
+>>> check_not_found("/distros/ubuntu/+source/thunderbird/+bug/1/+viewstatus")
+>>> check_not_found("/distros/ubuntu/+source/thunderbird/+bug/1/+editstatus")
 
 Viewing the bug in the context of a distro release source package in
 which the bug has already been reported.
 
->>> check("/distros/ubuntu/warty/+sources/mozilla-firefox/+bug/5")
+>>> check("/distros/ubuntu/warty/+source/mozilla-firefox/+bug/5")
 
 Viewing the bug in the context of a distro release source package in
 which the bug has not yet been reported.
 
->>> check("/distros/ubuntu/warty/+sources/mozilla-firefox/+bug/1")
->>> check_not_found("/distros/ubuntu/warty/+sources/mozilla-firefox/+bug/1/+viewstatus")
->>> check_not_found("/distros/ubuntu/warty/+sources/mozilla-firefox/+bug/1/+editstatus")
+>>> check("/distros/ubuntu/warty/+source/mozilla-firefox/+bug/1")
+>>> check_not_found("/distros/ubuntu/warty/+source/mozilla-firefox/+bug/1/+viewstatus")
+>>> check_not_found("/distros/ubuntu/warty/+source/mozilla-firefox/+bug/1/+editstatus")
 
 The bug filing pages.
 
 >>> check("/products/firefox/+filebug", auth=True)
 >>> check("/distros/ubuntu/+filebug", auth=True)
->>> check("/distros/ubuntu/+sources/mozilla-firefox/+filebug", auth=True)
->>> check("/distros/ubuntu/warty/+sources/mozilla-firefox/+filebug", auth=True)
+>>> check("/distros/ubuntu/+source/mozilla-firefox/+filebug", auth=True)
+>>> check("/distros/ubuntu/warty/+source/mozilla-firefox/+filebug", auth=True)
 
 Note that you should not be able to directly file a bug on a
 distrorelease; an IBugTask whose distrorelease is not None is

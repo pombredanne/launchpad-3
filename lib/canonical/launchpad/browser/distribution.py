@@ -11,7 +11,6 @@ __all__ = [
     'DistributionFileBugView',
     'DistributionSetView',
     'DistributionSetAddView',
-    'DistributionSetSearchView',
     ]
 
 from zope.interface import implements
@@ -23,8 +22,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPerson, IBugTaskSearchListingView,
-    IBugSet, IPublishedPackageSet, ISourcePackageNameSet, NotFoundError,
-    IDistroSourcePackageSet)
+    IBugSet, IPublishedPackageSet, ISourcePackageNameSet, NotFoundError)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser import BugTaskSearchListingView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
@@ -33,6 +31,7 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, GetitemNavigation, stepthrough, stepto)
+
 
 class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
@@ -45,25 +44,9 @@ class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
     def packages(self):
         return getUtility(IPublishedPackageSet)
 
-    @stepthrough('+sources')
+    @stepthrough('+source')
     def traverse_sources(self, name):
-        # XXX: Brad Bollenbach, 2005-09-12: There is not yet an
-        # interface for $distro/+sources; for now, this code's only
-        # promise is that it will return the correct
-        # IDistroSourcePackage for a URL path like:
-        #
-        # /distros/ubuntu/+sources/mozilla-firefox
-        #
-        # Obviously, there needs to be a simple page designed for a
-        # bare +sources. Here's the bug report to track that task:
-        #
-        # https://launchpad.net/malone/bugs/2230
-        sourcepackagenameset = getUtility(ISourcePackageNameSet)
-        srcpackagename = sourcepackagenameset.queryByName(name)
-        if not srcpackagename:
-            raise NotFoundError
-        return getUtility(IDistroSourcePackageSet).getPackage(
-            distribution=self.context, sourcepackagename=srcpackagename)
+        return self.context.getSourcePackage(name)
 
     @stepthrough('+milestone')
     def traverse_milestone(self, name):
@@ -113,7 +96,7 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'overview'
-    links = ['edit', 'reassign', 'members', 'milestone_add']
+    links = ['search', 'milestone_add', 'members', 'edit', 'reassign']
 
     def edit(self):
         text = 'Edit Details'
@@ -132,9 +115,9 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Add Milestone'
         return Link('+addmilestone', text, icon='add')
 
-    def searchpackages(self):
+    def search(self):
         text = 'Search Packages'
-        return Link('+packages', text, icon='search')
+        return Link('+search', text, icon='search')
 
     @enabled_with_permission('launchpad.Admin')
     def addrelease(self):
@@ -217,10 +200,28 @@ class DistributionTranslationsMenu(ApplicationMenu):
 
 class DistributionView(BuildRecordsView):
     """Default Distribution view class."""
-
+    
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        form = self.request.form
+        self.text = form.get('text')
+        self.matches = 0
+        self._results = None
+
+        self.searchrequested = False
+        if self.text is not None and self.text <> '':
+            self.searchrequested = True
+
+    def searchresults(self):
+        """Try to find the source packages in this distribution that match
+        the given text, then present those as a list. Cache previous results
+        so the search is only done once.
+        """
+        if self._results is None:
+            self._results = self.context.searchSourcePackages(self.text)
+        self.matches = len(self._results)
+        return self._results
 
 
 class DistributionBugsView(BugTaskSearchListingView):
@@ -312,20 +313,4 @@ class DistributionSetAddView(AddView):
 
     def nextURL(self):
         return self._nextURL
-
-class DistributionSetSearchView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.form  = request.form
-
-    def results(self):
-        return []
-
-    def search_action(self):
-        return True
-
-    def count(self):
-        return 3
 

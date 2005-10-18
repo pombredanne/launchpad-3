@@ -56,6 +56,19 @@ ALL_FTI = [
             ('description', B),
             ]),
 
+    ('distributionsourcepackagecache', [
+            ('name', A),
+            ('binpkgnames', B),
+            ('binpkgsummaries', C),
+            ('binpkgdescriptions', D),
+            ]),
+
+    ('distroreleasepackagecache', [
+            ('name', A),
+            ('summaries', B),
+            ('descriptions', C),
+            ]),
+
     ('message', [
             ('subject', B),
             ]),

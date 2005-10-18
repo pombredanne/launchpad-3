@@ -24,10 +24,10 @@ class TicketTargetView:
         +tickets view.
 
         It is also used in IPerson, which is not an ITicketTarget but
-        which does have a IPerson.tickets. In this case, it will also
+        which does have a IPerson.tickets(). In this case, it will also
         detect which set of tickets you want to see. The options are:
 
-         - all tickets (self.context.tickets)
+         - all tickets (self.context.tickets())
          - created by this person (self.context.created_tickets)
          - assigned to this person (self.context.assigned_tickets)
          - subscribed by this person (self.context.subscriber_tickets)
@@ -35,7 +35,7 @@ class TicketTargetView:
         """
         categories = {}
         if not IPerson.providedBy(self.context):
-            tickets = self.context.tickets
+            tickets = self.context.tickets()
         else:
             # for a person, we need to figure out which set of tickets to be
             # showing.
@@ -60,10 +60,10 @@ class TicketTargetView:
             #   or include it manually like Zope 3 will do in the future.
             #   Then, have different methods as entry-points for the different
             #   pages.
-            #     self.createdtickets()
-            #     self.assignedtickets()
-            #     self.answeredtickets()
-            #     self.subscribedtickets()
+            #     self.created_tickets
+            #     self.assigned_tickets
+            #     self.answered_tickets
+            #     self.subscribed_tickets
             #     self.tickets()  # everything else.
             #   Hook these up in zcml
             #   using the class and attribute style of registing pages.
@@ -77,7 +77,7 @@ class TicketTargetView:
             elif '+subscribedtickets' in url:
                 tickets = self.context.subscribed_tickets
             else:
-                tickets = self.context.tickets
+                tickets = self.context.tickets()
         for ticket in tickets:
             if categories.has_key(ticket.status):
                 category = categories[ticket.status]
@@ -94,5 +94,5 @@ class TicketTargetView:
         """Return <quantity> latest tickets created for this target. This
         is used by the +portlet-latesttickets view.
         """
-        return self.context.tickets[:quantity]
+        return self.context.tickets(quantity=quantity)
 

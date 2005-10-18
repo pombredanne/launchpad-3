@@ -1,0 +1,21 @@
+<div class="portlet">
+
+  <h4>Recent Support Requests:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul class="tickets">
+      <li tal:repeat="ticket view/latest_tickets">
+        <a tal:attributes="href ticket/fmt:url"
+           tal:content="ticket/title/fmt:shorten/80">Foo does not Bar</a>
+        (<span tal:replace="ticket/owner/browsername">Foo Bar</span>)
+        <span tal:replace="ticket/status/title">Fixed</span>
+      </li>
+      <li tal:condition="not: view/latest_tickets">
+        <i>No support requests for this package (yet)</i>
+      </li>
+    </ul>
+
+  </div>
+
+</div>

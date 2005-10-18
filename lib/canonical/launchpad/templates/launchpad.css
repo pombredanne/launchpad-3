@@ -196,7 +196,7 @@ input.searchButton {
 }
 
 .link-ftp {
-  background: transparent url(/++resource++file_icon.gif) 0px 1px no-repeat;
+  background: transparent url(/++resource++file) 0px 1px no-repeat;
 }
 
 .link-irc {
@@ -251,8 +251,8 @@ table.rowNavigation>thead>tr:hover {
 /* highlight specific table entry */
 
 tr.highlight {
-    border: 1px solid #ffa500;
-    background-color: #ffce7b;
+    border: 1px solid #ffc550;
+    background-color: #ffe7ab;
 }
 
 tr.amount, td.amount {
@@ -453,6 +453,9 @@ ul.edit>li, li.edit {
 ul.info>li, li.info {
   list-style-image: url(/++resource++info_icon.gif);
 }
+ul.file>li, li.file {
+  list-style-image: url(/++resource++file);
+}
 ul.languages>li, li.languages {
   list-style-image: url(/++resource++languages.gif);
 }
@@ -474,7 +477,10 @@ ul.milestone>li, li.milestone {
 ul.news>li, li.news {
   list-style-image: url(/++resource++news);
 }
-ul.packages>li, li.packages, ul.products>li, li.products {
+ul.packages>li, li.packages {
+  list-style-image: url(/++resource++package-binary);
+}
+ul.products>li, li.products {
   list-style-image: url(/++resource++product_icon.gif);
 }
 ul.person>li, li.person, ul.people>li, li.people {

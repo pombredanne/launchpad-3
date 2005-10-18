@@ -48,7 +48,7 @@ class POFileFacets(StandardLaunchpadFacets):
         potemplate = self.context.potemplate
 
         if potemplate.distrorelease:
-            source_package = potemplate.distrorelease.getSourcePackageByName(
+            source_package = potemplate.distrorelease.getSourcePackage(
                 potemplate.sourcepackagename)
             return canonical_url(source_package)
         else:

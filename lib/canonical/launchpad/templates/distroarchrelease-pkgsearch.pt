@@ -23,13 +23,12 @@
     
       <input type="text"
         name="name"
-        size="45"
+        size="35"
         tal:attributes="value request/name|nothing" />
 
       <input type="submit" value="Search"/>
 
-</form>
-<br><br>
+    </form>
 
 
   <tal:block tal:define="bn view/binaryPackagesBatchNavigator;

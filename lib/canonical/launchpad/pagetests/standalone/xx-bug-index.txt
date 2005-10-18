@@ -4,7 +4,7 @@ description, comments, external references, details of places in which
 this bug needs to be fixed, and so forth.
 
   >>> print http(r"""
-  ... GET /distros/debian/+sources/mozilla-firefox/+bug/2 HTTP/1.1
+  ... GET /distros/debian/+source/mozilla-firefox/+bug/2 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...Blackhole Trash folder...

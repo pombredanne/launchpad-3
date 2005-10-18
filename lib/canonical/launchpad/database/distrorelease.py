@@ -12,7 +12,9 @@ __all__ = [
 from zope.interface import implements
 from zope.component import getUtility
 
-from sqlobject import StringCol, ForeignKey, MultipleJoin, IntCol, RelatedJoin
+from sqlobject import (
+    StringCol, ForeignKey, MultipleJoin, IntCol, SQLObjectNotFound,
+    RelatedJoin)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -21,10 +23,15 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
-    IPublishedPackageSet, IHasBuildRecords, NotFoundError)
+    IPublishedPackageSet, IHasBuildRecords, NotFoundError,
+    IBinaryPackageName)
 
-from canonical.launchpad.database.sourcepackageindistro import (
-    SourcePackageInDistro)
+from canonical.launchpad.database.binarypackagename import (
+    BinaryPackageName)
+from canonical.launchpad.database.distroreleasebinarypackage import (
+    DistroReleaseBinaryPackage)
+from canonical.launchpad.database.distroreleasepackagecache import (
+    DistroReleasePackageCache)
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishing, SourcePackagePublishing)
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
@@ -77,11 +84,14 @@ class DistroRelease(SQLBase):
     nominatedarchindep = ForeignKey(
         dbName='nominatedarchindep',foreignKey='DistroArchRelease',
         notNull=False, default=None)
+    datelastlangpack = UtcDateTimeCol(dbName='datelastlangpack', notNull=False,
+        default=None)
+    messagecount = IntCol(notNull=True, default=0)
+
     specifications = MultipleJoin('Specification',
         joinColumn='distrorelease', orderBy='-datecreated')
-    datelastlangpack = UtcDateTimeCol(dbName='datelastlangpack', notNull=False,
-                                   default=None)
-    messagecount = IntCol(notNull=True, default=0)
+    package_caches = MultipleJoin('DistroReleasePackageCache',
+        joinColumn='distrorelease', orderBy='id')
 
     # XXX: dsilvers: 20051013: At some point, get rid of components/sections
     # from above and rename these and fix up the uploader and queue stuff.
@@ -189,18 +199,6 @@ class DistroRelease(SQLBase):
         """See ISpecificationTarget."""
         return self.distribution.getSpecification(name)
 
-    def getBugSourcePackages(self):
-        """See IDistroRelease."""
-        query = ("VSourcePackageInDistro.distrorelease = %i AND "
-                 "VSourcePackageInDistro.distro = BugTask.distribution AND "
-                 "VSourcePackageInDistro.name = BugTask.sourcepackagename AND "
-                 "(BugTask.status != %i OR BugTask.status != %i)"
-                 % sqlvalues(
-                    self.id, BugTaskStatus.FIXED, BugTaskStatus.REJECTED))
-
-        return SourcePackageInDistro.select(
-            query, clauseTables=["BugTask"], distinct=True)
-
     @property
     def open_cve_bugtasks(self):
         """See IDistroRelease."""
@@ -282,24 +280,23 @@ class DistroRelease(SQLBase):
         self.messagecount = messagecount
         ztm.commit()
 
-
-    def findSourcesByName(self, pattern):
-        """Get SourcePackages in a DistroRelease"""        
-        # XXX: Daniel Debonzi 20050711
-        # Implement it as soon as SourcePackageSet issue are sorted out.
-        raise NotImplemented
-
-    def getSourcePackageByName(self, name):
+    def getSourcePackage(self, name):
         """See IDistroRelease."""
         if not ISourcePackageName.providedBy(name):
-            name_set = SourcePackageNameSet()
-
             try:
-                name = name_set[name]
-            except IndexError:
-                raise ValueError('No such source package name %r' % name)
-
+                name = SourcePackageName.byName(name)
+            except SQLObjectNotFound:
+                return None
         return SourcePackage(sourcepackagename=name, distrorelease=self)
+
+    def getBinaryPackage(self, name):
+        """See IDistroRelease."""
+        if not IBinaryPackageName.providedBy(name):
+            try:
+                name = BinaryPackageName.byName(name)
+            except SQLObjectNotFound:
+                return None
+        return DistroReleaseBinaryPackage(self, name)
 
     def __getitem__(self, archtag):
         """See IDistroRelease."""
@@ -359,6 +356,117 @@ class DistroRelease(SQLBase):
         return Build.select(
             "distroarchrelease IN (%s) AND %s" % (arch_ids, status_clause),
             limit=limit, orderBy="-datebuilt")
+
+    def removeOldCacheItems(self):
+        """See IDistroRelease."""
+
+        # get the set of package names that should be there
+        bpns = set(BinaryPackageName.select("""
+            BinaryPackagePublishing.distroarchrelease = 
+                DistroArchRelease.id AND
+            DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishing.binarypackagerelease =
+                BinaryPackageRelease.id AND
+            BinaryPackageRelease.binarypackagename =
+                BinaryPackageName.id
+            """ % sqlvalues(self.id),
+            distinct=True,
+            clauseTables=['BinaryPackagePublishing', 'DistroArchRelease',
+                'BinaryPackageRelease']))
+
+        # remove the cache entries for binary packages we no longer want
+        for cache in self.package_caches:
+            if cache.binarypackagename not in bpns:
+                cache.destroySelf()
+ 
+    def updateCompletePackageCache(self, ztm=None):
+        """See IDistroRelease."""
+
+        # get the set of package names to deal with
+        bpns = list(BinaryPackageName.select("""
+            BinaryPackagePublishing.distroarchrelease = 
+                DistroArchRelease.id AND
+            DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishing.binarypackagerelease =
+                BinaryPackageRelease.id AND
+            BinaryPackageRelease.binarypackagename =
+                BinaryPackageName.id
+            """ % sqlvalues(self.id),
+            distinct=True,
+            clauseTables=['BinaryPackagePublishing', 'DistroArchRelease',
+                'BinaryPackageRelease']))
+
+        # now ask each of them to update themselves. commit every 100
+        # packages
+        counter = 0
+        for bpn in bpns:
+            self.updatePackageCache(bpn)
+            counter += 1
+            if counter > 99:
+                counter = 0
+                if ztm is not None:
+                    ztm.commit()
+            
+
+    def updatePackageCache(self, binarypackagename):
+        """See IDistroRelease."""
+
+        # get the set of published binarypackagereleases
+        bprs = BinaryPackageRelease.select("""
+            BinaryPackageRelease.binarypackagename = %s AND
+            BinaryPackageRelease.id =
+                BinaryPackagePublishing.binarypackagerelease AND
+            BinaryPackagePublishing.distroarchrelease = 
+                DistroArchRelease.id AND
+            DistroArchRelease.distrorelease = %s
+            """ % sqlvalues(binarypackagename.id, self.id),
+            orderBy='-datecreated',
+            clauseTables=['BinaryPackagePublishing', 'DistroArchRelease'],
+            distinct=True)
+        if len(bprs) == 0:
+            return
+
+        # find or create the cache entry
+        cache = DistroReleasePackageCache.selectOne("""
+            distrorelease = %s AND
+            binarypackagename = %s
+            """ % sqlvalues(self.id, binarypackagename.id))
+        if cache is None:
+            cache = DistroReleasePackageCache(
+                distrorelease=self,
+                binarypackagename=binarypackagename)
+
+        # make sure the cached name, summary and description are correct
+        cache.name = binarypackagename.name
+        cache.summary = bprs[0].summary
+        cache.description = bprs[0].description
+
+        # get the sets of binary package summaries, descriptions. there is
+        # likely only one, but just in case...
+
+        summaries = set()
+        descriptions = set()
+        for bpr in bprs:
+            summaries.add(bpr.summary)
+            descriptions.add(bpr.description)
+
+        # and update the caches
+        cache.summaries = ' '.join(sorted(summaries))
+        cache.descriptions = ' '.join(sorted(descriptions))
+
+    def searchPackages(self, text):
+        """See IDistroRelease."""
+        drpcaches = DistroReleasePackageCache.select("""
+            distrorelease = %s AND
+            fti @@ ftq(%s)
+            """ % sqlvalues(self.id, text),
+            selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
+            orderBy=['-rank'],
+            distinct=True)
+        return [DistroReleaseBinaryPackage(
+            distrorelease=self,
+            binarypackagename=drpc.binarypackagename) for drpc in drpcaches]
+
 
 class DistroReleaseSet:
     implements(IDistroReleaseSet)
