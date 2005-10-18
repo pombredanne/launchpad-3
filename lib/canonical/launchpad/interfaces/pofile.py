@@ -104,7 +104,7 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
     def __iter__():
         """Return an iterator over Current IPOMessageSets in this PO file."""
 
-    def messageSet(key, onlyCurrent=False):
+    def getPOMsgSet(key, onlyCurrent=False):
         """Extract one or several POMessageSets from this template.
 
         If the key is a string or a unicode object, returns the
@@ -118,10 +118,10 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         """
 
     def __getitem__(msgid):
-        """Same as messageSet(), with onlyCurrent=True.
+        """Same as getPOMsgSet(), with onlyCurrent=True.
         """
 
-    def messageSetsNotInTemplate():
+    def getPOMsgSetNotInTemplate():
         """
         Return an iterator over message sets in this PO file that do not
         correspond to a message set in the template; eg, the template
@@ -171,6 +171,19 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 
     def export():
         """Export this PO file as a string."""
+
+    def exportToFileHandle(filehandle, included_obsolete=True):
+        """Export this PO file to the given filehandle.
+
+        If the included_obsolete argument is set to False, the export does not
+        include the obsolete messages."""
+
+    def uncachedExport(included_obsolete=True):
+        """Export this PO file as string without using any cache.
+
+        If included_obsolete is False, the exported PO file does not have
+        obsolete entries.
+        """
 
     def invalidateCache():
         """Invalidate the cached export."""

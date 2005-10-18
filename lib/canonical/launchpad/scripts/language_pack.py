@@ -10,8 +10,10 @@ import sys
 import tarfile
 import tempfile
 import time
+import transaction
 from StringIO import StringIO
 from shutil import copyfileobj
+from urllib2 import HTTPError
 
 from zope.component import getUtility
 
@@ -82,7 +84,6 @@ def export(distribution_name, release_name, component, update, logger):
 
     pofiles = export_set.get_distrorelease_pofiles(release, date, component,
         languagepack=True)
-    # pofile_count = len(pofiles)
     pofile_count = export_set.get_distrorelease_pofiles_count(
         release, date, component, languagepack=True)
     logger.info("Number of PO files to export: %d" % pofile_count)
@@ -96,11 +97,15 @@ def export(distribution_name, release_name, component, update, logger):
             (pofile.id, index + 1, pofile_count))
 
         try:
+            # We don't want obsolete entries here, it makes no sens for a
+            # language pack.
+            contents = pofile.uncachedExport(included_obsolete=False)
+
             pofile_output(
                 potemplate=pofile.potemplate,
                 language=pofile.language,
                 variant=pofile.variant,
-                contents=pofile.export())
+                contents=contents)
         except:
             logger.exception(
                 "Uncaught exception while exporting PO file %d" % pofile.id)
@@ -108,6 +113,27 @@ def export(distribution_name, release_name, component, update, logger):
         # Flush database updates so that the export cache will be saved even
         # if the export process is interrupted.
         flush_database_updates()
+        transaction.commit()
+
+    potemplates = export_set.get_distrorelease_potemplates(release, component,
+        languagepack=True)
+    logger.info("Exporting POTemplates")
+
+    for index, potemplate in enumerate(potemplates):
+        logger.debug("Exporting %s (%d)" %
+            (potemplate.displayname, index + 1))
+
+        try:
+            contents = potemplate.export()
+        except (LookupError, HTTPError):
+            # We catch the HTTPError exception because the test fail due the
+            # lack of sampledata for librarian files.
+            logger.exception(
+                "We had an error getting this file from librarian.")
+            continue
+
+        archive.add_file('rosetta-%s/templates/%s.pot' % (release.name,
+            potemplate.potemplatename.translationdomain), contents)
 
     logger.debug("Adding timestamp file")
     contents = datetime.datetime.utcnow().strftime('%Y%m%d\n')

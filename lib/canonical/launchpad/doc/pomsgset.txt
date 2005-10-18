@@ -32,9 +32,9 @@ We need the right POMsgSet's. We'll get the PO Files, then find the po
 msgset from there.
 
 >>> upstream_pofile = upstream_evo.getPOFileByLang('es')
->>> upstream_pomsgset = upstream_pofile.messageSet(u'evolution addressbook')
+>>> upstream_pomsgset = upstream_pofile.getPOMsgSet(u'evolution addressbook')
 >>> hoary_pofile = hoary_evo.getPOFileByLang('es')
->>> hoary_pomsgset = hoary_pofile.messageSet(u'evolution addressbook')
+>>> hoary_pomsgset = hoary_pofile.getPOMsgSet(u'evolution addressbook')
 
 Show that there are no active translations and no suggestions for either
 upstream or the hoary translation.

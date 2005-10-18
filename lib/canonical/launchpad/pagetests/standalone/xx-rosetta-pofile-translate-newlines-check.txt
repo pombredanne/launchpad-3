@@ -68,7 +68,7 @@ adds it automatically
 This is the check, as we can see, we get the trailing new line char
 
   >>> print http(r"""
-  ... GET /products/evolution/+series/main/+pots/evolution-2.2/es/+translate?offset=22&count=1 HTTP/1.1
+  ... GET /products/evolution/+series/main/+pots/evolution-2.2/es/+translate?offset=21&count=1 HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
@@ -97,7 +97,7 @@ Now, we do the right submit, with one trailing new line...
 And we get the same output, just one trailing new line.
 
   >>> print http(r"""
-  ... GET /products/evolution/+series/main/+pots/evolution-2.2/es/+translate?offset=22&count=1 HTTP/1.1
+  ... GET /products/evolution/+series/main/+pots/evolution-2.2/es/+translate?offset=21&count=1 HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
@@ -127,7 +127,7 @@ Last check, the user sends two new line chars instead of just one...
 And Rosetta comes to the rescue and stores just one!.
 
   >>> print http(r"""
-  ... GET /products/evolution/+series/main/+pots/evolution-2.2/es/+translate?offset=22&count=1 HTTP/1.1
+  ... GET /products/evolution/+series/main/+pots/evolution-2.2/es/+translate?offset=21&count=1 HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok

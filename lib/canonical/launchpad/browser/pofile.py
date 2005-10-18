@@ -141,7 +141,7 @@ class POFileView:
         self.status_message = None
         self.header = POHeader(msgstr=context.header)
         self.URL = '%s/+translate' % self.context.language.code
-        self.header.finish()
+        self.header.updateDict()
         self._table_index_value = 0
         self.pluralFormCounts = None
         self.alerts = []

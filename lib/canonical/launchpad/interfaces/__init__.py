@@ -97,6 +97,7 @@ from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.pyarch import *
 from canonical.launchpad.interfaces.queue import *
 from canonical.launchpad.interfaces.rawfiledata import *
+from canonical.launchpad.interfaces.rosetta import *
 from canonical.launchpad.interfaces.rosettastats import *
 from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.section import *

@@ -39,6 +39,7 @@ from canonical.launchpad.database.pomsgset import POMsgSet
 
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po, OldPOImported
+from canonical.launchpad.components.poexport import FilePOFileOutput
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POHeader, POInvalidInputError)
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -206,7 +207,7 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         return iter(self.currentMessageSets())
 
-    def messageSet(self, key, onlyCurrent=False):
+    def getPOMsgSet(self, key, onlyCurrent=False):
         """See IPOFile."""
         query = 'potemplate = %d' % self.potemplate.id
         if onlyCurrent:
@@ -224,14 +225,14 @@ class POFile(SQLBase, RosettaStats):
 
         # Find a message ID with the given text.
         try:
-            messageID = POMsgID.byMsgid(key)
+            pomsgid = POMsgID.byMsgid(key)
         except SQLObjectNotFound:
             raise NotFoundError(key)
 
         # Find a message set with the given message ID.
 
         result = POTMsgSet.selectOne(query +
-            (' AND primemsgid = %d' % messageID.id))
+            (' AND primemsgid = %d' % pomsgid.id))
 
         if result is None:
             raise NotFoundError(key)
@@ -243,9 +244,9 @@ class POFile(SQLBase, RosettaStats):
 
     def __getitem__(self, msgid_text):
         """See IPOFile."""
-        return self.messageSet(msgid_text)
+        return self.getPOMsgSet(msgid_text)
 
-    def messageSetsNotInTemplate(self):
+    def getPOMsgSetsNotInTemplate(self):
         """See IPOFile."""
         return iter(POMsgSet.select('''
             POMsgSet.pofile = %d AND
@@ -465,7 +466,7 @@ class POFile(SQLBase, RosettaStats):
 
     def createMessageSetFromMessageSet(self, potmsgset):
         """See IPOFile."""
-        messageSet = POMsgSet(
+        pomsgset = POMsgSet(
             sequence=0,
             pofile=self,
             iscomplete=False,
@@ -474,7 +475,7 @@ class POFile(SQLBase, RosettaStats):
             isfuzzy=False,
             publishedfuzzy=False,
             potmsgset=potmsgset)
-        return messageSet
+        return pomsgset
 
     def createMessageSetFromText(self, text):
         """See IPOFile."""
@@ -494,7 +495,7 @@ class POFile(SQLBase, RosettaStats):
             # Parse the old header.
             old_header = POHeader(msgstr=self.header)
             # The POHeader needs to know is ready to be used.
-            old_header.finish()
+            old_header.updateDict()
             old_plural_form = old_header.get('Plural-Forms', None)
             if old_plural_form is not None:
                 # First attempt: use the plural-forms header that is already
@@ -521,7 +522,7 @@ class POFile(SQLBase, RosettaStats):
     def isPORevisionDateOlder(self, header):
         """See IPOFile."""
         old_header = POHeader(msgstr=self.header)
-        old_header.finish()
+        old_header.updateDict()
 
         # Get the old and new PO-Revision-Date entries as datetime objects.
         # That's the second element from the tuple that getPORevisionDate
@@ -539,7 +540,6 @@ class POFile(SQLBase, RosettaStats):
             return True
 
     # ICanAttachRawFileData implementation
-
     def attachRawFileData(self, contents, published, importer=None):
         """See ICanAttachRawFileData."""
         if self.variant:
@@ -733,14 +733,17 @@ class POFile(SQLBase, RosettaStats):
             alias_set = getUtility(ILibraryFileAliasSet)
             return alias_set[self.exportfile.id].read()
 
-    def uncachedExport(self):
-        """Export this PO file without looking in the cache."""
-        exporter = IPOTemplateExporter(self.potemplate)
-        return exporter.export_pofile(self.language, self.variant)
-
-    def export(self):
+    def uncachedExport(self, included_obsolete=True):
         """See IPOFile."""
-        if self.validExportCache():
+        exporter = IPOTemplateExporter(self.potemplate)
+        return exporter.export_pofile(self.language, self.variant,
+            included_obsolete)
+
+    def export(self, included_obsolete=True):
+        """See IPOFile."""
+        if self.validExportCache() and included_obsolete:
+            # Only use the cache if the request includes obsolete messages,
+            # without them, we always do a full export.
             return self.fetchExportCache()
         else:
             contents = self.uncachedExport()
@@ -748,8 +751,16 @@ class POFile(SQLBase, RosettaStats):
             if len(contents) == 0:
                 raise ZeroLengthPOExportError
 
-            self.updateExportCache(contents)
+            if included_obsolete:
+                # Update the cache if the request includes obsolete messages.
+                self.updateExportCache(contents)
             return contents
+
+    def exportToFileHandle(self, filehandle, included_obsolete=True):
+        """See IPOFile."""
+        exporter = IPOTemplateExporter(self.potemplate)
+        exporter.export_pofile_to_file(filehandle, self.language,
+            self.variant, included_obsolete)
 
     def invalidateCache(self):
         """See IPOFile."""
