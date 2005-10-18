@@ -2,6 +2,19 @@
 # Bugzilla schema:
 #  http://lxr.mozilla.org/mozilla/source/webtools/bugzilla/Bugzilla/DB/Schema.pm
 
+# XXX: 20051018 jamesh
+# Currently unhandled bug info:
+#  * Operating system and platform
+#  * version (not really used in Ubuntu bugzilla though)
+#  * target milestone
+#  * keywords
+#  * private bugs (none of the canonical-only bugs seem sensitive though)
+#  * bug dependencies
+#  * duplicate bugs
+#  * "bug XYZ" references inside comment text (would need a second pass)
+#
+# Not all of these are necessary though
+
 __metaclass__ = type
 
 from cStringIO import StringIO
