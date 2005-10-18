@@ -21,32 +21,50 @@ Let's instantiate the view for +index:
   >>> builder_view.lastBuilds().count()
   3
 
-Let's instantiate the view for +stop:
+Let's instantiate the view for +cancel:
 
   >>> request = TestRequest(form={'BUILDERID': 1})
 
-  >>> builder_view = queryView(builder, "+stop", request)
+  >>> builder_view = queryView(builder, "+cancel", request)
 
-  >>> builder_view.stopBuilder()
-  '<p>Stopping (1). Not implemented yet</p>'
-
-Let's instantiate the view for +abort:
-
-  >>> request = TestRequest(form={'BUILDERID': 1})
-
-  >>> builder_view = queryView(builder, "+abort", request)
-
-  >>> builder_view.abortBuilder()
-  '<p>Aborting (1). Not implemented yet</p>'
+  >>> builder_view.cancelBuildJob()
+  '<p>Cancel (1). Not implemented yet</p>'
 
 
-Let's instantiate the view for +edit:
+Let's instantiate the view for +mode:
 
 This page requires launchpad.Edit permission and the builder is owned
 by mark. we nee to log in as mark or any other member of admin team
 
   >>> from canonical.launchpad.ftests import login
   >>> login("foo.bar@canonical.com")
+
+Build an special request containing the fields we want to change:
+
+  >>> request = TestRequest(form={'field.manual': 'on', 
+  ...                             'UPDATE_SUBMIT': 'Change'})
+
+Instantiate the correspondent view:
+
+  >>> builder_view = queryView(builder, "+mode", request)
+
+Ensure the previous mode was AUTOMATIC
+
+  >>> builder.manual
+  False
+
+Call the update() method of the zope.app.form.EditView class
+
+  >>> builder_view.update()
+  u'Updated on ${date_time}'
+
+We've changed the builder mode to MANUAL
+
+  >>> builder.manual
+  True
+
+
+Let's instantiate the view for +edit:
 
 Build an special request containing the fields we want to change:
 
@@ -57,7 +75,7 @@ Build an special request containing the fields we want to change:
   ...                             'field.description': builder.description,
   ...                             'UPDATE_SUBMIT': 'Change'})
 
-Instantiate the corrspondent view:
+Instantiate the correspondent view:
 
   >>> builder_view = queryView(builder, "+edit", request)
 
@@ -71,7 +89,7 @@ Call the update() method of the zope.app.form.EditView class
   >>> builder_view.update()
   u'Updated on ${date_time}'
 
-Voilá, we modified the buildername
+We've modified the buildername
 
   >>> builder.id, builder.name
   (1, u'biscoito')

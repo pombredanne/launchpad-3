@@ -34,7 +34,7 @@ Then get the PO file from the exporter.
   msgid ""
   msgstr ""
   "Project-Id-Version: es\n"
-  "POT-Creation-Date: 2004-08-17 11:10+0200\n"
+  "POT-Creation-Date: 2005-08-25 14:56+0200\n"
   "PO-Revision-Date: 2005-04-07 13:22+0000\n"
   "Last-Translator: Carlos Perelló Marín <carlos@canonical.com>\n"
   "Language-Team: Spanish <traductores@es.gnome.org>\n"
@@ -42,7 +42,7 @@ Then get the PO file from the exporter.
   "Content-Type: text/plain; charset=UTF-8\n"
   "Content-Transfer-Encoding: 8bit\n"
   "Report-Msgid-Bugs-To: serrador@hispalinux.es\n"
-  "X-Generator: Rosetta (http://launchpad.ubuntu.com/rosetta/)\n"
+  "X-Generator: Rosetta (https://launchpad.net/rosetta/)\n"
   "Plural-Forms: nplurals=2; plural=(n != 1);\n"
   <BLANKLINE>
   #: a11y/addressbook/ea-addressbook-view.c:94
@@ -165,13 +165,6 @@ Then get the PO file from the exporter.
   "supports sizes from %i to %i bits in increments of %i bits.\n"
   "For example: "
   msgstr ""
-  <BLANKLINE>
-  #: encfs/encfsctl.cpp:346
-  #, c-format
-  msgid "Found %i invalid file."
-  msgid_plural "Found %i invalid files."
-  msgstr[0] ""
-  msgstr[1] ""
   <BLANKLINE>
   #: modules/aggregator.module:15
   msgid ""
@@ -298,10 +291,74 @@ Then get the PO file from the exporter.
   <BLANKLINE>
   #: lib/getopt.c:629 lib/getopt.c:641
   #, c-format
-  msgid ""
-  "%s: option `%s' is ambiguous\n"
+  msgid "%s: option `%s' is ambiguous\n"
   msgstr ""
   <BLANKLINE>
   #~ msgid "_Add Group"
   #~ msgstr "_Añadir grupo"
+
+We need to test also the feature that exports a po file without any obsolete
+message
+
+  >>> pofile = exporter.export_pofile(language, included_obsolete=False)
+  >>> print pofile
+  # traducción de es.po al Spanish
+  ...
+  msgid "evolution minicard"
+  msgstr ""
+  <BLANKLINE>
+  #: addressbook/addressbook-errors.xml.h:2
+  msgid "This addressbook could not be opened."
+  ...
+  #, c-format
+  msgid "%s: option `%s' is ambiguous\n"
+  msgstr ""
+
+Now, we should check that languages that its pluralform is 1, export the
+translations as expected.
+
+  >>> template = POTemplate.get(4)
+  >>> language = LanguageSet()['ja']
+
+Adapt the template with to exporter.
+
+  >>> from canonical.launchpad.components.poexport import POTemplateExporter
+  >>> exporter = POTemplateExporter(template)
+
+Then get the PO file from the exporter.
+
+  >>> pofile = exporter.export_pofile(language)
+  >>> print pofile
+  # Japanese translation for evolution
+  ...
+  "Plural-Forms: nplurals=1; plural=0\n"
+  ...
+  #, c-format
+  msgid "%d contact"
+  msgid_plural "%d contacts"
+  msgstr[0] "%d foo"
+  <BLANKLINE>
+  #: addressbook/gui/widgets/eab-gui-util.c:275
+  ...
+
+We had a bug that produce that a pofile export without variant, exports too
+any other variant file because we forgot 'WHERE variant IS NULL' clause
+
+  >>> from canonical.launchpad.database import POTemplate, LanguageSet
+  >>> template = POTemplate.get(2)
+  >>> language = LanguageSet()['es']
+
+Adapt the template with to exporter.
+
+  >>> from canonical.launchpad.components.poexport import POTemplateExporter
+  >>> exporter = POTemplateExporter(template)
+
+Then get the PO file from the exporter.
+
+  >>> pofile = exporter.export_pofile(language)
+  >>> print pofile
+  # Spanish translation for mount removable devices as normal user
+  ...
+  msgid "Internal error: could not change effective group id to real group id"
+  msgstr "Error interno: no es posible cambiar desde gid al gid real"
 

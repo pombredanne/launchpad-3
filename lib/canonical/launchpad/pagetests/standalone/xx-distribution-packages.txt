@@ -2,9 +2,7 @@ Check if the Distribution Search Packages page is not broken.
 This page is used to search packages in a distribution context.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/+packages HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
-  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
+  ... GET /distros/ubuntu/+search HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -13,12 +11,9 @@ This page is used to search packages in a distribution context.
 Search for a package and check if the result page is not broken
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/+packages/ HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
+  ... POST /distros/ubuntu/+search/ HTTP/1.1
   ... Content-Length: 12
   ... Content-Type: application/x-www-form-urlencoded
-  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
-  ... Referer: http://localhost:9000/distros/ubuntu/+packages
   ... 
   ... text=firefox""")
   HTTP/1.1 200 Ok

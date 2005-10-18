@@ -7,7 +7,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    StringCol, ForeignKey, RelatedJoin)
+    BoolCol, StringCol, ForeignKey, RelatedJoin, SQLObjectNotFound)
 
 from canonical.database.sqlbase import (
     SQLBase, sqlvalues)
@@ -16,10 +16,15 @@ from canonical.lp import dbschema
 
 from canonical.launchpad.interfaces import (
     IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot,
-    IHasBuildRecords, NotFoundError)
+    IHasBuildRecords, NotFoundError, IBinaryPackageName)
 
+from canonical.launchpad.database.binarypackagename import BinaryPackageName
+from canonical.launchpad.database.distroarchreleasebinarypackage import (
+    DistroArchReleaseBinaryPackage)
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
 from canonical.launchpad.database.build import Build
+from canonical.launchpad.database.binarypackagename import BinaryPackageName
+from canonical.launchpad.helpers import shortlist
 
 __all__ = [
     'DistroArchRelease',
@@ -34,20 +39,20 @@ class DistroArchRelease(SQLBase):
     _table = 'DistroArchRelease'
 
     distrorelease = ForeignKey(dbName='distrorelease',
-                               foreignKey='DistroRelease',
-                               notNull=True)
-
+        foreignKey='DistroRelease', notNull=True)
     processorfamily = ForeignKey(dbName='processorfamily',
-                                 foreignKey='ProcessorFamily',
-                                 notNull=True)
-
-    architecturetag = StringCol(dbName='architecturetag', notNull=True)
-
+        foreignKey='ProcessorFamily', notNull=True)
+    architecturetag = StringCol(notNull=True)
+    official = BoolCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
-    packages = RelatedJoin('BinaryPackage', joinColumn='distroarchrelease',
-                            intermediateTable='BinaryPackagePublishing',
-                            otherColumn='binarypackage')
+    packages = RelatedJoin('BinaryPackageRelease',
+        joinColumn='distroarchrelease',
+        intermediateTable='BinaryPackagePublishing',
+        otherColumn='binarypackagerelease')
+
+    def __getitem__(self, name):
+        return self.getBinaryPackage(name)
 
     @property
     def title(self):
@@ -93,16 +98,15 @@ class DistroArchRelease(SQLBase):
         return binset.findByNameInDistroRelease(
             self.distrorelease.id, pattern, self.architecturetag, fti)
 
-    def __getitem__(self, name):
-        binset = getUtility(IBinaryPackageReleaseSet)
-        packages = binset.getByNameInDistroRelease(
-            self.distrorelease.id, name=name, archtag=self.architecturetag,
-            orderBy='id')
-
-        try:
-            return packages[0]
-        except IndexError:
-            raise NotFoundError(name)
+    def getBinaryPackage(self, name):
+        """See IDistroArchRelease."""
+        if not IBinaryPackageName.providedBy(name):
+            try:
+                name = BinaryPackageName.byName(name)
+            except SQLObjectNotFound:
+                return None
+        return DistroArchReleaseBinaryPackage(
+            self, name)
 
     def getBuildRecords(self, status=None, limit=10):
         """See IHasBuildRecords"""
@@ -117,6 +121,25 @@ class DistroArchRelease(SQLBase):
             limit=limit, orderBy="-datebuilt"
             )
 
+    def getReleasedPackages(self, name, pocket=None):
+        """See IDistroArchRelease."""
+        if not IBinaryPackageName.providedBy(name):
+            name = BinaryPackageName.byName(name)
+        pocketclause = ""
+        if pocket is not None:
+            pocketclause = "AND pocket=%s" % sqlvalues(pocket.value)
+        published = BinaryPackagePublishing.select((
+            """
+            distroarchrelease = %s AND
+            status = %s AND
+            binarypackagerelease = binarypackagerelease.id AND
+            binarypackagerelease.binarypackagename = %s
+            """ % sqlvalues(self.id,
+                            dbschema.PackagePublishingStatus.PUBLISHED,
+                            name.id))+pocketclause,
+            clauseTables = ['BinaryPackageRelease'])
+        return shortlist(published)
+        
 
 class PocketChroot(SQLBase):
     implements(IPocketChroot)

@@ -60,7 +60,18 @@
         name="+pkgsearch"
         class="canonical.launchpad.browser.DistroArchReleaseBinariesView"
         template="../templates/distroarchrelease-pkgsearch.pt"
-        lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+pkgsearch"/>
+        />
+
+    <browser:editform
+      for="canonical.launchpad.interfaces.IDistroArchRelease"
+      permission="launchpad.Admin"
+      name="+admin"
+      schema="canonical.launchpad.interfaces.IDistroArchRelease"
+      facet="overview"
+      fields="architecturetag official"
+      template="../templates/distroarchrelease-admin.pt"
+      />
 
 </facet>
+
 </configure>

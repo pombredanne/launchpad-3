@@ -4,18 +4,18 @@ Test that missing files in web PO file uploads are detected.
 First, try to get the page unauthenticated.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+edit HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+edit HTTP/1.1
   ... Accept-Language: en-gb,en;q=0.5
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+edit/+login
+  Location: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+edit/+login
   <BLANKLINE>
 
 Then again with the magic authentication bit.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+edit HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+edit HTTP/1.1
   ... Accept-Language: en-gb,en;q=0.5
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
@@ -26,7 +26,7 @@ Now hit the upload button, but without giving a file for upload. We get an
 error message back.
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/cy/+edit HTTP/1.1
+  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/cy/+edit HTTP/1.1
   ... Accept-Language: en-gb,en;q=0.5
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Type: multipart/form-data; boundary=---------------------------210878615045361411296034445

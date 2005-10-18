@@ -12,7 +12,6 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-translations" /> 
   <div tal:replace="structure context/@@+portlet-langstats" /> 
   <div tal:replace="structure context/@@+portlet-latestbugs" />
 </metal:rightportlets>
@@ -32,15 +31,22 @@
         <table class="listing">
           <thead>          
             <tr>
-              <th> Family </th>
-              <th> Title </th>
-              <th> Architecture </th>
+              <th>Family</th>
+              <th>Title</th>
+              <th>Architecture</th>
             </tr>
           </thead>
           <tbody>
             <tr tal:repeat="arch context/architectures"
                 tal:attributes="onclick string:window.location='${arch/architecturetag}'">
-              <td tal:content="arch/processorfamily/name">processorfamily</td>
+              <td>
+                <span tal:content="arch/processorfamily/name">
+                  processorfamily name
+                </span>
+                <tal:official condition="arch/official">
+                  (official)
+                </tal:official>
+              </td>
               <td>
 	      <a tal:attributes="href arch/architecturetag"
                  tal:content="arch/processorfamily/title">
@@ -53,13 +59,17 @@
       </table>
       </tal:architectures>
 
-        <tal:description content="structure context/description/fmt:text-to-html">
-          description
-        </tal:description>
+      <div class="highlighted" style="font-size: 80%;">
+        <p tal:replace="structure context/description/fmt:text-to-html">
+          Distribution description
+        </p>
+      </div>
+
 
       <tal:block tal:define="sourcecount context/sourcecount "
                  tal:condition="sourcecount" tal:omit-tag>
-      <h2>Packages</h2>
+
+      <h2>Search Packages</h2>
 
       <p>This release of
       <span tal:replace="context/distribution/displayname" /> contains
@@ -68,21 +78,10 @@
       from a total of <span tal:replace="sourcecount" /> source
       packages.</p>
 
-      <div tal:condition="sourcecount">
-
-          <form name="search" method="POST" action="+packages">
-           <div class="formControls">
-            <label>Search:</label>
-            <input title="Search for a package" size="30"
-               type="text" name="text"/>
-            <input type="submit" value="Search"/>
-           </div>
-          </form>
-
-          <table>
-          </table>
-
-      </div>
+      <form name="search" action="+search" method="GET">
+        <input title="Search Packages" size="35" type="text" name="text"/>
+        <input type="submit" value="Search"/>
+      </form>
 
     </tal:block>
 

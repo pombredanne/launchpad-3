@@ -1,0 +1,15 @@
+<div class="portlet">
+  <h4>Package Releases:</h4>
+  <div class="portletBody portletContent">
+  <ul>
+    <li tal:repeat="release context/releases">
+      <a tal:attributes="href release/fmt:url"
+         tal:content="release/version">2.4.55-2</a>
+    </li>
+  </ul>
+  <tal:block condition="not: context/releases">
+    <img src="/++resource++info_icon.gif" />
+    No releases for this package have yet been published.
+  </tal:block>
+  </div>
+</div>

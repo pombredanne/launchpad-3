@@ -52,7 +52,8 @@ class ShippingRequest(SQLBase):
     """See IShippingRequest"""
 
     implements(IShippingRequest)
-    _defaultOrder = ['daterequested', 'id']
+    sortingColumns = ['daterequested', 'id']
+    _defaultOrder = sortingColumns
 
     recipient = ForeignKey(dbName='recipient', foreignKey='Person',
                            notNull=True)
@@ -276,7 +277,7 @@ class ShippingRequestSet:
 
     def search(self, request_type='any', standard_type=None,
                status=ShippingRequestStatus.ALL, recipient_text=None, 
-               omit_cancelled=True, orderBy=ShippingRequest._defaultOrder):
+               omit_cancelled=True, orderBy=ShippingRequest.sortingColumns):
         """See IShippingRequestSet"""
         queries = []
         clauseTables = []

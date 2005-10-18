@@ -23,7 +23,7 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IEditPOTemplate, IPOTemplateSet, IPOTemplateSubset, IRawFileData,
-    LanguageNotFound, NotFoundError, NameNotAvailable)
+    LanguageNotFound, TranslationConstants, NotFoundError, NameNotAvailable)
 
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -55,7 +55,6 @@ standardPOFileHeader = (
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Rosetta-Version: 0.1\n"
 "Plural-Forms: nplurals=%(nplurals)d; plural=%(pluralexpr)s\n"
 )
 
@@ -367,10 +366,19 @@ class POTemplate(SQLBase, RosettaStats):
 
     def hasPluralMessage(self):
         results = POMsgIDSighting.select('''
-            pluralform = 1 AND
-            potmsgset IN (SELECT id FROM POTMsgSet WHERE potemplate = %d)
-            ''' % self.id)
+            POMsgIDSighting.pluralform = %s AND
+            POMsgIDSighting.potmsgset = POTMsgSet.id AND
+            POTMsgSet.potemplate = %s AND
+            POTMsgSet.sequence > 0
+            ''' % sqlvalues(
+                TranslationConstants.PLURAL_FORM,
+                self.id), clauseTables=['POTMsgSet'])
         return results.count() > 0
+
+    def export(self):
+        """See IPOTemplate."""
+        rawfile = IRawFileData(self)
+        return helpers.getRawFileData(rawfile)
 
     # Methods defined in IEditPOTemplate
     def expireAllMessages(self):
@@ -585,6 +593,7 @@ class POTemplate(SQLBase, RosettaStats):
 
         # And finally, emit the modified event.
         notify(SQLObjectModifiedEvent(self, object_before_modification, fields))
+
 
 
 class POTemplateSubset:

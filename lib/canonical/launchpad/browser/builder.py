@@ -10,6 +10,8 @@ __all__ = ['BuilderSetNavigation', 'BuildFarmFacets', 'BuilderFacets',
 import datetime
 import pytz
 
+from sqlobject import SQLObjectNotFound
+
 import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
@@ -24,12 +26,23 @@ from canonical.launchpad.interfaces import (
     )
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, GetitemNavigation)
+    StandardLaunchpadFacets, Link, GetitemNavigation, stepthrough)
 
 
 class BuilderSetNavigation(GetitemNavigation):
 
     usedfor = IBuilderSet
+
+    @stepthrough('+build')
+    def traverse_build(self, name):
+        try:
+            build_id = int(name)
+        except ValueError:
+            return None
+        try:
+            return self.context.getBuild(build_id)
+        except SQLObjectNotFound:
+            return None
 
 
 class BuildFarmFacets(StandardLaunchpadFacets):
@@ -58,27 +71,19 @@ class BuilderView:
         UTC = pytz.timezone('UTC')
         return datetime.datetime.now(UTC)
 
-    def abortBuilder(self):
-        """Abort the builder."""
+    def cancelBuildJob(self):
+        """Cancel curent job in builder."""
         builder_id = self.request.form.get('BUILDERID')
         if not builder_id:
             return
-        # XXX cprov 20050823
-        # xmlrpclib presents an wierd behavior inside zope
-        # it needs investigation.
-        # self.context.slave.abort()
-        return '<p>Aborting (%s). Not implemented yet</p>' % builder_id
+        # XXX cprov 20051014
+        # The 'self.context.slave.abort()' seems to work with the new
+        # BuilderSlave class added by dsilvers, but I won't release it
+        # until we can test it properly, since we can only 'abort' slaves
+        # in BUILDING state it does depends of the major issue for testing
+        # Auto Build System, getting slave building something sane. 
+        return '<p>Cancel (%s). Not implemented yet</p>' % builder_id
 
-    def stopBuilder(self):
-        """Stop the builder."""
-        builder_id = self.request.form.get('BUILDERID')
-        if not builder_id:
-            return
-        # XXX cprov 20050823
-        # Depends on IBuilder.buildstop field addition
-        # self.builderstop = True
-        return '<p>Stopping (%s). Not implemented yet</p>' % builder_id
-        
     def lastBuilds(self):
         """Wrap up the IBuilderSet.lastBuilds method."""
         # XXX cprov 20050823

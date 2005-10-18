@@ -1,5 +1,4 @@
-<div class="portlet"
-  tal:condition="context/currentpotemplates">
+<div class="portlet" tal:condition="context/currentpotemplates">
 
   <h4>Translation Sets:</h4>
 
@@ -7,15 +6,22 @@
 
     <div class="portletContent even">
 
-    <div><span tal:replace="context/currentpotemplates/count:len">9</span>
-    translation templates exist for this release which can be translated in
-    Rosetta.</div>
+      <div>
+        <span tal:replace="context/currentpotemplates/count:len">9</span>
+        translation templates exist for this release which can be translated
+        in Rosetta.
+      </div>
 
-      <ul class="add"><li><a href="+translations"
-         title="See more translation options for this product">
-        More...
-      </a></li></ul>
+      <ul class="add">
+        <li>
+          <a href="+translations"
+             title="See more translation options for this product">
+            More...
+          </a>
+        </li>
+      </ul>
 
     </div>
   </div>
 </div>
+

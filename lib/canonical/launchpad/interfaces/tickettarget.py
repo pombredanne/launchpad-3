@@ -19,8 +19,13 @@ class ITicketTarget(Interface):
     Initially, only Products and Distributions can have tickets.
     """
 
-    tickets = Attribute("All the tickets for this "
-        "target, sorted newest first.")
+    def tickets(quantity=None):
+        """Support tickets for this source package, sorted newest first.
+
+        If needed, you can limit the number of tickets returned by passing a
+        number to the "quantity" parameter.
+        """
+
 
     def newTicket(owner, title, description):
         """Create a new support request, or trouble ticket, for the

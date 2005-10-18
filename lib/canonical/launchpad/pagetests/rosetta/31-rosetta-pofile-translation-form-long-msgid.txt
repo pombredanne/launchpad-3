@@ -7,7 +7,7 @@ Test if a submit with a big msgid string breaks Rosetta
   ...     'pagetests/rosetta/31-rosetta-pofile-translation-form-long-msgid.data')
   >>> data = open(data_file_name)
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate HTTP/1.1
+  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate HTTP/1.1
   ... Content-Length: 8126
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
@@ -23,7 +23,7 @@ Test if a submit with a big msgid string breaks Rosetta
 Check that the previous submit was saved.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=20 HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?offset=20 HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok

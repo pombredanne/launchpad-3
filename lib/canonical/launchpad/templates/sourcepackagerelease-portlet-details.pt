@@ -1,0 +1,12 @@
+<div class="portlet">
+
+  <h4><span tal:replace="context/title">source package "foobar"
+  2.3.1-2</span>:</h4>
+
+  <div class="portletBody portletContent">
+
+    <div tal:replace="structure context/@@+portlet-details-content" />
+
+  </div>
+
+</div>

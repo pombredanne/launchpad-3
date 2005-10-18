@@ -46,8 +46,20 @@ class BinaryPackagePublishing(SQLBase):
     priority = EnumCol(dbName='priority', schema=PackagePublishingPriority)
     status = EnumCol(dbName='status', schema=PackagePublishingStatus)
     scheduleddeletiondate = UtcDateTimeCol(default=None)
+    datecreated = UtcDateTimeCol(notNull=True)
     datepublished = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
+
+    @property
+    def distroarchreleasebinarypackagerelease(self):
+        """See IBinaryPackagePublishing."""
+        # import here to avoid circular import
+        from canonical.launchpad.database.distroarchreleasebinarypackagerelease \
+            import DistroArchReleaseBinaryPackageRelease
+
+        return DistroArchReleaseBinaryPackageRelease(
+            self.distroarchrelease,
+            self.binarypackagerelease)
 
 
 class SourcePackagePublishing(SQLBase):
@@ -322,9 +334,9 @@ class SourcePackagePublishingHistory(SQLBase):
     implements(ISourcePackagePublishingHistory)
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
-                                      dbName='sourcepackagerelease')
+        dbName='sourcepackagerelease')
     distrorelease = ForeignKey(foreignKey='DistroRelease',
-                               dbName='distrorelease')
+        dbName='distrorelease')
     component = ForeignKey(foreignKey='Component', dbName='component')
     section = ForeignKey(foreignKey='Section', dbName='section')
     status = EnumCol(schema=PackagePublishingStatus)
@@ -333,7 +345,7 @@ class SourcePackagePublishingHistory(SQLBase):
     datecreated = UtcDateTimeCol(default=None)
     datesuperseded = UtcDateTimeCol(default=None)
     supersededby = ForeignKey(foreignKey='SourcePackageRelease',
-                              dbName='supersededby', default=None)
+        dbName='supersededby', default=None)
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)

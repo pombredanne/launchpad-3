@@ -188,6 +188,14 @@
       attribute="__call__"
       />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.TicketTargetView"
+    name="+portlet-latesttickets"
+    permission="zope.Public"
+    template="../templates/tickettarget-portlet-latesttickets.pt"
+    />
+
   <!-- Adding SSH keys is the only possibly harmful thing that can be done
   without the user's password, so we use a special permission here to make
   sure only the user (and not launchpad admins) will be able to edit her own

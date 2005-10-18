@@ -18,7 +18,7 @@ __all__ = [
     ]
 
 from zope.schema import Bool, Datetime, Int, TextLine
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 _ = MessageIDFactory('launchpad')
@@ -66,6 +66,9 @@ class IBinaryPackagePublishing(Interface):
             title=_('The pocket into which this entry is published'),
             required=True, readonly=True,
             )
+    distroarchreleasebinarypackagerelease = Attribute("The object that "
+        "represents this binarypacakgerelease in this distroarchrelease.")
+
 
 class ISourcePackagePublishing(Interface):
     """A source package publishing record."""

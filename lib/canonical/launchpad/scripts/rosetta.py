@@ -13,7 +13,6 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (IPOTemplateSet, IPOFileSet,
     IPOFile, IPOTemplate)
 
-
 class ImportProcess:
     """Import .po and .pot files attached to Rosetta."""
 

@@ -60,7 +60,8 @@ class Person(SQLBase):
 
     implements(IPerson, ICalendarOwner)
 
-    _defaultOrder = ['displayname', 'familyname', 'givenname', 'name']
+    sortingColumns = ['displayname', 'familyname', 'givenname', 'name']
+    _defaultOrder = sortingColumns
 
     name = StringCol(dbName='name', alternateID=True, notNull=True)
     karma = IntCol(dbName='karma', notNull=True, default=0)
@@ -261,14 +262,15 @@ class Person(SQLBase):
         ret = sorted(ret, reverse=True, key=lambda a: a.datecreated)
         return ret
 
-    @property
-    def tickets(self):
+    def tickets(self, quantity=None):
         ret = set(self.created_tickets)
         ret = ret.union(self.answered_tickets)
         ret = ret.union(self.assigned_tickets)
         ret = ret.union(self.subscribed_tickets)
         ret = sorted(ret, key=lambda a: a.datecreated)
         ret.reverse()
+        if quantity is not None:
+            return ret[:quantity]
         return ret
 
     def isTeam(self):
@@ -548,6 +550,11 @@ class Person(SQLBase):
         return self.approvedmembers.union(self.administrators)
 
     @property
+    def active_member_count(self):
+        """See IPerson."""
+        return len(self.activemembers)
+
+    @property
     def inactivemembers(self):
         """See IPerson."""
         return self.expiredmembers.union(self.deactivatedmembers)
@@ -750,7 +757,7 @@ class PersonSet:
     """The set of persons."""
     implements(IPersonSet)
 
-    _defaultOrder = Person._defaultOrder
+    _defaultOrder = Person.sortingColumns
 
     def __init__(self):
         self.title = 'Launchpad People'
@@ -1584,6 +1591,10 @@ class TeamMembership(SQLBase):
     def statusname(self):
         return self.status.title
 
+    @property
+    def is_admin(self):
+        return self.status in [TeamMembershipStatus.ADMIN]
+
     def isExpired(self):
         return self.status == TeamMembershipStatus.EXPIRED
 
@@ -1592,7 +1603,7 @@ class TeamMembershipSet:
 
     implements(ITeamMembershipSet)
 
-    _defaultOrder = 'Person.displayname'
+    _defaultOrder = ['Person.displayname', 'Person.name']
 
     def getByPersonAndTeam(self, personID, teamID, default=None):
         result = TeamMembership.selectOneBy(personID=personID, teamID=teamID)

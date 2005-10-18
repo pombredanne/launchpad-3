@@ -37,11 +37,11 @@ class DistroArchReleaseFacets(StandardLaunchpadFacets):
 class DistroArchReleaseContextMenu(ContextMenu):
 
     usedfor = IDistroArchRelease
-    links = ['edit', 'packagesearch']
+    links = ['admin', 'packagesearch']
 
-    def edit(self):
-        text = 'Edit Architecture Release Details'
-        return Link('+edit', text, icon='edit')
+    def admin(self):
+        text = 'Administer'
+        return Link('+admin', text, icon='edit')
 
     def packagesearch(self):
         text = 'Search Packages'

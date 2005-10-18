@@ -59,7 +59,7 @@ class POTemplateFacets(StandardLaunchpadFacets):
         """Return the URL of the thing this PO template is attached to."""
 
         if self.context.distrorelease:
-            source_package = self.context.distrorelease.getSourcePackageByName(
+            source_package = self.context.distrorelease.getSourcePackage(
                 self.context.sourcepackagename)
             return canonical_url(source_package)
         else:
@@ -425,7 +425,7 @@ class POTemplateSubsetURL:
         if potemplatesubset.distrorelease is not None:
             assert potemplatesubset.productseries is None
             assert potemplatesubset.sourcepackagename is not None
-            return '+sources/%s/+pots' % (
+            return '+source/%s/+pots' % (
                 potemplatesubset.sourcepackagename.name)
         else:
             assert potemplatesubset.productseries is not None

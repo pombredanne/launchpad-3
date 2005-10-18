@@ -1,0 +1,13 @@
+<div class="portlet">
+
+  <h4>"<span tal:replace="context/name">apache2</span> 
+  <span tal:replace="context/version">2.0.39</span>" (source)
+  in <span tal:replace="context/distribution/name">ubuntu</span>:</h4>
+
+  <div class="portletBody portletContent">
+
+    <div tal:replace="structure context/sourcepackagerelease/@@+portlet-details-content" />
+
+  </div>
+
+</div>

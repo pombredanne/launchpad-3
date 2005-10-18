@@ -236,6 +236,9 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     def invalidateCache():
         """Invalidate the cached export for all pofiles."""
 
+    def export():
+        """Return as a string the .pot file."""
+
 
 class IEditPOTemplate(IPOTemplate):
     """Edit interface for an IPOTemplate."""

@@ -36,32 +36,32 @@ class SourcePackageRelease(SQLBase):
     creator = ForeignKey(foreignKey='Person', dbName='creator', notNull=True)
     component = ForeignKey(foreignKey='Component', dbName='component')
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
-                                   dbName='sourcepackagename', notNull=True)
+        dbName='sourcepackagename', notNull=True)
     maintainer = ForeignKey(foreignKey='Person', dbName='maintainer',
-                            notNull=True)
+        notNull=True)
     dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
     manifest = ForeignKey(foreignKey='Manifest', dbName='manifest')
     urgency = EnumCol(dbName='urgency', schema=SourcePackageUrgency,
-                      default=SourcePackageUrgency.LOW,
-                      notNull=True)
+        default=SourcePackageUrgency.LOW, notNull=True)
     dateuploaded = UtcDateTimeCol(dbName='dateuploaded', notNull=True,
-                                  default=UTC_NOW)
+        default=UTC_NOW)
     dsc = StringCol(dbName='dsc')
     version = StringCol(dbName='version', notNull=True)
     changelog = StringCol(dbName='changelog')
     builddepends = StringCol(dbName='builddepends')
     builddependsindep = StringCol(dbName='builddependsindep')
     architecturehintlist = StringCol(dbName='architecturehintlist')
-    format = EnumCol(dbName='format',
-                     schema=SourcePackageFormat,
-                     default=SourcePackageFormat.DPKG,
-                     notNull=True)
+    format = EnumCol(dbName='format', schema=SourcePackageFormat,
+        default=SourcePackageFormat.DPKG, notNull=True)
     uploaddistrorelease = ForeignKey(foreignKey='DistroRelease',
-                                     dbName='uploaddistrorelease')
+        dbName='uploaddistrorelease')
+
     builds = MultipleJoin('Build', joinColumn='sourcepackagerelease',
-                          orderBy=['-datecreated'])
+        orderBy=['-datecreated'])
     files = MultipleJoin('SourcePackageReleaseFile',
-                         joinColumn='sourcepackagerelease')
+        joinColumn='sourcepackagerelease')
+    publishings = MultipleJoin('SourcePackagePublishing',
+        joinColumn='sourcepackagerelease')
 
     @property
     def latest_build(self):
@@ -125,6 +125,16 @@ class SourcePackageRelease(SQLBase):
                  ' AND BinaryPackageRelease.build = Build.id '
                  ' AND Build.sourcepackagerelease = %i' % self.id)
         return BinaryPackageRelease.select(query, clauseTables=clauseTables)
+
+    @property
+    def current_publishings(self):
+        """See ISourcePackageRelease."""
+        from canonical.launchpad.database.distroreleasesourcepackagerelease \
+            import DistroReleaseSourcePackageRelease
+        return[DistroReleaseSourcePackageRelease(
+            publishing.distrorelease,
+            self) for publishing in self.publishings]
+
 
     def architecturesReleased(self, distroRelease):
         # The import is here to avoid a circular import. See top of module.

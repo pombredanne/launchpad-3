@@ -265,14 +265,14 @@ class GetObject(DatabaseScaffold):
         from canonical.launchpad.database import Distribution
         from canonical.launchpad.hctapi import get_object
         obj = get_object("lp:///netapplet")
-        self.assertEquals(obj.distro, Distribution.byName("ubuntu"))
+        self.assertEquals(obj.distribution, Distribution.byName("ubuntu"))
 
     def testSourcePackageTrumpsProduct(self):
         """get_object returns a SourcePackage not a Product."""
-        from canonical.launchpad.database import SourcePackage
+        from canonical.launchpad.database import DistributionSourcePackage
         from canonical.launchpad.hctapi import get_object
         obj = get_object("lp:///netapplet")
-        self.failUnless(isinstance(obj, SourcePackage))
+        self.failUnless(isinstance(obj, DistributionSourcePackage))
 
     def testDistroSourcePackage(self):
         """get_object returns a source package in a distro."""
@@ -445,17 +445,6 @@ class ResolveObject(DatabaseScaffold):
         release = get_object("lp:///ubuntu/netapplet/1.0-1")
         self.assertEquals(resolve_object(package),
                           release.sourcepackagerelease)
-
-    def testSourcePackageNotPublished(self):
-        """resolve_object raises LaunchpadError if sp isn't published."""
-        from canonical.launchpad.database import SourcePackageName
-        from canonical.launchpad.database import Distribution
-        name = SourcePackageName.byName("mozilla-firefox")
-        distro = Distribution.byName("ubuntu")
-        package = distro.getSourcePackage(name)
-
-        from canonical.launchpad.hctapi import resolve_object, LaunchpadError
-        self.assertRaises(LaunchpadError, resolve_object, package)
 
     def testDistroRelease(self):
         """resolve_object raises LaunchpadError if given DistroRelease."""

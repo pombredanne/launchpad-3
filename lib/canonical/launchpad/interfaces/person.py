@@ -116,11 +116,13 @@ class IPerson(Interface):
         "so you cannot undo changes."))
     emblem = Bytes(
         title=_("Emblem"), required=False, description=_("A small image, "
-        "max 16x16 pixels, that can be used to refer to this team of person."),
+        "max 16x16 pixels and 8k in file size, that can be used to refer "
+        "to this team of person."),
         constraint=valid_emblem)
     hackergotchi = Bytes(
         title=_("Hackergotchi"), required=False, description=_("An image, "
-        "max 96x96 pixels, that will be displayed on your home page. "
+        "maximum 150x150 pixels, that will be displayed on your home page. "
+        "It should be no bigger than 50k in size. "
         "Traditionally this is a great big grinning image of your mug. "
         "Make the most of it."),
         constraint=valid_hackergotchi)
@@ -215,6 +217,8 @@ class IPerson(Interface):
         "want a method to check if a given person is a member of a team, "
         "you should probably look at IPerson.inTeam().")
     activemembers = Attribute("List of members with ADMIN or APPROVED status")
+    active_member_count = Attribute("The number of real people who are "
+        "members of this team.")
     administrators = Attribute("List of members with ADMIN status")
     expiredmembers = Attribute("List of members with EXPIRED status")
     approvedmembers = Attribute("List of members with APPROVED status")
@@ -702,6 +706,7 @@ class ITeamMembership(Interface):
 
     # Properties
     statusname = Attribute("Status Name")
+    is_admin = Attribute("True if the person is an admin of the team.")
 
     def isExpired():
         """Return True if this membership's status is EXPIRED."""

@@ -593,32 +593,48 @@ class BuilderGroup:
         queueItem.buildstart = None
 
     def countAvailable(self):
+        """Return the number of available builder slaves.
+
+        Return the number of not failed, accessible and IDLE slave.
+        Do not count failed and MANUAL MODE slaves.
+        """
         count = 0
         for builder in self.builders:
             if builder.builderok:
+                # refuse builders in MANUAL MODE
+                if builder.manual:
+                    self.logger.debug("Builder %s wasn't count due it is in "
+                                      "MANUAL MODE." % builder.url)
+                    continue
+
+                # ensure communication works
                 slave = builder.slave
                 try:
                     slavestatus = slave.status()
                 except Exception, e:
-                    self.logger.debug("Builder %s wasn't counted due (%s)."
+                    self.logger.debug("Builder %s wasn't counted due to (%s)."
                                       % (builder.url, e))
                     continue
+
+                # ensure slave is IDLE
                 if slavestatus[0] == BuilderStatus.IDLE:
                     count += 1
         return count
 
     def firstAvailable(self):
-        """Return the first available builder slave connection instance or
-        None if there is no one.
+        """Return the first available builder slave.
+
+        Refuse failed and MANUAL MODE slaves. Return None if there is none
+        available.
         """
         for builder in self.builders:
             if builder.builderok:
+                if builder.manual:
+                    continue
                 slave = builder.slave
                 try:
                     slavestatus = slave.status()
                 except Exception, e:
-                    self.logger.debug("Builder %s wasn't counted due (%s)."
-                                      % (builder.url, e))
                     continue
                 if slavestatus[0] == BuilderStatus.IDLE:
                     return builder

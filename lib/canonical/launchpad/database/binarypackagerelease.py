@@ -13,6 +13,9 @@ from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
 from canonical.launchpad.interfaces import (
     IBinaryPackageRelease, IBinaryPackageReleaseSet, NotFoundError)
 
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
+
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
 
 from canonical.launchpad.helpers import shortlist
@@ -25,18 +28,18 @@ class BinaryPackageRelease(SQLBase):
     implements(IBinaryPackageRelease)
     _table = 'BinaryPackageRelease'
     binarypackagename = ForeignKey(dbName='binarypackagename', 
-                                 foreignKey='BinaryPackageName', notNull=True)
+        foreignKey='BinaryPackageName', notNull=True)
     version = StringCol(dbName='version', notNull=True)
     summary = StringCol(dbName='summary', notNull=True, default="")
     description = StringCol(dbName='description', notNull=True)
     build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
     binpackageformat = EnumCol(dbName='binpackageformat', notNull=True,
-                               schema=dbschema.BinaryPackageFormat)
+        schema=dbschema.BinaryPackageFormat)
     component = ForeignKey(dbName='component', foreignKey='Component',
-                           notNull=True)
+        notNull=True)
     section = ForeignKey(dbName='section', foreignKey='Section', notNull=True)
     priority = EnumCol(dbName='priority',
-                       schema=dbschema.PackagePublishingPriority)
+        schema=dbschema.PackagePublishingPriority)
     shlibdeps = StringCol(dbName='shlibdeps')
     depends = StringCol(dbName='depends')
     recommends = StringCol(dbName='recommends')
@@ -48,26 +51,32 @@ class BinaryPackageRelease(SQLBase):
     installedsize = IntCol(dbName='installedsize')
     copyright = StringCol(dbName='copyright')
     licence = StringCol(dbName='licence')
-    architecturespecific = BoolCol(dbName='architecturespecific', notNull=True)
+    architecturespecific = BoolCol(dbName='architecturespecific',
+        notNull=True)
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     files = MultipleJoin('BinaryPackageFile',
-                         joinColumn='binarypackagerelease')
+        joinColumn='binarypackagerelease')
 
+    @property
     def title(self):
+        """See IBinaryPackageRelease."""
         return '%s-%s' % (self.binarypackagename.name, self.version)
-    title = property(title, None)
 
-
+    @property
     def name(self):
+        """See IBinaryPackageRelease."""
         return self.binarypackagename.name
-    name = property(name)
 
-    def maintainer(self):
-        # XXX: this method is unused or untested; there was a trivial
-        # AttributeError here that I fixed. Please test.
-        #   -- kiko, 2005-09-23
-        return self.build.sourcepackagerelease.sourcepackage.maintainer
-    maintainer = property(maintainer)
+    @property
+    def distributionsourcepackagerelease(self):
+        """See IBinaryPackageRelease."""
+        # import here to avoid circular import problems
+        from canonical.launchpad.database.distributionsourcepackagerelease \
+            import DistributionSourcePackageRelease
+        return DistributionSourcePackageRelease(
+            distribution=self.build.distribution,
+            sourcepackagerelease=self.build.sourcepackagerelease)
 
     def current(self, distroRelease):
         """Return currently published releases of this package for a given
