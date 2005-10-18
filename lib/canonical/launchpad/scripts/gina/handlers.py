@@ -70,7 +70,7 @@ class DisplaynameDecodingError(Exception):
 
 
 class ImporterHandler:
-    """ Import Handler class
+    """Import Handler class
 
     This class is used to handle the import process.
     """
@@ -126,22 +126,19 @@ class ImporterHandler:
 
 
     def _get_distroarchrelease_info(self, archtag):
-        """Get the distroarchrelease and processor using the architecturetag"""
-        dar = DistroArchRelease.selectOneBy(\
+        """Get distroarchrelease and processor from the architecturetag"""
+        dar = DistroArchRelease.selectOneBy(
                 distroreleaseID=self.distrorelease.id,
                 architecturetag=archtag)
         if not dar:
-            raise ValueError, \
-                  ("Error finding distroarchrelease for %s/%s"
-                   % (self.distrorelease.name, archtag)
-                   )
+            raise ValueError("Error finding distroarchrelease for %s/%s"
+                   % (self.distrorelease.name, archtag))
 
         processor = Processor.selectOneBy(familyID=dar.processorfamily.id)
         if not processor:
-            raise ValueError, \
-                  ("Unable to find a processor from the processor family"
-                   "chosen from %s/%s"
-                   % (self.distrorelease.name, archtag))
+            raise ValueError("Unable to find a processor from the "
+                             "processor family chosen from %s/%s"
+                             % (self.distrorelease.name, archtag))
 
         return {'distroarchrelease': dar, 'processor': processor}
 
@@ -262,14 +259,14 @@ class ImporterHandler:
 
     def publish_sourcepackages(self, pocket):
         publisher = SourcePublisher(self.distrorelease)
-        log.info('Starting sourcepackages publishing process...')
+        log.info('Publishing Source Packages...')
         # Goes over the imported sourcepackages publishing them.
         for spr in self.imported_sources:
             publisher.publish(spr, pocket)
 
     def publish_binarypackages(self, pocket):
         """Publish all the binaries present on the binary cache."""
-        log.info('Starting binarypackages publishing process...')
+        log.info('Publishing Binary Packages...')
         for archtag, binarypackages in self.imported_bins.iteritems():
             distroarchrelease = \
                               self.archinfo_cache[archtag]['distroarchrelease']
@@ -289,20 +286,21 @@ class BinaryPackageHandler:
 
     def checkBin(self, binarypackagedata, archinfo):
         try:
-            # First check if the Binarypackagename exists.
             bin_name = BinaryPackageName.byName(binarypackagedata.package)
         except SQLObjectNotFound:
+            # If the binary package's name doesn't exist, don't even
+            # bother looking for a binary package.
             return None
 
-        # Return the Binaripackage if exists.
         return self._getBinary(bin_name, binarypackagedata.version,
                                binarypackagedata.architecture,
                                archinfo)
 
     def _getBinary(self, binaryname, version, architecture, distroarchinfo):
-        """Returns a binarypackage if it exists."""
+        """Returns a binarypackage -- if it exists."""
 
-        clauseTables = ["BinaryPackageRelease", "Build", "DistroArchRelease"]
+        clauseTables = ["inaryPackageRelease", "Build",
+                        "DistroRelease", "DistroArchRelease"]
 
         query = ("BinaryPackageRelease.binarypackagename=%s AND "
                  "BinaryPackageRelease.version=%s AND "
@@ -404,6 +402,8 @@ class BinaryPackageHandler:
             architecturespecific = architecturespecific,
             copyright = None
             )
+        log.info('Binary Package Release %s (%s) created' % 
+                 (bin_name.name, bin.version))
 
         # Insert file into Librarian
 
@@ -429,18 +429,16 @@ class BinaryPackageHandler:
                           libraryfile=alias,
                           filetype=getFileType(fname))
 
-
-
     def ensureBuild(self, bin, srcpkg, distroarchinfo):
         """Ensure a build record."""
         distroarchrelease = distroarchinfo['distroarchrelease']
         processor = distroarchinfo['processor']
 
         # XXX: Check it later -- Debonzi 20050516
-##         if bin.gpg_signing_key_owner:
-##             key = self.getGPGKey(bin.gpg_signing_key, 
-##                                  *bin.gpg_signing_key_owner)
-##         else:
+        #         if bin.gpg_signing_key_owner:
+        #             key = self.getGPGKey(bin.gpg_signing_key, 
+        #                                  *bin.gpg_signing_key_owner)
+        #         else:
         key = None
 
         # Try to select a build.
@@ -492,7 +490,6 @@ class BinaryPackagePublisher:
                 binpkg_publishinghistory.status.title,
                 ))
             return
-
 
         # Create the Publishing entry with status PENDING.
         SecureBinaryPackagePublishingHistory(
@@ -638,7 +635,6 @@ class SourcePackageReleaseHandler:
                                binarypackagedata.source_version,
                                distrorelease)
 
-
     def checkSource(self, sourcepackagedata, distrorelease):
         """Check if a sourcepackagerelease is already on lp db.
 
@@ -655,24 +651,21 @@ class SourcePackageReleaseHandler:
                                sourcepackagedata.version,
                                distrorelease)
 
-
     def _getSource(self, sourcepackagename, version, distrorelease):
         """Returns a sourcepackagerelease by its name and version."""
 
         distributionID=distrorelease.distribution.id
-        spr = SourcePackageRelease.selectOne(
-            """
-            sourcepackagerelease.sourcepackagename = %s AND
-            sourcepackagerelease.version = '%s' AND
-            sourcepackagepublishing.sourcepackagerelease = 
-                sourcepackagerelease.id AND
-            sourcepackagepublishing.distrorelease = distrorelease.id AND
-            distrorelease.distribution = %s
-            """ % (sourcepackagename.id, version, distributionID),
+        query = """
+                sourcepackagerelease.sourcepackagename = %s AND
+                sourcepackagerelease.version = '%s' AND
+                sourcepackagepublishing.sourcepackagerelease = 
+                    sourcepackagerelease.id AND
+                sourcepackagepublishing.distrorelease = distrorelease.id AND
+                distrorelease.distribution = %s
+                """ % (sourcepackagename.id, version, distributionID)
+        spr = SourcePackageRelease.selectOne(query,
             clauseTables=['SourcePackagePublishing', 'DistroRelease'])
         return spr
-
-
 
     def createSourcePackageRelease(self, src, distrorelease):
         """Create a SourcePackagerelease and db dependencies if needed.
@@ -689,13 +682,13 @@ class SourcePackageReleaseHandler:
             log.warn('Could not create person %s' % src.maintainer[1])
             return None
 
-# XXX: Check it later -- Debonzi 20050516
-##         if src.dsc_signing_key_owner:
-##             key = self.getGPGKey(src.dsc_signing_key, 
-##                                  *src.dsc_signing_key_owner)
-##         else:
-##             key = None
- 
+        # XXX: Check it later -- Debonzi 20050516
+        #         if src.dsc_signing_key_owner:
+        #             key = self.getGPGKey(src.dsc_signing_key, 
+        #                                  *src.dsc_signing_key_owner)
+        #         else:
+        #             key = None
+
         key = None # FIXIT
         dsc = encoding.guess(src.dsc)
 
@@ -737,7 +730,8 @@ class SourcePackageReleaseHandler:
                                    section=sectionID,
                                    manifest=None,
                                    uploaddistrorelease=distrorelease.id)
-
+        log.info('Source Package Release %s (%s) created' % 
+                 (name.name, src.version))
 
         # Insert file into the library and create the
         # SourcePackageReleaseFile entry on lp db.
@@ -806,7 +800,6 @@ class SourcePublisher:
             sourcepackagerelease.version,
             ))
 
-
     def _checkPublishing(self, sourcepackagerelease, distrorelease):
         """Query for the publishing entry"""
         return SecureSourcePackagePublishingHistory.selectOneBy(
@@ -834,9 +827,6 @@ class DistroHandler:
             raise ValueError, "Component %s not found" % component
 
         self.compcache[component] = ret
-        log.info("Component %s is %s" % \
-              (component, self.compcache[component].id))
-
         return ret
 
     def ensureSection(self, section):
@@ -854,7 +844,6 @@ class DistroHandler:
             ret = Section(name=section)
 
         self.sectcache[section] = ret
-        log.info("Section %s is %s" % (section, self.sectcache[section].id))
         return ret
 
 
