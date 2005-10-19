@@ -17,7 +17,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
-
+from canonical.launchpad.database.files import BinaryPackageFile
 from canonical.launchpad.helpers import shortlist
 
 from canonical.lp import dbschema
@@ -147,6 +147,20 @@ class BinaryPackageRelease(SQLBase):
         if item is None:
             raise NotFoundError("Version Not Found", version)
         return item
+
+    def addFile(self, file):
+        """See IBinaryPackageRelease."""
+        determined_filetype = None
+        if file.filename.endswith(".deb"):
+            determined_filetype = dbschema.BinaryPackageFileType.DEB
+        elif file.filename.endswith(".rpm"):
+            determined_filetype = dbschema.BinaryPackageFileType.RPM
+        elif file.filename.endswith(".udeb"):
+            determined_filetype = dbschema.BinaryPackageFileType.UDEB
+
+        return BinaryPackageFile(binarypackagerelease=self.id,
+                                 filetype=determined_filetype,
+                                 libraryfile=file.id)
 
 
 class BinaryPackageReleaseSet:

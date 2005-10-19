@@ -171,6 +171,28 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         given language, or a DummyDistroReleaseLanguage.
         """
 
+    def createUploadedSourcePackageRelease(sourcepackagename, version,
+            maintainer, dateuploaded, builddepends, builddependsindep,
+            architecturehintlist, component, creator, urgency,
+            changelog, dsc, dscsigningkey, section, manifest):
+        """Create a sourcepackagerelease with this distrorelease set to
+        be the uploadeddistrorelease.
+        """
+
+    def getComponentByName(name):
+        """Get the named component.
+
+        Raise NotFoundError if the component is not in the permitted component
+        list for this distrorelease.
+        """
+
+    def getSectionByName(name):
+        """Get the named section.
+
+        Raise NotFoundError if the section is not in the permitted section
+        list for this distrorelease.
+        """
+
     def removeOldCacheItems():
         """Delete any records that are no longer applicable."""
 
@@ -188,7 +210,6 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         """Search through the packge cache for this distrorelease and return
         DistroReleaseBinaryPackage objects that match the given text.
         """
-
 
 
 class IDistroReleaseSet(Interface):

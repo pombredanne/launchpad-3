@@ -120,6 +120,7 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (48, 'zen@shangri-la
 INSERT INTO emailaddress (id, email, person, status) VALUES (49, 'stub@fastmail.fm', 22, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (50, 'marilize@hbd.com', 55, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (51, 'jordi@ubuntu.com', 56, 4);
+INSERT INTO emailaddress (id, email, person, status) VALUES (52, 'daniel.silverstone@canonical.com', 26, 4);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'emailaddress'::pg_catalog.regclass;
@@ -128,7 +129,6 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'gpgkey'::pg_catalog.regclass;
 
 INSERT INTO gpgkey (id, "owner", keyid, fingerprint, active, algorithm, keysize) VALUES (1, 16, '12345678', 'ABCDEF0123456789ABCDDCBA0000111112345678', true, 17, 1024);
-
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'gpgkey'::pg_catalog.regclass;
 
@@ -381,6 +381,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (88, 52, 52);
 INSERT INTO teamparticipation (id, team, person) VALUES (89, 56, 56);
 INSERT INTO teamparticipation (id, team, person) VALUES (90, 30, 56);
 INSERT INTO teamparticipation (id, team, person) VALUES (91, 57, 16);
+INSERT INTO teamparticipation (id, team, person) VALUES (92, 17, 26);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'teamparticipation'::pg_catalog.regclass;
@@ -894,6 +895,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'section'::pg_catalog.regclass;
 
 INSERT INTO section (id, name) VALUES (1, 'default_section');
+INSERT INTO section (id, name) VALUES (2, 'editors');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'section'::pg_catalog.regclass;
@@ -5582,6 +5584,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'componentselection'::pg_catalog.regclass;
 
+INSERT INTO componentselection (id, distrorelease, component) VALUES (1, 3, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'componentselection'::pg_catalog.regclass;
@@ -5589,6 +5592,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sectionselection'::pg_catalog.regclass;
 
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (1, 3, 2);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sectionselection'::pg_catalog.regclass;

@@ -47,6 +47,10 @@ from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.bugtask import BugTaskSet, BugTask
 from canonical.launchpad.database.binarypackagerelease import (
         BinaryPackageRelease)
+from canonical.launchpad.database.component import Component
+from canonical.launchpad.database.section import Section
+from canonical.launchpad.database.sourcepackagerelease import (
+    SourcePackageRelease)
 from canonical.launchpad.helpers import shortlist
 
 
@@ -356,6 +360,49 @@ class DistroRelease(SQLBase):
         return Build.select(
             "distroarchrelease IN (%s) AND %s" % (arch_ids, status_clause),
             limit=limit, orderBy="-datebuilt")
+
+    def createUploadedSourcePackageRelease(self, sourcepackagename,
+            version, maintainer, dateuploaded, builddepends,
+            builddependsindep, architecturehintlist, component,
+            creator, urgency, changelog, dsc, dscsigningkey, section,
+            manifest):
+        """See IDistroRelease."""
+        return SourcePackageRelease(uploaddistrorelease=self.id,
+                                    sourcepackagename=sourcepackagename,
+                                    version=version,
+                                    maintainer=maintainer,
+                                    dateuploaded=dateuploaded,
+                                    builddepends=builddepends,
+                                    builddependsindep=builddependsindep,
+                                    architecturehintlist=architecturehintlist,
+                                    component=component,
+                                    creator=creator,
+                                    urgency=urgency,
+                                    changelog=changelog,
+                                    dsc=dsc,
+                                    dscsigningkey=dscsigningkey,
+                                    section=section,
+                                    manifest=manifest)
+
+    def getComponentByName(self, name):
+        """See IDistroRelease."""
+        comp = Component.byName(name)
+        if comp is None:
+            raise NotFoundError(name)
+        permitted = set(self.real_components)
+        if comp in permitted:
+            return comp
+        raise NotFoundError(name)
+
+    def getSectionByName(self, name):
+        """See IDistroRelease."""
+        section = Section.byName(name)
+        if section is None:
+            raise NotFoundError(name)
+        permitted = set(self.real_sections)
+        if section in permitted:
+            return section
+        raise NotFoundError(name)
 
     def removeOldCacheItems(self):
         """See IDistroRelease."""

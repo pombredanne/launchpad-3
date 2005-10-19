@@ -70,6 +70,17 @@ class ISourcePackageRelease(Interface):
     #      -- Steve Alexander, Fri Dec 10 14:28:41 UTC 2004
     architecturesReleased = Attribute("XXX")
 
+    def addFile(file):
+        """Add the provided library file alias (file) to the list of files
+        in this package.
+        """
+
+    def createBuild(distroarchrelease, processor):
+        """Create a build for the given distroarchrelease and return it.
+
+        If the processor isn't given, guess it from the distroarchrelease.
+        """
+
 
 class ISourcePackageReleaseSet(Interface):
 

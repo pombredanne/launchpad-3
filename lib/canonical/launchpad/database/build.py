@@ -21,6 +21,9 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
     IBuild, IBuildSet)
 
+from canonical.launchpad.database.binarypackagerelease import (
+    BinaryPackageRelease)
+
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.database.binarypackagerelease import (
@@ -96,6 +99,40 @@ class Build(SQLBase):
         raise IndexError, 'No binary package "%s" in build' % name
 
 
+    def createBinaryPackageRelease(self, binarypackagename, version,
+                                   summary, description,
+                                   binpackageformat, component,
+                                   section, priority, shlibdeps,
+                                   depends, recommends, suggests,
+                                   conflicts, replaces, provides,
+                                   essential, installedsize,
+                                   copyright, licence,
+                                   architecturespecific):
+        
+        """See IBuild."""
+        
+        return BinaryPackageRelease(build=self.id,
+                                    binarypackagename=binarypackagename,
+                                    version=version,
+                                    summary=summary,
+                                    description=description,
+                                    binpackageformat=binpackageformat,
+                                    component=component,
+                                    section=section,
+                                    priority=priority,
+                                    shlibdeps=shlibdeps,
+                                    depends=depends,
+                                    recommends=recommends,
+                                    suggests=suggests,
+                                    conflicts=conflicts,
+                                    replaces=replaces,
+                                    provides=provides,
+                                    essential=essential,
+                                    installedsize=installedsize,
+                                    copyright=copyright,
+                                    licence=licence,
+                                    architecturespecific=architecturespecific)
+
 
 class BuildSet:
     implements(IBuildSet)
@@ -110,4 +147,8 @@ class BuildSet:
                  )
 
         return Build.select(query, clauseTables=clauseTables)
+
+    def getByBuildID(self, id):
+        """See IBuildSet."""
+        return Build.get(id)
 

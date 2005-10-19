@@ -11,11 +11,13 @@ from zope.component import getUtility
 
 from sqlobject import StringCol, ForeignKey, MultipleJoin
 
+from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
-    EnumCol, SourcePackageUrgency, SourcePackageFormat)
+    EnumCol, SourcePackageUrgency, SourcePackageFormat,
+    SourcePackageFileType, BuildStatus)
 
 from canonical.launchpad.interfaces import (ISourcePackageRelease,
     ISourcePackageReleaseSet)
@@ -27,6 +29,7 @@ from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishing)
 
+from canonical.launchpad.database.files import SourcePackageReleaseFile
 
 class SourcePackageRelease(SQLBase):
     implements(ISourcePackageRelease)
@@ -150,6 +153,35 @@ class SourcePackageRelease(SQLBase):
             % (distroRelease.id, self.id),
             clauseTables=clauseTables))
         return archReleases
+
+    def addFile(self, file):
+        """See ISourcePackageRelease."""
+        determined_filetype = None
+        if file.filename.endswith(".dsc"):
+            determined_filetype = SourcePackageFileType.DSC
+        elif file.filename.endswith(".orig.tar.gz"):
+            determined_filetype = SourcePackageFileType.ORIG
+        elif file.filename.endswith(".diff.gz"):
+            determined_filetype = SourcePackageFileType.DIFF
+        elif file.filename.endswith(".tar.gz"):
+            determined_filetype = SourcePackageFileType.TARBALL
+
+        return SourcePackageReleaseFile(sourcepackagerelease=self.id,
+                                        filetype=determined_filetype,
+                                        libraryfile=file.id)
+
+    def createBuild(self, distroarchrelease, processor=None):
+        """See ISourcePackageRelease."""
+        # Guess a processor if one is not provided
+        if processor is None:
+            pf = distroarchrelease.processorfamily
+            # We guess at the first processor in the family
+            processor = shortlist(pf.processors)[0]
+            
+        return Build(distroarchrelease=distroarchrelease.id,
+                     sourcepackagerelease=self.id,
+                     processor=processor.id,
+                     buildstate=BuildStatus.NEEDSBUILD)
 
 
 class SourcePackageReleaseSet:
