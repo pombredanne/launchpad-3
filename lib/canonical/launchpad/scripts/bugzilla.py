@@ -32,56 +32,35 @@ from canonical.lp.dbschema import (
 
 logger = logging.getLogger('canonical.launchpad.scripts.bugzilla')
 
-def add_tz(dt):
+def _add_tz(dt):
     """Convert a naiive datetime value to a UTC datetime value."""
     assert dt.tzinfo is None, 'add_tz() only accepts naiive datetime values'
     return datetime.datetime(dt.year, dt.month, dt.day,
                              dt.hour, dt.minute, dt.second,
                              dt.microsecond, tzinfo=pytz.timezone('UTC'))
 
+class BugzillaBackend:
+    """A wrapper for all the MySQL database access.
 
-class PersonMapping:
-    """A class to keep track of a mapping from Bugzilla people to
-    Launchpad people."""
-
+    The main purpose of this is to make it possible to test the rest
+    of the import code without access to a MySQL database.
+    """
     def __init__(self, conn):
+        self.conn = conn
         self.cursor = conn.cursor()
-        self.personset = getUtility(IPersonSet)
-        self.mapping = {}
 
-    def get(self, bugzilla_id):
-        person = None
+    def lookupUser(self, user_id):
+        """Look up information about a particular Bugzilla user ID"""
+        self.cursor.execute('SELECT login_name, realname '
+                            '  FROM profiles '
+                            '  WHERE userid = %d' % user_id)
+        if self.cursor.rowcount != 1:
+            raise ValueError('could not look up user %d' % user_id)
+        (login_name, realname) = self.cursor.fetchone()
+        return (login_name, realname)
 
-        # Try and get the person using a cache of the mapping.  We
-        # check to make sure the person still exists and has not been
-        # merged.
-        launchpad_id = self.mapping.get(bugzilla_id)
-        if launchpad_id is not None:
-            try:
-                person = self.personset[launchpad_id]
-                if person.merged is not None:
-                    person = None
-            except KeyError:
-                pass
-
-        # look up the person
-        if person is None:
-            self.cursor.execute('SELECT login_name, realname '
-                                '  FROM profiles '
-                                '  WHERE userid = %d' % bugzilla_id)
-            (email, displayname) = self.cursor.fetchone()
-
-            person = self.personset.ensurePerson(
-                email=email, displayname=displayname)
-            self.mapping[bugzilla_id] = person.id
-
-        return person
-
-
-class Bug:
-    """Representation of a Bugzilla Bug"""
-    def __init__(self, conn, bug_id):
-        self.cursor = conn.cursor()
+    def getBugInfo(self, bug_id):
+        """Retrieve information about a bug."""
         self.cursor.execute(
             'SELECT bug_id, assigned_to, bug_file_loc, bug_severity, '
             '    bug_status, creation_ts, short_desc, op_sys, priority, '
@@ -92,15 +71,62 @@ class Bug:
             '    INNER JOIN products ON bugs.product_id = products.id '
             '    INNER JOIN components ON bugs.component_id = components.id '
             '  WHERE bug_id = %d' % bug_id)
+        if self.cursor.rowcount != 1:
+            raise ValueError('could not look up bug %d' % bug_id)
+        (bug_id, assigned_to, bug_file_loc, bug_severity, bug_status,
+         creation_ts, short_desc, op_sys, priority, product,
+         rep_platform, reporter, version, component, resolution,
+         target_milestone, qa_contact, status_whiteboard, keywords,
+         alias) = self.cursor.fetchone()
+
+        creation_ts = _add_tz(creation_ts)
+
+        return (bug_id, assigned_to, bug_file_loc, bug_severity,
+                bug_status, creation_ts, short_desc, op_sys, priority,
+                product, rep_platform, reporter, version, component,
+                resolution, target_milestone, qa_contact,
+                status_whiteboard, keywords, alias)
+
+    def getBugCcs(self, bug_id):
+        """Get the IDs of the people CC'd to the bug."""
+        self.cursor.execute('SELECT who FROM cc WHERE bug_id = %d'
+                            % bug_id)
+        return [row[0] for row in self.cursor.fetchall()]
+
+    def getBugComments(self, bug_id):
+        """Get the comments for the bug."""
+        self.cursor.execute('SELECT who, bug_when, thetext '
+                            '  FROM longdescs '
+                            '  WHERE bug_id = %d '
+                            '  ORDER BY bug_when' % bug_id)
+        return [(who, _add_tz(when), thetext)
+                 for (who, when, thetext) in self.cursor.fetchall()]
+
+    def getBugAttachments(self, bug_id):
+        """Get the attachments for the bug."""
+        self.cursor.execute('SELECT attach_id, creation_ts, description, '
+                            '    mimetype, ispatch, filename, thedata, '
+                            '    submitter_id '
+                            '  FROM attachments '
+                            '  WHERE bug_id = %d '
+                            '  ORDER BY attach_id' % bug_id)
+        return [(attach_id, _add_tz(creation_ts), description, mimetype,
+                 ispatch, filename, thedata, submitter_id)
+                for (attach_id, creation_ts, description,
+                     mimetype, ispatch, filename, thedata,
+                     submitter_id) in self.cursor.fetchall()]
+
+
+class Bug:
+    """Representation of a Bugzilla Bug"""
+    def __init__(self, backend, bug_id):
+        self.backend = backend
         (self.bug_id, self.assigned_to, self.bug_file_loc, self.bug_severity,
          self.bug_status, self.creation_ts, self.short_desc, self.op_sys,
          self.priority, self.product, self.rep_platform, self.reporter,
          self.version, self.component, self.resolution,
          self.target_milestone, self.qa_contact, self.status_whiteboard,
-         self.keywords, self.alias) = self.cursor.fetchone()
-
-        # fix up date ...
-        self.creation_ts = add_tz(self.creation_ts)
+         self.keywords, self.alias) = backend.getBugInfo(bug_id)
 
         self._ccs = None
         self._comments = None
@@ -110,41 +136,21 @@ class Bug:
     def ccs(self):
         """Return the IDs of people CC'd to this bug"""
         if self._ccs is not None: return self._ccs
-        
-        self.cursor.execute('SELECT who FROM cc WHERE bug_id = %d'
-                            % self.bug_id)
-        self._ccs = [row[0] for row in self.cursor.fetchall()]
+        self._ccs = self.backend.getBugCcs(self.bug_id)
         return self._ccs
 
     @property
     def comments(self):
         """Return the comments attached to this bug"""
         if self._comments is not None: return self._comments
-        
-        self.cursor.execute('SELECT who, bug_when, thetext '
-                            '  FROM longdescs '
-                            '  WHERE bug_id = %d '
-                            '  ORDER BY bug_when' % self.bug_id)
-        self._comments = []
-        for row in self.cursor.fetchall():
-            self._comments.append((row[0], add_tz(row[1]), row[2]))
+        self._comments = self.backend.getBugComments(self.bug_id)
         return self._comments
 
     @property
     def attachments(self):
         """Return the attachments for this bug"""
         if self._attachments is not None: return self._attachments
-
-        self.cursor.execute('SELECT attach_id, creation_ts, description, '
-                            '    mimetype, ispatch, filename, thedata, '
-                            '    submitter_id '
-                            '  FROM attachments '
-                            '  WHERE bug_id = %d '
-                            '  ORDER BY attach_id' % self.bug_id)
-        self._attachments = []
-        for row in self.cursor.fetchall():
-            self._attachments.append((row[0], add_tz(row[1]), row[2], row[3],
-                                      bool(row[4]), row[5], row[6], row[7]))
+        self._attachments = self.backend.getBugAttachments(self.bug_id)
         return self._attachments
 
     def map_severity(self, bugtask):
@@ -205,13 +211,39 @@ class Bugzilla:
     bugtracker_name = 'ubuntu-bugzilla'
 
     def __init__(self, conn):
-        self.conn = conn
-        self.cursor = conn.cursor
+        self.backend = BugzillaBackend(conn)
         self.bugtracker = getUtility(IBugTrackerSet)[self.bugtracker_name]
         self.bugset = getUtility(IBugSet)
         self.cveset = getUtility(ICveSet)
         self.extrefset = getUtility(IBugExternalRefSet)
-        self.people = PersonMapping(conn)
+        self.personset = getUtility(IPersonSet)
+        self.person_mapping = {}
+
+    def person(self, bugzilla_id):
+        """Get the Launchpad person corresponding to the given Bugzilla ID"""
+        person = None
+
+        # Try and get the person using a cache of the mapping.  We
+        # check to make sure the person still exists and has not been
+        # merged.
+        launchpad_id = self.person_mapping.get(bugzilla_id)
+        if launchpad_id is not None:
+            try:
+                person = self.personset[launchpad_id]
+                if person.merged is not None:
+                    person = None
+            except KeyError:
+                pass
+
+        # look up the person
+        if person is None:
+            email, displayname = self.backend.lookupUser(bugzilla_id)
+
+            person = self.personset.ensurePerson(
+                email=email, displayname=displayname)
+            self.person_mapping[bugzilla_id] = person.id
+
+        return person
 
     def get_lp_bugtarget(self, bug):
         """Returns a dictionary of arguments to createBug() that correspond
@@ -245,21 +277,21 @@ class Bugzilla:
                         'Launchpad bug %d', bug_id, lp_bug.id)
             return lp_bug
 
-        bug = Bug(self.conn, bug_id)
+        bug = Bug(self.backend, bug_id)
 
         comments = bug.comments[:]
 
         # create a message for the initial comment:
         msgset = getUtility(IMessageSet)
         who, when, text = comments.pop(0)
-        msg = msgset.fromText(bug.short_desc, text, self.people.get(who), when)
+        msg = msgset.fromText(bug.short_desc, text, self.person(who), when)
 
         # create the bug
         target = self.get_lp_bugtarget(bug)
         lp_bug = self.bugset.createBug(msg=msg,
                                        datecreated=bug.creation_ts,
                                        title=bug.short_desc,
-                                       owner=self.people.get(bug.reporter),
+                                       owner=self.person(bug.reporter),
                                        **target)
 
         # add the bug watch:
@@ -269,15 +301,15 @@ class Bugzilla:
         lp_bug.findCvesInText(text)
         for (who, when, text) in comments:
              msg = msgset.fromText(msg.followup_title, text,
-                                   self.people.get(who), when)
+                                   self.person(who), when)
              lp_bug.linkMessage(msg)
              lp_bug.findCvesInText(text)
 
         # subscribe QA contact and CC's
         if bug.qa_contact:
-            lp_bug.subscribe(self.people.get(bug.qa_contact))
+            lp_bug.subscribe(self.person(bug.qa_contact))
         for cc in bug.ccs:
-            lp_bug.subscribe(self.people.get(cc))
+            lp_bug.subscribe(self.person(cc))
 
         # if a URL is associated with the bug, add it:
         if bug.bug_file_loc:
@@ -288,7 +320,7 @@ class Bugzilla:
         # translate bugzilla status and severity to LP equivalents
         task = lp_bug.bugtasks[0]
         task.datecreated = bug.creation_ts
-        task.assignee = self.people.get(bug.assigned_to)
+        task.assignee = self.person(bug.assigned_to)
         task.statusexplanation = bug.status_whiteboard
         bug.map_severity(task)
         bug.map_priority(task)
@@ -316,7 +348,7 @@ class Bugzilla:
                 # could not find the add message, so create one:
                 msg = msgset.fromText(description,
                                       'Created attachment %s' % filename,
-                                      self.people.get(submitter_id),
+                                      self.person(submitter_id),
                                       creation_ts)
                 lp_bug.linkMessage(msg)
 

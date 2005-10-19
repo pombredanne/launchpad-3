@@ -1,6 +1,8 @@
 import logging
 import MySQLdb
 
+import _pythonpath
+
 from zope.component import getUtility
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import execute_zcml_for_scripts
@@ -20,6 +22,6 @@ setupInteraction(person)
 db = MySQLdb.connect(db='bugs_warty')
 bz = bugzilla.Bugzilla(db)
 
-bz.handle_bug(6000)
+bz.handle_bug(6002)
 
 ztm.commit()
