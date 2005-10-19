@@ -211,7 +211,10 @@ class Bugzilla:
     bugtracker_name = 'ubuntu-bugzilla'
 
     def __init__(self, conn):
-        self.backend = BugzillaBackend(conn)
+        if conn is not None:
+            self.backend = BugzillaBackend(conn)
+        else:
+            self.backend = None
         self.bugtracker = getUtility(IBugTrackerSet)[self.bugtracker_name]
         self.bugset = getUtility(IBugSet)
         self.cveset = getUtility(ICveSet)
@@ -221,11 +224,12 @@ class Bugzilla:
 
     def person(self, bugzilla_id):
         """Get the Launchpad person corresponding to the given Bugzilla ID"""
-        person = None
+        if bugzilla_id == 0: return None
 
         # Try and get the person using a cache of the mapping.  We
         # check to make sure the person still exists and has not been
         # merged.
+        person = None
         launchpad_id = self.person_mapping.get(bugzilla_id)
         if launchpad_id is not None:
             try:
@@ -361,3 +365,5 @@ class Bugzilla:
             getUtility(IBugAttachmentSet).create(
                 bug=lp_bug, filealias=filealias, attach_type=attach_type,
                 title=description, message=msg)
+
+        return lp_bug

@@ -1,0 +1,331 @@
+Bugzilla Import
+---------------
+
+The bugzilla import process makes use of a direct connection to the
+database.  In order to aid in testing, all the database accesses are
+performed through a single class that can be replaced.
+
+We will start by defining a fake backend and some fake information for
+it to return:
+
+  >>> from datetime import datetime
+  >>> import pytz
+  >>> UTC = pytz.timezone('UTC')
+
+  >>> users = [
+  ...     ('test@canonical.com', 'Sample User'),
+  ...     ('foo.bar@canonical.com', 'Foo Bar'),
+  ...     ('new.user@canonical.com', 'New User')  # <- not in Launchpad
+  ...     ]
+
+  >>> buginfo = [
+  ...         (1,                 # bug_id
+  ...          1,                 # assigned_to
+  ...          '',                # bug_file_loc
+  ...          'normal',          # bug_severity
+  ...          'NEW',             # status
+  ...          datetime(2005, 4, 1, tzinfo=UTC), # creation
+  ...          'Test bug 1',      # short_desc,
+  ...          'Linux',           # op_sys
+  ...          'P2',              # priority
+  ...          'Ubuntu',          # product
+  ...          'AMD64',           # rep_platform
+  ...          1,                 # reporter
+  ...          '--',              # version
+  ...          'mozilla-firefox', # component
+  ...          '',                # resolution
+  ...          '--',              # milestone
+  ...          0,                 # qa_contact
+  ...          'status',          # status_whiteboard
+  ...          '',                # keywords
+  ...          ''),               # alias
+  ...         # A WONTFIX bug on a non-existant distro package
+  ...         (2, 1, 'http://www.ubuntu.com', 'enhancement', 'RESOLVED',
+  ...          datetime(2005, 4, 2, tzinfo=UTC), 'Test bug 2', 
+  ...          'Linux', 'P1', 'Ubuntu', 'i386', 2, '--', 'unknown',
+  ...          'WONTFIX', '--', 0, '', '', ''),
+  ...         # An accepted bug:
+  ...         (3, 2, 'http://www.ubuntu.com', 'blocker', 'ASSIGNED',
+  ...          datetime(2005, 4, 3, tzinfo=UTC), 'Test bug 3', 
+  ...          'Linux', 'P1', 'Ubuntu', 'i386', 1, '--', 'netapplet',
+  ...          '', '--', 0, '', '', ''),
+  ...         # A fixed bug
+  ...         (4, 1, 'http://www.ubuntu.com', 'blocker', 'CLOSED',
+  ...          datetime(2005, 4, 4, tzinfo=UTC), 'Test bug 4',
+  ...          'Linux', 'P1', 'Ubuntu', 'i386', 1, '--', 'mozilla-firefox',
+  ...          'FIXED', '--', 0, '', '', ''),
+  ...     ]
+
+  >>> ccs = [[], [3], [], []]
+
+  >>> comments = [
+  ...     [(1, datetime(2005, 4, 1, tzinfo=UTC), 'First comment'),
+  ...      (2, datetime(2005, 4, 1, 1, tzinfo=UTC), 'Second comment')],
+  ...     [(1, datetime(2005, 4, 2, tzinfo=UTC), 'First comment'),
+  ...      (2, datetime(2005, 4, 2, 1, tzinfo=UTC), 'Second comment')],
+  ...     [(2, datetime(2005, 4, 3, tzinfo=UTC), 'First comment'),
+  ...      (1, datetime(2005, 4, 3, 1, tzinfo=UTC),
+  ...       'This is related to CVE-2005-1234'),
+  ...      (2, datetime(2005, 4, 3, 2, tzinfo=UTC),
+  ...       'Created an attachment (id=1)')],
+  ...     [(1, datetime(2005, 4, 4, tzinfo=UTC), 'First comment')]
+  ...     ]
+
+  >>> attachments = [
+  ...     [], [],
+  ...     [(1, datetime(2005, 4, 3, 2, tzinfo=UTC), 'An attachment',
+  ...       'text/x-patch', True, 'foo.patch', 'the data', 2)],
+  ...     []
+  ...     ]
+
+  >>> class FakeBackend:
+  ...     def lookupUser(self, user_id):
+  ...         return users[user_id - 1]
+  ...     def getBugInfo(self, bug_id):
+  ...         return buginfo[bug_id - 1]
+  ...     def getBugCcs(self, bug_id):
+  ...         return ccs[bug_id - 1]
+  ...     def getBugComments(self, bug_id):
+  ...         return comments[bug_id - 1]
+  ...     def getBugAttachments(self, bug_id):
+  ...         return attachments[bug_id - 1]
+
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.ftests import login, ANONYMOUS
+  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+  >>> from canonical.launchpad.interfaces import (
+  ...     IPersonSet, IBugSet, IBugTrackerSet)
+  >>> from canonical.lp.dbschema import BugTrackerType
+  >>> from canonical.launchpad.scripts import bugzilla
+  >>> LibrarianTestSetup().setUp()
+
+Some setup, including the creation of a bug tracker record:
+
+  >>> login('test@canonical.com')
+
+  >>> person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+  >>> bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
+  ...     'http://bugzilla.ubuntu.com', person,
+  ...     BugTrackerType.BUGZILLA, name='ubuntu-bugzilla')
+
+Now we create a bugzilla.Bugzilla instance to handle the import, using
+our fake backend data:
+
+  >>> bz = bugzilla.Bugzilla(None)
+  >>> bz.backend = FakeBackend()
+
+
+In order to verify that things get imported correctly, the following
+function will be used:
+
+  >>> def bugInfo(bug):
+  ...     print 'Title:', bug.title
+  ...     print 'Reporter:', bug.owner.displayname
+  ...     print 'Created:', bug.datecreated
+  ...     print 'Subscribers:'
+  ...     for sub in bug.subscriptions:
+  ...         print '    %s' % sub.person.displayname
+  ...     for task in bug.bugtasks:
+  ...         print 'Task:', task.targetname
+  ...         print '    Status:', task.status.name
+  ...         if task.product:
+  ...             print '    Product:', task.product.name
+  ...         if task.distribution:
+  ...             print '    Distro:', task.distribution.name
+  ...         if task.sourcepackagename:
+  ...             print '    Source package:', task.sourcepackagename.name
+  ...         if task.binarypackagename:
+  ...             print '    Binary package:', task.binarypackagename.name
+  ...         if task.assignee:
+  ...             print '    Assignee:', task.assignee.displayname
+  ...         if task.priority:
+  ...             print '    Priority:', task.priority.name
+  ...         if task.severity:
+  ...             print '    Severity:', task.severity.name
+  ...         if task.statusexplanation:
+  ...             print '    Explanation:', task.statusexplanation
+  ...     if bug.cves:
+  ...         print 'CVEs:'
+  ...     for cve in bug.cves:
+  ...         print '    %s' % cve.displayname
+  ...     print 'Messages:'
+  ...     for message in bug.messages:
+  ...         print '    Author:', message.owner.displayname
+  ...         print '    Date:', message.datecreated
+  ...         print '    Subject:', message.subject
+  ...         print '    %s' % message.contents
+  ...         print
+  ...     if bug.attachments:
+  ...         print 'Attachments:'
+  ...     for attachment in bug.attachments:
+  ...         print '    Title:', attachment.title
+  ...         print '    Type:', attachment.type.name
+  ...         print '    Name:', attachment.libraryfile.filename
+  ...         print '    Mime type:', attachment.libraryfile.mimetype
+
+
+Now we import bug #1 and check the results:
+
+  >>> bug = bz.handle_bug(1)
+  >>> bugInfo(bug)
+  Title: Test bug 1
+  Reporter: Sample Person
+  Created: 2005-04-01 00:00:00+00:00
+  Subscribers:
+      Sample Person
+  Task: mozilla-firefox (ubuntu)
+      Status: NEW
+      Distro: ubuntu
+      Source package: mozilla-firefox
+      Binary package: mozilla-firefox
+      Assignee: Sample Person
+      Priority: MEDIUM
+      Severity: NORMAL
+      Explanation: status (Bugzilla status=NEW, product=Ubuntu, component=mozilla-firefox)
+  Messages:
+      Author: Sample Person
+      Date: 2005-04-01 00:00:00+00:00
+      Subject: Test bug 1
+      First comment
+  <BLANKLINE>
+      Author: Foo Bar
+      Date: 2005-04-01 01:00:00+00:00
+      Subject: Re: Test bug 1
+      Second comment
+  <BLANKLINE>
+
+As well as importing the bug, a bug watch is created, linking the new
+Launchpad bug to the original Bugzilla bug:
+
+  >>> linked_bug = getUtility(IBugSet).queryByRemoteBug(bugtracker, 1)
+  >>> linked_bug == bug
+  True
+
+This bug watch link is used to prevent multiple imports of the same
+bug.
+
+  >>> second_import = bz.handle_bug(1)
+  >>> bug == second_import
+  True
+
+
+Next we try bug #2, which is assigned to a non-existant source
+package, so gets filed directly against the distribution.  Some things
+to notice:
+
+ * A Launchpad account is created for new.user@canonical.com as a side
+   effect of the import.
+ * The "RESOLVED WONTFIX" status is converted to a status of REJECTED
+   and a priority of WONTFIX
+
+Notice that the import also creates a Launchpad account for "New
+Person" as a side effect, since that person was subscribed to the
+Bugzilla bug.
+
+  >>> print getUtility(IPersonSet).getByEmail('new.user@canonical.com')
+  None
+  >>> bug = bz.handle_bug(2)
+  >>> bugInfo(bug)
+  Title: Test bug 2
+  Reporter: Foo Bar
+  Created: 2005-04-02 00:00:00+00:00
+  Subscribers:
+      Foo Bar
+      New User
+  Task: ubuntu
+      Status: REJECTED
+      Distro: ubuntu
+      Assignee: Sample Person
+      Priority: WONTFIX
+      Severity: WISHLIST
+      Explanation: Bugzilla status=RESOLVED WONTFIX, product=Ubuntu, component=unknown
+  Messages:
+      Author: Sample Person
+      Date: 2005-04-02 00:00:00+00:00
+      Subject: Test bug 2
+      First comment
+  <BLANKLINE>
+      Author: Foo Bar
+      Date: 2005-04-02 01:00:00+00:00
+      Subject: Re: Test bug 2
+      Second comment
+  <BLANKLINE>
+  >>> getUtility(IPersonSet).getByEmail('new.user@canonical.com')
+  <Person at ...>
+
+
+Now import an ASSIGNED bug.  Things to note about this import:
+
+ * the second comment mentions a CVE, causing a link between the bug
+   and CVE to be established.
+ * The attachment on this bug is imported
+
+  >>> bug = bz.handle_bug(3)
+  >>> bugInfo(bug)
+  Title: Test bug 3
+  Reporter: Sample Person
+  Created: 2005-04-03 00:00:00+00:00
+  Subscribers:
+      Sample Person
+  Task: netapplet (ubuntu)
+      Status: ACCEPTED
+      Distro: ubuntu
+      Source package: netapplet
+      Assignee: Foo Bar
+      Priority: HIGH
+      Severity: CRITICAL
+      Explanation: Bugzilla status=ASSIGNED, product=Ubuntu, component=netapplet
+  CVEs:
+      CVE-2005-1234
+  Messages:
+      Author: Foo Bar
+      Date: 2005-04-03 00:00:00+00:00
+      Subject: Test bug 3
+      First comment
+  <BLANKLINE>
+      Author: Sample Person
+      Date: 2005-04-03 01:00:00+00:00
+      Subject: Re: Test bug 3
+      This is related to CVE-2005-1234
+  <BLANKLINE>
+      Author: Foo Bar
+      Date: 2005-04-03 02:00:00+00:00
+      Subject: Re: Test bug 3
+      Created an attachment (id=1)
+  <BLANKLINE>
+  Attachments:
+      Title: An attachment
+      Type: PATCH
+      Name: foo.patch
+      Mime type: text/plain
+
+
+Next we import a fixed bug:
+
+  >>> bug = bz.handle_bug(4)
+  >>> bugInfo(bug)
+  Title: Test bug 4
+  Reporter: Sample Person
+  Created: 2005-04-04 00:00:00+00:00
+  Subscribers:
+      Sample Person
+  Task: mozilla-firefox (ubuntu)
+      Status: FIXED
+      Distro: ubuntu
+      Source package: mozilla-firefox
+      Binary package: mozilla-firefox
+      Assignee: Sample Person
+      Priority: HIGH
+      Severity: CRITICAL
+      Explanation: Bugzilla status=CLOSED FIXED, product=Ubuntu, component=mozilla-firefox
+  Messages:
+      Author: Sample Person
+      Date: 2005-04-04 00:00:00+00:00
+      Subject: Test bug 4
+      First comment
+  <BLANKLINE>
+
+
+Cleanup:
+
+  >>> LibrarianTestSetup().tearDown()
