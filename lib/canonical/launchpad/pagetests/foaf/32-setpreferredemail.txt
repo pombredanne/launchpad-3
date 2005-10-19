@@ -1,28 +1,23 @@
-  Now we set foo@baz.com as 'name16' preferred email address.
+  Now we set foo@baz.com as no-priv's preferred email address.
 
 
   >>> print http(r"""
-  ... GET /people/name16/+editemails HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... GET /people/no-priv/+editemails HTTP/1.1
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
   ...<h1>Your Email Addresses</h1>...
   ...
 
 
   >>> print http(r"""
-  ... POST /people/name16/+editemails HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
+  ... POST /people/no-priv/+editemails HTTP/1.1
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
   ... VALIDATED_SELECTED=foo%40baz.com&SET_PREFERRED=Set%20as%20Contact%20Address""")
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
   ...Your contact address has been changed to: foo@baz.com...
   ...

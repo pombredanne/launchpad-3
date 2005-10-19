@@ -23,7 +23,7 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
     SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND, OR
+from sqlobject.sqlbuilder import AND
 from canonical.database.sqlbase import (
     SQLBase, quote, cursor, sqlvalues, flush_database_updates,
     flush_database_caches)
@@ -39,18 +39,18 @@ from canonical.launchpad.interfaces import (
     IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
     ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
     ILoginTokenSet, KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken,
-    NotFoundError)
+    NotFoundError, IKarmaSet, IKarmaCacheSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.karma import KarmaCache, KarmaAction, Karma
+from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.shipit import ShippingRequest
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
-    TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType)
+    TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType, KarmaActionCategory)
 
 from canonical.foaf import nickname
 
@@ -307,10 +307,20 @@ class Person(SQLBase):
                 "No KarmaAction found with name '%s'." % action_name)
         Karma(person=self, action=action)
 
-    def getKarmaPointsByCategory(self, category):
+    def updateKarmaCache(self):
         """See IPerson."""
-        karmacache = KarmaCache.selectOneBy(personID=self.id, category=category)
-        return getattr(karmacache, 'karmavalue', 0)
+        cacheset = getUtility(IKarmaCacheSet)
+        karmaset = getUtility(IKarmaSet)
+        totalkarma = 0
+        for cat in KarmaActionCategory.items:
+            karmavalue = karmaset.getSumByPersonAndCategory(self, cat)
+            totalkarma += karmavalue
+            cache = cacheset.getByPersonAndCategory(self, cat)
+            if cache is None:
+                cache = cacheset.new(self, cat, karmavalue)
+            else:
+                cache.karmavalue = karmavalue
+        self.karma = totalkarma
 
     def inTeam(self, team):
         """See IPerson."""
@@ -1276,6 +1286,10 @@ class PersonSet:
         # Since we've updated the database behind SQLObject's back,
         # flush its caches.
         flush_database_caches()
+
+        # And now update the karma cache for both accounts.
+        from_person.updateKarmaCache()
+        to_person.updateKarmaCache()
 
 
 class EmailAddress(SQLBase):
