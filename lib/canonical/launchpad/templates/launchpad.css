@@ -662,16 +662,20 @@ table.listing, table.listing tbody {
   border-bottom: 1px solid #8cacbb;
 }
 table.listing th, table.listing td {
+  background: none;
   padding: 0.125em 0.25em;
 }
 table.listing th {
+  border: 1px solid #8cacbb;
+  text-transform: none;
   white-space: nowrap;
 }
 table.listing>tr>td, table.listing>tbody>tr>td {
   border: 1px #8cacbb;
   border-style: dotted none none none;
 }
-table.listing>tr.note>td, table.listing>tbody>tr.note>td {
+table.listing>tbody>tr.secondary>th, table.listing>tbody>tr.secondary>td,
+table.listing>tbody>tr.note>th, table.listing>tbody>tr.note>td {
   border-style: none;
 }
 table.listing>tr.note, table.listing>tbody>tr.note {
