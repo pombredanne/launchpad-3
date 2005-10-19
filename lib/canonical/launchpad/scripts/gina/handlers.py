@@ -16,50 +16,32 @@ from sqlobject import SQLObjectNotFound
 
 from zope.component import getUtility
 
-from canonical.launchpad.scripts.gina.library import getLibraryAlias
-from canonical.launchpad.scripts.gina.packages import SourcePackageData
+from canonical import encoding
+from canonical.config import config
+
+from canonical.database.sqlbase import quote
+from canonical.database.constants import nowUTC
+
+from canonical.archivepublisher import Poolifier, parse_tagfile
 
 from canonical.lp import initZopeless
+from canonical.lp.dbschema import PackagePublishingStatus, BuildStatus
+
+from canonical.launchpad.scripts import log
+from canonical.launchpad.scripts.gina.library import getLibraryAlias
+from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
+    urgencymap, prioritymap)
+
 from canonical.launchpad.database import (Distribution, DistroRelease,
     DistroArchRelease,Processor, SourcePackageName, SourcePackageRelease,
     Build, BinaryPackageRelease, BinaryPackageName,
     SecureBinaryPackagePublishingHistory,
     Component, Section, SourcePackageReleaseFile,
     SecureSourcePackagePublishingHistory, BinaryPackageFile)
-
 from canonical.launchpad.interfaces import IPersonSet, IBinaryPackageNameSet
 from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
-
-from canonical.database.sqlbase import quote
-
-from canonical.lp.dbschema import (PackagePublishingStatus,
-    PackagePublishingPriority, SourcePackageUrgency, BuildStatus)
-
-from canonical.launchpad.scripts import log
-from canonical.database.constants import nowUTC
-from canonical.config import config
-from canonical import encoding
 from canonical.launchpad.validators.version import valid_debian_version
 
-from canonical.archivepublisher import Poolifier, parse_tagfile
-
-priomap = {
-    "low": SourcePackageUrgency.LOW,
-    "medium": SourcePackageUrgency.MEDIUM,
-    "high": SourcePackageUrgency.HIGH,
-    "emergency": SourcePackageUrgency.EMERGENCY,
-    }
-
-prioritymap = {
-    "required": PackagePublishingPriority.REQUIRED,
-    "important": PackagePublishingPriority.IMPORTANT,
-    "standard": PackagePublishingPriority.STANDARD,
-    "optional": PackagePublishingPriority.OPTIONAL,
-    "extra": PackagePublishingPriority.EXTRA,
-    # Some binarypackages ended up with priority source, apparently
-    # because of a bug in dak.
-    "source": PackagePublishingPriority.EXTRA,
-}
 
 
 class DisplaynameDecodingError(Exception):
@@ -76,24 +58,19 @@ class ImporterHandler:
     """
     def __init__(self, distro_name, distrorelease_name, dry_run,
                  ktdb, poolroot, keyrings, pocket):
-        self.ztm = initZopeless(dbuser=config.gina.dbuser)
-
-        # Store basic import info.
-        self.distro = self._get_distro(distro_name)
-        self.distrorelease = self._get_distrorelease(distrorelease_name)
         self.dry_run = dry_run
 
-        # Info about architectures.
-        self.archinfo_cache = {}
+        self.ztm = initZopeless(dbuser=config.gina.dbuser)
 
+        self.distro = self._get_distro(distro_name)
+        self.distrorelease = self._get_distrorelease(distrorelease_name)
+
+        self.archinfo_cache = {}
         self.imported_sources = []
         self.imported_bins = {}
 
-        # Create a sourcepackagerelease handler
         self.sphandler = SourcePackageReleaseHandler(ktdb, poolroot,
                                                      keyrings, pocket)
-
-        # Create a binarypackage handler
         self.bphandler = BinaryPackageHandler(self.sphandler)
 
     def commit(self):
@@ -109,11 +86,12 @@ class ImporterHandler:
     #
     # Distro Stuff: Should go to DistroHandler
     #
+
     def _get_distro(self, name):
         """Return the distro database object by name."""
         distro = Distribution.selectOneBy(name=name)
         if not distro:
-            raise ValueError, "Error finding distribution for %s" % name
+            raise ValueError("Error finding distribution for %s" % name)
         return distro
 
     def _get_distrorelease(self, name):
@@ -121,9 +99,8 @@ class ImporterHandler:
         dr = DistroRelease.selectOneBy(name=name,
                                        distributionID=self.distro.id)
         if not dr:
-            raise ValueError, "Error finding distrorelease for %s" % name
+            raise ValueError("Error finding distrorelease for %s" % name)
         return dr
-
 
     def _get_distroarchrelease_info(self, archtag):
         """Get distroarchrelease and processor from the architecturetag"""
@@ -141,12 +118,6 @@ class ImporterHandler:
                              % (self.distrorelease.name, archtag))
 
         return {'distroarchrelease': dar, 'processor': processor}
-
-
-    #
-    # Distro Stuff
-    #
-
 
     def _cache_sprelease(self, sourcepackagerelease):
         """Append to the sourcepackagerelease imported list."""
@@ -167,7 +138,6 @@ class ImporterHandler:
 
         info = self._get_distroarchrelease_info(archtag)
         self.archinfo_cache[archtag] = info
-
 
     def preimport_sourcecheck(self, sourcepackagedata):
         """Check if SourcePackage already exists from a non-processed data"""
@@ -211,6 +181,7 @@ class ImporterHandler:
 
         self._cache_archinfo(archtag)
         distroarchinfo = self.archinfo_cache[archtag]
+        distrorelease = distroarchinfo['distroarchrelease'].distrorelease
 
         # Check if the binarypackage already exists.
         binarypackage = self.bphandler.checkBin(binarypackagedata,
@@ -223,16 +194,14 @@ class ImporterHandler:
             return binarypackage
 
         # Find the sourcepackagerelease that generate this binarypackage.
-        sourcepackage = self.sphandler.getSourceToBinary(
-            binarypackagedata,
-            distroarchinfo['distroarchrelease'].distrorelease)
+        sourcepackage = self.sphandler.getSourceForBinary(
+            binarypackagedata, distrorelease)
 
         if not sourcepackage:
             # We couldn't find a sourcepackagerelease in the database.
             # Perhaps we can opportunistically pick one out of the archive.
             sourcepackage = self.sphandler.findAndImportUnlistedSourcePackage(
-                binarypackagedata,
-                distroarchinfo['distroarchrelease'].distrorelease)
+                binarypackagedata, distrorelease)
 
         if not sourcepackage:
             # If the sourcepackagerelease is not imported, not way to import
@@ -353,28 +322,9 @@ class BinaryPackageHandler:
         else:
             licence = ''
 
-        # Get component and section from lp db.
         componentID = self.distro_handler.getComponentByName(bin.component).id
         sectionID = self.distro_handler.ensureSection(bin.section).id
-
-
-        # Check the architecture.
         architecturespecific = (bin.architecture == "all")
-
-        # Some binary packages lack priority. Better to import them with
-        # priority 'extra' than not to import them at all. Remove these
-        # lines when we don't want to import these packages anymore.
-        if not hasattr(bin, 'priority'):
-            bin.priority = 'extra'
-
-        # Sanity checking - priority has been known to be missing
-        bin_required = [
-            'version', 'filename', 'priority', 'installed_size',
-            ]
-        missing = [attr for attr in bin_required if not hasattr(bin, attr)]
-        if missing:
-            log.error("Binary package info missing %s" % ' '.join(missing))
-            return None
 
         # Create the binarypackage entry on lp db.
         binpkg = BinaryPackageRelease(
@@ -450,8 +400,7 @@ class BinaryPackageHandler:
 
         # Nothing to do if we fail we insert...
         log.debug("Unable to retrieve build for %d; making new one..." % (
-                srcpkg.id,
-                ))
+                srcpkg.id))
 
         # If does not exists, create a new record and return.
         build = Build(processor=processor.id,
@@ -620,8 +569,8 @@ class SourcePackageReleaseHandler:
 
         return spr
 
-    def getSourceToBinary(self, binarypackagedata, distrorelease):
-        """Get a SourcePackageRelease to a BinaryPackage"""
+    def getSourceForBinary(self, binarypackagedata, distrorelease):
+        """Get a SourcePackageRelease for a BinaryPackage"""
         try:
             spname = SourcePackageName.byName(binarypackagedata.source)
         except SQLObjectNotFound:
@@ -655,12 +604,12 @@ class SourcePackageReleaseHandler:
         distributionID=distrorelease.distribution.id
         query = """
                 sourcepackagerelease.sourcepackagename = %s AND
-                sourcepackagerelease.version = '%s' AND
+                sourcepackagerelease.version = %s AND
                 sourcepackagepublishing.sourcepackagerelease = 
                     sourcepackagerelease.id AND
                 sourcepackagepublishing.distrorelease = distrorelease.id AND
                 distrorelease.distribution = %s
-                """ % (sourcepackagename.id, version, distributionID)
+                """ % (sourcepackagename.id, quote(version), distributionID)
         spr = SourcePackageRelease.selectOne(query,
             clauseTables=['SourcePackagePublishing', 'DistroRelease'])
         return spr
@@ -698,14 +647,6 @@ class SourcePackageReleaseHandler:
         componentID = self.distro_handler.getComponentByName(src.component).id
         sectionID = self.distro_handler.ensureSection(src.section).id
 
-        # urgency is not null for us, but seems that some sourcepackage
-        # has no urgency.
-        if not hasattr(src, 'urgency'):
-            src.urgency = "low"
-
-        if src.urgency not in priomap:
-            src.urgency = "low"
-
         name = self.ensureSourcePackageName(src.package)
 
         if not valid_debian_version(src.version):
@@ -721,7 +662,7 @@ class SourcePackageReleaseHandler:
                                    architecturehintlist=src.architecture,
                                    component=componentID,
                                    creator=maintainer.id,
-                                   urgency=priomap[src.urgency],
+                                   urgency=urgencymap[src.urgency],
                                    changelog=changelog,
                                    dsc=dsc,
                                    dscsigningkey=key,
@@ -739,10 +680,10 @@ class SourcePackageReleaseHandler:
             try:
                 alias = getLibraryAlias(path, fname)
             except IOError:
-                log.info('Package %s not found on archive %s/%s' %(
+                log.info('  Package %s not found on archive %s/%s' %(
                     fname, path, fname))
             else:
-                log.info('Package %s included into library' % fname)
+                log.info('  Package %s included into library' % fname)
                 self.createSourcePackageReleaseFile(spr, fname, alias)
 
         return spr
@@ -806,7 +747,7 @@ class SourcePublisher:
 
 
 class DistroHandler:
-    """Class handler some distro related informations."""
+    """Handles distro related information."""
 
     def __init__(self):
         # Create a cache for components and sections
@@ -822,14 +763,14 @@ class DistroHandler:
         ret = Component.selectOneBy(name=component)
 
         if not ret:
-            raise ValueError, "Component %s not found" % component
+            raise ValueError("Component %s not found" % component)
 
         self.compcache[component] = ret
         return ret
 
     def ensureSection(self, section):
-        """Returns a section object by its name.
-        Create and return if does not exists.
+        """Returns a section object by its name. Create and return if it
+        doesn't exist.
         """
         if '/' in section:
             section = section[section.find('/')+1:]

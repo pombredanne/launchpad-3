@@ -10,18 +10,51 @@ the sources and binarypackages.
 
 __all__ = ['AbstractPackageData', 'SourcePackageData', 'BinaryPackageData']
 
-import re, os, tempfile, shutil, sys, time, rfc822
+import re
+import os
+import tempfile
+import shutil
+import rfc822
 
 from canonical.launchpad.scripts.gina.changelog import parse_changelog
 
 from canonical.database.constants import nowUTC
-from canonical.lp.dbschema import GPGKeyAlgorithm
+from canonical.lp.dbschema import (GPGKeyAlgorithm,
+    PackagePublishingPriority, SourcePackageUrgency)
 
 from canonical.launchpad.scripts import log
 from canonical.launchpad.scripts.gina import call
 
+
+class PackageFileProcessError(Exception):
+    """XXX"""
+
+class PoolFileNotFound(PackageFileProcessError):
+    """XXX"""
+
+
 def stripseq(seq):
     return [s.strip() for s in seq]
+
+
+urgencymap = {
+    "low": SourcePackageUrgency.LOW,
+    "medium": SourcePackageUrgency.MEDIUM,
+    "high": SourcePackageUrgency.HIGH,
+    "emergency": SourcePackageUrgency.EMERGENCY,
+    }   
+
+prioritymap = {
+    "required": PackagePublishingPriority.REQUIRED,
+    "important": PackagePublishingPriority.IMPORTANT,
+    "standard": PackagePublishingPriority.STANDARD,
+    "optional": PackagePublishingPriority.OPTIONAL,
+    "extra": PackagePublishingPriority.EXTRA,
+    # Some binarypackages ended up with priority source, apparently
+    # because of a bug in dak.
+    "source": PackagePublishingPriority.EXTRA,
+}
+
 
 GPGALGOS = {}
 for item in GPGKeyAlgorithm.items:
@@ -29,7 +62,28 @@ for item in GPGKeyAlgorithm.items:
 
 source_version_re = re.compile(r'([^ ]+) +\(([^\)]+)\)')
 
+
+class MissingRequiredArguments(Exception):
+    """Missing Required Arguments Exception.
+
+    Raised if we attempted to construct a SourcePackageData based on an
+    invalid Sources.gz entry -- IOW, without all the required arguments.
+    This is because we are stuck (for now) passing arguments using
+    **args as some of the argument names are not valid Python identifiers
+    """
+
+
+def parse_person(val):
+    if "," in val:
+        # Some emails have ',' like "Adam C. Powell, IV
+        # <hazelsct@debian.org>". rfc822.parseaddr seems to do not
+        # handle this properly, so we munge them here
+        val = val.replace(',','')
+    return rfc822.parseaddr(val)
+
+
 def get_person_by_key(self, keyrings, key):
+    # XXX: untested
     if key and key not in ("NOSIG", "None", "none"):
         command = ("gpg --no-options --no-default-keyring "
                    "--with-colons --fingerprint %s %s" % (key, keyrings))
@@ -47,8 +101,8 @@ def get_person_by_key(self, keyrings, key):
             algochar = GPGALGOS[algo]
         else:
             algochar = "?" % algo
-## STRIPPED GPGID Support by cprov 20041004
-##          id = line[2] + algochar + "/" + line[4][-8:]
+        # STRIPPED GPGID Support by cprov 20041004
+        #          id = line[2] + algochar + "/" + line[4][-8:]
         id = line[4][-8:]
         algorithm = algo
         keysize = line[2]
@@ -58,7 +112,7 @@ def get_person_by_key(self, keyrings, key):
             is_revoked = 0
         else:
             is_revoked = 1
-            
+
         h = os.popen("gpg --export --no-default-keyring %s "
                      "--armor %s" % (keyrings, key), "r")
         armor = h.read().strip()
@@ -67,72 +121,89 @@ def get_person_by_key(self, keyrings, key):
     else:
         return None
 
+
 class AbstractPackageData:
-    def parse_person(self, val):
-        # Some emails has ',' like "Adam C. Powell, IV <hazelsct@debian.org>"
-        # and rfc822.parseaddr seems to do not handle this properly
-        val = val.replace(',','')
-        return rfc822.parseaddr(val)
+    # This class represents information on a single package that was
+    # obtained through the archive. This information comes from either a
+    # Sources or Packages file, and is complemented by data scrubbed
+    # from the corresponding pool files (the dsc, deb and tar.gz)
+    package_root = None
+    package = None
+    required = None
+
+    def __init__(self):
+        missing = [attr for attr in self.required if not hasattr(self, attr)]
+        if missing:
+            raise MissingRequiredArguments(missing)
 
     def process_package(self, kdb, package_root, keyrings):
-        """ Process the package using the archive
+        """Process the package using the files located in the archive.
 
-        This method, using the archive, try to set properly some required
-        attributes with package information that we need to fill the lauchpad
-        db package tables.
+        Raises PoolFileNotFound if a file is not found in the pool.
+        Raises PackageFileProcessError if processing the package itself
+        caused an exception.
         """
+        self.package_root = package_root
+
         tempdir = tempfile.mkdtemp()
         try:
-            self.do_package(tempdir, package_root)
-        except:
-            log.exception("Evil things happened, check out %s" % tempdir)
-            return False
+            cwd = os.getcwd()
+            os.chdir(tempdir)
+            self.do_package(package_root)
+            os.chdir(cwd)
+        except PoolFileNotFound:
+            raise
+        except Exception, e:
+            raise PackageFileProcessError("Failed processing %s (perhaps "
+                                          "see %s): %s" %
+                                          (self.package, tempdir, e))
         shutil.rmtree(tempdir)
-        if not self.do_katie(kdb, keyrings):
-            return False
+
+        # XXX: Katie is disabled for the moment; hardcode the
+        # date_uploaded and c'est la vie
+        #   -- kiko, 2005-10-18
+        # if not self.do_katie(kdb, keyrings):
+        #    return False
+        self.date_uploaded = nowUTC
         self.is_processed = True
         return True
 
-    def do_package(self, dir, package_root):
+    def do_package(self, package_root):
         raise NotImplementedError
 
     def do_katie(self, kdb, keyrings):
         raise NotImplementedError
 
-
-class MissingRequiredArguments(ValueError):
-    """Missing Required Arguments Exception.
-
-    Raised if we attempted to construct a SourcePackageData without
-    all the required arguments. This is because we are stuck (for now)
-    passing arguments using **args as some of the argument names are not
-    valid Python identifiers
-    """
-    pass
+    def ensure_complete(self, kdb):
+        raise NotImplementedError
 
 
 class SourcePackageData(AbstractPackageData):
     """This Class holds important data to a given sourcepackagerelease."""
 
-    # These attributes must have been set by the end of the __init__ method.
-    # They are passed in as keyword arguments. If any are not set, a
-    # MissingRequiredArguments exception is raised.
-    _required = [
-        'package', 'binaries', 'version', 'section', 'maintainer', #'priority',
-        'build_depends', 'build_depends_indep', 'architecture',
-        'standards_version', 'directory', 'files', 'licence']
-
+    # Defaults, overwritten by __init__
     build_depends = ""
     build_depends_indep = ""
     standards_version = ""
     description = ""
+
+    # Defaults, overwritten by do_package and ensure_required
+    urgency = None
+    section = None
     licence = ""
+    changelog = ""
 
     is_processed = False
     is_created = False
 
-    def __init__(self, kdb, **args):
-        sentinel = object()
+    # These arguments /must/ have been set in the Sources file and
+    # supplied to __init__ as keyword arguments. If any are not, a
+    # MissingRequiredArguments exception is raised.
+    required = [
+        'package', 'binaries', 'version', 'maintainer',
+        'architecture', 'directory', 'files', 'format']
+
+    def __init__(self, **args):
         for k, v in args.items():
             if k == 'Binary':
                 self.binaries = stripseq(v.split(","))
@@ -142,7 +213,7 @@ class SourcePackageData(AbstractPackageData):
                 else:
                     self.component, self.section  = "main", v
             elif k == 'Maintainer':
-                self.maintainer = self.parse_person(v)
+                self.maintainer = parse_person(v)
             elif k == 'Files':
                 self.files = []
                 files = v.split("\n")
@@ -153,40 +224,25 @@ class SourcePackageData(AbstractPackageData):
                 self.uploaders = [person.split(" ", 1) for person in people]
             else:
                 setattr(self, k.lower().replace("-", "_"), v)
-        if getattr(self, 'section', sentinel) is sentinel:
-            log.info("Source package %s lacks a section, looking it up..." %
-                    self.package)
-            if not kdb:
-                self._setDefaults()
-                return
-            self.section = kdb.getSourceSection(self.package)
-            if '/' in self.section:
-                try:
-                    self.component, self.section = self.section.split("/")
-                except ValueError:
-                    self._setDefaults()
-                    return
-            self._setDefaults()
 
-        missing = [attr for attr in self._required if not hasattr(self, attr)]
-        if missing:
-            raise MissingRequiredArguments(missing)
+        AbstractPackageData.__init__(self)
 
-    def _setDefaults(self):
-        log.info("Damn, I had to assume 'misc'")
-        self.section = 'misc'
+    def do_package(self, package_root):
+        """Get the Changelog and licence from the package on archive.
 
-    def do_package(self, dir, package_root):
-        """Get the Changelog and licence from the package on archive."""
-        self.package_root = package_root
-        cwd = os.getcwd()
-
+        If successful processing of the package occurs, this method
+        sets the changelog, urgency and licence attributes.
+        """
         version = re.sub("^\d+:", "", self.version)
         filename = "%s_%s.dsc" % (self.package, version)
         fullpath = os.path.join(package_root, self.directory, filename)
+        if not os.path.exists(fullpath):
+            # If we didn't find this file in the archive, things are
+            # pretty bad, so stop processing immediately
+            raise PoolFileNotFound("File %s not in archive (%s)" % 
+                                   (filename, fullpath))
         self.dsc = open(fullpath).read().strip()
 
-        os.chdir(dir)
         call("dpkg-source -sn -x %s" % fullpath)
 
         version = re.sub("-[^-]+$", "", version)
@@ -195,50 +251,60 @@ class SourcePackageData(AbstractPackageData):
 
         if os.path.exists(fullpath):
             changelog = open(fullpath)
-            self.do_changelog(changelog)
+
+            line = ""
+            while not line:
+                line = changelog.readline().strip()
+            if "urgency=" in line:
+                self.urgency = line.split("urgency=")[1].strip().lower()
+            changelog.seek(0)
+            self.changelog = parse_changelog(changelog)
+
             changelog.close()
         else:
-            self.changelog = ''
+            log.info("No license found for %s in %s" % (self.package,
+                                                        filename))
 
         fullpath = os.path.join(filename, "debian", "copyright")
         if os.path.exists(fullpath):
             self.licence = open(fullpath).read().strip()
         else:
-            log.info("WML courtesy of Missing Copyrights Ltd. in %s" % filename)
-
-        os.chdir(cwd)
-
-    def do_changelog(self, changelog):
-        line = ""
-        while not line:
-            line = changelog.readline().strip()
-        self.urgency = line.split("urgency=")[1].strip().lower()
-        changelog.seek(0)
-        self.changelog = parse_changelog(changelog)
+            log.info("No license found for %s in %s" % (self.package,
+                                                        filename))
 
     def do_katie(self, kdb, keyrings):
-        if not kdb:
-            self.date_uploaded = nowUTC
-            return True
+        # XXX: disabled for the moment
+        raise AssertionError
 
         data = kdb.getSourcePackageRelease(self.package, self.version)
         if not data:
-            self.date_uploaded = nowUTC
-            return True
+            return
 
         assert len(data) == 1
         data = data[0]
         # self.date_uploaded = data["install_date"]
-        # XXX: Daniel Debonzi 20050621
-        # launchpad does not accept to include date like it
-        self.date_uploaded = nowUTC
+        #
+        #    self.dsc_signing_key = data["fingerprint"]
+        #    self.dsc_signing_key_owner = \
+        #        get_person_by_key(keyrings, self.dsc_signing_key)
 
-        # XXX: Daniel Debonzi 2005-05-18
-        # Check it when start using cprov gpghandler
-##         self.dsc_signing_key = data["fingerprint"]
-##         self.dsc_signing_key_owner = \
-##             get_person_by_key(keyrings, self.dsc_signing_key)
-        return True
+    def ensure_complete(self, kdb):
+        if self.section is None:
+            if kdb:
+                log.warn("Source package %s lacks section, looking it up..." %
+                         self.package)
+                self.section = kdb.getSourceSection(self.package)
+                if '/' in self.section:
+                    self.component, self.section = self.section.split("/")
+            else:
+                self.section = 'misc'
+                log.warn("Source package %s lacks section, assumed %r" %
+                         (self.package, self.section))
+
+        if self.urgency not in urgencymap:
+            log.warn("Invalid urgency in %s, %r, assumed %r" % 
+                     (self.package, self.urgency, "low"))
+            self.urgency = "low"
 
 
 class BinaryPackageData(AbstractPackageData):
@@ -247,8 +313,8 @@ class BinaryPackageData(AbstractPackageData):
     # These attributes must have been set by the end of the __init__ method.
     # They are passed in as keyword arguments. If any are not set, a
     # MissingRequiredArguments exception is raised.
-    _required = [
-        'package', 'priority', 'section', 'installed_size', 'maintainer',
+    required = [
+        'package', 'section', 'installed_size', 'maintainer',
         'architecture', 'essential', 'source', 'version', 'replaces',
         'provides', 'depends', 'pre_depends', 'enhances', 'suggests',
         'conflicts', 'filename', 'size', 'md5sum', 'description' ]
@@ -264,53 +330,47 @@ class BinaryPackageData(AbstractPackageData):
     replaces = ""
     provides = ""
     essential = ""
+    # XXX
+    sversion = None
     #
     is_processed = False
     is_created = False
     def __init__(self, **args):
         for k, v in args.items():
             if k == "Maintainer":
-                self.maintainer = self.parse_person(v)
+                self.maintainer = parse_person(v)
             else:
                 setattr(self, k.lower().replace("-", "_"), v)
-        self.source_version = self.version
-        if not self.source:
-            self.source = self.package
-            self.source_version = self.version
-        else:
-            # handle cases like "Source: myspell (1:3.0+pre3.1-6)"
-            # Which apt-pkg kindly splits for us already
-            if hasattr(self, 'sversion'):
-                self.source_version = self.sversion
-            # handle the cases which apt-pkg kindly leaves behind for us
-            # because it's too lazy or delicate or something else.
+
+        if self.source:
+            # We need to handle cases like "Source: myspell
+            # (1:3.0+pre3.1-6)". apt-pkg kindly splits this for us
+            # already, but sometimes fails.
             # XXX: dsilvers: 20050922: Work out why this happens and
             # file an upstream bug against python-apt once we've worked
             # it out.
             match = source_version_re.match(self.source)
-            if match:
+
+            if hasattr(self, 'sversion'):
+                self.source_version = self.sversion
+            elif match:
                 self.source = match.group(1)
                 self.source_version = match.group(2)
+            else:
+                # XXX: this is probably a best-guess and might fail
+                #   -- kiko, 2005-10-18
+                self.source_version = self.version
+        else:
+            self.source = self.package
+            self.source_version = self.version
 
-        if not hasattr(self, 'section'):
-            log.info("Binary package %s lacks a section... assuming misc" %
-                     self.package)
-            self.section = 'misc'
+        AbstractPackageData.__init__(self)
 
-
-        missing = [attr for attr in self._required if not hasattr(self, attr)]
-        if missing:
-            raise MissingRequiredArguments(missing)
-
-    def do_package(self, dir, package_root):
+    def do_package(self, package_root):
         """Grab shared library info from package in archive if it exists."""
-        self.package_root = package_root
-        cwd = os.getcwd()
         fullpath = os.path.join(package_root, self.filename)
-        os.chdir(dir)
-
         if not os.path.exists(fullpath):
-            raise ValueError, '%s not found'%fullpath
+            raise PoolFileNotFound('%s not found' % fullpath)
 
         call("dpkg -e %s" % fullpath)
         shlibfile = os.path.join("DEBIAN", "shlibs")
@@ -319,26 +379,33 @@ class BinaryPackageData(AbstractPackageData):
                 os.path.basename(fullpath)
                 ))
             self.shlibs = open(shlibfile).read().strip()
-        os.chdir(cwd)
 
     def do_katie(self, kdb, keyrings):
-        if not kdb:
-            return True
+        # XXX: disabled for the moment, will need to be rechecked
+        raise AssertionError
 
-        # XXX: Daniel Debonzi 2005-05-18
-        # Check it when start using cprov gpghandler
-        return True
         data = kdb.getBinaryPackageRelease(self.package, self.version,
                                            self.architecture)
         if not data:
-            return False
-        #assert len(data) >= 1
-        if len(data) == 0:
-            raise Exception, "assert len(data) >= 1"
+            return
+
+        assert len(data) >= 1
         data = data[0]
+
         self.gpg_signing_key = data["fingerprint"]
         log.debug(self.gpg_signing_key)
         self.gpg_signing_key_owner = \
             get_person_by_key(keyrings, self.gpg_signing_key)
         return True
+
+    def ensure_complete(self, kdb):
+        if not hasattr(self, 'section'):
+            self.section = 'misc'
+            log.warn("Binary package %s lacks a section... assumed %r" %
+                     (self.package, self.section))
+
+        if not hasattr(self, 'priority'):
+            self.priority = 'extra'
+            log.warn("Binary package %s lacks valid priority, assumed %r" %
+                     (self.package, self.section))
 
