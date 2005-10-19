@@ -7,7 +7,8 @@ quiet mode over it.
 
 We start out with 6 packages in our database.
 
-    >>> from canonical.launchpad.database import SourcePackageRelease
+    >>> from canonical.launchpad.database import (SourcePackageRelease,
+    ...                                           SourcePackageName)
     >>> SourcePackageRelease.select().count()
     6
 
@@ -22,67 +23,134 @@ Lets set up the absolute path for the gina_test_archive
     >>> path = os.path.join(os.getcwd(), relative_path)
     >>> os.symlink(path, '/tmp/gina_test_archive')
 
-Now, lets run gina on hoary. This test imports a few perfect packages:
+Create a distribution release for breezy (why is it so much #@!#@! work?!):
+
+    >>> from canonical.launchpad.database import DistroReleaseSet
+    >>> from canonical.launchpad.interfaces import (ILaunchpadCelebrities,
+    ... IDistroReleaseSet)
+    >>> celebs = getUtility(ILaunchpadCelebrities)
+    >>> ubuntu = celebs.ubuntu
+    >>> drs = getUtility(IDistroReleaseSet)
+    >>> hoary = drs.findByName("hoary")
+    >>> breezy = drs.new(ubuntu, "breezy", "Breezy Badger", "My title",
+    ...                  "My summary", "My description", "5.10", 1,
+    ...                  1, hoary, celebs.launchpad_developers)
+    >>> import transaction
+    >>> transaction.commit()
+
+Now, lets run gina on hoary and breezy. This test imports a few perfect
+packages:
 
   a) archive-copier, a source package with no binary packages. Its
      maintainer has a name which contains a ","
   b) python-sqllite, an arch-independent source package that generates
-     one binary package
-  c) ubuntu-meta, a source package that generates 5 binary packages
-  d) db1-compat, source package what generates 2 binary packages
-  X) gcc-defaults, a source package that generates a truckload of binary
-     packages with differing versions
+     one binary package.
+  c) ubuntu-meta, a source package that generates 5 binary packages.
+  d) db1-compat, source package what generates 2 binary packages. The same
+     version was included in both hoary and breezy.
+  e) gcc-defaults, a source package that generates a truckload of binary
+     packages with differing versions.
+  f) x11proto-damage, a source apckage which is only present in breezy
 
 Two packages which have recoverable errors:
 
-  e) ed, a source package what generates one binary package and
+  g) ed, a source package what generates one binary package and
      misses a section entry in Sources
-  f) python-pam, an arch-independent source package that generates one
+  h) python-pam, an arch-independent source package that generates one
        binary package, whose changelog contains a busted urgency
 
 And two completely broken packages:
 
-  g) util-linux, a source package that is missing from the pool
-  h) mkvmlinuz, a source package that generates one binary package,
-     but which is missing a version field in its Sources file
+  i) util-linux, a source package that is missing from the pool
+  j) mkvmlinuz, a source package that generates one binary package,
+     but which is missing a version field in its Sources file.
+     Its breezy package is also missing copyright and changelog.
 
 Let's give her a spin:
 
-    >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q', 'hoary']
+    >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q',
+    ...              'hoary', 'breezy']
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
 
 Check STDERR for the errors we expected:
 
     >>> print proc.stderr.read()
     ERROR   Unable to create SourcePackageData for mkvmlinuz: Required attributes not found
-     -> http://...
+     -> http://...version'])
     WARNING Source package ed lacks section, assumed 'misc'
     WARNING Invalid urgency in python-pam, None, assumed 'low'
     ERROR   Error processing package files for util-linux
-     -> http://...
+     -> http://...not in archive...))
+    ERROR   Invalid Sources stanza in /tmp/tmp...
+     -> http://...bogus\n')
+    WARNING No changelog file found for mkvmlinuz in mkvmlinuz-14ubuntu1
+    WARNING No license file found for mkvmlinuz in mkvmlinuz-14ubuntu1
+    WARNING Invalid urgency in mkvmlinuz, None, assumed 'low'
+    ERROR   Error processing package files for python-sqlite
+     -> http://...not in archive...))
+    ERROR   Error processing package files for util-linux
+     -> http://...not in archive...))
+    <BLANKLINE>
 
 The exit status must be 0, for success:
 
     >>> proc.wait()
     0
 
-And we should have 6 more packages in the database:
+=== Testing Source Package Results ===
 
-    >>> import transaction
+We should have a few more source packages in the database:
+
     >>> transaction.commit()
-    >>> SourcePackageRelease.select().count()
-    13
+    >>> existing = 6
+    >>> hoary = 9 - 2   # 2 packages fail
+    >>> breezy = 10 - 3 - 2  # 3 packages are the same as in hoary, 2 fail
+    >>> existing + hoary + breezy
+    18
+    >>> count = SourcePackageRelease.select().count()
+    >>> count == (existing + hoary + breezy) or count
+    True
+
+Check that x11proto-damage for its Build-Depends-Indep value correctly set:
+
+    >>> n = SourcePackageName.selectOneBy(name="x11proto-damage")
+    >>> x11p = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
+    ...                                         version="6.8.99.7-2")
+    >>> x11p.builddependsindep
+    u'debhelper (>= 4.0.0)'
+
+Make sure that we only imported one db1-compat source package.
+
+    >>> n = SourcePackageName.selectOneBy(name="db1-compat")
+    >>> db1 = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id)
+
+Check that the uploaders were added to mkvmlinuz for breezy. XXX: broken because we currently do nothing with uploaders :-(
+
+    >>> #n = SourcePackageName.selectOneBy(name="mkvmlinuz")
+    >>> #mkvm = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id, version="14ubuntu1")
+    >>> #mkvm.uploaders
+
+=== Testing Binary Package Results ===
 
 XXX: test binary package creation, in particular gcc-defaults, whose
      package versions differ from its source version
 XXX: test that there are only XXX binary package releases created
 XXX: test that there are only XXX builds created
 
-XXX: test breezy
-XXX: test x11proto-damage
-XXX: test mkvmlinux-14ubuntu1, which has missing copyright and changelog
-    c) mkvmlinuz, a source package that generates one binary package,
-       but which missing a changelog and a copyright file
+=== Other tests ===
+
+For kicks, finally, run gina on a configured but incomplete archive:
+
+    >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q', 'bogus']
+    >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
+    >>> print proc.stderr.read()
+    ERROR   Failed to analyze archive for bogoland
+     -> http://...)
+    <BLANKLINE>
+    >>> proc.wait()
+    1
+
+=== Wrap up ===
 
 Stop Librarian
     >>> LibrarianTestSetup().tearDown()

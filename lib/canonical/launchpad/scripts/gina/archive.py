@@ -15,12 +15,17 @@ import tempfile
 import os
 from string import split
 
+from canonical.launchpad.scripts import log
 from canonical.launchpad.scripts.gina import call
+
+
+class MangledArchiveError(Exception):
+    """Raised when the archive is found to be grossly incomplete"""
+
 
 class ArchiveFilesystemInfo:
     """Archive information files holder
 
- 
     This class gets and holds the Packages.gz and Source.gz files
     from a Package Archive and holds them as internal attributes
     to be used for other classes.
@@ -36,25 +41,31 @@ class ArchiveFilesystemInfo:
         # Search and get the files with full path
         sources_zipped = os.path.join(root, "dists", distrorelease,
                                       component, "source", "Sources.gz")
+        if not os.path.exists(sources_zipped):
+            raise MangledArchiveError("Archive mising Sources.gz at %s"
+                                      % sources_zipped)
         binaries_zipped = os.path.join(root, "dists", distrorelease,
                                        component, "binary-%s" % arch,
                                        "Packages.gz")
+        if not os.path.exists(binaries_zipped):
+            raise MangledArchiveError("Archive mising Packages.gz at %s"
+                                      % binaries_zipped)
         di_zipped = os.path.join(root, "dists", distrorelease, component,
                                  "debian-installer", "binary-%s" % arch,
                                  "Packages.gz")
-        
 
         # Extract the files
         srcfd, sources_tagfile = tempfile.mkstemp()
         call("gzip -dc %s > %s" % (sources_zipped, sources_tagfile))
         srcfile = os.fdopen(srcfd)
-        
+
         binfd, binaries_tagfile = tempfile.mkstemp()
         call("gzip -dc %s > %s" % (binaries_zipped, binaries_tagfile))
         binfile = os.fdopen(binfd)
-    
+
         difd, di_tagfile = tempfile.mkstemp()
         if os.path.exists(di_zipped):
+            # XXX: untested
             call("gzip -dc %s > %s" % (di_zipped, di_tagfile))
         difile = os.fdopen(difd)
 
@@ -65,7 +76,7 @@ class ArchiveFilesystemInfo:
         self.binfile = binfile
         self.di_tagfile = di_tagfile
         self.difile = difile
-        
+
 
 class ArchiveComponentItems:
     """Package Archive Items holder
@@ -123,29 +134,35 @@ class PackagesMap:
         # all components in all architectures.
         for info_set in arch_component_items:
             # Create a tmp map for binaries for one arch/component pair
-            if self.bin_map.has_key(info_set.arch):
-                tmpbin_map = self.bin_map[info_set.arch]
-            else:
-                tmpbin_map = {}
+            if not self.bin_map.has_key(info_set.arch):
+                self.bin_map[info_set.arch] = {}
+
+            tmpbin_map = self.bin_map[info_set.arch]
+
             # Get a apt_pkg handler for the binaries
             binaries = apt_pkg.ParseTagFile(info_set.binfile)
 
             # Run over the handler and store info in tmp_bin_map.
             while binaries.Step():
-                bin_tmp = dict(binaries.Section)
+                try:
+                    bin_tmp = dict(binaries.Section)
+                except KeyError:
+                    log.exception("Invalid Releases stanza in %s" % 
+                                  info_set.binaries_tagfile)
+                    continue
                 # Add in the dict the component
-                bin_tmp['Component']=info_set.component
+                bin_tmp['Component'] = info_set.component
                 bin_name = bin_tmp['Package']
                 tmpbin_map[bin_name] = bin_tmp
 
-
+            # XXX: untested
             # Get a apt_pkg handler for the debian installer binaries
             dibinaries = apt_pkg.ParseTagFile(info_set.binfile)
-            
+
             # Run over the handler and store info in tmp_bin_map.
             while dibinaries.Step():
                 dibin_tmp = dict(dibinaries.Section)
-                dibin_tmp['Component']=info_set.component
+                dibin_tmp['Component'] = info_set.component
                 dibin_name = dibin_tmp['Package']
                 tmpbin_map[bin_name] = dibin_tmp
 
@@ -157,8 +174,13 @@ class PackagesMap:
             # for all architectures, but we go over it to cover also source
             # packages that only compiles for one architecture.
             while sources.Step():
-                src_tmp = dict(sources.Section)
-                src_tmp['Component']=info_set.component
+                try:
+                    src_tmp = dict(sources.Section)
+                except KeyError:
+                    log.exception("Invalid Sources stanza in %s" %
+                                  info_set.sources_tagfile)
+                    continue
+                src_tmp['Component'] = info_set.component
                 src_name = src_tmp['Package']
 
                 # Check if the is a binary with the same package name.
@@ -171,7 +193,4 @@ class PackagesMap:
 
                 # insert into src_map
                 self.src_map[src_name] = src_tmp
-
-            # Store the tmpbin_map in bin_map, mapped by architecture.
-            self.bin_map[info_set.arch] = tmpbin_map
 

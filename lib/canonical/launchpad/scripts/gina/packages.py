@@ -181,11 +181,10 @@ class AbstractPackageData:
 class SourcePackageData(AbstractPackageData):
     """This Class holds important data to a given sourcepackagerelease."""
 
-    # Defaults, overwritten by __init__
+    # Defaults, potentially overwritten by __init__
     build_depends = ""
     build_depends_indep = ""
     standards_version = ""
-    description = ""
 
     # Defaults, overwritten by do_package and ensure_required
     urgency = None
@@ -220,6 +219,8 @@ class SourcePackageData(AbstractPackageData):
                 for f in files:
                     self.files.append(stripseq(f.split(" ")))
             elif k == 'Uploaders':
+                # XXX: we don't do anything with this data, but I
+                # suspect we should. -- kiko, 2005-10-19
                 people = stripseq(v.split(","))
                 self.uploaders = [person.split(" ", 1) for person in people]
             else:
@@ -251,7 +252,6 @@ class SourcePackageData(AbstractPackageData):
 
         if os.path.exists(fullpath):
             changelog = open(fullpath)
-
             line = ""
             while not line:
                 line = changelog.readline().strip()
@@ -259,21 +259,20 @@ class SourcePackageData(AbstractPackageData):
                 self.urgency = line.split("urgency=")[1].strip().lower()
             changelog.seek(0)
             self.changelog = parse_changelog(changelog)
-
             changelog.close()
         else:
-            log.info("No license found for %s in %s" % (self.package,
-                                                        filename))
+            log.warn("No changelog file found for %s in %s" % (self.package,
+                                                               filename))
 
         fullpath = os.path.join(filename, "debian", "copyright")
         if os.path.exists(fullpath):
             self.licence = open(fullpath).read().strip()
         else:
-            log.info("No license found for %s in %s" % (self.package,
-                                                        filename))
+            log.warn("No license file found for %s in %s" % (self.package,
+                                                             filename))
 
     def do_katie(self, kdb, keyrings):
-        # XXX: disabled for the moment
+        # XXX: disabled for the moment, untested
         raise AssertionError
 
         data = kdb.getSourcePackageRelease(self.package, self.version)
@@ -291,6 +290,7 @@ class SourcePackageData(AbstractPackageData):
     def ensure_complete(self, kdb):
         if self.section is None:
             if kdb:
+                # XXX: untested
                 log.warn("Source package %s lacks section, looking it up..." %
                          self.package)
                 self.section = kdb.getSourceSection(self.package)
@@ -381,7 +381,7 @@ class BinaryPackageData(AbstractPackageData):
             self.shlibs = open(shlibfile).read().strip()
 
     def do_katie(self, kdb, keyrings):
-        # XXX: disabled for the moment, will need to be rechecked
+        # XXX: disabled for the moment, untested
         raise AssertionError
 
         data = kdb.getBinaryPackageRelease(self.package, self.version,

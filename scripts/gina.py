@@ -24,18 +24,20 @@ import psycopg
 from optparse import OptionParser
 from datetime import timedelta
 
+from canonical.lp import initZopeless, dbschema
+from canonical.config import config
+from canonical.launchpad.scripts import logger_options, log
+from canonical.launchpad.scripts.lockfile import LockFile
+
 from canonical.launchpad.scripts.gina.katie import Katie
 from canonical.launchpad.scripts.gina.archive import (ArchiveComponentItems,
-                                                      PackagesMap)
+                                                      PackagesMap,
+                                                      MangledArchiveError)
 
 from canonical.launchpad.scripts.gina.handlers import ImporterHandler
 from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
     BinaryPackageData, MissingRequiredArguments, PackageFileProcessError)
 
-from canonical.lp.dbschema import PackagePublishingPocket
-from canonical.config import config
-from canonical.launchpad.scripts import logger_options, log
-from canonical.launchpad.scripts.lockfile import LockFile
 
 
 def _get_keyring(keyrings_root):
@@ -61,8 +63,8 @@ def main():
             help="Run all sections defined in launchpad.conf (in order)",
             dest="all", default=False)
 
-    parser.add_option(
-            "-l", "--lockfile", default="/var/lock/launchpad-gina.lock",
+    parser.add_option( "-l", "--lockfile", 
+            default="/var/lock/launchpad-gina.lock",
             help="Ensure only one process is running that locks LOCKFILE",
             metavar="LOCKFILE"
             )
@@ -90,18 +92,19 @@ def main():
         log.info('Lockfile %s already locked. Exiting.', options.lockfile)
         sys.exit(1)
 
+    ztm = initZopeless(dbuser=config.gina.dbuser)
     try:
         for target in targets:
             target_sections = [section for section in config.gina.target
                                if section.getSectionName() == target]
             # XXX: should be a proper exception -- kiko, 2005-10-18
             assert len(target_sections) == 1
-            run_gina(options, target_sections[0])
+            run_gina(options, ztm, target_sections[0])
     finally:
         lockfile.release()
 
 
-def run_gina(options, target_section):
+def run_gina(options, ztm, target_section):
     package_root = target_section.root
     keyrings_root = target_section.keyrings
     distro = target_section.distro
@@ -120,12 +123,10 @@ def run_gina(options, target_section):
     LPDB_USER = config.gina.dbuser
     KTDB = target_section.katie_dbname
 
-    if hasattr(PackagePublishingPocket, pocket.upper()):
-        pocket = getattr(PackagePublishingPocket, pocket.upper())
+    if hasattr(dbschema.PackagePublishingPocket, pocket.upper()):
+        pocket = getattr(dbschema.PackagePublishingPocket, pocket.upper())
     else:
-        log.error(
-            "Could not find a pocket schema for %s" % pocket
-            )
+        log.error("Could not find a pocket schema for %s" % pocket)
         sys.exit(1)
 
     if not pocket_distrorelease:
@@ -134,9 +135,10 @@ def run_gina(options, target_section):
     LIBRHOST = config.librarian.upload_host
     LIBRPORT = config.librarian.upload_port
 
+    log.info("")
+    log.info("=== Processing %s/%s ===" % (distro, distrorelease))
     log.debug("Packages read from: %s" % package_root)
     log.debug("Keyrings read from: %s" % keyrings_root)
-    log.info("Archive to read: %s/%s" % (distro, distrorelease))
     log.info("Destination DistroRelease/Pocket: %s/%s" % (
         pocket_distrorelease, pocket.title.lower()))
     log.info("Components to import: %s" % ", ".join(components))
@@ -152,18 +154,22 @@ def run_gina(options, target_section):
     log.info("")
 
     kdb = None
+    keyrings = None
     if KTDB:
         kdb = Katie(KTDB, distrorelease, dry_run)
+        keyrings = _get_keyring(keyrings_root)
 
-    keyrings = _get_keyring(keyrings_root)
-
-    # Create the ArchComponent Items object
-    arch_component_items = ArchiveComponentItems(package_root,
-                                                 distrorelease,
-                                                 components, archs)
+    try:
+        # Create the ArchComponent Items object
+        arch_component_items = ArchiveComponentItems(package_root,
+                                                     distrorelease,
+                                                     components, archs)
+    except MangledArchiveError:
+        log.exception("Failed to analyze archive for %s" % distrorelease)
+        sys.exit(1)
 
     packages_map = PackagesMap(arch_component_items)
-    importer_handler = ImporterHandler(distro, pocket_distrorelease,
+    importer_handler = ImporterHandler(ztm, distro, pocket_distrorelease,
                                        dry_run, kdb, package_root, keyrings,
                                        pocket)
 
@@ -181,7 +187,7 @@ def run_gina(options, target_section):
     importer_handler.commit()
 
     if source_only:
-        log.info('Source only mode... Done')
+        log.info('Source only mode... done')
         sys.exit(0)
 
     import_binarypackages(pocket, packages_map, kdb, package_root,
@@ -199,83 +205,101 @@ def import_sourcepackages(packages_map, kdb, package_root,
 
     for source in packages_map.src_map.itervalues():
         count += 1
-        do_one_sourcepackage(source, kdb, package_root, keyrings,
-                             importer_handler)
+        package_name = source.get("Package", "unknown")
+        try:
+            do_one_sourcepackage(source, kdb, package_root, keyrings,
+                                 importer_handler)
+        except MissingRequiredArguments:
+            log.exception("Unable to create SourcePackageData for %s: "
+                          "Required attributes not found" % package_name)
+            continue
+        except PackageFileProcessError:
+            # Problems with katie db stuff of opening files
+            log.exception("Error processing package files for %s" %
+                          package_name)
+            continue
+        except psycopg.Error:
+            log.exception("Database error: unable to create "
+                          "SourcePackageData for %s" % package_name)
+            importer_handler.abort()
+            return
+        except (AttributeError, KeyError, ValueError, TypeError):
+            # XXX: Debonzi 20050720
+            # Catch all common exception since they are not predictable ATM.
+            # SourcePackageData class should be refactored or rewrited to try
+            # to make it better and have tested include.
+            log.exception("Unable to create SourcePackageData for %s" %
+                          package_name)
+            continue
 
         if COUNTDOWN and count % COUNTDOWN == 0:
             log.warn('%i/%i sourcepackages processed' % (count, npacks))
 
-        # Commit often or hold locks in the database!
-        importer_handler.commit()
-
 
 def do_one_sourcepackage(source, kdb, package_root, keyrings,
                          importer_handler):
-    try:
-        source_data = SourcePackageData(**source)
-    except MissingRequiredArguments:
-        log.exception("Unable to create SourcePackageData for %s: "
-                      "Required attributes not found" % 
-                      source.get("Package", "unknown"))
-        return
-    except psycopg.Error:
-        log.exception("Database error: unable to create "
-                      "SourcePackageData for %s" %
-                      source.get("Package", "unknown"))
-        importer_handler.abort()
-        return
-    except (AttributeError, KeyError, ValueError, TypeError):
-        # XXX: Debonzi 20050720
-        # Catch all common exception since they are not predictable ATM.
-        # SourcePackageData class should be refactored or rewrited to try
-        # to make it better and have tested include.
-        log.exception("Unable to create SourcePackageData for %s" %
-                      source.get("Package", "unknown"))
-        return
-
+    source_data = SourcePackageData(**source)
     if importer_handler.preimport_sourcecheck(source_data):
         # Don't bother reading package information if the source package
         # already exists in the database
-        log.debug('%s already exists' % source_data.package)
+        log.info('%s already exists in the archive' % source_data.package)
         return
-
-    try:
-        source_data.process_package(kdb, package_root, keyrings)
-    except PackageFileProcessError:
-        # Problems with katie db stuff of opening files
-        log.exception("Error processing package files for %s" % 
-                      source_data.package)
-        return
-
+    source_data.process_package(kdb, package_root, keyrings)
     source_data.ensure_complete(kdb)
-
     # XXX The check if this package already exists is done twice here,
     # since preimport_sourcecheck already does it. -- kiko, 2005-10-18
     importer_handler.import_sourcepackage(source_data)
+    # Commit often or hold locks in the database!
+    importer_handler.commit()
 
 
 def import_binarypackages(pocket, packages_map, kdb, package_root,
                           keyrings, importer_handler):
     nosource = []
 
-    # Runs over all the architectures we have
+    # Run over all the architectures we have
     for arch in packages_map.bin_map.keys():
         count = 0
         npacks = len(packages_map.bin_map[arch])
         log.info('%i Binary Packages to be imported for %s' % 
                  (npacks, arch))
-        # Go over the binarypackages map importing them for this architecture
+        # Go over binarypackages importing them for this architecture
         for binary in packages_map.bin_map[arch].itervalues():
             count += 1
-
-            do_one_binarypackage(binary, arch, kdb, package_root, keyrings,
-                                 importer_handler, nosource)
+            try:
+                do_one_binarypackage(binary, arch, kdb, package_root,
+                                     keyrings, importer_handler, nosource)
+            except MissingRequiredArguments:
+                # Required attributes for this instance was not found.
+                log.exception("Unable to create BinaryPackageData: "
+                              "required attributes missing")
+                continue
+            except psycopg.Error:
+                log.exception("Database error: unable to create "
+                              "BinaryPackageData")
+                importer_handler.abort()
+                continue
+            except (AttributeError, ValueError, KeyError, TypeError):
+                # XXX: Debonzi 20050720
+                # Catch all common exception since they are not
+                # predictable ATM. BinaryPackageData class should be
+                # refactored or rewritten to try to make it better and
+                # have tests included.
+                log.exception("Failed to create BinaryPackageData")
+                continue
+            except psycopg.Error:
+                log.exception("Database error. Failed to import_binarypackage")
+                importer_handler.abort()
+                continue
+            except (AttributeError, ValueError, TypeError):
+                log.exception("Failed to import_binarypackage")
+                continue
 
             if COUNTDOWN and count % COUNTDOWN == 0:
                 log.warn('%i/%i binary packages processed' % (count, npacks))
 
         if nosource:
-            log.warn('%i Sources Not Found' % len(nosource))
+            log.warn('%i sources packages not found' % len(nosource))
             for pkg in nosource:
                 log.warn(pkg)
 
@@ -284,47 +308,19 @@ def import_binarypackages(pocket, packages_map, kdb, package_root,
 
 def do_one_binarypackage(binary, arch, kdb, package_root, keyrings,
                          importer_handler, nosource):
-    try:
-        binary_data = BinaryPackageData(**binary)
-    except MissingRequiredArguments:
-        # Required attributes for this instance was not found.
-        log.exception("Unable to create BinaryPackageData: "
-                      "required attributes missing")
-    except psycopg.Error:
-        log.exception("Database error: unable to create "
-                      "BinaryPackageData")
-        importer_handler.abort()
-    except (AttributeError, ValueError, KeyError, TypeError):
-        # XXX: Debonzi 20050720
-        # Catch all common exception since they are not
-        # predictable ATM. BinaryPackageData class should be
-        # refactored or rewritten to try to make it better and
-        # have tests included.
-        log.exception("Failed to create BinaryPackageData")
-        return
-
+    binary_data = BinaryPackageData(**binary)
     binary_data.ensure_complete(kdb)
-
     if not binary_data.process_package(kdb, package_root, keyrings):
         # Problems with katie db stuff of opening files
         log.error('Failed to import %s' % binary_data.package)
         return
+    if not importer_handler.import_binarypackage(arch, binary_data):
+        msg = 'Sourcepackage %s (%s) not found for %s (%s)' % (
+                binary_data.source, binary_data.source_version,
+                binary_data.package, binary_data.version,)
 
-    log.debug('Checking %s' % binary_data.package)
-    try:
-        if not importer_handler.import_binarypackage(arch, binary_data):
-            msg = 'Sourcepackage %s (%s) not found for %s (%s)' % (
-                    binary_data.source, binary_data.source_version,
-                    binary_data.package, binary_data.version,)
-
-            log.info(msg)
-            nosource.append(msg)
-    except (AttributeError, ValueError, TypeError):
-        log.exception("Failed to import_binarypackage")
-    except psycopg.Error:
-        log.exception("Database error. Failed to import_binarypackage")
-        importer_handler.abort()
-
+        log.info(msg)
+        nosource.append(msg)
     # Commit often or else we hold locks in the database
     importer_handler.commit()
 

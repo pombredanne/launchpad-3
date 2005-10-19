@@ -24,7 +24,6 @@ from canonical.database.constants import nowUTC
 
 from canonical.archivepublisher import Poolifier, parse_tagfile
 
-from canonical.lp import initZopeless
 from canonical.lp.dbschema import PackagePublishingStatus, BuildStatus
 
 from canonical.launchpad.scripts import log
@@ -38,10 +37,13 @@ from canonical.launchpad.database import (Distribution, DistroRelease,
     SecureBinaryPackagePublishingHistory,
     Component, Section, SourcePackageReleaseFile,
     SecureSourcePackagePublishingHistory, BinaryPackageFile)
+
 from canonical.launchpad.interfaces import IPersonSet, IBinaryPackageNameSet
 from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
 from canonical.launchpad.validators.version import valid_debian_version
 
+class DataSetupError(Exception):
+    """Raised when required data is found to be missing in the database"""
 
 
 class DisplaynameDecodingError(Exception):
@@ -56,11 +58,11 @@ class ImporterHandler:
 
     This class is used to handle the import process.
     """
-    def __init__(self, distro_name, distrorelease_name, dry_run,
+    def __init__(self, ztm, distro_name, distrorelease_name, dry_run,
                  ktdb, poolroot, keyrings, pocket):
         self.dry_run = dry_run
 
-        self.ztm = initZopeless(dbuser=config.gina.dbuser)
+        self.ztm = ztm
 
         self.distro = self._get_distro(distro_name)
         self.distrorelease = self._get_distrorelease(distrorelease_name)
@@ -91,7 +93,7 @@ class ImporterHandler:
         """Return the distro database object by name."""
         distro = Distribution.selectOneBy(name=name)
         if not distro:
-            raise ValueError("Error finding distribution for %s" % name)
+            raise DataSetupError("Error finding distribution %r" % name)
         return distro
 
     def _get_distrorelease(self, name):
@@ -99,7 +101,7 @@ class ImporterHandler:
         dr = DistroRelease.selectOneBy(name=name,
                                        distributionID=self.distro.id)
         if not dr:
-            raise ValueError("Error finding distrorelease for %s" % name)
+            raise DataSetupError("Error finding distrorelease %r" % name)
         return dr
 
     def _get_distroarchrelease_info(self, archtag):
@@ -108,14 +110,14 @@ class ImporterHandler:
                 distroreleaseID=self.distrorelease.id,
                 architecturetag=archtag)
         if not dar:
-            raise ValueError("Error finding distroarchrelease for %s/%s"
-                   % (self.distrorelease.name, archtag))
+            raise DataSetupError("Error finding distroarchrelease for %s/%s"
+                                 % (self.distrorelease.name, archtag))
 
         processor = Processor.selectOneBy(familyID=dar.processorfamily.id)
         if not processor:
-            raise ValueError("Unable to find a processor from the "
-                             "processor family chosen from %s/%s"
-                             % (self.distrorelease.name, archtag))
+            raise DataSetupError("Unable to find a processor from the "
+                                 "processor family chosen from %s/%s"
+                                 % (self.distrorelease.name, archtag))
 
         return {'distroarchrelease': dar, 'processor': processor}
 
@@ -244,227 +246,44 @@ class ImporterHandler:
         log.debug('Pushing done...')
 
 
-class BinaryPackageHandler:
-    """Handler to deal with binarypackages."""
-    def __init__(self, sphandler):
-        # Create other needed object handlers.
-        self.person_handler = PersonHandler()
-        self.distro_handler = DistroHandler()
-        self.source_handler = sphandler
+class DistroHandler:
+    """Handles distro related information."""
 
-    def checkBin(self, binarypackagedata, archinfo):
-        try:
-            bin_name = BinaryPackageName.byName(binarypackagedata.package)
-        except SQLObjectNotFound:
-            # If the binary package's name doesn't exist, don't even
-            # bother looking for a binary package.
-            return None
+    def __init__(self):
+        # Create a cache for components and sections
+        # to do not query db all the time.
+        self.compcache = {} 
+        self.sectcache = {}
 
-        return self._getBinary(bin_name, binarypackagedata.version,
-                               binarypackagedata.architecture,
-                               archinfo)
+    def getComponentByName(self, component):
+        """Returns a component object by its name."""
+        if component in self.compcache:
+            return self.compcache[component]
 
-    def _getBinary(self, binaryname, version, architecture, distroarchinfo):
-        """Returns a binarypackage -- if it exists."""
+        ret = Component.selectOneBy(name=component)
 
-        clauseTables = ["BinaryPackageRelease", "Build",
-                        "DistroRelease", "DistroArchRelease"]
+        if not ret:
+            raise ValueError("Component %s not found" % component)
 
-        query = ("BinaryPackageRelease.binarypackagename=%s AND "
-                 "BinaryPackageRelease.version=%s AND "
-                 "Build.id = BinaryPackageRelease.build"
-                 % (binaryname.id,
-                    quote(version)))
+        self.compcache[component] = ret
+        return ret
 
-        if architecture != "all":
-            query = ("Build.Processor = %s AND %s" %
-                     (distroarchinfo['processor'].id, query))
+    def ensureSection(self, section):
+        """Returns a section object by its name. Create and return if it
+        doesn't exist.
+        """
+        if '/' in section:
+            section = section[section.find('/')+1:]
+        if section in self.sectcache:
+            return self.sectcache[section]
 
-        # When looking for binaries, we need to remember that they are
-        # shared between distribution releases, so match on the
-        # distribution they were built for.
-        distroarchrelease = distroarchinfo['distroarchrelease']
-        query = ("Build.distroarchrelease = distroarchrelease.id AND "
-                 "DistroArchRelease.distrorelease = DistroRelease.id AND "
-                 "DistroRelease.distribution = %d AND %s" %
-                 (distroarchrelease.distrorelease.distribution.id, query))
+        ret = Section.selectOneBy(name=section)
 
-        bpr = BinaryPackageRelease.selectOne(query, clauseTables=clauseTables)
-        if bpr is None:
-            log.debug('BPR not found: %r %r %r, query=%s' % (
-                binaryname, version, architecture, query))
-        return bpr
+        if not ret:
+            ret = Section(name=section)
 
-    def createBinaryPackage(self, bin, srcpkg, distroarchinfo):
-        """Create a new binarypackage."""
-
-        # Ensure a binarypackagename for this binarypackage.
-        bin_name = getUtility(IBinaryPackageNameSet).ensure(bin.package)
-
-        # Ensure a build record for this binarypackage.
-        build = self.ensureBuild(bin, srcpkg, distroarchinfo)
-        if not build:
-            # Create build failure. Return to make it keep going.
-            return
-
-        # Get binarypackage the description.
-        description = encoding.guess(bin.description)
-
-        # Build a sumary using the description.
-        summary = description.split("\n")[0]
-        if summary[-1] != '.':
-            summary = summary + '.'
-
-        # XXX: Daniel Debonzi
-        # Keep it til we have licence on the SourcePackageRelease Table
-        if hasattr(srcpkg, 'licence'):
-            licence = encoding.guess(srcpkg.licence)
-        else:
-            licence = ''
-
-        componentID = self.distro_handler.getComponentByName(bin.component).id
-        sectionID = self.distro_handler.ensureSection(bin.section).id
-        architecturespecific = (bin.architecture == "all")
-
-        # Create the binarypackage entry on lp db.
-        binpkg = BinaryPackageRelease(
-            binarypackagename = bin_name.id,
-            component = componentID,
-            version = bin.version,
-            summary = summary,
-            description = description,
-            build = build.id,
-            binpackageformat = getBinaryPackageFormat(bin.filename),
-            section = sectionID,
-            priority = prioritymap[bin.priority],
-            shlibdeps = bin.shlibs,
-            depends = bin.depends,
-            suggests = bin.suggests,
-            recommends = bin.recommends,
-            conflicts = bin.conflicts,
-            replaces = bin.replaces,
-            provides = bin.provides,
-            essential = False,
-            installedsize = int(bin.installed_size),
-            licence = licence,
-            architecturespecific = architecturespecific,
-            copyright = None
-            )
-        log.info('Binary Package Release %s (%s) created' % 
-                 (bin_name.name, bin.version))
-
-        # Insert file into Librarian
-
-        fdir, fname = os.path.split(bin.filename)
-        log.debug('Including %s into librarian' % fname)
-        try:
-            alias = getLibraryAlias(
-                    "%s/%s" % (bin.package_root, fdir), fname
-                    )
-        except IOError:
-            log.debug('Package %s not found on archive %s/%s/%s' % (
-                fname, bin.package_root, fdir, fname
-                ))
-        else:
-            self.createBinaryPackageFile(binpkg, fname, alias)
-
-        # Return the binarypackage object.
-        return binpkg
-
-    def createBinaryPackageFile(self, binpkg, fname, alias):
-        """Create the binarypackagefile entry on lp db."""
-        BinaryPackageFile(binarypackagerelease=binpkg.id,
-                          libraryfile=alias,
-                          filetype=getFileType(fname))
-
-    def ensureBuild(self, bin, srcpkg, distroarchinfo):
-        """Ensure a build record."""
-        distroarchrelease = distroarchinfo['distroarchrelease']
-        processor = distroarchinfo['processor']
-
-        # XXX: Check it later -- Debonzi 20050516
-        #         if bin.gpg_signing_key_owner:
-        #             key = self.getGPGKey(bin.gpg_signing_key, 
-        #                                  *bin.gpg_signing_key_owner)
-        #         else:
-        key = None
-
-        # Try to select a build.
-        build = Build.selectOneBy(sourcepackagereleaseID=srcpkg.id,
-                                  processorID=processor.id,
-                                  distroarchreleaseID=distroarchrelease.id)
-
-        if build:
-            # If already exists, return it.
-            return build
-
-        # Nothing to do if we fail we insert...
-        log.debug("Unable to retrieve build for %d; making new one..." % (
-                srcpkg.id))
-
-        # If does not exists, create a new record and return.
-        build = Build(processor=processor.id,
-                      distroarchrelease=distroarchrelease.id,
-                      buildstate=BuildStatus.FULLYBUILT,
-                      gpgsigningkey=key,
-                      sourcepackagerelease=srcpkg.id,
-                      buildduration=None,
-                      buildlog=None,
-                      builder=None,
-                      changes=None,
-                      datebuilt=None)
-
-        return build
-
-
-class BinaryPackagePublisher:
-    """Binarypackage publisher class."""
-    def __init__(self, distroarchrelease):
-        self.distroarchrelease = distroarchrelease
-
-    def publish(self, binarypackage, pocket):
-        """Create the publishing entry on db if does not exist."""
-        log.debug('Publishing BinaryPackage %s-%s' % (
-            binarypackage.binarypackagename.name, binarypackage.version,
-            ))
-
-        # Check if the binarypackage is already published and if yes,
-        # just report it.
-        binpkg_publishinghistory = self._checkPublishing(
-            binarypackage, self.distroarchrelease)
-        if binpkg_publishinghistory:
-            log.debug('Binarypackage already published as %s' % (
-                binpkg_publishinghistory.status.title,
-                ))
-            return
-
-        # Create the Publishing entry with status PENDING.
-        SecureBinaryPackagePublishingHistory(
-            binarypackagerelease = binarypackage.id,
-            component = binarypackage.component,
-            section = binarypackage.section,
-            priority = binarypackage.priority,
-            distroarchrelease = self.distroarchrelease.id,
-            status = PackagePublishingStatus.PENDING,
-            datecreated = nowUTC,
-            datepublished = nowUTC,
-            pocket = pocket,
-            datesuperseded = None,
-            supersededby = None,
-            datemadepending = None,
-            dateremoved = None,
-            )
-
-        log.debug('BinaryPackage %s-%s published.' % (
-            binarypackage.binarypackagename.name, binarypackage.version,
-            ))
-
-
-    def _checkPublishing(self, binarypackage, distroarchrelease):
-        """Query for the publishing entry"""
-        return SecureBinaryPackagePublishingHistory.selectOneBy(
-            binarypackagereleaseID=binarypackage.id,
-            distroarchreleaseID=distroarchrelease.id)
+        self.sectcache[section] = ret
+        return ret
 
 
 class SourcePackageReleaseHandler:
@@ -746,44 +565,227 @@ class SourcePublisher:
             distroreleaseID=distrorelease.id)
 
 
-class DistroHandler:
-    """Handles distro related information."""
+class BinaryPackageHandler:
+    """Handler to deal with binarypackages."""
+    def __init__(self, sphandler):
+        # Create other needed object handlers.
+        self.person_handler = PersonHandler()
+        self.distro_handler = DistroHandler()
+        self.source_handler = sphandler
 
-    def __init__(self):
-        # Create a cache for components and sections
-        # to do not query db all the time.
-        self.compcache = {} 
-        self.sectcache = {}
+    def checkBin(self, binarypackagedata, archinfo):
+        try:
+            bin_name = BinaryPackageName.byName(binarypackagedata.package)
+        except SQLObjectNotFound:
+            # If the binary package's name doesn't exist, don't even
+            # bother looking for a binary package.
+            return None
 
-    def getComponentByName(self, component):
-        """Returns a component object by its name."""
-        if component in self.compcache:
-            return self.compcache[component]
+        return self._getBinary(bin_name, binarypackagedata.version,
+                               binarypackagedata.architecture,
+                               archinfo)
 
-        ret = Component.selectOneBy(name=component)
+    def _getBinary(self, binaryname, version, architecture, distroarchinfo):
+        """Returns a binarypackage -- if it exists."""
 
-        if not ret:
-            raise ValueError("Component %s not found" % component)
+        clauseTables = ["BinaryPackageRelease", "Build",
+                        "DistroRelease", "DistroArchRelease"]
 
-        self.compcache[component] = ret
-        return ret
+        query = ("BinaryPackageRelease.binarypackagename=%s AND "
+                 "BinaryPackageRelease.version=%s AND "
+                 "Build.id = BinaryPackageRelease.build"
+                 % (binaryname.id,
+                    quote(version)))
 
-    def ensureSection(self, section):
-        """Returns a section object by its name. Create and return if it
-        doesn't exist.
-        """
-        if '/' in section:
-            section = section[section.find('/')+1:]
-        if section in self.sectcache:
-            return self.sectcache[section]
+        if architecture != "all":
+            query = ("Build.Processor = %s AND %s" %
+                     (distroarchinfo['processor'].id, query))
 
-        ret = Section.selectOneBy(name=section)
+        # When looking for binaries, we need to remember that they are
+        # shared between distribution releases, so match on the
+        # distribution they were built for.
+        distroarchrelease = distroarchinfo['distroarchrelease']
+        query = ("Build.distroarchrelease = distroarchrelease.id AND "
+                 "DistroArchRelease.distrorelease = DistroRelease.id AND "
+                 "DistroRelease.distribution = %d AND %s" %
+                 (distroarchrelease.distrorelease.distribution.id, query))
 
-        if not ret:
-            ret = Section(name=section)
+        bpr = BinaryPackageRelease.selectOne(query, clauseTables=clauseTables)
+        if bpr is None:
+            log.debug('BPR not found: %r %r %r, query=%s' % (
+                binaryname, version, architecture, query))
+        return bpr
 
-        self.sectcache[section] = ret
-        return ret
+    def createBinaryPackage(self, bin, srcpkg, distroarchinfo):
+        """Create a new binarypackage."""
+
+        # Ensure a binarypackagename for this binarypackage.
+        bin_name = getUtility(IBinaryPackageNameSet).ensure(bin.package)
+
+        # Ensure a build record for this binarypackage.
+        build = self.ensureBuild(bin, srcpkg, distroarchinfo)
+        if not build:
+            # Create build failure. Return to make it keep going.
+            return
+
+        # Get binarypackage the description.
+        description = encoding.guess(bin.description)
+
+        # Build a sumary using the description.
+        summary = description.split("\n")[0]
+        if summary[-1] != '.':
+            summary = summary + '.'
+
+        # XXX: Daniel Debonzi
+        # Keep it til we have licence on the SourcePackageRelease Table
+        if hasattr(srcpkg, 'licence'):
+            licence = encoding.guess(srcpkg.licence)
+        else:
+            licence = ''
+
+        componentID = self.distro_handler.getComponentByName(bin.component).id
+        sectionID = self.distro_handler.ensureSection(bin.section).id
+        architecturespecific = (bin.architecture == "all")
+
+        # Create the binarypackage entry on lp db.
+        binpkg = BinaryPackageRelease(
+            binarypackagename = bin_name.id,
+            component = componentID,
+            version = bin.version,
+            summary = summary,
+            description = description,
+            build = build.id,
+            binpackageformat = getBinaryPackageFormat(bin.filename),
+            section = sectionID,
+            priority = prioritymap[bin.priority],
+            shlibdeps = bin.shlibs,
+            depends = bin.depends,
+            suggests = bin.suggests,
+            recommends = bin.recommends,
+            conflicts = bin.conflicts,
+            replaces = bin.replaces,
+            provides = bin.provides,
+            essential = False,
+            installedsize = int(bin.installed_size),
+            licence = licence,
+            architecturespecific = architecturespecific,
+            copyright = None
+            )
+        log.info('Binary Package Release %s (%s) created' % 
+                 (bin_name.name, bin.version))
+
+        # Insert file into Librarian
+
+        fdir, fname = os.path.split(bin.filename)
+        log.debug('Including %s into librarian' % fname)
+        try:
+            alias = getLibraryAlias(
+                    "%s/%s" % (bin.package_root, fdir), fname
+                    )
+        except IOError:
+            log.debug('Package %s not found on archive %s/%s/%s' % (
+                fname, bin.package_root, fdir, fname
+                ))
+        else:
+            self.createBinaryPackageFile(binpkg, fname, alias)
+
+        # Return the binarypackage object.
+        return binpkg
+
+    def createBinaryPackageFile(self, binpkg, fname, alias):
+        """Create the binarypackagefile entry on lp db."""
+        BinaryPackageFile(binarypackagerelease=binpkg.id,
+                          libraryfile=alias,
+                          filetype=getFileType(fname))
+
+    def ensureBuild(self, bin, srcpkg, distroarchinfo):
+        """Ensure a build record."""
+        distroarchrelease = distroarchinfo['distroarchrelease']
+        processor = distroarchinfo['processor']
+
+        # XXX: Check it later -- Debonzi 20050516
+        #         if bin.gpg_signing_key_owner:
+        #             key = self.getGPGKey(bin.gpg_signing_key, 
+        #                                  *bin.gpg_signing_key_owner)
+        #         else:
+        key = None
+
+        # Try to select a build.
+        build = Build.selectOneBy(sourcepackagereleaseID=srcpkg.id,
+                                  processorID=processor.id,
+                                  distroarchreleaseID=distroarchrelease.id)
+
+        if build:
+            # If already exists, return it.
+            return build
+
+        # Nothing to do if we fail we insert...
+        log.debug("Unable to retrieve build for %d; making new one..." % (
+                srcpkg.id))
+
+        # If does not exists, create a new record and return.
+        build = Build(processor=processor.id,
+                      distroarchrelease=distroarchrelease.id,
+                      buildstate=BuildStatus.FULLYBUILT,
+                      gpgsigningkey=key,
+                      sourcepackagerelease=srcpkg.id,
+                      buildduration=None,
+                      buildlog=None,
+                      builder=None,
+                      changes=None,
+                      datebuilt=None)
+
+        return build
+
+
+class BinaryPackagePublisher:
+    """Binarypackage publisher class."""
+    def __init__(self, distroarchrelease):
+        self.distroarchrelease = distroarchrelease
+
+    def publish(self, binarypackage, pocket):
+        """Create the publishing entry on db if does not exist."""
+        log.debug('Publishing BinaryPackage %s-%s' % (
+            binarypackage.binarypackagename.name, binarypackage.version,
+            ))
+
+        # Check if the binarypackage is already published and if yes,
+        # just report it.
+        binpkg_publishinghistory = self._checkPublishing(
+            binarypackage, self.distroarchrelease)
+        if binpkg_publishinghistory:
+            log.debug('Binarypackage already published as %s' % (
+                binpkg_publishinghistory.status.title,
+                ))
+            return
+
+        # Create the Publishing entry with status PENDING.
+        SecureBinaryPackagePublishingHistory(
+            binarypackagerelease = binarypackage.id,
+            component = binarypackage.component,
+            section = binarypackage.section,
+            priority = binarypackage.priority,
+            distroarchrelease = self.distroarchrelease.id,
+            status = PackagePublishingStatus.PENDING,
+            datecreated = nowUTC,
+            datepublished = nowUTC,
+            pocket = pocket,
+            datesuperseded = None,
+            supersededby = None,
+            datemadepending = None,
+            dateremoved = None,
+            )
+
+        log.debug('BinaryPackage %s-%s published.' % (
+            binarypackage.binarypackagename.name, binarypackage.version,
+            ))
+
+
+    def _checkPublishing(self, binarypackage, distroarchrelease):
+        """Query for the publishing entry"""
+        return SecureBinaryPackagePublishingHistory.selectOneBy(
+            binarypackagereleaseID=binarypackage.id,
+            distroarchreleaseID=distroarchrelease.id)
 
 
 class PersonHandler:
