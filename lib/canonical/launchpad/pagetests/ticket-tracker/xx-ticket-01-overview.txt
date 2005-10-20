@@ -45,16 +45,16 @@ optionally source package too.
 On a source package we should see the Support facet menu link.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  .../distros/ubuntu/hoary/+sources/evolution/+tickets">Support...
+  .../distros/ubuntu/hoary/+source/evolution/+tickets">Support...
   ...Latest...Support Requests:...
 
 And on the source package's Support page, we should see "Request Support".
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+tickets HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+tickets HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...+addticket">Request Support...
@@ -80,7 +80,7 @@ And on a Distribution.
 And on a Source Package.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+tickets HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+tickets HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

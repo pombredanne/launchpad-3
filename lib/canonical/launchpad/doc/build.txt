@@ -27,7 +27,7 @@ Let's check the complex properties of a build object.
   u'warty'
 
   >>> firefox_build.title
-  u'mozilla-firefox-0.9'
+  u'i386 build of mozilla-firefox 0.9 in ubuntu warty (2004-09-27)'
 
   >>> firefox_build.buildlog = 34
   >>> firefox_build.buildlog.url

@@ -48,12 +48,14 @@
     <resource name="email" file="../images/mail_icon.gif" />
     <resource name="favicon.png" file="../images/launchpad_favicon.png" />
     <resource name="favorite_icon.gif" file="../images/favorite_icon.gif" />
+    <resource name="file" file="../images/file_icon.gif" />
     <resource name="file_icon.gif" file="../images/file_icon.gif" />
     <resource name="green-bar.png" file="../images/green-bar.png" />
     <resource name="hackergotchi" file="../images/nobody.png" />
     <resource name="info.gif" file="../images/info.gif" />
     <resource name="info.png" file="../images/info.png" />
     <resource name="info_icon.gif" file="../images/info_icon.gif" />
+    <resource name="info" file="../images/info_icon.gif" />
     <resource name="list" file="../images/info.png" />
     <resource name="languages.gif" file="../images/languages.gif" />
     <resource name="link" file="../images/link_icon.gif" />
@@ -64,6 +66,7 @@
     <resource name="mail_icon.gif" file="../images/mail_icon.gif" />
     <resource name="package-binary" file="../images/package-binary.png" />
     <resource name="package-source" file="../images/package-source.png" />
+    <resource name="package" file="../images/package-binary.png" />
     <resource name="news" file="../images/newsitem_icon.gif" />
     <resource name="phone_icon.gif" file="../images/phone_icon.gif" />
     <resource name="print.gif" file="../images/print.gif" />

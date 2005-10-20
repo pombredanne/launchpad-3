@@ -1,0 +1,19 @@
+<div class="portlet">
+
+  <h4>Provides:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul >
+      <li tal:repeat="binprovides view/provides">
+        <span tal:content="binprovides/name" />
+        <tal:dummy condition="binprovides/signal">
+          (<span tal:replace="binprovides/signal" />
+           <span tal:replace="binprovides/version" />)
+        </tal:dummy>
+      </li>
+    </ul>
+
+  </div>
+
+</div>

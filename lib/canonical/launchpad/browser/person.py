@@ -73,7 +73,8 @@ from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission, Navigation, stepto, stepthrough, smartquote)
+    enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
+    redirection)
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -82,6 +83,8 @@ _ = MessageIDFactory('launchpad')
 class PersonNavigation(Navigation, CalendarTraversalMixin):
 
     usedfor = IPerson
+
+    redirection("+bugs", "+assignedbugs")
 
     def breadcrumb(self):
         return self.context.displayname
@@ -574,11 +577,6 @@ class PersonView:
             self.context.reviewerBounties or
             self.context.subscribedBounties or
             self.context.claimedBounties)
-
-    def redirectToAssignedBugs(self):
-        """Redirect to the +assignedbugs report."""
-        self.request.response.redirect(
-            canonical_url(self.context) + "/+assignedbugs")
 
     def activeMembersCount(self):
         return len(self.context.activemembers)

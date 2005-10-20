@@ -1,7 +1,7 @@
 Check to see if the items label is correct when all entries are showed in one page.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?count=30 HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?count=30 HTTP/1.1
   ... Accept-Language: en-gb,en;q=0.5
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
@@ -18,7 +18,7 @@ Check to see if the items label is correct when all entries are showed in one pa
 Check to see if the items label is correct when we are atBeginning of the form.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate HTTP/1.1
   ... Accept-Language: en-gb,en;q=0.5
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
@@ -38,7 +38,7 @@ Check to see if the items label is correct when we are atBeginning of the form.
 Check to see if the items label is correct when we are atEnd of the form.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=20 HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?offset=20 HTTP/1.1
   ... Accept-Language: en-gb,en;q=0.5
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
@@ -59,7 +59,7 @@ Check to see if the items label is correct when we aren't atBeginning or atEnd
 of the form.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=10 HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?offset=10 HTTP/1.1
   ... Accept-Language: en-gb,en;q=0.5
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)

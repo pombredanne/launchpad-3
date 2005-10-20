@@ -126,6 +126,10 @@ class BuilderSet(object):
         """See IBuilderSet."""
         return Builder.select()
 
+    def getBuild(self, id):
+        """See IBuilderSet."""
+        return Build.get(id)
+
 
 class BuildQueue(SQLBase):
     implements(IBuildQueue)

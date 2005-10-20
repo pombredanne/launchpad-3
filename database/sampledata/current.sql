@@ -7,8 +7,8 @@ SET search_path = public, pg_catalog;
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'person'::pg_catalog.regclass;
 
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (1, 'Mark Shuttleworth', 'Mark', 'Shuttleworth', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'sabdfl', NULL, '''mark'':2B,4C ''sabdfl'':1A ''shuttleworth'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.591618', NULL, 'UTC', 500, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (2, 'Robert Collins', 'Robert', 'Collins', 'ID1adsprLaTBox18F6dpSdtSdqCiOdpgUXBo4oG17qhg73jSDTVe3g==', NULL, NULL, 'lifeless', NULL, '''collin'':3B,5C ''robert'':2B,4C ''lifeless'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.598107', NULL, 'UTC', 2, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (1, 'Mark Shuttleworth', 'Mark', 'Shuttleworth', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'sabdfl', NULL, '''mark'':2B,4C ''sabdfl'':1A ''shuttleworth'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.591618', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (2, 'Robert Collins', 'Robert', 'Collins', 'ID1adsprLaTBox18F6dpSdtSdqCiOdpgUXBo4oG17qhg73jSDTVe3g==', NULL, NULL, 'lifeless', NULL, '''collin'':3B,5C ''robert'':2B,4C ''lifeless'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.598107', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (3, 'Dave Miller', 'Dave', 'Miller', NULL, NULL, NULL, 'justdave', NULL, '''dave'':2B,4C ''miller'':3B,5C ''justdav'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.610048', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (4, 'Colin Watson', 'Colin', 'Watson', NULL, NULL, NULL, 'kamion', NULL, '''colin'':2B,4C ''kamion'':1A ''watson'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.611185', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (5, 'Scott James Remnant', 'Scott James', 'Remnant', NULL, NULL, NULL, 'keybuk', NULL, '''jame'':3B,6C ''scott'':2B,5C ''keybuk'':1A ''remnant'':4B,7C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.608802', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
@@ -18,7 +18,7 @@ INSERT INTO person (id, displayname, givenname, familyname, "password", teamowne
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (9, 'Christian Reis', 'Christian', 'Reis', NULL, NULL, NULL, 'kiko', NULL, '''rei'':3B,5C ''kiko'':1A ''christian'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.594941', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (10, 'Alexander Limi', 'Alexander', 'Limi', NULL, NULL, NULL, 'limi', NULL, '''limi'':1A,3B,5C ''alexand'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.619713', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (11, 'Steve Alexander', 'Steve', 'Alexander', NULL, NULL, NULL, 'stevea', NULL, '''steve'':2B,4C ''stevea'':1A ''alexand'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.599234', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (12, 'Sample Person', 'Sample', 'Person', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name12', NULL, '''sampl'':2B,4C ''name12'':1A ''person'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.612277', 1, 'Australia/Perth', 450, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (12, 'Sample Person', 'Sample', 'Person', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name12', NULL, '''sampl'':2B,4C ''name12'':1A ''person'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.612277', 1, 'Australia/Perth', 91, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (13, 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U', NULL, NULL, 'carlos', NULL, '''carlo'':1A,2B,5C ''marín'':4B,7C ''perelló'':3B,6C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.615543', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (14, 'Dafydd Harries', 'Dafydd', 'Harries', 'EvSuSe4k4tkRHSp6p+g91vyQIwL5VJ3iTbRZ', NULL, NULL, 'daf', NULL, '''daf'':1A ''harri'':3B,5C ''dafydd'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.616666', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (16, 'Foo Bar', 'Foo', 'Bar', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name16', NULL, '''bar'':3B,5C ''foo'':2B,4C ''name16'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', 2, 'Africa/Johannesburg', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
@@ -60,7 +60,7 @@ INSERT INTO person (id, displayname, givenname, familyname, "password", teamowne
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (52, 'No Privileges Person', 'No', 'Privileges', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'no-priv', NULL, '''priv'':3A ''person'':6B ''no-priv'':1A ''privileg'':5B,7C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', NULL, 'UTC', 0, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027', NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (53, 'testing Spanish team', NULL, NULL, NULL, 13, NULL, 'testing-spanish-team', NULL, '''team'':4A,7B ''test'':2A,5B ''spanish'':3A,6B ''testing-spanish-team'':1A', NULL, NULL, 1, NULL, '2005-07-12 14:32:01.84779', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (54, 'ShipIt Administrators', NULL, NULL, NULL, 1, 'ShipIt Administrators', 'shipit-admins', NULL, '''admin'':3A ''shipit'':2A,4B ''administr'':5B ''shipit-admin'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (55, 'Marilize Coetzee', 'Marilize', 'Coetzee', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'marilize', NULL, '''maril'':1A,2B,4C ''coetze'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', NULL, 'Africa/Johannesburg', 450, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (55, 'Marilize Coetzee', 'Marilize', 'Coetzee', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'marilize', NULL, '''maril'':1A,2B,4C ''coetze'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', NULL, 'Africa/Johannesburg', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (56, 'Jordi Mallach', 'Jordi', 'Mallach', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'jordi', NULL, '''jordi'':1A,2B,4C ''mallach'':3B,5C', NULL, NULL, 1, NULL, '2005-10-07 14:17:51.593849', NULL, 'UTC', 0, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027', NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (57, 'Launchpad Developers', NULL, NULL, NULL, 16, 'Launchpad developers', 'launchpad', NULL, '''develop'':3B ''launchpad'':1A,2B', NULL, NULL, 3, NULL, '2005-10-13 13:03:41.668724', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
@@ -79,7 +79,7 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (7, 'steve.alexander
 INSERT INTO emailaddress (id, email, person, status) VALUES (8, 'colin.watson@ubuntulinux.com', 4, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (9, 'scott.james.remnant@ubuntulinux.com', 5, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (10, 'andrew.bennetts@ubuntulinux.com', 7, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (11, 'james.blackwell@ubuntulinux.com', 8, 1);
+INSERT INTO emailaddress (id, email, person, status) VALUES (11, 'james.blackwell@ubuntulinux.com', 8, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (12, 'christian.reis@ubuntulinux.com', 9, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (13, 'jeff.waugh@ubuntulinux.com', 6, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (14, 'dave.miller@ubuntulinux.com', 3, 1);
@@ -112,7 +112,7 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (40, 'morten@wtf.dk'
 INSERT INTO emailaddress (id, email, person, status) VALUES (41, 'mpo@iki.fi', 48, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (42, 'kebil@kaunas.init.lt', 49, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (43, 'tsukimi@quaqua.net', 50, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (44, 'kreutzm@itp.uni-hannover.de', 51, 1);
+INSERT INTO emailaddress (id, email, person, status) VALUES (44, 'kreutzm@itp.uni-hannover.de', 51, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (45, 'support@ubuntu.com', 17, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (46, 'no-priv@canonical.com', 52, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (47, 'stuart@stuartbishop.net', 22, 2);
@@ -120,6 +120,7 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (48, 'zen@shangri-la
 INSERT INTO emailaddress (id, email, person, status) VALUES (49, 'stub@fastmail.fm', 22, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (50, 'marilize@hbd.com', 55, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (51, 'jordi@ubuntu.com', 56, 4);
+INSERT INTO emailaddress (id, email, person, status) VALUES (52, 'daniel.silverstone@canonical.com', 26, 4);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'emailaddress'::pg_catalog.regclass;
@@ -381,6 +382,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (88, 52, 52);
 INSERT INTO teamparticipation (id, team, person) VALUES (89, 56, 56);
 INSERT INTO teamparticipation (id, team, person) VALUES (90, 30, 56);
 INSERT INTO teamparticipation (id, team, person) VALUES (91, 57, 16);
+INSERT INTO teamparticipation (id, team, person) VALUES (92, 17, 26);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'teamparticipation'::pg_catalog.regclass;
@@ -466,6 +468,7 @@ INSERT INTO product (id, project, "owner", name, displayname, title, summary, de
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone) VALUES (12, NULL, 16, 'a52dec', 'a52dec', 'Liba52 Test Decoder', 'a52dec is a test program for liba52.', 'This tool decodes ATSC A/52 streams, and also includes a demultiplexer for mpeg-1 and mpeg-2 program streams. The liba52 source code is always distributed in the a52dec package, to make sure it easier for people to test it.', '2005-04-14 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''1'':27 ''2'':31 ''a/52'':17 ''also'':20 ''atsc'':16 ''code'':37 ''make'':46 ''mpeg'':26,30 ''sure'':47 ''test'':4B,9C,53 ''tool'':14 ''alway'':39 ''decod'':5B,15 ''peopl'':51 ''sourc'':36 ''a52dec'':1A,2A,6C,43 ''easier'':49 ''includ'':21 ''liba52'':3B,12C,35 ''mpeg-1'':25 ''mpeg-2'':29 ''packag'':44 ''stream'':18,33 ''program'':10C,32 ''distribut'':40 ''demultiplex'':23', false, NULL, 1, NULL, NULL, false, false);
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone) VALUES (13, 5, 16, 'gnomebaker', 'gnomebaker', 'Gnome Baker', 'Gnome Baker is a CD burning application', 'Gnome Baker burns CDs like there''s no tomorrow', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''cd'':9C ''cds'':15 ''burn'':10C,14 ''like'':16 ''baker'':4B,6C,13 ''gnome'':3B,5C,12 ''applic'':11C ''gnomebak'':1A,2A ''tomorrow'':20', false, NULL, 1, NULL, NULL, false, false);
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone) VALUES (14, NULL, 12, 'bazaar', 'Bazaar', 'Bazaar', 'Bazaar is a distributed revision control system', 'Bazaar is all about source control and double-dashes.', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''dash'':20 ''doubl'':19 ''revis'':8C ''sourc'':15 ''bazaar'':1A,2A,3B,4C,11 ''system'':10C ''control'':9C,16 ''distribut'':7C ''double-dash'':18', false, NULL, 1, NULL, NULL, false, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone) VALUES (15, NULL, 1, 'alsa-utils', 'alsa-utils', 'ALSA utilities', 'Utilities for configurating and using the Advanced Linux Sound Architecture', '', '2005-09-15 09:05:11.472752', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, true, '''use'':13C ''alsa'':2A,5A,7B ''util'':3A,6A,8B,9C ''linux'':16C ''sound'':17C ''advanc'':15C ''configur'':11C ''alsa-util'':1A,4A ''architectur'':18C', false, NULL, 1, NULL, NULL, false, false);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'product'::pg_catalog.regclass;
@@ -497,6 +500,7 @@ of the product.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NU
 INSERT INTO productseries (id, product, name, displayname, summary, branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, bkrepository, releaseroot, releasefileglob, releaseverstyle, targetarcharchive, targetarchcategory, targetarchbranch, targetarchversion, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated) VALUES (5, 11, 'releases', 'NetApplet Releases', 'Releases of Network Applet', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.899819');
 INSERT INTO productseries (id, product, name, displayname, summary, branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, bkrepository, releaseroot, releasefileglob, releaseverstyle, targetarcharchive, targetarchcategory, targetarchbranch, targetarchversion, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated) VALUES (6, 12, 'main', 'MAIN', 'The primary upstream development branch, from which all releases are made.', NULL, 2, NULL, NULL, 1, ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52', 'a52dec', 'MAIN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.913564');
 INSERT INTO productseries (id, product, name, displayname, summary, branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, bkrepository, releaseroot, releasefileglob, releaseverstyle, targetarcharchive, targetarchcategory, targetarchbranch, targetarchversion, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated) VALUES (7, 12, 'failedbranch', 'FAILEDBRANCH', 'A branch where auto test has failed.', NULL, 3, NULL, NULL, 1, ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52', 'a52dec', 'AUTOTESTFAILED', NULL, NULL, NULL, NULL, NULL, NULL, 'a52dec@bazaar.ubuntu.com', 'a52dec', 'AUTOTESTFAILED', '0', NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.913564');
+INSERT INTO productseries (id, product, name, displayname, summary, branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, bkrepository, releaseroot, releasefileglob, releaseverstyle, targetarcharchive, targetarchcategory, targetarchbranch, targetarchversion, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated) VALUES (8, 15, 'main', 'MAIN', 'The mainline for alsa-utils', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-09-15 09:10:03.531637');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'productseries'::pg_catalog.regclass;
@@ -667,6 +671,8 @@ Updated translations:
    - en_CA (Adam Weinberger)
    - lt (Zygimantas Berucka)', 12, NULL, 3, NULL, '2005-06-06 08:59:51.919766');
 INSERT INTO productrelease (id, datereleased, "version", title, description, changelog, "owner", summary, productseries, manifest, datecreated) VALUES (7, '2005-03-10 16:20:00', '1.0', NULL, NULL, NULL, 12, NULL, 5, NULL, '2005-06-06 08:59:51.925908');
+INSERT INTO productrelease (id, datereleased, "version", title, description, changelog, "owner", summary, productseries, manifest, datecreated) VALUES (8, '2005-02-03 08:50:00', '1.0.8', NULL, NULL, NULL, 1, NULL, 8, 16, '2005-09-15 09:15:49.327457');
+INSERT INTO productrelease (id, datereleased, "version", title, description, changelog, "owner", summary, productseries, manifest, datecreated) VALUES (9, '2005-06-10 10:40:00', '1.0.9a', NULL, NULL, NULL, 1, NULL, 8, 17, '2005-09-15 09:16:00.235886');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'productrelease'::pg_catalog.regclass;
@@ -704,6 +710,8 @@ INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES 
 INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (7, 'plone@arch.ubuntu.com', 'Plone', 'text', false, NULL);
 INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (8, 'gnome@arch.ubuntu.com', 'GNOME', 'The GNOME Project', false, NULL);
 INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (9, 'iso-codes@arch.ubuntu.com', 'iso-codes', 'The iso-codes', false, NULL);
+INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (10, 'alsa-utils@bazaar.ubuntu.com', 'alsa-utils upstream imports', 'Imports of ALSA utilites upstream CVS and releases', true, 1);
+INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (11, 'scott@ubuntu.com--2005', 'Scott James Remnant''s 2005 Ubuntu archive', 'Ubuntu work done by Scott James Remnant during 2005', true, 5);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'archarchive'::pg_catalog.regclass;
@@ -739,6 +747,35 @@ INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible
 INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (12, 1, 'mozilla', 'release', '0.9', true);
 INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (13, 1, 'mozilla', 'release', '0.8', true);
 INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (14, 8, 'evolution', 'MAIN', '0', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (15, 10, 'alsa-utils', 'release', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (16, 10, 'alsa-utils', 'release', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (17, 10, 'alsa-utils', 'orig', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (18, 10, 'alsa-utils', 'diff', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (19, 10, 'alsa-utils', 'packaging', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (20, 10, 'alsa-utils', 'move-asound-state-to-var', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (21, 10, 'alsa-utils', 'debian-alsaconf-idmode', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (22, 10, 'alsa-utils', 'debian-alsaconf-paths', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (23, 10, 'alsa-utils', 'debian-alsaconf-noclear', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (24, 10, 'alsa-utils', 'debian-alsaconf-modprobe-driver', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (25, 10, 'alsa-utils', 'debian-alsaconf-force-stop-driver', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (26, 10, 'alsa-utils', 'debian-alsaconf-improve-intro', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (27, 10, 'alsa-utils', 'debian-alsaconf-cfgfile', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (28, 10, 'alsa-utils', 'debian-alsaconf-nodup', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (29, 10, 'alsa-utils', 'orig', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (30, 10, 'alsa-utils', 'diff', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (31, 10, 'alsa-utils', 'packaging', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (32, 10, 'alsa-utils', 'move-asound-state-to-var', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (33, 10, 'alsa-utils', 'alsaconf-safe-tmp', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (34, 10, 'alsa-utils', 'debian-alsaconf-idmode', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (35, 10, 'alsa-utils', 'debian-alsaconf-paths', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (36, 10, 'alsa-utils', 'debian-alsaconf-noclear', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (37, 10, 'alsa-utils', 'debian-alsaconf-modprobe-driver', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (38, 10, 'alsa-utils', 'debian-alsaconf-unload-modules', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (39, 10, 'alsa-utils', 'debian-alsaconf-improve-intro', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (40, 10, 'alsa-utils', 'debian-alsaconf-nodup', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (41, 10, 'alsa-utils', 'debian-alsaconf-modprobe-ignoreinstall', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (45, 11, 'alsa-utils', 'packaging', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (51, 11, 'alsa-utils', 'debian-alsaconf-modprobe-driver', '1.0.9a', true);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'archnamespace'::pg_catalog.regclass;
@@ -760,6 +797,35 @@ INSERT INTO branch (id, archnamespace, title, description, "owner", product) VAL
 INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (12, 12, 'Mozilla Firefox 0.9', 'text', 1, 4);
 INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (13, 13, 'Mozilla Firefox 0.8', 'text', 1, 4);
 INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (14, 14, 'Evolution HEAD', 'text', 1, 5);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (15, 15, 'alsa-utils 1.0.8 upstream release', 'Upstream release import of alsa-utils 1.0.8', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (16, 16, 'alsa-utils 1.0.9a upstream release', 'Upstream release import of alsa-utils 1.0.9a', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (83, 17, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (84, 18, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (85, 19, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (86, 20, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (87, 21, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (88, 22, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (89, 23, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (90, 24, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (91, 25, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (92, 26, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (93, 27, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (94, 28, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (95, 29, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (96, 30, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (97, 31, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (98, 32, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (99, 33, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (100, 34, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (101, 35, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (102, 36, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (103, 37, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (104, 38, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (105, 39, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (106, 40, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (107, 41, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (108, 45, '', '', 5, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (109, 51, '', '', 5, 15);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'branch'::pg_catalog.regclass;
@@ -770,6 +836,42 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'changeset'::pg_catal
 INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (1, 10, '2005-03-09 15:45:00', 'base-0', 'Import of Mozilla Firefox 0.9.2', NULL, NULL);
 INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (2, 11, '2005-03-09 15:50:00', 'base-0', 'Import of Mozilla Firefox 0.9.1', NULL, NULL);
 INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (3, 12, '2005-03-09 15:55:00', 'base-0', 'Import of Mozilla Firefox 0.9', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (4, 15, '2005-09-15 09:35:37.496879', 'base-0', 'Import of alsa-utils 1.0.8', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (5, 16, '2005-09-15 09:36:07.561267', 'base-0', 'tag of alsa-utils@bazaar.ubuntu.com/alsa-utils--release--1.0.8--base-0', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (6, 16, '2005-09-15 09:36:12.939539', 'patch-1', 'Import of alsa-utils 1.0.9a', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (7, 83, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (8, 84, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (9, 85, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (10, 86, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (11, 87, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (12, 88, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (13, 89, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (14, 90, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (15, 91, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (16, 92, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (17, 93, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (18, 94, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (19, 95, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (20, 96, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (21, 97, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (22, 98, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (23, 99, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (24, 100, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (25, 101, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (26, 102, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (27, 103, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (28, 104, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (29, 105, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (30, 106, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (31, 107, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (32, 96, '2005-09-15 11:39:02.11211', 'patch-1', 'Updated something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (33, 97, '2005-09-15 11:39:10.592695', 'patch-1', 'Updated something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (34, 108, '2005-09-15 11:47:28.961834', 'base-0', 'Tag of ubuntu source', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (35, 109, '2005-09-15 11:47:33.527519', 'base-0', 'Tag of ubuntu source', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (36, 108, '2005-09-15 11:47:42.99696', 'patch-1', 'Scott changed something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (37, 109, '2005-09-15 11:47:46.07592', 'patch-1', 'Scott changed something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (38, 108, '2005-09-15 11:48:45.449073', 'patch-2', 'Scott changed something again', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (39, 109, '2005-09-15 11:48:48.584052', 'patch-2', 'Scott changed something again', NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'changeset'::pg_catalog.regclass;
@@ -825,6 +927,13 @@ INSERT INTO manifest (id, datecreated, uuid) VALUES (3, '2005-03-09 16:00:00', '
 INSERT INTO manifest (id, datecreated, uuid) VALUES (4, '2005-03-09 16:05:00', '97b4ece8-b3c5-4e07-b529-6c76b59a5455');
 INSERT INTO manifest (id, datecreated, uuid) VALUES (14, '2005-03-24 00:00:00', 'e0451064-b405-4f52-b387-ebfc1a7ee297');
 INSERT INTO manifest (id, datecreated, uuid) VALUES (15, '2005-08-24 00:00:00', 'e0451064-b405-4f52-b387-ebfc1a7ee298');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (16, '2005-09-15 09:25:03.854339', '832daafc-edc6-466e-96ca-4694d1c698c1');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (17, '2005-09-15 09:25:10.189057', 'cffc5b5a-b03a-41f8-85bf-c647bf6ca6f7');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (18, '2005-09-15 10:55:57.236793', '2b25dad3-fd3e-4fac-954c-85bf05df881e');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (19, '2005-09-15 10:56:02.929012', '4ea94cbf-02fc-41a3-b500-60f8303feb46');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (20, '2005-09-15 10:56:09.480215', 'd37d8397-9e76-41bf-a44b-34b75a6c7287');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (21, '2005-09-15 11:48:24.403679', '797ce287-ef57-4a17-a029-166a5f45ebd1');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (22, '2005-09-15 11:49:08.616734', '76592d75-a554-45ba-a034-eec477674e48');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'manifest'::pg_catalog.regclass;
@@ -832,12 +941,78 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'manifestentry'::pg_catalog.regclass;
 
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", parent, dirname, hint) VALUES (1, 1, 1, 10, 1, 4, 'firefox-0.9.2.tar.gz', NULL, 'firefox-0.9.2/', 1);
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", parent, dirname, hint) VALUES (2, 2, 1, 11, 2, 4, 'firefox-0.9.1.tar.gz', NULL, 'firefox-0.9.1/', NULL);
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", parent, dirname, hint) VALUES (3, 2, 2, NULL, NULL, 1, 'firefox-0.9.1.tar.gz/random/', NULL, NULL, NULL);
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", parent, dirname, hint) VALUES (4, 3, 1, 12, 3, 5, 'firefox-0.9.zip', NULL, 'firefox-0.9/', NULL);
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", parent, dirname, hint) VALUES (5, 3, 2, 12, NULL, 6, 'firefox-0.9_unix.patch', 1, 'firefox-0.9_unix/', NULL);
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", parent, dirname, hint) VALUES (6, 4, 1, 13, NULL, 3, 'firefox-0.8.ar', NULL, NULL, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (1, 1, 1, 10, 1, 4, 'firefox-0.9.2.tar.gz', 'firefox-0.9.2/', 1, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (2, 2, 1, 11, 2, 4, 'firefox-0.9.1.tar.gz', 'firefox-0.9.1/', NULL, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (3, 2, 2, NULL, NULL, 1, 'firefox-0.9.1.tar.gz/random/', NULL, NULL, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (4, 3, 1, 12, 3, 5, 'firefox-0.9.zip', 'firefox-0.9/', NULL, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (5, 3, 2, 12, NULL, 6, 'firefox-0.9_unix.patch', 'firefox-0.9_unix/', NULL, 1);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (6, 4, 1, 13, NULL, 3, 'firefox-0.8.ar', NULL, NULL, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (7, 16, 1, 15, 4, 4, 'alsa-utils-1.0.8.tar.gz', 'alsa-utils-1.0.8/', 1, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (8, 17, 1, 16, 6, 4, 'alsa-utils-1.0.9a.tar.gz', 'alsa-utils-1.0.9a/', 1, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (9, 18, 1, 83, 7, 4, 'alsa-utils_1.0.8.orig.tar.gz', 'alsa-utils-1.0.8/', 1, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (11, 18, 2, 84, 8, 2, 'alsa-utils-1.0.8', NULL, 2, 1);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (14, 18, 3, 85, 9, 2, 'alsa-utils-1.0.8/debian', NULL, 3, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (15, 18, 4, 86, 10, 6, 'alsa-utils-1.0.8/debian/patches/10_move_asound_state_to_var.dpatch', 'alsa-utils-1.0.8/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (16, 18, 5, 87, 11, 6, 'alsa-utils-1.0.8/debian/patches/90_debian_alsaconf_idmode.dpatch', 'alsa-utils-1.0.8/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (17, 18, 6, 88, 12, 6, 'alsa-utils-1.0.8/debian/patches/90_debian_alsaconf_paths.dpatch', 'alsa-utils-1.0.8/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (18, 18, 7, 89, 13, 6, 'alsa-utils-1.0.8/debian/patches/91_debian_alsaconf_noclear.dpatch', 'alsa-utils-1.0.8/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (20, 18, 8, 90, 14, 6, 'alsa-utils-1.0.8/debian/patches/94_debian_alsaconf_modprobe_driver.dpatch', 'alsa-utils-1.0.8/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (21, 18, 9, 91, 15, 6, 'alsa-utils-1.0.8/debian/patches/95_debian_alsaconf_force_stop_driver.dpatch', 'alsa-utils-1.0.8/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (22, 18, 10, 92, 16, 6, 'alsa-utils-1.0.8/debian/patches/96_debian_alsaconf_improve_intro.dpatch', 'alsa-utils-1.0.8/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (23, 18, 11, 93, 17, 6, 'alsa-utils-1.0.8/debian/patches/96_debian_alsaconf_cfgfile.dpatch', 'alsa-utils-1.0.8/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (24, 18, 12, 94, 18, 6, 'alsa-utils-1.0.8/debian/patches/97_debian_alsaconf_cfgfile.dpatch', 'alsa-utils-1.0.8/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (25, 19, 1, 95, 19, 4, 'alsa-utils_1.0.9a.orig.tar.gz', 'alsa-utils-1.0.9a/', 1, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (26, 19, 2, 96, 20, 2, 'alsa-utils-1.0.9a', NULL, 2, 1);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (27, 19, 3, 97, 21, 2, 'alsa-utils-1.0.9a/debian', NULL, 3, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (29, 19, 4, 98, 22, 6, 'alsa-utils-1.0.9a/debian/patches/10_move_asound_state_to_var.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (30, 19, 5, 99, 23, 6, 'alsa-utils-1.0.9a/debian/patches/20_alsaconf_safe_tmp.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (31, 19, 6, 100, 24, 6, 'alsa-utils-1.0.9a/debian/patches/90_debian_alsaconf_idmode.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (32, 19, 7, 101, 25, 6, 'alsa-utils-1.0.9a/debian/patches/90_debian_alsaconf_paths.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (33, 19, 8, 102, 26, 6, 'alsa-utils-1.0.9a/debian/patches/91_debian_alsaconf_noclear.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (34, 19, 9, 103, 27, 6, 'alsa-utils-1.0.9a/debian/patches/94_debian_alsaconf_modprobe_driver.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (35, 19, 10, 104, 28, 6, 'alsa-utils-1.0.9a/debian/patches/95_debian_alsaconf_unload_modules.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (36, 19, 11, 105, 29, 6, 'alsa-utils-1.0.9a/debian/patches/96_debian_alsaconf_improve_intro.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (37, 19, 12, 106, 30, 6, 'alsa-utils-1.0.9a/debian/patches/98_debian_alsaconf_nodup.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (38, 19, 13, 107, 31, 6, 'alsa-utils-1.0.9a/debian/patches/99_debian_alsaconf_modprobe_ignoreinstall.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (39, 20, 1, 95, 19, 4, 'alsa-utils_1.0.9a.orig.tar.gz', 'alsa-utils-1.0.9a/', 1, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (40, 20, 2, 96, 32, 2, 'alsa-utils-1.0.9a', NULL, 2, 1);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (41, 20, 3, 97, 33, 2, 'alsa-utils-1.0.9a/debian', NULL, 3, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (42, 20, 4, 98, 22, 6, 'alsa-utils-1.0.9a/debian/patches/10_move_asound_state_to_var.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (43, 20, 5, 99, 23, 6, 'alsa-utils-1.0.9a/debian/patches/20_alsaconf_safe_tmp.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (44, 20, 6, 100, 24, 6, 'alsa-utils-1.0.9a/debian/patches/90_debian_alsaconf_idmode.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (45, 20, 7, 101, 25, 6, 'alsa-utils-1.0.9a/debian/patches/90_debian_alsaconf_paths.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (46, 20, 8, 102, 26, 6, 'alsa-utils-1.0.9a/debian/patches/91_debian_alsaconf_noclear.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (47, 20, 9, 103, 27, 6, 'alsa-utils-1.0.9a/debian/patches/94_debian_alsaconf_modprobe_driver.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (48, 20, 10, 104, 28, 6, 'alsa-utils-1.0.9a/debian/patches/95_debian_alsaconf_unload_modules.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (49, 20, 11, 105, 29, 6, 'alsa-utils-1.0.9a/debian/patches/96_debian_alsaconf_improve_intro.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (50, 20, 12, 106, 30, 6, 'alsa-utils-1.0.9a/debian/patches/98_debian_alsaconf_nodup.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (51, 20, 13, 107, 31, 6, 'alsa-utils-1.0.9a/debian/patches/99_debian_alsaconf_modprobe_ignoreinstall.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (52, 21, 1, 95, 19, 4, 'alsa-utils_1.0.9a.orig.tar.gz', 'alsa-utils-1.0.9a/', 1, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (53, 21, 2, 96, 32, 2, 'alsa-utils-1.0.9a', NULL, 2, 1);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (54, 21, 3, 108, 36, 2, 'alsa-utils-1.0.9a/debian', NULL, 3, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (55, 21, 4, 98, 22, 6, 'alsa-utils-1.0.9a/debian/patches/10_move_asound_state_to_var.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (56, 21, 5, 99, 23, 6, 'alsa-utils-1.0.9a/debian/patches/20_alsaconf_safe_tmp.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (57, 21, 6, 100, 24, 6, 'alsa-utils-1.0.9a/debian/patches/90_debian_alsaconf_idmode.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (58, 21, 7, 101, 25, 6, 'alsa-utils-1.0.9a/debian/patches/90_debian_alsaconf_paths.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (59, 21, 8, 102, 26, 6, 'alsa-utils-1.0.9a/debian/patches/91_debian_alsaconf_noclear.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (60, 21, 9, 109, 37, 6, 'alsa-utils-1.0.9a/debian/patches/94_debian_alsaconf_modprobe_driver.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (61, 21, 10, 104, 28, 6, 'alsa-utils-1.0.9a/debian/patches/95_debian_alsaconf_unload_modules.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (62, 21, 11, 105, 29, 6, 'alsa-utils-1.0.9a/debian/patches/96_debian_alsaconf_improve_intro.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (63, 21, 12, 106, 30, 6, 'alsa-utils-1.0.9a/debian/patches/98_debian_alsaconf_nodup.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (64, 21, 13, 107, 31, 6, 'alsa-utils-1.0.9a/debian/patches/99_debian_alsaconf_modprobe_ignoreinstall.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (65, 22, 1, 95, 19, 4, 'alsa-utils_1.0.9a.orig.tar.gz', 'alsa-utils-1.0.9a/', 1, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (66, 22, 2, 96, 32, 2, 'alsa-utils-1.0.9a', NULL, 2, 1);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (67, 22, 3, 108, 38, 2, 'alsa-utils-1.0.9a/debian', NULL, 3, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (68, 22, 4, 98, 22, 6, 'alsa-utils-1.0.9a/debian/patches/10_move_asound_state_to_var.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (69, 22, 5, 99, 23, 6, 'alsa-utils-1.0.9a/debian/patches/20_alsaconf_safe_tmp.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (70, 22, 6, 100, 24, 6, 'alsa-utils-1.0.9a/debian/patches/90_debian_alsaconf_idmode.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (71, 22, 7, 101, 25, 6, 'alsa-utils-1.0.9a/debian/patches/90_debian_alsaconf_paths.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (72, 22, 8, 102, 26, 6, 'alsa-utils-1.0.9a/debian/patches/91_debian_alsaconf_noclear.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (73, 22, 9, 109, 39, 6, 'alsa-utils-1.0.9a/debian/patches/94_debian_alsaconf_modprobe_driver.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (74, 22, 10, 104, 28, 6, 'alsa-utils-1.0.9a/debian/patches/95_debian_alsaconf_unload_modules.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (75, 22, 11, 105, 29, 6, 'alsa-utils-1.0.9a/debian/patches/96_debian_alsaconf_improve_intro.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (76, 22, 12, 106, 30, 6, 'alsa-utils-1.0.9a/debian/patches/98_debian_alsaconf_nodup.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (77, 22, 13, 107, 31, 6, 'alsa-utils-1.0.9a/debian/patches/99_debian_alsaconf_modprobe_ignoreinstall.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'manifestentry'::pg_catalog.regclass;
@@ -875,7 +1050,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'builder'::pg_catalog.regclass;
 
-INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 1, NULL, false, NULL, false, 'http://localhost:8221/');
+INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url, manual) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 1, NULL, false, NULL, false, 'http://localhost:8221/', false);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'builder'::pg_catalog.regclass;
@@ -894,6 +1069,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'section'::pg_catalog.regclass;
 
 INSERT INTO section (id, name) VALUES (1, 'default_section');
+INSERT INTO section (id, name) VALUES (2, 'editors');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'section'::pg_catalog.regclass;
@@ -947,9 +1123,9 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distroarchrelease'::pg_catalog.regclass;
 
-INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner") VALUES (1, 1, 1, 'i386', 1);
-INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner") VALUES (6, 3, 1, 'i386', 1);
-INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner") VALUES (7, 6, 1, 'i386', 1);
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official) VALUES (1, 1, 1, 'i386', 1, true);
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official) VALUES (6, 3, 1, 'i386', 1, true);
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official) VALUES (7, 6, 1, 'i386', 1, true);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distroarchrelease'::pg_catalog.regclass;
@@ -1058,6 +1234,7 @@ INSERT INTO sourcepackagename (id, name) VALUES (15, 'a52dec');
 INSERT INTO sourcepackagename (id, name) VALUES (16, 'mozilla');
 INSERT INTO sourcepackagename (id, name) VALUES (17, 'uberfrob');
 INSERT INTO sourcepackagename (id, name) VALUES (18, 'thunderbird');
+INSERT INTO sourcepackagename (id, name) VALUES (19, 'alsa-utils');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackagename'::pg_catalog.regclass;
@@ -1066,6 +1243,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'packaging'::pg_catalog.regclass;
 
 INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 1, 1, 3, 2, '2005-07-05 14:20:26.577312', NULL);
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 10, 19, 1, 8, '2005-09-15 11:55:38.640138', NULL);
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 11, 19, 8, 8, '2005-09-15 11:55:48.109778', NULL);
 INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 2, 9, 3, 3, '2005-07-05 14:20:26.577312', NULL);
 INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 3, 10, 1, 5, '2005-07-05 14:20:26.577312', NULL);
 INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 4, 9, 1, 3, '2005-07-05 14:20:26.577312', NULL);
@@ -1085,6 +1264,9 @@ INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency,
 INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (17, 1, '0.99.6-1', '2005-03-14 18:00:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 1, 10, 1, 1);
 INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (20, 1, '0.1-1', '2005-03-24 20:59:31.439579', 1, NULL, 1, 'This is a placeholder changelog for pmount 0.1-1', NULL, NULL, NULL, NULL, 1, 14, 1, 14, 3, 1);
 INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (21, 1, '0.1-2', '2005-06-24 20:59:31.439579', 1, NULL, 1, 'This is a placeholder changelog for pmount 0.1-2', NULL, NULL, NULL, NULL, 1, 15, 1, 14, 3, 1);
+INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (23, 1, '1.0.8-1ubuntu1', '2005-02-03 08:50:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, 18, 1, 19, 1, 1);
+INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (24, 1, '1.0.9a-4', '2005-07-01 22:47:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 1, 19, 8, 1);
+INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (25, 1, '1.0.9a-4ubuntu1', '2005-08-01 14:10:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 1, 19, 3, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackagerelease'::pg_catalog.regclass;
@@ -1121,8 +1303,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'binarypackagerelease'::pg_catalog.regclass;
 
-INSERT INTO binarypackagerelease (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', NULL, NULL, NULL, 'mozilla-firefox', false, NULL, NULL, NULL, true, '''web'':3C,7 ''browser'':4C,8 ''firefox'':2C,6 ''mozilla'':1C,5');
-INSERT INTO binarypackagerelease (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''pmount'':1C,3 ''descript'':4 ''shortdesc'':2C');
+INSERT INTO binarypackagerelease (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', NULL, NULL, NULL, 'mozilla-firefox', false, NULL, NULL, NULL, true, '''web'':3C,7 ''browser'':4C,8 ''firefox'':2C,6 ''mozilla'':1C,5', '2005-10-19 17:50:10.874189');
+INSERT INTO binarypackagerelease (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''pmount'':1C,3 ''descript'':4 ''shortdesc'':2C', '2005-10-19 17:50:10.878712');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'binarypackagerelease'::pg_catalog.regclass;
@@ -3232,7 +3414,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (435, 'uk', 'Ukrainian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (436, 'umb', 'Umbundu', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (437, 'und', 'Undetermined', NULL, NULL, NULL, true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (438, 'urd', 'Urdu', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (438, 'urd', 'Urdu', NULL, 2, 'n != 1', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (439, 'uz', 'Uzbek', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (440, 'vai', 'Vai', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (441, 've', 'Venda', NULL, NULL, NULL, true, 0);
@@ -5582,6 +5764,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'componentselection'::pg_catalog.regclass;
 
+INSERT INTO componentselection (id, distrorelease, component) VALUES (1, 3, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'componentselection'::pg_catalog.regclass;
@@ -5589,6 +5772,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sectionselection'::pg_catalog.regclass;
 
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (1, 3, 2);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sectionselection'::pg_catalog.regclass;
@@ -5903,22 +6087,22 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'karma'::pg_catalog.regclass;
 
-INSERT INTO karma (id, datecreated, person, "action") VALUES (1, '2005-07-05 05:24:07.409248', 12, 1);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (2, '2005-07-05 05:24:07.414864', 12, 2);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (3, '2005-07-05 05:24:07.415443', 12, 3);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (4, '2005-07-05 05:24:07.415915', 12, 4);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (5, '2005-07-05 05:24:07.416384', 12, 5);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (6, '2005-07-05 05:24:07.416837', 12, 6);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (7, '2005-07-05 05:24:07.41729', 12, 7);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (8, '2005-07-05 05:24:07.417756', 12, 8);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (9, '2005-07-05 05:24:07.418209', 12, 9);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (10, '2005-07-13 14:43:02.452716', 12, 9);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (11, '2005-08-03 12:04:50.669962', 16, 9);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (12, '2005-08-04 01:15:48.241836', 16, 9);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (13, '2005-08-10 16:30:32.295049', 12, 9);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (14, '2005-08-10 16:30:47.448639', 12, 9);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (15, '2005-10-11 23:08:01.899322', 13, 13);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (16, '2005-10-14 15:12:29.602117', 16, 1);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (1, '2025-07-05 05:24:07.409248', 12, 1);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (2, '2025-07-05 05:24:07.414864', 12, 2);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (3, '2025-07-05 05:24:07.415443', 12, 3);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (4, '2025-07-05 05:24:07.415915', 12, 4);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (5, '2025-07-05 05:24:07.416384', 12, 5);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (6, '2025-07-05 05:24:07.416837', 12, 6);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (7, '2025-07-05 05:24:07.41729', 12, 7);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (8, '2025-07-05 05:24:07.417756', 12, 8);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (9, '2025-07-05 05:24:07.418209', 12, 9);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (10, '2025-07-13 14:43:02.452716', 12, 9);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (11, '2025-08-03 12:04:50.669962', 16, 9);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (12, '2025-08-04 01:15:48.241836', 16, 9);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (13, '2025-08-10 16:30:32.295049', 12, 9);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (14, '2025-08-10 16:30:47.448639', 12, 9);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (15, '2025-10-14 15:12:29.602117', 16, 1);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (16, '2025-10-14 15:12:29.602117', 16, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'karma'::pg_catalog.regclass;
@@ -6114,6 +6298,10 @@ INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, dist
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (5, 16, 3, 2, 1, 1, '2004-03-10 16:30:00', '2004-03-10 16:30:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (8, 20, 3, 3, 1, 1, '2005-04-18 17:34:15.308434', '2005-04-18 17:34:15.308434', '2005-08-24 17:01:15.308434', NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (9, 21, 3, 2, 1, 1, '2005-08-24 17:01:15.308434', '2005-08-24 17:01:15.308434', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (10, 23, 1, 2, 1, 1, '2005-09-15 11:42:02.870714', '2005-09-15 11:42:02.870714', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (11, 24, 8, 2, 1, 1, '2005-09-15 11:42:21.070926', '2005-09-15 11:42:21.070926', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (12, 25, 3, 2, 1, 1, '2005-09-15 11:43:00.05741', '2005-09-15 11:43:00.05741', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (14, 24, 3, 7, 1, 1, '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', 25, '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', 0, false, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'securesourcepackagepublishinghistory'::pg_catalog.regclass;
@@ -7754,6 +7942,7 @@ INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter,
 INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (2, 'canvas', 'Support <canvas> Objects', 'With the Firefox 1.1 Developer Preview Release, Firefox includes a new HTML element for programmable graphics. <canvas> is based on the WhatWG canvas specification (http://www.whatwg.org/specs/web-apps/current-work/#graphics), which itself is based on Apple''s <canvas> implemented in Safari. It can be used for rendering graphs, UI elements, and other custom graphics on the client.', 16, NULL, NULL, NULL, '2005-08-24 16:05:03.406307', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://developer.mozilla.org/en/docs/Drawing_Graphics_with_Canvas', NULL);
 INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (3, 'svg-support', 'Support Native SVG Objects', 'Scalable Vector Graphics (SVG) is an XML markup language for describing two-dimensional vector graphics. Mozilla should natively support embedded SVG images in HTML documents, or SVG served directly, much as PNG or JPEG images can be served.', 16, 13, 2, NULL, '2005-08-24 16:10:05.078543', 4, NULL, NULL, NULL, NULL, 10, 70, 'http://developer.mozilla.org/en/docs/SVG', NULL);
 INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (4, 'e4x', 'Support E4X in EcmaScript', 'E4X adds native XML datatypes to the ECMAScript language, extends the semantics of familiar ECMAScript operators for manipulating XML objects and adds a small set of new operators for common XML operations, such as searching and filtering. It also adds support for XML literals, namespaces, qualified names and other mechanisms to facilitate XML processing.', 16, 14, 28, NULL, '2005-08-24 16:11:37.431981', 4, NULL, NULL, NULL, 1, 20, 0, 'http://www.ecma-international.org/publications/standards/Ecma-357.htm', 'This is the status whiteboard. Dig it?');
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (5, 'mergewin', 'Merge Open Browser Windows with "Consolidate Windows"', 'It should be possible to merge multiple open browser windows with a "Consolidate Windows" menu option.', 16, NULL, NULL, NULL, '2005-10-19 18:03:59.900723', 4, NULL, NULL, NULL, NULL, 40, 50, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'specification'::pg_catalog.regclass;
@@ -7850,7 +8039,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'shippingrun'::pg_catalog.regclass;
 
-INSERT INTO shippingrun (id, datecreated, sentforshipping, csvfile) VALUES (1, '2005-08-01 18:38:24.526648', FALSE, 35);
+INSERT INTO shippingrun (id, datecreated, sentforshipping, csvfile) VALUES (1, '2005-08-01 18:38:24.526648', false, 35);
+
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'shippingrun'::pg_catalog.regclass;
 
@@ -7885,7 +8075,7 @@ INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled
 INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (11, 13, NULL, false, NULL, '2005-05-02 18:38:24.526648', NULL, NULL, 'noreason', false, 'Carlos Marin', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''carlo'':1A ''marin'':2A');
 INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (12, 6, NULL, false, NULL, '2005-05-08 18:38:24.526648', NULL, NULL, 'noreason', false, 'Jeff Waugh', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''jeff'':1A ''waugh'':2A');
 INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (13, 55, NULL, false, NULL, '2005-05-09 18:38:24.526648', NULL, NULL, 'noreason', false, 'Marilize Coetzee', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''maril'':1A ''coetze'':2A');
-INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (14, 8, 55, false, NULL, '2005-05-19 18:38:24.526648', TRUE, NULL, 'noreason', TRUE, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (14, 8, 55, false, NULL, '2005-05-19 18:38:24.526648', true, NULL, 'noreason', true, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''jame'':1A ''blackwel'':2A');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'shippingrequest'::pg_catalog.regclass;
@@ -7935,6 +8125,7 @@ INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, archite
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (40, 14, 9, 1, 1, 1, 9);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (41, 14, 6, 1, 1, 2, 6);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (42, 14, 9, 1, 1, 3, 9);
+
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'requestedcds'::pg_catalog.regclass;
 
@@ -8025,6 +8216,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'developmentmanifest'::pg_catalog.regclass;
 
+INSERT INTO developmentmanifest (id, "owner", distrorelease, sourcepackagename, manifest, datecreated) VALUES (1, 5, 3, 19, 21, '2005-09-14 00:00:00');
+INSERT INTO developmentmanifest (id, "owner", distrorelease, sourcepackagename, manifest, datecreated) VALUES (2, 5, 3, 19, 22, '2005-09-15 12:52:12.626654');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'developmentmanifest'::pg_catalog.regclass;
@@ -8061,6 +8254,36 @@ INSERT INTO distrocomponentuploader (id, distribution, component, uploader) VALU
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distrocomponentuploader'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distributionsourcepackagecache'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distributionsourcepackagecache'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distroreleasepackagecache'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distroreleasepackagecache'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distroreleasequeuecustom'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distroreleasequeuecustom'::pg_catalog.regclass;
+
+
+
+
+
+
+
+
+
 
 
 

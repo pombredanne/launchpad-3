@@ -107,7 +107,9 @@ other things) the uploader for validating incoming uploads.
    >>> hoary = distroreleaseset.get(3)
    >>> for c in hoary.real_components:
    ...     print c.name
+   main
    >>> for s in hoary.real_sections:
    ...     print s.name
+   editors
 
 [1] https://wiki.launchpad.canonical.com/DerivationOverview

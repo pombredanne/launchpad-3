@@ -23,7 +23,7 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
     SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND, OR
+from sqlobject.sqlbuilder import AND
 from canonical.database.sqlbase import (
     SQLBase, quote, cursor, sqlvalues, flush_database_updates,
     flush_database_caches)
@@ -39,18 +39,18 @@ from canonical.launchpad.interfaces import (
     IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
     ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
     ILoginTokenSet, KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken,
-    NotFoundError)
+    NotFoundError, IKarmaSet, IKarmaCacheSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.karma import KarmaCache, KarmaAction, Karma
+from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.shipit import ShippingRequest
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
-    TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType)
+    TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType, KarmaActionCategory)
 
 from canonical.foaf import nickname
 
@@ -262,14 +262,15 @@ class Person(SQLBase):
         ret = sorted(ret, reverse=True, key=lambda a: a.datecreated)
         return ret
 
-    @property
-    def tickets(self):
+    def tickets(self, quantity=None):
         ret = set(self.created_tickets)
         ret = ret.union(self.answered_tickets)
         ret = ret.union(self.assigned_tickets)
         ret = ret.union(self.subscribed_tickets)
         ret = sorted(ret, key=lambda a: a.datecreated)
         ret.reverse()
+        if quantity is not None:
+            return ret[:quantity]
         return ret
 
     def isTeam(self):
@@ -306,10 +307,20 @@ class Person(SQLBase):
                 "No KarmaAction found with name '%s'." % action_name)
         Karma(person=self, action=action)
 
-    def getKarmaPointsByCategory(self, category):
+    def updateKarmaCache(self):
         """See IPerson."""
-        karmacache = KarmaCache.selectOneBy(personID=self.id, category=category)
-        return getattr(karmacache, 'karmavalue', 0)
+        cacheset = getUtility(IKarmaCacheSet)
+        karmaset = getUtility(IKarmaSet)
+        totalkarma = 0
+        for cat in KarmaActionCategory.items:
+            karmavalue = karmaset.getSumByPersonAndCategory(self, cat)
+            totalkarma += karmavalue
+            cache = cacheset.getByPersonAndCategory(self, cat)
+            if cache is None:
+                cache = cacheset.new(self, cat, karmavalue)
+            else:
+                cache.karmavalue = karmavalue
+        self.karma = totalkarma
 
     def inTeam(self, team):
         """See IPerson."""
@@ -547,6 +558,11 @@ class Person(SQLBase):
     def activemembers(self):
         """See IPerson."""
         return self.approvedmembers.union(self.administrators)
+
+    @property
+    def active_member_count(self):
+        """See IPerson."""
+        return len(self.activemembers)
 
     @property
     def inactivemembers(self):
@@ -1271,6 +1287,10 @@ class PersonSet:
         # flush its caches.
         flush_database_caches()
 
+        # And now update the karma cache for both accounts.
+        from_person.updateKarmaCache()
+        to_person.updateKarmaCache()
+
 
 class EmailAddress(SQLBase):
     implements(IEmailAddress)
@@ -1584,6 +1604,10 @@ class TeamMembership(SQLBase):
     @property
     def statusname(self):
         return self.status.title
+
+    @property
+    def is_admin(self):
+        return self.status in [TeamMembershipStatus.ADMIN]
 
     def isExpired(self):
         return self.status == TeamMembershipStatus.EXPIRED

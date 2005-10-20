@@ -141,7 +141,7 @@ class IBugTaskSearch(Interface):
     for status to be a List field on a search form, where more than
     one value can be selected.)
     """
-    searchtext = TextLine(title=_("Bug ID or Keywords"), required=False)
+    searchtext = TextLine(title=_("Bug ID or Keywords:"), required=False)
     status = List(
         title=_('Bug Status'),
         value_type=IBugTask['status'],

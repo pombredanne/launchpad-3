@@ -1,0 +1,77 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Binary Package Search</h1>
+
+  <p class="documentDescription">
+    Use this form to search through the
+    packages in <span tal:replace="context/title" />.
+  </p>
+
+  <form name="search" method="GET">
+  
+    <input type="text"
+      name="text"
+      size="35"
+      tal:attributes="value request/text|nothing" />
+
+    <input type="submit" value="Search"
+        tal:condition="not: view/searchrequested" />
+    <input type="submit" value="Search Again"
+        tal:condition="view/searchrequested" />
+
+    <p class="discreet">
+       Search for a software package in this release using the form
+       above. You will be shown a list of matching packages, and can
+       explore the archive from there.
+    </p>
+
+  </form>
+
+  <tal:searching condition="view/searchrequested">
+
+    <tal:has_matches condition="view/searchresults">
+
+      <tal:per_match repeat="drbp view/searchresults">
+        <img src="/++resource++package-binary" />
+        <a tal:content="drbp/name"
+           tal:attributes="href drbp/fmt:url">foobar</a>:
+        <div style="margin-left: 30px; font-size: 80%;"
+             tal:content="drbp/summary">
+          Gee whiz special package.
+          <span tal:replace="drbp/description"
+                tal:condition="python:view.matches < 5">
+            Gee whiz special package description goes here if there are
+            fewer than 5 matches.
+          </span>
+        </div>
+      </tal:per_match>
+
+    </tal:has_matches>
+
+    <tal:no_matches condition="not: view/matches">
+
+      <img src="/++resource++alert" />
+      <i>No packages matching "<span tal:replace="view/text">amarok</span>"
+      are published in
+      <span tal:replace="context/displayname">hoary</span>.</i>
+
+    </tal:no_matches>
+
+  </tal:searching>
+
+</div>
+
+</body>
+
+</html>

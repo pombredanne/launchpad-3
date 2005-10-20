@@ -2,10 +2,13 @@
 
 __metaclass__ = type
 
-from zope.testing.doctest import DocTestSuite
+from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
 
 def test_suite():
-    suite = DocTestSuite('canonical.config')
+    suite = DocTestSuite(
+            'canonical.config',
+            optionflags=NORMALIZE_WHITESPACE | ELLIPSIS
+            )
     return suite
 
 

@@ -43,7 +43,6 @@ from zope.app.debug import Debugger
 from zope.app.publication.http import HTTPPublication
 import zope.app.tests.setup
 from zope.app.component.hooks import setSite, getSite
-from zope.app.tests import ztapi
 from zope.component import getUtility
 import zope.security.management
 
@@ -53,6 +52,8 @@ from canonical.chunkydiff import elided_source
 from canonical.config import config
 import canonical.launchpad.layers
 
+
+from canonical.launchpad.webapp import LaunchpadBrowserRequest
 
 # XXX: When we've upgraded Zope 3 to a newer version, we'll just import
 #      IHeaderOutput from zope.publisher.interfaces.http.
@@ -283,7 +284,7 @@ class BrowserTestCase(FunctionalTestCase):
         publish(request, handle_errors=handle_errors)
         # Urgh - need to play with the response's privates to extract
         # cookies that have been set
-        for k,v in response._cookies.items():
+        for k, v in response._cookies.items():
             k = k.encode('utf8')
             self.cookies[k] = v['value'].encode('utf8')
             if self.cookies[k].has_key('Path'):

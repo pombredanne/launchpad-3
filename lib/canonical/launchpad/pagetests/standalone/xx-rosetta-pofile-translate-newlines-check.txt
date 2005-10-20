@@ -1,7 +1,7 @@
 First, we check that the textarea is empty by default.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=19&count=1 HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?offset=19&count=1 HTTP/1.1
   ... Accept-Language: en-gb,en;q=0.5
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
@@ -14,11 +14,11 @@ Now, we submit some text with new lines before and after the text, the
 answer should have exactly those strings.
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?count=1&offset=19 HTTP/1.1
+  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?count=1&offset=19 HTTP/1.1
   ... Content-Length: 105
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=19&count=1
+  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?offset=19&count=1
   ... 
   ... set_149_msgid=&set_149_translation_es_0=%0D%0Afoo%0D%0A%0D%0A&offset=20&show=all&SUBMIT=Save+%26+Continue""")
   HTTP/1.1 200 Ok
@@ -33,20 +33,18 @@ answer should have exactly those strings.
 And finally, a line that does not start with a new line so we are sure we don't get extra whitespaces
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?count=1&offset=19 HTTP/1.1
+  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?count=1&offset=19 HTTP/1.1
   ... Content-Length: 87
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+translate?offset=19&count=1
+  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?offset=19&count=1
   ... 
   ... set_149_msgid=&set_149_translation_es_0=foo&offset=20&show=all&SUBMIT=Save+%26+Continue""") #doctest: -NORMALIZE_WHITESPACE
   HTTP/1.1 200 Ok
   ...
-                          </div>
   ...<textarea lang="es" rows="5"
       name="set_149_translation_es_0" dir="ltr" tabindex="1">
-  foo</textarea>...
-                          <div>
+  foo</textarea>
   ...
 
 Now, Check that even though the user forgot the trailing new line char, Rosetta

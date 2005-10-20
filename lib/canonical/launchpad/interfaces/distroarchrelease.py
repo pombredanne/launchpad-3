@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
+from zope.schema import Bool, TextLine
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.interfaces import IHasOwner
@@ -21,7 +22,14 @@ class IDistroArchRelease(IHasOwner):
     id = Attribute("Identifier")
     distrorelease = Attribute("DistroRelease")
     processorfamily = Attribute("ProcessorFamily")
-    architecturetag = Attribute("ArchitectureTag")
+    architecturetag = TextLine(title=_("Architecture Tag"),
+        description=_("The architecture tag, or short piece of text that "
+        "identifies this architecture. All binary packages in the archive "
+        "will use this tag in their filename. Please get it correct. It "
+        "should really never be changed!"), required=True)
+    official = Bool(title=_("Official Support"),
+        description=_("Indicate whether or not this port has official "
+        "support from the vendor of the distribution."), required=True)
     owner = Attribute("Owner")
 
     #joins
@@ -34,6 +42,8 @@ class IDistroArchRelease(IHasOwner):
     binarycount = Attribute('Count of Binary Packages')
     isNominatedArchIndep = Attribute(
         'True if this distroarchrelease is the NominatedArchIndep one.')
+
+    distribution = Attribute("The distribution of the package.")
 
     def getChroot(pocket=None, default=None):
         """Return the librarian file alias of the chroot for a given Pocket.
@@ -59,6 +69,13 @@ class IDistroArchRelease(IHasOwner):
 
     def __getitem__(name):
         """Getter"""
+    
+    def getBinaryPackage(name):
+        """Return the DistroArchReleaseBinaryPackage with the given name in
+        this distro arch release.
+        """
+
+
 
 class IPocketChroot(Interface):
     """PocketChroot Table Interface"""

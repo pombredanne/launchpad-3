@@ -53,22 +53,21 @@ example, with Malone, a bug is usually filed on a distribution
 sourcepackage (filing a bug on a specific distrorelease actually means
 something quite different, but is outside the scope of this document.)
 
-To retrieve a distribution source package, use the
-IDistroSourcePackageSet utility:
+To retrieve a distribution source package, use the getSourcePackage
+method on a distribution:
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistroSourcePackageSet, IDistributionSet, IDistroSourcePackage)
+    ...     IDistributionSet, IDistributionSourcePackage)
     >>> ubuntu = getUtility(IDistributionSet).get(1)
-    >>> ubuntu_firefox = getUtility(IDistroSourcePackageSet).getPackage(
-    ...     distribution=ubuntu, sourcepackagename=firefox)
-    >>> IDistroSourcePackage.providedBy(ubuntu_firefox)
+    >>> ubuntu_firefox = ubuntu.getSourcePackage(firefox)
+    >>> IDistributionSourcePackage.providedBy(ubuntu_firefox)
     True
     >>> print ubuntu_firefox.name
     mozilla-firefox
     >>> print ubuntu_firefox.title
-    ubuntu mozilla-firefox
+    Source Package "mozilla-firefox" in Ubuntu Linux
     >>> print ubuntu_firefox.displayname
-    ubuntu mozilla-firefox
+    mozilla-firefox in ubuntu
     >>> ubuntu_firefox.distribution == ubuntu
     True
     >>> ubuntu_firefox.sourcepackagename == firefox
@@ -77,10 +76,8 @@ IDistroSourcePackageSet utility:
 Distro sourcepackages know how to compare to each other:
 
     >>> debian = getUtility(IDistributionSet).get(3)
-    >>> ubuntu_firefox_also = getUtility(IDistroSourcePackageSet).getPackage(
-    ...     distribution=ubuntu, sourcepackagename=firefox)
-    >>> debian_firefox = getUtility(IDistroSourcePackageSet).getPackage(
-    ...     distribution=debian, sourcepackagename=firefox)
+    >>> ubuntu_firefox_also = ubuntu.getSourcePackage(firefox)
+    >>> debian_firefox = debian.getSourcePackage(firefox)
 
     >>> ubuntu_firefox_also == ubuntu_firefox
     True

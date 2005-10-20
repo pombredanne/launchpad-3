@@ -1,0 +1,99 @@
+Each of the +bugs bug listings have a sort order widget, to allow the user
+various options in ordering the search results. Let's demonstrate this
+functionality by going through each +bugs page.
+
+1. The upstream +bugs page.
+
+Default view:
+
+  >>> print http("""
+  ... GET /products/firefox/+bugs HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...5...
+  ...4...
+  ...1...
+
+Sort by title:
+
+  >>> print http("""
+  ... GET /products/firefox/+bugs?sortorder=title&sort=Sort HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...1...
+  ...5...
+  ...4...
+
+2. The distro +bugs page.
+
+Default view:
+
+  >>> print http("""
+  ... GET /distros/debian/+bugs HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...1...
+  ...2...
+  ...3...
+
+Sort by title:
+
+  >>> print http("""
+  ... GET /distros/debian/+bugs?sortorder=title&sort=Sort HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...2...
+  ...3...
+  ...1...
+
+3. The distrorelease +bugs page.
+
+Default view:
+
+  >>> print http("""
+  ... GET /distros/ubuntu/warty/+bugs HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...5...
+
+Sort by title:
+
+  >>> print http("""
+  ... GET /distros/ubuntu/warty/+bugs?sortorder=title&sort=Sort HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...5...
+
+4. The distro sourcepackage +bugs page.
+
+Default view:
+
+  >>> print http("""
+  ... GET /distros/debian/+source/mozilla-firefox/+bugs HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...1...
+  ...2...
+  ...3...
+
+Sort by severity, then priority:
+
+  >>> print http("""
+  ... GET /distros/ubuntu/warty/+bugs?sortorder=title&sort=Sort HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...3...
+  ...1...
+  ...2...
+
+There is currently no sort widget on the distro release +bugs listing, due to
+the fact that it's a different layout, broken into multiple reports on the same
+page.

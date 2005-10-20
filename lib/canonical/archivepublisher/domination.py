@@ -5,7 +5,7 @@
 # related to the domination of old source and binary releases inside
 # the publishing tables.
 
-from canonical.sourcerer.deb.version import (
+from sourcerer.deb.version import (
     Version as DebianVersion, BadUpstreamError)
 
 from canonical.lp.dbschema import PackagePublishingStatus

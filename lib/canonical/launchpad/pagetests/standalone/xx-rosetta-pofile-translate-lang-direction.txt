@@ -15,7 +15,7 @@ HTML uses a dash as the separator in language codes rather than an
 underscore.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/en_AU/+translate HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/en_AU/+translate HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -38,7 +38,7 @@ When entering Hebrew translations, the form controls are set to right
 to left:
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/he/+translate HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/he/+translate HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -59,7 +59,7 @@ Suggestion text is also tagged with it's language code and text
 direction:
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/he/+translate?alt=es HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/he/+translate?alt=es HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -70,7 +70,7 @@ direction:
   <input type="text" lang="he"
       dir="rtl" name="set_130_translation_he_0" tabindex="1" />
   ...
-  <pre><b>Spanish (Alternate Language):</b><br />
-  <span lang="es" dir="ltr">...</span> (...)</pre>
+  ...Spanish (Alternate Language):...
+  ... lang="es" dir="ltr">...</...
   ...
 

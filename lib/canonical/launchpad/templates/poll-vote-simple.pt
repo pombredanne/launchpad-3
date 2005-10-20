@@ -12,11 +12,17 @@
 
   <div metal:fill-slot="main">
 
-    <h1 tal:content="context/proposition" />
+    <h1>Simple Vote Page</h1>
 
     <tal:can-vote condition="view/userCanVote">
     <p class="portalMessage" tal:condition="view/feedback"
        tal:content="view/feedback" />
+
+    <div class="highlighted" style="font-size: 80%;">
+      <tal:proposition replace="structure context/proposition/fmt:text-to-html">
+         The proposition goes here.
+      </tal:proposition>
+    </div>
 
     <form action="" method="POST">
 
@@ -38,7 +44,7 @@
     <table cols="2">
       <tr>
         <td>
-          <h3>Your current vote</h3>
+          <h2>Current Vote</h2>
           <tal:block condition="not: view/userVoted">
             <p>You have not yet voted in this poll.</p>
           </tal:block>
@@ -63,7 +69,7 @@
         </td>
         <td>
           <tal:block condition="not: view/userVoted">
-            <h3>Vote now</h3>
+            <h2>Vote Now</h2>
             <p>Choose one option</p>
 
             <label>
@@ -74,7 +80,7 @@
           </tal:block>
 
           <tal:block condition="view/userVoted">
-            <h3>Change your vote</h3>
+            <h2>Change Vote</h2>
             <p>Choose one option</p>
 
             <label>

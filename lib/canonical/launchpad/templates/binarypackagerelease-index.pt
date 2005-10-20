@@ -1,0 +1,155 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+  </metal:leftportlets>
+
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-latestversions" />
+  </metal:rightportlets>
+
+  <div metal:fill-slot="main">
+
+    <h2 tal:content="context/summary">Package Summary Here</h2>
+
+    <p class="highlighted" tal:content="context/description" />
+
+    <b>Source package:</b>
+    <a tal:define="spackage context/distributionsourcepackagerelease"
+       tal:content="spackage/name"
+       tal:attributes="href spackage/fmt:url">
+       SOURCEPACKAGE</a><br />
+
+    <b>Download:</b>
+    <ul tal:condition="context/files">
+      <li class="file" tal:repeat="file context/files">
+        <a tal:content="file/url/filename"
+           tal:attributes="href file/url/fileurl" />
+      </li>
+      <li class="alert" tal:condition="not: context/files">
+        <i>No files for this binary package.</i>
+      </li>
+    </ul>
+
+    <h2>Relationship to other packages</h2>
+          
+
+    <table>
+      <tbody>
+        <tr tal:condition="view/provides">
+          <th><label>Provides:</label></th>
+          <td>
+            <ul >
+              <li tal:repeat="binprovides view/provides">
+
+     <span tal:content="binprovides/name" />
+		<tal:dummy condition="binprovides/signal">
+                  (<span tal:replace="binprovides/signal" />
+                  <span tal:replace="binprovides/version" />)
+		</tal:dummy>
+                </li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr  tal:condition="view/depends">
+            <th><label>Depends on:</label></th>
+            <td>
+              <ul>
+                <li tal:repeat="bindepends view/depends">
+                  
+	        <a tal:content="bindepends/name"
+		tal:attributes="href string:../../../${bindepends/name}"/> 
+		<tal:dummy condition="bindepends/signal">
+		              (<span tal:replace="bindepends/signal" /> 
+		              <span tal:replace="bindepends/version" />)
+		</tal:dummy> 
+
+	              </li>
+	            </ul>
+            </td>
+          </tr>
+
+          <tr tal:condition="view/recommends">
+            <th><label>Recommends:</label></th>
+            <td>
+              <ul>
+                <li tal:repeat="binrecommends view/recommends">
+
+	        <a tal:content="binrecommends/name"
+		tal:attributes="href string:../../../${binrecommends/name}"/> 
+		<tal:dummy condition="binrecommends/signal">
+                  (<span tal:replace="binrecommends/signal" /> 
+                  <span tal:replace="binrecommends/version" />)
+		</tal:dummy>
+
+        	      </li>
+        	    </ul>
+            </td>
+          </tr>
+
+          <tr  tal:condition="view/suggests">
+            <th><label>Suggests:</label></th>
+            <td>
+              <ul>
+                <li tal:repeat="binsuggests view/suggests">
+
+	        <a tal:content="binsuggests/name"
+		tal:attributes="href string:../../../${binsuggests/name}"/>  
+		<tal:dummy condition="binsuggests/signal">
+                  (<span tal:replace="binsuggests/signal" />
+                  <span tal:replace="binsuggests/version" />)
+		</tal:dummy>
+
+                </li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr tal:condition="view/conflicts">
+            <th><label>Conflicts with:</label></th>
+            <td>
+              <ul>
+                <li tal:repeat="binconflicts view/conflicts">
+
+	        <a tal:content="binconflicts/name"
+		tal:attributes="href string:../../../${binconflicts/name}"/> 
+		<tal:dummy condition="binconflicts/signal">
+                  (<span tal:replace="binconflicts/signal" /> 
+                  <span tal:replace="binconflicts/version" />)
+		</tal:dummy> 
+
+                </li>
+              </ul>
+
+            </td>
+          </tr>
+
+          <tr tal:condition="view/replaces">
+            <th><label>Replaces:</label></th>
+            <td>
+              <ul>
+                <li tal:repeat="binreplaces view/replaces">
+
+	        <a tal:content="binreplaces/name"
+		tal:attributes="href string:../../../${binreplaces/name}"/>  
+		<tal:dummy condition="binreplaces/signal">
+                  (<span tal:replace="binreplaces/signal" /> 
+                  <span tal:replace="binreplaces/version" />)
+		</tal:dummy> 
+
+                </li>
+              </ul>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+  </body>
+</html>

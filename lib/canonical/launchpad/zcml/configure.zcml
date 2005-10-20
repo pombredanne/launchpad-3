@@ -7,6 +7,8 @@
     <!-- Content class configuration -->
     <include file="archuserid.zcml" />
     <include file="batchnavigator.zcml" />
+    <include file="binarypackagepublishing.zcml" />
+    <include file="binarypackagepublishinghistory.zcml" />
     <include file="binarypackagerelease.zcml" />
     <include file="binarypackagename.zcml" />
     <include file="binarypackagepublishing.zcml" />
@@ -37,10 +39,16 @@
     <include file="cvereference.zcml" />
     <include file="datetime.zcml" />
     <include file="distribution.zcml" />
+    <include file="distributionsourcepackage.zcml" />
+    <include file="distributionsourcepackagerelease.zcml" />
     <include file="distrocomponentuploader.zcml" />
     <include file="distrorelease.zcml" />
+    <include file="distroreleasebinarypackage.zcml" />
+    <include file="distroreleasesourcepackagerelease.zcml" />
     <include file="distroreleaselanguage.zcml" />
     <include file="distroarchrelease.zcml" />
+    <include file="distroarchreleasebinarypackage.zcml" />
+    <include file="distroarchreleasebinarypackagerelease.zcml" />
     <include file="emailaddress.zcml" />
     <include file="files.zcml" />
     <include file="foaf.zcml" />
@@ -79,12 +87,13 @@
     <include file="product.zcml" />
     <include file="project.zcml" />
     <include file="publishedpackage.zcml" />
+    <include file="queue.zcml" />
     <include file="registry.zcml" />
     <include file="sourcepackage.zcml" />
     <include file="sourcepackagename.zcml" />
-    <include file="sourcepackagerelease.zcml" />
-    <include file="sourcepackagereleaseindistro.zcml" />
     <include file="sourcepackagepublishing.zcml" />
+    <include file="sourcepackagepublishinghistory.zcml" />
+    <include file="sourcepackagerelease.zcml" />
     <include file="specification.zcml" />
     <include file="specificationdependency.zcml" />
     <include file="specificationreview.zcml" />
@@ -95,7 +104,6 @@
     <include file="ticketreopening.zcml" />
     <include file="ticketsubscription.zcml" />
     <include file="tickettarget.zcml" />
-    <include file="vsourcepackagereleasepublishing.zcml" />
     <include file="shipit.zcml" />
     <include file="sshkey.zcml" />
     <include file="teammembership.zcml" />

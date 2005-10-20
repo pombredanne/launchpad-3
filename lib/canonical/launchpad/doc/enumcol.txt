@@ -90,7 +90,7 @@ But not items from another schema.
     >>> t.foo = AnotherSchema.ONE
     Traceback (most recent call last):
     ...
-    TypeError: DBSchema Item from wrong class
+    TypeError: DBSchema Item from wrong class, <class 'AnotherSchema'> != <class 'FooSchema'>
 
 Tear down.
 
