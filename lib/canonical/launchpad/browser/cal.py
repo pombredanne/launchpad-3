@@ -171,7 +171,7 @@ class CalendarNavigation(Navigation):
     @property
     def _datetimenow(self):
         user_timezone = getUtility(ILaunchBag).timezone
-        now = datetime.now(user_timezone)
+        return datetime.now(user_timezone)
 
     @stepto('today')
     def today(self):
