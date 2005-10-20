@@ -10,7 +10,7 @@ We start out with 6 packages in our database.
     >>> from canonical.launchpad.database import (SourcePackageRelease,
     ...                                           SourcePackageName)
     >>> SourcePackageRelease.select().count()
-    6
+    9
 
     >>> import subprocess, sys, os
     >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
@@ -102,11 +102,11 @@ The exit status must be 0, for success:
 We should have a few more source packages in the database:
 
     >>> transaction.commit()
-    >>> existing = 6
+    >>> existing = 9
     >>> hoary = 9 - 2   # 2 packages fail
     >>> breezy = 10 - 3 - 2  # 3 packages are the same as in hoary, 2 fail
     >>> existing + hoary + breezy
-    18
+    21
     >>> count = SourcePackageRelease.select().count()
     >>> count == (existing + hoary + breezy) or count
     True

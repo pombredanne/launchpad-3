@@ -356,6 +356,13 @@ def quote(x):
     >>> quote(r"\'hello")
     "'\\\\\\'hello'"
 
+    Note that we need to receive a Unicode string back, because our
+    query will be a Unicode string (the entire query will be encoded
+    before sending across the wire to the database).
+
+    >>> quote(u"\N{TRADE MARK SIGN}")
+    u"'\u2122'"
+
     Timezone handling is not implemented, since all timestamps should
     be UTC anyway.
 

@@ -10,7 +10,7 @@ If we haven't logged in yet, we should be prompted to.
   HTTP/1.1 303 See Other
   Content-Length: 0
   Content-Type: text/plain;charset=utf-8
-  Location: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export/+login
+  Location: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export/+login...
 
 If we GET the page while logged in, we should get a confirmation form.
 

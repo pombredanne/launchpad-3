@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces import (
     IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
     IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
-    IShippingRun)
+    IShippingRun, ISpecification)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -53,6 +53,18 @@ class EditByOwnersOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
+
+
+class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ISpecification
+
+    def checkAuthenticated(self, user):
+        assert self.obj.target
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.target.owner) or 
+                user.inTeam(self.obj.owner) or 
+                user.inTeam(admins))
 
 
 class AdminSeriesSourceByButtSource(AuthorizationBase):

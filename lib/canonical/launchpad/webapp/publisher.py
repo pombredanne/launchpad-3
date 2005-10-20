@@ -142,7 +142,10 @@ class LaunchpadView(UserAttributeCache):
         self.request = request
 
     def initialize(self):
-        """Override this in subclasses."""
+        """Override this in subclasses.
+       
+        Default implementation does nothing.
+        """
         pass
 
     @property

@@ -16,5 +16,5 @@ https://launchpad.net/products/launchpad/+bug/2730
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/products/firefox/+bug/8/+index/+login
+  Location: http://localhost:9000/products/firefox/+bug/8/+index/+login?...
   <BLANKLINE>

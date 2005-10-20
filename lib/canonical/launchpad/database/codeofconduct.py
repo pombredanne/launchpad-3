@@ -9,7 +9,6 @@ __all__ = ['CodeOfConduct', 'CodeOfConductSet', 'CodeOfConductConf',
            'SignedCodeOfConduct', 'SignedCodeOfConductSet']
 
 import os
-import errno
 from sha import sha
 from datetime import datetime
 
@@ -22,6 +21,7 @@ from canonical.database.sqlbase import SQLBase, quote, flush_database_updates
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.mail.sendmail import simple_sendmail
+from canonical.launchpad.webapp import canonical_url
 
 from canonical.launchpad.interfaces import (
     ICodeOfConduct, ICodeOfConductSet, ICodeOfConductConf,
@@ -173,8 +173,6 @@ class SignedCodeOfConduct(SQLBase):
 
     def sendAdvertisementEmail(self, subject, content):
         """See ISignedCodeOfConduct."""
-        # XXX cprov 20050705
-        # Until when it will be necessary ?
         assert self.owner.preferredemail
         template = open('lib/canonical/launchpad/emailtemplates/'
                         'signedcoc-acknowledge.txt').read()
@@ -240,11 +238,11 @@ class SignedCodeOfConductSet:
         gpg = gpgkeyset.getByFingerprint(sig.fingerprint)
 
         if not gpg:
-            return ('The key you used to sign, which fingerprint is <kbd>%s'
-                    '</kbd>, is not properly registered in launchpad. Please '
-                    'access <a href="/people/%s/+editgpgkey">Edit GPG Keys'
-                    '</a> and follow the instructions.' % (sig.fingerprint,
-                                                           user.name))
+            return ('The key you used, which has the fingerprint <kbd>%s'
+                    '</kbd>, is not registered in Launchpad. Please '
+                    '<a href="/people/%s/+editgpgkeys">follow the '
+                    'instructions</a> and try again.'
+                    % (sig.fingerprint, canonical_url(user)))
 
         if gpg.owner.id != user.id:
             return ('GPG key onwer (%s) and current Launchpad user (%s) '
