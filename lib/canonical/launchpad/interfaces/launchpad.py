@@ -22,7 +22,7 @@ __all__ = [
     'IBazaarApplication', 'IFOAFApplication', 'IPasswordEncryptor',
     'IReadZODBAnnotation', 'IWriteZODBAnnotation',
     'IZODBAnnotation', 'IAuthorization',
-    'IHasOwner', 'IHasAssignee', 'IHasProduct', 
+    'IHasOwner', 'IHasAssignee', 'IHasProduct',
     'IHasProductAndAssignee', 'IOpenLaunchBag',
     'IAging', 'IHasDateCreated',
     'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities',
@@ -34,7 +34,7 @@ __all__ = [
     'IPasswordChangeApp', 'IPasswordResets', 'IShipItApplication',
     'IAfterTraverseEvent', 'AfterTraverseEvent',
     'IBeforeTraverseEvent', 'BeforeTraverseEvent',
-    'IBreadcrumb', 'ILaunchpadBrowserApplicationRequest'
+    'IBreadcrumb', 'ILaunchpadBrowserApplicationRequest',
     ]
 
 

@@ -36,6 +36,8 @@
                 PostgreSQL's default setting is used.
             </description>
         </key>
+        <key name="browser_notification_level" required="no"
+            datatype="canonical.config.loglevel" default="info" />
     </sectiontype>
 
     <sectiontype name="gina_target">
@@ -84,10 +86,10 @@
                 main,universe,restricted
             </example>
         </key>
-        <!-- datatype changed from existing-directory to allow config
-        to load without ubuntu-keyrings installed (such as on emperor) -->
-        <key name="keyrings" datatype="string"
-            default="/usr/share/keyrings">
+        <!-- datatype really should be existing-directory, but keyrings
+        are not installed on all production servers and they shouldn't need
+        it installed if they are not running Gina. -->
+        <key name="keyrings" datatype="string" default="/usr/share/keyrings">
             <description>
                 A full path to where the keyrings files are
                 available. These keyrings are used to look up who signed

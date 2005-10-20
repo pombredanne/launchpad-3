@@ -1266,3 +1266,34 @@ Calendar stuff.
   background: #e0b6af;
   border: 1px #884631 solid;
 }
+
+.error-notification,
+.warning-notification {
+  background-position: 5px 0.5em;
+  padding-left: 30px;
+  background-color: #ff9070;
+  border: 1px solid #ddb0b0;
+  color: Black;
+  background-image: url(/++resource++alert_icon.gif);
+  font-size: 85%;
+  font-weight: bold;
+  margin: 1em 0em 0em 0em;
+  padding: 0.5em 1em 0.5em 3em;
+  background-repeat: no-repeat;
+}
+
+.notice-notification,
+.info-notification,
+.debug-notification {
+  background-position: 5px 0.5em;
+  padding-left: 30px;
+  background-color: #ffce7b;
+  border: 1px solid #ddb0b0;
+  color: Black;
+  background-image: url(/++resource++info_icon.gif);
+  font-size: 85%;
+  font-weight: bold;
+  margin: 1em 0em 0em 0em;
+  padding: 0.5em 1em 0.5em 3em;
+  background-repeat: no-repeat;
+}

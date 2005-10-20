@@ -1,26 +1,32 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 """The webapp package contains infrastructure that is common across Launchpad
 that is to do with aspects such as security, menus, zcml, tales and so on.
 
 This module also has an API for use by the application.
 """
+__metaclass__ = type
 
 __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'nearest_menu', 'canonical_url', 'nearest', 'structured',
            'StandardLaunchpadFacets', 'enabled_with_permission',
            'LaunchpadView', 'Navigation', 'stepthrough', 'redirection',
-           'stepto', 'GetitemNavigation', 'LaunchpadBrowserRequest',
-           'smartquote']
+           'stepto', 'GetitemNavigation', 'smartquote',
+           'LaunchpadBrowserRequest', 'LaunchpadBrowserResponse']
 
 import re
 from zope.component import getUtility
 
 from canonical.launchpad.webapp.menu import (
     Link, FacetMenu, ApplicationMenu, ContextMenu, nearest_menu, structured,
-    enabled_with_permission)
+    enabled_with_permission
+    )
 from canonical.launchpad.webapp.publisher import (
     canonical_url, nearest, LaunchpadView, Navigation, stepthrough,
     redirection, stepto)
-from canonical.launchpad.webapp.servers import LaunchpadBrowserRequest
+from canonical.launchpad.webapp.servers import (
+        LaunchpadBrowserRequest, LaunchpadBrowserResponse
+        )
 from canonical.launchpad.interfaces import ILaunchBag
 
 
@@ -106,4 +112,5 @@ class StandardLaunchpadFacets(FacetMenu):
         target = '+calendar'
         text = 'Calendar'
         return Link(target, text, enabled=False)
+
 
