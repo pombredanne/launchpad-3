@@ -2,7 +2,7 @@ The bug task edit page now features a new and improved assignee
 widget, which makes it easier to "take" a task.
 
   >>> print http(r"""
-  ... GET /distros/debian/+sources/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
+  ... GET /distros/debian/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Cookie: launchpad=cB8B19HiXp7whphyHXL-4zHCb5QJy.chSata4WiN2w3eRyOpyVk63w
   ... """)
@@ -16,7 +16,7 @@ So, taking the task is now as simple as selecting the "me" radio
 button:
 
   >>> print http(r"""
-  ... POST /distros/debian/+sources/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
+  ... POST /distros/debian/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1999
   ... Content-Type: multipart/form-data; boundary=---------------------------19759086281403130373932339922
@@ -92,7 +92,7 @@ In this example, we were logged in as Foo Bar, so the task is now
 automagically assigned to Foo Bar.
 
   >>> print http(r"""
-  ... GET /distros/debian/+sources/mozilla-firefox/+bug/1 HTTP/1.1
+  ... GET /distros/debian/+source/mozilla-firefox/+bug/1 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Cookie: launchpad=cB8B19HiXp7whphyHXL-4zHCb5QJy.chSata4WiN2w3eRyOpyVk63w
   ... Referer: http://localhost:9000/distros/debian/+bugs/1/+edit
@@ -105,7 +105,7 @@ automagically assigned to Foo Bar.
 But, you can also assign the task to another person, of course:
 
   >>> print http(r"""
-  ... POST /distros/debian/+sources/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
+  ... POST /distros/debian/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1999
   ... Content-Type: multipart/form-data; boundary=---------------------------19759086281403130373932339922
@@ -179,20 +179,20 @@ But, you can also assign the task to another person, of course:
 In this case, we assigned the task to Sample Person:
 
   >>> print http(r"""
-  ... GET /distros/debian/+sources/mozilla-firefox/+bug/1 HTTP/1.1
+  ... GET /distros/debian/+source/mozilla-firefox/+bug/1 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Cookie: launchpad=cB8B19HiXp7whphyHXL-4zHCb5QJy.chSata4WiN2w3eRyOpyVk63w
   ... """)
   HTTP/1.1 200 Ok
   ...
-  ...debian mozilla-firefox...Sample Person...
+  ...mozilla-firefox (debian)...Sample Person...
   ...
 
 Lastly, the widget also allows you to simply assign the task to nobody
 (to, "give up" the task, you might say)
 
   >>> print http(r"""
-  ... POST /distros/debian/+sources/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
+  ... POST /distros/debian/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1999
   ... Content-Type: multipart/form-data; boundary=---------------------------19759086281403130373932339922
@@ -266,11 +266,11 @@ Lastly, the widget also allows you to simply assign the task to nobody
 And now the bug task is unassigned:
 
   >>> print http(r"""
-  ... GET /distros/debian/+sources/mozilla-firefox/+bug/1 HTTP/1.1
+  ... GET /distros/debian/+source/mozilla-firefox/+bug/1 HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Cookie: launchpad=cB8B19HiXp7whphyHXL-4zHCb5QJy.chSata4WiN2w3eRyOpyVk63w
   ... """)
   HTTP/1.1 200 Ok
   ...
-  ...debian mozilla-firefox...
+  ...mozilla-firefox (debian)...
   ...

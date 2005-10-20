@@ -136,6 +136,8 @@ XXX: test binary package creation, in particular gcc-defaults, whose
      package versions differ from its source version
 XXX: test that there are only XXX binary package releases created
 XXX: test that there are only XXX builds created
+XXX: put in a test that says, when it creates a BPR or SPR, make sure there is
+     not already one pointing at the same LibraryFileContent
 
 === Other tests ===
 

@@ -205,7 +205,7 @@ And should be accepted by our validator.
 
 And here's a non-current message set. It shouldn't be fuzzy either.
 
-    >>> messageSets = list(pofile.messageSetsNotInTemplate())
+    >>> messageSets = list(pofile.getPOMsgSetsNotInTemplate())
     >>> messageSets[0].potmsgset.primemsgid_.msgid
     u'balloon'
     >>> messageSets[0].publishedfuzzy
@@ -213,7 +213,7 @@ And here's a non-current message set. It shouldn't be fuzzy either.
 
 This message set should be fuzzy, however.
 
-    >>> messageSet = pofile.messageSet(u'bar')
+    >>> messageSet = pofile.getPOMsgSet(u'bar')
     >>> messageSet.publishedfuzzy
     True
 
@@ -225,14 +225,14 @@ be the same for the active translation.
 
 And this one should have the validation status with an error.
 
-    >>> messageSet = pofile.messageSet(u'Foo %s')
+    >>> messageSet = pofile.getPOMsgSet(u'Foo %s')
     >>> published = messageSet.publishedSubmission(0)
     >>> published.validationstatus == TranslationValidationStatus.UNKNOWNERROR
     True
 
 Check that the plural form was imported correctly.
 
-    >>> messageSet = pofile.messageSet(u'Singular %d')
+    >>> messageSet = pofile.getPOMsgSet(u'Singular %d')
     >>> published = messageSet.publishedSubmission(0)
     >>> published.validationstatus == TranslationValidationStatus.OK
     True

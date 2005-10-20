@@ -54,7 +54,7 @@ Now let's add a translation to the PO file.
     >>> person = Person.get(1)
 
     >>> msgid = u"Failed to authenticate with LDAP server."
-    >>> msgset = pofile.messageSet(msgid)
+    >>> msgset = pofile.getPOMsgSet(msgid)
     >>> print msgset.active_texts
     [None]
     >>> msgset.updateTranslationSet(person, {0: 'Blah.'}, fuzzy=False,

@@ -139,10 +139,8 @@ class PackagesMap:
 
             tmpbin_map = self.bin_map[info_set.arch]
 
-            # Get a apt_pkg handler for the binaries
+            # Run over the binary stanzas and store info in tmp_bin_map.
             binaries = apt_pkg.ParseTagFile(info_set.binfile)
-
-            # Run over the handler and store info in tmp_bin_map.
             while binaries.Step():
                 try:
                     bin_tmp = dict(binaries.Section)
@@ -156,23 +154,20 @@ class PackagesMap:
                 tmpbin_map[bin_name] = bin_tmp
 
             # XXX: untested
-            # Get a apt_pkg handler for the debian installer binaries
+            # Run over the D-I stanzas and store info in tmp_bin_map.
             dibinaries = apt_pkg.ParseTagFile(info_set.binfile)
-
-            # Run over the handler and store info in tmp_bin_map.
             while dibinaries.Step():
                 dibin_tmp = dict(dibinaries.Section)
                 dibin_tmp['Component'] = info_set.component
                 dibin_name = dibin_tmp['Package']
                 tmpbin_map[bin_name] = dibin_tmp
 
-            # Get a apt_pkg handler for the sources
+            # Run over the source stanzas and store info in src_map. We
+            # make just one source map (instead of one per architecture)
+            # because most of then are the same for all architectures,
+            # but we go over it to also cover source packages that only
+            # compile for one architecture.
             sources = apt_pkg.ParseTagFile(info_set.srcfile)
-
-            # Run over the handler and store info in src_map
-            # We make just one source map because most of then are the same
-            # for all architectures, but we go over it to cover also source
-            # packages that only compiles for one architecture.
             while sources.Step():
                 try:
                     src_tmp = dict(sources.Section)
@@ -182,15 +177,5 @@ class PackagesMap:
                     continue
                 src_tmp['Component'] = info_set.component
                 src_name = src_tmp['Package']
-
-                # Check if the is a binary with the same package name.
-                if src_name in tmpbin_map.keys():
-                    # If so, grabe the binary description for this source.
-                    description = tmpbin_map[src_name]['Description']
-                    src_tmp['Description'] = description
-                    # Also, store on the binary a reference for this source
-                    tmpbin_map[src_name]['SourceRef'] = src_tmp
-
-                # insert into src_map
                 self.src_map[src_name] = src_tmp
 

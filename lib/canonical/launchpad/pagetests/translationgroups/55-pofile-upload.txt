@@ -2,7 +2,7 @@
 First make sure we can see the page.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
@@ -11,7 +11,7 @@ First make sure we can see the page.
 Now let's upload one that is published.
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
+  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
   ... Accept-Language: en-us,en;q=0.7,af;q=0.3
   ... Content-Length: 1452
   ... Content-Type: multipart/form-data; boundary=---------------------------107090301610607307082078743785
@@ -73,7 +73,7 @@ Now let's upload one that is published.
 And one that is not published.
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
+  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
   ... Accept-Language: en-us,en;q=0.7,af;q=0.3
   ... Content-Length: 1352
   ... Content-Type: multipart/form-data; boundary=---------------------------14904033691485035791236536155

@@ -1,0 +1,35 @@
+<tal:comment replace="nothing">
+  This is here so that these details can be re-used in all the
+  distr*sourcepackagerelease classes
+</tal:comment>
+<b>Creator:</b>
+<img src="/++resource++user">
+<a tal:content="context/creator/browsername"
+   tal:attributes="href context/creator/fmt:url">Foo Bar</a><br />
+
+<b>Maintainer:</b>
+<img src="/++resource++user">
+<a tal:content="context/maintainer/browsername"
+   tal:attributes="href context/maintainer/fmt:url">Foo Bar</a><br />
+
+<b>Maintainer Defaults:</b><sup>*</sup><br />
+<div style="margin-left: 10px;">
+  <b>Urgency:</b>
+  <span tal:replace="context/urgency/title">High</span><br />
+
+  <b>Component:</b>
+  <span tal:replace="context/component/name">main</span><br />
+
+  <b>Architectures:</b>
+  <span tal:replace="context/architecturehintlist">i386, ppc</span><br />
+</div>
+<div style="font-size: 80%;">
+<sup>*</sup> actual publishing details may vary in this distribution, these
+are just the package defaults.
+</div>
+
+<b>Initially uploaded to:</b><br />
+<span tal:replace="context/uploaddistrorelease/displayname">Warty</span>
+<br />
+
+

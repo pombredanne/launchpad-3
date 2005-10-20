@@ -3,7 +3,7 @@ bug. An external reference could link to a mailing list discussion
 about this problem, for example.
 
   >>> print http(r"""
-  ... POST /distros/debian/+sources/mozilla-firefox/+bug/2/+addurl HTTP/1.1
+  ... POST /distros/debian/+source/mozilla-firefox/+bug/2/+addurl HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 0
   ... Content-Type: application/x-www-form-urlencoded
@@ -18,7 +18,7 @@ form of either a URL or a CVE reference number. As an example, here's
 how to add a URL external reference.
 
   >>> print http(r"""
-  ... POST /distros/debian/+sources/mozilla-firefox/+bug/2/+addurl HTTP/1.1
+  ... POST /distros/debian/+source/mozilla-firefox/+bug/2/+addurl HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 527
   ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
@@ -53,7 +53,7 @@ how to add a URL external reference.
 
 
   >>> print http(r"""
-  ... GET /distros/debian/+sources/mozilla-firefox/+bug/2/references/ HTTP/1.1
+  ... GET /distros/debian/+source/mozilla-firefox/+bug/2/references/ HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 303 See Other
@@ -63,7 +63,7 @@ how to add a URL external reference.
 
 
   >>> print http(r"""
-  ... GET /distros/debian/+sources/mozilla-firefox/+bug/2 HTTP/1.1
+  ... GET /distros/debian/+source/mozilla-firefox/+bug/2 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...Blackhole Trash folder...

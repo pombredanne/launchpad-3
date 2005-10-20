@@ -6,9 +6,15 @@ __metaclass__ = type
 
 Classes to handle and create entries on launchpad db.
 """
-__all__ = ['ImporterHandler', 'BinaryPackageHandler', 'BinaryPackagePublisher',
-'SourcePackageReleaseHandler', 'SourcePublisher', 'DistroHandler',
-'PersonHandler']
+__all__ = [
+    'ImporterHandler',
+    'BinaryPackageHandler',
+    'BinaryPackagePublisher',
+    'SourcePackageReleaseHandler',
+    'SourcePublisher',
+    'DistroHandler',
+    'PersonHandler',
+    ]
 
 import os
 

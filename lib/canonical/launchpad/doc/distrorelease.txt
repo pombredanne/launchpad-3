@@ -78,7 +78,7 @@ DistroRelease.getPublishedReleases:
 
 
 CVE BugTasks on a Distro Release
-------------------------------
+--------------------------------
 
 A distro release should know what CVE-related bug tasks exist on it, and
 what state they are in. We should be able to find open, and closed,
@@ -96,5 +96,20 @@ There should be NO resolved CVE tasks:
     >>> tasks = woody.resolved_cve_bugtasks
     >>> print len(tasks)
     0
+
+DistroReleases have components and sections
+-------------------------------------------
+
+A distrorelease has some number of components and/or sections which
+are valid for that distrorelease. These selections are used by (among
+other things) the uploader for validating incoming uploads.
+
+   >>> hoary = distroreleaseset.get(3)
+   >>> for c in hoary.real_components:
+   ...     print c.name
+   main
+   >>> for s in hoary.real_sections:
+   ...     print s.name
+   editors
 
 [1] https://wiki.launchpad.canonical.com/DerivationOverview

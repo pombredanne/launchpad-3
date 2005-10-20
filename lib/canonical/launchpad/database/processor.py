@@ -5,7 +5,7 @@ __all__ = ['Processor', 'ProcessorFamily']
 
 from zope.interface import implements
 
-from sqlobject import StringCol, ForeignKey
+from sqlobject import StringCol, ForeignKey, MultipleJoin
 
 from canonical.database.sqlbase import SQLBase
 
@@ -30,3 +30,4 @@ class ProcessorFamily(SQLBase):
     title = StringCol(dbName='title', notNull=True)
     description = StringCol(dbName='description', notNull=True)
 
+    processors = MultipleJoin('Processor', joinColumn='family')

@@ -1,7 +1,7 @@
 Test to check the POFile index page list all contributors as it should.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

@@ -29,7 +29,8 @@ class Poll(SQLBase):
 
     implements(IPoll)
     _table = 'Poll'
-    _defaultOrder = ['title', 'id']
+    sortingColumns = ['title', 'id']
+    _defaultOrder = sortingColumns
 
     team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
 
@@ -241,8 +242,6 @@ class PollSet:
 
     implements(IPollSet)
 
-    _defaultOrder = Poll._defaultOrder
-
     def new(self, team, name, title, proposition, dateopens, datecloses,
             secrecy, allowspoilt, poll_type=PollAlgorithm.SIMPLE):
         """See IPollSet."""
@@ -257,7 +256,7 @@ class PollSet:
             when = datetime.now(pytz.timezone('UTC'))
 
         if orderBy is None:
-            orderBy = self._defaultOrder
+            orderBy = Poll.sortingColumns
 
         teamfilter = Poll.q.teamID == team.id
         results = Poll.select(teamfilter)

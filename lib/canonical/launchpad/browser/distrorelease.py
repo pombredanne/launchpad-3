@@ -33,9 +33,6 @@ from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 
-# XXX: This import needs to go away.  SteveAlexander, 2005-10-07
-from canonical.launchpad.database import SourcePackageSet
-
 
 class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
@@ -59,13 +56,20 @@ class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
             drlangset = getUtility(IDistroReleaseLanguageSet)
             return drlangset.getDummy(self.context, lang)
 
-    @stepto('+packages')
-    def packages(self):
-        return getUtility(IPublishedPackageSet)
+    @stepthrough('+source')
+    def source(self, name):
+        return self.context.getSourcePackage(name)
 
-    @stepto('+sources')
-    def sources(self):
-        return SourcePackageSet(distrorelease=self.context)
+    # sabdfl 17/10/05 please keep this old location here for
+    # LaunchpadIntegration on Breezy, unless you can figure out how to
+    # redirect to the newer +source, defined above
+    @stepthrough('+sources')
+    def sources(self, name):
+        return self.context.getSourcePackage(name)
+
+    @stepthrough('+package')
+    def package(self, name):
+        return self.context.getBinaryPackage(name)
 
 
 class DistroReleaseFacets(StandardLaunchpadFacets):
@@ -78,7 +82,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     usedfor = IDistroRelease
     facet = 'overview'
-    links = ['edit', 'reassign', 'sources', 'packaging', 'support']
+    links = ['search', 'support', 'packaging', 'edit', 'reassign', ]
 
     def edit(self):
         text = 'Edit Details'
@@ -89,10 +93,6 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
         text = 'Change Admin'
         return Link('+reassign', text, icon='edit')
 
-    def sources(self):
-        text = 'Source Packages'
-        return Link('+sources', text, icon='packages')
-
     def packaging(self):
         text = 'Upstream Links'
         return Link('+packaging', text, icon='info')
@@ -101,6 +101,10 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
         text = 'Request Support'
         url = canonical_url(self.context.distribution) + '/+addticket'
         return Link(url, text, icon='add')
+
+    def search(self):
+        text = 'Search Packages'
+        return Link('+search', text, icon='search')
 
 
 class DistroReleaseBugsMenu(ApplicationMenu):
@@ -139,6 +143,22 @@ class DistroReleaseView(BuildRecordsView):
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(self.request)
+        self.text = request.form.get('text')
+        self.matches = 0
+        self._results = None
+
+        self.searchrequested = False
+        if self.text is not None and self.text <> '':
+            self.searchrequested = True
+
+    def searchresults(self):
+        """Try to find the packages in this distro release that match
+        the given text, then present those as a list. 
+        """
+        if self._results is None:
+            self._results = self.context.searchPackages(self.text)
+        self.matches = len(self._results)
+        return self._results
 
     def requestDistroLangs(self):
         """Produce a set of DistroReleaseLanguage and

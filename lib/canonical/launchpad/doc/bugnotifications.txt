@@ -61,10 +61,12 @@ examples throughout the rest of this document.
     2
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person <test@canonical.com>
+    bounces@canonical.com
     >>> print to_addr
     ['test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
+    >>> msg["From"]
+    'Sample Person <test@canonical.com>'
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
     >>> msg["Reply-To"]
@@ -165,8 +167,10 @@ let's hang a bug onto the ILaunchBag utility.
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person <test@canonical.com>
+    bounces@canonical.com
     >>> msg = email.message_from_string(raw_message)
+    >>> msg["From"]
+    'Sample Person <test@canonical.com>'
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
     >>> msg["Reply-To"]
@@ -206,8 +210,10 @@ let's hang a bug onto the ILaunchBag utility.
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person <test@canonical.com>
+    bounces@canonical.com
     >>> msg = email.message_from_string(raw_message)
+    >>> msg["From"]
+    'Sample Person <test@canonical.com>'
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
     >>> msg["Reply-To"]
@@ -250,8 +256,10 @@ let's hang a bug onto the ILaunchBag utility.
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person <test@canonical.com>
+    bounces@canonical.com
     >>> msg = email.message_from_string(raw_message)
+    >>> msg["From"]
+    'Sample Person <test@canonical.com>'
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
     >>> msg["Reply-To"]
@@ -290,8 +298,10 @@ let's hang a bug onto the ILaunchBag utility.
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person <test@canonical.com>
+    bounces@canonical.com
     >>> msg = email.message_from_string(raw_message)
+    >>> msg["From"]
+    'Sample Person <test@canonical.com>'
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
     >>> msg["Reply-To"]
@@ -340,8 +350,10 @@ task Accepted, assigns himself to it, and adds a status note.
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person <test@canonical.com>
+    bounces@canonical.com
     >>> msg = email.message_from_string(raw_message)
+    >>> msg["From"]
+    'Sample Person <test@canonical.com>'
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
     >>> msg["Reply-To"]
@@ -380,8 +392,10 @@ pretending we've just added a watch to a bug.
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person <test@canonical.com>
+    bounces@canonical.com
     >>> msg = email.message_from_string(raw_message)
+    >>> msg["From"]
+    'Sample Person <test@canonical.com>'
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
     >>> msg["Reply-To"]
@@ -422,8 +436,10 @@ the changes made:
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person <test@canonical.com>
+    bounces@canonical.com
     >>> msg = email.message_from_string(raw_message)
+    >>> msg["From"]
+    'Sample Person <test@canonical.com>'
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
     >>> msg["Reply-To"]
@@ -465,8 +481,10 @@ this document:
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person <test@canonical.com>
+    bounces@canonical.com
     >>> msg = email.message_from_string(raw_message)
+    >>> msg["From"]
+    'Sample Person <test@canonical.com>'
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
     >>> msg["Reply-To"]
@@ -507,8 +525,10 @@ publishing an object created event.
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person <test@canonical.com>
+    bounces@canonical.com
     >>> msg = email.message_from_string(raw_message)
+    >>> msg["From"]
+    'Sample Person <test@canonical.com>'
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
     >>> msg["Reply-To"]
@@ -548,8 +568,10 @@ When a link is edited, the notification will look as follows:
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person <test@canonical.com>
+    bounces@canonical.com
     >>> msg = email.message_from_string(raw_message)
+    >>> msg["From"]
+    'Sample Person <test@canonical.com>'
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
     >>> msg["Reply-To"]
@@ -703,8 +725,10 @@ private, and Foo Bar is not an explicit subscriber to the bug, he will
     [['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
-    Sample Person <test@canonical.com>
+    bounces@canonical.com
     >>> msg = email.message_from_string(raw_message)
+    >>> msg["From"]
+    'Sample Person <test@canonical.com>'
     >>> msg["Subject"]
     '[Bug ...] firefox crashes all the time'
     >>> msg["Reply-To"]

@@ -40,6 +40,7 @@ class VPOExportSet:
         'sourcecomment',
         'filereferences',
         'flagscomment',
+        'popluralforms',
     ]
     columns = ', '.join(['POExport.' + name for name in column_names])
 
@@ -77,13 +78,19 @@ class VPOExportSet:
             else:
                 break
 
-    def get_pofile_rows(self, potemplate, language, variant=None):
+    def get_pofile_rows(self, potemplate, language, variant=None,
+                        included_obsolete=True):
         """See IVPOExportSet."""
         where = ('potemplate = %s AND language = %s' %
             sqlvalues(potemplate.id, language.id))
 
         if variant:
             where += ' AND variant = %s' % sqlvalues(variant.encode('UTF-8'))
+        else:
+            where += ' AND variant is NULL'
+
+        if not included_obsolete:
+            where += ' AND potsequence > 0'
 
         return self._select(where=where)
 
@@ -152,6 +159,46 @@ class VPOExportSet:
         for (id,) in cur.fetchall():
             yield POFile.get(id)
 
+    def get_distrorelease_potemplates(self, release, component=None,
+        languagepack=None):
+        """Return a SQL query of PO files which would be contained in an
+        export of a distribtuion release.
+
+        The filtering is done based on the 'release', last modified 'date',
+        archive 'component' and if it belongs to a 'languagepack'
+        """
+        join = '''
+            SELECT DISTINCT POTemplate.id
+            FROM POTemplate
+              JOIN DistroRelease ON
+                DistroRelease.id = POTemplate.distrorelease'''
+
+        where = '''
+            WHERE
+              DistroRelease.id = %s''' % sqlvalues(release.id)
+
+        if component is not None:
+            join += '''
+                  JOIN SourcePackagePublishing ON
+                    SourcePackagePublishing.distrorelease=DistroRelease.id
+                  JOIN SourcePackageRelease ON
+                    SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id
+                  JOIN Component ON
+                    SourcePackagePublishing.component=Component.id'''
+
+            where += ''' AND
+                SourcePackageRelease.sourcepackagename = POTemplate.sourcepackagename AND
+                Component.name = %s''' % sqlvalues(component)
+
+        if languagepack is not None:
+            where += ''' AND
+                POTemplate.languagepack = %s''' % sqlvalues(languagepack)
+
+        cur = cursor()
+        cur.execute(join + where)
+        for (id,) in cur.fetchall():
+            yield POTemplate.get(id)
+
     def get_distrorelease_pofiles_count(self, release, date=None, component=None,
         languagepack=None):
         """See IVPOExport."""
@@ -196,7 +243,7 @@ class VPOExport:
     implements(IVPOExport)
 
     def __init__(self, *args):
-        (self.potemplate,
+        (potemplate,
          language,
          self.variant,
          self.potsequence,
@@ -214,11 +261,13 @@ class VPOExport:
          self.pocommenttext,
          self.sourcecomment,
          self.filereferences,
-         self.flagscomment) = args
+         self.flagscomment,
+         self.popluralforms) = args
 
         self.language = Language.get(language)
         self.pofile = POFile.selectOneBy(
-            potemplateID=self.potemplate,
+            potemplateID=potemplate,
             languageID=language,
             variant=self.variant)
+        self.potemplate = POTemplate.get(potemplate)
 

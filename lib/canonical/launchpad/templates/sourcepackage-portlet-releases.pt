@@ -3,7 +3,8 @@
   <div class="portletBody portletContent">
   <ul>
     <li tal:repeat="release context/releases">
-      <span tal:replace="release/version">2.4.55-2</span>
+      <a tal:content="release/version"
+         tal:attributes="href release/fmt:url">2.4.55-2</a>
     </li>
   </ul>
   <tal:block condition="not: context/releases">

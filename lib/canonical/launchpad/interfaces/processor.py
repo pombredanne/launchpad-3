@@ -28,3 +28,4 @@ class IProcessorFamily(Interface):
     title = Attribute("The Processor Family Title")
     description = Attribute("The Processor Name Description")
 
+    processors = Attribute("The Processors in this family.")

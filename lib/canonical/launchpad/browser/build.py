@@ -3,11 +3,32 @@
 """Browser views for builds."""
 
 __metaclass__ = type
-__all__ = ['BuildRecordsView']
+
+__all__ = [
+    'BuildNavigation',
+    'BuildFacets',
+    'BuildRecordsView',
+    ]
 
 from canonical.lp.dbschema import BuildStatus
 
 from canonical.launchpad.interfaces import IHasBuildRecords
+
+from canonical.launchpad.interfaces import IBuild
+
+from canonical.launchpad.webapp import (
+    StandardLaunchpadFacets, Link, GetitemNavigation, stepthrough)
+
+
+class BuildNavigation(GetitemNavigation):
+    usedfor = IBuild
+
+
+class BuildFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for an IBuild."""
+    enable_only = ['overview']
+
+    usedfor = IBuild
 
 
 class BuildRecordsView:

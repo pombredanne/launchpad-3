@@ -119,34 +119,22 @@ An IDistroRelease.
     >>> canonical_url(hoary)
     u'http://localhost:8086/distros/ubuntu/hoary'
 
-An ISourcePackageSet.
-
-Note, this should be renamed ISourcePackageSubset for when we're not talking
-about the utility that is all sourcepackages.  Also, note that it requires
-using a database class in browser code, as below.
-
-    >>> from canonical.launchpad.database import SourcePackageSet
-    >>> hoary_sourcepackages = SourcePackageSet(distrorelease=hoary)
-    >>> canonical_url(hoary_sourcepackages)
-    u'http://localhost:8086/distros/ubuntu/hoary/+sources'
-
 An ISourcePackage.
 
-    >>> canonical_url(hoary_sourcepackages['evolution'])
-    u'http://localhost:8086/distros/ubuntu/hoary/+sources/evolution'
+    >>> canonical_url(hoary.getSourcePackage('evolution'))
+    u'http://localhost:8086/distros/ubuntu/hoary/+source/evolution'
 
-An IDistroSourcePackage.
+An IDistributionSourcePackage.
 
-    >>> from canonical.launchpad.interfaces.sourcepackage import (
-    ...     IDistroSourcePackageSet)
+    >>> from canonical.launchpad.interfaces.distributionsourcepackage import (
+    ...     IDistributionSourcePackage)
     >>> from canonical.launchpad.interfaces.sourcepackagename import (
     ...     ISourcePackageNameSet)
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
-    >>> ubuntu_firefox = getUtility(IDistroSourcePackageSet).getPackage(
-    ...     distribution=celebs.ubuntu,
-    ...     sourcepackagename=sourcepackagenameset['mozilla-firefox'])
+    >>> ubuntu_firefox = celebs.ubuntu.getSourcePackage(
+    ...     sourcepackagenameset['mozilla-firefox'])
     >>> canonical_url(ubuntu_firefox)
-    u'http://localhost:8086/distros/ubuntu/+sources/mozilla-firefox'
+    u'http://localhost:8086/distros/ubuntu/+source/mozilla-firefox'
 
 == Projects and products ==
 
@@ -213,7 +201,7 @@ An IDistroBugTask.
 
     >>> distro_task = getUtility(IBugTaskSet).get(4)
     >>> canonical_url(distro_task)
-    u'http://localhost:8086/distros/debian/+sources/mozilla-firefox/+bug/1'
+    u'http://localhost:8086/distros/debian/+source/mozilla-firefox/+bug/1'
 
 An IDistroBugTask without a sourcepackage.
 
@@ -230,7 +218,7 @@ An IDistroReleaseBugTask.
 
     >>> distro_release_task = getUtility(IBugTaskSet).get(16)
     >>> canonical_url(distro_release_task)
-    u'http://localhost:8086/distros/ubuntu/warty/+sources/mozilla-firefox/+bug/5'
+    u'http://localhost:8086/distros/ubuntu/warty/+source/mozilla-firefox/+bug/5'
 
 An IDistroReleaseBugTask without a sourcepackage.
 
@@ -258,7 +246,7 @@ private.)
 A private bugtask, as an anonymous user.
 
     >>> canonical_url(distro_release_task)
-    u'http://localhost:8086/distros/ubuntu/warty/+sources/mozilla-firefox/+bug/5'
+    u'http://localhost:8086/distros/ubuntu/warty/+source/mozilla-firefox/+bug/5'
 
     >>> login("foo.bar@canonical.com")
     >>> distro_release_task.bug.private = False
@@ -300,20 +288,20 @@ And here's our subset.
     ...     distrorelease=hoary, sourcepackagename=sourcepackagename)
 
     >>> canonical_url(potemplatesubset)
-    u'http://localhost:8086/distros/ubuntu/hoary/+sources/evolution/+pots'
+    u'http://localhost:8086/distros/ubuntu/hoary/+source/evolution/+pots'
 
 We can get a particular PO template for this source package by its PO template
 name.
 
     >>> potemplate = potemplatesubset['evolution-2.2']
     >>> canonical_url(potemplate)
-    u'http://localhost:8086/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2'
+    u'http://localhost:8086/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2'
 
 And we can get a particular PO file for this PO template by its language code.
 
     >>> pofile = potemplate.getPOFileByLang('es')
     >>> canonical_url(pofile)
-    u'http://localhost:8086/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es'
+    u'http://localhost:8086/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es'
 
 Upstream POTemplateSubsets work in much the same way, except they hang off a
 product release.  Let's get a product release.

@@ -86,6 +86,7 @@ __all__ = (
 'TranslationPermission',
 'TranslationValidationStatus',
 'DistroReleaseQueueStatus',
+'DistroReleaseQueueCustomFormat',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
 )
@@ -137,7 +138,7 @@ class DBSchemaValidator(validators.Validator):
         >>> validator.fromPython(ImportTestStatus.NEW, None)
         Traceback (most recent call last):
         ...
-        TypeError: DBSchema Item from wrong class
+        TypeError: DBSchema Item from wrong class, <class 'canonical.lp.dbschema.ImportTestStatus'> != <class 'canonical.lp.dbschema.BugTaskStatus'>
         >>>
 
         """
@@ -153,8 +154,11 @@ class DBSchemaValidator(validators.Validator):
             return value
         if value.__class__ != Item:
             raise TypeError('Not a DBSchema Item: %r' % value)
-        if value.schema is not self.schema:
-            raise TypeError('DBSchema Item from wrong class')
+        # Using != rather than 'is not' in order to cope with Security Proxy
+        # proxied items and their schemas.
+        if value.schema != self.schema:
+            raise TypeError('DBSchema Item from wrong class, %r != %r' % (
+                value.schema, self.schema))
         return value.value
 
     def toPython(self, value, state):
@@ -1493,14 +1497,7 @@ class DistroReleaseQueueStatus(DBSchema):
     DistroRelease) the effects are published via the PackagePublishing and
     SourcePackagePublishing tables.  """
 
-    UNCHECKED = Item(1, """
-        Unchecked
-
-        This upload has been checked enough to get it into the database but
-        has yet to be checked for new binary packages, mismatched overrides
-        or similar.  """)
-
-    NEW = Item(2, """
+    NEW = Item(0, """
         New
 
         This upload is either a brand-new source package or contains a
@@ -1510,7 +1507,7 @@ class DistroReleaseQueueStatus(DBSchema):
         then entries will be made in the overrides tables and further
         uploads will bypass this state """)
 
-    UNAPPROVED = Item(3, """
+    UNAPPROVED = Item(1, """
         Unapproved
 
         If a DistroRelease is frozen or locked out of ordinary updates then
@@ -1520,21 +1517,13 @@ class DistroReleaseQueueStatus(DBSchema):
         releases where you want the security team of a DistroRelease to
         approve uploads.  """)
 
-    BYHAND = Item(4, """
-        ByHand
-
-        If an upload contains files which are not stored directly into the
-        pool tree (I.E. not .orig.tar.gz .tar.gz .diff.gz .dsc .deb or
-        .udeb) then the package must be processed by hand. This may involve
-        unpacking a tarball somewhere special or similar.  """)
-
-    ACCEPTED = Item(5, """
+    ACCEPTED = Item(2, """
         Accepted
 
         An upload in this state has passed all the checks required of it and
         is ready to have its publishing records created.  """)
 
-    DONE = Item(7, """
+    DONE = Item(3, """
         Done
 
         An upload in this state has had its publishing records created if it
@@ -1543,7 +1532,7 @@ class DistroReleaseQueueStatus(DBSchema):
         uploads and create entries in a journal or similar before removing
         the queue item.  """)
 
-    REJECTED = Item(6, """
+    REJECTED = Item(4, """
         Rejected
 
         An upload which reaches this state has, for some reason or another
@@ -1552,6 +1541,27 @@ class DistroReleaseQueueStatus(DBSchema):
         is present to allow logging tools to record the rejection and then
         clean up any subsequently unnecessary records.  """)
 
+class DistroReleaseQueueCustomFormat(DBSchema):
+    """Custom formats valid for the upload queue
+
+    An upload has various files potentially associated with it, from source
+    package releases, through binary builds, to specialist upload forms such
+    as a debian-installer tarball or a set of translations.
+    """
+
+    DEBIAN_INSTALLER = Item(0, """
+        raw-installer
+
+        A raw-installer file is a tarball. This is processed as a version
+        of the debian-installer to be unpacked into the archive root.
+        """)
+
+    ROSETTA_TRANSLATIONS = Item(1, """
+        raw-translations
+
+        A raw-translations file is a tarball. This is passed to the rosetta
+        import queue to be incorporated into that package's translations.
+        """)
 
 class PackagePublishingStatus(DBSchema):
     """Package Publishing Status
@@ -1846,6 +1856,13 @@ class BinaryPackageFileType(DBSchema):
 
         This format is the standard package format used on Ubuntu and other
         similar operating systems.
+        """)
+
+    UDEB = Item(3, """
+        UDEB Format
+
+        This format is the standard package format used on Ubuntu and other
+        similar operating systems for the installation system.
         """)
 
     RPM = Item(2, """
@@ -2527,6 +2544,7 @@ class BuildStatus(DBSchema):
         reset all relevant CHROOTWAIT builds to NEEDSBUILD after the chroot
         has been fixed.
         """)
+
 
 class MirrorFreshness(DBSchema):
     """ Mirror Freshness

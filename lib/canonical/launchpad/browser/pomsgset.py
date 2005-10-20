@@ -7,8 +7,7 @@ from zope.exceptions import NotFoundError
 from zope.component import getUtility
 
 from canonical.launchpad import helpers
-from canonical.launchpad.helpers import TranslationConstants
-from canonical.launchpad.interfaces import ILanguageSet
+from canonical.launchpad.interfaces import ILanguageSet, TranslationConstants
 
 
 class POMsgSetView:
@@ -40,7 +39,13 @@ class POMsgSetView:
         self.second_lang_pofile = second_lang_pofile
         self.second_lang_msgset = None
         if self.second_lang_pofile:
-            self.second_lang_msgset = second_lang_pofile[potmsgset.primemsgid_.msgid]
+            try:
+                self.second_lang_msgset = (
+                    second_lang_pofile[potmsgset.primemsgid_.msgid]
+                    )
+            except NotFoundError:
+                # The second language doesn't have this message ID.
+                self.second_lang_msgset = None
 
         try:
             self.pomsgset = potmsgset.poMsgSet(code)

@@ -39,7 +39,7 @@ class ISpecification(IHasOwner):
             "Describe the feature as clearly as possible in up to 70 characters. "
             "This title is displayed in every feature list or report."))
     specurl = TextLine(
-        title=_('Specification URL'), required=True,
+        title=_('Specification URL'), required=False,
         description=_(
             "The URL of the specification. This is usually a wiki page."),
         constraint=valid_webref)

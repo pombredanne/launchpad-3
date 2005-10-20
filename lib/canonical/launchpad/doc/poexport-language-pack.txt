@@ -52,9 +52,12 @@ Check that the log looks ok.
 
     >>> print '\n'.join(logger.messages)
     Selecting PO files for export
-    Number of PO files to export: 10
-    Exporting PO file ... (1/10)
-    Exporting PO file ... (2/10)
+    Number of PO files to export: 11
+    Exporting PO file ... (1/11)
+    Exporting PO file ... (2/11)
+    ...
+    Exporting POTemplates
+    Exporting pmount in ubuntu hoary package "pmount" (1)
     ...
     Adding timestamp file
     Adding mapping file

@@ -43,6 +43,7 @@ Mock Builder, a class to emulate the Builder behaviour:
   ...     def __init__(self, name, slave):
   ...         self.slave = slave 
   ...         self.builderok = True
+  ...         self.manual = False
   ...         self.url = 'http://fake:0000'
   ...         slave.urlbase = self.url
   ...         self.name = name

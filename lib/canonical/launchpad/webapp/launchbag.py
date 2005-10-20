@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces import (
         IOpenLaunchBag, ILaunchBag,
         ILaunchpadApplication, IPerson, IProject, IProduct, IDistribution,
         IDistroRelease, ISourcePackage, IBug, IDistroArchRelease,
-        ISourcePackageReleasePublishing, ISpecification, IBugTask)
+        ISpecification, IBugTask)
 from canonical.launchpad.webapp.interfaces import ILoggedInEvent
 
 _utc_tz = pytz.timezone('UTC')
@@ -37,7 +37,6 @@ class LaunchBag:
         IDistroRelease: 'distrorelease',
         IDistroArchRelease: 'distroarchrelease',
         ISourcePackage: 'sourcepackage',
-        ISourcePackageReleasePublishing: 'sourcepackagereleasepublishing',
         ISpecification: 'specification',
         IBug: 'bug',
         IBugTask: 'bugtask',

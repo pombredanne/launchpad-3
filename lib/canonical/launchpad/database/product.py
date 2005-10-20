@@ -85,8 +85,6 @@ class Product(SQLBase):
 
     specifications = MultipleJoin('Specification', joinColumn='product',
         orderBy=['-datecreated', 'id'])
-    tickets = MultipleJoin('Ticket', joinColumn='product',
-        orderBy=['-datecreated', 'id'])
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
@@ -163,6 +161,14 @@ class Product(SQLBase):
         """See IBugTarget."""
         return BugSet().createBug(
             product=self, comment=description, title=title, owner=owner)
+
+    def tickets(self, quantity=None):
+        """See ITicketTarget."""
+        return Ticket.select("""
+            product = %s
+            """ % sqlvalues(self.id),
+            orderBy='-datecreated',
+            limit=quantity)
 
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""

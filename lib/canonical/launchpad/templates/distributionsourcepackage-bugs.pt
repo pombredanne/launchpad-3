@@ -1,0 +1,30 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<div metal:fill-slot="main"
+     tal:define="listing_columns view/listing_columns">
+
+  <h1>Bug Listing</h1>
+
+  <table metal:use-macro="context/@@+bugtask-macros-listview/bugtask_search_form" />
+
+  <script>
+  <!--
+  document.forms[0].elements['field.searchtext'].focus();
+  //-->
+  </script>
+
+  <br />
+  <table id="sourcepackagebugs">
+    <tr tal:repeat="task view/open_bugs">
+      <metal:taskrow use-macro="task/@@+bugtask-macros-listview/item" />
+    </tr>
+  </table>
+</div>
+
+</body>
+</html>

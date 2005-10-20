@@ -48,7 +48,7 @@ Foo Bar files a *private* bug on Ubuntu Linux. He gets redirected to it.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/distros/ubuntu/+sources/evolution/+bug/8
+  Location: http://localhost:9000/distros/ubuntu/+source/evolution/+bug/8
   ...
 
 Foo Bar see the private bug he filed.

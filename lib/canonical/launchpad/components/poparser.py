@@ -11,6 +11,8 @@ import sets
 import textwrap
 import codecs
 import logging
+import doctest
+import unittest
 
 from canonical.launchpad.interfaces import IPOMessage, IPOHeader, IPOParser
 from zope.interface import implements
@@ -121,7 +123,7 @@ class POMessage(object):
         def wrap(self, text):
             return [self.initial_indent + text]
 
-    def __unicode__(self, wrap=78):
+    def __unicode__(self, wrap=77):
         r'''
         Text representation of the message.  Should wrap correctly.
         For some of these examples to work (the ones with plural forms),
@@ -152,19 +154,11 @@ class POMessage(object):
         >>> unicode(POMessage(msgid="\tServer name: %s", msgstr=""))
         u'msgid "\\tServer name: %s"\nmsgstr ""'
 
-        '(this single-quote is here to appease emacs)
         '''
-        if wrap:
-            wrapper = textwrap.TextWrapper(wrap - 1, subsequent_indent=u'"',
-                                           break_long_words=False)
-            wrapper.initial_indent = wrapper.subsequent_indent
-        else:
-            wrapper = self._fake_wrapper()
-
         return '\n'.join([
             self._comments_representation(),
-            self._msgids_representation(wrapper),
-            self._msgstrs_representation(wrapper),
+            self._msgids_representation(wrap),
+            self._msgstrs_representation(wrap),
             ]).strip()
 
     def _comments_representation(self):
@@ -187,40 +181,46 @@ class POMessage(object):
         if self.commentText:
             for line in self.commentText.split('\n')[:-1]:
                 text.append(u'#' + line)
-        if self.sourceComment:
+        if self.sourceComment and not self.obsolete:
+            # If it's an obsolete entry, the source comments are not exported.
             for line in self.sourceComment.split('\n')[:-1]:
                 text.append(u'#. ' + line)
         # not so for references - we strip() it
-        if self.fileReferences:
+        if self.fileReferences and not self.obsolete:
+            # If it's an obsolete entry, the references are not exported.
             for line in self.fileReferences.split('\n'):
                 text.append(u'#: ' + line)
         if self.flags:
             text.append(self.flagsText())
         return u'\n'.join(text)
 
-    def _msgids_representation(self, wrapper):
-        text = self._wrap(self.msgid, u'msgid', wrapper)
+    def _msgids_representation(self, wrap_width):
+        text = self._wrap(self.msgid, u'msgid', wrap_width)
         if self.msgidPlural:
-            text.extend(self._wrap(self.msgidPlural, u'msgid_plural', wrapper))
+            text.extend(
+                self._wrap(self.msgidPlural, u'msgid_plural', wrap_width))
         if self.obsolete:
             text = ['#~ ' + l for l in text]
         return u'\n'.join(text)
 
-    def _msgstrs_representation(self, wrapper):
+    def _msgstrs_representation(self, wrap_width):
         text = []
         if self.msgstrPlurals:
             for i, s in enumerate(self.msgstrPlurals):
-                text.extend(self._wrap(s, u'msgstr[%s]' % i, wrapper))
+                text.extend(self._wrap(s, u'msgstr[%s]' % i, wrap_width))
+        elif self.msgidPlural:
+            # It's a plural form but we don't have any translation for it.
+            text = ([u'msgstr[0] ""', u'msgstr[1] ""'])
         else:
-            text = self._wrap(self.msgstr, u'msgstr', wrapper)
+            # It's a singular form.
+            text = self._wrap(self.msgstr, u'msgstr', wrap_width)
         if self.obsolete:
             text = ['#~ ' + l for l in text]
         return u'\n'.join(text)
 
-    def _wrap(self, text, prefix, wrapper):
+    def _wrap(self, text, prefix, wrap_width):
         r'''
         This method does the actual wrapping.
-        '
 
         >>> POMessage(msgid="abcdefghijkl", msgstr="z").__unicode__(20)
         u'msgid "abcdefghijkl"\nmsgstr "z"'
@@ -237,19 +237,51 @@ class POMessage(object):
         >>> unicode(POMessage(msgid="abc\ndef", msgstr="z"))
         u'msgid ""\n"abc\\n"\n"def"\nmsgstr "z"'
 
-        '(this single-quote is here to appease emacs)
+        but not when it's just a line that ends with a newline char
+        >>> unicode(POMessage(msgid="abc\n", msgstr="def\n"))
+        u'msgid "abc\\n"\nmsgstr "def\\n"'
+
+        It's time to test the wrapping with the '-' char:
+        >>> pomsg = POMessage(
+        ...     msgid="WARNING: unsafe enclosing directory permissions on homedir `%s'\n",
+        ...     msgstr="WARNUNG: Unsichere Zugriffsrechte des umgebenden Verzeichnisses des Home-Verzeichnisses `%s'\n"
+        ...     )
+        >>> print unicode(pomsg)
+        msgid "WARNING: unsafe enclosing directory permissions on homedir `%s'\n"
+        msgstr ""
+        "WARNUNG: Unsichere Zugriffsrechte des umgebenden Verzeichnisses des Home-"
+        "Verzeichnisses `%s'\n"
+
+        When we changed the wrapping code, we got a bug with this string.
+        >>> pomsg = POMessage(
+        ...     msgid="The location and hierarchy of the Evolution contact folders has changed since Evolution 1.x.\n\n",
+        ...     msgstr="")
+        >>> print unicode(pomsg)
+        msgid ""
+        "The location and hierarchy of the Evolution contact folders has changed "
+        "since Evolution 1.x.\n"
+        "\n"
+        msgstr ""
+
+
         '''
-        r = [prefix + u' ""']
+        if wrap_width is None:
+            raise AssertionError('wrap_width should not be None')
+        wrapped_lines = [u'%s%s' % (prefix, u' ""')]
         if not text:
-            return r
+            return wrapped_lines
         text = text.replace(u'\\', u'\\\\')
-        text = text.replace(u'\"', u'\\"')
+        text = text.replace(ur'"', ur'\"')
         text = text.replace(u'\t', u'\\t')
-        unwrapped = u'%s "%s"' % (prefix, text)
-        if ('\n' not in unwrapped) and ((not wrapper.width)
-                   or (len(unwrapped) <= wrapper.width + 1)):
-            return [unwrapped]
-        del unwrapped
+        if (text.endswith('\n') and '\n' not in text[:-1]):
+            # If there is only one newline char and it's at the end of the
+            # string.
+            text = text.replace(u'\n', u'\\n')
+        unwrapped_line = u'%s "%s"' % (prefix, text)
+        if ('\n' not in unwrapped_line and
+            len(unwrapped_line) <= wrap_width):
+            return [unwrapped_line]
+        del unwrapped_line
         paragraphs = text.split('\n')
         end = len(paragraphs) - 1
         for i, paragraph in enumerate(paragraphs):
@@ -258,26 +290,30 @@ class POMessage(object):
                     break
             else:
                 paragraph += u'\\n'
-            # XXX: Carlos Perello Marin 05/01/2004 I'm not sure this is the
-            # best way to fix the bug #24 . The problem cames with the
-            # TextWrapper.wrap method. If you give it a string that ends with
-            # one or more white spaces it just removes it and that's really
-            # bad for us because that changes the msgid.
-            # With this if - else I just prevent to call the method if it's
-            # not needed but It will still fail with a really long line that
-            # ends with a white space... We need to move to other solution
-            # outside TextWrapper.wrap because I don't see a way to disable
-            # that behaviour.
-            if len(paragraph) <= wrapper.width + 1:
-                wrapped = [wrapper.subsequent_indent + paragraph]
+            if len(paragraph) <= wrap_width:
+                wrapped_line = [u'%s%s' % (u'"', paragraph)]
             else:
-                wrapped = wrapper.wrap(paragraph)
-            for line in wrapped[:-1]:
-                r.append(line + u" " + wrapper.subsequent_indent)
-            r.append(wrapped[-1] + wrapper.subsequent_indent)
-        return r
+                line = u''
+                new_block = u''
+                wrapped_line = []
+                for char in paragraph:
+                    if len(line) + len(new_block) < wrap_width:
+                        if char in [' ', '\t', '\n', '-']:
+                            line += u'%s%s' % (new_block, char)
+                            new_block = u''
+                        else:
+                            new_block += char
+                    else:
+                        wrapped_line.append(u'%s%s' % (u'"', line))
+                        line = u'%s%s' % (new_block, char)
+                        new_block = u''
+                if line or new_block:
+                    wrapped_line.append(u'%s%s%s' % (u'"', line, new_block))
+            for line in wrapped_line[:-1]:
+                wrapped_lines.append(u'%s%s' % (line, u'"'))
+            wrapped_lines.append(u'%s%s' % (wrapped_line[-1], u'"'))
+        return wrapped_lines
 
-_marker = []
 class POHeader(dict, POMessage):
     implements(IPOHeader, IPOMessage)
 
@@ -291,22 +327,30 @@ class POHeader(dict, POMessage):
         self.nplurals = None
         self.pluralExpr = '0'
 
-    def finish(self):
+
+    def updateDict(self):
+        """Sync the msgstr content with the dict like object that represents
+        this object.
+        """
+        for key in self.keys():
+            # Remove any previous dict entry.
+            dict.__delitem__(self, key)
+
         for attr in ('msgidPlural', 'msgstrPlurals', 'fileReferences'):
             if getattr(self, attr):
                 logging.warning(POSyntaxWarning(
                     msg='PO file header entry should have no %s' % attr))
                 setattr(self, attr, u'')
 
-        for l in self.msgstr.strip().split('\n'):
-            l = l.strip()
-            if not l:
+        for line in self.msgstr.strip().split('\n'):
+            line = line.strip()
+            if not line:
                 continue
             try:
-                field, value = l.split(':', 1)
+                field, value = line.split(':', 1)
             except ValueError:
                 logging.warning(POSyntaxWarning(
-                    msg='PO file header entry has a bad entry: %s' % l))
+                    msg='PO file header entry has a bad entry: %s' % line))
                 continue
             field, value = field.strip(), value.strip()
             if field.lower() == 'plural-forms':
@@ -344,7 +388,7 @@ class POHeader(dict, POMessage):
             try:
                 v = self._casefold[item.lower()]
             except KeyError:
-                if default is _marker:
+                if default == []:
                     raise KeyError, item
                 else:
                     return default
@@ -353,7 +397,7 @@ class POHeader(dict, POMessage):
         return v
 
     def __getitem__(self, item):
-        return self.get(item, _marker)
+        return self.get(item, [])
 
     def has_key(self, item):
         try:
@@ -375,10 +419,10 @@ class POHeader(dict, POMessage):
         self._casefold[item.lower()] = value
 
         if item.lower() == 'content-type':
-            d = parse_assignments(self['content-type'], skipfirst=True)
-            if 'charset' in d:
-                if d['charset'] != 'CHARSET':
-                    self.charset = d['charset']
+            parts = parse_assignments(self['content-type'], skipfirst=True)
+            if 'charset' in parts:
+                if parts['charset'] != 'CHARSET':
+                    self.charset = parts['charset']
                 else:
                     self.charset = 'us-ascii'
             # Convert attributes to unicode
@@ -390,12 +434,12 @@ class POHeader(dict, POMessage):
 
         # Plural forms logic
         elif item.lower() == 'plural-forms':
-            d = parse_assignments(self['plural-forms'])
-            if d.get('nplurals') == 'INTEGER':
+            parts = parse_assignments(self['plural-forms'])
+            if parts.get('nplurals') == 'INTEGER':
                 # sure hope it's a template.
                 self.nplurals = 2
             else:
-                nplurals = d.get('nplurals')
+                nplurals = parts.get('nplurals')
                 try:
                     self.nplurals = int(nplurals)
                 except TypeError:
@@ -408,7 +452,7 @@ class POHeader(dict, POMessage):
                         " the default value..."
                         ))
                     self.nplurals = 2
-                self.pluralExpr = d.get('plural', '0')
+                self.pluralExpr = parts.get('plural', '0')
 
         # Update msgstr
         if update_msgstr:
@@ -437,6 +481,31 @@ class POHeader(dict, POMessage):
             text.append('')
             self.msgstr = u'\n'.join(text)
 
+    def __delitem__(self, item):
+        # Update the msgstr entry
+        # XXX: CarlosPerelloMarin 20050901 This parser sucks too much!
+        text = []
+        for l in self.msgstr.strip().split('\n'):
+            l = l.strip()
+            if not l:
+                continue
+            try:
+                field, value = l.split(':', 1)
+            except ValueError:
+                # The header has an entry without ':' that's an error in
+                # the header, log it and continue with next entry.
+                logging.warning(
+                    POSyntaxWarning(self._lineno, 'Invalid header entry.'))
+                continue
+            field = field.strip()
+            if field.lower() != item.lower():
+                text.append(l)
+        text.append('')
+        self.msgstr = u'\n'.join(text)
+
+        # And now, the dict part of the object needs to be rebuilt...
+        self.updateDict()
+
     def update(self, other):
         for key in other:
             # not using items() because this way we get decoding
@@ -444,7 +513,7 @@ class POHeader(dict, POMessage):
 
     def copy(self):
         cp = POHeader(self)
-        cp.finish()
+        cp.updateDict()
         # copy any changes made by user-code
         cp.update(self)
         return cp
@@ -559,7 +628,7 @@ class POParser(object):
         try:
             self.header = self.header_factory(messages=self.messages, 
                                               **self._partial_transl)
-            self.header.finish()
+            self.header.updateDict()
         except (POSyntaxError, POInvalidInputError), e:
             if e.lno is None:
                 e.lno = self._partial_transl['_lineno']
@@ -570,7 +639,7 @@ class POParser(object):
 
     def to_unicode(self, text):
         'Convert text to unicode'
-        if self.header: # header converts itself to unicode on finish()
+        if self.header: # header converts itself to unicode on updateDict()
             try:
                 return unicode(text, self.header.charset)
             except UnicodeError:
@@ -731,7 +800,7 @@ class POParser(object):
 # the plural-form header
 
 def parse_assignments(text, separator=';', assigner='=', skipfirst=False):
-    d = {}
+    parts = {}
     if skipfirst:
         start=1
     else:
@@ -748,113 +817,9 @@ def parse_assignments(text, separator=';', assigner='=', skipfirst=False):
                 ))
             continue
 
-        d[name.strip()] = value.strip()
-    return d
-
-# convenience function to dump a catalog to a file-like object
-
-def _write_inner(writer, header):
-    "Try to write header and messages to writer; raise UnicodeError"
-    # could just use '\n\n'.join() but that could potentially eat
-    # up ugly ammounts of RAM
-    writer.write(unicode(header))
-    for message in header.messages:
-        writer.write(u'\n\n')
-        writer.write(unicode(message))
-    writer.write(u'\n')
-
-def write(f, header, recode=None, use_replace=False):
-    """Write a message catalog to an encoded file.
-
-    Second argument should be a IPOHeader object.  The messages to
-    dump are acquired from its 'messages' attribute.
-
-    Will try to dump using the charset in the header; if that fails,
-    what happens depends on the 'recode' parameter.  If it is a false
-    value (the default), we just raise UnicodeError.
-
-    If, however, 'recode' is True, we will recode to UTF-8; it may
-    also be a sequence of strings naming various charsets to attempt.
-    If the keyword argument 'use_replace' is true and recoding also
-    fails, encode with the last charset in 'recode', using the option
-    (errors='replace').
-
-    First argument may be any file-like object, opened for writing,
-    *but* it needs to support seek(0), or recoding will not be
-    attempted.
-
-    If recoding is to be attempted, header.messages may *NOT* be an
-    iterator or you will lose messages!
-    """
-    # first pass: try convert everything to the encoding
-    # in the header
-    writer = codecs.getwriter(header.charset)(f, 'strict')
-    try:
-        _write_inner(writer, header)
-    except UnicodeError:
-        if not recode:
-            raise
-        try:
-            f.seek(0)
-        except:
-            # does not support seek(0)
-            raise
-    else:
-        return
-
-    if recode is True:
-        recode = ('UTF-8',)
-    for charset in recode:
-        header_r = header.recode(charset)
-        writer = codecs.getwriter(charset)(f, 'strict')
-        try:
-            _write_inner(writer, header_r)
-        except UnicodeError:
-            pass
-        else:
-            return
-    if use_replace:
-        # use last charset in 'recode' list
-        writer = codecs.getwriter(f, charset)(f, 'replace')
-        _write_inner(writer, header_r)
+        parts[name.strip()] = value.strip()
+    return parts
 
 if __name__ == '__main__':
-    do_diff = False
-
-    for i in range(len(sys.argv)):
-        if sys.argv[i] == '--diff':
-            do_diff = True
-            del sys.argv[i]
-
-    if len(sys.argv) > 1:
-        in_f = file(sys.argv[1], 'rU')
-    else:
-        in_f = sys.stdin
-
-    if len(sys.argv) > 2:
-        out_f = file(sys.argv[2], 'w')
-    else:
-        out_f = sys.stdout
-
-    if do_diff:
-        from cStringIO import StringIO
-        out_f = StringIO()
-
-    parser = POParser()
-
-    # let's both be nice to RAM and test how well POParser responds to batches
-    while True:
-        batch = in_f.read(1024)
-        if not batch:
-            break
-        parser.write(batch)
-
-    parser.finish()
-
-    write(out_f, parser.header)
-    if do_diff:
-        import difflib
-        in_f.seek(0)
-        out_f.seek(0)
-        sys.stdout.writelines(difflib.unified_diff(
-            in_f.readlines(), out_f.readlines(), in_f.name, 'generated output'))
+    runner = unittest.TextTestRunner()
+    runner.run(doctest.DocTestSuite())
