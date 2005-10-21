@@ -1484,12 +1484,25 @@ class TranslationPermission(DBSchema):
         logged-in user can add or edit translations in any language, without
         any review.""")
 
+    STRUCTURED = Item(20, """
+        Structured
+
+        This group has designated translators for certain languages. In
+        those languages, people who are not designated translators can only
+        make suggestions. However, in languages which do not yet have a
+        designated translator, anybody can edit the translations directly,
+        with no further review.""")
+
     CLOSED = Item(100, """
         Closed
 
         This group allows only designated translators to edit the
-        translations of its files. No other contributions will be considered
-        or allowed.""")
+        translations of its files. You can become a designated translator
+        either by joining an existing language translation team for this
+        project, or by getting permission to start a new team for a new
+        language. People who are not designated translators can still make
+        suggestions for new translations, but those suggestions need to be
+        reviewed before being accepted by the designated translator.""")
 
 class DistroReleaseQueueStatus(DBSchema):
     """Distro Release Queue Status
