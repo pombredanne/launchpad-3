@@ -60,6 +60,15 @@ def librarianTearDown(test):
     LibrarianTestSetup().tearDown()
     tearDown(test)
 
+def importdSetUp(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(dbuser='importd').setUp()
+    setGlobs(test)
+
+def importdTearDown(test):
+    LaunchpadZopelessTestSetup().tearDown()
+
+
 # Files that have special needs can construct their own suite
 special = {
 
@@ -93,6 +102,9 @@ special = {
             '../doc/cve-update.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
             ),
+    'revision.txt': FunctionalDocFileSuite(
+            '../doc/revision.txt',
+            setUp=importdSetUp, tearDown=importdTearDown)
     }
 
 def test_suite():

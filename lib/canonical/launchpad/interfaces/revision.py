@@ -36,11 +36,7 @@ class IRevision(IHasOwner):
 
 
 class IRevisionAuthor(Interface):
-    """Bazaar revision author """
-
-    # FIXME: The sole purpose of this table is apparently to improve the
-    # database normalisation. Therefore the name column should be UNIQUE.
-    # -- David Allouche 2005-09-06
+    """Committer of a Bazaar revision."""
 
     # id = Int(title=_("RevisionAuthor ID"), required=True, readonly=True)
     name = TextLine(title=_("Revision Author Name"), required=True)
