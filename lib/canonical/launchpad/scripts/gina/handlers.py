@@ -33,9 +33,10 @@ from canonical.archivepublisher import Poolifier, parse_tagfile
 from canonical.lp.dbschema import PackagePublishingStatus, BuildStatus
 
 from canonical.launchpad.scripts import log
-from canonical.launchpad.scripts.gina.library import getLibraryAlias
+from canonical.launchpad.scripts.gina.library import (getLibraryAlias,
+                                                      checkLibraryForFile)
 from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
-    urgencymap, prioritymap)
+    urgencymap, prioritymap, get_dsc_path, PoolFileNotFound)
 
 from canonical.launchpad.database import (Distribution, DistroRelease,
     DistroArchRelease,Processor, SourcePackageName, SourcePackageRelease,
@@ -73,7 +74,7 @@ class ImporterHandler:
         self.distro = self._get_distro(distro_name)
         self.distrorelease = self._get_distrorelease(distrorelease_name)
 
-        self.archinfo_cache = {}
+        self.archinfo = {}
         self.imported_sources = []
         self.imported_bins = {}
 
@@ -127,68 +128,65 @@ class ImporterHandler:
 
         return {'distroarchrelease': dar, 'processor': processor}
 
-    def _cache_sprelease(self, sourcepackagerelease):
+    def _store_sprelease_for_publishing(self, sourcepackagerelease):
         """Append to the sourcepackagerelease imported list."""
         if sourcepackagerelease not in self.imported_sources:
             self.imported_sources.append(sourcepackagerelease)
 
-    def _cache_binaries(self, binarypackage, archtag):
+    def _store_bprelease_for_publishing(self, binarypackage, archtag):
         """Append to the binarypackage imported list."""
         if archtag not in self.imported_bins.keys():
             self.imported_bins[archtag] = []
 
         self.imported_bins[archtag].append(binarypackage)
 
-    def _cache_archinfo(self, archtag):
-        """Append retrived distroarchrelease info to a cache."""
-        if archtag in self.archinfo_cache.keys():
+    def _store_archinfo(self, archtag):
+        """Append retrived distroarchrelease info to a dict."""
+        if archtag in self.archinfo.keys():
             return
 
         info = self._get_distroarchrelease_info(archtag)
-        self.archinfo_cache[archtag] = info
+        self.archinfo[archtag] = info
+
+    def ensure_sourcepackagename(self, name):
+        """Import only the sourcepackagename ensuring them."""
+        self.sphandler.ensureSourcePackageName(name)
 
     def preimport_sourcecheck(self, sourcepackagedata):
-        """Check if SourcePackage already exists from a non-processed data"""
-        sourcepackagerelease = self.sphandler.checkSource(
-            sourcepackagedata, self.distrorelease)
+        """
+        Check if this SourcePackageRelease already exists. This can
+        happen, for instance, if a source package didn't change over
+        releases, or if Gina runs multiple times over the same release
+        """
+        sourcepackagerelease = self.sphandler.checkSource(sourcepackagedata, 
+                                                          self.distrorelease)
         if not sourcepackagerelease:
             return None
 
         # Append to the sourcepackagerelease imported list.
-        self._cache_sprelease(sourcepackagerelease)
+        self._store_sprelease_for_publishing(sourcepackagerelease)
         return sourcepackagerelease
-
-    def import_sourcepackagename(self, name):
-        """Import only the sourcepackagename ensuring them."""
-        self.sphandler.ensureSourcePackageName(name)
 
     def import_sourcepackage(self, sourcepackagedata):
         """Handler the sourcepackage import process"""
-
-        # Check if the sourcepackagerelease already exists.
-        sourcepackagerelease = self.sphandler.checkSource(
-            sourcepackagedata, self.distrorelease)
-        if sourcepackagerelease:
-            log.debug('Sourcepackagerelease %s version %s already exists' %(
-                sourcepackagedata.package, sourcepackagedata.version
-                ))
-        else:
-            # If not, create it.
-            handler = self.sphandler.createSourcePackageRelease
-            sourcepackagerelease = handler(sourcepackagedata,
-                                           self.distrorelease)
+        assert not self.sphandler.checkSource(sourcepackagedata,
+                                              self.distrorelease)
+        handler = self.sphandler.createSourcePackageRelease
+        sourcepackagerelease = handler(sourcepackagedata,
+                                       self.distrorelease)
 
         # Append to the sourcepackagerelease imported list.
         if sourcepackagerelease:
-            self._cache_sprelease(sourcepackagerelease)
+            self._store_sprelease_for_publishing(sourcepackagerelease)
 
         return sourcepackagerelease
 
     def import_binarypackage(self, archtag, binarypackagedata):
         """Handler the binarypackage import process"""
+        # XXX: kinda untested
 
-        self._cache_archinfo(archtag)
-        distroarchinfo = self.archinfo_cache[archtag]
+        self._store_archinfo(archtag)
+        distroarchinfo = self.archinfo[archtag]
         distrorelease = distroarchinfo['distroarchrelease'].distrorelease
 
         # Check if the binarypackage already exists.
@@ -198,10 +196,10 @@ class ImporterHandler:
             # Already imported, so return it.
             log.debug('Binary package %s version %s already exists for %s' % (
                 binarypackagedata.package, binarypackagedata.version, archtag))
-            self._cache_binaries(binarypackage, archtag)
+            self._store_bprelease_for_publishing(binarypackage, archtag)
             return binarypackage
 
-        # Find the sourcepackagerelease that generate this binarypackage.
+        # Find the sourcepackagerelease that generated this binarypackage.
         sourcepackage = self.sphandler.getSourceForBinary(
             binarypackagedata, distrorelease)
 
@@ -229,35 +227,33 @@ class ImporterHandler:
                 ))
             return None
 
-        # Cache it and return.
-        self._cache_binaries(binarypackage, archtag)
+        self._store_bprelease_for_publishing(binarypackage, archtag)
         return binarypackage
 
     def publish_sourcepackages(self, pocket):
-        publisher = SourcePublisher(self.distrorelease)
         log.info('Publishing Source Packages...')
-        # Goes over the imported sourcepackages publishing them.
+        publisher = SourcePublisher(self.distrorelease)
         for spr in self.imported_sources:
             publisher.publish(spr, pocket)
+        log.info('done')
 
     def publish_binarypackages(self, pocket):
-        """Publish all the binaries present on the binary cache."""
         log.info('Publishing Binary Packages...')
         for archtag, binarypackages in self.imported_bins.iteritems():
-            distroarchrelease = \
-                              self.archinfo_cache[archtag]['distroarchrelease']
+            archinfo = self.archinfo[archtag]
+            distroarchrelease = archinfo['distroarchrelease']
             publisher = BinaryPackagePublisher(distroarchrelease)
             for binary in binarypackages:
                 publisher.publish(binary, pocket)
-        log.debug('Pushing done...')
+        log.info('done')
 
 
 class DistroHandler:
     """Handles distro related information."""
 
     def __init__(self):
-        # Create a cache for components and sections
-        # to do not query db all the time.
+        # Components and sections are cached to avoid redoing the same
+        # database queries over and over again.
         self.compcache = {} 
         self.sectcache = {}
 
@@ -278,13 +274,10 @@ class DistroHandler:
         """Returns a section object by its name. Create and return if it
         doesn't exist.
         """
-        if '/' in section:
-            section = section[section.find('/')+1:]
         if section in self.sectcache:
             return self.sectcache[section]
 
         ret = Section.selectOneBy(name=section)
-
         if not ret:
             ret = Section(name=section)
 
@@ -307,6 +300,9 @@ class SourcePackageReleaseHandler:
         self.keyrings = keyrings
         self.pocket = pocket
 
+    def ensureSourcePackageName(self, name):
+        return SourcePackageName.ensure(name)
+
     def findAndImportUnlistedSourcePackage(self, binarypackagedata,
                                            distrorelease):
         """Try to find a sourcepackagerelease in the archive for the
@@ -317,56 +313,26 @@ class SourcePackageReleaseHandler:
 
         This commonly happens when the source package is no longer part
         of the distribution but a binary built from it is and thus the
-        source is not in Sources.gz but is on the disk.
+        source is not in Sources.gz but is on the disk. This may also
+        happen if the package has not built yet.
 
         If we fail to find it we return None and the binary importer
         will handle this in the same way as if the package simply wasn't
         in the database. I.E. the binary import will fail but the
         process as a whole will continue okay.
         """
+        # XXX: untested
+        assert not self.getSourceForBinary(binarypackagedata,
+                                           distrorelease)
 
         sp_name = binarypackagedata.source
         sp_version = binarypackagedata.source_version
         sp_component = binarypackagedata.component
 
-        # strip the epoch because it's not wanted here.
-        if ":" in sp_version:
-            sp_version = sp_version[sp_version.find(":")+1:]
-
-        dsc_name = "%s_%s.dsc" % (sp_name, sp_version)
-
-        sp_path = os.path.join(self.archiveroot, "pool",
-                               self.poolify(sp_name, sp_component),
-                               dsc_name)
-        if not os.path.exists(sp_path):
-            # aah well, failed...
-            return None
-
-        dsc_contents = parse_tagfile(sp_path, allow_unsigned=True)
-
-        # Since the dsc doesn't know, we add in the sub-path, package,
-        # component etc.
-        dsc_contents['directory'] = self.poolify(sp_name, sp_component)
-        dsc_contents['package'] = sp_name
-        dsc_contents['component'] = sp_component
-
-        # Also, the dsc doesn't list itself so we'll add it ourselves
-        if 'files' not in dsc_contents:
-            log.error('Problem parsing %s: %r' % (dsc_name, dsc_contents))
-            return None
-        if not dsc_contents['files'].endswith("\n"):
-            dsc_contents['files'] += "\n"
-        # XXX: wtf is this? -- kiko, 2005-10-18
-        dsc_contents['files'] += "xxx 000 %s" % dsc_name
-
-        # By capitalising the first letters of the keys we can create
-        # a new dict which SourcePackageData will accept...
-        capitalised_dsc = {}
-        for k, v in dsc_contents.items():
-            capitalised_dsc[k.capitalize()] = v
+        parsed_dsc = self._parseDSC(sp_name, sp_version, sp_component)
 
         # Generate an sp_data object for the dsc
-        sp_data = SourcePackageData(self.ktdb, **capitalised_dsc)
+        sp_data = SourcePackageData(self.ktdb, **parsed_dsc)
 
         # Process the package
         sp_data.process_package(self.ktdb,
@@ -394,8 +360,46 @@ class SourcePackageReleaseHandler:
 
         return spr
 
+    def _parseDSC(self, sp_name, sp_version, sp_component):
+        # XXX: untested
+        directory = os.path.join(self.archiveroot, "pool",
+                                 self.poolify(sp_name, sp_component))
+        try:
+            dsc_path = get_dsc_path(sp_name, sp_version, self.archiveroot)
+        except PoolFileNotFound:
+            # Aah well, no source package in archive either.
+            return None
+
+        dsc_contents = parse_tagfile(dsc_path, allow_unsigned=True)
+
+        # Since the dsc doesn't know, we add in the directory, package
+        # and component
+        dsc_contents['directory'] = self.poolify(sp_name, sp_component)
+        dsc_contents['package'] = sp_name
+        dsc_contents['component'] = sp_component
+
+        # Also, the dsc doesn't list itself so we'll just have to add it
+        # ourselves
+        if 'files' not in dsc_contents:
+            log.error('DSC for %s didn\'t contain a files entry: %r' % 
+                      (dsc_name, dsc_contents))
+            return None
+        if not dsc_contents['files'].endswith("\n"):
+            dsc_contents['files'] += "\n"
+        # XXX: Why do we hack the md5sum and size of the DSC? Should
+        # probably calculate it properly.
+        dsc_contents['files'] += "xxx 000 %s" % dsc_name
+
+        # By capitalising the first letters of the keys we can create
+        # a new dict which SourcePackageData will accept...
+        capitalised_dsc = {}
+        for k, v in dsc_contents.items():
+            capitalised_dsc[k.capitalize()] = v
+        return capitalised_dsc
+
     def getSourceForBinary(self, binarypackagedata, distrorelease):
         """Get a SourcePackageRelease for a BinaryPackage"""
+        # XXX: untested
         try:
             spname = SourcePackageName.byName(binarypackagedata.source)
         except SQLObjectNotFound:
@@ -450,8 +454,9 @@ class SourcePackageReleaseHandler:
             maintainer = self.person_handler.ensurePerson(displayname,
                                                           emailaddress)
         except DisplaynameDecodingError:
-            # problems decoding name in  utf8
-            log.warn('Could not create person %s' % src.maintainer[1])
+            # XXX: untested
+            log.error('Could not decode name for person %s' %
+                      src.maintainer[1])
             return None
 
         # XXX: Check it later -- Debonzi 20050516
@@ -464,6 +469,7 @@ class SourcePackageReleaseHandler:
         key = None # FIXIT
         dsc = encoding.guess(src.dsc)
 
+        # XXX: untested
         try:
             changelog = encoding.guess(src.changelog[0]["changes"])
         except IndexError:
@@ -472,12 +478,33 @@ class SourcePackageReleaseHandler:
         componentID = self.distro_handler.getComponentByName(src.component).id
         sectionID = self.distro_handler.ensureSection(src.section).id
 
-        name = self.ensureSourcePackageName(src.package)
-
         if not valid_debian_version(src.version):
-            log.warn('%s has an invalid version %s', name.name, src.version)
+            # XXX: untested
+            log.error('%s has an invalid version %s', name.name, src.version)
             return None
 
+        to_upload = []
+        for i in src.files:
+            fname = i[-1]
+            path = os.path.join(src.package_root, src.directory)
+            if not os.path.exists(path):
+                # XXX: untested
+                log.error('Package %s not found on archive %s' %
+                          (fname, path))
+                return None
+            if checkLibraryForFile(path, fname):
+                # XXX: untested
+                log.error('File %s for %s has been uploaded before: %s' % 
+                          (fname, src.package))
+                return None
+            to_upload.append((fname, path))
+
+        #
+        # DO IT! At this point, we've decided we have everything we need
+        # to create the SPR.
+        #
+
+        name = self.ensureSourcePackageName(src.package)
         spr = SourcePackageRelease(sourcepackagename=name.id,
                                    version=src.version,
                                    maintainer=maintainer.id,
@@ -499,29 +526,14 @@ class SourcePackageReleaseHandler:
 
         # Insert file into the library and create the
         # SourcePackageReleaseFile entry on lp db.
-        for i in src.files:
-            fname = i[-1]
-            path = "%s/%s" % (src.package_root, src.directory)
-            try:
-                alias = getLibraryAlias(path, fname)
-            except IOError:
-                log.info('  Package %s not found on archive %s/%s' %(
-                    fname, path, fname))
-            else:
-                log.info('  Package %s included into library' % fname)
-                self.createSourcePackageReleaseFile(spr, fname, alias)
+        for fname, path in to_upload:
+            alias = getLibraryAlias(path, fname)
+            SourcePackageReleaseFile(sourcepackagerelease=spr.id,
+                                     libraryfile=alias,
+                                     filetype=getFileType(fname))
+            log.info('Package file %s included into library' % fname)
 
         return spr
-
-    def createSourcePackageReleaseFile(self, spr, fname, alias):
-        """Create the SourcePackageReleaseFile entry on lp db."""
-
-        SourcePackageReleaseFile(sourcepackagerelease=spr.id,
-                                 libraryfile=alias,
-                                 filetype=getFileType(fname))
-
-    def ensureSourcePackageName(self, name):
-        return SourcePackageName.ensure(name)
 
 
 class SourcePublisher:

@@ -4,17 +4,21 @@ __metaclass__ = type
 
 """Library access methods to gina."""
 
-import os, sha
+import os
+import sha
+import urllib2
 
-from canonical.librarian.client import LibrarianClient
+from canonical.config import config
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import ILibraryFileAliasSet
+from canonical.launchpad.database import LibraryFileContent
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 
 execute_zcml_for_scripts()
-librarian = getUtility(ILibraryFileAliasSet).create
+librarian = getUtility(ILibraryFileAliasSet)
+
 
 def _libType(fname):
     if fname.endswith(".dsc"):
@@ -34,12 +38,23 @@ def getLibraryAlias(root, filename):
     global librarian
     if librarian is None:
         return None
-    fname = "%s/%s"%(root,filename)
-    fobj = open( fname, "rb" )
+    fname = os.path.join(root, filename)
+    fobj = open(fname, "rb")
     size = os.stat(fname).st_size
-    alias = librarian(filename, size, fobj,
-                      contentType=_libType(filename))
-
+    alias = librarian.create(filename, size, fobj,
+                             contentType=_libType(filename))
     fobj.close()
     return alias
+
+
+def checkLibraryForFile(path, filename):
+    fullpath = os.path.join(path, filename)
+    assert os.path.exists(fullpath)
+    digester = sha.sha()
+    openfile = open(fullpath, "r")
+    for chunk in iter(lambda: openfile.read(1024*4), ''):
+        digester.update(chunk)
+    digest = digester.hexdigest()
+    openfile.close()
+    return LibraryFileContent.selectOneBy(sha1=digest)
 

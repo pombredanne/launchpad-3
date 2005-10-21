@@ -8,9 +8,16 @@ quiet mode over it.
 We start out with 6 packages in our database.
 
     >>> from canonical.launchpad.database import (SourcePackageRelease,
-    ...                                           SourcePackageName)
-    >>> SourcePackageRelease.select().count()
-    9
+    ...     SecureSourcePackagePublishingHistory, SourcePackageName,
+    ...     SourcePackageReleaseFile, Person, TeamParticipation,
+    ...     WikiName, EmailAddress)
+    >>> orig_spr_count = SourcePackageRelease.select().count()
+    >>> orig_person_count = Person.select().count()
+    >>> orig_tp_count = TeamParticipation.select().count()
+    >>> orig_email_count = EmailAddress.select().count()
+    >>> orig_wiki_count = WikiName.select().count()
+    >>> original_spph_count = \
+    ...     SecureSourcePackagePublishingHistory.select().count()
 
     >>> import subprocess, sys, os
     >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
@@ -51,11 +58,16 @@ packages:
   e) gcc-defaults, a source package that generates a truckload of binary
      packages with differing versions.
   f) x11proto-damage, a source apckage which is only present in breezy
+  g) libcap, a source package which generates 2 binary packages, and
+     whose version number contains an epoch. It is not in the Breezy
+     Sources list. XXX: but some binaries are in the Packages file?
 
 Two packages which have recoverable errors:
 
   g) ed, a source package what generates one binary package and
-     misses a section entry in Sources
+     misses a section entry in Sources. The same version exists in
+     breezy, this time with a defined section (which we don't handle
+     correctly)
   h) python-pam, an arch-independent source package that generates one
        binary package, whose changelog contains a busted urgency
 
@@ -103,13 +115,13 @@ We should have a few more source packages in the database:
 
     >>> transaction.commit()
     >>> existing = 9
-    >>> hoary = 9 - 2   # 2 packages fail
+    >>> hoary = 10 - 2   # 2 packages fail
     >>> breezy = 10 - 3 - 2  # 3 packages are the same as in hoary, 2 fail
-    >>> existing + hoary + breezy
-    21
+    >>> hoary + breezy
+    13
     >>> count = SourcePackageRelease.select().count()
-    >>> count == (existing + hoary + breezy) or count
-    True
+    >>> count - orig_spr_count
+    13
 
 Check that x11proto-damage for its Build-Depends-Indep value correctly set:
 
@@ -118,6 +130,60 @@ Check that x11proto-damage for its Build-Depends-Indep value correctly set:
     ...                                         version="6.8.99.7-2")
     >>> x11p.builddependsindep
     u'debhelper (>= 4.0.0)'
+
+Check that the dsc on the libcap package is correct, and that we
+only imported one:
+
+    >>> n = SourcePackageName.selectOneBy(name="libcap")
+    >>> cap = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id)
+    >>> print cap.dsc
+    -----BEGIN PGP SIGNED MESSAGE-----
+    Hash: SHA1
+    <BLANKLINE>
+    Format: 1.0
+    Source: libcap
+    Version: 1:1.10-14
+    Binary: libcap-dev, libcap-bin, libcap1
+    Maintainer: Michael Vogt <mvo@debian.org>
+    Architecture: any
+    Standards-Version: 3.6.1
+    Build-Depends: debhelper
+    Files:
+     291be97b78789f331499a0ab22d9d563 28495 libcap_1.10.orig.tar.gz
+     b867a0c1db9e8ff568415bbcd1fa65dc 12928 libcap_1.10-14.diff.gz
+    <BLANKLINE>
+    -----BEGIN PGP SIGNATURE-----
+    Version: GnuPG v1.2.4 (GNU/Linux)
+    <BLANKLINE>
+    iD8DBQFAfGV8liSD4VZixzQRAlHoAJ4hD8yDp/VIJUcdQLLr9KH/XQSczQCfQH/D
+    FVJMGmGr+2YLZfF+oRUKcug=
+    =bw+A
+    -----END PGP SIGNATURE-----
+
+And check that its files actually ended up in the librarian (these sha1sums
+were calculated directly on the files):
+
+    >>> files = SourcePackageReleaseFile.selectBy(sourcepackagereleaseID=cap.id,
+    ...                                           orderBy="libraryfile")
+    >>> for f in files:
+    ...     print f.libraryfile.content.sha1
+    107d5478e72385f714523bad5359efedb5dcc8b2
+    0083da007d44c02fd861c1d21579f716490cab02
+    e6661aec051ccb201061839d275f2282968d8b93
+
+Check that the section on the python-pam package is correct, and that we
+only imported one:
+
+    >>> n = SourcePackageName.selectOneBy(name="python-pam")
+    >>> pp = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id)
+    >>> print pp.component.name
+    main
+
+In the hoary Sources, its section is listed as underworld/python. Ensure
+this is cut up correctly:
+
+    >>> print pp.section.name
+    python
 
 Make sure that we only imported one db1-compat source package.
 
@@ -130,6 +196,23 @@ Check that the uploaders were added to mkvmlinuz for breezy. XXX: broken because
     >>> #mkvm = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id, version="14ubuntu1")
     >>> #mkvm.uploaders
 
+=== Testing Source Package History ===
+
+We should have one entry for each package listed in Sources that was
+successfully processed.
+
+    - We had 2 errors (out of 10 Sources stanzas) in hoary: mkvmlinuz and
+      util-linux
+
+    - We had 2 errors (out of 10 Sources stanzas) in breezy: python-sqllite and
+      util-linux (again, poor thing)
+
+    >>> print SecureSourcePackagePublishingHistory.select().count() \
+    ...     - original_spph_count
+    16
+
+XXX: test security pocket?
+
 === Testing Binary Package Results ===
 
 XXX: test binary package creation, in particular gcc-defaults, whose
@@ -138,6 +221,25 @@ XXX: test that there are only XXX binary package releases created
 XXX: test that there are only XXX builds created
 XXX: put in a test that says, when it creates a BPR or SPR, make sure there is
      not already one pointing at the same LibraryFileContent
+
+=== Testing People Created ===
+
+Ensure only one Kamion was created (he's an uploader on multiple packages), and
+that we imported exactly 9 people (13 packages with 3 being uploaded by Kamion,
+2 being uploaded by mdz and 2 by doko).
+
+    >>> from sqlobject import LIKE
+    >>> p = Person.selectOne(LIKE(Person.q.name, "cjwatson%"))
+    >>> print p.name
+    cjwatson
+    >>> print Person.select().count() - orig_person_count
+    9
+    >>> print TeamParticipation.select().count() - orig_tp_count 
+    9
+    >>> print EmailAddress.select().count() - orig_email_count
+    9
+    >>> print WikiName.select().count() - orig_wiki_count
+    9
 
 === Other tests ===
 
@@ -159,4 +261,40 @@ Stop Librarian
 
 Remove the tmp link to the gina_test_archive
     >>> os.remove('/tmp/gina_test_archive')
+
+2d227a7e3e67d59c92cd265003ac882b76ae45eb
+ec62e3aee3fb632aefc859c9441f5845563312ca
+abb61231a3baeb988b145ffe97cdbaea8f651d93
+4c72a8dea6002c60b61597855e2b99381e86afb8
+473d585af33444a45673d9b6ca8f4a8049637a6e
+87c075c4c6954343c25eb046f945eae17fc6b423
+47b8a4be4c2d7f62078bae621d71bc2d8d872527
+1dbe9b1a1bbeb44e0ce2e234e6e3d06b308664ed
+5f0be795f782e9cef4c22f25aaed14b9a75dc8d4
+26403ef7351eda5e2821c49c24ef3c89c58332cc
+3f159fdd4fad935eb50594dac14802c4cf03808a
+9147f1a69a07e64b533bd8513c143efaf8052dc7
+24d94b10a69aff13256aa02a77ff02f81695cbf5
+7383da6ad6c0f61bd8d72cb32cae5514bf571c5e
+857d538d0773e8b1a24ba06c4da1fff8cce03360
+e1eaeba90df2d7e886143577cc7d5ba24b8c3ea7
+720458a0ebb5b4fa145a3048444611a450204122
+4052d6ebcfa695878cc96a2d57c8348b0d594fac
+bab9c09975f7db010087313c2a2065c04f431187
+38987267e703e7af18c9d62ca971ab8bbdbfc88a
+668f3618452609bb2a924b903fb1abbb8657e8c9
+a7f8adb7c8a6cb0a50c5418b13c18005fc4a0f9a
+c8b5a10e0485a6a9c9e9c588305200d90d760a8e
+973ad40448b36137cfceeb37c8f5e7c8c7e52aa2
+2cc1fb324d0851a8c9d335193578a292e5890ab4
+cae5ebd15268c6c000eceac3b755c6841f1b909a
+ce4d97ce2e94962b081e78e8336c0ca67b5feb1b
+c4e1d9add21a5510763a6003a841f62b056ac53e
+089bfd26d8ab4503710d4b49495ddf779132bde5
+895520101eb838ec1eecb42fae335cecf2520a33
+7489a2a1313cd11423edabf9bef6ab19582b80cd
+11e8b3986096b319bececaf890513493bda4a9e0
+87478d21055ba7a326a1a51683a6f5cc9035fb79
+9e80cb9ce59ad71d8f6fb9f25c9beb6d3bc0a81c
+d9ad0dc6ed7c48ab139e072e3bbbde623b379ff7
 

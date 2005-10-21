@@ -37,6 +37,18 @@ def stripseq(seq):
     return [s.strip() for s in seq]
 
 
+def get_dsc_path(name, version, directory):
+    version = re.sub("^\d+:", "", version)
+    filename = "%s_%s.dsc" % (name, version)
+    fullpath = os.path.join(directory, filename)
+    if not os.path.exists(fullpath):
+        # If we didn't find this file in the archive, things are
+        # pretty bad, so stop processing immediately
+        raise PoolFileNotFound("File %s not in archive (%s)" % 
+                               (filename, fullpath))
+    return fullpath
+
+
 urgencymap = {
     "low": SourcePackageUrgency.LOW,
     "medium": SourcePackageUrgency.MEDIUM,
@@ -59,8 +71,6 @@ prioritymap = {
 GPGALGOS = {}
 for item in GPGKeyAlgorithm.items:
     GPGALGOS[item.value] = item.name
-
-source_version_re = re.compile(r'([^ ]+) +\(([^\)]+)\)')
 
 
 class MissingRequiredArguments(Exception):
@@ -234,18 +244,13 @@ class SourcePackageData(AbstractPackageData):
         If successful processing of the package occurs, this method
         sets the changelog, urgency and licence attributes.
         """
+        dsc_path = get_dsc_path(self.package, self.version,
+                                os.path.join(package_root, self.directory))
+        self.dsc = open(dsc_path).read().strip()
+
+        call("dpkg-source -sn -x %s" % dsc_path)
+
         version = re.sub("^\d+:", "", self.version)
-        filename = "%s_%s.dsc" % (self.package, version)
-        fullpath = os.path.join(package_root, self.directory, filename)
-        if not os.path.exists(fullpath):
-            # If we didn't find this file in the archive, things are
-            # pretty bad, so stop processing immediately
-            raise PoolFileNotFound("File %s not in archive (%s)" % 
-                                   (filename, fullpath))
-        self.dsc = open(fullpath).read().strip()
-
-        call("dpkg-source -sn -x %s" % fullpath)
-
         version = re.sub("-[^-]+$", "", version)
         filename = "%s-%s" % (self.package, version)
         fullpath = os.path.join(filename, "debian", "changelog")
@@ -289,6 +294,11 @@ class SourcePackageData(AbstractPackageData):
 
     def ensure_complete(self, kdb):
         if self.section is None:
+            # This assumption is a bit evil. There is a hidden issue
+            # that manifests itself if the source package was unchanged
+            # between releases and its Sources file lacked a section
+            # initially and later the section is added. Shouldn't be an
+            # issue in practice.
             if kdb:
                 # XXX: untested
                 log.warn("Source package %s lacks section, looking it up..." %
@@ -305,6 +315,11 @@ class SourcePackageData(AbstractPackageData):
             log.warn("Invalid urgency in %s, %r, assumed %r" % 
                      (self.package, self.urgency, "low"))
             self.urgency = "low"
+
+        if '/' in self.section:
+            # this apparently happens with packages in universe.
+            # 3dchess, for instance, uses "universe/games"
+            self.section = self.section.split("/", 1)[1]
 
 
 class BinaryPackageData(AbstractPackageData):
@@ -335,6 +350,8 @@ class BinaryPackageData(AbstractPackageData):
     #
     is_processed = False
     is_created = False
+    #
+    source_version_re = re.compile(r'([^ ]+) +\(([^\)]+)\)')
     def __init__(self, **args):
         for k, v in args.items():
             if k == "Maintainer":
@@ -349,7 +366,7 @@ class BinaryPackageData(AbstractPackageData):
             # XXX: dsilvers: 20050922: Work out why this happens and
             # file an upstream bug against python-apt once we've worked
             # it out.
-            match = source_version_re.match(self.source)
+            match = self.source_version_re.match(self.source)
 
             if hasattr(self, 'sversion'):
                 self.source_version = self.sversion
