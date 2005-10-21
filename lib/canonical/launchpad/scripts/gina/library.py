@@ -6,9 +6,7 @@ __metaclass__ = type
 
 import os
 import sha
-import urllib2
 
-from canonical.config import config
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import ILibraryFileAliasSet

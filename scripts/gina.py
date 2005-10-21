@@ -31,10 +31,10 @@ from canonical.launchpad.scripts.lockfile import LockFile
 
 from canonical.launchpad.scripts.gina.katie import Katie
 from canonical.launchpad.scripts.gina.archive import (ArchiveComponentItems,
-                                                      PackagesMap,
-                                                      MangledArchiveError)
+    PackagesMap, MangledArchiveError)
 
-from canonical.launchpad.scripts.gina.handlers import ImporterHandler
+from canonical.launchpad.scripts.gina.handlers import (ImporterHandler,
+    MultiplePackageReleaseError)
 from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
     BinaryPackageData, MissingRequiredArguments, PackageFileProcessError)
 
@@ -177,7 +177,7 @@ def run_gina(options, ztm, target_section):
         log.info('Running in SourcePackageName-only mode...')
         for source in packages_map.src_map.itervalues():
             log.info('Ensuring %s name' % source['Package'])
-            importer_handler.import_sourcepackagename(source['Package'])
+            importer_handler.ensure_sourcepackagename(source['Package'])
         log.info('done')
         sys.exit(0)
 
@@ -190,8 +190,8 @@ def run_gina(options, ztm, target_section):
         log.info('Source only mode... done')
         sys.exit(0)
 
-    import_binarypackages(pocket, packages_map, kdb, package_root,
-                          keyrings, importer_handler)
+    import_binarypackages(packages_map, kdb, package_root, keyrings,
+                          importer_handler)
     importer_handler.publish_binarypackages(pocket)
     importer_handler.commit()
 
@@ -216,6 +216,10 @@ def import_sourcepackages(packages_map, kdb, package_root,
         except PackageFileProcessError:
             # Problems with katie db stuff of opening files
             log.exception("Error processing package files for %s" %
+                          package_name)
+            continue
+        except MultiplePackageReleaseError:
+            log.exception("Database duplication processing %s" %
                           package_name)
             continue
         except psycopg.Error:
@@ -253,8 +257,8 @@ def do_one_sourcepackage(source, kdb, package_root, keyrings,
     importer_handler.commit()
 
 
-def import_binarypackages(pocket, packages_map, kdb, package_root,
-                          keyrings, importer_handler):
+def import_binarypackages(packages_map, kdb, package_root, keyrings,
+                          importer_handler):
     nosource = []
 
     # Run over all the architectures we have

@@ -8,10 +8,7 @@ Class to handle and query the katie db properly.
 """
 __all__ = ['Katie']
 
-import re
-from sets import Set
-import psycopg
-
+from canonical.config import config
 from canonical.launchpad.scripts import log
 from canonical.database.sqlbase import connect
 
@@ -93,24 +90,23 @@ class Katie:
     #
 
     def getSourcePackageRelease(self, name, version):
-        log.debug("Hunting for release %s / %s" % (name,version))
+        log.debug("Hunting for release %s / %s" % (name, version))
         ret =  self._query_to_dict("""SELECT * FROM source, fingerprint
                                       WHERE  source = %s 
                                       AND    source.sig_fpr = fingerprint.id
                                       AND    version = %s""", (name, version))
         if not ret:
-            return None #Shortcircuit because the ubuntu lookup fails
             log.debug("that spr didn't turn up. Attempting to find via ubuntu")
         else:
             return ret
 
+        # XXX: what to do when the ubuntu lookup fails?
         return self._query_to_dict("""SELECT * FROM source, fingerprint
                                       WHERE  source = %s 
                                       AND    source.sig_fpr = fingerprint.id
                                       AND    version like '%subuntu%s'""" % 
                                       ("%s", version, "%"), name)
-        
-    
+
     def getBinaryPackageRelease(self, name, version, arch):  
         return self._query_to_dict("""SELECT * FROM binaries, architecture, 
                                                     fingerprint

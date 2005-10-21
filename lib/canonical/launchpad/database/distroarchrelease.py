@@ -17,7 +17,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad.interfaces import (
     IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot,
-    IHasBuildRecords, NotFoundError, IBinaryPackageName)
+    IHasBuildRecords, IBinaryPackageName)
 
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchreleasebinarypackage import (

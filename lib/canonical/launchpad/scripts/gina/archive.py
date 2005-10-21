@@ -13,7 +13,6 @@ __all__ = ['ArchiveFilesystemInfo', 'ArchiveComponentItems', 'PackagesMap']
 import apt_pkg
 import tempfile
 import os
-from string import split
 
 from canonical.launchpad.scripts import log
 from canonical.launchpad.scripts.gina import call
@@ -128,7 +127,7 @@ class PackagesMap:
 
         # Create an orphan map to track binarypackages with no source
         # package.
-        self.orphans ={}
+        self.orphans = {}
 
         # Iterate over ArchComponentItems instance to cover
         # all components in all architectures.

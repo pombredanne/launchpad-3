@@ -23,7 +23,6 @@ from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
 from canonical import encoding
-from canonical.config import config
 
 from canonical.database.sqlbase import quote
 from canonical.database.constants import nowUTC
@@ -58,6 +57,13 @@ class DisplaynameDecodingError(Exception):
     def __init__(self, displayname):
         message = "Could not decode %s" % (displayname)
         Exception.__init__(self, message)
+
+
+class MultiplePackageReleaseError(Exception):
+    """
+    Raised when multiple package releases of the same version are
+    found for a single distribution, indicating database corruption.
+    """
 
 
 class ImporterHandler:
@@ -365,7 +371,8 @@ class SourcePackageReleaseHandler:
         directory = os.path.join(self.archiveroot, "pool",
                                  self.poolify(sp_name, sp_component))
         try:
-            dsc_path = get_dsc_path(sp_name, sp_version, self.archiveroot)
+            dsc_name, dsc_path = get_dsc_path(sp_name, sp_version, 
+                                              directory)
         except PoolFileNotFound:
             # Aah well, no source package in archive either.
             return None
@@ -439,8 +446,20 @@ class SourcePackageReleaseHandler:
                 sourcepackagepublishing.distrorelease = distrorelease.id AND
                 distrorelease.distribution = %s
                 """ % (sourcepackagename.id, quote(version), distributionID)
-        spr = SourcePackageRelease.selectOne(query,
-            clauseTables=['SourcePackagePublishing', 'DistroRelease'])
+        # XXX: this should really be a select DISTINCT. What we want to
+        # know here is the set of source packages with this version that
+        # was ever published into this archive.
+        releases = set()
+        for spr in SourcePackageRelease.select(query,
+            clauseTables=['SourcePackagePublishing', 'DistroRelease']):
+            releases.add(spr.id)
+        if not releases:
+            return None
+        if len(releases) != 1:
+            raise MultiplePackageReleaseError("Found more than one "
+                    "version of %s published into %s" %
+                    (sourcepackagename.name,
+                     distrorelease.distribution.name))
         return spr
 
     def createSourcePackageRelease(self, src, distrorelease):
@@ -475,12 +494,9 @@ class SourcePackageReleaseHandler:
         except IndexError:
             changelog = None
 
-        componentID = self.distro_handler.getComponentByName(src.component).id
-        sectionID = self.distro_handler.ensureSection(src.section).id
-
         if not valid_debian_version(src.version):
             # XXX: untested
-            log.error('%s has an invalid version %s', name.name, src.version)
+            log.error('%s has an invalid version %s', src.package, src.version)
             return None
 
         to_upload = []
@@ -504,6 +520,8 @@ class SourcePackageReleaseHandler:
         # to create the SPR.
         #
 
+        componentID = self.distro_handler.getComponentByName(src.component).id
+        sectionID = self.distro_handler.ensureSection(src.section).id
         name = self.ensureSourcePackageName(src.package)
         spr = SourcePackageRelease(sourcepackagename=name.id,
                                    version=src.version,
@@ -547,17 +565,16 @@ class SourcePublisher:
         """Create the publishing entry on db if does not exist."""
         log.debug('Publishing SourcePackageRelease %s-%s' % (
             sourcepackagerelease.sourcepackagename.name,
-            sourcepackagerelease.version,
-            ))
+            sourcepackagerelease.version))
 
         # Check if the sprelease is already published and if yes,
         # just report it.
         source_publishinghistory = self._checkPublishing(
             sourcepackagerelease, self.distrorelease)
         if source_publishinghistory:
-            log.debug('SourcePackageRelease already published as %s' % (
-                source_publishinghistory.status.title
-                ))
+            # XXX: untested
+            log.debug('SourcePackageRelease already published as %s' %
+                      source_publishinghistory.status.title)
             return
 
         # Create the Publishing entry with status PENDING.
@@ -573,8 +590,7 @@ class SourcePublisher:
             )
         log.debug('SourcePackageRelease %s-%s published' % (
             sourcepackagerelease.sourcepackagename.name,
-            sourcepackagerelease.version,
-            ))
+            sourcepackagerelease.version))
 
     def _checkPublishing(self, sourcepackagerelease, distrorelease):
         """Query for the publishing entry"""

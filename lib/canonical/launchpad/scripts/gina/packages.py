@@ -25,29 +25,9 @@ from canonical.lp.dbschema import (GPGKeyAlgorithm,
 from canonical.launchpad.scripts import log
 from canonical.launchpad.scripts.gina import call
 
-
-class PackageFileProcessError(Exception):
-    """XXX"""
-
-class PoolFileNotFound(PackageFileProcessError):
-    """XXX"""
-
-
-def stripseq(seq):
-    return [s.strip() for s in seq]
-
-
-def get_dsc_path(name, version, directory):
-    version = re.sub("^\d+:", "", version)
-    filename = "%s_%s.dsc" % (name, version)
-    fullpath = os.path.join(directory, filename)
-    if not os.path.exists(fullpath):
-        # If we didn't find this file in the archive, things are
-        # pretty bad, so stop processing immediately
-        raise PoolFileNotFound("File %s not in archive (%s)" % 
-                               (filename, fullpath))
-    return fullpath
-
+#
+# Data setup
+#
 
 urgencymap = {
     "low": SourcePackageUrgency.LOW,
@@ -67,20 +47,29 @@ prioritymap = {
     "source": PackagePublishingPriority.EXTRA,
 }
 
-
 GPGALGOS = {}
 for item in GPGKeyAlgorithm.items:
     GPGALGOS[item.value] = item.name
 
+#
+# Helper functions
+#
 
-class MissingRequiredArguments(Exception):
-    """Missing Required Arguments Exception.
+def stripseq(seq):
+    return [s.strip() for s in seq]
 
-    Raised if we attempted to construct a SourcePackageData based on an
-    invalid Sources.gz entry -- IOW, without all the required arguments.
-    This is because we are stuck (for now) passing arguments using
-    **args as some of the argument names are not valid Python identifiers
-    """
+
+def get_dsc_path(name, version, directory):
+    # Note that this is also used in handlers.py
+    version = re.sub("^\d+:", "", version)
+    filename = "%s_%s.dsc" % (name, version)
+    fullpath = os.path.join(directory, filename)
+    if not os.path.exists(fullpath):
+        # If we didn't find this file in the archive, things are
+        # pretty bad, so stop processing immediately
+        raise PoolFileNotFound("File %s not in archive (%s)" % 
+                               (filename, fullpath))
+    return filename, fullpath
 
 
 def parse_person(val):
@@ -92,8 +81,8 @@ def parse_person(val):
     return rfc822.parseaddr(val)
 
 
-def get_person_by_key(self, keyrings, key):
-    # XXX: untested
+def get_person_by_key(keyrings, key):
+    # XXX: untested, should probably be a method
     if key and key not in ("NOSIG", "None", "none"):
         command = ("gpg --no-options --no-default-keyring "
                    "--with-colons --fingerprint %s %s" % (key, keyrings))
@@ -131,6 +120,30 @@ def get_person_by_key(self, keyrings, key):
     else:
         return None
 
+#
+# Exception classes
+#
+
+class MissingRequiredArguments(Exception):
+    """Missing Required Arguments Exception.
+
+    Raised if we attempted to construct a SourcePackageData based on an
+    invalid Sources.gz entry -- IOW, without all the required arguments.
+    This is because we are stuck (for now) passing arguments using
+    **args as some of the argument names are not valid Python identifiers
+    """
+
+
+class PackageFileProcessError(Exception):
+    """XXX"""
+
+
+class PoolFileNotFound(PackageFileProcessError):
+    """XXX"""
+
+#
+# Implementation classes
+#
 
 class AbstractPackageData:
     # This class represents information on a single package that was
@@ -142,7 +155,7 @@ class AbstractPackageData:
     required = None
 
     def __init__(self):
-        missing = [attr for attr in self.required if not hasattr(self, attr)]
+        missing = [attr for attr in self.required if not getattr(self, attr)]
         if missing:
             raise MissingRequiredArguments(missing)
 
@@ -190,6 +203,10 @@ class AbstractPackageData:
 
 class SourcePackageData(AbstractPackageData):
     """This Class holds important data to a given sourcepackagerelease."""
+
+    # Defaults, overwritten by __init__
+    version = None
+    directory = None
 
     # Defaults, potentially overwritten by __init__
     build_depends = ""
@@ -244,8 +261,9 @@ class SourcePackageData(AbstractPackageData):
         If successful processing of the package occurs, this method
         sets the changelog, urgency and licence attributes.
         """
-        dsc_path = get_dsc_path(self.package, self.version,
-                                os.path.join(package_root, self.directory))
+        dsc_name, dsc_path = get_dsc_path(self.package, self.version,
+                                          os.path.join(package_root,
+                                                       self.directory))
         self.dsc = open(dsc_path).read().strip()
 
         call("dpkg-source -sn -x %s" % dsc_path)
@@ -330,9 +348,8 @@ class BinaryPackageData(AbstractPackageData):
     # MissingRequiredArguments exception is raised.
     required = [
         'package', 'section', 'installed_size', 'maintainer',
-        'architecture', 'essential', 'source', 'version', 'replaces',
-        'provides', 'depends', 'pre_depends', 'enhances', 'suggests',
-        'conflicts', 'filename', 'size', 'md5sum', 'description' ]
+        'architecture', 'source', 'version', 'depends', 'filename',
+        'size', 'md5sum', 'description' ]
     source = None # Some packages have Source, some don't -- the ones
                   # that don't have the same package name
     depends = ""
