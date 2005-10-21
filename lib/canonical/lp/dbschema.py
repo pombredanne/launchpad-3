@@ -153,7 +153,10 @@ class DBSchemaValidator(validators.Validator):
         if value is DEFAULT:
             return value
         if value.__class__ != Item:
-            raise TypeError('Not a DBSchema Item: %r' % value)
+            # We use repr(value) because if it's a tuple (yes, it has been
+            # seen in some cases) then the interpolation would swallow that
+            # fact, confusing poor programmers like Daniel.
+            raise TypeError('Not a DBSchema Item: %s' % repr(value))
         # Using != rather than 'is not' in order to cope with Security Proxy
         # proxied items and their schemas.
         if value.schema != self.schema:

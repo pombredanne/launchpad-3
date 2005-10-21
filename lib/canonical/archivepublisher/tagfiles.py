@@ -65,7 +65,7 @@ class TagFileParseError(Exception):
 re_single_line_field = re.compile(r"^(\S*)\s*:\s*(.*)");
 re_multi_line_field = re.compile(r"^\s(.*)");
 
-def parse_tagfile(filename, dsc_whitespace_rules=0):
+def parse_tagfile(filename, dsc_whitespace_rules=0, allow_unsigned=False):
     """Parses a tag file and returns a dictionary where each field is a
     key.  The mandatory first argument is the filename of the tag file.
 
@@ -129,7 +129,7 @@ def parse_tagfile(filename, dsc_whitespace_rules=0):
                     line = indexed_lines[index]
             continue
         # If we're not inside the signed data, don't process anything
-        if not inside_signature:
+        if not (inside_signature or allow_unsigned):
             continue
         slf = re_single_line_field.match(line)
         if slf:

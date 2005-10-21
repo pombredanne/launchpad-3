@@ -15,6 +15,7 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 from canonical.launchpad.validators.version import valid_debian_version
 
+from canonical.lp.dbschema import BuildStatus
 
 class ISourcePackageRelease(Interface):
     """A source package release, e.g. apache-utils 2.0.48-3"""
@@ -75,10 +76,12 @@ class ISourcePackageRelease(Interface):
         in this package.
         """
 
-    def createBuild(distroarchrelease, processor):
+    def createBuild(distroarchrelease, processor=None,
+                    status=BuildStatus.NEEDSBUILD):
         """Create a build for the given distroarchrelease and return it.
 
         If the processor isn't given, guess it from the distroarchrelease.
+        If the status isn't given, use NEEDSBUILD.
         """
 
 

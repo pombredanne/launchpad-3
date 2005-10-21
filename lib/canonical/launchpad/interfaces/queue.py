@@ -35,6 +35,17 @@ class IDistroReleaseQueue(Interface):
     pocket = Int(
             title=_("The pocket"), required=True, readonly=False,
             )
+
+    def addSource(spr):
+        """Add the provided source package release to this queue entry."""
+
+    def addBuild(build):
+        """Add the provided build to this queue entry."""
+
+    def addCustom(library_file, custom_type):
+        """Add the provided library file alias as a custom queue entry of
+        the given custom type.
+        """
     
 
 class IDistroReleaseQueueBuild(Interface):
@@ -54,6 +65,7 @@ class IDistroReleaseQueueBuild(Interface):
             title=_("The related build"), required=True, readonly=False,
             )
 
+
 class IDistroReleaseQueueSource(Interface):
     """A Queue item's related sourcepackagereleases (for Lucille)"""
 
@@ -71,6 +83,7 @@ class IDistroReleaseQueueSource(Interface):
             title=_("The related source package release"), required=True,
             readonly=False,
             )
+
 
 class IDistroReleaseQueueCustom(Interface):
     """A Queue item's related custom format files (for uploader/queue)"""
