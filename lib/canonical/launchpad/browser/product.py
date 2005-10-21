@@ -441,8 +441,12 @@ class ProductEditView(ProductView, SQLObjectEditView):
         SQLObjectEditView.__init__(self, context, request)
 
     def changed(self):
-        # If the name changed then the URL changed, so redirect
-        self.request.response.redirect(canonical_url(self.context))
+        # If the name changed then the URL will have changed
+        if self.context.active:
+            self.request.response.redirect(canonical_url(self.context))
+        else:
+            productset = getUtility(IProductSet)
+            self.request.response.redirect(canonical_url(productset))
 
 
 class ProductSeriesAddView(AddView):

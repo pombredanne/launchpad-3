@@ -277,6 +277,11 @@ And this is for a person:
 >>> check("/people/name16/+calendar")
 >>> check("/people/name16/+calendar/+subscribe", auth=True)
 
+>>> check("/bazaar")
+>>> check("/bazaar/+portlet-importstats")
+>>> check("/bazaar/series", auth=True)
+>>> check("/bazaar/series/+bazaar-index", auth=True)
+
 # XXX: all broken, currently, because of subtraversals. See bug 2149.
 # >>> check("/people/name16/+rdf")
 # >>> check("/people/name18/+rdf")

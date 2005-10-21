@@ -1,0 +1,30 @@
+Project
+=======
+
+XXX: One day, someone needs to fill this out with more interesting tests
+then the simple one I'm adding today.
+
+>>> from zope.component import getUtility
+>>> from canonical.launchpad.interfaces import (IProjectSet, IProject,
+...                                             NotFoundError)
+>>> from canonical.database.sqlbase import flush_database_updates
+>>> from canonical.launchpad.ftests import login
+
+Grab the gnome project from its project set:
+
+>>> projectset = getUtility(IProjectSet)
+>>> gnome = projectset["gnome"]
+
+Set it as inactive, logging in as an admin:
+
+>>> login("foo.bar@canonical.com")
+>>> gnome.active = False
+>>> flush_database_updates()
+
+It had better not show up any longer!
+
+>>> try:
+...   projectset[gnome.name]
+... except NotFoundError:
+...   pass
+
