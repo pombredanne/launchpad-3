@@ -15,7 +15,6 @@ from zope.interface import Interface, Attribute
 
 from zope.schema import Datetime, Int, Choice, Text, TextLine
 
-from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces import IHasOwner, IMessageTarget
 from canonical.lp.dbschema import TicketStatus, TicketPriority
 
@@ -165,4 +164,6 @@ class ITicketSet(Interface):
         distribution=None):
         """Create a new trouble ticket."""
 
+    def getAnsweredTickets():
+        """Return all tickets with the status ANSWERED."""
 

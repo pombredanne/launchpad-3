@@ -35,14 +35,14 @@ Now we can post a ticket.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/products/firefox/+ticket/6
+  Location: http://localhost:9000/products/firefox/+ticket/8
   ...
 
 
 After posting the ticket, it should redirect to the posted ticket page.
 
   >>> print http(r"""
-  ... GET /products/firefox/+ticket/6 HTTP/1.1
+  ... GET /products/firefox/+ticket/8 HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
