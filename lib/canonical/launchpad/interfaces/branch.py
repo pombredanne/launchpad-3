@@ -72,7 +72,7 @@ class IBranch(IHasOwner):
 
     # Home page attributes
     home_page = TextLine(
-        title=_('Home Page URL'), required=True,
+        title=_('Home Page URL'), required=False,
         description=_("The URL of the branch home page, describing the "
                       "purpose of the branch."), constraint=valid_webref)
     branch_home_page = Attribute(

@@ -62,17 +62,16 @@ Branches must implement the IBranch interface.
 >>> verifyObject(IBranch, firefox_dev)
 True
 
-Branch may or may not be associated to a product.
-
-TODO: demonstrate that home_page may be NULL, once the schema is updated to
-allow it. -- David Allouche 2005-10-19
+Branch may or may not be associated to a product, and may have no home_page
 
 >>> url = 'http://example.com/~ddaa/junkcode'
 >>> junkcode = branchset.new('junkcode', ddaa, None, url,
-...     title, summary=summary, home_page=home_page)
+...     title, summary=summary)
 >>> junkcode.name
 u'junkcode'
 >>> junkcode.product is None
+True
+>>> junkcode.home_page is None
 True
 
 Branch not associated to a product are called "junk" branch and treated for

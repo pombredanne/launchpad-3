@@ -92,7 +92,6 @@ UPDATE Branch SET
 -- Set final column constraints after data migration
 ALTER TABLE Branch ALTER COLUMN owner SET NOT NULL;
 ALTER TABLE Branch ALTER COLUMN product_locked SET NOT NULL;
-ALTER TABLE Branch ALTER COLUMN home_page_locked SET NOT NULL;
 ALTER TABLE Branch ALTER COLUMN starred SET NOT NULL;
 ALTER TABLE Branch ALTER COLUMN lifecycle_status SET NOT NULL;
 ALTER TABLE Branch ALTER COLUMN current_activity SET NOT NULL;

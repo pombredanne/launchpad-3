@@ -59,7 +59,7 @@ attribute that identify the leftmost ancestor.
 >>> revision_2 = Revision(owner=admins, log_body=log_body_2,
 ...     revision_author=author, revision_id=revision_id_2, revision_date=date,
 ...     diff_adds=None, diff_deletes=None,
-...     commited_against=revision_1)
+...     committed_against=revision_1)
 
 Revisions are associated to branches through the RevisionNumber table. A given
 revision may appear in different positions in different branches thanks to
