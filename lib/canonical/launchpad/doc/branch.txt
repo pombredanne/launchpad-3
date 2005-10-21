@@ -83,7 +83,35 @@ navigation purposes as if they were associated to a magic product named
 >>> firefox_dev.product_name
 u'firefox'
 
+    TODO: test Person.registered_branches, Person.authored_branches and
+    Person.related_branches -- DavidAllouche 2005-10-21
+
+Branches can be subscribed to and unsubscribed from by a Person.
+
+>>> from canonical.launchpad.interfaces import IPerson, IBranchSubscription
+>>> sabdfl = personset.getByName('sabdfl')
+>>> sabdfl.subscribed_branches
+[]
+>>> subscription = firefox_dev.subscribe(sabdfl)
+>>> verifyObject(IBranchSubscription, subscription)
+True
+>>> subscription.branch == firefox_dev and subscription.person == sabdfl
+True
+>>> firefox_dev.subscriptions == [subscription]
+True
+>>> firefox_dev.subscribers == [sabdfl]
+True
+>>> sabdfl.subscribed_branches == [firefox_dev]
+True
+>>> firefox_dev.unsubscribe(sabdfl)
+>>> firefox_dev.subscribers
+[]
+
 See revision.txt for a doctest covering the creation of revisions and related
 objects. Revision data is loaded in the database by Taxi, Launchpad code is
 only concened with using this data.
 
+    TODO: test Branch.revision_history, Branch.revision_count, and
+    Branch.latest_revisions from sampledata. Cannot populate the tables from
+    here because only the importd user is allowed to do that, and importd works
+    in a zopeless environment. -- DavidAllouche 2005-10-21
