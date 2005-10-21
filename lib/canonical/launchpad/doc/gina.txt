@@ -223,8 +223,6 @@ Ensure all we published to was main, in the main pocket:
     ...                     pocket=0).count() - original_spph_count
     16
 
-XXX: test publishing a security pocket?
-
 === Testing Binary Package Results ===
 
 XXX: test binary package creation, in particular gcc-defaults, whose
@@ -255,8 +253,8 @@ that we imported exactly 9 people (13 packages with 3 being uploaded by Kamion,
 
 === Re-run Gina ===
 
-We do a re-run. We should get only ERRORs, indicating packages that failed to
-import the last time.
+We do a re-run over the same components. We should get only ERRORs, indicating
+packages that failed to import the last time.
 
     >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q',
     ...              'hoary', 'breezy']
@@ -272,6 +270,34 @@ import the last time.
      -> http://...not in archive...))
     ERROR   Error processing package files for util-linux
      -> http://...not in archive...))
+
+Nothing should happen to our data -- no counts should have changed, etc.
+
+    >>> SourcePackageRelease.select().count() - orig_spr_count
+    13
+    >>> print SecureSourcePackagePublishingHistory.select().count() \
+    ...     - original_spph_count
+    16
+    >>> print Person.select().count() - orig_person_count
+    9
+    >>> print TeamParticipation.select().count() - orig_tp_count 
+    9
+    >>> print EmailAddress.select().count() - orig_email_count
+    9
+    >>> print WikiName.select().count() - orig_wiki_count
+    9
+
+=== Run Gina over a release with 2 components, 2 archs and one pocket ===
+
+XXX: TBD
+
+    >>> dapper = drs.new(ubuntu, "dapper", "Dapper Dragoon", "My title",
+    ...                  "My summary", "My description", "5.10", 1,
+    ...                  1, breezy, celebs.launchpad_developers)
+    >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q',
+    ...             'dapper' 'dapper-updates']
+    >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
+    >>> print proc.stderr.read()
 
 Nothing should happen to our data -- no counts should have changed, etc.
 
