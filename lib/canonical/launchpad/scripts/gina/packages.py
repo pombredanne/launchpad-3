@@ -16,6 +16,9 @@ import tempfile
 import shutil
 import rfc822
 
+from canonical import encoding
+
+from canonical.archivepublisher import Poolifier
 from canonical.launchpad.scripts.gina.changelog import parse_changelog
 
 from canonical.database.constants import nowUTC
@@ -27,6 +30,8 @@ from canonical.launchpad.scripts.gina import call
 
 from canonical.launchpad.validators.version import valid_debian_version
 
+# Stash a reference to the poolifier method
+poolify = Poolifier().poolify
 
 #
 # Data setup
@@ -323,7 +328,16 @@ class SourcePackageData(AbstractPackageData):
         """
         ret = read_dsc(self.package, self.version, self.directory, 
                        package_root)
-        self.dsc, self.urgency, self.changelog, self.licence = ret
+
+        # We don't use the licence here at all
+        dsc, urgency, changelog, dummy = ret
+
+        self.dsc = encoding.guess(dsc)
+        self.urgency = urgency
+        if changelog is None:
+            self.changelog = None
+        else:
+            self.changelog = encoding.guess(changelog[0]["changes"])
 
     def do_katie(self, kdb, keyrings):
         # XXX: disabled for the moment, untested
@@ -346,8 +360,9 @@ class SourcePackageData(AbstractPackageData):
             # This assumption is a bit evil. There is a hidden issue
             # that manifests itself if the source package was unchanged
             # between releases and its Sources file lacked a section
-            # initially and later the section is added. Shouldn't be an
-            # issue in practice.
+            # initially and later the section is added: we will never
+            # update the record. I doubt this will be an issue in
+            # practice.
             if kdb:
                 # XXX: untested
                 log.warn("Source package %s lacks section, looking it up..." %
@@ -380,7 +395,7 @@ class BinaryPackageData(AbstractPackageData):
     _required = [
         'package', 'installed_size', 'maintainer',
         'architecture', 'version', 'filename',
-        'size', 'md5sum', 'description' ]
+        'size', 'md5sum', 'description', 'summary']
 
     # Set in __init__
     source = None
@@ -416,6 +431,18 @@ class BinaryPackageData(AbstractPackageData):
                 self.maintainer = parse_person(v)
             elif k == "Essential":
                 self.essential = (v == "yes")
+            elif k == "Description":
+                self.description = encoding.guess(v)
+                summary = self.description.split("\n")[0].strip()
+                if not summary.endswith('.'):
+                    summary = summary + '.'
+                self.summary = summary
+            elif k == "Installed-Size":
+                try:
+                    self.installed_size = int(v)
+                except ValueError:
+                    raise MissingRequiredArguments("Installed-Size is "
+                        "not a valid integer: %r" % v)
             else:
                 setattr(self, k.lower().replace("-", "_"), v)
             # XXX: "enhances" is not used and not stored anywhere
@@ -464,6 +491,20 @@ class BinaryPackageData(AbstractPackageData):
             log.debug("Grabbing shared library info from %s" % 
                       os.path.basename(fullpath))
             self.shlibs = open(shlibfile).read().strip()
+
+        # XXX: using self.component here is wrong. What we need here is
+        # a locate_source_package_in_pool() function that finds it and
+        # returns it.
+        directory = os.path.join("pool",
+            poolify(self.source, self.component))
+
+        # XXX: we could probably refactor read_dsc into three parts, one
+        # that unpacked the file and two consumers that read specific
+        # data from it.
+        ret = read_dsc(self.source, self.source_version,
+                       directory, package_root)
+        dummy, dummy, dummy, licence = ret
+        self.licence = encoding.guess(licence)
 
     def do_katie(self, kdb, keyrings):
         # XXX: disabled for the moment, untested

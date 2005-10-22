@@ -52,7 +52,7 @@ from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
 poolify = Poolifier().poolify
 
 
-def check_librarian(files, package_root, directory):
+def check_not_in_librarian(files, package_root, directory):
     to_upload = []
     if not isinstance(files, list):
         # A little bit of ugliness. The source package's files attribute
@@ -65,12 +65,12 @@ def check_librarian(files, package_root, directory):
         path = os.path.join(package_root, directory)
         if not os.path.exists(os.path.join(path, fname)):
             # XXX: untested
-            log.error('Package %s not found on archive %s' % (fname, path))
-            return None
+            raise PoolFileNotFound('Package %s not found on archive '
+                                   '%s' % (fname, path))
         if checkLibraryForFile(path, fname):
             # XXX: untested
-            log.error('File %s already exists in the librarian' % fname)
-            return None
+            raise LibrarianHasFileError('File %s already exists in the '
+                                        'librarian' % fname)
         to_upload.append((fname, path))
     return to_upload
 
@@ -90,6 +90,12 @@ class MultiplePackageReleaseError(Exception):
     """
     Raised when multiple package releases of the same version are
     found for a single distribution, indicating database corruption.
+    """
+
+class LibrarianHasFileError(MultiplePackageReleaseError):
+    """
+    Raised when the librarian already contains a file we are trying
+    to import. This indicates database corruption.
     """
 
 
@@ -357,14 +363,16 @@ class SourcePackageReleaseHandler:
 
         sp_name = binarypackagedata.source
         sp_version = binarypackagedata.source_version
+        # XXX: this assumption is incorrect, because the components may
+        # not be the same. As I said in packages.py, what we need is a
+        # locate_source_package_in_pool() function.
         sp_component = binarypackagedata.component
 
         log.debug("Looking for source package %r (%r) in %r" %
                   (sp_name, sp_version, sp_component))
-        parsed_dsc = self._parseDSC(sp_name, sp_version, sp_component)
 
-        # Generate an sp_data object for the dsc
-        sp_data = SourcePackageData(self.ktdb, **parsed_dsc)
+        sp_data = self._getSourcePackageDataFromDSC(sp_name, 
+            sp_version, sp_component)
 
         # Process the package
         sp_data.process_package(self.ktdb,
@@ -392,8 +400,8 @@ class SourcePackageReleaseHandler:
 
         return spr
 
-    def _parseDSC(self, sp_name, sp_version, sp_component):
-        # XXX: untested
+    def _getSourcePackageDataFromDSC(self, sp_name, sp_version, sp_component):
+        # XXX: untested, duplicates poolify call
         directory = os.path.join(self.archiveroot, "pool",
                                  poolify(sp_name, sp_component))
         try:
@@ -410,8 +418,7 @@ class SourcePackageReleaseHandler:
         dsc_contents['package'] = sp_name
         dsc_contents['component'] = sp_component
 
-        # Also, the dsc doesn't list itself so we'll just have to add it
-        # ourselves
+        # the dsc doesn't list itself so add it ourselves
         if 'files' not in dsc_contents:
             log.error('DSC for %s didn\'t contain a files entry: %r' % 
                       (dsc_name, dsc_contents))
@@ -422,12 +429,13 @@ class SourcePackageReleaseHandler:
         # probably calculate it properly.
         dsc_contents['files'] += "xxx 000 %s" % dsc_name
 
-        # By capitalising the first letters of the keys we can create
-        # a new dict which SourcePackageData will accept...
-        capitalised_dsc = {}
+        # SourcePackageData requires capitals
+        capitalized_dsc = {}
         for k, v in dsc_contents.items():
-            capitalised_dsc[k.capitalize()] = v
-        return capitalised_dsc
+            capitalized_dsc[k.capitalize()] = v
+
+        return SourcePackageData(**capitalized_dsc)
+
 
     def getSourceForBinary(self, binarypackagedata, distrorelease):
         """Get a SourcePackageRelease for a BinaryPackage"""
@@ -461,7 +469,6 @@ class SourcePackageReleaseHandler:
 
     def _getSource(self, sourcepackagename, version, distrorelease):
         """Returns a sourcepackagerelease by its name and version."""
-
         distributionID=distrorelease.distribution.id
         query = """
                 sourcepackagerelease.sourcepackagename = %s AND
@@ -509,18 +516,9 @@ class SourcePackageReleaseHandler:
         #                                  *src.dsc_signing_key_owner)
         #         else:
         key = None
-        dsc = encoding.guess(src.dsc)
 
-        if src.changelog is not None:
-            changelog = encoding.guess(src.changelog[0]["changes"])
-        else:
-            changelog = None
-
-        to_upload = check_librarian(src.files, src.package_root,
-                                    src.directory)
-        if to_upload is None:
-            # XXX: convert to exception
-            return None
+        to_upload = check_not_in_librarian(src.files, src.package_root,
+                                           src.directory)
 
         #
         # DO IT! At this point, we've decided we have everything we need
@@ -540,8 +538,8 @@ class SourcePackageReleaseHandler:
                                    component=componentID,
                                    creator=maintainer.id,
                                    urgency=urgencymap[src.urgency],
-                                   changelog=changelog,
-                                   dsc=dsc,
+                                   changelog=src.changelog,
+                                   dsc=src.dsc,
                                    dscsigningkey=key,
                                    section=sectionID,
                                    manifest=None,
@@ -580,7 +578,14 @@ class SourcePublisher:
                       source_publishinghistory.status.title)
             return
 
-        # Create the Publishing entry with status PENDING.
+        # XXX: this code does not cope with source packages not listed
+        # in Sources.gz that have moved around in the pool. We should be
+        # using locate_source_package_in_pool() here instead of the
+        # strict component name. Section may suffer from the same
+        # problem.
+        #
+        # Create the Publishing entry with status PENDING so that we can
+        # republish this later into a Soyuz archive.
         SecureSourcePackagePublishingHistory(
             distrorelease=self.distrorelease.id,
             sourcepackagerelease=sourcepackagerelease.id,
@@ -660,32 +665,9 @@ class BinaryPackageHandler:
 
     def createBinaryPackage(self, bin, srcpkg, distroarchinfo):
         """Create a new binarypackage."""
-        description = encoding.guess(bin.description)
-        summary = description.split("\n")[0].strip()
-        if not summary.endswith('.'):
-            summary = summary + '.'
-
-        # XXX XXX XXX
-        directory = os.path.join(self.archiveroot, "pool",
-                                 poolify(srcpkg.sourcepackagename.name,
-                                         srcpkg.component.name))
-        assert os.path.exists(directory)
-        cwd = os.getcwd()
-        tempdir = tempfile.mkdtemp()
-        os.chdir(tempdir)
-        ret = read_dsc(srcpkg.sourcepackagename.name, srcpkg.version,
-                       directory, bin.package_root)
-        os.chdir(cwd)
-        dsc, urgency, changelog, licence = ret
-        licence = encoding.guess(licence)
-
         fdir, fname = os.path.split(bin.filename)
-        to_upload = check_librarian(fname, bin.package_root, fdir)
-        if to_upload is None:
-            # XXX: convert to exception
-            return None
+        to_upload = check_not_in_librarian(fname, bin.package_root, fdir)
         fname, path = to_upload[0]
-        # XXX XXX XXX
 
         componentID = self.distro_handler.getComponentByName(bin.component).id
         sectionID = self.distro_handler.ensureSection(bin.section).id
@@ -699,8 +681,8 @@ class BinaryPackageHandler:
             binarypackagename = bin_name.id,
             component = componentID,
             version = bin.version,
-            description = description,
-            summary = summary,
+            description = bin.description,
+            summary = bin.summary,
             build = build.id,
             binpackageformat = getBinaryPackageFormat(bin.filename),
             section = sectionID,
@@ -713,10 +695,10 @@ class BinaryPackageHandler:
             replaces = bin.replaces,
             provides = bin.provides,
             essential = bin.essential,
-            installedsize = int(bin.installed_size),
-            licence = licence,
+            installedsize = bin.installed_size,
+            licence = bin.licence,
             architecturespecific = architecturespecific,
-            copyright = None
+            copyright = None,
             )
         log.info('Binary Package Release %s (%s) created' %
                  (bin_name.name, bin.version))

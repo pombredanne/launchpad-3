@@ -275,6 +275,10 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
                 log.exception("Error processing package files for %s" %
                               package_name)
                 continue
+            except MultiplePackageReleaseError:
+                log.exception("Database duplication processing %s" %
+                              package_name)
+                continue
             except psycopg.Error:
                 log.exception("Database error: unable to create "
                               "BinaryPackageData for %s" % package_name)

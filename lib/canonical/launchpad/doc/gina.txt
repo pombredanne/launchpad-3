@@ -276,6 +276,7 @@ Test all the data got to the ed BPR intact:
     utility.  The classic unix line editor, ed is a line-oriented text
     editor.  It is used to create, display, modify and otherwise
     ...
+    except that this permission notice may be stated in a translation approved
     by the Foundation.
 
 XXX: test binary package creation, in particular gcc-defaults, whose
