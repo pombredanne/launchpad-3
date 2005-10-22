@@ -9,8 +9,9 @@ We start out with 6 packages in our database.
 
     >>> from canonical.launchpad.database import (SourcePackageRelease,
     ...     SecureSourcePackagePublishingHistory, SourcePackageName,
+    ...     BinaryPackageRelease, BinaryPackageName,
     ...     SourcePackageReleaseFile, Person, TeamParticipation,
-    ...     WikiName, EmailAddress)
+    ...     WikiName, EmailAddress, BinaryPackageRelease, Build)
     >>> SPPH = SecureSourcePackagePublishingHistory
 
 Get the current status of the database:
@@ -21,15 +22,21 @@ Get the current status of the database:
     >>> orig_email_count = EmailAddress.select().count()
     >>> orig_wiki_count = WikiName.select().count()
     >>> original_spph_count = SPPH.select().count()
+    >>> orig_bpr_count = BinaryPackageRelease.select().count()
+    >>> orig_build_count = Build.select().count()
 
     >>> import subprocess, sys, os
     >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
     >>> LibrarianTestSetup().setUp()
 
-Lets set up the filesystem:
+Let's set up the filesystem:
 
     >>> try:
     ...     os.unlink("/var/lock/launchpad-gina.lock")
+    ... except OSError:
+    ...     pass
+    >>> try:
+    ...     os.remove('/tmp/gina_test_archive')
     ... except OSError:
     ...     pass
     >>> relative_path = ('lib/canonical/launchpad/scripts/'
@@ -59,13 +66,14 @@ packages:
      maintainer has a name which contains a ","
   b) python-sqllite, an arch-independent source package that generates
      one binary package.
-  c) ubuntu-meta, a source package that generates 5 binary packages.
-  d) db1-compat, source package what generates 2 binary packages. The same
+  c) ubuntu-meta, a source package that generates 3 binary packages in
+     Hoary and 5 in breezy.
+  d) db1-compat, source package what generates 1 binary package. The same
      version was included in both hoary and breezy.
   e) gcc-defaults, a source package that generates a truckload of binary
      packages with differing versions.
-  f) x11proto-damage, a source apckage which is only present in breezy
-  g) libcap, a source package which generates 2 binary packages, and
+  f) x11proto-damage, a package which is only present in breezy
+  g) libcap, a source package which generates 3 binary packages, and
      whose version number contains an epoch. It is not in the Breezy
      Sources list. XXX: but some binaries are in the Packages file?
 
@@ -74,16 +82,18 @@ Two packages which have recoverable errors:
   g) ed, a source package what generates one binary package and
      misses a section entry in Sources. The same version exists in
      breezy, this time with a defined section (which we don't handle
-     correctly)
+     correctly). Its hoary binary package lacks a Priority.
   h) python-pam, an arch-independent source package that generates one
-       binary package, whose changelog contains a busted urgency
+     binary package, whose changelog contains a busted urgency. Its hoary
+     binary package contains lacks a Section.
 
 And two completely broken packages:
 
-  i) util-linux, a source package that is missing from the pool
+  i) util-linux, a source package that is missing from the pool. It
+     generates 4 binary packages, all missing.
   j) mkvmlinuz, a source package that generates one binary package,
      but which is missing a version field in its Sources file.
-     Its breezy package is also missing copyright and changelog.
+     Its breezy package has a version but is missing copyright and changelog.
 
 Let's give her a spin:
 
@@ -94,21 +104,30 @@ Let's give her a spin:
 Check STDERR for the errors we expected:
 
     >>> print proc.stderr.read()
-    ERROR   Unable to create SourcePackageData for mkvmlinuz: Required attributes not found
-     -> http://...version'])
+    ERROR   Unable to create SourcePackageData for mkvmlinuz
+     -> http://...version: None)
     WARNING Source package ed lacks section, assumed 'misc'
     WARNING Invalid urgency in python-pam, None, assumed 'low'
     ERROR   Error processing package files for util-linux
-     -> http://...not in archive...))
+     -> http://...dsc not in archive...))
+    ERROR   Error processing package files for bsdutils
+     -> http://...deb not found)
+    ERROR   Error processing package files for mount
+     -> http://...deb not found)
+    WARNING Binary package python-pam lacks a section... assumed 'misc'
+    ERROR   Error processing package files for util-linux-locales
+     -> http://...deb not found)
+    ERROR   Error processing package files for util-linux
+     -> http://...deb not found)
     ERROR   Invalid Sources stanza in /tmp/tmp...
      -> http://...bogus\n')
     WARNING No changelog file found for mkvmlinuz in mkvmlinuz-14ubuntu1
     WARNING No license file found for mkvmlinuz in mkvmlinuz-14ubuntu1
     WARNING Invalid urgency in mkvmlinuz, None, assumed 'low'
     ERROR   Error processing package files for python-sqlite
-     -> http://...not in archive...))
+     -> http://...dsc not in archive...))
     ERROR   Error processing package files for util-linux
-     -> http://...not in archive...))
+     -> http://...dsc not in archive...))
     <BLANKLINE>
 
 The exit status must be 0, for success:
@@ -137,6 +156,16 @@ Check that x11proto-damage has its Build-Depends-Indep value correctly set:
     ...                                         version="6.8.99.7-2")
     >>> x11p.builddependsindep
     u'debhelper (>= 4.0.0)'
+    >>> print x11p.changelog
+    x11proto-damage (6.8.99.7-2) breezy; urgency=low
+    <BLANKLINE>
+    <BLANKLINE>
+      * Add dependency on x11proto-fixes-dev.
+    <BLANKLINE>
+     -- Daniel Stone <daniel.stone@ubuntu.com>  Mon, 11 Jul 2005 19:11:11 +1000
+    >>> from canonical.lp.dbschema import SourcePackageUrgency
+    >>> x11p.urgency == SourcePackageUrgency.LOW
+    True
 
 Check that the dsc on the libcap package is correct, and that we
 only imported one:
@@ -197,12 +226,6 @@ Make sure that we only imported one db1-compat source package.
     >>> n = SourcePackageName.selectOneBy(name="db1-compat")
     >>> db1 = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id)
 
-Check that the uploaders were added to mkvmlinuz for breezy. XXX: broken because we currently do nothing with uploaders :-(
-
-    >>> #n = SourcePackageName.selectOneBy(name="mkvmlinuz")
-    >>> #mkvm = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id, version="14ubuntu1")
-    >>> #mkvm.uploaders
-
 === Testing Source Package Publishing ===
 
 We should have one entry for each package listed in Sources that was
@@ -225,12 +248,41 @@ Ensure all we published to was main, in the main pocket:
 
 === Testing Binary Package Results ===
 
+We have 14 binary packages. The 4 packages for util-linux fail:
+
+    >>> BinaryPackageRelease.select().count() - orig_bpr_count
+    10
+    >>> Build.select().count() - orig_build_count
+    6
+
+Test all the data got to the ed BPR intact:
+
+    >>> n = BinaryPackageName.selectOneBy(name="ed")
+    >>> ed = BinaryPackageRelease.selectOneBy(binarypackagenameID=n.id)
+    >>> print ed.version
+    0.2-20
+    >>> print ed.build.processor.name
+    386
+    >>> print ed.build.buildstate
+    1
+    >>> print ed.build.distroarchrelease.processorfamily.name
+    x86
+    >>> print ed.build.distroarchrelease.architecturetag
+    i386
+    >>> print ed.summary
+    The classic unix line editor.
+    >>> print ed.licence
+    This is Debian GNU's prepackaged version of the FSF's GNU ed
+    utility.  The classic unix line editor, ed is a line-oriented text
+    editor.  It is used to create, display, modify and otherwise
+    ...
+    by the Foundation.
+
 XXX: test binary package creation, in particular gcc-defaults, whose
      package versions differ from its source version
 XXX: test that there are only XXX binary package releases created
 XXX: test that there are only XXX builds created
-XXX: put in a test that says, when it creates a BPR or SPR, make sure there is
-     not already one pointing at the same LibraryFileContent
+XXX: test package with invalid version and invalid source version
 
 === Testing People Created ===
 
@@ -260,16 +312,28 @@ packages that failed to import the last time.
     ...              'hoary', 'breezy']
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
     >>> print proc.stderr.read()
-    ERROR   Unable to create SourcePackageData for mkvmlinuz: Required attributes not found
-     -> http://...version'])
+    ERROR   Unable to create SourcePackageData for mkvmlinuz
+     -> http://...version: None)
     ERROR   Error processing package files for util-linux
-     -> http://...not in archive...))
+     -> http://...dsc not in archive...))
+    ERROR   Error processing package files for bsdutils
+     -> http://...deb not found)
+    ERROR   Error processing package files for mount
+     -> http://...deb not found)
+    WARNING Binary package python-pam lacks a section... assumed 'misc'
+    ERROR   Error processing package files for util-linux-locales
+     -> http://...deb not found)
+    ERROR   Error processing package files for util-linux
+     -> http://...deb not found)
     ERROR   Invalid Sources stanza in /tmp/tmp...
      -> http://...bogus\n')
     ERROR   Error processing package files for python-sqlite
-     -> http://...not in archive...))
+     -> http://...dsc not in archive...))
     ERROR   Error processing package files for util-linux
-     -> http://...not in archive...))
+     -> http://...dsc not in archive...))
+    <BLANKLINE>
+    >>> proc.wait()
+    0
 
 Nothing should happen to our data -- no counts should have changed, etc.
 
@@ -289,31 +353,18 @@ Nothing should happen to our data -- no counts should have changed, etc.
 
 === Run Gina over a release with 2 components, 2 archs and one pocket ===
 
-XXX: TBD
 
     >>> dapper = drs.new(ubuntu, "dapper", "Dapper Dragoon", "My title",
     ...                  "My summary", "My description", "5.10", 1,
     ...                  1, breezy, celebs.launchpad_developers)
     >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q',
-    ...             'dapper' 'dapper-updates']
+    ...              'dapper', 'dapper-updates']
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
-    >>> print proc.stderr.read()
+    >>> #print proc.stderr.read()
+    >>> proc.wait()
+    1
 
-Nothing should happen to our data -- no counts should have changed, etc.
-
-    >>> SourcePackageRelease.select().count() - orig_spr_count
-    13
-    >>> print SecureSourcePackagePublishingHistory.select().count() \
-    ...     - original_spph_count
-    16
-    >>> print Person.select().count() - orig_person_count
-    9
-    >>> print TeamParticipation.select().count() - orig_tp_count 
-    9
-    >>> print EmailAddress.select().count() - orig_email_count
-    9
-    >>> print WikiName.select().count() - orig_wiki_count
-    9
+XXX: TBD
 
 === Other tests ===
 
@@ -335,40 +386,4 @@ Stop Librarian
 
 Remove the tmp link to the gina_test_archive
     >>> os.remove('/tmp/gina_test_archive')
-
-2d227a7e3e67d59c92cd265003ac882b76ae45eb
-ec62e3aee3fb632aefc859c9441f5845563312ca
-abb61231a3baeb988b145ffe97cdbaea8f651d93
-4c72a8dea6002c60b61597855e2b99381e86afb8
-473d585af33444a45673d9b6ca8f4a8049637a6e
-87c075c4c6954343c25eb046f945eae17fc6b423
-47b8a4be4c2d7f62078bae621d71bc2d8d872527
-1dbe9b1a1bbeb44e0ce2e234e6e3d06b308664ed
-5f0be795f782e9cef4c22f25aaed14b9a75dc8d4
-26403ef7351eda5e2821c49c24ef3c89c58332cc
-3f159fdd4fad935eb50594dac14802c4cf03808a
-9147f1a69a07e64b533bd8513c143efaf8052dc7
-24d94b10a69aff13256aa02a77ff02f81695cbf5
-7383da6ad6c0f61bd8d72cb32cae5514bf571c5e
-857d538d0773e8b1a24ba06c4da1fff8cce03360
-e1eaeba90df2d7e886143577cc7d5ba24b8c3ea7
-720458a0ebb5b4fa145a3048444611a450204122
-4052d6ebcfa695878cc96a2d57c8348b0d594fac
-bab9c09975f7db010087313c2a2065c04f431187
-38987267e703e7af18c9d62ca971ab8bbdbfc88a
-668f3618452609bb2a924b903fb1abbb8657e8c9
-a7f8adb7c8a6cb0a50c5418b13c18005fc4a0f9a
-c8b5a10e0485a6a9c9e9c588305200d90d760a8e
-973ad40448b36137cfceeb37c8f5e7c8c7e52aa2
-2cc1fb324d0851a8c9d335193578a292e5890ab4
-cae5ebd15268c6c000eceac3b755c6841f1b909a
-ce4d97ce2e94962b081e78e8336c0ca67b5feb1b
-c4e1d9add21a5510763a6003a841f62b056ac53e
-089bfd26d8ab4503710d4b49495ddf779132bde5
-895520101eb838ec1eecb42fae335cecf2520a33
-7489a2a1313cd11423edabf9bef6ab19582b80cd
-11e8b3986096b319bececaf890513493bda4a9e0
-87478d21055ba7a326a1a51683a6f5cc9035fb79
-9e80cb9ce59ad71d8f6fb9f25c9beb6d3bc0a81c
-d9ad0dc6ed7c48ab139e072e3bbbde623b379ff7
 

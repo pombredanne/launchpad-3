@@ -25,6 +25,9 @@ from canonical.lp.dbschema import (GPGKeyAlgorithm,
 from canonical.launchpad.scripts import log
 from canonical.launchpad.scripts.gina import call
 
+from canonical.launchpad.validators.version import valid_debian_version
+
+
 #
 # Data setup
 #
@@ -70,6 +73,47 @@ def get_dsc_path(name, version, directory):
         raise PoolFileNotFound("File %s not in archive (%s)" % 
                                (filename, fullpath))
     return filename, fullpath
+
+
+def read_dsc(package, version, directory, package_root):
+    urgency = None
+
+    dsc_name, dsc_path = get_dsc_path(package, version,
+        os.path.join(package_root, directory))
+    dsc = open(dsc_path).read().strip()
+
+    call("dpkg-source -sn -x %s" % dsc_path)
+
+    version = re.sub("^\d+:", "", version)
+    version = re.sub("-[^-]+$", "", version)
+    filename = "%s-%s" % (package, version)
+    fullpath = os.path.join(filename, "debian", "changelog")
+
+    if os.path.exists(fullpath):
+        clfile = open(fullpath)
+        line = ""
+        while not line:
+            line = clfile.readline().strip()
+        if "urgency=" in line:
+            urgency = line.split("urgency=")[1].strip().lower()
+        clfile.seek(0)
+        changelog = parse_changelog(clfile)
+        clfile.close()
+    else:
+        log.warn("No changelog file found for %s in %s" % (package, filename))
+        changelog = None
+
+    # Look for the license. License is an interesting case: we obtain it
+    # when opening the DSC file, but we only really do this when
+    # creating a BinaryPackageRelease, because that's where it needs to
+    # be stored.
+    fullpath = os.path.join(filename, "debian", "copyright")
+    if os.path.exists(fullpath):
+        licence = open(fullpath).read().strip()
+    else:
+        log.warn("No license file found for %s in %s" % (package, filename))
+        licence = None
+    return dsc, urgency, changelog, licence
 
 
 def parse_person(val):
@@ -135,11 +179,22 @@ class MissingRequiredArguments(Exception):
 
 
 class PackageFileProcessError(Exception):
-    """XXX"""
+    """An error occurred while processing a package file"""
 
 
 class PoolFileNotFound(PackageFileProcessError):
-    """XXX"""
+    """The specified file was not found in the archive pool"""
+
+
+class InvalidVersionError(Exception):
+    """An invalid package version was found"""
+
+
+class InvalidSourceVersionError(Exception):
+    """
+    An invalid source package version was found when processing a binary
+    package.
+    """
 
 #
 # Implementation classes
@@ -152,10 +207,17 @@ class AbstractPackageData:
     # from the corresponding pool files (the dsc, deb and tar.gz)
     package_root = None
     package = None
-    required = None
+    _required = None
+    version = None
 
     def __init__(self):
-        missing = [attr for attr in self.required if not getattr(self, attr)]
+        if self.version is None or not valid_debian_version(self.version):
+            # XXX: untested
+            raise InvalidVersionError("%s has an invalid version: %s" %
+                                      (self.package, self.version))
+
+
+        missing = [attr for attr in self._required if not getattr(self, attr)]
         if missing:
             raise MissingRequiredArguments(missing)
 
@@ -169,11 +231,13 @@ class AbstractPackageData:
         self.package_root = package_root
 
         tempdir = tempfile.mkdtemp()
+        cwd = os.getcwd()
+        os.chdir(tempdir)
         try:
-            cwd = os.getcwd()
-            os.chdir(tempdir)
-            self.do_package(package_root)
-            os.chdir(cwd)
+            try:
+                self.do_package(package_root)
+            finally:
+                os.chdir(cwd)
         except PoolFileNotFound:
             raise
         except Exception, e:
@@ -205,7 +269,6 @@ class SourcePackageData(AbstractPackageData):
     """This Class holds important data to a given sourcepackagerelease."""
 
     # Defaults, overwritten by __init__
-    version = None
     directory = None
 
     # Defaults, potentially overwritten by __init__
@@ -214,10 +277,7 @@ class SourcePackageData(AbstractPackageData):
     standards_version = ""
 
     # Defaults, overwritten by do_package and ensure_required
-    urgency = None
     section = None
-    licence = ""
-    changelog = ""
 
     is_processed = False
     is_created = False
@@ -225,7 +285,7 @@ class SourcePackageData(AbstractPackageData):
     # These arguments /must/ have been set in the Sources file and
     # supplied to __init__ as keyword arguments. If any are not, a
     # MissingRequiredArguments exception is raised.
-    required = [
+    _required = [
         'package', 'binaries', 'version', 'maintainer',
         'architecture', 'directory', 'files', 'format']
 
@@ -261,38 +321,9 @@ class SourcePackageData(AbstractPackageData):
         If successful processing of the package occurs, this method
         sets the changelog, urgency and licence attributes.
         """
-        dsc_name, dsc_path = get_dsc_path(self.package, self.version,
-                                          os.path.join(package_root,
-                                                       self.directory))
-        self.dsc = open(dsc_path).read().strip()
-
-        call("dpkg-source -sn -x %s" % dsc_path)
-
-        version = re.sub("^\d+:", "", self.version)
-        version = re.sub("-[^-]+$", "", version)
-        filename = "%s-%s" % (self.package, version)
-        fullpath = os.path.join(filename, "debian", "changelog")
-
-        if os.path.exists(fullpath):
-            changelog = open(fullpath)
-            line = ""
-            while not line:
-                line = changelog.readline().strip()
-            if "urgency=" in line:
-                self.urgency = line.split("urgency=")[1].strip().lower()
-            changelog.seek(0)
-            self.changelog = parse_changelog(changelog)
-            changelog.close()
-        else:
-            log.warn("No changelog file found for %s in %s" % (self.package,
-                                                               filename))
-
-        fullpath = os.path.join(filename, "debian", "copyright")
-        if os.path.exists(fullpath):
-            self.licence = open(fullpath).read().strip()
-        else:
-            log.warn("No license file found for %s in %s" % (self.package,
-                                                             filename))
+        ret = read_dsc(self.package, self.version, self.directory, 
+                       package_root)
+        self.dsc, self.urgency, self.changelog, self.licence = ret
 
     def do_katie(self, kdb, keyrings):
         # XXX: disabled for the moment, untested
@@ -346,24 +377,34 @@ class BinaryPackageData(AbstractPackageData):
     # These attributes must have been set by the end of the __init__ method.
     # They are passed in as keyword arguments. If any are not set, a
     # MissingRequiredArguments exception is raised.
-    required = [
-        'package', 'section', 'installed_size', 'maintainer',
-        'architecture', 'source', 'version', 'depends', 'filename',
+    _required = [
+        'package', 'installed_size', 'maintainer',
+        'architecture', 'version', 'filename',
         'size', 'md5sum', 'description' ]
-    source = None # Some packages have Source, some don't -- the ones
-                  # that don't have the same package name
+
+    # Set in __init__
+    source = None
+    source_version = None
+    version = None
+    architecture = None
+    filename = None
+
+    # Defaults, optionally overwritten in __init__
     depends = ""
-    shlibs = ""
-    pre_depends = ""
-    recommends = ""
     suggests = ""
-    enhances = ""
+    recommends = ""
     conflicts = ""
     replaces = ""
     provides = ""
-    essential = ""
-    # XXX
-    sversion = None
+    essential = False
+
+    # Overwritten in do_package, optionally
+    shlibs = ""
+
+    # Overwritten by __init__ and ensure_required
+    section = None
+    priority = None
+
     #
     is_processed = False
     is_created = False
@@ -373,8 +414,12 @@ class BinaryPackageData(AbstractPackageData):
         for k, v in args.items():
             if k == "Maintainer":
                 self.maintainer = parse_person(v)
+            elif k == "Essential":
+                self.essential = (v == "yes")
             else:
                 setattr(self, k.lower().replace("-", "_"), v)
+            # XXX: "enhances" is not used and not stored anywhere
+            # XXX: same for "pre_depends"
 
         if self.source:
             # We need to handle cases like "Source: myspell
@@ -383,20 +428,26 @@ class BinaryPackageData(AbstractPackageData):
             # XXX: dsilvers: 20050922: Work out why this happens and
             # file an upstream bug against python-apt once we've worked
             # it out.
-            match = self.source_version_re.match(self.source)
-
-            if hasattr(self, 'sversion'):
-                self.source_version = self.sversion
-            elif match:
-                self.source = match.group(1)
-                self.source_version = match.group(2)
-            else:
-                # XXX: this is probably a best-guess and might fail
-                #   -- kiko, 2005-10-18
-                self.source_version = self.version
+            if self.source_version is None:
+                match = self.source_version_re.match(self.source)
+                if match:
+                    self.source = match.group(1)
+                    self.source_version = match.group(2)
+                else:
+                    # XXX: this is probably a best-guess and might fail
+                    #   -- kiko, 2005-10-18
+                    self.source_version = self.version
         else:
+            # Some packages have Source, some don't -- the ones that
+            # don't have the same package name.
             self.source = self.package
             self.source_version = self.version
+
+        if (self.source_version is None or
+            not valid_debian_version(self.source_version)):
+            raise InvalidSourceVersionError("Binary package %s (%s) "
+                "refers to source package %s with invalid version: %s" %
+                (self.package, self.version, self.source, self.source_version))
 
         AbstractPackageData.__init__(self)
 
@@ -409,9 +460,9 @@ class BinaryPackageData(AbstractPackageData):
         call("dpkg -e %s" % fullpath)
         shlibfile = os.path.join("DEBIAN", "shlibs")
         if os.path.exists(shlibfile):
-            log.debug("Grabbing shared library info from %s" % (
-                os.path.basename(fullpath)
-                ))
+            # XXX: untested
+            log.debug("Grabbing shared library info from %s" % 
+                      os.path.basename(fullpath))
             self.shlibs = open(shlibfile).read().strip()
 
     def do_katie(self, kdb, keyrings):
@@ -433,12 +484,12 @@ class BinaryPackageData(AbstractPackageData):
         return True
 
     def ensure_complete(self, kdb):
-        if not hasattr(self, 'section'):
+        if self.section is None:
             self.section = 'misc'
             log.warn("Binary package %s lacks a section... assumed %r" %
                      (self.package, self.section))
 
-        if not hasattr(self, 'priority'):
+        if self.priority is None:
             self.priority = 'extra'
             log.warn("Binary package %s lacks valid priority, assumed %r" %
                      (self.package, self.section))

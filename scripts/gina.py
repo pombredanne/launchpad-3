@@ -34,9 +34,10 @@ from canonical.launchpad.scripts.gina.archive import (ArchiveComponentItems,
     PackagesMap, MangledArchiveError)
 
 from canonical.launchpad.scripts.gina.handlers import (ImporterHandler,
-    MultiplePackageReleaseError)
+    MultiplePackageReleaseError, NoSourcePackageError)
 from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
-    BinaryPackageData, MissingRequiredArguments, PackageFileProcessError)
+    BinaryPackageData, MissingRequiredArguments,
+    PackageFileProcessError, InvalidVersionError)
 
 
 
@@ -109,8 +110,8 @@ def run_gina(options, ztm, target_section):
     keyrings_root = target_section.keyrings
     distro = target_section.distro
     distrorelease = target_section.distrorelease
-    components = target_section.components.split(",")
-    archs = target_section.architectures.split(",")
+    components = [c.strip() for c in target_section.components.split(",")]
+    archs = [a.strip() for a in target_section.architectures.split(",")]
     pocket = target_section.pocket
     pocket_distrorelease = target_section.pocketrelease
     source_only = target_section.source_only
@@ -160,7 +161,6 @@ def run_gina(options, ztm, target_section):
         keyrings = _get_keyring(keyrings_root)
 
     try:
-        # Create the ArchComponent Items object
         arch_component_items = ArchiveComponentItems(package_root,
                                                      distrorelease,
                                                      components, archs)
@@ -209,9 +209,9 @@ def import_sourcepackages(packages_map, kdb, package_root,
         try:
             do_one_sourcepackage(source, kdb, package_root, keyrings,
                                  importer_handler)
-        except MissingRequiredArguments:
-            log.exception("Unable to create SourcePackageData for %s: "
-                          "Required attributes not found" % package_name)
+        except (InvalidVersionError, MissingRequiredArguments):
+            log.exception("Unable to create SourcePackageData for %s" % 
+                          package_name)
             continue
         except PackageFileProcessError:
             # Problems with katie db stuff of opening files
@@ -227,14 +227,6 @@ def import_sourcepackages(packages_map, kdb, package_root,
                           "SourcePackageData for %s" % package_name)
             importer_handler.abort()
             return
-        except (AttributeError, KeyError, ValueError, TypeError):
-            # XXX: Debonzi 20050720
-            # Catch all common exception since they are not predictable ATM.
-            # SourcePackageData class should be refactored or rewrited to try
-            # to make it better and have tested include.
-            log.exception("Unable to create SourcePackageData for %s" %
-                          package_name)
-            continue
 
         if COUNTDOWN and count % COUNTDOWN == 0:
             log.warn('%i/%i sourcepackages processed' % (count, npacks))
@@ -270,39 +262,36 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
         # Go over binarypackages importing them for this architecture
         for binary in packages_map.bin_map[arch].itervalues():
             count += 1
+            package_name = binary.get("Package", "unknown")
             try:
                 do_one_binarypackage(binary, arch, kdb, package_root,
-                                     keyrings, importer_handler, nosource)
-            except MissingRequiredArguments:
-                # Required attributes for this instance was not found.
-                log.exception("Unable to create BinaryPackageData: "
-                              "required attributes missing")
+                                     keyrings, importer_handler)
+            except (InvalidVersionError, MissingRequiredArguments):
+                log.exception("Unable to create BinaryPackageData for %s" % 
+                              package_name)
+                continue
+            except PackageFileProcessError:
+                # Problems with katie db stuff of opening files
+                log.exception("Error processing package files for %s" %
+                              package_name)
                 continue
             except psycopg.Error:
                 log.exception("Database error: unable to create "
-                              "BinaryPackageData")
+                              "BinaryPackageData for %s" % package_name)
                 importer_handler.abort()
                 continue
-            except (AttributeError, ValueError, KeyError, TypeError):
-                # XXX: Debonzi 20050720
-                # Catch all common exception since they are not
-                # predictable ATM. BinaryPackageData class should be
-                # refactored or rewritten to try to make it better and
-                # have tests included.
-                log.exception("Failed to create BinaryPackageData")
-                continue
-            except psycopg.Error:
-                log.exception("Database error. Failed to import_binarypackage")
-                importer_handler.abort()
-                continue
-            except (AttributeError, ValueError, TypeError):
-                log.exception("Failed to import_binarypackage")
+            except NoSourcePackageError:
+                log.exception("Failed to create Binary Package for %s" % 
+                              package_name)
+                nosource.append(binary)
                 continue
 
             if COUNTDOWN and count % COUNTDOWN == 0:
+                # XXX: untested
                 log.warn('%i/%i binary packages processed' % (count, npacks))
 
         if nosource:
+            # XXX: untested
             log.warn('%i sources packages not found' % len(nosource))
             for pkg in nosource:
                 log.warn(pkg)
@@ -311,20 +300,11 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
 
 
 def do_one_binarypackage(binary, arch, kdb, package_root, keyrings,
-                         importer_handler, nosource):
+                         importer_handler):
     binary_data = BinaryPackageData(**binary)
     binary_data.ensure_complete(kdb)
-    if not binary_data.process_package(kdb, package_root, keyrings):
-        # Problems with katie db stuff of opening files
-        log.error('Failed to import %s' % binary_data.package)
-        return
-    if not importer_handler.import_binarypackage(arch, binary_data):
-        msg = 'Sourcepackage %s (%s) not found for %s (%s)' % (
-                binary_data.source, binary_data.source_version,
-                binary_data.package, binary_data.version,)
-
-        log.info(msg)
-        nosource.append(msg)
+    binary_data.process_package(kdb, package_root, keyrings)
+    importer_handler.import_binarypackage(arch, binary_data)
     # Commit often or else we hold locks in the database
     importer_handler.commit()
 

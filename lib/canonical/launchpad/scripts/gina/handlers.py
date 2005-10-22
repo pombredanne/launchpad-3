@@ -17,6 +17,7 @@ __all__ = [
     ]
 
 import os
+import tempfile
 
 from sqlobject import SQLObjectNotFound
 
@@ -35,7 +36,7 @@ from canonical.launchpad.scripts import log
 from canonical.launchpad.scripts.gina.library import (getLibraryAlias,
                                                       checkLibraryForFile)
 from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
-    urgencymap, prioritymap, get_dsc_path, PoolFileNotFound)
+    urgencymap, prioritymap, get_dsc_path, read_dsc, PoolFileNotFound)
 
 from canonical.launchpad.database import (Distribution, DistroRelease,
     DistroArchRelease,Processor, SourcePackageName, SourcePackageRelease,
@@ -46,7 +47,33 @@ from canonical.launchpad.database import (Distribution, DistroRelease,
 
 from canonical.launchpad.interfaces import IPersonSet, IBinaryPackageNameSet
 from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
-from canonical.launchpad.validators.version import valid_debian_version
+
+# Stash a reference to the poolifier method
+poolify = Poolifier().poolify
+
+
+def check_librarian(files, package_root, directory):
+    to_upload = []
+    if not isinstance(files, list):
+        # A little bit of ugliness. The source package's files attribute
+        # returns a three-tuple with md5sum, size and name. The binary
+        # package, on the other hand, only really provides a filename.
+        # This is tested through the two codepaths, so it should be safe.
+        files = [(None, files)]
+    for i in files:
+        fname = i[-1]
+        path = os.path.join(package_root, directory)
+        if not os.path.exists(os.path.join(path, fname)):
+            # XXX: untested
+            log.error('Package %s not found on archive %s' % (fname, path))
+            return None
+        if checkLibraryForFile(path, fname):
+            # XXX: untested
+            log.error('File %s already exists in the librarian' % fname)
+            return None
+        to_upload.append((fname, path))
+    return to_upload
+
 
 class DataSetupError(Exception):
     """Raised when required data is found to be missing in the database"""
@@ -64,6 +91,10 @@ class MultiplePackageReleaseError(Exception):
     Raised when multiple package releases of the same version are
     found for a single distribution, indicating database corruption.
     """
+
+
+class NoSourcePackageError(Exception):
+    """Raised when a Binary Package has no matching Source Package"""
 
 
 class ImporterHandler:
@@ -86,7 +117,7 @@ class ImporterHandler:
 
         self.sphandler = SourcePackageReleaseHandler(ktdb, poolroot,
                                                      keyrings, pocket)
-        self.bphandler = BinaryPackageHandler(self.sphandler)
+        self.bphandler = BinaryPackageHandler(self.sphandler, poolroot)
 
     def commit(self):
         """Commit to the database."""
@@ -203,7 +234,7 @@ class ImporterHandler:
             log.debug('Binary package %s version %s already exists for %s' % (
                 binarypackagedata.package, binarypackagedata.version, archtag))
             self._store_bprelease_for_publishing(binarypackage, archtag)
-            return binarypackage
+            return
 
         # Find the sourcepackagerelease that generated this binarypackage.
         sourcepackage = self.sphandler.getSourceForBinary(
@@ -218,23 +249,17 @@ class ImporterHandler:
         if not sourcepackage:
             # If the sourcepackagerelease is not imported, not way to import
             # this binarypackage. Warn and giveup.
-            log.info("FMO courtesy of TROUP & TROUT inc. on %s (%s)" % (
-                binarypackagedata.source, binarypackagedata.source_version
-                ))
-            return None
+            raise NoSourcePackageError("No source package %s (%s) found "
+                "for %s (%s)" % (binarypackagedata.name,
+                                 binarypackagedata.version,
+                                 binarypackagedata.source,
+                                 binarypackagedata.source_version))
 
         # Create the binarypackage on db and import into librarian
         binarypackage = self.bphandler.createBinaryPackage(binarypackagedata,
                                                            sourcepackage,
                                                            distroarchinfo)
-        if binarypackage is None:
-            log.error("Unable to createBinaryPackage on %s (%s)" % (
-                binarypackagedata.source, binarypackagedata.source_version
-                ))
-            return None
-
         self._store_bprelease_for_publishing(binarypackage, archtag)
-        return binarypackage
 
     def publish_sourcepackages(self, pocket):
         log.info('Publishing Source Packages...')
@@ -302,7 +327,6 @@ class SourcePackageReleaseHandler:
         self.distro_handler = DistroHandler()
         self.ktdb = KTDB
         self.archiveroot = archiveroot
-        self.poolify = Poolifier().poolify
         self.keyrings = keyrings
         self.pocket = pocket
 
@@ -335,6 +359,8 @@ class SourcePackageReleaseHandler:
         sp_version = binarypackagedata.source_version
         sp_component = binarypackagedata.component
 
+        log.debug("Looking for source package %r (%r) in %r" %
+                  (sp_name, sp_version, sp_component))
         parsed_dsc = self._parseDSC(sp_name, sp_version, sp_component)
 
         # Generate an sp_data object for the dsc
@@ -369,10 +395,9 @@ class SourcePackageReleaseHandler:
     def _parseDSC(self, sp_name, sp_version, sp_component):
         # XXX: untested
         directory = os.path.join(self.archiveroot, "pool",
-                                 self.poolify(sp_name, sp_component))
+                                 poolify(sp_name, sp_component))
         try:
-            dsc_name, dsc_path = get_dsc_path(sp_name, sp_version, 
-                                              directory)
+            dsc_name, dsc_path = get_dsc_path(sp_name, sp_version, directory)
         except PoolFileNotFound:
             # Aah well, no source package in archive either.
             return None
@@ -381,7 +406,7 @@ class SourcePackageReleaseHandler:
 
         # Since the dsc doesn't know, we add in the directory, package
         # and component
-        dsc_contents['directory'] = self.poolify(sp_name, sp_component)
+        dsc_contents['directory'] = poolify(sp_name, sp_component)
         dsc_contents['package'] = sp_name
         dsc_contents['component'] = sp_component
 
@@ -483,37 +508,19 @@ class SourcePackageReleaseHandler:
         #             key = self.getGPGKey(src.dsc_signing_key, 
         #                                  *src.dsc_signing_key_owner)
         #         else:
-        #             key = None
-
-        key = None # FIXIT
+        key = None
         dsc = encoding.guess(src.dsc)
 
-        # XXX: untested
-        try:
+        if src.changelog is not None:
             changelog = encoding.guess(src.changelog[0]["changes"])
-        except IndexError:
+        else:
             changelog = None
 
-        if not valid_debian_version(src.version):
-            # XXX: untested
-            log.error('%s has an invalid version %s', src.package, src.version)
+        to_upload = check_librarian(src.files, src.package_root,
+                                    src.directory)
+        if to_upload is None:
+            # XXX: convert to exception
             return None
-
-        to_upload = []
-        for i in src.files:
-            fname = i[-1]
-            path = os.path.join(src.package_root, src.directory)
-            if not os.path.exists(path):
-                # XXX: untested
-                log.error('Package %s not found on archive %s' %
-                          (fname, path))
-                return None
-            if checkLibraryForFile(path, fname):
-                # XXX: untested
-                log.error('File %s for %s has been uploaded before: %s' % 
-                          (fname, src.package))
-                return None
-            to_upload.append((fname, path))
 
         #
         # DO IT! At this point, we've decided we have everything we need
@@ -563,12 +570,8 @@ class SourcePublisher:
 
     def publish(self, sourcepackagerelease, pocket):
         """Create the publishing entry on db if does not exist."""
-        log.debug('Publishing SourcePackageRelease %s-%s' % (
-            sourcepackagerelease.sourcepackagename.name,
-            sourcepackagerelease.version))
-
-        # Check if the sprelease is already published and if yes,
-        # just report it.
+        # Check if the sprelease is already published and if so, just
+        # report it.
         source_publishinghistory = self._checkPublishing(
             sourcepackagerelease, self.distrorelease)
         if source_publishinghistory:
@@ -601,11 +604,12 @@ class SourcePublisher:
 
 class BinaryPackageHandler:
     """Handler to deal with binarypackages."""
-    def __init__(self, sphandler):
+    def __init__(self, sphandler, poolroot):
         # Create other needed object handlers.
         self.person_handler = PersonHandler()
         self.distro_handler = DistroHandler()
         self.source_handler = sphandler
+        self.archiveroot = poolroot
 
     def checkBin(self, binarypackagedata, archinfo):
         try:
@@ -621,6 +625,7 @@ class BinaryPackageHandler:
 
     def _getBinary(self, binaryname, version, architecture, distroarchinfo):
         """Returns a binarypackage -- if it exists."""
+        # XXX: untested
 
         clauseTables = ["BinaryPackageRelease", "Build",
                         "DistroRelease", "DistroArchRelease"]
@@ -644,6 +649,9 @@ class BinaryPackageHandler:
                  "DistroRelease.distribution = %d AND %s" %
                  (distroarchrelease.distrorelease.distribution.id, query))
 
+        # XXX: check if there are other packages in this build with this
+        # same package name
+
         bpr = BinaryPackageRelease.selectOne(query, clauseTables=clauseTables)
         if bpr is None:
             log.debug('BPR not found: %r %r %r, query=%s' % (
@@ -652,42 +660,47 @@ class BinaryPackageHandler:
 
     def createBinaryPackage(self, bin, srcpkg, distroarchinfo):
         """Create a new binarypackage."""
-
-        # Ensure a binarypackagename for this binarypackage.
-        bin_name = getUtility(IBinaryPackageNameSet).ensure(bin.package)
-
-        # Ensure a build record for this binarypackage.
-        build = self.ensureBuild(bin, srcpkg, distroarchinfo)
-        if not build:
-            # Create build failure. Return to make it keep going.
-            return
-
-        # Get binarypackage the description.
         description = encoding.guess(bin.description)
-
-        # Build a sumary using the description.
-        summary = description.split("\n")[0]
-        if summary[-1] != '.':
+        summary = description.split("\n")[0].strip()
+        if not summary.endswith('.'):
             summary = summary + '.'
 
-        # XXX: Daniel Debonzi
-        # Keep it til we have licence on the SourcePackageRelease Table
-        if hasattr(srcpkg, 'licence'):
-            licence = encoding.guess(srcpkg.licence)
-        else:
-            licence = ''
+        # XXX XXX XXX
+        directory = os.path.join(self.archiveroot, "pool",
+                                 poolify(srcpkg.sourcepackagename.name,
+                                         srcpkg.component.name))
+        assert os.path.exists(directory)
+        cwd = os.getcwd()
+        tempdir = tempfile.mkdtemp()
+        os.chdir(tempdir)
+        ret = read_dsc(srcpkg.sourcepackagename.name, srcpkg.version,
+                       directory, bin.package_root)
+        os.chdir(cwd)
+        dsc, urgency, changelog, licence = ret
+        licence = encoding.guess(licence)
+
+        fdir, fname = os.path.split(bin.filename)
+        to_upload = check_librarian(fname, bin.package_root, fdir)
+        if to_upload is None:
+            # XXX: convert to exception
+            return None
+        fname, path = to_upload[0]
+        # XXX XXX XXX
 
         componentID = self.distro_handler.getComponentByName(bin.component).id
         sectionID = self.distro_handler.ensureSection(bin.section).id
         architecturespecific = (bin.architecture == "all")
+
+        bin_name = getUtility(IBinaryPackageNameSet).ensure(bin.package)
+        build = self.ensureBuild(bin, srcpkg, distroarchinfo)
 
         # Create the binarypackage entry on lp db.
         binpkg = BinaryPackageRelease(
             binarypackagename = bin_name.id,
             component = componentID,
             version = bin.version,
-            summary = summary,
             description = description,
+            summary = summary,
             build = build.id,
             binpackageformat = getBinaryPackageFormat(bin.filename),
             section = sectionID,
@@ -699,43 +712,26 @@ class BinaryPackageHandler:
             conflicts = bin.conflicts,
             replaces = bin.replaces,
             provides = bin.provides,
-            essential = False,
+            essential = bin.essential,
             installedsize = int(bin.installed_size),
             licence = licence,
             architecturespecific = architecturespecific,
             copyright = None
             )
-        log.info('Binary Package Release %s (%s) created' % 
+        log.info('Binary Package Release %s (%s) created' %
                  (bin_name.name, bin.version))
 
-        # Insert file into Librarian
-
-        fdir, fname = os.path.split(bin.filename)
-        log.debug('Including %s into librarian' % fname)
-        try:
-            alias = getLibraryAlias(
-                    "%s/%s" % (bin.package_root, fdir), fname
-                    )
-        except IOError:
-            log.debug('Package %s not found on archive %s/%s/%s' % (
-                fname, bin.package_root, fdir, fname
-                ))
-        else:
-            self.createBinaryPackageFile(binpkg, fname, alias)
+        alias = getLibraryAlias(path, fname)
+        BinaryPackageFile(binarypackagerelease=binpkg.id,
+                          libraryfile=alias,
+                          filetype=getFileType(fname))
+        log.info('Package file %s included into library' % fname)
 
         # Return the binarypackage object.
         return binpkg
 
-    def createBinaryPackageFile(self, binpkg, fname, alias):
-        """Create the binarypackagefile entry on lp db."""
-        BinaryPackageFile(binarypackagerelease=binpkg.id,
-                          libraryfile=alias,
-                          filetype=getFileType(fname))
-
     def ensureBuild(self, bin, srcpkg, distroarchinfo):
         """Ensure a build record."""
-        distroarchrelease = distroarchinfo['distroarchrelease']
-        processor = distroarchinfo['processor']
 
         # XXX: Check it later -- Debonzi 20050516
         #         if bin.gpg_signing_key_owner:
@@ -744,30 +740,23 @@ class BinaryPackageHandler:
         #         else:
         key = None
 
-        # Try to select a build.
+        distroarchrelease = distroarchinfo['distroarchrelease']
+        processor = distroarchinfo['processor']
+        # XXX: this is wrong for multiple releases
         build = Build.selectOneBy(sourcepackagereleaseID=srcpkg.id,
                                   processorID=processor.id,
                                   distroarchreleaseID=distroarchrelease.id)
-
-        if build:
-            # If already exists, return it.
-            return build
-
-        # Nothing to do if we fail we insert...
-        log.debug("Unable to retrieve build for %d; making new one..." % (
-                srcpkg.id))
-
-        # If does not exists, create a new record and return.
-        build = Build(processor=processor.id,
-                      distroarchrelease=distroarchrelease.id,
-                      buildstate=BuildStatus.FULLYBUILT,
-                      gpgsigningkey=key,
-                      sourcepackagerelease=srcpkg.id,
-                      buildduration=None,
-                      buildlog=None,
-                      builder=None,
-                      changes=None,
-                      datebuilt=None)
+        if not build:
+            build = Build(processor=processor.id,
+                          distroarchrelease=distroarchrelease.id,
+                          buildstate=BuildStatus.FULLYBUILT,
+                          gpgsigningkey=key,
+                          sourcepackagerelease=srcpkg.id,
+                          buildduration=None,
+                          buildlog=None,
+                          builder=None,
+                          changes=None,
+                          datebuilt=None)
 
         return build
 
