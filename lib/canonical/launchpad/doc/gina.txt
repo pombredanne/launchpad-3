@@ -218,6 +218,17 @@ only imported one:
     FVJMGmGr+2YLZfF+oRUKcug=
     =bw+A
     -----END PGP SIGNATURE-----
+    >>> print cap.maintainer.displayname
+    Michael Vogt
+
+Test ubuntu-meta in breezy, which was forcefully imported.
+
+    >>> n = SourcePackageName.selectOneBy(name="ubuntu-meta")
+    >>> um = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
+    ...         version="0.80")
+    >>> print um.section.name, um.architecturehintlist, \
+    ...         um.uploaddistrorelease.name
+    base any breezy
 
 And check that its files actually ended up in the librarian (these sha1sums
 were calculated directly on the files):
@@ -276,7 +287,7 @@ We have 26 binary packages in hoary. The 4 packages for util-linux fail, and 1
 package fails for each of python-sqlite and python-pam. We should publish one
 entry for each package listed in Releases.
 
-We have XXX binary packages in breezy. db1-compat, the 3 libcap packages and
+We have 23 binary packages in breezy. db1-compat, ed, the 3 libcap packages and
 python-pam is unchanged.  python-sqlite fails. The 5 ubuntu-meta packages work.
 
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
@@ -311,11 +322,23 @@ Test all the data got to the ed BPR intact:
     except that this permission notice may be stated in a translation approved
     by the Foundation.
 
+Check binary package libgjc-dev in Breezy. Its version number must differ from
+its source version number.
+
+    >>> n = BinaryPackageName.selectOneBy(name="libgcj-dev")
+    >>> lib = BinaryPackageRelease.selectOneBy(binarypackagenameID=n.id,
+    ...         version="4:4.0.1-3")
+    >>> print lib.version
+    4:4.0.1-3
+    >>> print lib.build.sourcepackagerelease.version
+    1.28
+    >>> print lib.build.sourcepackagerelease.maintainer.displayname
+    Debian GCC maintainers
+
 XXX: test binary package creation, in particular gcc-defaults, whose
      package versions differ from its source version
-XXX: test that there are only XXX binary package releases created
-XXX: test that there are only XXX builds created
 XXX: test package with invalid version and invalid source version
+XXX: test package with maintainer with non-ascii name
 
 === Testing People Created ===
 

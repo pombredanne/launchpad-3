@@ -17,13 +17,10 @@ __all__ = [
     ]
 
 import os
-import tempfile
 
 from sqlobject import SQLObjectNotFound
 
 from zope.component import getUtility
-
-from canonical import encoding
 
 from canonical.database.sqlbase import quote
 from canonical.database.constants import nowUTC
@@ -36,7 +33,7 @@ from canonical.launchpad.scripts import log
 from canonical.launchpad.scripts.gina.library import (getLibraryAlias,
                                                       checkLibraryForFile)
 from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
-    urgencymap, prioritymap, get_dsc_path, read_dsc, PoolFileNotFound)
+    urgencymap, prioritymap, get_dsc_path, PoolFileNotFound)
 
 from canonical.launchpad.database import (Distribution, DistroRelease,
     DistroArchRelease,Processor, SourcePackageName, SourcePackageRelease,
@@ -77,13 +74,6 @@ def check_not_in_librarian(files, package_root, directory):
 
 class DataSetupError(Exception):
     """Raised when required data is found to be missing in the database"""
-
-
-class DisplaynameDecodingError(Exception):
-    """Not valid unicode displayname"""
-    def __init__(self, displayname):
-        message = "Could not decode %s" % (displayname)
-        Exception.__init__(self, message)
 
 
 class MultiplePackageReleaseError(Exception):
@@ -373,7 +363,6 @@ class SourcePackageReleaseHandler:
         in the database. I.E. the binary import will fail but the
         process as a whole will continue okay.
         """
-        # XXX: untested
         assert not self.getSourceForBinary(binarypackagedata,
                                            distrorelease)
 
@@ -397,12 +386,7 @@ class SourcePackageReleaseHandler:
                                 self.keyrings)
         sp_data.ensure_complete(self.ktdb)
 
-        # Attempt to construct a sourcepackagerelease against the
-        # provided dsc_contents...
         spr = self.createSourcePackageRelease(sp_data, distrorelease)
-
-        if not spr:
-            return None
 
         # Publish it because otherwise we'll have problems later.
         # Essentially this routine is only ever called when a binary
@@ -419,7 +403,7 @@ class SourcePackageReleaseHandler:
 
     def _getSourcePackageDataFromDSC(self, sp_name, sp_version,
                                      sp_component, sp_section):
-        # XXX: untested, duplicates poolify call
+        # XXX: duplicates poolify call
         directory = os.path.join(self.archiveroot, "pool",
                                  poolify(sp_name, sp_component))
         try:
@@ -458,7 +442,6 @@ class SourcePackageReleaseHandler:
 
     def getSourceForBinary(self, binarypackagedata, distrorelease):
         """Get a SourcePackageRelease for a BinaryPackage"""
-        # XXX: untested
         try:
             spname = SourcePackageName.byName(binarypackagedata.source)
         except SQLObjectNotFound:
@@ -520,14 +503,8 @@ class SourcePackageReleaseHandler:
         """
 
         displayname, emailaddress = src.maintainer
-        try:
-            maintainer = self.person_handler.ensurePerson(displayname,
-                                                          emailaddress)
-        except DisplaynameDecodingError:
-            # XXX: untested
-            log.error('Could not decode name for person %s' %
-                      src.maintainer[1])
-            return None
+        maintainer = self.person_handler.ensurePerson(displayname,
+                                                      emailaddress)
 
         # XXX: Check it later -- Debonzi 20050516
         #         if src.dsc_signing_key_owner:
@@ -589,19 +566,21 @@ class SourcePublisher:
         """Create the publishing entry on db if does not exist."""
         # Check if the sprelease is already published and if so, just
         # report it.
+        log.debug('Publishing SourcePackage %s-%s' % (
+            sourcepackagerelease.sourcepackagename.name, 
+            sourcepackagerelease.version))
         source_publishinghistory = self._checkPublishing(
             sourcepackagerelease, self.distrorelease)
         if source_publishinghistory:
-            # XXX: untested
             log.debug('SourcePackageRelease already published as %s' %
                       source_publishinghistory.status.title)
             return
 
-        # XXX: this code does not cope with source packages not listed
-        # in Sources.gz that have moved around in the pool. We should be
-        # using locate_source_package_in_pool() here instead of the
-        # strict component name. Section may suffer from the same
-        # problem.
+        # XXX: Component may be incorrect: this code does not cope with
+        # source packages not listed in Sources.gz that have moved
+        # around in the pool. We should be using
+        # locate_source_package_in_pool() here instead of the strict
+        # component name. Section may suffer from the same problem.
         #
         # Create the Publishing entry with status PENDING so that we can
         # republish this later into a Soyuz archive.
@@ -628,6 +607,13 @@ class SourcePublisher:
 
 class BinaryPackageHandler:
     """Handler to deal with binarypackages."""
+    # XXX
+    # XXX
+    # XXX
+    # XXX needs to be tested XXX
+    # XXX
+    # XXX
+    # XXX
     def __init__(self, sphandler, poolroot):
         # Create other needed object handlers.
         self.person_handler = PersonHandler()
@@ -649,7 +635,7 @@ class BinaryPackageHandler:
 
     def _getBinary(self, binaryname, version, architecture, distroarchinfo):
         """Returns a binarypackage -- if it exists."""
-        # XXX: untested
+        # XXX: still broken, needs fixing
 
         clauseTables = ["BinaryPackageRelease", "Build",
                         "DistroRelease", "DistroArchRelease"]
@@ -693,7 +679,7 @@ class BinaryPackageHandler:
         architecturespecific = (bin.architecture == "all")
 
         bin_name = getUtility(IBinaryPackageNameSet).ensure(bin.package)
-        build = self.ensureBuild(bin, srcpkg, distroarchinfo)
+        build = self.ensureBuild(srcpkg, distroarchinfo)
 
         # Create the binarypackage entry on lp db.
         binpkg = BinaryPackageRelease(
@@ -731,7 +717,7 @@ class BinaryPackageHandler:
         # Return the binarypackage object.
         return binpkg
 
-    def ensureBuild(self, bin, srcpkg, distroarchinfo):
+    def ensureBuild(self, srcpkg, distroarchinfo):
         """Ensure a build record."""
 
         # XXX: Check it later -- Debonzi 20050516
@@ -770,8 +756,7 @@ class BinaryPackagePublisher:
     def publish(self, binarypackage, pocket):
         """Create the publishing entry on db if does not exist."""
         log.debug('Publishing BinaryPackage %s-%s' % (
-            binarypackage.binarypackagename.name, binarypackage.version,
-            ))
+            binarypackage.binarypackagename.name, binarypackage.version))
 
         # Check if the binarypackage is already published and if yes,
         # just report it.
@@ -779,8 +764,7 @@ class BinaryPackagePublisher:
             binarypackage, self.distroarchrelease)
         if binpkg_publishinghistory:
             log.debug('Binarypackage already published as %s' % (
-                binpkg_publishinghistory.status.title,
-                ))
+                binpkg_publishinghistory.status.title))
             return
 
         # Create the Publishing entry with status PENDING.
@@ -801,8 +785,7 @@ class BinaryPackagePublisher:
             )
 
         log.debug('BinaryPackage %s-%s published.' % (
-            binarypackage.binarypackagename.name, binarypackage.version,
-            ))
+            binarypackage.binarypackagename.name, binarypackage.version))
 
 
     def _checkPublishing(self, binarypackage, distroarchrelease):
@@ -831,14 +814,7 @@ class PersonHandler:
 
     def createPerson(self, emailaddress, displayname):
         """Create a new Person"""
-
-        try:
-            displayname = encoding.guess(displayname)
-        except UnicodeDecodeError:
-            raise DisplaynameDecodingError(displayname)
-
         givenname = displayname.split()[0]
-
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             email=emailaddress, displayname=displayname, givenname=givenname)
         return person

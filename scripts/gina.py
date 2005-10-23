@@ -36,7 +36,7 @@ from canonical.launchpad.scripts.gina.archive import (ArchiveComponentItems,
 from canonical.launchpad.scripts.gina.handlers import (ImporterHandler,
     MultiplePackageReleaseError, NoSourcePackageError)
 from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
-    BinaryPackageData, MissingRequiredArguments,
+    BinaryPackageData, MissingRequiredArguments, DisplayNameDecodingError,
     PackageFileProcessError, InvalidVersionError)
 
 
@@ -210,7 +210,8 @@ def import_sourcepackages(packages_map, kdb, package_root,
         try:
             do_one_sourcepackage(source, kdb, package_root, keyrings,
                                  importer_handler)
-        except (InvalidVersionError, MissingRequiredArguments):
+        except (InvalidVersionError, MissingRequiredArguments,
+                DisplayNameDecodingError):
             log.exception("Unable to create SourcePackageData for %s" % 
                           package_name)
             continue

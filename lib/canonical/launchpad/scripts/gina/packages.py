@@ -201,6 +201,11 @@ class InvalidSourceVersionError(Exception):
     package.
     """
 
+
+class DisplayNameDecodingError(Exception):
+    """Invalid unicode encountered in displayname"""
+
+
 #
 # Implementation classes
 #
@@ -214,6 +219,7 @@ class AbstractPackageData:
     package = None
     _required = None
     version = None
+    component = None
 
     def __init__(self):
         if self.version is None or not valid_debian_version(self.version):
@@ -306,7 +312,13 @@ class SourcePackageData(AbstractPackageData):
                 else:
                     self.component, self.section  = "main", v
             elif k == 'Maintainer':
-                self.maintainer = parse_person(v)
+                displayname, emailaddress = parse_person(v)
+                try:
+                    self.maintainer = (encoding.guess(displayname),
+                                       emailaddress)
+                except UnicodeDecodeError:
+                    raise DisplayNameDecodingError("Could not decode "
+                                                   "name %s" % displayname)
             elif k == 'Files':
                 self.files = []
                 files = v.split("\n")
