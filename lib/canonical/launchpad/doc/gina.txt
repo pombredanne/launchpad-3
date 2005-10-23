@@ -5,7 +5,7 @@ This file is a simple test for gina. It uses a test archive (kept in
 canonical.launchpad.scripts.ftests.archive_for_gina) and runs gina in
 quiet mode over it.
 
-We start out with 6 packages in our database.
+Get the current counts of stuff in the database:
 
     >>> from canonical.launchpad.database import (
     ...     SourcePackageRelease,
@@ -20,8 +20,6 @@ We start out with 6 packages in our database.
     >>> SSPPH = SecureSourcePackagePublishingHistory
     >>> SBPPH = SecureBinaryPackagePublishingHistory
 
-Get the current status of the database:
-
     >>> orig_spr_count = SourcePackageRelease.select().count()
     >>> orig_sspph_count = SSPPH.select().count()
     >>> orig_person_count = Person.select().count()
@@ -31,9 +29,6 @@ Get the current status of the database:
     >>> orig_bpr_count = BinaryPackageRelease.select().count()
     >>> orig_build_count = Build.select().count()
     >>> orig_sbpph_count = SBPPH.select().count()
-
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-    >>> LibrarianTestSetup().setUp()
 
 Create a distribution release and an arch release for breezy:
 
@@ -55,13 +50,11 @@ Create a distribution release and an arch release for breezy:
     >>> import transaction
     >>> transaction.commit()
 
-Now, lets run gina on hoary and breezy. This test imports a few perfect
-packages:
+Now, lets run gina on hoary and breezy. This test imports a few
+packages successfully (at least partially):
 
    * archive-copier, a source package with no binary packages. Its
      maintainer has a name which contains a ","
-   * python-sqllite, an arch-independent source package that generates
-     one binary package.
    * db1-compat, source package what generates 1 binary package. The same
      version was included in both hoary and breezy.
    * gcc-defaults, a source package that generates 8 binary packages with
@@ -71,9 +64,6 @@ packages:
      whose version number contains an epoch. It is not in the Breezy
      Sources list, but some binaries are in the Packages file. However, these
      binaries are unchaged in Breezy.
-
-Two packages which have recoverable errors:
-
    * ubuntu-meta, a source package that generates 3 binary packages in
      Hoary and 5 in breezy. However, its breezy version is /not/ listed in the 
      Sources list, so the binary packages will need to discover it.
@@ -81,17 +71,21 @@ Two packages which have recoverable errors:
      misses a section entry in Sources. The same version exists in
      breezy, this time with a defined section (which we don't handle
      correctly). Its hoary binary package lacks a Priority.
+   * python-sqllite, an arch-independent source package that generates
+     one binary package. Its breezy packages are missing from the archive.
    * python-pam, an arch-independent source package that generates one
      binary package, whose changelog contains a busted urgency. Its hoary
-     binary package contains lacks a Section.
-
-And two completely broken packages:
-
-   * util-linux, a source package that is missing from the pool. It
-     generates 4 binary packages, all missing.
+     binary package contains lacks a Section. Its breezy packages are missing
+     from the archive.
    * mkvmlinuz, a source package that generates one binary package,
      but which is missing a version field in its Sources file.
      Its breezy package has a version but is missing copyright and changelog.
+
+And one completely broken package:
+
+   * util-linux, a source package that is missing from the pool. It
+     generates 4 binary packages, all missing. It's correctly listed in Sources
+     and Packages, though.
 
 Let's set up the filesystem:
 
@@ -108,6 +102,11 @@ Let's set up the filesystem:
     ...                  'ftests/gina_test_archive')
     >>> path = os.path.join(os.getcwd(), relative_path)
     >>> os.symlink(path, '/tmp/gina_test_archive')
+
+Get the librarian going:
+
+    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+    >>> LibrarianTestSetup().setUp()
 
 And give her a spin:
 
@@ -177,8 +176,8 @@ Check that x11proto-damage has its Build-Depends-Indep value correctly set:
     >>> n = SourcePackageName.selectOneBy(name="x11proto-damage")
     >>> x11p = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
     ...                                         version="6.8.99.7-2")
-    >>> x11p.builddependsindep
-    u'debhelper (>= 4.0.0)'
+    >>> print x11p.builddependsindep
+    debhelper (>= 4.0.0)
     >>> print x11p.changelog
     x11proto-damage (6.8.99.7-2) breezy; urgency=low
     <BLANKLINE>

@@ -89,6 +89,10 @@ class LibrarianHasFileError(MultiplePackageReleaseError):
     """
 
 
+class MultipleBuildError(MultiplePackageReleaseError):
+    """Raised when we have multiple builds for the same package"""
+
+
 class NoSourcePackageError(Exception):
     """Raised when a Binary Package has no matching Source Package"""
 
@@ -270,7 +274,8 @@ class ImporterHandler:
         # Create the binarypackage on db and import into librarian
         binarypackage = self.bphandler.createBinaryPackage(binarypackagedata,
                                                            sourcepackage,
-                                                           distroarchinfo)
+                                                           distroarchinfo,
+                                                           archtag)
         self._store_bprelease_for_publishing(binarypackage, archtag)
 
     def publish_sourcepackages(self, pocket):
@@ -607,13 +612,6 @@ class SourcePublisher:
 
 class BinaryPackageHandler:
     """Handler to deal with binarypackages."""
-    # XXX
-    # XXX
-    # XXX
-    # XXX needs to be tested XXX
-    # XXX
-    # XXX
-    # XXX
     def __init__(self, sphandler, poolroot):
         # Create other needed object handlers.
         self.person_handler = PersonHandler()
@@ -635,32 +633,26 @@ class BinaryPackageHandler:
 
     def _getBinary(self, binaryname, version, architecture, distroarchinfo):
         """Returns a binarypackage -- if it exists."""
-        # XXX: still broken, needs fixing
-
-        clauseTables = ["BinaryPackageRelease", "Build",
-                        "DistroRelease", "DistroArchRelease"]
-
-        query = ("BinaryPackageRelease.binarypackagename=%s AND "
-                 "BinaryPackageRelease.version=%s AND "
-                 "Build.id = BinaryPackageRelease.build"
-                 % (binaryname.id,
-                    quote(version)))
-
-        if architecture != "all":
-            query = ("Build.Processor = %s AND %s" %
-                     (distroarchinfo['processor'].id, query))
+        clauseTables = ["BinaryPackageRelease", "DistroRelease", "Build",
+                        "DistroArchRelease"]
+        distrorelease = distroarchinfo['distroarchrelease'].distrorelease
 
         # When looking for binaries, we need to remember that they are
         # shared between distribution releases, so match on the
-        # distribution they were built for.
-        distroarchrelease = distroarchinfo['distroarchrelease']
-        query = ("Build.distroarchrelease = distroarchrelease.id AND "
+        # distribution and the architecture tag of the distroarchrelease
+        # they were built for 
+        query = ("BinaryPackageRelease.binarypackagename=%s AND "
+                 "BinaryPackageRelease.version=%s AND "
+                 "BinaryPackageRelease.build = Build.id AND "
+                 "Build.distroarchrelease = DistroArchRelease.id AND "
                  "DistroArchRelease.distrorelease = DistroRelease.id AND "
-                 "DistroRelease.distribution = %d AND %s" %
-                 (distroarchrelease.distrorelease.distribution.id, query))
+                 "DistroRelease.distribution = %d" %
+                 (binaryname.id, quote(version), 
+                  distrorelease.distribution.id))
 
-        # XXX: check if there are other packages in this build with this
-        # same package name
+        if architecture != "all":
+            query += ("AND DistroArchRelease.architecturetag = %s" %
+                      quote(architecture))
 
         bpr = BinaryPackageRelease.selectOne(query, clauseTables=clauseTables)
         if bpr is None:
@@ -668,7 +660,7 @@ class BinaryPackageHandler:
                 binaryname, version, architecture, query))
         return bpr
 
-    def createBinaryPackage(self, bin, srcpkg, distroarchinfo):
+    def createBinaryPackage(self, bin, srcpkg, distroarchinfo, archtag):
         """Create a new binarypackage."""
         fdir, fname = os.path.split(bin.filename)
         to_upload = check_not_in_librarian(fname, bin.package_root, fdir)
@@ -679,7 +671,7 @@ class BinaryPackageHandler:
         architecturespecific = (bin.architecture == "all")
 
         bin_name = getUtility(IBinaryPackageNameSet).ensure(bin.package)
-        build = self.ensureBuild(srcpkg, distroarchinfo)
+        build = self.ensureBuild(bin, srcpkg, distroarchinfo, archtag)
 
         # Create the binarypackage entry on lp db.
         binpkg = BinaryPackageRelease(
@@ -717,23 +709,39 @@ class BinaryPackageHandler:
         # Return the binarypackage object.
         return binpkg
 
-    def ensureBuild(self, srcpkg, distroarchinfo):
+    def ensureBuild(self, binary, srcpkg, distroarchinfo, archtag):
         """Ensure a build record."""
-
-        # XXX: Check it later -- Debonzi 20050516
-        #         if bin.gpg_signing_key_owner:
-        #             key = self.getGPGKey(bin.gpg_signing_key, 
-        #                                  *bin.gpg_signing_key_owner)
-        #         else:
-        key = None
-
         distroarchrelease = distroarchinfo['distroarchrelease']
-        processor = distroarchinfo['processor']
-        # XXX: this is wrong for multiple releases
-        build = Build.selectOneBy(sourcepackagereleaseID=srcpkg.id,
-                                  processorID=processor.id,
-                                  distroarchreleaseID=distroarchrelease.id)
-        if not build:
+        distribution = distroarchrelease.distrorelease.distribution
+        clauseTables = ["Build", "DistroArchRelease", "DistroRelease"]
+
+        query = ("Build.sourcepackagerelease = %d AND "
+                 "Build.distroarchrelease = DistroArchRelease.id AND " 
+                 "DistroArchRelease.distrorelease = DistroRelease.id AND "
+                 "DistroRelease.distribution = %d"
+                 % (srcpkg.id, distribution.id))
+
+        if archtag != "all":
+            query += ("AND DistroArchRelease.architecturetag = %s" 
+                      % quote(archtag))
+
+        build = Build.selectOne(query, clauseTables)
+        if build:
+            for bpr in build.binarypackages:
+                if bpr.binarypackagename.name == binary.package:
+                    raise MultipleBuildError("Build %d was already found "
+                        "for package %s (%s)" %
+                        (build.id, binary.package, binary.version))
+        else:
+
+            # XXX: Check it later -- Debonzi 20050516
+            #         if bin.gpg_signing_key_owner:
+            #             key = self.getGPGKey(bin.gpg_signing_key, 
+            #                                  *bin.gpg_signing_key_owner)
+            #         else:
+            key = None
+
+            processor = distroarchinfo['processor']
             build = Build(processor=processor.id,
                           distroarchrelease=distroarchrelease.id,
                           buildstate=BuildStatus.FULLYBUILT,
@@ -744,7 +752,6 @@ class BinaryPackageHandler:
                           builder=None,
                           changes=None,
                           datebuilt=None)
-
         return build
 
 
