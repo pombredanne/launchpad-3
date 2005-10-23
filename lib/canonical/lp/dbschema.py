@@ -1206,6 +1206,14 @@ class SpecificationStatus(DBSchema):
         codebase to which it was targeted.
         """)
 
+    INFORMATIONAL = Item(55, """
+        Informational
+
+        This specification does not need to be implemented. It is an
+        overview, or documentation spec, that describes high level behaviour
+        and links to actual specifications for implementation.
+        """)
+
     SUPERCEDED = Item(60, """
         Superceded
 

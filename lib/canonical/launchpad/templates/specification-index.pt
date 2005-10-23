@@ -37,14 +37,6 @@
     <table>
       <tbody>
         <tr>
-          <th>Name:</th>
-          <td tal:content="context/name">fix-widget-barfing</td>
-        </tr>
-        <tr>
-          <th>Title:</th>
-          <td tal:content="context/title">Fix the Widgets</td>
-        </tr>
-        <tr>
           <th>Status:</th>
           <td tal:content="context/status/title">Approved</td>
         </tr>
@@ -78,18 +70,20 @@
           <th>Whiteboard:</th>
           <td tal:content="context/whiteboard">whiteboard</td>
         </tr>
+        <tr tal:condition="context/specurl">
+          <th>Spec Page:</th>
+          <td>
+            <img src="/++resource++link" />
+            <a tal:attributes="href context/specurl">
+              Read the Full Specification
+            </a>
+          </td>
+        </tr>
       </tbody>
     </table>
-      <p tal:content="context/summary">
+      <p class="highlighted" tal:content="context/summary">
         The feature summary will be given here.
       </p>
-      <ul tal:condition="context/specurl">
-        <li class="download">
-          <a tal:attributes="href context/specurl">
-            Read the complete specification
-          </a>
-        </li>
-      </ul>
     </div>
   </body>
 </html>

@@ -336,6 +336,22 @@ tr.rowLinkified a {
 .priorityLow     { color: Black; }
 .priorityWontfix { color: Gray; }
 
+/* Spec status and priority */
+
+.specstatusIMPLEMENTED   { color: Green; }
+.specstatusAPPROVED      { color: Black; }
+.specstatusPENDING       { color: Yellow; }
+.specstatusDRAFT         { color: Orange; }
+.specstatusBRAINDUMP     { color: Red; }
+.specstatusSUPERSEDED    { color: Gray; }
+.specstatusOBSOLETE      { color: Gray; }
+
+.specpriorityWISHLIST   { color: Gray; }
+.specpriorityLOW        { color: Black; }
+.specpriorityMEDIUM     { color: Orange; }
+.specpriorityHIGH       { color: Red; }
+.specpriorityEMERGENCY  { color: Red; }
+
 /* Board-like comment CSS */
 
 .boardComment {
@@ -616,6 +632,12 @@ a, #portal-footer a {
   text-decoration: underline;
 }
 
+/* portlet links must not be underlined -- sabdfl */
+
+.portlet a {
+  text-decoration: none;
+}
+
 /* -- Don't stomp on people's preferred fonts (much): -- */
 
 body {
@@ -686,12 +708,6 @@ table.listing>thead, table.listing>thead>tr>th {
 }
 table.listing>thead>tr>td {
   border: none;
-}
-
-/* Alternating "even" and "odd" colors are bong */
-
-.portlet {
-  background-color: #f7f9fa;
 }
 
 /* Abbreviations should only be marked if they actually have explanations */
@@ -767,13 +783,25 @@ li {
   background: transparent url(/++resource++user.gif)
 }
 
+/* added by: sabdfl
+         on: 22/10/2005
+   We want our portlets to be a bit more distinctive. I'd like to
+   distinguish more clearly between the portlet content and the main body
+   content, and the best way to do this seems to be to have the portlets
+   darker.
+*/
 .portlet {
   background-color: #f4f5f8;
 }
 
+/* removed by sabdfl on 22/10/2005
+   Having list elements spaced far apart in the portlets looks terrible.
+   Please discuss with me before putting this back if you are tempted.
+
 .portlet li {
   margin-bottom: 0.5em;
 }
+*/
 
 /* === New design === */
 
@@ -907,8 +935,17 @@ ul.app>li.current {
   margin-left: 2%;
   width: 48%;
 }
+
 .lesser {
   font-size: smaller;
+}
+
+/* sabdfl 22/10/2005 indented and moreindented useful for listings */
+.indented {
+  margin-left: 1em;
+}
+.moreindented {
+  margin-left: 2em;
 }
 
 .sidebar {
