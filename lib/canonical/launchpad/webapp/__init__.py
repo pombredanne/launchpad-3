@@ -69,6 +69,9 @@ class StandardLaunchpadFacets(FacetMenu):
     links = ['overview', 'bugs', 'support', 'bounties', 'specifications',
              'translations', 'calendar']
 
+    enable_only = ['overview', 'bugs', 'bounties', 'specifications',
+                   'translations', 'calendar']
+
     defaultlink = 'overview'
 
     def overview(self):
@@ -87,13 +90,12 @@ class StandardLaunchpadFacets(FacetMenu):
         return Link(target, text)
 
     def support(self):
-        # This facet is visible but unavailable by default. You need to define
-        # a 'support' facet with the Link enabled in order to get an enabled
-        # 'Support' facet tab.
+        # This facet is visible but unavailable by default.
+        # See the enable_only list above.
         target = '+tickets'
         text = 'Support'
         summary = 'Technical Support Requests'
-        return Link(target, text, summary, enabled=False)
+        return Link(target, text, summary)
 
     def specifications(self):
         target = '+specs'

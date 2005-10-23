@@ -14,6 +14,8 @@ Check the shipit login page.
   ...input type="submit" name="loginpage_submit_login" value="Log In"...
   ...
 
+Check posting to the shipit login page.  On a successful login, it redirects
+you to the myrequest page.
 
   >>> print http(r"""
   ... POST /shipit/++vh++http:shipit:80/++/ HTTP/1.1
@@ -26,3 +28,17 @@ Check the shipit login page.
   ...
   Location: myrequest?...
   ...
+
+
+Many people seem to have bookmarked /user.cgi as the shipit homepage.
+We want to redirect from here to the shipit front page, rather than giving
+an unfriendly 404 error.
+
+  >>> print http(r"""
+  ... GET /shipit/++vh++http:shipit:80/++/user.cgi HTTP/1.1
+  ... """)  #doctest: -NORMALIZE_WHITESPACE
+  HTTP/1.1 301 Moved Permanently
+  ...
+  Location: .
+  ...
+

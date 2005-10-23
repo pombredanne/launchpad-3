@@ -55,6 +55,9 @@ class ProjectFacets(StandardLaunchpadFacets):
 
     usedfor = IProject
 
+    enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
+                   'translations', 'calendar']
+
     def overview(self):
         target = ''
         text = 'Overview'
