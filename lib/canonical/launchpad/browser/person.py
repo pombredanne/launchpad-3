@@ -941,15 +941,24 @@ class PersonView:
         result, key = gpghandler.retrieveKey(fingerprint)
 
         if not result:
-            # use the content ok 'key' for debug proposes
+            # use the content of 'key' for debug proposes; place it in a
+            # blockquote because it often comes out empty.
             return (
-                "Launchpad could not import GPG key, the reason was:"
-                "<code>%s</code>."
-                "Check if you published it correctly in the global key ring "
-                "(using <kbd>gpg --send-keys KEY</kbd>) and that you add "
-                "entered the fingerprint correctly (as produced by <kbd>"
-                "gpg --fingerprint YOU</kdb>). Try later or cancel your "
-                "request." % (key))
+                """Launchpad could not import your GPG key.
+                <ul>
+                  <li>Did you enter your complete fingerprint correctly,
+                  as produced by <kbd>gpg --fingerprint</kdb>?</li>
+                  <li>Have you published your key to a public key
+                  server, using <kbd>gpg --send-keys</kbd>?</li>
+                  <li>If you have just published your key to the
+                  keyserver, note that the keys take a while to be
+                  synchronized to our internal keyserver.<br>Please wait at
+                  least 30 minutes before attempting to import your
+                  key.</li>
+                </ul>
+                <p>
+                <blockquote>%s</blockquote>
+                Try again later or cancel your request.""" % key)
 
         self._validateGPG(key)
 
