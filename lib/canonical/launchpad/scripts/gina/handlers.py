@@ -243,8 +243,6 @@ class ImporterHandler:
 
     def import_binarypackage(self, archtag, binarypackagedata):
         """Handler the binarypackage import process"""
-        # XXX: kinda untested
-
         self._store_archinfo(archtag)
         distroarchinfo = self.archinfo[archtag]
         distrorelease = distroarchinfo['distroarchrelease'].distrorelease
@@ -270,6 +268,7 @@ class ImporterHandler:
                 binarypackagedata, distrorelease)
 
         if not sourcepackage:
+            # XXX: untested
             # If the sourcepackagerelease is not imported, not way to import
             # this binarypackage. Warn and giveup.
             raise NoSourcePackageError("No source package %s (%s) found "
@@ -384,17 +383,19 @@ class SourcePackageReleaseHandler:
         # not be the same. As I said in packages.py, what we need is a
         # locate_source_package_in_pool() function.
         sp_component = binarypackagedata.component
+        sp_section = binarypackagedata.section
 
         log.debug("Looking for source package %r (%r) in %r" %
                   (sp_name, sp_version, sp_component))
 
         sp_data = self._getSourcePackageDataFromDSC(sp_name, 
-            sp_version, sp_component)
+            sp_version, sp_component, sp_section)
 
         # Process the package
         sp_data.process_package(self.ktdb,
                                 os.path.join(self.archiveroot, "pool"),
                                 self.keyrings)
+        sp_data.ensure_complete(self.ktdb)
 
         # Attempt to construct a sourcepackagerelease against the
         # provided dsc_contents...
@@ -403,21 +404,21 @@ class SourcePackageReleaseHandler:
         if not spr:
             return None
 
-        if self.pocket:
-            # Publish it because otherwise we'll have problems later.
-            # Essentially this routine is only ever called when a binary
-            # is encountered for which the source was not found.
-            # Now that we have found and imported the source, we need
-            # to be sure to publish it because the binary import code
-            # assumes that the sources have been imported properly before
-            # the binary import is started. Thusly since this source is
-            # being imported "late" in the process, we publish it immediately
-            # to make sure it doesn't get lost.
-            SourcePublisher(distrorelease).publish(spr, self.pocket)
+        # Publish it because otherwise we'll have problems later.
+        # Essentially this routine is only ever called when a binary
+        # is encountered for which the source was not found.
+        # Now that we have found and imported the source, we need
+        # to be sure to publish it because the binary import code
+        # assumes that the sources have been imported properly before
+        # the binary import is started. Thusly since this source is
+        # being imported "late" in the process, we publish it immediately
+        # to make sure it doesn't get lost.
+        SourcePublisher(distrorelease).publish(spr, self.pocket)
 
         return spr
 
-    def _getSourcePackageDataFromDSC(self, sp_name, sp_version, sp_component):
+    def _getSourcePackageDataFromDSC(self, sp_name, sp_version,
+                                     sp_component, sp_section):
         # XXX: untested, duplicates poolify call
         directory = os.path.join(self.archiveroot, "pool",
                                  poolify(sp_name, sp_component))
@@ -430,10 +431,11 @@ class SourcePackageReleaseHandler:
         dsc_contents = parse_tagfile(dsc_path, allow_unsigned=True)
 
         # Since the dsc doesn't know, we add in the directory, package
-        # and component
+        # component and section
         dsc_contents['directory'] = poolify(sp_name, sp_component)
         dsc_contents['package'] = sp_name
         dsc_contents['component'] = sp_component
+        dsc_contents['section'] = sp_section
 
         # the dsc doesn't list itself so add it ourselves
         if 'files' not in dsc_contents:

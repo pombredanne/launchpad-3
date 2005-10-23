@@ -249,6 +249,8 @@ class AbstractPackageData:
             raise PackageFileProcessError("Failed processing %s (perhaps "
                                           "see %s): %s" %
                                           (self.package, tempdir, e))
+        # We only rmtree if everything worked as expected; otherwise,
+        # leave it around for forensics.
         shutil.rmtree(tempdir)
 
         # XXX: Katie is disabled for the moment; hardcode the

@@ -76,6 +76,11 @@ class ArchiveFilesystemInfo:
         self.di_tagfile = di_tagfile
         self.difile = difile
 
+    def cleanup(self):
+        os.unlink(self.sources_tagfile)
+        os.unlink(self.binaries_tagfile)
+        os.unlink(self.di_tagfile)
+
 
 class ArchiveComponentItems:
     """Package Archive Items holder
@@ -103,6 +108,10 @@ class ArchiveComponentItems:
         # Iterate over the ArchiveFilesystemInfo instances.
         return iter(self._archive_archs)
 
+    def cleanup(self):
+        for ai in self._archive_archs:
+            ai.cleanup()
+
 
 class PackagesMap:
     """Archive Package Map class
@@ -120,6 +129,10 @@ class PackagesMap:
     the values are a dict that holds the same information as on source map.
     """
     def __init__(self, arch_component_items):
+        self.create_maps(arch_component_items)
+        arch_component_items.cleanup()
+
+    def create_maps(self, arch_component_items):
         # Create the maps
         self.src_map = {}
         self.bin_map = {}

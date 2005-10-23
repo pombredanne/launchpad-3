@@ -91,21 +91,6 @@ Files:
  4797b5ea7a3d96b87333e6b5af7b9979 41099 python-sqlite_1.0.1.orig.tar.gz
  358fd0ee2534e4ef9fa451b5d5222c20 1689 python-sqlite_1.0.1-2ubuntu1.diff.gz
 
-Package: ubuntu-meta
-Binary: ubuntu-desktop, ubuntu-base, ubuntu-minimal, ubuntu-live, ubuntu-standard
-Version: 0.80
-Priority: important
-Section: base
-Maintainer: Matt Zimmerman <mdz@ubuntu.com>
-Build-Depends: debhelper (>= 4)
-Architecture: any
-Standards-Version: 3.6.1
-Format: 1.0
-Directory: pool/main/u/ubuntu-meta
-Files:
- c372f77d81a9d95b72fafe1a55126fbc 556 ubuntu-meta_0.80.dsc
-  582cf001b7f0173791a9e472d6da9c8c 16010 ubuntu-meta_0.80.tar.gz
-
 Package: ed
 Binary: ed
 Version: 0.2-20

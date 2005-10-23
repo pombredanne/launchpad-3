@@ -243,10 +243,7 @@ def do_one_sourcepackage(source, kdb, package_root, keyrings,
         return
     source_data.process_package(kdb, package_root, keyrings)
     source_data.ensure_complete(kdb)
-    # XXX The check if this package already exists is done twice here,
-    # since preimport_sourcecheck already does it. -- kiko, 2005-10-18
     importer_handler.import_sourcepackage(source_data)
-    # Commit often or hold locks in the database!
     importer_handler.commit()
 
 
@@ -309,14 +306,11 @@ def do_one_binarypackage(binary, arch, kdb, package_root, keyrings,
                          importer_handler):
     binary_data = BinaryPackageData(**binary)
     if importer_handler.preimport_binarycheck(arch, binary_data):
-        # Don't bother reading package information if the source package
-        # already exists in the database
         log.info('%s already exists in the archive' % binary_data.package)
         return
     binary_data.ensure_complete(kdb)
     binary_data.process_package(kdb, package_root, keyrings)
     importer_handler.import_binarypackage(arch, binary_data)
-    # Commit often or else we hold locks in the database
     importer_handler.commit()
 
 
