@@ -110,27 +110,26 @@
         permission="zope.Public" >
         <browser:page
             name="+portlet-details"
-            facet="overview"
             template="../templates/distribution-portlet-details.pt"
             lp:url="/distros/$Distribution.name/+portlet-details" />
         <browser:page
             name="+portlet-releases"
-            facet="overview"
             template="../templates/distribution-portlet-releases.pt"
             lp:url="/distros/$Distribution.name/+portlet-releases" />
         <browser:page
             name="+portlet-milestones"
-            facet="overview"
             template="../templates/object-portlet-milestones.pt"
             lp:url="/distros/$Distribution.name/+portlet-milestones" />
         <browser:page
+            name="+portlet-uploaders"
+            template="../templates/distribution-portlet-uploaders.pt"
+            lp:url="/distros/$Distribution.name/+portlet-uploaders" />
+        <browser:page
             name="+portlet-bounties"
-            facet="bounties"
             template="../templates/object-portlet-bounties.pt"
             lp:url="/distros/$Distribution.name/+portlet-bounties" />
         <browser:page
             name="+portlet-aboutcve"
-            facet="bugs"
             template="../templates/distribution-portlet-aboutcve.pt"
             lp:url="/distros/$Distribution.name/+portlet-aboutcve" />
     </browser:pages>
