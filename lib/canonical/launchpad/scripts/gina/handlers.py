@@ -64,6 +64,9 @@ def check_not_in_librarian(files, package_root, directory):
             # XXX: untested
             raise PoolFileNotFound('Package %s not found on archive '
                                    '%s' % (fname, path))
+        # XXX: <stub> Until I or someone else completes
+        # LibrarianGarbageCollection (the first half of which is
+        # awaiting review)
         #if checkLibraryForFile(path, fname):
         #    # XXX: untested
         #    raise LibrarianHasFileError('File %s already exists in the '
@@ -605,6 +608,8 @@ class SourcePublisher:
 
     def _checkPublishing(self, sourcepackagerelease, distrorelease):
         """Query for the publishing entry"""
+        # XXX: we really shouldn't use selectOneBy here, because it will
+        # blow up if we have database duplication issues.
         return SecureSourcePackagePublishingHistory.selectOneBy(
             sourcepackagereleaseID=sourcepackagerelease.id,
             distroreleaseID=distrorelease.id)
@@ -654,6 +659,8 @@ class BinaryPackageHandler:
             query += ("AND DistroArchRelease.architecturetag = %s" %
                       quote(architecture))
 
+        # XXX: we really shouldn't use selectOne here, because it will
+        # blow up if we have database duplication issues.
         bpr = BinaryPackageRelease.selectOne(query, clauseTables=clauseTables)
         if bpr is None:
             log.debug('BPR not found: %r %r %r, query=%s' % (
@@ -725,6 +732,8 @@ class BinaryPackageHandler:
             query += ("AND DistroArchRelease.architecturetag = %s" 
                       % quote(archtag))
 
+        # XXX: we really shouldn't use selectOne here, because it will
+        # blow up if we have database duplication issues.
         build = Build.selectOne(query, clauseTables)
         if build:
             for bpr in build.binarypackages:
