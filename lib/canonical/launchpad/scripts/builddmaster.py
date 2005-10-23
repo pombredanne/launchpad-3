@@ -26,6 +26,7 @@ import datetime
 import pytz
 import tempfile
 import os
+import apt_pkg
 
 from sqlobject import SQLObjectNotFound
 from sqlobject.sqlbuilder import AND, IN
@@ -33,7 +34,8 @@ from sqlobject.sqlbuilder import AND, IN
 from canonical.launchpad.database import (
     Builder, BuildQueue, Build, SourcePackagePublishing,
     LibraryFileAlias, BinaryPackageRelease, BinaryPackageFile,
-    BinaryPackageName, Processor, SecureBinaryPackagePublishingHistory
+    BinaryPackageName, Processor, SecureBinaryPackagePublishingHistory,
+    PublishedPackageSet
     )
 
 from canonical.lp.dbschema import (
@@ -952,22 +954,111 @@ class BuilddMaster:
             }
 
         score_urgency = {
-            dbschema.SourcePackageUrgency.LOW: 1,
-            dbschema.SourcePackageUrgency.MEDIUM: 2,
-            dbschema.SourcePackageUrgency.HIGH: 3,
-            dbschema.SourcePackageUrgency.EMERGENCY: 4,
+            dbschema.SourcePackageUrgency.LOW: 5,
+            dbschema.SourcePackageUrgency.MEDIUM: 10,
+            dbschema.SourcePackageUrgency.HIGH: 15,
+            dbschema.SourcePackageUrgency.EMERGENCY: 20,
             }
-        
+
+        # Define a table we'll use to calculate the score based on the time
+        # in the build queue.  The table is a sorted list of (upper time
+        # limit in seconds, score) tuples.
+        queue_time_scores = [
+            (3600, 20),
+            (1800, 15), 
+            (900, 10), 
+            (300, 5), 
+        ]
+
+        score = 0
         msg = "%s (%d) -> " % (job.name, job.lastscore)
         
         # Calculate the urgency-related part of the score
-        job.lastscore += score_urgency[job.urgency]
+        score += score_urgency[job.urgency]
         msg += "U+%d " % score_urgency[job.urgency]
         
         # Calculate the component-related part of the score
-        job.lastscore += score_componentname[job.component_name]
+        score += score_componentname[job.component_name]
         msg += "C+%d " % score_componentname[job.component_name]
-        
+
+        # Calculate the build queue time component of the score
+        eta = datetime.datetime.now(pytz.timezone('UTC')) - job.created
+        for limit, dep_score in queue_time_scores:
+            if eta.seconds > limit:
+                score += dep_score
+                msg += "%d " % score
+                break
+
+        # parse package builde dependencies using apt_pkg
+        parsed_deps = apt_pkg.ParseDepends(job.builddependsindep)
+
+        # XXX cprov 20051017
+        # use getUtility() but depends of loding ZCML info
+        published_set = PublishedPackageSet()
+
+        # apt_pkg requires InitSystem to get VersionCompare working properly
+        apt_pkg.InitSystem()
+
+        # this dict maps the package version relationship syntax in lambda
+        # functions which returns bollean according the results of
+        # apt_pkg.VersionCompare function (see the order above).
+        # For further information about pkg relationship syntax see:
+        #
+        # http://www.debian.org/doc/debian-policy/ch-relationships.html
+        #
+        relation_map = {
+            # stricly later
+            '>>' : lambda x : x == 1,
+            # later or equal
+            '>=' : lambda x : x >= 0,
+            # stricly equal
+            '=' : lambda x : x == 0,
+            # earlier or equal
+            '<=' : lambda x : x <= 0,
+            # strictly ealier
+            '<<' : lambda x : x == -1
+            }
+
+        for token in parsed_deps:
+            try:
+                name, version, relation = token[0]
+            except ValueError:
+                # XXX cprov 20051018:
+                # We should remove the job if we could not parse it's
+                # dependency, but AFAICS, the integrity chacks in uploader
+                # component will be in charge of this. In few words i'm
+                # confident this piece of code are never going to be executed
+                self._logger.critical("DEP FORMAT ERROR: '%s'" % token[0])
+                continue
+            
+            dep_candidate = published_set.findDepCandidate(
+                name=name, distroarchrelease=job.archrelease)
+            
+            if dep_candidate:
+                # use apt_pkg function to compare versions
+                # it behaves similar to cmp, i.e., returns negative
+                # if first < second, zero if first == second and
+                # positive if first > second
+                dep_result = apt_pkg.VersionCompare(
+                    dep_candidate.binarypackageversion, version)
+
+                # use the previous mapped result to indentify if the depency
+                # ws satisfied or not
+                if relation_map[relation](dep_result):
+                    # grant more 1 (one) point of scoring for each satisfied
+                    # dependency
+                    score += 1
+                    continue
+                
+            # reduce score in 10 point for each unsatisfied dependency
+            score -= 10
+            self._logger.warn("MISSED DEP: %r in %s %s"
+                              % (token, job.archrelease.distrorelease.name,
+                                 job.archrelease.architecturetag))
+            
+        # store current score value
+        job.lastscore = score
+
         self._logger.debug(msg + " = %d" % job.lastscore)
 
     def sanitiseAndScoreCandidates(self):

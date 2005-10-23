@@ -134,6 +134,7 @@ from canonical.launchpad.interfaces.translator import *
 from canonical.launchpad.interfaces.vpoexport import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
+from canonical.launchpad.interfaces.developmentmanifest import *
 from canonical.launchpad.interfaces.distrocomponentuploader import *
 
 from canonical.launchpad.interfaces.cal import *

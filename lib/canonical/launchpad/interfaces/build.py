@@ -53,11 +53,31 @@ class IBuild(Interface):
 
 
 
+    def createBinaryPackageRelease(binarypackagename, version,
+                                   summary, description,
+                                   binpackageformat, component,
+                                   section, priority, shlibdeps,
+                                   depends, recommends, suggests,
+                                   conflicts, replaces, provides,
+                                   essential, installedsize,
+                                   copyright, licence,
+                                   architecturespecific):
+        """Create a binary package release with the provided args, attached
+        to this specific build.
+        """
+
 class IBuildSet(Interface):
     """Interface for BuildSet"""
 
     def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
         """Return a build for a SourcePackageRelease and an ArchTag"""
+
+    def getByBuildID(id):
+        """Return the exact build specified.
+
+        id is the numeric ID of the build record in the database.
+        I.E. getUtility(IBuildSet).getByBuildID(foo).id == foo
+        """
 
 
 class IHasBuildRecords(Interface):

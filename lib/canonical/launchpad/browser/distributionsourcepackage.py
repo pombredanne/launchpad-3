@@ -11,14 +11,14 @@ __all__ = [
 
 from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
-
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, IBugTaskSearch, BugTaskSearchParams,
     ILaunchBag, UNRESOLVED_BUGTASK_STATUSES)
 
-from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.bugtask import (
+    BugTargetTraversalMixin, get_sortorder_from_request)
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu,
@@ -143,7 +143,7 @@ class DistributionSourcePackageBugsView:
             user=getUtility(ILaunchBag).user,
             status=any(*UNRESOLVED_BUGTASK_STATUSES),
             searchtext=searchtext,
-            orderby=self.DEFAULT_ORDER)
+            orderby=get_sortorder_from_request(self.request))
         return self.context.searchTasks(search_params)
 
 

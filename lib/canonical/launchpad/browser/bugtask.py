@@ -14,8 +14,8 @@ __all__ = [
     'BugTaskSearchListingView',
     'BugTargetView',
     'BugTaskView',
-    'BugTaskReleaseTargetingView']
-
+    'BugTaskReleaseTargetingView',
+    'get_sortorder_from_request']
 
 import urllib
 
@@ -50,6 +50,14 @@ from canonical.launchpad.components.bugtask import NullBugTask
 #       -- kiko, 2005-08-23
 STATUS_OPEN = any(dbschema.BugTaskStatus.NEW,
                   dbschema.BugTaskStatus.ACCEPTED)
+
+def get_sortorder_from_request(request):
+    """Get the sortorder from the request."""
+    if request.get("orderby"):
+        return request.get("orderby").split(",")
+    else:
+        # No sort ordering specified, so use a reasonable default.
+        return ["-priority", "-severity"]
 
 
 class BugTargetTraversalMixin:
@@ -520,11 +528,10 @@ class BugTaskSearchListingView:
         form_params = getWidgetsData(self, self.search_form_schema)
         search_params = BugTaskSearchParams(user=self.user)
 
-
         search_params.statusexplanation = form_params.get("statusexplanation")
         search_params.assignee = form_params.get("assignee")
-        search_params.orderby = self.request.get("orderby",
-                                                 ["-severity", "-priority"])
+
+        search_params.orderby = get_sortorder_from_request(self.request)
 
         severities = form_params.get("severity")
         if severities:
@@ -819,12 +826,19 @@ class BugTaskSearchListingView:
                                    "illegal context")
 
         releases = getUtility(IDistroReleaseSet).search(
-            distribution=distribution, isreleased=True, orderBy="-datereleased")
+            distribution=distribution, orderBy="-datereleased")
 
         release_bugs = []
         for release in releases:
-            bugcount = self._countTasks(user=self.user, status=STATUS_OPEN, 
-                                        omit_dupes=True)
+            # XXX: Brad Bollenbach, 2005-10-18: Re-instantiating search_params
+            # in the loop every time is evil, but doing so *outside* the loop
+            # raises an AssertionError. See:
+            #
+            # https://launchpad.net/products/malone/+bug/3333
+            search_params = BugTaskSearchParams(
+                status=STATUS_OPEN, omit_dupes=True, user=self.user)
+            release_tasks = release.searchTasks(search_params)
+            bugcount = release_tasks.count()
             release_bugs.append({
                 "releasename" : release.displayname,
                 "bugcount" : bugcount,

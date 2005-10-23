@@ -8,7 +8,10 @@ environment variable, and defaults to 'default'
 
 __metaclass__ = type
 
-import sys, os, os.path
+import sys
+import os
+import os.path
+import logging
 from urlparse import urlparse, urlunparse
 
 import zope.thread
@@ -192,4 +195,36 @@ def urlbase(value):
         value = value + '/'
     return value
 
+def loglevel(value):
+    """ZConfig validator for log levels.
 
+    Input is a string ('info','debug','warning','error','fatal' etc.
+    as per logging module), and output is the integer value.
+
+    >>> import logging
+    >>> loglevel("info") == logging.INFO
+    True
+    >>> loglevel("FATAL") == logging.FATAL
+    True
+    >>> loglevel("foo")
+    Traceback (most recent call last):
+    ...
+    ValueError: ...
+    """
+    value = value.upper().strip()
+    if value == 'DEBUG':
+        return logging.DEBUG
+    elif value == 'INFO':
+        return logging.INFO
+    elif value == 'WARNING' or value == 'WARN':
+        return logging.WARNING
+    elif value == 'ERROR':
+        return logging.ERROR
+    elif value == 'FATAL':
+        return logging.FATAL
+    else:
+        raise ValueError(
+                "Invalid log level %s. "
+                "Should be DEBUG, CRITICAL, ERROR, FATAL, INFO, WARNING "
+                "as per logging module." % value
+                )

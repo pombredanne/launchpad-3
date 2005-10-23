@@ -662,16 +662,20 @@ table.listing, table.listing tbody {
   border-bottom: 1px solid #8cacbb;
 }
 table.listing th, table.listing td {
+  background: none;
   padding: 0.125em 0.25em;
 }
 table.listing th {
+  border: 1px solid #8cacbb;
+  text-transform: none;
   white-space: nowrap;
 }
 table.listing>tr>td, table.listing>tbody>tr>td {
   border: 1px #8cacbb;
   border-style: dotted none none none;
 }
-table.listing>tr.note>td, table.listing>tbody>tr.note>td {
+table.listing>tbody>tr.secondary>th, table.listing>tbody>tr.secondary>td,
+table.listing>tbody>tr.note>th, table.listing>tbody>tr.note>td {
   border-style: none;
 }
 table.listing>tr.note, table.listing>tbody>tr.note {
@@ -1261,4 +1265,35 @@ Calendar stuff.
 #calendar-view-day .other {
   background: #e0b6af;
   border: 1px #884631 solid;
+}
+
+.error-notification,
+.warning-notification {
+  background-position: 5px 0.5em;
+  padding-left: 30px;
+  background-color: #ff9070;
+  border: 1px solid #ddb0b0;
+  color: Black;
+  background-image: url(/++resource++alert_icon.gif);
+  font-size: 85%;
+  font-weight: bold;
+  margin: 1em 0em 0em 0em;
+  padding: 0.5em 1em 0.5em 3em;
+  background-repeat: no-repeat;
+}
+
+.notice-notification,
+.info-notification,
+.debug-notification {
+  background-position: 5px 0.5em;
+  padding-left: 30px;
+  background-color: #ffce7b;
+  border: 1px solid #ddb0b0;
+  color: Black;
+  background-image: url(/++resource++info_icon.gif);
+  font-size: 85%;
+  font-weight: bold;
+  margin: 1em 0em 0em 0em;
+  padding: 0.5em 1em 0.5em 3em;
+  background-repeat: no-repeat;
 }

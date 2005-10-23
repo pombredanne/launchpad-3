@@ -19,7 +19,8 @@ from sqlobject import (
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus)
+    PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus,
+    DistroReleaseQueueStatus)
 
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
@@ -47,6 +48,11 @@ from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.bugtask import BugTaskSet, BugTask
 from canonical.launchpad.database.binarypackagerelease import (
         BinaryPackageRelease)
+from canonical.launchpad.database.component import Component
+from canonical.launchpad.database.section import Section
+from canonical.launchpad.database.sourcepackagerelease import (
+    SourcePackageRelease)
+from canonical.launchpad.database.queue import DistroReleaseQueue
 from canonical.launchpad.helpers import shortlist
 
 
@@ -357,6 +363,49 @@ class DistroRelease(SQLBase):
             "distroarchrelease IN (%s) AND %s" % (arch_ids, status_clause),
             limit=limit, orderBy="-datebuilt")
 
+    def createUploadedSourcePackageRelease(self, sourcepackagename,
+            version, maintainer, dateuploaded, builddepends,
+            builddependsindep, architecturehintlist, component,
+            creator, urgency, changelog, dsc, dscsigningkey, section,
+            manifest):
+        """See IDistroRelease."""
+        return SourcePackageRelease(uploaddistrorelease=self.id,
+                                    sourcepackagename=sourcepackagename,
+                                    version=version,
+                                    maintainer=maintainer,
+                                    dateuploaded=dateuploaded,
+                                    builddepends=builddepends,
+                                    builddependsindep=builddependsindep,
+                                    architecturehintlist=architecturehintlist,
+                                    component=component,
+                                    creator=creator,
+                                    urgency=urgency,
+                                    changelog=changelog,
+                                    dsc=dsc,
+                                    dscsigningkey=dscsigningkey,
+                                    section=section,
+                                    manifest=manifest)
+
+    def getComponentByName(self, name):
+        """See IDistroRelease."""
+        comp = Component.byName(name)
+        if comp is None:
+            raise NotFoundError(name)
+        permitted = set(self.real_components)
+        if comp in permitted:
+            return comp
+        raise NotFoundError(name)
+
+    def getSectionByName(self, name):
+        """See IDistroRelease."""
+        section = Section.byName(name)
+        if section is None:
+            raise NotFoundError(name)
+        permitted = set(self.real_sections)
+        if section in permitted:
+            return section
+        raise NotFoundError(name)
+
     def removeOldCacheItems(self):
         """See IDistroRelease."""
 
@@ -466,6 +515,20 @@ class DistroRelease(SQLBase):
         return [DistroReleaseBinaryPackage(
             distrorelease=self,
             binarypackagename=drpc.binarypackagename) for drpc in drpcaches]
+
+    def newArch(self, architecturetag, processorfamily, official, owner):
+        """See IDistroRelease."""
+        dar = DistroArchRelease(architecturetag=architecturetag,
+            processorfamily=processorfamily, official=official,
+            distrorelease=self, owner=owner)
+        return dar
+        
+    def createQueueEntry(self, pocket):
+        """See IDistroRelease."""
+
+        return DistroReleaseQueue(distrorelease=self.id,
+                                  pocket=pocket,
+                                  status=DistroReleaseQueueStatus.ACCEPTED)
 
 
 class DistroReleaseSet:

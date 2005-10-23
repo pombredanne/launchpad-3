@@ -42,11 +42,9 @@ And finally, a line that does not start with a new line so we are sure we don't 
   ... set_149_msgid=&set_149_translation_es_0=foo&offset=20&show=all&SUBMIT=Save+%26+Continue""") #doctest: -NORMALIZE_WHITESPACE
   HTTP/1.1 200 Ok
   ...
-                          </div>
   ...<textarea lang="es" rows="5"
       name="set_149_translation_es_0" dir="ltr" tabindex="1">
-  foo</textarea>...
-                          <div>
+  foo</textarea>
   ...
 
 Now, Check that even though the user forgot the trailing new line char, Rosetta

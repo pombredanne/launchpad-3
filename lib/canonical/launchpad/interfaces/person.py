@@ -329,9 +329,10 @@ class IPerson(Interface):
     def assignKarma(action_name):
         """Assign karma for the action named <action_name> to this person."""
 
-    def getKarmaPointsByCategory(category):
-        """Return the cached karma of this person for all actions of the given
-        category s(he) performed."""
+    def updateKarmaCache():
+        """Update this person's karma attribute and all entries in the
+        KarmaCache table for this person.
+        """
 
     def inTeam(team):
         """Return True if this person is a member or the owner of <team>.

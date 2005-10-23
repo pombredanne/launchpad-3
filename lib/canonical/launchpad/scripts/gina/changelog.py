@@ -54,7 +54,8 @@ def parse_changelog(changelines):
     for line in changelines:
         #print line[:-1]
         if state == 0:
-            if line.startswith(" ") or line.startswith("\t") or not line.rstrip():
+            if (line.startswith(" ") or line.startswith("\t") or 
+                not line.rstrip()):
                 #print "State0 skip"
                 continue
             try:
@@ -75,7 +76,9 @@ def parse_changelog(changelines):
             if line.startswith(" --") and "@" in line:
                 #print "state1 accept"
                 # Last line of stanza
-                rets.append(parse_changelog_stanza(firstline,stanza,line.strip()[3:]))
+                rets.append(parse_changelog_stanza(firstline,
+                                                   stanza,
+                                                   line.strip()[3:]))
                 state = 0
 
     # leftovers with no close line

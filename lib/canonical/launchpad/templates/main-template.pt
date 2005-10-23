@@ -109,6 +109,37 @@
           rowspan="2"
         >
               <div id="region-content">
+                  <tal:block
+                      define="notifications request/notifications"
+                      condition="notifications">
+                      <div class="error-notification"
+                          tal:repeat="notification notifications/error"
+                          tal:content="structure notification/message">
+                          A error notification message
+                      </div>
+                      <div class="warning-notification"
+                          tal:repeat="notification notifications/warning"
+                          tal:content="structure notification/message">
+                          A warning notification message
+                      </div>
+                      <div class="notice-notification"
+                          tal:repeat="notification notifications/notice"
+                          tal:content="structure notification/message">
+                          A notice notification message
+                      </div>
+                      <div class="info-notification"
+                          tal:repeat="notification notifications/info"
+                          tal:content="structure notification/message">
+                          A info notification message
+                      </div>
+                      <div class="debug-notification"
+                          tal:repeat="notification notifications/debug"
+                          tal:content="structure notification/message">
+                          A debug notification message, only displayed on
+                          developers boxes.
+                      </div>
+                  </tal:block>
+
                   <metal:main define-slot="main" tal:condition="nothing">
                       <p>Main content area.</p>
                   </metal:main>

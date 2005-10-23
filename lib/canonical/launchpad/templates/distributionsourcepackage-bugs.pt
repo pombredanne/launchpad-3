@@ -10,14 +10,7 @@
 
   <h1>Bug Listing</h1>
 
-  <form name="bugtask_search" action="" method="GET">
-    <p>
-      <label tal:content="view/searchtext_widget/label">
-        Bug id or text:
-      </label>
-      <tal:searchtext content="structure view/searchtext_widget" />
-      <input type="submit" name="search" value="Search" />
-  </form>
+  <table metal:use-macro="context/@@+bugtask-macros-listview/bugtask_search_form" />
 
   <script>
   <!--
@@ -25,10 +18,12 @@
   //-->
   </script>
 
+  <br />
   <table id="sourcepackagebugs">
     <tr tal:repeat="task view/open_bugs">
       <metal:taskrow use-macro="task/@@+bugtask-macros-listview/item" />
     </tr>
+  </table>
 </div>
 
 </body>

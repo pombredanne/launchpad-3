@@ -1,0 +1,24 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:lp="http://launchpad.canonical.com"
+    i18n_domain="launchpad">
+
+    <content class="canonical.launchpad.database.DistroReleaseQueue">
+        <allow interface="canonical.launchpad.interfaces.IDistroReleaseQueue" />
+    </content>
+
+    <content class="canonical.launchpad.database.DistroReleaseQueueSource">
+        <allow interface="canonical.launchpad.interfaces.IDistroReleaseQueueSource" />
+    </content>
+
+    <content class="canonical.launchpad.database.DistroReleaseQueueBuild">
+        <allow interface="canonical.launchpad.interfaces.IDistroReleaseQueueBuild" />
+    </content>
+
+    <content class="canonical.launchpad.database.DistroReleaseQueueCustom">
+        <allow interface="canonical.launchpad.interfaces.IDistroReleaseQueueCustom" />
+    </content>
+
+</configure>

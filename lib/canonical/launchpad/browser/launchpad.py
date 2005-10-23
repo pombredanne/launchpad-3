@@ -182,6 +182,9 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
     usedfor = ILaunchpadRoot
 
+    enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
+                   'translations', 'calendar']
+
     def overview(self):
         target = ''
         text = 'Overview'

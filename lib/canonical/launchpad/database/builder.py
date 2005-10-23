@@ -144,31 +144,43 @@ class BuildQueue(SQLBase):
 
     @property
     def archrelease(self):
+        """See IBuildQueue"""
         return self.build.distroarchrelease
 
     @property
     def urgency(self):
+        """See IBuildQueue"""
         return self.build.sourcepackagerelease.urgency
     
     @property
     def component_name(self):
+        """See IBuildQueue"""
         return self.build.sourcepackagerelease.component.name
 
     @property
     def archhintlist(self):
+        """See IBuildQueue"""
         return self.build.sourcepackagerelease.archhintlist
     
     @property
     def name(self):
+        """See IBuildQueue"""
         return self.build.sourcepackagerelease.name
 
     @property
     def version(self):
+        """See IBuildQueue"""
         return self.build.sourcepackagerelease.version
 
     @property
     def files(self):
+        """See IBuildQueue"""        
         return self.build.sourcepackagerelease.files
+
+    @property
+    def builddependsindep(self):
+        """See IBuildQueue"""
+        return self.build.sourcepackagerelease.builddependsindep
 
     @property
     def buildduration(self):

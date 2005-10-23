@@ -4,7 +4,7 @@ languages: fa,hu,ja,kr,jbo,ko,tr,vi,zh,bo,ka
 nplurals:  1
 plural:    0
 
-languages: az,ca,da,nn,nl,en,eu,fo,gu,de,no,sv,es,fi,el,hi,he,it,is,sq,pt,eo,ms,nb,pa,ta,an,zu,af,xh,bg,gl,ku,lb,la,et,fur,ast
+languages: az,ca,da,nn,nl,en,eu,fo,gu,de,no,sv,es,fi,el,hi,he,it,is,sq,pt,eo,ms,nb,pa,ta,an,zu,af,xh,bg,gl,ku,lb,la,et,fur,ast,urd,si
 nplurals:  2
 plural:    n != 1
 

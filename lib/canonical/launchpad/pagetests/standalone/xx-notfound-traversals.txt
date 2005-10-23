@@ -65,6 +65,8 @@ spider -- StuartBishop 20050822
 >>> check("/legal")
 >>> check("/feedback")
 
+>>> check("/shipit/robots.txt")
+
 >>> check("/bounties")
 >>> check("/bounties/foomatic-widgets")
 
@@ -277,6 +279,11 @@ And this is for a person:
 >>> check("/people/name16/+calendar")
 >>> check("/people/name16/+calendar/+subscribe", auth=True)
 
+>>> check("/bazaar")
+>>> check("/bazaar/+portlet-importstats")
+>>> check("/bazaar/series", auth=True)
+>>> check("/bazaar/series/+bazaar-index", auth=True)
+
 # XXX: all broken, currently, because of subtraversals. See bug 2149.
 # >>> check("/people/name16/+rdf")
 # >>> check("/people/name18/+rdf")
@@ -284,10 +291,9 @@ And this is for a person:
 # >>> check("/products/firefox/series/1.0/+rdf")
 # >>> check("/codeofconduct/1.0/+download")
 
-# XXX: See bug 2150
-# >>> check("/distros/ubuntu/hoary/+bounties")
 # XXX: See bug 2151
 # >>> check("/distros/ubuntu/hoary/i386/+edit")
-# XXX: See bug 2152
-# >>> check("/distros/ubuntu/+translations")
+
+>>> check_not_found(
+...     '/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/xxxx')
 

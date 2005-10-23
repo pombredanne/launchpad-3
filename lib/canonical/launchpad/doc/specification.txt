@@ -32,4 +32,35 @@ this the specification target.
     >>> print newspec.target.name
     firefox
 
+We attach now a spec to a distribution.
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> sabdfl = Person.byName('sabdfl')
+    >>> ubuspec = specset.new('fix-spec-permissions',
+    ...                       'Fix Specification Permissions',
+    ...                       'http://www.ubuntu.com/FixBrokenSpecPerms',
+    ...                       'we really need this',
+    ...                       SpecificationPriority.EMERGENCY,
+    ...                       SpecificationStatus.APPROVED,
+    ...                       sabdfl,
+    ...                       distribution=ubuntu)
+    >>> print ubuspec.name
+    fix-spec-permissions
+
+The Ubuntu distro is owned by the Ubuntu team, name17. jdub is a member,
+and therefore should be able to edit any spec attached to it (but not
+specs attached to mozilla-firefox).
+
+    >>> from canonical.launchpad.helpers import check_permission
+    >>> print ubuntu.owner.name
+    name17
+    >>> jdub = Person.byName('jdub')
+    >>> jdub.inTeam(ubuntu.owner)
+    True
+    >>> login(jdub.preferredemail.email)
+    >>> check_permission('launchpad.Edit', ubuspec)
+    True
+    >>> check_permission('launchpad.Edit', newspec)
+    False
 

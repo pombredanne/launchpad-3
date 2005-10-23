@@ -100,25 +100,30 @@
             <th style="text-align: right">requested</th>
             <th style="text-align: right">approved</th>
             <th>status</th>
-            <th></th>
           </tr>
         </thead>
         <tbody>
           <tal:block repeat="shipitrequest currentBatch">
             <tr tal:attributes="
               style string:background-color: ${shipitrequest/highlightColour}">
-              <td tal:content="shipitrequest/id" />
-              <td tal:content="shipitrequest/recipientdisplayname" />
+              <td><a tal:attributes="href shipitrequest/fmt:url"
+                     tal:content="shipitrequest/id">id</a></td>
+              <td>
+                <span tal:replace="shipitrequest/recipientdisplayname" /><br />
+                (<span
+                  tal:replace="shipitrequest/recipient/preferredemail/email"
+                  />)
+              </td>
               <td tal:content="shipitrequest/daterequested/fmt:date" />
               <td tal:content="shipitrequest/country/name" />
               <td style="text-align: right" 
                   tal:content="shipitrequest/totalCDs" />
-              <td style="text-align: right"
+              <td style="text-align: right" 
                   tal:content="shipitrequest/totalapprovedCDs" />
               <td>
                 <tal:block condition="not: shipitrequest/cancelled">
                   <tal:block condition="shipitrequest/isApproved">
-                    approved
+                    approved<br />
                     <span tal:condition="not: shipitrequest/shipment"
                       >(unshipped)</span>
                     <span tal:condition="shipitrequest/shipment"
@@ -135,7 +140,6 @@
                 </tal:block>
                 <span tal:condition="shipitrequest/cancelled">cancelled</span>
               </td>
-              <td>[<a tal:attributes="href shipitrequest/fmt:url">edit</a>]</td>
             </tr>
           </tal:block>
         </tbody>

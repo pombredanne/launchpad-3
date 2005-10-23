@@ -323,5 +323,3 @@ class SourcePackageBugsView:
         return [
             "id", "title", "status", "priority", "severity",
             "submittedon", "submittedby", "assignedto", "actions"]
-
-

@@ -8,6 +8,7 @@ __all__ = [
     'IDistroReleaseQueue',
     'IDistroReleaseQueueBuild',
     'IDistroReleaseQueueSource',
+    'IDistroReleaseQueueCustom',
     ]
 
 from zope.schema import Int
@@ -20,49 +21,88 @@ class IDistroReleaseQueue(Interface):
     """A Queue item for Lucille"""
 
     id = Int(
-            title = _("ID"), required = True, readonly = True,
+            title=_("ID"), required=True, readonly=True,
             )
 
     status = Int(
-            title = _("Queue status"), required = True, readonly = False,
+            title=_("Queue status"), required=True, readonly=False,
             )
 
     distrorelease = Int(
-            title = _("Distribution release"), required = True, readonly = False,
+            title=_("Distribution release"), required=True, readonly=False,
             )
+
+    pocket = Int(
+            title=_("The pocket"), required=True, readonly=False,
+            )
+
+    def addSource(spr):
+        """Add the provided source package release to this queue entry."""
+
+    def addBuild(build):
+        """Add the provided build to this queue entry."""
+
+    def addCustom(library_file, custom_type):
+        """Add the provided library file alias as a custom queue entry of
+        the given custom type.
+        """
+    
 
 class IDistroReleaseQueueBuild(Interface):
     """A Queue item's related builds (for Lucille)"""
 
     id = Int(
-            title = _("ID"), required = True, readonly = True,
+            title=_("ID"), required=True, readonly=True,
             )
 
 
     distroreleasequeue = Int(
-            title = _("Distribution release queue"), required = True,
-            readonly = False,
+            title=_("Distribution release queue"), required=True,
+            readonly=False,
             )
 
     build = Int(
-            title = _("The related build"), required = True, readonly = False,
+            title=_("The related build"), required=True, readonly=False,
             )
+
 
 class IDistroReleaseQueueSource(Interface):
     """A Queue item's related sourcepackagereleases (for Lucille)"""
 
     id = Int(
-            title = _("ID"), required = True, readonly = True,
+            title=_("ID"), required=True, readonly=True,
             )
 
 
     distroreleasequeue = Int(
-            title = _("Distribution release queue"), required = True,
-            readonly = False,
+            title=_("Distribution release queue"), required=True,
+            readonly=False,
             )
 
     sourcepackagerelease = Int(
-            title = _("The related source package release"), required = True,
-            readonly = False,
+            title=_("The related source package release"), required=True,
+            readonly=False,
+            )
+
+
+class IDistroReleaseQueueCustom(Interface):
+    """A Queue item's related custom format files (for uploader/queue)"""
+
+    id = Int(
+            title=_("ID"), required=True, readonly=True,
+            )
+
+    distroreleasequeue = Int(
+            title=_("Distribution release queue"), required=True,
+            readonly=False,
+            )
+
+    customformat = Int(
+            title=_("The custom format for the file"), required=True,
+            readonly=False,
+            )
+
+    libraryfilealias = Int(
+            title=_("The file"), required=True, readonly=False,
             )
 
