@@ -417,21 +417,6 @@ Nothing should happen to our data -- no counts should have changed, etc.
     >>> SBPPH.select().count() - orig_sbpph_count
     42
 
-=== Run Gina over a release with 2 components, 2 archs and one pocket ===
-
-
-    >>> dapper = drs.new(ubuntu, "dapper", "Dapper Dragoon", "My title",
-    ...                  "My summary", "My description", "5.10", 1,
-    ...                  1, breezy, celebs.launchpad_developers)
-    >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q',
-    ...              'dapper', 'dapper-updates']
-    >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
-    >>> #print proc.stderr.read()
-    >>> proc.wait()
-    1
-
-XXX: TBD
-
 === Other tests ===
 
 For kicks, finally, run gina on a configured but incomplete archive:
