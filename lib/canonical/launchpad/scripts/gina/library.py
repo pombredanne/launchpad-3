@@ -54,5 +54,5 @@ def checkLibraryForFile(path, filename):
         digester.update(chunk)
     digest = digester.hexdigest()
     openfile.close()
-    return LibraryFileContent.selectOneBy(sha1=digest)
+    return LibraryFileContent.selectBy(sha1=digest).count() > 0
 

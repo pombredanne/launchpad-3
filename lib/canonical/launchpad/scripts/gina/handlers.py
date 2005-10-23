@@ -64,10 +64,10 @@ def check_not_in_librarian(files, package_root, directory):
             # XXX: untested
             raise PoolFileNotFound('Package %s not found on archive '
                                    '%s' % (fname, path))
-        if checkLibraryForFile(path, fname):
-            # XXX: untested
-            raise LibrarianHasFileError('File %s already exists in the '
-                                        'librarian' % fname)
+        #if checkLibraryForFile(path, fname):
+        #    # XXX: untested
+        #    raise LibrarianHasFileError('File %s already exists in the '
+        #                                'librarian' % fname)
         to_upload.append((fname, path))
     return to_upload
 

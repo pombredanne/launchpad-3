@@ -109,11 +109,13 @@ def run_gina(options, ztm, target_section):
     package_root = target_section.root
     keyrings_root = target_section.keyrings
     distro = target_section.distro
+    # XXX I honestly think having a separate distrorelease section is a
+    # bit silly. Can't we construct this based on `distrorelease-pocket`?
+    pocket_distrorelease = target_section.pocketrelease
     distrorelease = target_section.distrorelease
     components = [c.strip() for c in target_section.components.split(",")]
     archs = [a.strip() for a in target_section.architectures.split(",")]
     pocket = target_section.pocket
-    pocket_distrorelease = target_section.pocketrelease
     source_only = target_section.source_only
     spnames_only = target_section.sourcepackagenames_only
 
@@ -124,24 +126,13 @@ def run_gina(options, ztm, target_section):
     LPDB_USER = config.gina.dbuser
     KTDB = target_section.katie_dbname
 
-    if hasattr(dbschema.PackagePublishingPocket, pocket.upper()):
-        pocket = getattr(dbschema.PackagePublishingPocket, pocket.upper())
-    else:
-        log.error("Could not find a pocket schema for %s" % pocket)
-        sys.exit(1)
-
-    if not pocket_distrorelease:
-        pocket_distrorelease = distrorelease
-
     LIBRHOST = config.librarian.upload_host
     LIBRPORT = config.librarian.upload_port
 
     log.info("")
-    log.info("=== Processing %s/%s ===" % (distro, distrorelease))
+    log.info("=== Processing %s/%s/%s ===" % (distro, distrorelease, pocket))
     log.debug("Packages read from: %s" % package_root)
     log.debug("Keyrings read from: %s" % keyrings_root)
-    log.info("Destination DistroRelease/Pocket: %s/%s" % (
-        pocket_distrorelease, pocket.title.lower()))
     log.info("Components to import: %s" % ", ".join(components))
     log.info("Architectures to import: %s" % ", ".join(archs))
     log.debug("Launchpad database: %s" % LPDB)
@@ -154,6 +145,14 @@ def run_gina(options, ztm, target_section):
     log.info("Dry run: %s" % (dry_run))
     log.info("")
 
+    if hasattr(dbschema.PackagePublishingPocket, pocket.upper()):
+        pocket = getattr(dbschema.PackagePublishingPocket, pocket.upper())
+        # XXX: should we ensure that the pocket release contains the
+        # pocket name?
+    else:
+        log.error("Could not find a pocket schema for %s" % pocket)
+        sys.exit(1)
+
     kdb = None
     keyrings = None
     if KTDB:
@@ -162,14 +161,14 @@ def run_gina(options, ztm, target_section):
 
     try:
         arch_component_items = ArchiveComponentItems(package_root,
-                                                     distrorelease,
+                                                     pocket_distrorelease,
                                                      components, archs)
     except MangledArchiveError:
-        log.exception("Failed to analyze archive for %s" % distrorelease)
+        log.exception("Failed to analyze archive for %s" % pocket_distrorelease)
         sys.exit(1)
 
     packages_map = PackagesMap(arch_component_items)
-    importer_handler = ImporterHandler(ztm, distro, pocket_distrorelease,
+    importer_handler = ImporterHandler(ztm, distro, distrorelease,
                                        dry_run, kdb, package_root, keyrings,
                                        pocket)
 
