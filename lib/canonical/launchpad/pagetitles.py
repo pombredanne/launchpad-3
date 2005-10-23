@@ -320,6 +320,8 @@ distroarchreleasebinarypackage_index = ContextTitle('%s')
 
 distroarchreleasebinarypackagerelease_index = ContextTitle('%s')
 
+distrorelease_addport = ContextTitle('Add Port for %s')
+
 distrorelease_bugs = ContextTitle('Release %s: Bugs')
 
 distrorelease_cvereport = ContextDisplayName('CVE Report for %s')

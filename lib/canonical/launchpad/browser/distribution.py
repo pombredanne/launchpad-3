@@ -99,7 +99,8 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'overview'
-    links = ['search', 'milestone_add', 'members', 'edit', 'reassign']
+    links = ['search', 'milestone_add', 'members', 'edit', 'reassign',
+             'addrelease']
 
     def edit(self):
         text = 'Edit Details'
@@ -124,8 +125,8 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def addrelease(self):
-        text = 'Add New Distribution Release'
-        return Link('+add', text, icon='add')
+        text = 'Add Release'
+        return Link('+addrelease', text, icon='add')
 
 
 class DistributionBugsMenu(ApplicationMenu):

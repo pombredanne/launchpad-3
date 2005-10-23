@@ -61,13 +61,13 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
     # Bug 3256
     real_components = Attribute("The release's components.")
     real_sections = Attribute("The release's sections.")
-    releasestatus = Attribute(
-        "The release's status, such as FROZEN or DEVELOPMENT, as "
-        "specified in the DistributionReleaseStatus enum.")
+    releasestatus = Choice(
+        title=_("Release Status"), required=True,
+        vocabulary='DistributionReleaseStatus')
     datereleased = Attribute("The datereleased.")
     parentrelease = Choice(
         title=_("Parent Release"),
-        description=_("The Parente Distribution Release."), required=True,
+        description=_("The Parent Distribution Release."), required=True,
         vocabulary='DistroRelease')
     owner = Attribute("Owner")
     state = Attribute("DistroRelease Status")
@@ -215,6 +215,9 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         """Create a queue item attached to this distrorelease and the given
         pocket.
         """
+    
+    def newArch(architecturetag, processorfamily, official, owner):
+        """Create a new port or DistroArchRelease for this DistroRelease."""
 
 
 class IDistroReleaseSet(Interface):
