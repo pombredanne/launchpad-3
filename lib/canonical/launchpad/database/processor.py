@@ -31,3 +31,4 @@ class ProcessorFamily(SQLBase):
     description = StringCol(dbName='description', notNull=True)
 
     processors = MultipleJoin('Processor', joinColumn='family')
+

@@ -7,46 +7,35 @@ quiet mode over it.
 
 We start out with 6 packages in our database.
 
-    >>> from canonical.launchpad.database import (SourcePackageRelease,
-    ...     SecureSourcePackagePublishingHistory, SourcePackageName,
-    ...     BinaryPackageRelease, BinaryPackageName,
-    ...     SourcePackageReleaseFile, Person, TeamParticipation,
-    ...     WikiName, EmailAddress, BinaryPackageRelease, Build)
+    >>> from canonical.launchpad.database import (
+    ...     SourcePackageRelease,
+    ...     SecureSourcePackagePublishingHistory,
+    ...     Person,
+    ...     TeamParticipation,
+    ...     WikiName,
+    ...     EmailAddress,
+    ...     BinaryPackageRelease,
+    ...     Build)
     >>> SPPH = SecureSourcePackagePublishingHistory
 
 Get the current status of the database:
 
     >>> orig_spr_count = SourcePackageRelease.select().count()
+    >>> original_spph_count = SPPH.select().count()
     >>> orig_person_count = Person.select().count()
     >>> orig_tp_count = TeamParticipation.select().count()
     >>> orig_email_count = EmailAddress.select().count()
     >>> orig_wiki_count = WikiName.select().count()
-    >>> original_spph_count = SPPH.select().count()
     >>> orig_bpr_count = BinaryPackageRelease.select().count()
     >>> orig_build_count = Build.select().count()
 
-    >>> import subprocess, sys, os
     >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
     >>> LibrarianTestSetup().setUp()
 
-Let's set up the filesystem:
+Create a distribution release and an arch release for breezy:
 
-    >>> try:
-    ...     os.unlink("/var/lock/launchpad-gina.lock")
-    ... except OSError:
-    ...     pass
-    >>> try:
-    ...     os.remove('/tmp/gina_test_archive')
-    ... except OSError:
-    ...     pass
-    >>> relative_path = ('lib/canonical/launchpad/scripts/'
-    ...                  'ftests/gina_test_archive')
-    >>> path = os.path.join(os.getcwd(), relative_path)
-    >>> os.symlink(path, '/tmp/gina_test_archive')
-
-Create a distribution release for breezy (why is it so much #@!#@! work?!):
-
-    >>> from canonical.launchpad.database import DistroReleaseSet
+    >>> from canonical.launchpad.database import (DistroReleaseSet,
+    ...     ProcessorFamily, DistroArchRelease)
     >>> from canonical.launchpad.interfaces import (ILaunchpadCelebrities,
     ... IDistroReleaseSet)
     >>> celebs = getUtility(ILaunchpadCelebrities)
@@ -56,6 +45,10 @@ Create a distribution release for breezy (why is it so much #@!#@! work?!):
     >>> breezy = drs.new(ubuntu, "breezy", "Breezy Badger", "My title",
     ...                  "My summary", "My description", "5.10", 1,
     ...                  1, hoary, celebs.launchpad_developers)
+    >>> pf = ProcessorFamily.selectOneBy(name="x86")
+    >>> dar = DistroArchRelease(distrorelease=breezy, processorfamily=pf,
+    ...                         architecturetag="i386", official=True,
+    ...                         owner=celebs.launchpad_developers)
     >>> import transaction
     >>> transaction.commit()
 
@@ -70,8 +63,8 @@ packages:
      Hoary and 5 in breezy.
   d) db1-compat, source package what generates 1 binary package. The same
      version was included in both hoary and breezy.
-  e) gcc-defaults, a source package that generates a truckload of binary
-     packages with differing versions.
+  e) gcc-defaults, a source package that generates 8 binary packages with
+     differing versions.
   f) x11proto-damage, a package which is only present in breezy
   g) libcap, a source package which generates 3 binary packages, and
      whose version number contains an epoch. It is not in the Breezy
@@ -95,7 +88,23 @@ And two completely broken packages:
      but which is missing a version field in its Sources file.
      Its breezy package has a version but is missing copyright and changelog.
 
-Let's give her a spin:
+Let's set up the filesystem:
+
+    >>> import subprocess, sys, os
+    >>> try:
+    ...     os.unlink("/var/lock/launchpad-gina.lock")
+    ... except OSError:
+    ...     pass
+    >>> try:
+    ...     os.remove('/tmp/gina_test_archive')
+    ... except OSError:
+    ...     pass
+    >>> relative_path = ('lib/canonical/launchpad/scripts/'
+    ...                  'ftests/gina_test_archive')
+    >>> path = os.path.join(os.getcwd(), relative_path)
+    >>> os.symlink(path, '/tmp/gina_test_archive')
+
+And give her a spin:
 
     >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q',
     ...              'hoary', 'breezy']
@@ -104,20 +113,25 @@ Let's give her a spin:
 Check STDERR for the errors we expected:
 
     >>> print proc.stderr.read()
+    WARNING Source package ed lacks section, assumed 'misc'
     ERROR   Unable to create SourcePackageData for mkvmlinuz
      -> http://...version: None)
-    WARNING Source package ed lacks section, assumed 'misc'
     WARNING Invalid urgency in python-pam, None, assumed 'low'
     ERROR   Error processing package files for util-linux
      -> http://...dsc not in archive...))
     ERROR   Error processing package files for bsdutils
      -> http://...deb not found)
+    WARNING Binary package ed lacks valid priority, assumed 'extra'
     ERROR   Error processing package files for mount
      -> http://...deb not found)
     WARNING Binary package python-pam lacks a section... assumed 'misc'
-    ERROR   Error processing package files for util-linux-locales
+    ERROR   Error processing package files for python2.4-pam
+     -> http://...deb not found)
+    ERROR   Error processing package files for python2.4-sqlite
      -> http://...deb not found)
     ERROR   Error processing package files for util-linux
+     -> http://...deb not found)
+    ERROR   Error processing package files for util-linux-locales
      -> http://...deb not found)
     ERROR   Invalid Sources stanza in /tmp/tmp...
      -> http://...bogus\n')
@@ -151,6 +165,7 @@ We should have more source packages in the database:
 
 Check that x11proto-damage has its Build-Depends-Indep value correctly set:
 
+    >>> from canonical.launchpad.database import SourcePackageName
     >>> n = SourcePackageName.selectOneBy(name="x11proto-damage")
     >>> x11p = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
     ...                                         version="6.8.99.7-2")
@@ -199,6 +214,7 @@ only imported one:
 And check that its files actually ended up in the librarian (these sha1sums
 were calculated directly on the files):
 
+    >>> from canonical.launchpad.database import SourcePackageReleaseFile
     >>> files = SourcePackageReleaseFile.selectBy(sourcepackagereleaseID=cap.id,
     ...                                           orderBy="libraryfile")
     >>> for f in files:
@@ -248,15 +264,17 @@ Ensure all we published to was main, in the main pocket:
 
 === Testing Binary Package Results ===
 
-We have 14 binary packages. The 4 packages for util-linux fail:
+We have 26 binary packages. The 4 packages for util-linux fail, and 1 package
+fails for each of python-sqlite and python-pam:
 
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
-    10
+    20
     >>> Build.select().count() - orig_build_count
-    6
+    7
 
 Test all the data got to the ed BPR intact:
 
+    >>> from canonical.launchpad.database import BinaryPackageName
     >>> n = BinaryPackageName.selectOneBy(name="ed")
     >>> ed = BinaryPackageRelease.selectOneBy(binarypackagenameID=n.id)
     >>> print ed.version
@@ -321,10 +339,13 @@ packages that failed to import the last time.
      -> http://...deb not found)
     ERROR   Error processing package files for mount
      -> http://...deb not found)
-    WARNING Binary package python-pam lacks a section... assumed 'misc'
-    ERROR   Error processing package files for util-linux-locales
+    ERROR   Error processing package files for python2.4-pam
+     -> http://...deb not found)
+    ERROR   Error processing package files for python2.4-sqlite
      -> http://...deb not found)
     ERROR   Error processing package files for util-linux
+     -> http://...deb not found)
+    ERROR   Error processing package files for util-linux-locales
      -> http://...deb not found)
     ERROR   Invalid Sources stanza in /tmp/tmp...
      -> http://...bogus\n')
@@ -351,6 +372,10 @@ Nothing should happen to our data -- no counts should have changed, etc.
     9
     >>> print WikiName.select().count() - orig_wiki_count
     9
+    >>> BinaryPackageRelease.select().count() - orig_bpr_count
+    20
+    >>> Build.select().count() - orig_build_count
+    7
 
 === Run Gina over a release with 2 components, 2 archs and one pocket ===
 

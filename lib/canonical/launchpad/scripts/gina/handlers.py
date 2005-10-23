@@ -224,6 +224,23 @@ class ImporterHandler:
 
         return sourcepackagerelease
 
+    def preimport_binarycheck(self, archtag, binarypackagedata):
+        """
+        Check if this BinaryPackageRelease already exists. This can
+        happen, for instance, if a binary package didn't change over
+        releases, or if Gina runs multiple times over the same release
+        """
+        self._store_archinfo(archtag)
+        distroarchinfo = self.archinfo[archtag]
+        binarypackagerelease = self.bphandler.checkBin(binarypackagedata,
+                                                          distroarchinfo)
+        if not binarypackagerelease:
+            return None
+
+        # Append to the sourcepackagerelease imported list.
+        self._store_bprelease_for_publishing(binarypackagerelease, archtag)
+        return binarypackagerelease
+
     def import_binarypackage(self, archtag, binarypackagedata):
         """Handler the binarypackage import process"""
         # XXX: kinda untested

@@ -533,5 +533,5 @@ class BinaryPackageData(AbstractPackageData):
         if self.priority is None:
             self.priority = 'extra'
             log.warn("Binary package %s lacks valid priority, assumed %r" %
-                     (self.package, self.section))
+                     (self.package, self.priority))
 

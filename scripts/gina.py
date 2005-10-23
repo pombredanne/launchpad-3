@@ -203,7 +203,8 @@ def import_sourcepackages(packages_map, kdb, package_root,
     npacks = len(packages_map.src_map)
     log.info('%i Source Packages to be imported' % npacks)
 
-    for source in packages_map.src_map.itervalues():
+    for source in sorted(packages_map.src_map.values(),
+                         key=lambda x: x.get("Package")):
         count += 1
         package_name = source.get("Package", "unknown")
         try:
@@ -260,7 +261,8 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
         log.info('%i Binary Packages to be imported for %s' % 
                  (npacks, arch))
         # Go over binarypackages importing them for this architecture
-        for binary in packages_map.bin_map[arch].itervalues():
+        for binary in sorted(packages_map.bin_map[arch].values(),
+                             key=lambda x: x.get("Package")):
             count += 1
             package_name = binary.get("Package", "unknown")
             try:
@@ -306,6 +308,11 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
 def do_one_binarypackage(binary, arch, kdb, package_root, keyrings,
                          importer_handler):
     binary_data = BinaryPackageData(**binary)
+    if importer_handler.preimport_binarycheck(arch, binary_data):
+        # Don't bother reading package information if the source package
+        # already exists in the database
+        log.info('%s already exists in the archive' % binary_data.package)
+        return
     binary_data.ensure_complete(kdb)
     binary_data.process_package(kdb, package_root, keyrings)
     importer_handler.import_binarypackage(arch, binary_data)
