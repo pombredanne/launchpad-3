@@ -92,9 +92,11 @@ we'll define one here.
     >>> class Response(object):
     ...
     ...     redirected_to = None
+    ...     status = None
     ...
-    ...     def redirect(self, name):
+    ...     def redirect(self, name, status=None):
     ...         self.redirected_to = name
+    ...         self.status = status
 
     >>> import canonical.launchpad.webapp.servers
 
@@ -437,17 +439,21 @@ This is step five:
 You can also return redirection('urlpath') from a traversal method to cause
 a redirect when you traverse that name.
 
+You can provide an optional status=30x keyword argument to redirection to
+make it redirect with a different status code.  The default is 'None' which
+means to use 303 when the request is HTTP/1.1.
+
 Let's make another navigation class to test redirection.
 
     >>> from canonical.launchpad.webapp import redirection
 
     >>> class ThingSetNavigation4(ThingSetNavigation):
     ...
-    ...     redirection('tree', 'trees')
+    ...     redirection('tree', 'trees', status=301)
     ...     redirection('toad', 'toads')
     ...
     ...     def traverse(self, name):
-    ...         return redirection('/another/place')
+    ...         return redirection('/another/place', status=301)
     ...
     ...     @stepthrough('outerspace')
     ...     def traverse_outerspace(self, name):
@@ -460,22 +466,30 @@ Let's make another navigation class to test redirection.
     ''
     >>> request.response.redirected_to
     'trees'
+    >>> print request.response.status
+    301
 
     >>> navigation4.publishTraverse(request, 'toad')()
     ''
     >>> request.response.redirected_to
     'toads'
+    >>> print request.response.status
+    None
 
     >>> navigation4.publishTraverse(request, 'something')()
     ''
     >>> request.response.redirected_to
     '/another/place'
+    >>> print request.response.status
+    301
 
     >>> request.traversal_stack = ['tundra']
     >>> navigation4.publishTraverse(request, 'outerspace')()
     ''
     >>> request.response.redirected_to
     '/siberia/tundra'
+    >>> print request.response.status
+    None
 
 
 Make a clean request.

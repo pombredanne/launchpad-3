@@ -53,4 +53,9 @@ class IPublishedPackageSet(Interface):
         """Search through published packages returning those that meet the
         given criteria"""
 
+    def findDepCandidate(name, distroarchrelease):
+        """Return the package candidate within the distroarchrelease context.
 
+        Return the PublishedPackage record by bynarypackagename or None if
+        not found.
+        """

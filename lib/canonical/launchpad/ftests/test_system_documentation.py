@@ -52,6 +52,16 @@ def poExportSetUp(test):
 def poExportTearDown(test):
     LaunchpadZopelessTestSetup().tearDown()
 
+def uploaderSetUp(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(dbuser='uploader').setUp()
+    setGlobs(test)
+    # Set up an anonymous interaction.
+    login(ANONYMOUS)
+
+def uploaderTearDown(test):
+    LaunchpadZopelessTestSetup().tearDown()
+
 def librarianSetUp(test):
     setUp(test)
     LibrarianTestSetup().setUp()
@@ -92,6 +102,10 @@ special = {
     'cve-update.txt': FunctionalDocFileSuite(
             '../doc/cve-update.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
+            ),
+    'nascentupload.txt': FunctionalDocFileSuite(
+            '../doc/nascentupload.txt',
+            setUp=uploaderSetUp, tearDown=uploaderTearDown
             ),
     }
 

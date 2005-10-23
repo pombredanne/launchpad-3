@@ -94,7 +94,7 @@ another query:
     >>> cursor.execute('SELECT 1')
     Traceback (most recent call last):
     ...
-    RequestExpired: ('The current request has expired', ('SELECT 1',), {})
+    RequestExpired: (('SELECT 1',), {})
 
 
 When a RequestExpired exception is raised, the current database
@@ -150,7 +150,7 @@ remove the timout:
     >>> cursor.execute('SELECT 1')
     Traceback (most recent call last):
     ...
-    RequestExpired: ('The current request has expired', ('SELECT 1',), {})
+    RequestExpired: (('SELECT 1',), {})
     >>> statement_issued.set()
     >>> thread.join()
     >>> clear_request_started()

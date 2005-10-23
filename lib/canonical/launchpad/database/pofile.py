@@ -45,6 +45,59 @@ from canonical.launchpad.components.poparser import (
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 
 
+def _check_translation_perms(permission, translators, person):
+    """This is a utility function that will return True or False depending
+    on whether the person is part of the right group of translators, and the
+    permission on the relevant project or product.
+    """
+
+    if person is None:
+        return False
+
+    rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+
+    if person.inTeam(rosetta_experts):
+        # Rosetta experts can edit translations always.
+        return True
+
+    # now, let's determine if the person is part of a designated
+    # translation team
+    is_designated_translator = False
+    # XXX sabdfl 25/05/05 this code could be improved when we have
+    # implemented CrowdControl
+    for translator in translators:
+        if person.inTeam(translator):
+            is_designated_translator = True
+            break
+
+    # have a look at the applicable permission policy
+    if permission == TranslationPermission.OPEN:
+        # if the translation policy is "open", then yes, anybody is an
+        # editor of any translation
+        return True
+    elif permission == TranslationPermission.STRUCTURED:
+        # in the case of a STRUCTURED permission, designated translators
+        # can edit, unless there are no translators, in which case
+        # anybody can translate
+        if len(translators) > 0:
+            # when there are designated translators, only they can edit
+            if is_designated_translator is True:
+                return True
+        else:
+            # since there are no translators, anyone can edit
+            return True
+    elif permission == TranslationPermission.CLOSED:
+        # if the translation policy is "closed", then check if the person is
+        # in the set of translators
+        if is_designated_translator:
+            return True
+    else:
+        raise NotImplementedError('Unknown permission %s' % permission.name)
+
+    # ok, thats all we can check, and so we must assume the answer is no
+    return False
+
+
 class POFile(SQLBase, RosettaStats):
     implements(IPOFile, IRawFileData)
 
@@ -151,28 +204,14 @@ class POFile(SQLBase, RosettaStats):
         if person is None:
             return False
 
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
-
-        if person.inTeam(rosetta_experts):
-            # Rosetta experts can edit translations always.
+        # check based on permissions
+        translators = [t.translator for t in self.translators]
+        perm_result = _check_translation_perms(
+            self.translationpermission,
+            translators,
+            person)
+        if perm_result is True:
             return True
-
-        # have a look at the aplicable permission policy
-        tperm = self.translationpermission
-        if tperm == TranslationPermission.OPEN:
-            # if the translation policy is "open", then yes
-            return True
-        elif tperm == TranslationPermission.CLOSED:
-            # if the translation policy is "closed", then check if the person is
-            # in the set of translators
-            # XXX sabdfl 25/05/05 this code could be improved when we have
-            # implemented CrowdControl
-            translators = [t.translator for t in self.translators]
-            for translator in translators:
-                if person.inTeam(translator):
-                    return True
-        else:
-            raise NotImplementedError('Unknown permission %s' % tperm.name)
 
         # Finally, check for the owner of the PO file
         return person.inTeam(self.owner)
@@ -806,25 +845,11 @@ class DummyPOFile(RosettaStats):
         return ret
 
     def canEditTranslations(self, person):
-        tperm = self.potemplate.translationpermission
-        if tperm == TranslationPermission.OPEN:
-            # if the translation policy is "open", then yes
-            return True
-        elif tperm == TranslationPermission.CLOSED:
-            if person is not None:
-                # if the translation policy is "closed", then check if the
-                # person is in the set of translators XXX sabdfl 25/05/05 this
-                # code could be improved when we have implemented CrowdControl
-                translators = [t.translator for t in self.translators]
-                for translator in translators:
-                    if person.inTeam(translator):
-                        return True
-        else:
-            raise NotImplementedError('Unknown permission %s' % tperm.name)
-
-        # At this point you either got an OPEN (true) or you are not in the
-        # designated translation group, so you can't edit them
-        return False
+        translators = [t.translator for t in self.translators]
+        return _check_translation_perms(
+            self.translationpermission,
+            translators,
+            person)
 
     def currentCount(self):
         return 0

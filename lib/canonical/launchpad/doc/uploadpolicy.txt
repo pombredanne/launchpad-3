@@ -1,0 +1,72 @@
+== The uploader policies ==
+
+When the uploader is invoked, it is given a policy to work in. This
+governs such things as what tests get run at what stages of the
+upload, and whether or not there is a build to be created, or one in
+existence to be used. These policies are in the
+canonical.archivepublisher package, in the uploadpolicy module. They
+are accessed by calling findPolicyByName which will either return a
+policy instance or else raise a KeyError.
+
+XXX: dsilvers: 20051019: Get rid of this registration/lookup system
+when we've fixed bug 3137
+
+  >>> from canonical.archivepublisher.uploadpolicy import findPolicyByName
+
+There are two policies defined so far. They are the insecure and
+buildd policies.
+
+  >>> insecure_policy = findPolicyByName('insecure')
+  >>> insecure_policy.name == 'insecure'
+  True
+  >>> buildd_policy = findPolicyByName('buildd')
+  >>> buildd_policy.name == 'buildd'
+  True
+  >>> abstract_policy = findPolicyByName('abstract')
+  Traceback (most recent call last):
+  ...
+  KeyError: 'abstract'
+
+There is a bunch of attributes which we expect to have and which can vary
+from policy to policy.
+
+  >>> insecure_policy.unsigned_changes_ok
+  False
+  >>> buildd_policy.unsigned_changes_ok
+  True
+  >>> insecure_policy.unsigned_dsc_ok
+  False
+  >>> buildd_policy.unsigned_dsc_ok
+  True
+
+The policies require certain values to be present in the options at times...
+
+  >>> class MockAbstractOptions:
+  ...     distro = 'ubuntu'
+  >>> class MockOptions(MockAbstractOptions):
+  ...     buildid = 1
+
+  >>> ab_opts = MockAbstractOptions()
+  >>> bd_opts = MockOptions()
+
+  >>> insecure_policy.setOptions(ab_opts)
+  >>> insecure_policy.options is ab_opts
+  True
+  >>> insecure_policy.distro.displayname
+  u'ubuntu'
+  >>> buildd_policy.setOptions(ab_opts)
+  Traceback (most recent call last):
+  ...
+  UploadPolicyError: BuildID required for buildd context
+  >>> buildd_policy.setOptions(bd_opts)
+  >>> buildd_policy.options is bd_opts
+  True
+  >>> buildd_policy.distro.displayname
+  u'ubuntu'
+
+Policies can think about distroreleases...
+
+  >>> buildd_policy.setDistroReleaseAndPocket("hoary")
+  >>> buildd_policy.distrorelease.name
+  u'hoary'
+  >>> buildd_policy.announcelist

@@ -144,6 +144,7 @@ class IBuildQueue(Interface):
     name = Attribute("SourcePackageRelease name")
     version = Attribute("SourcePackageRelease version")
     files = Attribute("SourcePackageRelease files")
+    builddependsindep = Attribute("SourcePackageRelease builddependsindep")
     buildduration = Attribute("The duration of the build in progress")
 
     def destroySelf():

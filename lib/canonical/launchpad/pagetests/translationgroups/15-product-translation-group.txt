@@ -17,9 +17,8 @@ First make sure it has no translation group and permissions.
   <BLANKLINE>
           <i>Not assigned</i><br />
   <BLANKLINE>
-          <b>Translation Perms:</b><br />
-          Open
-          <br />
+  ...Translation Perms:...
+  ...Open...
   ...
 
 Now let's make sure we can see the page to let us change translation group
@@ -87,8 +86,7 @@ Now these changes should show up in the product page.
           <a href="/rosetta/groups/polyglot/">The PolyGlot Translation Group</a><br />
   <BLANKLINE>
   <BLANKLINE>
-          <b>Translation Perms:</b><br />
-          Open
-          <br />
+  ...Translation Perms:...
+  ...Open...
   ...
 

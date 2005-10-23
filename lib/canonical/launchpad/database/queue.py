@@ -43,6 +43,23 @@ class DistroReleaseQueue(SQLBase):
     customfiles = MultipleJoin('DistroReleaseQueueCustom',
                                joinColumn='distroreleasequeue')
 
+    def addSource(self, spr):
+        """See IDistroReleaseQueue."""
+        return DistroReleaseQueueSource(distroreleasequeue=self.id,
+                                        sourcepackagerelease=spr.id)
+
+    def addBuild(self, build):
+        """See IDistroReleaseQueue."""
+        return DistroReleaseQueueBuild(distroreleasequeue=self.id,
+                                       build=build.id)
+
+    def addCustom(self, library_file, custom_type):
+        """See IDistroReleaseQueue."""
+        return DistroReleaseQueueCustom(distroreleasequeue=self.id,
+                                        libraryfilealias=library_file.id,
+                                        customformat=custom_type)
+
+
 class DistroReleaseQueueBuild(SQLBase):
     """A Queue item's related builds (for Lucille)."""
     implements(IDistroReleaseQueueBuild)
@@ -69,7 +86,7 @@ class DistroReleaseQueueSource(SQLBase):
         foreignKey='SourcePackageRelease'
         )
 
-    
+
 class DistroReleaseQueueCustom(SQLBase):
     """A Queue item's related custom format uploads."""
     implements(IDistroReleaseQueueCustom)
@@ -86,4 +103,3 @@ class DistroReleaseQueueCustom(SQLBase):
     libraryfilealias = ForeignKey(dbName='libraryfilealias',
                                   foreignKey="LibraryFileAlias",
                                   notNull=True)
-    
