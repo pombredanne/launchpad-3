@@ -22,9 +22,11 @@
 __metaclass__ = type
 
 from cStringIO import StringIO
+import re
 import logging
 import datetime
 import pytz
+import urlparse
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
@@ -218,7 +220,7 @@ class Bug:
         if self.bug_status == 'ASSIGNED':
             bugtask.status = BugTaskStatus.ACCEPTED
         elif self.bug_status == 'PENDINGUPLOAD':
-            bugtask.status = BugTaskStatus.PENDING
+            bugtask.status = BugTaskStatus.PENDINGUPLOAD
         elif self.bug_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
             # depends on the resolution:
             if self.resolution == 'FIXED':
@@ -310,6 +312,16 @@ class Bugzilla:
             'binarypackagename': binpkg
             }
 
+    _bug_re = re.compile('bug\s*#?\s*(?P<id>\d+)', re.IGNORECASE)
+    def replaceBugRef(self, match):
+        # XXX: 20051024 jamesh
+        # this is where bug number rewriting would be plugged in
+        bug_id = int(match.group('id'))
+        url = urlparse.urljoin(self.bugtracker.baseurl,
+                               'show_bug.cgi?id=%d' % bug_id)
+        return '%s [%s]' % (match.group(0), url)
+
+
     def handleBug(self, bug_id):
         """Maybe import a single bug.
 
@@ -334,6 +346,10 @@ class Bugzilla:
         # create a message for the initial comment:
         msgset = getUtility(IMessageSet)
         who, when, text = comments.pop(0)
+        text = self._bug_re.sub(self.replaceBugRef, text)
+        # the initial comment can't be empty
+        if not text.strip():
+            text = '<empty comment>'
         msg = msgset.fromText(bug.short_desc, text, self.person(who), when)
 
         # create the bug
@@ -350,10 +366,11 @@ class Bugzilla:
         # add remaining comments, and add CVEs found in all text
         lp_bug.findCvesInText(text)
         for (who, when, text) in comments:
-             msg = msgset.fromText(msg.followup_title, text,
-                                   self.person(who), when)
-             lp_bug.linkMessage(msg)
-             lp_bug.findCvesInText(text)
+            text = self._bug_re.sub(self.replaceBugRef, text)
+            msg = msgset.fromText(msg.followup_title, text,
+                                  self.person(who), when)
+            lp_bug.linkMessage(msg)
+            lp_bug.findCvesInText(text)
 
         # subscribe QA contact and CC's
         if bug.qa_contact:
@@ -420,6 +437,8 @@ class Bugzilla:
             try:
                 trans.begin()
                 self.handleBug(bug_id)
+            except (SystemExit, KeyboardInterrupt):
+                raise
             except:
                 logger.exception('Could not import Bugzilla bug #%d', bug_id)
                 trans.abort()

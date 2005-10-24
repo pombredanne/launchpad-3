@@ -13,8 +13,6 @@ from zope.component import getUtility
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
-from canonical.launchpad.helpers import setupInteraction
-from canonical.launchpad.interfaces import IPersonSet
 
 from canonical.launchpad.scripts import bugzilla
 
@@ -32,7 +30,6 @@ def make_connection(options):
 
     return MySQLdb.connect(**kws)
         
-
 def main(argv):
     parser = optparse.OptionParser(
         description="This script imports bugs from a Bugzilla into Launchpad.")
@@ -70,10 +67,6 @@ def main(argv):
 
     ztm = initZopeless()
     execute_zcml_for_scripts()
-
-    # XXX: what user should this run as?
-    person = getUtility(IPersonSet).getByName('name12')
-    setupInteraction(person)
 
     db = make_connection(options)
     bz = bugzilla.Bugzilla(db)
