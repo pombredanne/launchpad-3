@@ -415,7 +415,8 @@ class SourcePackageReleaseHandler:
         directory = os.path.join(self.archiveroot, "pool",
                                  poolify(sp_name, sp_component))
         try:
-            dsc_name, dsc_path = get_dsc_path(sp_name, sp_version, directory)
+            dsc_name, dsc_path = get_dsc_path(sp_name, sp_version,
+                                              sp_component, directory)
         except PoolFileNotFound:
             # Aah well, no source package in archive either.
             return None

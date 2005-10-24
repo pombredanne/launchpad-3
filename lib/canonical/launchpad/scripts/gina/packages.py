@@ -67,33 +67,44 @@ def stripseq(seq):
     return [s.strip() for s in seq]
 
 
-def get_dsc_path(name, version, directory):
+def get_dsc_path(name, version, component, root):
     # Note that this is also used in handlers.py
+
     version = re.sub("^\d+:", "", version)
     filename = "%s_%s.dsc" % (name, version)
-    fullpath = os.path.join(directory, filename)
-    if not os.path.exists(fullpath):
-        # If we didn't find this file in the archive, things are
-        # pretty bad, so stop processing immediately
-        raise PoolFileNotFound("File %s not in archive (%s)" % 
-                               (filename, fullpath))
-    return filename, fullpath
+    pool_root = os.path.join(root, "pool")
+    # We do a first attempt using the obvious directory name, composed
+    # with the component. However, this may fail if a binary is being
+    # published in another component.
+    pool_dir = poolify(name, component)
+    fullpath = os.path.join(pool_root, pool_dir, filename)
+    if os.path.exists(fullpath):
+        return filename, fullpath
+
+    # Do a second pass, scrubbing through all components in the pool.
+    for component in os.listdir(pool_root):
+        if not os.path.isdir(os.path.join(pool_root, component)):
+            continue
+        pool_dir = poolify(name, component)
+        fullpath = os.path.join(pool_root, pool_dir, filename)
+        if os.path.exists(fullpath):
+            return filename, fullpath
+
+    # Couldn't find the file anywhere -- too bad.
+    raise PoolFileNotFound("File %s not in archive" % filename)
 
 
-def read_dsc(package, version, directory, package_root):
+def read_dsc(package, version, component, package_root):
     urgency = None
 
     dsc_name, dsc_path = get_dsc_path(package, version,
-        os.path.join(package_root, directory))
-    dsc = open(dsc_path).read().strip()
-
+                                      component, package_root)
     call("dpkg-source -sn -x %s" % dsc_path)
 
     version = re.sub("^\d+:", "", version)
     version = re.sub("-[^-]+$", "", version)
     filename = "%s-%s" % (package, version)
     fullpath = os.path.join(filename, "debian", "changelog")
-
     changelog = None
     if os.path.exists(fullpath):
         clfile = open(fullpath)
@@ -107,7 +118,6 @@ def read_dsc(package, version, directory, package_root):
         # parse (for some reason). Need to investigate why.
         changelog = parse_changelog(clfile)
         clfile.close()
-
     if not changelog:
         # This also catches the result of parse_changelog above
         log.warn("No changelog file found for %s in %s" % (package, filename))
@@ -123,6 +133,9 @@ def read_dsc(package, version, directory, package_root):
     else:
         log.warn("No license file found for %s in %s" % (package, filename))
         licence = None
+
+    dsc = open(dsc_path).read().strip()
+
     return dsc, urgency, changelog, licence
 
 
@@ -329,6 +342,16 @@ class SourcePackageData(AbstractPackageData):
                 self.binaries = stripseq(v.split(","))
             elif k == 'Section':
                 self.section = parse_section(v)
+            elif k == 'Urgency':
+                urgency = v
+                # This is to handle cases like:
+                #   - debget: 'high (actually works)
+                #   - lxtools: 'low, closes=90239'
+                if " " in urgency:
+                    urgency = urgency.split()[0]
+                if "," in urgency:
+                    urgency = urgency.split(",")[0]
+                self.urgency = urgency
             elif k == 'Maintainer':
                 displayname, emailaddress = parse_person(v)
                 try:
@@ -358,9 +381,8 @@ class SourcePackageData(AbstractPackageData):
         If successful processing of the package occurs, this method
         sets the changelog, urgency and licence attributes.
         """
-        ret = read_dsc(self.package, self.version, self.directory, 
+        ret = read_dsc(self.package, self.version, self.component,
                        package_root)
-
         # We don't use the licence here at all
         dsc, urgency, changelog, dummy = ret
 
@@ -539,17 +561,11 @@ class BinaryPackageData(AbstractPackageData):
                       os.path.basename(fullpath))
             self.shlibs = open(shlibfile).read().strip()
 
-        # XXX: using self.component here is wrong. What we need here is
-        # a locate_source_package_in_pool() function that finds it and
-        # returns it.
-        directory = os.path.join("pool",
-            poolify(self.source, self.component))
-
         # XXX: we could probably refactor read_dsc into three parts, one
         # that unpacked the file and two consumers that read specific
         # data from it.
         ret = read_dsc(self.source, self.source_version,
-                       directory, package_root)
+                       self.component, package_root)
         dummy, dummy, dummy, licence = ret
         self.licence = encoding.guess(licence)
 
@@ -574,7 +590,7 @@ class BinaryPackageData(AbstractPackageData):
     def ensure_complete(self, kdb):
         if self.section is None:
             self.section = 'misc'
-            log.warn("Binary package %s lacks a section... assumed %r" %
+            log.warn("Binary package %s lacks a section, assumed %r" %
                      (self.package, self.section))
 
         if self.priority is None:
