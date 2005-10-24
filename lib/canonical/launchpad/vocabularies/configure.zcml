@@ -91,6 +91,11 @@
     />
 
   <vocabulary
+    name="DistributionReleaseStatus"
+    factory="canonical.launchpad.vocabularies.DistributionReleaseStatusVocabulary"
+    />
+
+  <vocabulary
     name="FilteredDistroRelease"
     factory="canonical.launchpad.vocabularies.FilteredDistroReleaseVocabulary"
     />
@@ -273,6 +278,11 @@
   <vocabulary
     name="Processor"
     factory="canonical.launchpad.vocabularies.ProcessorVocabulary"
+    />
+
+  <vocabulary
+    name="ProcessorFamily"
+    factory="canonical.launchpad.vocabularies.ProcessorFamilyVocabulary"
     />
 
   <!-- Define the widget used by Choice fields that use huge vocabularies -->

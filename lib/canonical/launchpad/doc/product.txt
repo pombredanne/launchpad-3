@@ -7,8 +7,10 @@ software. It can be part of a Project or it can be standalone.
 
 >>> from zope.component import getUtility
 >>> from zope.interface.verify import verifyObject
->>> from canonical.launchpad.interfaces import IProductSet, IProduct
+>>> from canonical.launchpad.interfaces import (IProductSet, IProduct,
+...                                             NotFoundError)
 >>> from canonical.launchpad.ftests import login
+>>> from canonical.database.sqlbase import flush_database_updates
 
 Let's log in as Foo Bar to ensure we have the privileges to do what we're
 going to demonstrate.
@@ -56,4 +58,15 @@ primary_translatable is nonexistent:
 >>> print a52dec.primary_translatable
 None
 
+Now, to test the active flag. If we disabled a product:
+
+>>> a52dec.active = False
+>>> flush_database_updates()
+
+It should no longer be retreivable via ProductSet's __getitem__:
+
+>>> try:
+...   productset[a52dec.name]
+... except NotFoundError:
+...   pass
 

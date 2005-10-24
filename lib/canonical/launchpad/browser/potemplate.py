@@ -55,6 +55,8 @@ class POTemplateFacets(StandardLaunchpadFacets):
 
     defaultlink = 'translations'
 
+    enable_only = ['overview', 'translations']
+
     def _parent_url(self):
         """Return the URL of the thing this PO template is attached to."""
 
@@ -74,12 +76,6 @@ class POTemplateFacets(StandardLaunchpadFacets):
         target = ''
         text = 'Translations'
         return Link(target, text)
-
-    def bugs(self):
-        return Link("", "Bugs", enabled=False)
-
-    def calendar(self):
-        return Link("", "Calendar", enabled=False)
 
 
 class POTemplateAppMenus(POFileAppMenus):

@@ -7,6 +7,7 @@ __all__ = [
     'DistroArchReleaseContextMenu',
     'DistroArchReleaseFacets',
     'DistroArchReleaseView',
+    'DistroArchReleaseAddView',
     'DistroArchReleaseBinariesView',
     ]
 
@@ -17,6 +18,7 @@ from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, ContextMenu, Link,
     GetitemNavigation)
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.addview import SQLObjectAddView
 
 from canonical.launchpad.interfaces import IDistroArchRelease
 
@@ -83,4 +85,24 @@ class DistroArchReleaseBinariesView:
                       size = batch_size)
 
         return BatchNavigator(batch = batch, request = self.request)
+
+
+class DistroArchReleaseAddView(SQLObjectAddView):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self._nextURL = '.'
+        SQLObjectAddView.__init__(self, context, request)
+
+    def create(self, architecturetag, processorfamily, official, owner):
+        """Create a new Port."""
+        dar = self.context.newArch(architecturetag, processorfamily,
+            official, owner)
+        self._nextURL = canonical_url(dar)
+        return dar
+
+    def nextURL(self):
+        return self._nextURL
+
 

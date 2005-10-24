@@ -82,7 +82,8 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     usedfor = IDistroRelease
     facet = 'overview'
-    links = ['search', 'support', 'packaging', 'edit', 'reassign', ]
+    links = ['search', 'support', 'packaging', 'edit', 'reassign',
+             'addport', 'admin']
 
     def edit(self):
         text = 'Edit Details'
@@ -105,6 +106,16 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
     def search(self):
         text = 'Search Packages'
         return Link('+search', text, icon='search')
+
+    @enabled_with_permission('launchpad.Admin')
+    def addport(self):
+        text = 'Add Port'
+        return Link('+addport', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def admin(self):
+        text = 'Administer'
+        return Link('+admin', text, icon='edit')
 
 
 class DistroReleaseBugsMenu(ApplicationMenu):

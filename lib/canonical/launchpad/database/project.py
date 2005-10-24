@@ -107,7 +107,7 @@ class ProjectSet:
         return iter(Project.selectBy(active=True))
 
     def __getitem__(self, name):
-        project = Project.selectOneBy(name=name)
+        project = Project.selectOneBy(name=name, active=True)
         if project is None:
             raise NotFoundError(name)
         return project

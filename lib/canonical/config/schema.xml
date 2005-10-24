@@ -341,10 +341,19 @@
     </sectiontype>
 
     <sectiontype name="cveupdater">
-        <key name="dbuser" datatype="string" default="karma">
+        <key name="dbuser" datatype="string" default="cve">
             <description>
                 The database user wich will be used to update the CVE
                 database.
+            </description>
+        </key>
+    </sectiontype>
+
+    <sectiontype name="tickettracker">
+        <key name="dbuser" datatype="string" default="tickettracker">
+            <description>
+                The database user wich will be used to send reminders
+                regarding answered tickets.
             </description>
         </key>
     </sectiontype>
@@ -464,6 +473,7 @@
         <section name="*" type="karmacacheupdater"
             attribute="karmacacheupdater" />
         <section name="*" type="cveupdater" attribute="cveupdater" />
+        <section name="*" type="tickettracker" attribute="tickettracker" />
         <section name="*" type="buildsequencer" attribute="buildsequencer" />
         <section name="*" type="uploader" attribute="uploader" />
     </sectiontype>

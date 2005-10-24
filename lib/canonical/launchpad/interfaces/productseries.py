@@ -9,6 +9,7 @@ __all__ = [
     'IProductSeriesSource',
     'IProductSeriesSourceAdmin',
     'IProductSeriesSet',
+    'IProductSeriesSourceSet',
     ]
 
 from zope.schema import  Choice, Datetime, Int, Text, TextLine
@@ -182,37 +183,22 @@ class IProductSeriesSourceAdmin(Interface):
 
     def enableAutoSync():
         """enable this series RCS for automatic baz syncronisation"""
-    
+
 
 class IProductSeriesSet(Interface):
-    """A set of ProductSeries objects. Note that it can be restricted by
-    initialising it with a product, in which case it iterates over only the
-    Product Release Series' for that Product."""
+    """A set of ProductSeries objects for a specific product."""
 
     def __iter__():
         """Return an interator over the ProductSeries', constrained by
-        self.product if the ProductSeries was initialised that way."""
+        self.product."""
 
     def __getitem__(name):
         """Return a specific ProductSeries, by name, constrained by the
-        self.product. For __getitem__, a self.product is absolutely
-        required, as ProductSeries names are only unique within the Product
-        they cover."""
+        self.product."""
 
-    def _querystr(ready=None, text=None, forimport=None, importstatus=None):
-        """Return a querystring and clauseTables for use in a search or a
-        get or a query. Arguments:
-          ready - boolean indicator of whether or not to limit the search
-                  to products and projects that have been reviewed and are
-                  active.
-          text - text to search for in the product and project titles and
-                 descriptions
-          forimport - whether or not to limit the search to series which
-                      have RCS data on file
-          importstatus - limit the list to series which have the given
-                         import status.
-        """
 
+class IProductSeriesSourceSet(Interface):
+    """The set of ProductSeries with a view to source imports"""
     def search(ready=None, text=None, forimport=None, importstatus=None,
                start=None, length=None):
         """return a list of series matching the arguments, which are passed

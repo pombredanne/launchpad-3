@@ -8,7 +8,7 @@ __all__ = ['BazaarApplicationView', 'BazaarApplicationNavigation']
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IProductSeriesSet, IBazaarApplication, IProductSet)
+    IProductSeriesSourceSet, IBazaarApplication, IProductSet)
 from canonical.lp.dbschema import ImportStatus
 from canonical.launchpad.webapp import Navigation, stepto
 import canonical.launchpad.layers
@@ -19,7 +19,7 @@ class BazaarApplicationView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.seriesset = getUtility(IProductSeriesSet)
+        self.seriesset = getUtility(IProductSeriesSourceSet)
 
     def import_count(self):
         return self.seriesset.importcount()
@@ -68,5 +68,5 @@ class BazaarApplicationNavigation(Navigation):
     @stepto('series')
     def series(self):
         # DEPRECATED
-        return getUtility(IProductSeriesSet)
+        return getUtility(IProductSeriesSourceSet)
 

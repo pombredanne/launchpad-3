@@ -19,7 +19,8 @@ from sqlobject import (
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus)
+    PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus,
+    DistroReleaseQueueStatus)
 
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
@@ -51,6 +52,7 @@ from canonical.launchpad.database.component import Component
 from canonical.launchpad.database.section import Section
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
+from canonical.launchpad.database.queue import DistroReleaseQueue
 from canonical.launchpad.helpers import shortlist
 
 
@@ -513,6 +515,20 @@ class DistroRelease(SQLBase):
         return [DistroReleaseBinaryPackage(
             distrorelease=self,
             binarypackagename=drpc.binarypackagename) for drpc in drpcaches]
+
+    def newArch(self, architecturetag, processorfamily, official, owner):
+        """See IDistroRelease."""
+        dar = DistroArchRelease(architecturetag=architecturetag,
+            processorfamily=processorfamily, official=official,
+            distrorelease=self, owner=owner)
+        return dar
+        
+    def createQueueEntry(self, pocket):
+        """See IDistroRelease."""
+
+        return DistroReleaseQueue(distrorelease=self.id,
+                                  pocket=pocket,
+                                  status=DistroReleaseQueueStatus.ACCEPTED)
 
 
 class DistroReleaseSet:

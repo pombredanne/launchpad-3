@@ -170,18 +170,18 @@ class SourcePackageRelease(SQLBase):
                                         filetype=determined_filetype,
                                         libraryfile=file.id)
 
-    def createBuild(self, distroarchrelease, processor=None):
+    def createBuild(self, distroarchrelease, processor=None,
+                    status=BuildStatus.NEEDSBUILD):
         """See ISourcePackageRelease."""
         # Guess a processor if one is not provided
         if processor is None:
             pf = distroarchrelease.processorfamily
             # We guess at the first processor in the family
             processor = shortlist(pf.processors)[0]
-            
+
         return Build(distroarchrelease=distroarchrelease.id,
                      sourcepackagerelease=self.id,
-                     processor=processor.id,
-                     buildstate=BuildStatus.NEEDSBUILD)
+                     processor=processor.id, buildstate=status)
 
 
 class SourcePackageReleaseSet:

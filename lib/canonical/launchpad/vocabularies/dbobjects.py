@@ -29,6 +29,7 @@ __all__ = [
     'PersonAccountToMergeVocabulary',
     'POTemplateNameVocabulary',
     'ProcessorVocabulary',
+    'ProcessorFamilyVocabulary',
     'ProductReleaseVocabulary',
     'ProductSeriesVocabulary',
     'ProductVocabulary',
@@ -59,7 +60,8 @@ from canonical.launchpad.database import (
     SourcePackageName, BinaryPackageRelease, BugWatch, Sprint,
     BinaryPackageName, Language, Milestone, Product, Project, ProductRelease,
     ProductSeries, TranslationGroup, BugTracker, POTemplateName, Schema,
-    Bounty, Country, Specification, Bug, Processor, PersonSet)
+    Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
+    PersonSet)
 from canonical.launchpad.interfaces import (
     ILaunchBag, ITeam, ITeamMembershipSubset, IPersonSet, IEmailAddressSet)
 
@@ -947,6 +949,14 @@ class ProcessorVocabulary(NamedSQLObjectVocabulary):
                 )
             for processor in processors:
                 yield self._toTerm(processor)
+
+
+class ProcessorFamilyVocabulary(NamedSQLObjectVocabulary):
+    _table = ProcessorFamily
+    _orderBy = 'name'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.title)
 
 
 class SchemaVocabulary(NamedSQLObjectVocabulary):

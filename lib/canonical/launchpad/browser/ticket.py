@@ -22,8 +22,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link, canonical_url,
-    enabled_with_permission, GetitemNavigation)
+    ContextMenu, Link, canonical_url, enabled_with_permission,
+    GetitemNavigation)
 
 
 class TicketSetNavigation(GetitemNavigation):

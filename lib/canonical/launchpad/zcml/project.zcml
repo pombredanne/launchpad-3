@@ -171,6 +171,7 @@
         name="+review"
         for="canonical.launchpad.interfaces.IProject"
         schema="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.ProjectEditView"
         facet="overview"
         label="Review Upstream Project Details:"
         fields="name displayname title summary description homepageurl

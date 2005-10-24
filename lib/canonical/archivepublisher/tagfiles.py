@@ -65,7 +65,7 @@ class TagFileParseError(Exception):
 re_single_line_field = re.compile(r"^(\S*)\s*:\s*(.*)");
 re_multi_line_field = re.compile(r"^\s(.*)");
 
-def parse_tagfile(filename, dsc_whitespace_rules=0):
+def parse_tagfile(filename, dsc_whitespace_rules=0, allow_unsigned=False):
     """Parses a tag file and returns a dictionary where each field is a
     key.  The mandatory first argument is the filename of the tag file.
 
@@ -107,6 +107,11 @@ def parse_tagfile(filename, dsc_whitespace_rules=0):
     while index < num_of_lines:
         index += 1
         line = indexed_lines[index]
+
+        # If the line is empty and we're not strictly enforcing whitespace
+        # rules, then just continue.
+        # If we're enforcing the rules, then check those rules, and maybe
+        # complain.
         if line == "":
             if dsc_whitespace_rules:
                 index += 1
@@ -121,6 +126,9 @@ def parse_tagfile(filename, dsc_whitespace_rules=0):
                 continue
         if line.startswith("-----BEGIN PGP SIGNATURE"):
             break
+
+        # If we're at the start of a signed section, then consume the signature
+        # information, and remember that we're inside the signed data.
         if line.startswith("-----BEGIN PGP SIGNED MESSAGE"):
             inside_signature = 1
             if dsc_whitespace_rules:
@@ -128,8 +136,9 @@ def parse_tagfile(filename, dsc_whitespace_rules=0):
                     index += 1
                     line = indexed_lines[index]
             continue
-        # If we're not inside the signed data, don't process anything
-        if not inside_signature:
+        # If we're not inside the signed data, don't process anything, unless
+        # we've decided to allow unsigned files.
+        if not (inside_signature or allow_unsigned):
             continue
         slf = re_single_line_field.match(line)
         if slf:
