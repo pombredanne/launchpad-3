@@ -52,7 +52,7 @@ class ISpecification(IHasOwner):
         default=SpecificationStatus.BRAINDUMP)
     priority = Choice(
         title=_('Priority'), vocabulary='SpecificationPriority',
-        default=SpecificationPriority.MEDIUM)
+        default=None, required=False)
     assignee = Choice(title=_('Assignee'), required=False,
         description=_("The person responsible for implementing the feature."),
         vocabulary='ValidPersonOrTeam')
@@ -90,10 +90,14 @@ class ISpecification(IHasOwner):
     # joins
     subscriptions = Attribute('The set of subscriptions to this spec.')
     sprints = Attribute('The sprints at which this spec is discussed.')
+    sprint_links = Attribute('The entries that link this spec to sprints.')
     reviews = Attribute('The set of reviews queued.')
     bugs = Attribute('Bugs related to this spec')
     dependencies = Attribute('Specs on which this spec depends.')
     blocked_specs = Attribute('Specs for which this spec is a dependency.')
+
+    def getSprintSpecification(sprintname):
+        """Get the record that links this spec to the named sprint."""
 
     # subscription-related methods
     def subscribe(person):

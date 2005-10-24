@@ -113,6 +113,10 @@ class PersonSetNavigation(Navigation):
     def breadcrumb(self):
         return 'People'
 
+    @stepto('+me')
+    def me(self):
+        return getUtility(ILaunchBag).user
+
     def traverse(self, name):
         return self.context.getByName(name)
 
@@ -242,11 +246,16 @@ class PersonSpecsMenu(ApplicationMenu):
 
     facet = 'specifications'
 
-    links = ['created', 'assigned', 'drafted', 'review', 'subscribed']
+    links = ['created', 'assigned', 'drafted', 'review', 'approver',
+             'subscribed']
 
     def created(self):
         text = 'Specifications Created'
         return Link('+createdspecs', text, icon='spec')
+
+    def approver(self):
+        text = 'Specifications to Approve'
+        return Link('+approverspecs', text, icon='spec')
 
     def assigned(self):
         text = 'Specifications Assigned'

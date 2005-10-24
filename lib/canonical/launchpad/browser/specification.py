@@ -12,20 +12,31 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, enabled_with_permission, LaunchpadView)
+    canonical_url, ContextMenu, Link, enabled_with_permission,
+    LaunchpadView, Navigation)
 
 __all__ = [
     'SpecificationContextMenu',
+    'SpecificationNavigation',
     'SpecificationView',
     'SpecificationAddView',
     'SpecificationEditView',
     ]
 
 
+class SpecificationNavigation(Navigation):
+
+    usedfor = ISpecification
+
+    def traverse(self, sprintname):
+        return self.context.getSprintSpecification(sprintname)
+
+
 class SpecificationContextMenu(ContextMenu):
 
     usedfor = ISpecification
-    links = ['edit', 'people', 'status', 'setseries', 'setdistrorelease',
+    links = ['edit', 'people', 'status', 'priority', 'setseries',
+             'setdistrorelease',
              'milestone', 'requestreview', 'doreview', 'subscription',
              'linkbug', 'unlinkbug', 'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'administer']
@@ -41,6 +52,10 @@ class SpecificationContextMenu(ContextMenu):
     def status(self):
         text = 'Change Status'
         return Link('+status', text, icon='edit')
+
+    def priority(self):
+        text = 'Change Priority'
+        return Link('+priority', text, icon='edit')
 
     def setseries(self):
         text = 'Target to Series'

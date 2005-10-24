@@ -12,12 +12,16 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
-  <div metal:fill-slot="main">
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
 
-    <div metal:use-macro="context/@@launchpad_editform/editform">
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_editform/editform">
 
     <div metal:fill-slot="extra_info" class="documentDescription">
-      Change the details of the meeting or sprint using the form below.
+      The priority should reflect the views of the coordinating team of
+      <span tal:replace="context/target/displayname">Ubuntu</span>.
     </div>
 
   </div>

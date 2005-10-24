@@ -20,6 +20,7 @@ from canonical.launchpad.interfaces import (
 
 _ = MessageIDFactory('launchpad')
 
+
 class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
     ITicketTarget):
 

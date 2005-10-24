@@ -5,9 +5,10 @@
   xmlns:lp="http://launchpad.canonical.com"
   i18n_domain="launchpad">
 
-  <!-- BugCve -->
-  <content class="canonical.launchpad.database.BugCve">
-    <allow interface="canonical.launchpad.interfaces.IBugCve" />
+  <!-- DistributionSourcePackageCache -->
+  <content class="canonical.launchpad.database.DistributionSourcePackageCache">
+    <allow
+      interface="canonical.launchpad.interfaces.IDistributionSourcePackageCache" />
   </content>
 
 </configure>

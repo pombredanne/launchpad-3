@@ -1,0 +1,37 @@
+<table width="100%">
+  <tr>
+    <td width="10px">
+      <img src="/++resource++spec" />
+    </td>
+    <td width="70%">
+      <a tal:attributes="href context/fmt:url"
+         tal:content="context/title">Spec Title Here</a>
+    </td>
+    <td class="lesser">
+      <tal:block condition="context/specurl">
+        <img src="/++resource++link" />
+        <a tal:attributes="href context/specurl">Web Page</a>
+      </tal:block>
+    </td>
+  </tr>
+  <tr class="lesser">
+    <td></td>
+    <td>
+      <span tal:content="context/status/title"
+            tal:attributes="class string:specstatus${context/status/name}"
+            >Approved</span>
+      <span tal:condition="context/priority"
+            tal:content="context/priority/title"
+            tal:attributes="class string:specpriority${context/priority/name}"
+            >High</span>
+      <i tal:condition="not: context/priority">No priority</i>
+      <tal:block condition="context/assignee">
+        <img src="/++resource++user.gif" />&nbsp;<a
+             tal:attributes="href context/assignee/fmt:url"
+             tal:content="context/assignee/browsername">Foo Bar</a>
+      </tal:block>
+    </td>
+    <td>
+    </td>
+  </tr>
+</table>

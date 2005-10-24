@@ -47,8 +47,8 @@ ALL_FTI = [
             ]),
 
     ('binarypackagerelease', [
-            ('summary', C),
-            ('description', D),
+            ('summary', B),
+            ('description', C),
             ]),
 
     ('cve', [

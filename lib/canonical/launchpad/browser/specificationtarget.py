@@ -18,6 +18,25 @@ class SpecificationTargetView:
         self.request = request
         self._plan = None
         self._dangling = None
+        self._categories = None
+        self._count = None
+        self.listing_detailed = True
+        self.listing_compact = False
+        url = self.request.getURL()
+        if '+createdspecs' in url:
+            self.view_title = 'Created by %s' % self.context.title
+        elif '+approverspecs' in url:
+            self.view_title = 'For approval by %s' % self.context.title
+        elif '+assignedspecs' in url:
+            self.view_title = 'Assigned to %s' % self.context.title
+        elif '+reviewspecs' in url:
+            self.view_title = 'For review by %s' % self.context.title
+        elif '+draftedspecs' in url:
+            self.view_title = 'Drafted by %s' % self.context.title
+        elif '+subscribedspecs' in url:
+            self.view_title = 'Subscribed by %s' % self.context.title
+        else:
+            self.view_title = ''
 
     def categories(self):
         """This organises the specifications related to this target by
@@ -39,6 +58,8 @@ class SpecificationTargetView:
          - subscribed by this person (self.context.subscriber_specs)
 
         """
+        if self._categories is not None:
+            return self._categories
         categories = {}
         if not IPerson.providedBy(self.context):
             specs = self.context.specifications
@@ -72,7 +93,20 @@ class SpecificationTargetView:
                 categories[spec.status] = category
             category['specs'].append(spec)
         categories = categories.values()
-        return sorted(categories, key=lambda a: a['status'].value)
+        self._categories = sorted(categories, key=lambda a: a['status'].value)
+        # update listing style
+        self._count = len(specs)
+        if self._count > 5:
+            self.listing_detailed = False
+            self.listing_compact = True
+        return self._categories
+
+    def count(self):
+        """Return the number of specs in this view."""
+        if self._count is not None:
+            return self._count
+        self.categories()
+        return self._count
 
     def getLatestSpecifications(self, quantity=5):
         """Return <quantity> latest specs created for this target. This
