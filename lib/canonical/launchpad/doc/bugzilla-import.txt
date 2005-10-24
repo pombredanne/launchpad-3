@@ -166,7 +166,7 @@ function will be used:
 
 Now we import bug #1 and check the results:
 
-  >>> bug = bz.handle_bug(1)
+  >>> bug = bz.handleBug(1)
   >>> bugInfo(bug)
   Title: Test bug 1
   Reporter: Sample Person
@@ -204,7 +204,7 @@ Launchpad bug to the original Bugzilla bug:
 This bug watch link is used to prevent multiple imports of the same
 bug.
 
-  >>> second_import = bz.handle_bug(1)
+  >>> second_import = bz.handleBug(1)
   >>> bug == second_import
   True
 
@@ -224,7 +224,7 @@ Bugzilla bug.
 
   >>> print getUtility(IPersonSet).getByEmail('new.user@canonical.com')
   None
-  >>> bug = bz.handle_bug(2)
+  >>> bug = bz.handleBug(2)
   >>> bugInfo(bug)
   Title: Test bug 2
   Reporter: Foo Bar
@@ -260,7 +260,7 @@ Now import an ASSIGNED bug.  Things to note about this import:
    and CVE to be established.
  * The attachment on this bug is imported
 
-  >>> bug = bz.handle_bug(3)
+  >>> bug = bz.handleBug(3)
   >>> bugInfo(bug)
   Title: Test bug 3
   Reporter: Sample Person
@@ -302,7 +302,7 @@ Now import an ASSIGNED bug.  Things to note about this import:
 
 Next we import a fixed bug:
 
-  >>> bug = bz.handle_bug(4)
+  >>> bug = bz.handleBug(4)
   >>> bugInfo(bug)
   Title: Test bug 4
   Reporter: Sample Person

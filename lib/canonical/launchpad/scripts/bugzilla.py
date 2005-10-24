@@ -24,9 +24,9 @@ import pytz
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IPersonSet, IDistributionSet, ISourcePackageSet, IBugSet,
-    IBugTrackerSet, IBugExternalRefSet, IBugAttachmentSet,
-    IMessageSet, ILibraryFileAliasSet, ICveSet, NotFoundError)
+    IPersonSet, IDistributionSet, IBugSet, IBugTrackerSet,
+    IBugExternalRefSet, IBugAttachmentSet, IMessageSet,
+    ILibraryFileAliasSet, ICveSet, NotFoundError)
 from canonical.lp.dbschema import (
     BugTaskSeverity, BugTaskStatus, BugTaskPriority, BugAttachmentType)
 
@@ -116,6 +116,27 @@ class BugzillaBackend:
                      mimetype, ispatch, filename, thedata,
                      submitter_id) in self.cursor.fetchall()]
 
+    def findBugs(self, product=[], component=[], status=[]):
+        joins = []
+        conditions = []
+        if product:
+            joins.append('INNER JOIN products ON bugs.product_id = products.id')
+            conditions.append('products.name IN (%s)' %
+                ', '.join([self.conn.escape(p) for p in product]))
+        if component:
+            joins.append('INNER JOIN components ON bugs.component_id = components.id')
+            conditions.append('components.name IN (%s)' %
+                ', '.join([self.conn.escape(c) for c in component]))
+        if status:
+            conditions.append('bugs.bug_status IN (%s)' %
+                ', '.join([self.conn.escape(s) for s in status]))
+        if conditions:
+            conditions = 'WHERE %s' % ' AND '.join(conditions)
+        else:
+            conditions = ''
+        self.cursor.execute('SELECT bug_id FROM bugs %s %s ORDER BY bug_id' %
+                            (' '.join(joins), conditions))
+        return [bug_id for (bug_id,) in self.cursor.fetchall()]
 
 class Bug:
     """Representation of a Bugzilla Bug"""
@@ -153,7 +174,7 @@ class Bug:
         self._attachments = self.backend.getBugAttachments(self.bug_id)
         return self._attachments
 
-    def map_severity(self, bugtask):
+    def mapSeverity(self, bugtask):
         bugtask.severity = {
             'blocker': BugTaskSeverity.CRITICAL,
             'critical': BugTaskSeverity.CRITICAL,
@@ -164,7 +185,7 @@ class Bug:
             'enhancement': BugTaskSeverity.WISHLIST
             }.get(self.bug_severity, BugTaskSeverity.NORMAL)
 
-    def map_priority(self, bugtask):
+    def mapPriority(self, bugtask):
         bugtask.priority = {
             'P1': BugTaskPriority.HIGH,
             'P2': BugTaskPriority.MEDIUM,
@@ -173,7 +194,7 @@ class Bug:
             'P5': BugTaskPriority.LOW
             }.get(self.priority, BugTaskPriority.MEDIUM)
 
-    def map_status(self, bugtask):
+    def mapStatus(self, bugtask):
         if self.bug_status == 'ASSIGNED':
             bugtask.status = BugTaskStatus.ACCEPTED
         elif self.bug_status == 'PENDINGUPLOAD':
@@ -249,7 +270,7 @@ class Bugzilla:
 
         return person
 
-    def get_lp_bugtarget(self, bug):
+    def getLaunchpadBugtarget(self, bug):
         """Returns a dictionary of arguments to createBug() that correspond
         to the given bugzilla bug.
         """
@@ -257,9 +278,8 @@ class Bugzilla:
         assert bug.product == 'Ubuntu'
         
         ubuntu = getUtility(IDistributionSet)['ubuntu']
-        srcpkgset = getUtility(ISourcePackageSet)
         try:
-            srcpkg, binpkg = srcpkgset.getPackageNames(bug.component)
+            srcpkg, binpkg = ubuntu.getPackageNames(bug.component)
         except ValueError:
             srcpkg = binpkg = None
 
@@ -269,7 +289,12 @@ class Bugzilla:
             'binarypackagename': binpkg
             }
 
-    def handle_bug(self, bug_id):
+    def handleBug(self, bug_id):
+        """Maybe import a single bug.
+
+        If the bug has already been imported (detected by checking for
+        a bug watch), it is skipped.
+        """
         logger.info('Handling Bugzilla bug %d', bug_id)
         
         # is there a bug watch on the bug?
@@ -291,7 +316,7 @@ class Bugzilla:
         msg = msgset.fromText(bug.short_desc, text, self.person(who), when)
 
         # create the bug
-        target = self.get_lp_bugtarget(bug)
+        target = self.getLaunchpadBugtarget(bug)
         lp_bug = self.bugset.createBug(msg=msg,
                                        datecreated=bug.creation_ts,
                                        title=bug.short_desc,
@@ -326,9 +351,9 @@ class Bugzilla:
         task.datecreated = bug.creation_ts
         task.assignee = self.person(bug.assigned_to)
         task.statusexplanation = bug.status_whiteboard
-        bug.map_severity(task)
-        bug.map_priority(task)
-        bug.map_status(task)
+        bug.mapSeverity(task)
+        bug.mapPriority(task)
+        bug.mapStatus(task)
 
         # XXX: translate milestone linkage
 
@@ -367,3 +392,15 @@ class Bugzilla:
                 title=description, message=msg)
 
         return lp_bug
+
+    def importBugs(trans, **kws):
+        bugs = self.backend.findBugs(**kws)
+        for bug_id in bugs:
+            try:
+                trans.begin()
+                self.handleBug(bug_id)
+            except:
+                logger.exception('Could not import Bugzilla bug #%d', bug_id)
+                trans.abort()
+            else:
+                trans.commit()
