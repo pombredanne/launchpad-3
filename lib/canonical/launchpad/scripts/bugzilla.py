@@ -1,3 +1,7 @@
+# Copyright 2005 Canonical Ltd.  All rights reserved.
+
+"""Bugzilla to Launchpad import logic"""
+
 
 # Bugzilla schema:
 #  http://lxr.mozilla.org/mozilla/source/webtools/bugzilla/Bugzilla/DB/Schema.pm
@@ -45,9 +49,16 @@ class BugzillaBackend:
     The main purpose of this is to make it possible to test the rest
     of the import code without access to a MySQL database.
     """
-    def __init__(self, conn):
+    def __init__(self, conn, charset='UTF-8'):
         self.conn = conn
         self.cursor = conn.cursor()
+        self.charset = charset
+
+    def _decode(self, s):
+        if s is not None:
+            return s.decode(self.charset, 'replace')
+        else:
+            return None
 
     def lookupUser(self, user_id):
         """Look up information about a particular Bugzilla user ID"""
@@ -57,6 +68,7 @@ class BugzillaBackend:
         if self.cursor.rowcount != 1:
             raise ValueError('could not look up user %d' % user_id)
         (login_name, realname) = self.cursor.fetchone()
+        realname = self._decode(realname)
         return (login_name, realname)
 
     def getBugInfo(self, bug_id):
@@ -79,7 +91,14 @@ class BugzillaBackend:
          target_milestone, qa_contact, status_whiteboard, keywords,
          alias) = self.cursor.fetchone()
 
+        bug_file_loc = self._decode(bug_file_loc)
         creation_ts = _add_tz(creation_ts)
+        product = self._decode(product)
+        version = self._decode(version)
+        component = self._decode(component)
+        status_whiteboard = self._decode(status_whiteboard)
+        keywords = self._decode(keywords)
+        alias = self._decode(alias)
 
         return (bug_id, assigned_to, bug_file_loc, bug_severity,
                 bug_status, creation_ts, short_desc, op_sys, priority,
@@ -99,7 +118,7 @@ class BugzillaBackend:
                             '  FROM longdescs '
                             '  WHERE bug_id = %d '
                             '  ORDER BY bug_when' % bug_id)
-        return [(who, _add_tz(when), thetext)
+        return [(who, _add_tz(when), self._decode(thetext))
                  for (who, when, thetext) in self.cursor.fetchall()]
 
     def getBugAttachments(self, bug_id):
@@ -110,8 +129,9 @@ class BugzillaBackend:
                             '  FROM attachments '
                             '  WHERE bug_id = %d '
                             '  ORDER BY attach_id' % bug_id)
-        return [(attach_id, _add_tz(creation_ts), description, mimetype,
-                 ispatch, filename, thedata, submitter_id)
+        return [(attach_id, _add_tz(creation_ts),
+                 self._decode(description), mimetype,
+                 ispatch, self._decode(filename), thedata, submitter_id)
                 for (attach_id, creation_ts, description,
                      mimetype, ispatch, filename, thedata,
                      submitter_id) in self.cursor.fetchall()]
@@ -279,7 +299,8 @@ class Bugzilla:
         
         ubuntu = getUtility(IDistributionSet)['ubuntu']
         try:
-            srcpkg, binpkg = ubuntu.getPackageNames(bug.component)
+            srcpkg, binpkg = ubuntu.getPackageNames(
+                bug.component.encode('ASCII'))
         except ValueError:
             srcpkg = binpkg = None
 
@@ -393,7 +414,7 @@ class Bugzilla:
 
         return lp_bug
 
-    def importBugs(trans, **kws):
+    def importBugs(self, trans, **kws):
         bugs = self.backend.findBugs(**kws)
         for bug_id in bugs:
             try:
