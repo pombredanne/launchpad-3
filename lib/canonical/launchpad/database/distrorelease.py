@@ -96,8 +96,8 @@ class DistroRelease(SQLBase):
 
     specifications = MultipleJoin('Specification',
         joinColumn='distrorelease', orderBy='-datecreated')
-    package_caches = MultipleJoin('DistroReleasePackageCache',
-        joinColumn='distrorelease', orderBy='id')
+    binary_package_caches = MultipleJoin('DistroReleasePackageCache',
+        joinColumn='distrorelease', orderBy='name')
 
     # XXX: dsilvers: 20051013: At some point, get rid of components/sections
     # from above and rename these and fix up the uploader and queue stuff.
@@ -424,7 +424,7 @@ class DistroRelease(SQLBase):
                 'BinaryPackageRelease']))
 
         # remove the cache entries for binary packages we no longer want
-        for cache in self.package_caches:
+        for cache in self.binary_package_caches:
             if cache.binarypackagename not in bpns:
                 cache.destroySelf()
  

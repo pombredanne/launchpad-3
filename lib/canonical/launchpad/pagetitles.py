@@ -314,7 +314,7 @@ distroarchrelease_index = ContextTitle('%s overview')
 
 distroarchrelease_builds = ContextTitle('Builds for %s')
 
-distroarchrelease_pkgsearch = 'Binary Package Search'
+distroarchrelease_search = 'Binary Package Search'
 
 distroarchreleasebinarypackage_index = ContextTitle('%s')
 

@@ -101,6 +101,9 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
     specifications = Attribute("The specifications targeted to this "
         "product series.")
 
+    binary_package_caches = Attribute("All of the cached binary package "
+        "records for this distrorelease.")
+
     # other properties
     previous_releases = Attribute("Previous distroreleases from the same "
         "distribution.")

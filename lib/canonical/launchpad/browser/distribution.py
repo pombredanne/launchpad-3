@@ -96,7 +96,8 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'overview'
-    links = ['search', 'milestone_add', 'members', 'edit', 'reassign']
+    links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
+             'reassign']
 
     def edit(self):
         text = 'Edit Details'
@@ -106,6 +107,10 @@ class DistributionOverviewMenu(ApplicationMenu):
     def reassign(self):
         text = 'Change Admin'
         return Link('+reassign', text, icon='edit')
+
+    def allpkgs(self):
+        text = 'List All Packages'
+        return Link('+allpackages', text, icon='info')
 
     def members(self):
         text = 'Change Members'
@@ -205,8 +210,9 @@ class DistributionView(BuildRecordsView):
         self.context = context
         self.request = request
         form = self.request.form
-        self.text = form.get('text')
+        self.text = form.get('text', None)
         self.matches = 0
+        self.detailed = True
         self._results = None
 
         self.searchrequested = False
@@ -221,6 +227,8 @@ class DistributionView(BuildRecordsView):
         if self._results is None:
             self._results = self.context.searchSourcePackages(self.text)
         self.matches = len(self._results)
+        if self.matches > 5:
+            self.detailed = False
         return self._results
 
 

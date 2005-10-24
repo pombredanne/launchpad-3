@@ -15,5 +15,5 @@ ALTER TABLE SprintSpecification ALTER COLUMN needs_discussion SET DEFAULT TRUE;
 ALTER TABLE Specification ALTER COLUMN priority DROP NOT NULL;
 UPDATE Specification SET priority = NULL WHERE priority = 50;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (25,88,0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (25,45,0);
 

@@ -19,6 +19,7 @@ class SpecificationTargetView:
         self._plan = None
         self._dangling = None
         self._categories = None
+        self._count = None
         self.listing_detailed = True
         self.listing_compact = False
         url = self.request.getURL()
@@ -35,7 +36,7 @@ class SpecificationTargetView:
         elif '+subscribedspecs' in url:
             self.view_title = 'Subscribed by %s' % self.context.title
         else:
-            self.view_title = 'All Specs for %s' % self.context.title
+            self.view_title = ''
 
     def categories(self):
         """This organises the specifications related to this target by
@@ -94,10 +95,18 @@ class SpecificationTargetView:
         categories = categories.values()
         self._categories = sorted(categories, key=lambda a: a['status'].value)
         # update listing style
-        if len(specs) > 5:
+        self._count = len(specs)
+        if self._count > 5:
             self.listing_detailed = False
             self.listing_compact = True
         return self._categories
+
+    def count(self):
+        """Return the number of specs in this view."""
+        if self._count is not None:
+            return self._count
+        self.categories()
+        return self._count
 
     def getLatestSpecifications(self, quantity=5):
         """Return <quantity> latest specs created for this target. This

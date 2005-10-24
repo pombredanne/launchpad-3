@@ -40,6 +40,7 @@
     <include file="datetime.zcml" />
     <include file="distribution.zcml" />
     <include file="distributionsourcepackage.zcml" />
+    <include file="distributionsourcepackagecache.zcml" />
     <include file="distributionsourcepackagerelease.zcml" />
     <include file="distrocomponentuploader.zcml" />
     <include file="distrorelease.zcml" />

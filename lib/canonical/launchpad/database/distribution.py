@@ -78,7 +78,7 @@ class Distribution(SQLBase):
     uploaders = MultipleJoin('DistroComponentUploader',
         joinColumn='distribution')
     source_package_caches = MultipleJoin('DistributionSourcePackageCache',
-        joinColumn='distribution')
+        joinColumn='distribution', orderBy='name')
 
     @property
     def releases(self):

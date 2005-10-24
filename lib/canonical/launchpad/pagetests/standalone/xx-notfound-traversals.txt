@@ -121,7 +121,7 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/hoary/+packaging")
 
 >>> check("/distros/ubuntu/hoary/i386")
->>> check("/distros/ubuntu/hoary/i386/+pkgsearch")
+>>> check("/distros/ubuntu/hoary/i386/+search")
 
 >>> check("/distros/ubuntu/hoary/+source/mozilla-firefox")
 >>> check("/distros/ubuntu/hoary/+source/evolution/")

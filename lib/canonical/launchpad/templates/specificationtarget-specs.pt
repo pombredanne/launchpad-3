@@ -6,12 +6,10 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-filterspecs" />
+  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-specviews" />
-  <div tal:replace="structure context/@@+portlet-groupspecs" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -27,14 +25,21 @@
       spec => an ISpecification
   </p>
 
-  <p tal:condition="not:context/specifications">
+  <h1 tal:condition="view/view_title"
+      tal:content="view/view_title">Specs for Approval</h1>
+
+  <p tal:condition="not: view/count">
     <img src="/++resource++alert" />
-    <i>There are no specifications registered for
+    <i>There are no specifications in this category for
     <span tal:replace="context/displayname">Ubuntu 5.04</span> at the
     moment.</i>
   </p>
 
-  <tal:specifications condition="context/specifications">
+  <p tal:condition="view/count">
+    <b><span tal:replace="view/count">5</span> specifications to list:</b>
+  </p>
+
+  <tal:specifications condition="view/categories">
     <tal:block repeat="category view/categories">
       <h2 tal:content="category/status/title">Approved</h2>
       <div

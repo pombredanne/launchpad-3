@@ -24,6 +24,8 @@ from canonical.launchpad.database.distroarchreleasebinarypackage import (
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
+from canonical.launchpad.database.binarypackagerelease import (
+    BinaryPackageRelease)
 from canonical.launchpad.helpers import shortlist
 
 __all__ = [
@@ -63,6 +65,11 @@ class DistroArchRelease(SQLBase):
             )
     
     @property
+    def displayname(self):
+        """See IDistroArchRelease."""
+        return '%s %s' % (self.distrorelease.name, self.architecturetag)
+   
+    @property
     def binarycount(self):
         """See IDistroArchRelease """
         # XXX: Needs system doc test. SteveAlexander 2005-04-24.
@@ -97,6 +104,27 @@ class DistroArchRelease(SQLBase):
         binset = getUtility(IBinaryPackageReleaseSet)
         return binset.findByNameInDistroRelease(
             self.distrorelease.id, pattern, self.architecturetag, fti)
+
+    def searchBinaryPackages(self, text):
+        """See IDistroArchRelease."""
+        bprs = BinaryPackageRelease.select("""
+            BinaryPackagePublishing.distroarchrelease = %s AND
+            BinaryPackagePublishing.binarypackagerelease = 
+                BinaryPackageRelease.id AND
+            BinaryPackageRelease.fti @@ ftq(%s)
+            """ % sqlvalues(self.id, text),
+            selectAlso="""
+                rank(BinaryPackageRelease.fti, ftq(%s))
+                AS rank""" % sqlvalues(text),
+            clauseTables=['BinaryPackagePublishing'],
+            orderBy=['-rank'],
+            distinct=True)
+        # import here to avoid circular import problems
+        from canonical.launchpad.database import (
+            DistroArchReleaseBinaryPackageRelease)
+        return [DistroArchReleaseBinaryPackageRelease(
+                    distroarchrelease=self,
+                    binarypackagerelease=bpr) for bpr in bprs]
 
     def getBinaryPackage(self, name):
         """See IDistroArchRelease."""

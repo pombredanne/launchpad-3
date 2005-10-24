@@ -1,6 +1,7 @@
 <div class="portlet">
 
-    <h4>Details for <span tal:replace="context/architecturetag">ARCHITECTURE NAME</span>:</h4>
+    <h4>Details for <span tal:replace="context/displayname">warty
+    i386</span>:</h4>
 
     <div class="portletBody">
         <div class="portletContent even">
@@ -14,7 +15,7 @@
             <b>Processor Family:</b><br />
             <span tal:replace="context/processorfamily/title" /><br />
 
-            <b>Porting Lead:</b><br />
+            <b>Port Registrant:</b><br />
             <img src="/++resource++user.gif">
             <a tal:attributes="href context/owner/fmt:url"
                tal:content="context/owner/browsername">owner name</a><br /> 

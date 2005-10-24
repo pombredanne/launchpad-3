@@ -37,6 +37,7 @@ class IDistroArchRelease(IHasOwner):
 
     # for page layouts etc
     title = Attribute('Title')
+    displayname = Attribute('Display name')
 
     # useful attributes
     binarycount = Attribute('Count of Binary Packages')
@@ -52,8 +53,9 @@ class IDistroArchRelease(IHasOwner):
         'default'.
         """
 
-    def findPackagesByName(pattern):
-        """Search BinaryPackages matching pattern"""
+    def searchBinaryPackages(text):
+        """Search BinaryPackageRelease published in this release for those
+        matching the given text."""
 
     def getReleasedPackages(name, pocket=None):
         """Get the publishing records for the given binary package name.
@@ -63,9 +65,6 @@ class IDistroArchRelease(IHasOwner):
 
         If pocket is not specified, we look in all pockets.
         """
-
-    def findPackagesByArchtagName(pattern, fti=False):
-        """Search BinaryPackages matching pattern and archtag"""
 
     def __getitem__(name):
         """Getter"""
