@@ -96,9 +96,11 @@ And rock this baby:
     >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q',
     ...              'dapper', 'dapper-updates']
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
-    >>> print proc.stderr.read()
+    >>> #print proc.stderr.read()
     >>> proc.wait()
     0
 
 XXX: TBD
+XXX: test that section is stripped of component when parsing universe
+     packages.
 

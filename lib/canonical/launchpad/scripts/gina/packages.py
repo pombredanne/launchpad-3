@@ -135,6 +135,17 @@ def parse_person(val):
     return rfc822.parseaddr(val)
 
 
+def parse_section(v):
+    if "/" in v:
+        # When a "/" is found in the section, it indicates
+        # component/section. We don't want to override the
+        # component, since it is correctly indicated by the
+        # packages/sources files.
+        return v.split("/", 1)[1]
+    else:
+        return v
+
+
 def get_person_by_key(keyrings, key):
     # XXX: untested, should probably be a method
     if key and key not in ("NOSIG", "None", "none"):
@@ -224,6 +235,11 @@ class AbstractPackageData:
     package = None
     _required = None
     version = None
+
+    # Component is something of a special case. It is set up in
+    # archive.py:PackagesMap (and only overwritten here in special
+    # cases, which I'm not sure is really correct). We check it as part
+    # of _required in the subclasses only as a sanity check.
     component = None
 
     def __init__(self):
@@ -305,17 +321,14 @@ class SourcePackageData(AbstractPackageData):
     # MissingRequiredArguments exception is raised.
     _required = [
         'package', 'binaries', 'version', 'maintainer',
-        'architecture', 'directory', 'files']
+        'architecture', 'directory', 'files', 'component']
 
     def __init__(self, **args):
         for k, v in args.items():
             if k == 'Binary':
                 self.binaries = stripseq(v.split(","))
             elif k == 'Section':
-                if "/" in v:
-                    self.component, self.section = v.split("/")
-                else:
-                    self.component, self.section  = "main", v
+                self.section = parse_section(v)
             elif k == 'Maintainer':
                 displayname, emailaddress = parse_person(v)
                 try:
@@ -426,7 +439,7 @@ class BinaryPackageData(AbstractPackageData):
     # MissingRequiredArguments exception is raised.
     _required = [
         'package', 'installed_size', 'maintainer',
-        'architecture', 'version', 'filename',
+        'architecture', 'version', 'filename', 'component',
         'size', 'md5sum', 'description', 'summary']
 
     # Set in __init__
@@ -463,6 +476,8 @@ class BinaryPackageData(AbstractPackageData):
                 self.maintainer = parse_person(v)
             elif k == "Essential":
                 self.essential = (v == "yes")
+            elif k == 'Section':
+                self.section = parse_section(v)
             elif k == "Description":
                 self.description = encoding.guess(v)
                 summary = self.description.split("\n")[0].strip()
