@@ -292,12 +292,12 @@ class Bugzilla:
 
         return person
 
-    def getLaunchpadBugtarget(self, bug):
+    def getLaunchpadBugTarget(self, bug):
         """Returns a dictionary of arguments to createBug() that correspond
         to the given bugzilla bug.
         """
         # we currently only support mapping Ubuntu bugs ...
-        assert bug.product == 'Ubuntu'
+        assert bug.product == 'Ubuntu', 'product != Ubuntu'
         
         ubuntu = getUtility(IDistributionSet)['ubuntu']
         try:
@@ -353,7 +353,7 @@ class Bugzilla:
         msg = msgset.fromText(bug.short_desc, text, self.person(who), when)
 
         # create the bug
-        target = self.getLaunchpadBugtarget(bug)
+        target = self.getLaunchpadBugTarget(bug)
         lp_bug = self.bugset.createBug(msg=msg,
                                        datecreated=bug.creation_ts,
                                        title=bug.short_desc,

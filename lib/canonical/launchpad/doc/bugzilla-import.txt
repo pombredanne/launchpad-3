@@ -1,5 +1,5 @@
 Bugzilla Import
----------------
+===============
 
 The bugzilla import process makes use of a direct connection to the
 database.  In order to aid in testing, all the database accesses are
@@ -326,6 +326,141 @@ Next we import a fixed bug:
   <BLANKLINE>
 
 
+
+Severity Mapping
+----------------
+
+Bugzilla severities are mapped to the equivalent Launchpad values:
+
+  >>> bug = bugzilla.Bug(bz.backend, 1)
+  >>> class FakeBugTask:
+  ...     pass
+  >>> bugtask = FakeBugTask()
+  >>> for severity in ['blocker', 'critical', 'major', 'normal',
+  ...                  'minor', 'trivial', 'enhancement']:
+  ...     bug.bug_severity = severity
+  ...     bug.mapSeverity(bugtask)
+  ...     print '%-11s  %s' % (severity, bugtask.severity.name)
+  blocker      CRITICAL
+  critical     CRITICAL
+  major        MAJOR
+  normal       NORMAL
+  minor        MINOR
+  trivial      MINOR
+  enhancement  WISHLIST
+
+
+Priority Mapping
+----------------
+
+  >>> for priority in ['P1', 'P2', 'P3', 'P4', 'P5']:
+  ...     bug.priority = priority
+  ...     bug.mapPriority(bugtask)
+  ...     print '%-2s  %s' % (priority, bugtask.priority.name)
+  P1  HIGH
+  P2  MEDIUM
+  P3  MEDIUM
+  P4  LOW
+  P5  LOW
+
+
+Status Mapping
+--------------
+
+  >>> for status in ['UNCONFIRMED', 'NEW', 'ASSIGNED', 'REOPENED',
+  ...                'NEEDINFO', 'UPSTREAM', 'PENDINGUPLOAD',
+  ...                'RESOLVED', 'VERIFIED', 'CLOSED']:
+  ...     bug.bug_status = status
+  ...     bugtask.statusexplanation = ''
+  ...     bug.mapStatus(bugtask)
+  ...     print '%-13s  %s' % (status, bugtask.status.name)
+  UNCONFIRMED    NEW
+  NEW            NEW
+  ASSIGNED       ACCEPTED
+  REOPENED       NEW
+  NEEDINFO       NEW
+  UPSTREAM       NEW
+  PENDINGUPLOAD  PENDINGUPLOAD
+  RESOLVED       REJECTED
+  VERIFIED       REJECTED
+  CLOSED         REJECTED
+
+If the bug has been resolved, the resoltuion will affect the status:
+
+  >>> bug.priority = 'P2'
+  >>> bug.bug_status = 'RESOLVED'
+  >>> for resolution in ['FIXED', 'INVALID', 'WONTFIX', 'NOTABUG',
+  ...                    'NOTWARTY', 'UNIVERSE', 'LATER', 'REMIND',
+  ...                    'DUPLICATE', 'WORKSFORME', 'MOVED']:
+  ...     bug.resolution = resolution
+  ...     bugtask.statusexplanation = ''
+  ...     bug.mapPriority(bugtask)
+  ...     bug.mapStatus(bugtask)
+  ...     print '%-10s  %-8s  %s' % (resolution, bugtask.status.name,
+  ...                                bugtask.priority.name)
+  FIXED       FIXED     MEDIUM
+  INVALID     REJECTED  MEDIUM
+  WONTFIX     REJECTED  WONTFIX
+  NOTABUG     REJECTED  MEDIUM
+  NOTWARTY    REJECTED  MEDIUM
+  UNIVERSE    REJECTED  MEDIUM
+  LATER       REJECTED  MEDIUM
+  REMIND      REJECTED  MEDIUM
+  DUPLICATE   REJECTED  MEDIUM
+  WORKSFORME  REJECTED  MEDIUM
+  MOVED       REJECTED  MEDIUM
+
+
+Bug Target Mapping
+------------------
+
+The Bugzilla.getLaunchpadTarget() method is used to map bugzilla bugs
+to Launchpad bug targets.  This is not general purpose logic: it only
+applies to the Ubuntu bugzilla.
+
+The current mapping only handles bugs filed under the "Ubuntu"
+product.  If the component the bug is filed under is a known package
+name, the bug is targeted at that package in ubuntu.  If it isn't,
+then the bug is filed directly against the distribution.
+
+  >>> def showMapping(product, component):
+  ...     bug.product = product
+  ...     bug.component = component
+  ...     target = bz.getLaunchpadBugTarget(bug)
+  ...     distribution = target.get('distribution')
+  ...     if distribution:
+  ...         print 'Distribution:', distribution.name
+  ...     spn = target.get('sourcepackagename')
+  ...     if spn:
+  ...         print 'Source package:', spn.name
+  ...     bpn = target.get('sourcepackagename')
+  ...     if bpn:
+  ...         print 'Binary package:', bpn.name
+  ...     product = target.get('product')
+  ...     if product:
+  ...         print 'Product:', product.name
+
+  >>> showMapping('Ubuntu', 'mozilla-firefox')
+  Distribution: ubuntu
+  Source package: mozilla-firefox
+  Binary package: mozilla-firefox
+
+  >>> showMapping('Ubuntu', 'netapplet')
+  Distribution: ubuntu
+  Source package: netapplet
+  Binary package: netapplet
+
+  >>> showMapping('Ubuntu', 'unknown-package-name')
+  Distribution: ubuntu
+
+  >>> showMapping('not-Ubuntu', 'general')
+  Traceback (most recent call last):
+    ...
+  AssertionError: product != Ubuntu
+
+
 Cleanup:
 
   >>> LibrarianTestSetup().tearDown()
+
+
