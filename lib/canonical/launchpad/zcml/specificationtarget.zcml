@@ -8,7 +8,7 @@
 <facet facet="specifications">
 
   <browser:pages
-    for="canonical.launchpad.interfaces.ISpecificationTarget"
+    for="canonical.launchpad.interfaces.IHasSpecifications"
     class="canonical.launchpad.browser.SpecificationTargetView"
     permission="zope.Public">
     <browser:page
@@ -21,13 +21,13 @@
       name="+portlet-latestspecs"
       template="../templates/specificationtarget-portlet-latestspecs.pt" />
     <browser:page
-      name="+portlet-filter"
+      name="+portlet-filterspecs"
       template="../templates/specificationtarget-portlet-filter.pt" />
     <browser:page
-      name="+portlet-group"
+      name="+portlet-groupspecs"
       template="../templates/specificationtarget-portlet-group.pt" />
     <browser:page
-      name="+portlet-views"
+      name="+portlet-specviews"
       template="../templates/specificationtarget-portlet-views.pt" />
   </browser:pages>
 

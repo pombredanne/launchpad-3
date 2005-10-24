@@ -400,7 +400,8 @@ COMMENT ON COLUMN SprintAttendance.time_ends IS 'The time of departure from the 
 
 /* SprintSpecification */
 COMMENT ON TABLE SprintSpecification IS 'The link between a sprint and a specification, so that we know which specs are going to be discussed at which sprint.';
-
+COMMENT ON COLUMN SprintSpecification.needs_discussion IS 'Whether or not this specification requires further discussion at this sprint. This is used as part of the scheduling algorithm.';
+COMMENT ON COLUMN SprintSpecification.status IS 'Whether or not the spec has been approved on the agenda for this sprint.';
 
 /* Ticket */
 COMMENT ON TABLE Ticket IS 'A trouble ticket, or support request, for a distribution or for an application. Such tickets are created by end users who need support on a particular feature or package or product.';

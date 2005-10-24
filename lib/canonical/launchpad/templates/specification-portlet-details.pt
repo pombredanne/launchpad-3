@@ -44,11 +44,11 @@
     <i tal:condition="not: context/approver">No approver</i><br />
     <tal:has_sprints define="sprint_links context/sprint_links"
                      condition="sprint_links">
-      <b>Sprints:</b>
+      <b>Sprints:</b><br />
       <tal:sprint repeat="sprint_link sprint_links">
         <a tal:attributes="href sprint_link/sprint/fmt:url"
            tal:content="sprint_link/sprint/name" /> 
-        (<span tal:replace="sprint_link/status/title">Approved</span>),
+        (<span tal:replace="sprint_link/status/title">Approved</span>)<br />
       </tal:sprint>
 	</tal:has_sprints>
   </div>
