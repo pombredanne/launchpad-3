@@ -651,13 +651,13 @@ class BinaryPackageHandler:
                   distrorelease.distribution.id))
 
         if architecture != "all":
-            query += ("AND DistroArchRelease.architecturetag = %s" %
+            query += (" AND DistroArchRelease.architecturetag = %s" %
                       quote(architecture))
 
         bpr = BinaryPackageRelease.selectOne(query, clauseTables=clauseTables)
         if bpr is None:
             log.debug('BPR not found: %r %r %r, query=%s' % (
-                binaryname, version, architecture, query))
+                binaryname.name, version, architecture, query))
         return bpr
 
     def createBinaryPackage(self, bin, srcpkg, distroarchinfo, archtag):
