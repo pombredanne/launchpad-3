@@ -1,34 +1,440 @@
 Gina Test
 ---------
 
-This file is a simple test for gina just check it she is broken by any other
-launchpad modification.
+This file is a simple test for gina. It uses a test archive (kept in
+canonical.launchpad.scripts.ftests.archive_for_gina) and runs gina in
+quiet mode over it.
+
+Get the current counts of stuff in the database:
+
+    >>> from canonical.launchpad.database import (
+    ...     SourcePackageRelease,
+    ...     SecureSourcePackagePublishingHistory,
+    ...     SecureBinaryPackagePublishingHistory,
+    ...     Person,
+    ...     TeamParticipation,
+    ...     WikiName,
+    ...     EmailAddress,
+    ...     BinaryPackageRelease,
+    ...     Build)
+    >>> SSPPH = SecureSourcePackagePublishingHistory
+    >>> SBPPH = SecureBinaryPackagePublishingHistory
+
+    >>> orig_spr_count = SourcePackageRelease.select().count()
+    >>> orig_sspph_count = SSPPH.select().count()
+    >>> orig_person_count = Person.select().count()
+    >>> orig_tp_count = TeamParticipation.select().count()
+    >>> orig_email_count = EmailAddress.select().count()
+    >>> orig_wiki_count = WikiName.select().count()
+    >>> orig_bpr_count = BinaryPackageRelease.select().count()
+    >>> orig_build_count = Build.select().count()
+    >>> orig_sbpph_count = SBPPH.select().count()
+
+Create a distribution release and an arch release for breezy:
+
+    >>> from canonical.launchpad.database import (DistroReleaseSet,
+    ...     ProcessorFamily, DistroArchRelease)
+    >>> from canonical.launchpad.interfaces import (ILaunchpadCelebrities,
+    ... IDistroReleaseSet)
+    >>> celebs = getUtility(ILaunchpadCelebrities)
+    >>> ubuntu = celebs.ubuntu
+    >>> drs = getUtility(IDistroReleaseSet)
+    >>> hoary = drs.findByName("hoary")
+    >>> breezy = drs.new(ubuntu, "breezy", "Breezy Badger", "My title",
+    ...                  "My summary", "My description", "5.10", 1,
+    ...                  1, hoary, celebs.launchpad_developers)
+    >>> pf = ProcessorFamily.selectOneBy(name="x86")
+    >>> dar = DistroArchRelease(distrorelease=breezy, processorfamily=pf,
+    ...                         architecturetag="i386", official=True,
+    ...                         owner=celebs.launchpad_developers)
+    >>> import transaction
+    >>> transaction.commit()
+
+Now, lets run gina on hoary and breezy. This test imports a few
+packages successfully (at least partially):
+
+   * archive-copier, a source package with no binary packages. Its
+     maintainer has a name which contains a ","
+   * db1-compat, source package what generates 1 binary package. The same
+     version was included in both hoary and breezy.
+   * gcc-defaults, a source package that generates 8 binary packages with
+     differing versions.
+   * x11proto-damage, a package which is only present in breezy
+   * libcap, a source package which generates 3 binary packages, and
+     whose version number contains an epoch. It is not in the Breezy
+     Sources list, but some binaries are in the Packages file. However, these
+     binaries are unchaged in Breezy.
+   * ubuntu-meta, a source package that generates 3 binary packages in
+     Hoary and 5 in breezy. However, its breezy version is /not/ listed in the 
+     Sources list, so the binary packages will need to discover it.
+   * ed, a source package what generates one binary package and
+     misses a section entry in Sources. The same version exists in
+     breezy, this time with a defined section (which we don't handle
+     correctly). Its hoary binary package lacks a Priority.
+   * python-sqllite, an arch-independent source package that generates
+     one binary package. Its breezy packages are missing from the archive.
+   * python-pam, an arch-independent source package that generates one
+     binary package, whose changelog contains a busted urgency. Its hoary
+     binary package contains lacks a Section. Its breezy packages are missing
+     from the archive.
+   * mkvmlinuz, a source package that generates one binary package,
+     but which is missing a version field in its Sources file.
+     Its breezy package has a version but is missing copyright and changelog.
+
+And one completely broken package:
+
+   * util-linux, a source package that is missing from the pool. It
+     generates 4 binary packages, all missing. It's correctly listed in Sources
+     and Packages, though.
+
+Let's set up the filesystem:
 
     >>> import subprocess, sys, os
-    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-    >>> LibrarianTestSetup().setUp()
-
-Lets now give and absolute path to the gina_test_archive
-
+    >>> try:
+    ...     os.unlink("/var/lock/launchpad-gina.lock")
+    ... except OSError:
+    ...     pass
+    >>> try:
+    ...     os.remove('/tmp/gina_test_archive')
+    ... except OSError:
+    ...     pass
     >>> relative_path = ('lib/canonical/launchpad/scripts/'
     ...                  'ftests/gina_test_archive')
     >>> path = os.path.join(os.getcwd(), relative_path)
     >>> os.symlink(path, '/tmp/gina_test_archive')
 
-Now, lets run gina
-    >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q', 'hoary']
+Get the librarian going:
+
+    >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+    >>> LibrarianTestSetup().setUp()
+
+And give her a spin:
+
+    >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q',
+    ...              'hoary', 'breezy']
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
 
-STDERR should be empty
+Check STDERR for the errors we expected:
+
     >>> print proc.stderr.read()
+    WARNING Source package ed lacks section, assumed 'misc'
+    ERROR   Unable to create SourcePackageData for mkvmlinuz
+     -> http://...version: None)
+    WARNING Invalid urgency in python-pam, None, assumed 'low'
+    ERROR   Error processing package files for util-linux
+     -> http://...dsc not in archive...))
+    ERROR   Error processing package files for bsdutils
+     -> http://...deb not found)
+    WARNING Binary package ed lacks valid priority, assumed 'extra'
+    ERROR   Error processing package files for mount
+     -> http://...deb not found)
+    WARNING Binary package python-pam lacks a section... assumed 'misc'
+    ERROR   Error processing package files for python2.4-pam
+     -> http://...deb not found)
+    ERROR   Error processing package files for python2.4-sqlite
+     -> http://...deb not found)
+    ERROR   Error processing package files for util-linux
+     -> http://...deb not found)
+    ERROR   Error processing package files for util-linux-locales
+     -> http://...deb not found)
+    ERROR   Invalid Sources stanza in /tmp/tmp...
+     -> http://...bogus\n')
+    WARNING No changelog file found for mkvmlinuz in mkvmlinuz-14ubuntu1
+    WARNING No license file found for mkvmlinuz in mkvmlinuz-14ubuntu1
+    WARNING Invalid urgency in mkvmlinuz, None, assumed 'low'
+    ERROR   Error processing package files for python-sqlite
+     -> http://...dsc not in archive...))
+    ERROR   Error processing package files for util-linux
+     -> http://...dsc not in archive...))
+    ERROR   Error processing package files for python-sqlite
+     -> http://...deb not found)
     <BLANKLINE>
 
-Exit status must be Success
+The exit status must be 0, for success:
+
     >>> proc.wait()
     0
+
+=== Testing Source Package Results ===
+
+We should have more source packages in the database:
+
+    >>> transaction.commit()
+    >>> existing = 9
+    >>> hoary = 10 - 2   # 2 packages fail
+    >>> breezy = 9 - 3 - 2 + 1  # 3 packages are the same as in hoary, 2 fail,
+    ... #one that is imported forcefully (ubuntu-meta)
+    >>> hoary + breezy
+    13
+    >>> count = SourcePackageRelease.select().count()
+    >>> count - orig_spr_count
+    13
+
+Check that x11proto-damage has its Build-Depends-Indep value correctly set:
+
+    >>> from canonical.launchpad.database import SourcePackageName
+    >>> n = SourcePackageName.selectOneBy(name="x11proto-damage")
+    >>> x11p = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
+    ...                                         version="6.8.99.7-2")
+    >>> print x11p.builddependsindep
+    debhelper (>= 4.0.0)
+    >>> print x11p.changelog
+    x11proto-damage (6.8.99.7-2) breezy; urgency=low
+    <BLANKLINE>
+    <BLANKLINE>
+      * Add dependency on x11proto-fixes-dev.
+    <BLANKLINE>
+     -- Daniel Stone <daniel.stone@ubuntu.com>  Mon, 11 Jul 2005 19:11:11 +1000
+    >>> from canonical.lp.dbschema import SourcePackageUrgency
+    >>> x11p.urgency == SourcePackageUrgency.LOW
+    True
+
+Check that the dsc on the libcap package is correct, and that we
+only imported one:
+
+    >>> n = SourcePackageName.selectOneBy(name="libcap")
+    >>> cap = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id)
+    >>> print cap.dsc
+    -----BEGIN PGP SIGNED MESSAGE-----
+    Hash: SHA1
+    <BLANKLINE>
+    Format: 1.0
+    Source: libcap
+    Version: 1:1.10-14
+    Binary: libcap-dev, libcap-bin, libcap1
+    Maintainer: Michael Vogt <mvo@debian.org>
+    Architecture: any
+    Standards-Version: 3.6.1
+    Build-Depends: debhelper
+    Files:
+     291be97b78789f331499a0ab22d9d563 28495 libcap_1.10.orig.tar.gz
+     b867a0c1db9e8ff568415bbcd1fa65dc 12928 libcap_1.10-14.diff.gz
+    <BLANKLINE>
+    -----BEGIN PGP SIGNATURE-----
+    Version: GnuPG v1.2.4 (GNU/Linux)
+    <BLANKLINE>
+    iD8DBQFAfGV8liSD4VZixzQRAlHoAJ4hD8yDp/VIJUcdQLLr9KH/XQSczQCfQH/D
+    FVJMGmGr+2YLZfF+oRUKcug=
+    =bw+A
+    -----END PGP SIGNATURE-----
+    >>> print cap.maintainer.displayname
+    Michael Vogt
+
+Test ubuntu-meta in breezy, which was forcefully imported.
+
+    >>> n = SourcePackageName.selectOneBy(name="ubuntu-meta")
+    >>> um = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
+    ...         version="0.80")
+    >>> print um.section.name, um.architecturehintlist, \
+    ...         um.uploaddistrorelease.name
+    base any breezy
+
+And check that its files actually ended up in the librarian (these sha1sums
+were calculated directly on the files):
+
+    >>> from canonical.launchpad.database import SourcePackageReleaseFile
+    >>> files = SourcePackageReleaseFile.selectBy(sourcepackagereleaseID=cap.id,
+    ...                                           orderBy="libraryfile")
+    >>> for f in files:
+    ...     print f.libraryfile.content.sha1
+    107d5478e72385f714523bad5359efedb5dcc8b2
+    0083da007d44c02fd861c1d21579f716490cab02
+    e6661aec051ccb201061839d275f2282968d8b93
+
+Check that the section on the python-pam package is correct, and that we
+only imported one:
+
+    >>> n = SourcePackageName.selectOneBy(name="python-pam")
+    >>> pp = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id)
+    >>> print pp.component.name
+    main
+
+In the hoary Sources, its section is listed as underworld/python. Ensure
+this is cut up correctly:
+
+    >>> print pp.section.name
+    python
+
+Make sure that we only imported one db1-compat source package.
+
+    >>> n = SourcePackageName.selectOneBy(name="db1-compat")
+    >>> db1 = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id)
+
+=== Testing Source Package Publishing ===
+
+We should have one entry for each package listed in Sources that was
+successfully processed.
+
+    - We had 2 errors (out of 10 Sources stanzas) in hoary: mkvmlinuz and
+      util-linux
+
+    - We had 2 errors (out of 10 Sources stanzas) in breezy: python-sqllite and
+      util-linux (again, poor thing)
+
+    >>> print SSPPH.select().count() - orig_sspph_count
+    16
+
+Ensure all we published to was main, in the main pocket:
+
+    >>> print SSPPH.selectBy(componentID=1,
+    ...                     pocket=0).count() - orig_sspph_count
+    16
+
+=== Testing Binary Package Results ===
+
+We have 26 binary packages in hoary. The 4 packages for util-linux fail, and 1
+package fails for each of python-sqlite and python-pam. We should publish one
+entry for each package listed in Releases.
+
+We have 23 binary packages in breezy. db1-compat, ed, the 3 libcap packages and
+python-pam is unchanged.  python-sqlite fails. The 5 ubuntu-meta packages work.
+
+    >>> BinaryPackageRelease.select().count() - orig_bpr_count
+    36
+    >>> Build.select().count() - orig_build_count
+    9
+    >>> SBPPH.select().count() - orig_sbpph_count
+    42
+
+Test all the data got to the ed BPR intact:
+
+    >>> from canonical.launchpad.database import BinaryPackageName
+    >>> n = BinaryPackageName.selectOneBy(name="ed")
+    >>> ed = BinaryPackageRelease.selectOneBy(binarypackagenameID=n.id)
+    >>> print ed.version
+    0.2-20
+    >>> print ed.build.processor.name
+    386
+    >>> print ed.build.buildstate
+    1
+    >>> print ed.build.distroarchrelease.processorfamily.name
+    x86
+    >>> print ed.build.distroarchrelease.architecturetag
+    i386
+    >>> print ed.summary
+    The classic unix line editor.
+    >>> print ed.licence
+    This is Debian GNU's prepackaged version of the FSF's GNU ed
+    utility.  The classic unix line editor, ed is a line-oriented text
+    editor.  It is used to create, display, modify and otherwise
+    ...
+    except that this permission notice may be stated in a translation approved
+    by the Foundation.
+
+Check binary package libgjc-dev in Breezy. Its version number must differ from
+its source version number.
+
+    >>> n = BinaryPackageName.selectOneBy(name="libgcj-dev")
+    >>> lib = BinaryPackageRelease.selectOneBy(binarypackagenameID=n.id,
+    ...         version="4:4.0.1-3")
+    >>> print lib.version
+    4:4.0.1-3
+    >>> print lib.build.sourcepackagerelease.version
+    1.28
+    >>> print lib.build.sourcepackagerelease.maintainer.displayname
+    Debian GCC maintainers
+
+XXX: test binary package creation, in particular gcc-defaults, whose
+     package versions differ from its source version
+XXX: test package with invalid version and invalid source version
+XXX: test package with maintainer with non-ascii name
+
+=== Testing People Created ===
+
+Ensure only one Kamion was created (he's an uploader on multiple packages), and
+that we imported exactly 9 people (13 packages with 3 being uploaded by Kamion,
+2 being uploaded by mdz and 2 by doko).
+
+    >>> from sqlobject import LIKE
+    >>> p = Person.selectOne(LIKE(Person.q.name, "cjwatson%"))
+    >>> print p.name
+    cjwatson
+    >>> print Person.select().count() - orig_person_count
+    9
+    >>> print TeamParticipation.select().count() - orig_tp_count 
+    9
+    >>> print EmailAddress.select().count() - orig_email_count
+    9
+    >>> print WikiName.select().count() - orig_wiki_count
+    9
+
+=== Re-run Gina ===
+
+We do a re-run over the same components. We should get only ERRORs, indicating
+packages that failed to import the last time.
+
+    >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q',
+    ...              'hoary', 'breezy']
+    >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
+    >>> print proc.stderr.read()
+    ERROR   Unable to create SourcePackageData for mkvmlinuz
+     -> http://...version: None)
+    ERROR   Error processing package files for util-linux
+     -> http://...dsc not in archive...))
+    ERROR   Error processing package files for bsdutils
+     -> http://...deb not found)
+    ERROR   Error processing package files for mount
+     -> http://...deb not found)
+    ERROR   Error processing package files for python2.4-pam
+     -> http://...deb not found)
+    ERROR   Error processing package files for python2.4-sqlite
+     -> http://...deb not found)
+    ERROR   Error processing package files for util-linux
+     -> http://...deb not found)
+    ERROR   Error processing package files for util-linux-locales
+     -> http://...deb not found)
+    ERROR   Invalid Sources stanza in /tmp/tmp...
+     -> http://...bogus\n')
+    ERROR   Error processing package files for python-sqlite
+     -> http://...dsc not in archive...))
+    ERROR   Error processing package files for util-linux
+     -> http://...dsc not in archive...))
+    ERROR   Error processing package files for python-sqlite
+     -> http://...deb not found)
+    <BLANKLINE>
+    >>> proc.wait()
+    0
+
+Nothing should happen to our data -- no counts should have changed, etc.
+
+    >>> SourcePackageRelease.select().count() - orig_spr_count
+    13
+    >>> print SecureSourcePackagePublishingHistory.select().count() \
+    ...     - orig_sspph_count
+    16
+    >>> print Person.select().count() - orig_person_count
+    9
+    >>> print TeamParticipation.select().count() - orig_tp_count 
+    9
+    >>> print EmailAddress.select().count() - orig_email_count
+    9
+    >>> print WikiName.select().count() - orig_wiki_count
+    9
+    >>> BinaryPackageRelease.select().count() - orig_bpr_count
+    36
+    >>> Build.select().count() - orig_build_count
+    9
+    >>> SBPPH.select().count() - orig_sbpph_count
+    42
+
+=== Other tests ===
+
+For kicks, finally, run gina on a configured but incomplete archive:
+
+    >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q', 'bogus']
+    >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
+    >>> print proc.stderr.read()
+    ERROR   Failed to analyze archive for bogoland
+     -> http://...)
+    <BLANKLINE>
+    >>> proc.wait()
+    1
+
+=== Wrap up ===
 
 Stop Librarian
     >>> LibrarianTestSetup().tearDown()
 
 Remove the tmp link to the gina_test_archive
     >>> os.remove('/tmp/gina_test_archive')
+

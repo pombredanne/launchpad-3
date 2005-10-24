@@ -18,6 +18,7 @@ __all__ = [
     'BugTaskStatusVocabulary',
     'BugTrackerTypeVocabulary',
     'CveStatusVocabulary',
+    'DistributionReleaseStatusVocabulary',
     'GPGKeyAlgorithmVocabulary',
     'InfestationStatusVocabulary',
     'KarmaActionCategoryVocabulary',
@@ -69,6 +70,7 @@ BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
 BugTrackerTypeVocabulary = vocab_factory(dbschema.BugTrackerType,
     noshow=[dbschema.BugTrackerType.DEBBUGS])
 CveStatusVocabulary = vocab_factory(dbschema.CveStatus)
+DistributionReleaseStatusVocabulary = vocab_factory(dbschema.DistributionReleaseStatus)
 GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
 KarmaActionCategoryVocabulary = vocab_factory(dbschema.KarmaActionCategory)

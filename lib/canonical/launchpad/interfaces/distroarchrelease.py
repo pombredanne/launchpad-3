@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Bool, TextLine
+from zope.schema import Bool, Choice, Int, TextLine
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.interfaces import IHasOwner
@@ -21,7 +21,8 @@ class IDistroArchRelease(IHasOwner):
     """DistroArchRelease Table Interface"""
     id = Attribute("Identifier")
     distrorelease = Attribute("DistroRelease")
-    processorfamily = Attribute("ProcessorFamily")
+    processorfamily = Choice(title=_("Processor Family"),
+        required=True, vocabulary='ProcessorFamily')
     architecturetag = TextLine(title=_("Architecture Tag"),
         description=_("The architecture tag, or short piece of text that "
         "identifies this architecture. All binary packages in the archive "
@@ -30,7 +31,8 @@ class IDistroArchRelease(IHasOwner):
     official = Bool(title=_("Official Support"),
         description=_("Indicate whether or not this port has official "
         "support from the vendor of the distribution."), required=True)
-    owner = Attribute("Owner")
+    owner = Int(title=_('The person who registered this port.'),
+        required=True)
 
     #joins
     packages = Attribute('List of binary packages in this port.')

@@ -1,0 +1,51 @@
+
+We want to test that we can add a new DistroArchRelease (or "Port").
+
+We will test as Foo Bar, who is an administrator.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+addport HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+OK, so lets try POSTING to the form.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/hoary/+addport HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 837
+  ... Content-Type: multipart/form-data; boundary=---------------------------185962309721203306911361655462
+  ... 
+  ... -----------------------------185962309721203306911361655462
+  ... Content-Disposition: form-data; name="field.architecturetag"
+  ... 
+  ... amd64
+  ... -----------------------------185962309721203306911361655462
+  ... Content-Disposition: form-data; name="field.processorfamily"
+  ... 
+  ... amd64
+  ... -----------------------------185962309721203306911361655462
+  ... Content-Disposition: form-data; name="field.processorfamily-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------185962309721203306911361655462
+  ... Content-Disposition: form-data; name="field.official.used"
+  ... 
+  ... 
+  ... -----------------------------185962309721203306911361655462
+  ... Content-Disposition: form-data; name="field.official"
+  ... 
+  ... on
+  ... -----------------------------185962309721203306911361655462
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------185962309721203306911361655462--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: .../hoary/amd64
+  ...
+

@@ -1,0 +1,96 @@
+
+We will test that we can add a distro release.
+
+First, we need to be able to see the page, if we are an administrator. So we
+test as anonymous.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+addrelease HTTP/1.1
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+
+Now we will try as Mark Shuttleworth on Debian, where he is the owner.
+This time we expect to be able to see it.
+
+  >>> print http(r"""
+  ... GET /distros/debian/+addrelease HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+OK, let's test as Foo Bar, who is an administrator.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+addrelease HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Now, lets POST to that form, as Foo Bar.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+addrelease HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1397
+  ... Content-Type: multipart/form-data; boundary=---------------------------10424793931518121850917935624
+  ... 
+  ... -----------------------------10424793931518121850917935624
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... fidget
+  ... -----------------------------10424793931518121850917935624
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... Fidget
+  ... -----------------------------10424793931518121850917935624
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... The Fidgety Fairy Release
+  ... -----------------------------10424793931518121850917935624
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... The fidgety fairy is a test release.
+  ... -----------------------------10424793931518121850917935624
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... And it really should never be visible.
+  ... -----------------------------10424793931518121850917935624
+  ... Content-Disposition: form-data; name="field.version"
+  ... 
+  ... 5.12
+  ... -----------------------------10424793931518121850917935624
+  ... Content-Disposition: form-data; name="field.parentrelease"
+  ... 
+  ... ubuntu/hoary
+  ... -----------------------------10424793931518121850917935624
+  ... Content-Disposition: form-data; name="field.components"
+  ... 
+  ... schema
+  ... -----------------------------10424793931518121850917935624
+  ... Content-Disposition: form-data; name="field.sections"
+  ... 
+  ... schema
+  ... -----------------------------10424793931518121850917935624
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------10424793931518121850917935624--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: fidget
+  ...
+
+
+And now we can see the fidget release:
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/fidget HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+

@@ -10,7 +10,7 @@ Architecture: any
 Standards-Version: 3.6.0
 Build-Depends: debhelper (>> 4.2.28), python2.4-dev, python2.3-dev, python (>= 2.4), libpam0g-dev
 Files: 
- dd7c355da0edc09b306f8fd33e756be3 15064 python-pam_0.4.2-10.1ubuntu3.tar.gz
+ 3be1e6c4cd329ee5ac71465e0d32ad27 15103 python-pam_0.4.2-10.1ubuntu3.tar.gz
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.2.5 (GNU/Linux)

@@ -516,6 +516,13 @@ class DistroRelease(SQLBase):
             distrorelease=self,
             binarypackagename=drpc.binarypackagename) for drpc in drpcaches]
 
+    def newArch(self, architecturetag, processorfamily, official, owner):
+        """See IDistroRelease."""
+        dar = DistroArchRelease(architecturetag=architecturetag,
+            processorfamily=processorfamily, official=official,
+            distrorelease=self, owner=owner)
+        return dar
+        
     def createQueueEntry(self, pocket):
         """See IDistroRelease."""
 

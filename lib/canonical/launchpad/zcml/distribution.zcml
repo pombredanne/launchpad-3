@@ -146,7 +146,7 @@
     </browser:pages>
 
     <browser:addform
-        name="+add"
+        name="+addrelease"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IDistroRelease"
         label="Create a New Distribution Release in Soyuz"

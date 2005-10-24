@@ -1,7 +1,10 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['DistroArchRelease']
+__all__ = [
+    'DistroArchRelease',
+    'PocketChroot',
+    ]
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -9,18 +12,17 @@ from zope.component import getUtility
 from sqlobject import (
     BoolCol, StringCol, ForeignKey, RelatedJoin, SQLObjectNotFound)
 
-from canonical.database.sqlbase import (
-    SQLBase, sqlvalues)
-
 from canonical.lp import dbschema
+from canonical.database.sqlbase import SQLBase, sqlvalues
 
 from canonical.launchpad.interfaces import (
     IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot,
-    IHasBuildRecords, NotFoundError, IBinaryPackageName)
+    IHasBuildRecords, IBinaryPackageName)
 
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchreleasebinarypackage import (
     DistroArchReleaseBinaryPackage)
+from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
@@ -28,16 +30,9 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.helpers import shortlist
 
-__all__ = [
-    'DistroArchRelease',
-    'PocketChroot',
-    ]
-
 
 class DistroArchRelease(SQLBase):
-
     implements(IDistroArchRelease, IHasBuildRecords)
-
     _table = 'DistroArchRelease'
 
     distrorelease = ForeignKey(dbName='distrorelease',
@@ -63,7 +58,7 @@ class DistroArchRelease(SQLBase):
             self.distrorelease.title, self.architecturetag,
             self.processorfamily.name
             )
-    
+
     @property
     def displayname(self):
         """See IDistroArchRelease."""
@@ -85,7 +80,7 @@ class DistroArchRelease(SQLBase):
         """See IDistroArchRelease"""
         return (self.distrorelease.nominatedarchindep and
                 self.id == self.distrorelease.nominatedarchindep.id)
-    
+
     def getChroot(self, pocket=None, default=None):
         """See IDistroArchRelease"""
         if not pocket:
@@ -98,7 +93,7 @@ class DistroArchRelease(SQLBase):
             return pchroot.chroot
 
         return default
-                
+
     def findPackagesByName(self, pattern, fti=False):
         """Search BinaryPackages matching pattern and archtag"""
         binset = getUtility(IBinaryPackageReleaseSet)
@@ -143,7 +138,7 @@ class DistroArchRelease(SQLBase):
             status_clause = "buildstate=%s" % sqlvalues(status)
         else:
             status_clause = "builder is not NULL"
-            
+
         return Build.select(
             "distroarchrelease=%s AND %s" % (self.id, status_clause),
             limit=limit, orderBy="-datebuilt"
@@ -167,7 +162,7 @@ class DistroArchRelease(SQLBase):
                             name.id))+pocketclause,
             clauseTables = ['BinaryPackageRelease'])
         return shortlist(published)
-        
+
 
 class PocketChroot(SQLBase):
     implements(IPocketChroot)
@@ -176,12 +171,9 @@ class PocketChroot(SQLBase):
     distroarchrelease = ForeignKey(dbName='distroarchrelease',
                                    foreignKey='DistroArchRelease',
                                    notNull=True)
-
-    pocket = dbschema.EnumCol(dbName='pocket',
-                              schema=dbschema.PackagePublishingPocket,
+    pocket = dbschema.EnumCol(schema=dbschema.PackagePublishingPocket,
                               default=dbschema.PackagePublishingPocket.RELEASE,
                               notNull=True)
-
     chroot = ForeignKey(dbName='chroot',
                         foreignKey='LibraryFileAlias')
 
