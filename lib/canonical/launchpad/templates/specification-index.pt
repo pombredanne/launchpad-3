@@ -40,7 +40,7 @@
           <th>Status:</th>
           <td tal:content="context/status/title">Approved</td>
         </tr>
-        <tr>
+        <tr tal:condition="context/priority">
           <th>Priority:</th>
           <td tal:content="context/priority/title">High</td>
         </tr>

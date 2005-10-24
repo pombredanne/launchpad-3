@@ -20,6 +20,11 @@
     classes="SpecificationContextMenu"
     />
 
+  <browser:navigation
+    module="canonical.launchpad.browser"
+    classes="SpecificationNavigation"
+    />
+
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISpecification"
     name="+index" />
@@ -138,11 +143,25 @@
   </browser:editform>
 
   <browser:editform
+    name="+priority"
+    schema="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditView"
+    label="Change Priority"
+    fields="priority whiteboard"
+    permission="launchpad.Admin"
+    template="../templates/specification-priority.pt">
+    <browser:widget
+      field="whiteboard"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="5" />
+  </browser:editform>
+
+  <browser:editform
     name="+status"
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Change Status"
-    fields="status priority whiteboard"
+    fields="status whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-status.pt">
     <browser:widget
@@ -170,7 +189,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Administer Specification"
-    fields="name"
+    fields="name priority"
     permission="launchpad.Admin"
     template="../templates/specification-edit.pt"
   />

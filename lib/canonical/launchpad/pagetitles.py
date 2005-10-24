@@ -771,6 +771,8 @@ specification_milestone = 'Target Feature to Milestone'
 
 specification_people = 'Change the Specification Assignee, Drafter and Reviewer'
 
+specification_priority = 'Change the Specification Priority'
+
 specification_distrorelease = ('Target Feature Specification at '
                                'Distribution Release')
 
@@ -800,13 +802,19 @@ specificationtarget_specs = ContextTitle('Specifications for %s')
 
 specificationtarget_specplan = ContextTitle('Project Plan for %s')
 
-sprint_index = ContextTitle('%s (Sprint or Meeting)')
+sprint_attend = ContextTitle('Register your Attendance at %s')
 
 sprint_edit = ContextTitle('Edit Meeting Details: %s')
+
+sprint_index = ContextTitle('%s (Sprint or Meeting)')
 
 sprint_new = 'Register a new Meeting or Sprint in Launchpad'
 
 sprints_index = 'Launchpad Meeting or Sprint Registry'
+
+sprintspecification_edit = 'Edit details of spec at sprint.'
+
+sprintspecification_admin = 'Approve spec for sprint agenda.'
 
 tickets_index = 'Launchpad tech support system'
 

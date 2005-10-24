@@ -15,7 +15,7 @@
 
   <browser:menus
       module="canonical.launchpad.browser"
-      classes="SprintContextMenu SprintSetContextMenu"
+      classes="SprintFacets SprintContextMenu SprintSetContextMenu"
       />
 
   <browser:defaultView
@@ -58,8 +58,19 @@
       field="summary"
       class="zope.app.form.browser.TextAreaWidget"
       height="5" />
+    <browser:widget
+      field="address"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="3" />
   </browser:editform>
 
+  <browser:page
+    name="+attend"
+    for="canonical.launchpad.interfaces.ISprint"
+    class="canonical.launchpad.browser.SprintAttendanceAddView"
+    permission="launchpad.Edit"
+    template="../templates/sprint-attend.pt"
+    />
 
   <!-- SprintSet -->
   <content class="canonical.launchpad.database.SprintSet">

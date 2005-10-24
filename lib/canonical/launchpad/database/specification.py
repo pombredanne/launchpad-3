@@ -45,8 +45,8 @@ class Specification(SQLBase):
     summary = StringCol(notNull=True)
     status = EnumCol(schema=SpecificationStatus, notNull=True,
         default=SpecificationStatus.BRAINDUMP)
-    priority = EnumCol(schema=SpecificationPriority, notNull=True,
-        default=SpecificationPriority.MEDIUM)
+    priority = EnumCol(schema=SpecificationPriority, notNull=False,
+        default=None)
     assignee = ForeignKey(dbName='assignee', notNull=False,
         foreignKey='Person')
     drafter = ForeignKey(dbName='drafter', notNull=False,
@@ -102,6 +102,13 @@ class Specification(SQLBase):
         if self.product:
             return self.product
         return self.distribution
+
+    def getSprintSpecification(self, sprintname):
+        """See ISpecification."""
+        for sprintspecification in self.sprint_links:
+            if sprintspecification.sprint.name == sprintname:
+                return sprintspecification
+        return None
 
     # subscriptions
     def subscribe(self, person):

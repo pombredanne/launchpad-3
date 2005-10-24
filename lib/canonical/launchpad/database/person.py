@@ -324,6 +324,8 @@ class Person(SQLBase):
 
     def inTeam(self, team):
         """See IPerson."""
+        if team is None:
+            return False
         tp = TeamParticipation.selectOneBy(teamID=team.id, personID=self.id)
         if tp is not None or self.id == team.teamownerID:
             return True

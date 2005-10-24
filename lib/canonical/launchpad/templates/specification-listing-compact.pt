@@ -20,9 +20,11 @@
       <span tal:content="context/status/title"
             tal:attributes="class string:specstatus${context/status/name}"
             >Approved</span>
-      <span tal:content="context/priority/title"
+      <span tal:condition="context/priority"
+            tal:content="context/priority/title"
             tal:attributes="class string:specpriority${context/priority/name}"
-            >High</span>:
+            >High</span>
+      <i tal:condition="not: context/priority">No priority</i>
       <tal:block condition="context/assignee">
         <img src="/++resource++user.gif" />&nbsp;<a
              tal:attributes="href context/assignee/fmt:url"

@@ -147,7 +147,7 @@ class DistributionBountiesMenu(ApplicationMenu):
     links = ['new', 'link']
 
     def new(self):
-        text = 'Register a New Bounty'
+        text = 'Register New Bounty'
         return Link('+addbounty', text, icon='add')
 
     def link(self):
@@ -159,14 +159,14 @@ class DistributionSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'specifications'
-    links = ['new', 'roadmap']
+    links = ['roadmap', 'new']
 
     def roadmap(self):
         text = 'Roadmap'
         return Link('+specplan', text, icon='info')
 
     def new(self):
-        text = 'Register a New Specification'
+        text = 'Register New Specification'
         return Link('+addspec', text, icon='add')
 
 

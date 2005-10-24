@@ -76,6 +76,7 @@ __all__ = (
 'SourcePackageUrgency',
 'SpecificationPriority',
 'SpecificationStatus',
+'SprintSpecificationStatus',
 'SSHKeyType',
 'TextDirection',
 'TicketPriority',
@@ -1229,6 +1230,35 @@ class SpecificationStatus(DBSchema):
         This specification has been obsoleted. Probably, we decided not to
         implement it for some reason. It should not be displayed, and people
         should not put any effort into implementing it.
+        """)
+
+
+class SprintSpecificationStatus(DBSchema):
+    """The current approval status of the spec on this sprints agenda.
+    
+    This enum allows us to know whether or not the meeting admin team has
+    agreed to discuss an item.
+    """
+
+    APPROVED = Item(10, """
+        approved
+
+        This spec has been approved for the meeting agenda.
+        """)
+
+    DECLINED = Item(20, """
+        declined
+
+        This spec was submitted for consideration for the meeting agenda but
+        has been declined.
+        """)
+
+    SUBMITTED = Item(30, """
+        submitted
+
+        This spec has been submitted for consideration by the meeting
+        organisers. It has not yet been approved or declined for the meeting
+        agenda.
         """)
 
 

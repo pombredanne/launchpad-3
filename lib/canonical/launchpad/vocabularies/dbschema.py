@@ -26,6 +26,7 @@ __all__ = [
     'PollSecrecyVocabulary',
     'SpecificationStatusVocabulary',
     'SpecificationPriorityVocabulary',
+    'SprintSpecificationStatusVocabulary',
     'TeamSubscriptionPolicyVocabulary',
     'TicketPriorityVocabulary',
     'TicketStatusVocabulary',
@@ -76,6 +77,7 @@ PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
 PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
 SpecificationStatusVocabulary =  vocab_factory(dbschema.SpecificationStatus)
 SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
+SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
 TeamSubscriptionPolicyVocabulary = vocab_factory(
         dbschema.TeamSubscriptionPolicy)
 TicketStatusVocabulary =  vocab_factory(dbschema.TicketStatus)

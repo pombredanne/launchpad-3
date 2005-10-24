@@ -17,9 +17,11 @@
         tal:attributes="class string:specstatus${context/status/name}"
         >Approved</span>
   Priority
-  <span tal:content="context/priority/title"
+  <span tal:condition="context/priority"
+        tal:content="context/priority/title"
         tal:attributes="class string:specpriority${context/priority/name}"
-        >High</span>:
+        >High</span>
+  <i tal:condition="not: context/priority">None assigned</i>.
   <span tal:replace="context/summary">
     summary here
   </span>
@@ -35,4 +37,3 @@
     </b>
   </tal:block>
 </div>
-<hr />
