@@ -129,6 +129,10 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
     def updateStatistics(self):
         """Update all the Rosetta stats for this distro release."""
 
+    def updatePackageCount(self):
+        """Update the binary and source package counts for this distro
+        release."""
+
     def findSourcesByName(name):
         """Return an iterator over source packages with a name that matches
         this one."""

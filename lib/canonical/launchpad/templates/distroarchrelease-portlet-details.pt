@@ -20,7 +20,7 @@
             <a tal:attributes="href context/owner/fmt:url"
                tal:content="context/owner/browsername">owner name</a><br /> 
 
-            <b><span tal:content="context/binarycount">4234</span> binary
+            <b><span tal:content="context/package_count">4234</span> binary
             packages</b><br />
 
         </div>

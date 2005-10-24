@@ -33,6 +33,8 @@ class IDistroArchRelease(IHasOwner):
         "support from the vendor of the distribution."), required=True)
     owner = Int(title=_('The person who registered this port.'),
         required=True)
+    package_count = Attribute('A cache of the number of packages published '
+        'in the RELEASE pocket of this port.')
 
     #joins
     packages = Attribute('List of binary packages in this port.')
@@ -42,11 +44,15 @@ class IDistroArchRelease(IHasOwner):
     displayname = Attribute('Display name')
 
     # useful attributes
-    binarycount = Attribute('Count of Binary Packages')
     isNominatedArchIndep = Attribute(
         'True if this distroarchrelease is the NominatedArchIndep one.')
 
     distribution = Attribute("The distribution of the package.")
+
+    def updatePackageCount():
+        """Update the cached binary package count for this distro arch
+        release.
+        """
 
     def getChroot(pocket=None, default=None):
         """Return the librarian file alias of the chroot for a given Pocket.

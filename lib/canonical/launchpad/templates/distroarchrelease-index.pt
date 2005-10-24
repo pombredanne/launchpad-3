@@ -43,7 +43,7 @@
 
   <p class="discreet">
     This archive currently contains
-    <span tal:replace="context/binarycount" /> software packages. Search
+    <span tal:replace="context/package_count" /> software packages. Search
     them now to find a specific package that meets your needs.
   </p>
 

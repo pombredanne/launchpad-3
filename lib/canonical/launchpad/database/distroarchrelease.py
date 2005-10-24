@@ -10,10 +10,11 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    BoolCol, StringCol, ForeignKey, RelatedJoin, SQLObjectNotFound)
+    BoolCol, IntCol, StringCol, ForeignKey, RelatedJoin, SQLObjectNotFound)
 
 from canonical.lp import dbschema
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.constants import DEFAULT
 
 from canonical.launchpad.interfaces import (
     IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot,
@@ -42,6 +43,7 @@ class DistroArchRelease(SQLBase):
     architecturetag = StringCol(notNull=True)
     official = BoolCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    package_count = IntCol(notNull=True, default=DEFAULT)
 
     packages = RelatedJoin('BinaryPackageRelease',
         joinColumn='distroarchrelease',
@@ -64,16 +66,18 @@ class DistroArchRelease(SQLBase):
         """See IDistroArchRelease."""
         return '%s %s' % (self.distrorelease.name, self.architecturetag)
    
-    @property
-    def binarycount(self):
+    def updatePackageCount(self):
         """See IDistroArchRelease """
-        # XXX: Needs system doc test. SteveAlexander 2005-04-24.
-        query = ('BinaryPackagePublishing.distroarchrelease = %s AND '
-                 'BinaryPackagePublishing.status = %s'
-                 % sqlvalues(
-                    self.id, dbschema.PackagePublishingStatus.PUBLISHED
-                 ))
-        return BinaryPackagePublishing.select(query).count()
+        query = """
+            BinaryPackagePublishing.distroarchrelease = %s AND 
+            BinaryPackagePublishing.status = %s AND
+            BinaryPackagePublishing.pocket = %s
+            """ % sqlvalues(
+                    self.id,
+                    dbschema.PackagePublishingStatus.PUBLISHED,
+                    dbschema.PackagePublishingPocket.RELEASE
+                 )
+        self.package_count = BinaryPackagePublishing.select(query).count()
 
     @property
     def isNominatedArchIndep(self):
