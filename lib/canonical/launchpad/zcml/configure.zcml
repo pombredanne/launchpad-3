@@ -52,7 +52,6 @@
     <include file="distroarchreleasebinarypackagerelease.zcml" />
     <include file="emailaddress.zcml" />
     <include file="files.zcml" />
-    <include file="foaf.zcml" />
     <include file="gpgkey.zcml" />
     <include file="ircid.zcml" />
     <include file="jabberid.zcml" />
@@ -127,7 +126,6 @@
     <include file="rosetta.zcml" />
     <include file="malone.zcml" />
     <include file="registry.zcml" />
-    <include file="foaf.zcml" />
     <include file="bazaar.zcml" />
 
     <!-- Event configuration -->
