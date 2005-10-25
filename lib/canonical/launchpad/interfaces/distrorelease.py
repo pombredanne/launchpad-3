@@ -161,6 +161,11 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         If pocket is not specified, we look in all pockets.
         """
 
+    def getAllReleasesByStatus(status):
+        """Return all sourcepackages in a given published_status for this
+        DistroRelease.
+        """
+
     def publishedBinaryPackages(component=None):
         """Given an optional component name, return a list of the binary
         packages that are currently published in this distrorelease in the

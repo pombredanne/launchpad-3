@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'IDistroArchRelease',
+    'IDistroArchReleaseSet',
     'IPocketChroot',
     ]
 
@@ -48,6 +49,12 @@ class IDistroArchRelease(IHasOwner):
         'True if this distroarchrelease is the NominatedArchIndep one.')
 
     distribution = Attribute("The distribution of the package.")
+    default_processor = Attribute(
+        "Return the DistroArchRelease default processor, by picking the "
+        "first processor inside its processorfamily.")
+    processors = Attribute(
+        "The group of Processors for this Distroarchrelease.processorfamily."
+        )
 
     def updatePackageCount():
         """Update the cached binary package count for this distro arch
@@ -82,6 +89,24 @@ class IDistroArchRelease(IHasOwner):
         this distro arch release.
         """
 
+    def findDepCandidateByName(name):
+        """Return the last published binarypackage by given name.
+
+        Return the PublishedPackage record by binarypackagename or None if
+        not found.
+        """
+
+class IDistroArchReleaseSet(Interface):
+    """Interface for DistroArchReleaseSet"""
+
+    def __iter__():
+        """Iterate over distroarchreleases."""
+
+    def count():
+        """Return the number of distroarchreleases in the system."""
+
+    def get(distroarchrelease_id):
+        """Return the IDistroArchRelease to the given distroarchrelease_id."""
 
 
 class IPocketChroot(Interface):

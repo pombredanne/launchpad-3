@@ -10,7 +10,8 @@ from zope.component import getUtility
 
 # SQLObject/SQLBase
 from sqlobject import (
-    StringCol, ForeignKey, IntervalCol)
+    StringCol, ForeignKey, IntervalCol, MultipleJoin)
+from sqlobject.sqlbuilder import AND, IN
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -23,11 +24,10 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
+from canonical.launchpad.database.builder import BuildQueue
 
 from canonical.librarian.interfaces import ILibrarianClient
 
-from canonical.launchpad.database.binarypackagerelease import (
-    BinaryPackageRelease)
 
 from canonical.lp.dbschema import EnumCol, BuildStatus
 
@@ -53,6 +53,14 @@ class Build(SQLBase):
     gpgsigningkey = ForeignKey(dbName='gpgsigningkey', foreignKey='GPGKey',
         default=None)
     changes = StringCol(dbName='changes', default=None)
+
+    @property
+    def buildqueue_record(self):
+        """See IBuild"""
+        # XXX cprov 20051025
+        # Would be nice if we can use fresh sqlobject feature 'singlejoin'
+        # instead, see bug # 3424
+        return BuildQueue.selectOneBy(buildID=self.id)
 
     @property
     def distrorelease(self):
@@ -133,6 +141,10 @@ class Build(SQLBase):
                                     licence=licence,
                                     architecturespecific=architecturespecific)
 
+    def createBuildQueueEntry(self):
+        """See IBuild"""
+        return BuildQueue(build=self.id)
+
 
 class BuildSet:
     implements(IBuildSet)
@@ -152,3 +164,16 @@ class BuildSet:
         """See IBuildSet."""
         return Build.get(id)
 
+    def getPendingBuildsForArchSet(self, archreleases):
+        """See IBuildSet."""
+        archrelease_ids = [d.id for d in archreleases]
+
+        return Build.select(
+            AND(Build.q.buildstate==BuildStatus.NEEDSBUILD,
+                IN(Build.q.distroarchreleaseID, archrelease_ids))
+            )                                  
+
+    def getBuildsForBuilder(self, builder, limit=10):
+        """See IBuildSet"""
+        return Build.select("builder=%s" % sqlvalues(builder.id), limit=limit,
+                            orderBy="-datebuilt")

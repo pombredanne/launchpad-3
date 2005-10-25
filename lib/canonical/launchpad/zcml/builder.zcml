@@ -129,6 +129,11 @@
     <!-- BuildQueue -->
     <content class="canonical.launchpad.database.BuildQueue">
        <allow interface="canonical.launchpad.interfaces.IBuildQueue"/>
+       <!-- XXX cprov 20051020: we need a autobuild celebrity, bug #3580 -->
+       <!-- Grant permissions to write on BuildQueue and Build. --> 
+       <require
+            permission="zope.Public"
+            set_attributes="lastscore"/>
     </content>
 
     <!-- BuildQueueSet -->

@@ -361,6 +361,11 @@ class DistroRelease(SQLBase):
             clauseTables = ['SourcePackageRelease'])
         return shortlist(published)
 
+    def getAllReleasesByStatus(self, status):
+        """See IDistroRelease."""
+        return SourcePackagePublishing.selectBy(distroreleaseID=self.id,
+                                                status=status)
+
     def publishedBinaryPackages(self, component=None):
         """See IDistroRelease."""
         # XXX sabdfl 04/07/05 this can become a utility when that works
