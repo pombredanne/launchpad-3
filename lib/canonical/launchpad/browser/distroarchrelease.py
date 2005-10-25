@@ -7,16 +7,18 @@ __all__ = [
     'DistroArchReleaseContextMenu',
     'DistroArchReleaseFacets',
     'DistroArchReleaseView',
+    'DistroArchReleaseAddView',
     'DistroArchReleaseBinariesView',
     ]
 
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
-from zope.component import getUtility
 
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, ContextMenu, Link,
     GetitemNavigation)
+from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.addview import SQLObjectAddView
 
 from canonical.launchpad.interfaces import IDistroArchRelease
 
@@ -37,26 +39,23 @@ class DistroArchReleaseFacets(StandardLaunchpadFacets):
 class DistroArchReleaseContextMenu(ContextMenu):
 
     usedfor = IDistroArchRelease
-    links = ['edit', 'packagesearch']
+    links = ['admin', 'packagesearch']
 
-    def edit(self):
-        text = 'Edit Architecture Release Details'
-        return Link('+edit', text, icon='edit')
+    def admin(self):
+        text = 'Administer'
+        return Link('+admin', text, icon='edit')
 
     def packagesearch(self):
         text = 'Search Packages'
         return Link('+pkgsearch', text, icon='search')
 
 
-class DistroArchReleaseView:
+class DistroArchReleaseView(BuildRecordsView):
+    """Default DistroArchRelease view class."""
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
-
-    def getBuilt(self):
-        """Return the last build records for the DistroArchRelease context."""
-        return self.context.getWorkedBuildRecords()
 
 
 class DistroArchReleaseBinariesView:
@@ -86,4 +85,24 @@ class DistroArchReleaseBinariesView:
                       size = batch_size)
 
         return BatchNavigator(batch = batch, request = self.request)
+
+
+class DistroArchReleaseAddView(SQLObjectAddView):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self._nextURL = '.'
+        SQLObjectAddView.__init__(self, context, request)
+
+    def create(self, architecturetag, processorfamily, official, owner):
+        """Create a new Port."""
+        dar = self.context.newArch(architecturetag, processorfamily,
+            official, owner)
+        self._nextURL = canonical_url(dar)
+        return dar
+
+    def nextURL(self):
+        return self._nextURL
+
 

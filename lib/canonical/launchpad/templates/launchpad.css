@@ -83,7 +83,7 @@ input[disabled] {
 .portalErrorMessage,
 .portalError {
     background-color: #ff9070;
-    border: 1px solid #ddb0b0;
+    border: 1px solid #998080;
     color: Black;
     margin: 0em 0em 0em 0em;
     padding: 0.3em 0.3em 0.3em 0.3em;
@@ -100,7 +100,7 @@ input[disabled] {
     background-image: url(/++resource++alert_icon.gif);
     background-repeat: no-repeat;
     background-position: 5px 50%;
-    padding: 0.5em 1em 0.5em 3em;
+    padding: 0.3em 1em 0.3em 3em;
 }
 
 
@@ -196,7 +196,7 @@ input.searchButton {
 }
 
 .link-ftp {
-  background: transparent url(/++resource++file_icon.gif) 0px 1px no-repeat;
+  background: transparent url(/++resource++file) 0px 1px no-repeat;
 }
 
 .link-irc {
@@ -251,8 +251,8 @@ table.rowNavigation>thead>tr:hover {
 /* highlight specific table entry */
 
 tr.highlight {
-    border: 1px solid #ffa500;
-    background-color: #ffce7b;
+    border: 1px solid #ffc550;
+    background-color: #ffe7ab;
 }
 
 tr.amount, td.amount {
@@ -453,6 +453,9 @@ ul.edit>li, li.edit {
 ul.info>li, li.info {
   list-style-image: url(/++resource++info_icon.gif);
 }
+ul.file>li, li.file {
+  list-style-image: url(/++resource++file);
+}
 ul.languages>li, li.languages {
   list-style-image: url(/++resource++languages.gif);
 }
@@ -474,7 +477,10 @@ ul.milestone>li, li.milestone {
 ul.news>li, li.news {
   list-style-image: url(/++resource++news);
 }
-ul.packages>li, li.packages, ul.products>li, li.products {
+ul.packages>li, li.packages {
+  list-style-image: url(/++resource++package-binary);
+}
+ul.products>li, li.products {
   list-style-image: url(/++resource++product_icon.gif);
 }
 ul.person>li, li.person, ul.people>li, li.people {
@@ -656,16 +662,20 @@ table.listing, table.listing tbody {
   border-bottom: 1px solid #8cacbb;
 }
 table.listing th, table.listing td {
+  background: none;
   padding: 0.125em 0.25em;
 }
 table.listing th {
+  border: 1px solid #8cacbb;
+  text-transform: none;
   white-space: nowrap;
 }
 table.listing>tr>td, table.listing>tbody>tr>td {
   border: 1px #8cacbb;
   border-style: dotted none none none;
 }
-table.listing>tr.note>td, table.listing>tbody>tr.note>td {
+table.listing>tbody>tr.secondary>th, table.listing>tbody>tr.secondary>td,
+table.listing>tbody>tr.note>th, table.listing>tbody>tr.note>td {
   border-style: none;
 }
 table.listing>tr.note, table.listing>tbody>tr.note {
@@ -1255,4 +1265,35 @@ Calendar stuff.
 #calendar-view-day .other {
   background: #e0b6af;
   border: 1px #884631 solid;
+}
+
+.error-notification,
+.warning-notification {
+  background-position: 5px 0.5em;
+  padding-left: 30px;
+  background-color: #ff9070;
+  border: 1px solid #ddb0b0;
+  color: Black;
+  background-image: url(/++resource++alert_icon.gif);
+  font-size: 85%;
+  font-weight: bold;
+  margin: 1em 0em 0em 0em;
+  padding: 0.5em 1em 0.5em 3em;
+  background-repeat: no-repeat;
+}
+
+.notice-notification,
+.info-notification,
+.debug-notification {
+  background-position: 5px 0.5em;
+  padding-left: 30px;
+  background-color: #ffce7b;
+  border: 1px solid #ddb0b0;
+  color: Black;
+  background-image: url(/++resource++info_icon.gif);
+  font-size: 85%;
+  font-weight: bold;
+  margin: 1em 0em 0em 0em;
+  padding: 0.5em 1em 0.5em 3em;
+  background-repeat: no-repeat;
 }

@@ -89,22 +89,26 @@ class redirection:
 
     It is an object returned from a traversal method in its one argument
     form.  It says that the result of such traversal is a redirect.
+
+    You can use the keyword argument 'status' to change the status code
+    from the default of 303 (assuming http/1.1).
     """
 
-    def __init__(self, arg1, arg2=None):
+    def __init__(self, arg1, arg2=None, status=None):
         if arg2 is None:
             self.toname = arg1
         else:
             self.fromname = arg1
             self.toname = arg2
             addClassAdvisor(self.advise)
+        self.status = status
 
     def advise(self, cls):
         redirections = cls.__dict__.get('__redirections__')
         if redirections is None:
             redirections = {}
             setattr(cls, '__redirections__', redirections)
-        redirections[self.fromname] = self.toname
+        redirections[self.fromname] = (self.toname, self.status)
         return cls
 
 
@@ -142,7 +146,10 @@ class LaunchpadView(UserAttributeCache):
         self.request = request
 
     def initialize(self):
-        """Override this in subclasses."""
+        """Override this in subclasses.
+       
+        Default implementation does nothing.
+        """
         pass
 
     @property
@@ -361,7 +368,8 @@ class Navigation:
         if nextobj is None:
             raise NotFound(self.context, name)
         elif isinstance(nextobj, redirection):
-            return RedirectionView(nextobj.toname, request)
+            return RedirectionView(
+                nextobj.toname, request, status=nextobj.status)
         else:
             return nextobj
 
@@ -427,7 +435,8 @@ class Navigation:
         redirections = self._combined_class_info('__redirections__')
         if redirections is not None:
             if name in redirections:
-                return RedirectionView(redirections[name], request)
+                urlto, status = redirections[name]
+                return RedirectionView(urlto, request, status=status)
 
         # Finally, use the self.traverse() method.  This can return
         # an object to be traversed, or raise NotFoundError.  It must not
@@ -446,12 +455,13 @@ class Navigation:
 class RedirectionView:
     implements(IBrowserPublisher)
 
-    def __init__(self, target, request):
+    def __init__(self, target, request, status=None):
         self.target = target
         self.request = request
+        self.status = status
 
     def __call__(self):
-        self.request.response.redirect(self.target)
+        self.request.response.redirect(self.target, status=self.status)
         return ''
 
     def browserDefault(self, request):

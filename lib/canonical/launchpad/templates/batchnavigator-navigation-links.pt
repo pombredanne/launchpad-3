@@ -30,4 +30,5 @@
   of
   <span tal:replace="total">42</span> result<span
       tal:omit-tag="" tal:condition="python: total != 1">s</span>
+
 </tal:block>

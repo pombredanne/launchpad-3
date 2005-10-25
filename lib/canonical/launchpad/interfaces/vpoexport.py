@@ -11,7 +11,8 @@ from zope.interface import Interface, Attribute
 class IVPOExportSet(Interface):
     """A collection of IVPOExport-providing rows."""
 
-    def get_pofile_rows(potemplate, language, variant=None):
+    def get_pofile_rows(potemplate, language, variant=None,
+        included_obsolete=True):
         """Return all rows which belong to a particular PO file."""
 
     def get_potemplate_rows(potemplate):
@@ -28,7 +29,16 @@ class IVPOExportSet(Interface):
 
     def get_distrorelease_pofiles_count(release, date=None, component=None,
         languagepack=None):
-        """Return the number of PO files which would be contained in an export of a
+        """Return the number of PO files which would be contained in an export
+        of a distribution release.
+
+        The filtering is done based on the 'release', last modified 'date',
+        archive 'component' and if it belongs to a 'languagepack'
+        """
+
+    def get_distrorelease_potemplates(release, component=None,
+        languagepack=None):
+        """Get a list of PO files which would be contained in an export of a
         distribtuion release.
 
         The filtering is done based on the 'release', last modified 'date',
@@ -47,14 +57,14 @@ class IVPOExport(Interface):
     name = Attribute("See IPOTemplateName.name")
     translationdomain = Attribute("See IPOTemplateName.translationdomain")
 
-    potemplate = Attribute("See IPOTemplate.id")
+    potemplate = Attribute("See IPOTemplate")
     distrorelease = Attribute("See IPOTemplate.distrorelease")
     sourcepackagename = Attribute("See IPOTemplate.sourcepackagename")
     productrelease = Attribute("See IPOTemplate.productrelease")
     potheader = Attribute("See IPOTemplate.header")
     languagepack = Attribute("See IPOTemplate.languagepack")
 
-    pofile = Attribute("See IPOFile.id")
+    pofile = Attribute("See IPOFile")
     language = Attribute("See IPOFile.language")
     variant = Attribute("See IPOFile.variant")
     potopcomment = Attribute("See IPOFile.topcomment")

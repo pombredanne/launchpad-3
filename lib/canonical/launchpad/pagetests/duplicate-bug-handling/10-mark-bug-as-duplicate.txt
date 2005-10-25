@@ -1,7 +1,7 @@
 First, visit the +duplicate page on the bug you're looking at:
 
   >>> print http(r"""
-  ... GET /distros/debian/+sources/mozilla-firefox/+bug/2/+duplicate HTTP/1.1
+  ... GET /distros/debian/+source/mozilla-firefox/+bug/2/+duplicate HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
@@ -21,7 +21,7 @@ duplicate:
 Now, let's go ahead and mark bug 2 as a duplicate of bug 1.
 
   >>> print http(r"""
-  ... POST /distros/debian/+sources/mozilla-firefox/+bug/2/+duplicate HTTP/1.1
+  ... POST /distros/debian/+source/mozilla-firefox/+bug/2/+duplicate HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 309
   ... Content-Type: multipart/form-data; boundary=---------------------------17976867087135254391306687757
@@ -38,7 +38,7 @@ Now, let's go ahead and mark bug 2 as a duplicate of bug 1.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://.../distros/debian/+sources/mozilla-firefox/+bug/2
+  Location: http://.../distros/debian/+source/mozilla-firefox/+bug/2
   ...
 
 When the bug is marked as a duplicate, each subscriber will receive,
@@ -76,8 +76,10 @@ notification:
     >>> from_addr, to_addrs, raw_message = sent_emails[-1]
 
     >>> print from_addr
-    Foo Bar <foo.bar@canonical.com>
+    bounces@canonical.com
     >>> msg = email.message_from_string(raw_message)
+    >>> msg["From"]
+    'Foo Bar <foo.bar@canonical.com>'
     >>> msg["Subject"]
     '[Bug 2] Blackhole Trash folder'
 
@@ -103,8 +105,10 @@ notification:
     >>> from_addr, to_addrs, raw_message = sent_emails[0]
 
     >>> print from_addr
-    Foo Bar <foo.bar@canonical.com>
+    bounces@canonical.com
     >>> msg = email.message_from_string(raw_message)
+    >>> msg["From"]
+    'Foo Bar <foo.bar@canonical.com>'
     >>> msg["Subject"]
     '[Bug 1] Firefox does not support SVG'
 

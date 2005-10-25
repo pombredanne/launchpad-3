@@ -31,7 +31,10 @@
         <i>Not assigned</i><br />
         </tal:block>
         <b>Translation Perms:</b><br />
-        <span tal:replace="context/translationpermission/title">Open</span>
+        <span
+          tal:content="context/translationpermission/title"
+          tal:attributes="title context/translationpermission/description">
+          Open</span>
         <br />
 
         <tal:does_not_use_rosetta condition="not: context/official_rosetta">

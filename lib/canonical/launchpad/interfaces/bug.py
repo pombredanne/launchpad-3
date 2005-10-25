@@ -142,7 +142,7 @@ class IBug(IMessageTarget):
         removed.
         """
 
-    def findCvesInText(self, bug, text):
+    def findCvesInText(self, text):
         """Find any CVE references in the given text, make sure they exist
         in the database, and are linked to this bug.
         """
@@ -244,7 +244,7 @@ class IBugAddForm(IBug):
             emerge or similar."""),
             vocabulary="SourcePackageName")
     distribution = Choice(
-            title=_("Linux Distribution"), required=False,
+            title=_("Linux Distribution"), required=True,
             description=_("""Ubuntu, Debian, Gentoo, etc."""),
             vocabulary="Distribution")
     owner = Int(title=_("Owner"), required=True)

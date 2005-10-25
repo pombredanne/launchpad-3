@@ -55,13 +55,19 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         title=_("Section"),
         description=_("The release sections."), required=True,
         vocabulary='Schema')
-    releasestatus = Attribute(
-        "The release's status, such as FROZEN or DEVELOPMENT, as "
-        "specified in the DistributionReleaseStatus enum.")
+    # XXX: dsilvers: 20051013: These should be renamed and the above removed
+    # in the future when we have time. Uploader and Queue systems will need
+    # fixing to cope.
+    # Bug 3256
+    real_components = Attribute("The release's components.")
+    real_sections = Attribute("The release's sections.")
+    releasestatus = Choice(
+        title=_("Release Status"), required=True,
+        vocabulary='DistributionReleaseStatus')
     datereleased = Attribute("The datereleased.")
     parentrelease = Choice(
         title=_("Parent Release"),
-        description=_("The Parente Distribution Release."), required=True,
+        description=_("The Parent Distribution Release."), required=True,
         vocabulary='DistroRelease')
     owner = Attribute("Owner")
     state = Attribute("DistroRelease Status")
@@ -107,16 +113,15 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         "Any bugtasks on this distrorelease that are for bugs with "
         "CVE references, and are resolved.")
 
-    def getBugSourcePackages():
-        """Get SourcePackages in a DistroRelease with BugTask"""
-
     def traverse(name):
         """Traverse across a distrorelease in Launchpad. This looks for
         special URL items, like +sources or +packages, then goes on to
         traverse using __getitem__."""
 
-    def __getitem__(arch):
-        """Return a Set of Binary Packages in this distroarchrelease."""
+    def __getitem__(archtag):
+        """Return the distroarchrelease for this distrorelease with the
+        given architecturetag.
+        """
 
     def updateStatistics(self):
         """Update all the Rosetta stats for this distro release."""
@@ -125,20 +130,28 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         """Return an iterator over source packages with a name that matches
         this one."""
 
-    def getSourcePackageByName(name):
+    def getSourcePackage(name):
         """Return a source package in this distro release by name.
 
         The name given may be a string or an ISourcePackageName-providing
         object.
         """
 
+    def getBinaryPackage(name):
+        """Return a DistroReleaseBinaryPackage for this name.
+
+        The name given may be an IBinaryPackageName or a string.
+        """
+
     def findBinariesByName(name):
         """Return an iterator over binary packages with a name that matches
         this one."""
 
-    def getPublishedReleases(sourcepackage_or_name):
+    def getPublishedReleases(sourcepackage_or_name, pocket=None):
         """Given a SourcePackageName, return a list of the currently
         published SourcePackageReleases as SourcePackagePublishing records.
+
+        If pocket is not specified, we look in all pockets.
         """
 
     def publishedBinaryPackages(component=None):
@@ -157,6 +170,54 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         """Return the DistroReleaseLanguage for this distrorelease and the
         given language, or a DummyDistroReleaseLanguage.
         """
+
+    def createUploadedSourcePackageRelease(sourcepackagename, version,
+            maintainer, dateuploaded, builddepends, builddependsindep,
+            architecturehintlist, component, creator, urgency,
+            changelog, dsc, dscsigningkey, section, manifest):
+        """Create a sourcepackagerelease with this distrorelease set to
+        be the uploadeddistrorelease.
+        """
+
+    def getComponentByName(name):
+        """Get the named component.
+
+        Raise NotFoundError if the component is not in the permitted component
+        list for this distrorelease.
+        """
+
+    def getSectionByName(name):
+        """Get the named section.
+
+        Raise NotFoundError if the section is not in the permitted section
+        list for this distrorelease.
+        """
+
+    def removeOldCacheItems():
+        """Delete any records that are no longer applicable."""
+
+    def updateCompletePackageCache():
+        """Update the package cache for all binary package names published
+        in this distro release.
+        """
+
+    def updatePackageCache(name):
+        """Update the package cache for the binary packages with the given
+        name.
+        """
+
+    def searchPackages(text):
+        """Search through the packge cache for this distrorelease and return
+        DistroReleaseBinaryPackage objects that match the given text.
+        """
+
+    def createQueueEntry(pocket):
+        """Create a queue item attached to this distrorelease and the given
+        pocket.
+        """
+    
+    def newArch(architecturetag, processorfamily, official, owner):
+        """Create a new port or DistroArchRelease for this DistroRelease."""
 
 
 class IDistroReleaseSet(Interface):

@@ -18,7 +18,7 @@ class IManifestEntry(Interface):
     entrytype = Attribute("Type of the entry")
     path = Attribute("Path within source package this entry produces")
     hint = Attribute("Hint as to purpose of this entry")
-    patchon = Attribute("Sequence number of entry this is applied to")
+    parent = Attribute("Sequence number of our parent entry")
 
     dirname = Attribute("Directory name in the file produced by the entry")
     branch = Attribute("Branch to obtain entry content from")

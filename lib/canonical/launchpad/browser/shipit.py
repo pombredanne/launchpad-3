@@ -25,7 +25,7 @@ from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
 from canonical.launchpad.webapp import (
-    canonical_url, Navigation, stepto)
+    canonical_url, Navigation, stepto, redirection)
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.helpers import positiveIntOrZero, intOrZero
@@ -724,6 +724,9 @@ class ShipItNavigation(Navigation):
 
     usedfor = IShipItApplication
     newlayer = canonical.launchpad.layers.ShipItLayer
+
+    # Support bookmarks to the old shipit application that used cgi scripts.
+    redirection('user.cgi', '.', status=301)
 
     @stepto('requests')
     def requests(self):

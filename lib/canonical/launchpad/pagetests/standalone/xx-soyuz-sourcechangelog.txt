@@ -1,6 +1,6 @@
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/pmount/+changelog HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/pmount/+changelog HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...

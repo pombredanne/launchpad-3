@@ -3,17 +3,24 @@
 
 __metaclass__ = type
 
-from zope.interface import implements
+from zope.publisher.browser import BrowserRequest, BrowserResponse
+from zope.app.session.interfaces import ISession
+from zope.interface import Interface, implements
 from zope.app.publication.interfaces import IPublicationRequestFactory
-import canonical.launchpad.layers
 from zope.server.http.publisherhttpserver import PublisherHTTPServer
 from zope.app.server.servertype import ServerType
 from zope.server.http.commonaccesslogger import CommonAccessLogger
+import zope.publisher.publish
+
+import canonical.launchpad.layers
 from canonical.publication import LaunchpadBrowserPublication
 from zope.publisher.browser import BrowserRequest
 #from zope.publisher.http import HTTPRequest
 import zope.publisher.publish
 from canonical.launchpad.interfaces import ILaunchpadBrowserApplicationRequest
+from canonical.launchpad.webapp.notification import (
+        NotificationRequest, NotificationResponse
+        )
 
 
 class StepsToGo:
@@ -93,11 +100,9 @@ class StepsToGo:
         return bool(self._stack)
 
 
-class LaunchpadBrowserRequest(BrowserRequest):
+class LaunchpadBrowserRequest(BrowserRequest, NotificationRequest):
 
     implements(ILaunchpadBrowserApplicationRequest)
-
-    __slots__ = ('__provides__', 'breadcrumbs')
 
     def __init__(self, body_instream, outstream, environ, response=None):
         self.breadcrumbs = []
@@ -107,6 +112,29 @@ class LaunchpadBrowserRequest(BrowserRequest):
     @property
     def stepstogo(self):
         return StepsToGo(self)
+
+    def _createResponse(self, outstream):
+        """As per zope.publisher.browser.BrowserRequest._createResponse"""
+        return LaunchpadBrowserResponse(outstream)
+
+
+class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
+
+    # Note that NotificationResponse defines a 'redirect' method which
+    # needs to override the 'redirect' method in BrowserResponse
+    def __init__(self, outstream, header_output=None, http_transaction=None):
+        super(LaunchpadBrowserResponse, self).__init__(
+                outstream, header_output, http_transaction
+                )
+
+
+def adaptResponseToSession(response):
+    """Adapt LaunchpadBrowserResponse to ISession"""
+    return ISession(response._request)
+
+def adaptRequestToResponse(request):
+    """Adapt LaunchpadBrowserRequest to LaunchpadBrowserResponse"""
+    return request.response
 
 
 class HTTPPublicationRequestFactory:

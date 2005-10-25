@@ -23,8 +23,15 @@
   <h1 tal:content="context/title">Feature Specification</h1>
 
   <p tal:repeat="notice view/notices" tal:content="notice"
-     class="portalMessage">
+     class="portalMessage" style="margin-bottom: 10px">
     notice goes here
+  </p>
+
+  <p tal:condition="not:context/specurl" class="portalMessage"
+     style="margin-bottom: 10px">
+    This specification is currently not linked to a URL. Visit the
+    <a href="+edit">edit page</a> if you wish to link it to a URL that others
+    can visit to read a more detailed description of the specification.
   </p>
 
     <table>
@@ -76,7 +83,7 @@
       <p tal:content="context/summary">
         The feature summary will be given here.
       </p>
-      <ul>
+      <ul tal:condition="context/specurl">
         <li class="download">
           <a tal:attributes="href context/specurl">
             Read the complete specification

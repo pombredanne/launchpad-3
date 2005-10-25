@@ -5,6 +5,7 @@ from zope.schema import Bool, Choice, Text, TextLine, Bytes
 
 from canonical.launchpad.interfaces.rawfiledata import ICanAttachRawFileData
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
+from canonical.launchpad.interfaces.launchpad import NotFoundError
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -15,8 +16,10 @@ __all__ = (
     'LanguageNotFound', 'IPOTemplateSubset', 'IPOTemplateSet', 'IPOTemplate',
     'IEditPOTemplate', 'IPOTemplateWithContent')
 
-class LanguageNotFound(ValueError):
+
+class LanguageNotFound(NotFoundError):
     """Raised when a a language does not exist in the database."""
+
 
 class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     """A PO template. For example 'nautilus/po/nautilus.pot'."""
@@ -235,6 +238,9 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
 
     def invalidateCache():
         """Invalidate the cached export for all pofiles."""
+
+    def export():
+        """Return as a string the .pot file."""
 
 
 class IEditPOTemplate(IPOTemplate):

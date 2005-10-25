@@ -1,3 +1,46 @@
+<metal:item define-macro="bugtask_search_form">
+  <tal:comment condition="nothing">
+    This macro expects the following names are defined on the view class of the
+    callsite.
+
+    :searchtext_widget: The widget in which search keywords can be entered.
+    :shouldShowPackageName: Should the sourcepackage name be shown in the
+    listing?
+  </tal:comment>
+
+  <form name="bugtask_search" action="" method="GET">
+    <table>
+      <tr>
+        <th>
+          <label tal:content="view/searchtext_widget/label">
+            Bug id or text:
+          </label>
+        </th>
+        <td>
+          <tal:searchtext content="structure view/searchtext_widget" />
+        </td>
+      </tr>
+      <tr>
+        <th>
+          <label metal:use-macro="context/@@+bugtask-macros-listview/sortwidget_label" />
+        </th>
+        <td>
+          <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
+        </td>
+      </tr>
+      <tr>
+        <th>
+        </th>
+        <td>
+          <input type="submit" name="search" value="Search" />
+          <input type="hidden"
+                 name="advanced" tal:attributes="value request/advanced|nothing" />
+        </td>
+      </tr>
+    </table>
+  </form>
+</metal:item>
+
 <metal:item define-macro="item">
   <tal:comment replace="nothing">
   This macro expects the following variables defined:
@@ -7,7 +50,17 @@
   </tal:comment>
 
   <td style="width: 20px" valign="baseline">
-    <tal:taskicon content="structure task/fmt:icon" />&nbsp;
+    <a tal:condition="task/priority"
+       tal:attributes="href task/fmt:url;
+                       title string:${task/priority/title} priority">
+      <tal:taskicon content="structure task/fmt:icon" />
+    </a>
+    <a tal:condition="not: task/priority"
+       tal:attributes="href task/fmt:url"
+       title="No priority set">
+      <tal:taskicon content="structure task/fmt:icon" />
+    </a>
+    &nbsp;
   </td>
   <th valign="baseline">
     <a tal:attributes="href task/fmt:url">
@@ -51,4 +104,35 @@
       class="discreet"
     >Not wanted elsewhere</div>
   </td>
+</metal:item>
+
+<metal:item define-macro="sortwidget_label">
+  <label for="orderby">Sorted by:</label>
+</metal:item>
+
+<metal:item define-macro="sortwidget">
+  <tal:comment condition="nothing">
+    This macro expects that the callsite's view class has a shouldShowPackageName
+    method.
+  </tal:comment>
+
+  <select name="orderby" id="orderby" size="1"
+          tal:define="orderby request/orderby|string:-priority,-severity">
+    <option value="-datecreated"
+            tal:attributes="selected python:orderby == '-datecreated'">newest first</option>
+    <option value="datecreated"
+            tal:attributes="selected python:orderby == 'datecreated'">oldest first</option>
+    <option value="-priority,-severity"
+            tal:attributes="selected python:orderby == '-priority,-severity'">priority, then severity</option>
+    <option value="-severity,-priority"
+            tal:attributes="selected python:orderby == '-severity,-priority'">severity, then priority</option>
+    <option value="title"
+            tal:attributes="selected python:orderby == 'title'">title</option>
+    <option value="milestone"
+            tal:attributes="selected python:orderby == 'milestone'">milestone</option>
+    <option tal:condition="view/shouldShowPackageName|nothing"
+            tal:attributes="selected python:orderby == 'package'"
+            value="package">package</option>
+  </select>
+
 </metal:item>

@@ -56,6 +56,7 @@ class Builder(SQLBase):
     failnotes = StringCol(dbName='failnotes', default=None)
     trusted = BoolCol(dbName='trusted', default=False, notNull=True)
     speedindex = IntCol(dbName='speedindex', default=0)
+    manual = BoolCol(dbName='manual', default=False)
     
     @property
     def currentjob(self):
@@ -65,16 +66,24 @@ class Builder(SQLBase):
     @property
     def slave(self):
         """See IBuilder"""
-        return BuilderSlave(self.url,allow_none=1)
+        return BuilderSlave(self.url, allow_none=True)
 
     @property
     def status(self):
         """See IBuilder"""
+        if self.manual:
+            mode = 'MANUAL'
+        else:
+            mode = 'AUTO'
+            
         if not self.builderok:
-            return 'NOT OK : %s' % self.failnotes
+            return 'NOT OK : %s (%s)' % (self.failnotes, mode)
+
         if self.currentjob:
-            return 'BUILDING %s' % self.currentjob.build.title
-        return 'IDLE'
+            return 'BUILDING %s (%s)' % (self.currentjob.build.title,
+                                         mode)
+
+        return 'IDLE (%s)' % mode
 
     def lastBuilds(self, limit=10):
         """See IBuilder"""
@@ -117,6 +126,10 @@ class BuilderSet(object):
         """See IBuilderSet."""
         return Builder.select()
 
+    def getBuild(self, id):
+        """See IBuilderSet."""
+        return Build.get(id)
+
 
 class BuildQueue(SQLBase):
     implements(IBuildQueue)
@@ -131,31 +144,43 @@ class BuildQueue(SQLBase):
 
     @property
     def archrelease(self):
+        """See IBuildQueue"""
         return self.build.distroarchrelease
 
     @property
     def urgency(self):
+        """See IBuildQueue"""
         return self.build.sourcepackagerelease.urgency
     
     @property
     def component_name(self):
+        """See IBuildQueue"""
         return self.build.sourcepackagerelease.component.name
 
     @property
     def archhintlist(self):
+        """See IBuildQueue"""
         return self.build.sourcepackagerelease.archhintlist
     
     @property
     def name(self):
+        """See IBuildQueue"""
         return self.build.sourcepackagerelease.name
 
     @property
     def version(self):
+        """See IBuildQueue"""
         return self.build.sourcepackagerelease.version
 
     @property
     def files(self):
+        """See IBuildQueue"""        
         return self.build.sourcepackagerelease.files
+
+    @property
+    def builddependsindep(self):
+        """See IBuildQueue"""
+        return self.build.sourcepackagerelease.builddependsindep
 
     @property
     def buildduration(self):

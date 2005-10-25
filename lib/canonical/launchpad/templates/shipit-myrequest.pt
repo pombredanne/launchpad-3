@@ -18,7 +18,8 @@
   
     <tal:block condition="view/orderIsCancelledOrShipped">
       <h1 tal:condition="order/cancelled">This order was cancelled</h1>
-      <h1 tal:condition="order/shipment">This order was already shipped</h1>
+      <h1 tal:condition="order/shipment">This order is being processed by the
+        shippin company</h1>
     </tal:block>
 
     <tal:block condition="not: view/orderIsCancelledOrShipped">

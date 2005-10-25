@@ -7,6 +7,10 @@ from xml.dom import minidom
 from canonical.lp.dbschema import BugTrackerType
 from canonical.launchpad.scripts import log
 
+# The user agent we send in our requests
+LP_USER_AGENT = "Launchpad Bugscraper/0.1 (http://launchpad.net/malone)"
+
+
 class UnknownBugTrackerTypeError(Exception):
     """
     Exception class to catch systems we don't have a class for yet
@@ -19,6 +23,7 @@ class UnknownBugTrackerTypeError(Exception):
     def __str__(self):
         return self.bugtrackertypename
 
+
 class BugTrackerConnectError(Exception):
     """
     Exception class to catch misc errors contacting a bugtracker
@@ -30,7 +35,8 @@ class BugTrackerConnectError(Exception):
 
     def __str__(self):
         return "%s: %s" % (self.url, self.error)
-        
+
+
 class ExternalSystem(object):
     """
     Generic class for a remote system.  This is a pass-through class
@@ -55,16 +61,23 @@ class ExternalSystem(object):
     def malonify_status(self, status):
         return self.remotesystem.malonify_status(status)
 
+
 class Bugzilla(ExternalSystem):
     """
     A class that deals with communications with a remote Bugzilla system
 
-    >>> watch = Bugzilla("https://bugzilla.mozilla.org")
+    >>> watch = Bugzilla("http://bugzilla.mozilla.org")
     >>> watch.baseurl
-    'https://bugzilla.mozilla.org'
+    'http://bugzilla.mozilla.org'
+    >>> watch = Bugzilla("http://bugzilla.mozilla.org/")
+    >>> watch.baseurl
+    'http://bugzilla.mozilla.org'
     >>> watch = Bugzilla("https://bugzilla.mozilla.org/")
     >>> watch.baseurl
     'https://bugzilla.mozilla.org'
+    >>> watch = Bugzilla("http://bugs.kde.org/")
+    >>> watch.version
+    u'2.16.10'
     """
 
     def __init__(self, baseurl, version=None):
@@ -80,9 +93,13 @@ class Bugzilla(ExternalSystem):
                                       % (self.version, baseurl))
 
     def _probe_version(self):
-        #print "probing version of %s" % self.baseurl
+        # For some reason, bugs.kde.org doesn't allow the regular urllib
+        # user-agent string (Python-urllib/2.x) to access their
+        # bugzilla, so we send our own instead.
+        request = urllib2.Request("%s/xml.cgi?id=1" % self.baseurl,
+                                  headers={'User-agent': LP_USER_AGENT})
         try:
-            url = urllib2.urlopen("%s/xml.cgi?id=1" % self.baseurl)
+            url = urllib2.urlopen(request)
         except (urllib2.HTTPError, urllib2.URLError), val:
             raise BugTrackerConnectError(self.baseurl, val)
         ret = url.read()
@@ -100,7 +117,7 @@ class Bugzilla(ExternalSystem):
 
         >>> watch = Bugzilla("https://bugzilla.mozilla.org")
         >>> watch.get_bug_status(11901)
-        u'ASSIGNED'
+        u'RESOLVED FIXED'
         >>> watch.get_bug_status(251003)
         u'RESOLVED DUPLICATE'
         >>> watch.get_bug_status(12345)
@@ -179,9 +196,11 @@ class Bugzilla(ExternalSystem):
             raise NotImplementedError("Unsupported status %s at %s" 
                                       % (status, self.baseurl))
 
+
 def _test():
     import doctest, externalsystem
     return doctest.testmod(externalsystem)
+
 
 if __name__ == "__main__":
     _test()

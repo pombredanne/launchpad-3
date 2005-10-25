@@ -25,15 +25,13 @@ from canonical.launchpad.webapp import (
 
 from canonical.launchpad.interfaces import (
     IDistroReleaseLanguageSet, IBugTaskSearchListingView, IDistroRelease,
-    ICountry, IDistroReleaseSet, ILaunchBag, IBuildSet, ILanguageSet,
-    NotFoundError, IPublishedPackageSet)
+    ICountry, IDistroReleaseSet, ILaunchBag, ILanguageSet,NotFoundError,
+    IPublishedPackageSet)
 
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
-
-# XXX: This import needs to go away.  SteveAlexander, 2005-10-07
-from canonical.launchpad.database import SourcePackageSet
+from canonical.launchpad.browser.build import BuildRecordsView
 
 
 class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -58,13 +56,20 @@ class DistroReleaseNavigation(GetitemNavigation, BugTargetTraversalMixin):
             drlangset = getUtility(IDistroReleaseLanguageSet)
             return drlangset.getDummy(self.context, lang)
 
-    @stepto('+packages')
-    def packages(self):
-        return getUtility(IPublishedPackageSet)
+    @stepthrough('+source')
+    def source(self, name):
+        return self.context.getSourcePackage(name)
 
-    @stepto('+sources')
-    def sources(self):
-        return SourcePackageSet(distrorelease=self.context)
+    # sabdfl 17/10/05 please keep this old location here for
+    # LaunchpadIntegration on Breezy, unless you can figure out how to
+    # redirect to the newer +source, defined above
+    @stepthrough('+sources')
+    def sources(self, name):
+        return self.context.getSourcePackage(name)
+
+    @stepthrough('+package')
+    def package(self, name):
+        return self.context.getBinaryPackage(name)
 
 
 class DistroReleaseFacets(StandardLaunchpadFacets):
@@ -77,7 +82,8 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     usedfor = IDistroRelease
     facet = 'overview'
-    links = ['edit', 'reassign', 'sources', 'packaging', 'support']
+    links = ['search', 'support', 'packaging', 'edit', 'reassign',
+             'addport', 'admin']
 
     def edit(self):
         text = 'Edit Details'
@@ -88,10 +94,6 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
         text = 'Change Admin'
         return Link('+reassign', text, icon='edit')
 
-    def sources(self):
-        text = 'Source Packages'
-        return Link('+sources', text, icon='packages')
-
     def packaging(self):
         text = 'Upstream Links'
         return Link('+packaging', text, icon='info')
@@ -100,6 +102,20 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
         text = 'Request Support'
         url = canonical_url(self.context.distribution) + '/+addticket'
         return Link(url, text, icon='add')
+
+    def search(self):
+        text = 'Search Packages'
+        return Link('+search', text, icon='search')
+
+    @enabled_with_permission('launchpad.Admin')
+    def addport(self):
+        text = 'Add Port'
+        return Link('+addport', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def admin(self):
+        text = 'Administer'
+        return Link('+admin', text, icon='edit')
 
 
 class DistroReleaseBugsMenu(ApplicationMenu):
@@ -130,7 +146,7 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
         return Link('+specplan', text, icon='info')
 
 
-class DistroReleaseView:
+class DistroReleaseView(BuildRecordsView):
 
     def __init__(self, context, request):
         self.context = context
@@ -138,6 +154,22 @@ class DistroReleaseView:
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(self.request)
+        self.text = request.form.get('text')
+        self.matches = 0
+        self._results = None
+
+        self.searchrequested = False
+        if self.text is not None and self.text <> '':
+            self.searchrequested = True
+
+    def searchresults(self):
+        """Try to find the packages in this distro release that match
+        the given text, then present those as a list. 
+        """
+        if self._results is None:
+            self._results = self.context.searchPackages(self.text)
+        self.matches = len(self._results)
+        return self._results
 
     def requestDistroLangs(self):
         """Produce a set of DistroReleaseLanguage and
@@ -203,10 +235,6 @@ class DistroReleaseView:
         """
         distro_url = canonical_url(self.context.distribution)
         return self.request.response.redirect(distro_url + "/+filebug")
-
-    def getBuilt(self):
-        """Return the last build records within the DistroRelease context."""
-        return self.context.getWorkedBuildRecords()
 
 
 class DistroReleaseBugsView(BugTaskSearchListingView):

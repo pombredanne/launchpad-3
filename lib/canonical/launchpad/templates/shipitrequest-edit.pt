@@ -35,7 +35,8 @@
         <span tal:replace="context/whocancelled/displayname" />.
       </p>
       <p tal:condition="context/shipment" 
-         class="portalMessage">This request was already shipped.
+         class="portalMessage">This request is being processed by the shipping
+         company.
       </p>
     </tal:block>
 
@@ -145,19 +146,12 @@
     <table>
       <tr>
         <td align="right"><strong>Recipient:</strong></td>
-        <td tal:condition="not: context/recipientdisplayname">
-          <tal:XXX condition="nothing">
-          Okay, so we hardcoded the URL. Blame canonical_url and bug 2119!
-          </tal:XXX>
-          <a tal:attributes="href string:https://launchpad.net/people/${context/recipient/name}">
-            <span tal:replace="context/recipient/displayname" /></a>
-            (<a tal:attributes="href 
-              string:mailto:${context/recipient/preferredemail/email}"
-              ><span tal:replace="context/recipient/preferredemail/email" 
-              /></a>)
-        </td>
         <td tal:condition="context/recipientdisplayname">
           <span tal:replace="context/recipientdisplayname" />
+          (<a tal:attributes="href 
+            string:mailto:${context/recipient/preferredemail/email}"
+            ><span tal:replace="context/recipient/preferredemail/email" 
+            /></a>)
         </td>
       </tr>
       <tr tal:condition="context/organization">

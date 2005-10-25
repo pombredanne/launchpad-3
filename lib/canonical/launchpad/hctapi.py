@@ -75,7 +75,9 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import (
      Product, ProductSeries, ProductRelease,
      Distribution, DistroRelease, DistroReleaseSet,
-     SourcePackageName, SourcePackage, SourcePackageRelease,
+     DistributionSourcePackage, DistributionSourcePackageRelease,
+     DistroReleaseSourcePackageRelease, SourcePackageName, SourcePackage,
+     SourcePackageRelease,
      Manifest, ManifestEntry, ManifestAncestry, Archive, ArchNamespace,
      Branch, Changeset, VersionMapper
      )
@@ -112,30 +114,6 @@ MANIFEST_ENTRY_HINT_MAP = (
 class LaunchpadError(UrlError):
     """URL error caused by the Launchpad backend."""
     pass
-
-class SourcePackageReleaseInDistroRelease:
-    """SourcePackageRelease and DistroRelease.
-
-    We use this class instead of a SourcePackageRelease directly as we
-    always need to remember which DistroRelease it came from.
-    """
-
-    def __init__(self, sourcepackagerelease, distrorelease):
-        self.sourcepackagerelease = sourcepackagerelease
-        self.distrorelease = distrorelease
-
-    def __repr__(self):
-        """Return a debugging representation of the class."""
-        text = "<%s %r %r>" % (type(self).__name__,
-                               str(self.sourcepackagerelease.name),
-                               str(self.distrorelease.name))
-        return text
-
-    @property
-    def sourcepackage(self):
-        """SourcePackage object."""
-        return SourcePackage(self.sourcepackagerelease.sourcepackagename,
-                             self.distrorelease)
 
 
 def split_path(url_path):
@@ -347,9 +325,9 @@ def get_object(url, resolve=False):
                         )
 
             spr = objs[-1].sourcepackagerelease
-            obj = SourcePackageReleaseInDistroRelease(spr, obj)
+            obj = DistroReleaseSourcePackageRelease(obj, spr)
 
-        elif isinstance(obj, SourcePackage):
+        elif isinstance(obj, DistributionSourcePackage):
             # The part of the URL after a source package is always a
             # source package release.  FIXME this should use
             # SourcePackageHistory or similar
@@ -360,8 +338,7 @@ def get_object(url, resolve=False):
                         "in URL: '%s'" % (part, url)
                         )
 
-            obj = SourcePackageReleaseInDistroRelease(rels[-1],
-                                                      obj.distrorelease)
+            obj = rels[-1]
 
         else:
             raise LaunchpadError(
@@ -407,17 +384,25 @@ def where_am_i(obj):
         obj = None
 
 
-    if isinstance(obj, SourcePackageReleaseInDistroRelease):
-        parts.append(obj.sourcepackagerelease.version)
-        obj = obj.sourcepackage
-
     if isinstance(obj, SourcePackageRelease):
+        obj = DistroReleaseSourcePackageRelease(obj.uploaddistrorelease, obj)
+
+    if isinstance(obj, DistroReleaseSourcePackageRelease):
+        obj = DistributionSourcePackageRelease(
+            obj.distribution, obj.sourcepackagerelease)
+
+    if isinstance(obj, DistributionSourcePackageRelease):
         parts.append(obj.version)
-        obj = SourcePackage(obj.sourcepackagename, obj.uploaddistrorelease)
+        obj = DistributionSourcePackage(
+            obj.distribution, obj.sourcepackagerelease.sourcepackagename)
+
+    if isinstance(obj, DistributionSourcePackage):
+        parts.append(obj.name)
+        obj = obj.distribution
 
     if isinstance(obj, SourcePackage):
         parts.append(obj.name)
-        obj = obj.distro
+        obj = obj.distribution
 
 
     if isinstance(obj, DistroRelease):
@@ -461,17 +446,19 @@ def resolve_object(obj):
     if isinstance(obj, ProductRelease):
         return obj
 
-    if isinstance(obj, SourcePackage):
+    if isinstance(obj, DistributionSourcePackage):
         if obj.currentrelease is None:
             raise LaunchpadError(
                     "No current development release of package: '%s'" % (
                         obj.name,)
                     )
 
-        obj = SourcePackageReleaseInDistroRelease(obj.currentrelease,
-                                                  obj.distrorelease)
+        obj = obj.currentrelease
 
-    if isinstance(obj, SourcePackageReleaseInDistroRelease):
+    if isinstance(obj, DistributionSourcePackageRelease):
+        return obj.sourcepackagerelease
+
+    if isinstance(obj, DistroReleaseSourcePackageRelease):
         return obj.sourcepackagerelease
 
     if isinstance(obj, SourcePackageRelease):
@@ -534,7 +521,7 @@ def get_manifest_from(obj):
     manifest = Manifest(ancestor=str(obj.uuid))
 
     sequence_map = {}
-    patch_on_map = []
+    parent_map = []
 
     for obj_entry in obj.entries:
         type_map = dict(MANIFEST_ENTRY_TYPE_MAP)
@@ -561,18 +548,18 @@ def get_manifest_from(obj):
         entry.changeset = get_changeset_from(obj_entry.changeset)
         manifest.append(entry)
 
-        # Keep track of sequence numbers and patch_on settings
+        # Keep track of sequence numbers and parent settings
         sequence_map[obj_entry.sequence] = entry
-        if obj_entry.patchon is not None:
-            patch_on_map.append((obj_entry.patchon, entry))
+        if obj_entry.parent is not None:
+            parent_map.append((obj_entry.parent, entry))
 
-    # Map patch_on to sequence numbers
-    for patch_on, entry in patch_on_map:
-        if patch_on not in sequence_map:
+    # Map parent to sequence numbers
+    for parent, entry in parent_map:
+        if parent not in sequence_map:
             raise LaunchpadError("Manifest entry parent not in sequence: '%s'"
                                  % entry.path)
 
-        entry.patch_on = sequence_map[patch_on]
+        entry.parent = sequence_map[parent]
 
     return manifest
 
@@ -606,18 +593,14 @@ def get_release(url, release):
             rel = obj.getRelease(release)
             if rel is None:
                 return None
-        elif isinstance(obj, SourcePackage):
-            # FIXME more intelligence for version parsing (using sourcerer.deb)
-            # and this should use SourcePackageHistory
+        elif isinstance(obj, DistributionSourcePackage):
             rels = [ _r for _r in obj.releases
                      if (_r.version == release
                          or _r.version.startswith("%s-" % release)) ]
             if not len(rels):
                 return None
 
-            rel = SourcePackageReleaseInDistroRelease(
-                    rels[-1], obj.distrorelease
-                    )
+            rel = rels[-1]
         else:
             raise LaunchpadError(
                     "Unable to determine release for object: %r" % obj
@@ -651,9 +634,14 @@ def get_package(url, distro_url=None):
         if isinstance(obj, ProductSeries):
             productseries = obj
 
-        if isinstance(obj, SourcePackageReleaseInDistroRelease):
-            version = obj.sourcepackagerelease.version
-            obj = obj.sourcepackage
+        if isinstance(obj, DistributionSourcePackage):
+            obj = SourcePackage(obj.sourcepackagename,
+                                obj.distribution.currentrelease)
+
+        if isinstance(obj, DistroReleaseSourcePackageRelease):
+            version = obj.version
+            obj = SourcePackage(obj.sourcepackagerelease.sourcepackagename,
+                                obj.distrorelease)
 
         if isinstance(obj, SourcePackageRelease):
             version = obj.version
@@ -684,8 +672,8 @@ def get_package(url, distro_url=None):
                             url, distro_url
                             )
                         )
-            return where_am_i(SourcePackageReleaseInDistroRelease(
-                package.currentrelease, distro))
+            return where_am_i(DistroReleaseSourcePackageRelease(
+                distro, package.currentrelease))
 
         # Or in the distribution
         elif isinstance(distro, Distribution):
@@ -771,7 +759,9 @@ def put_manifest(url, manifest):
     begin_transaction()
     try:
         obj = get_object(url)
-        if isinstance(obj, SourcePackageReleaseInDistroRelease):
+        if isinstance(obj, DistroReleaseSourcePackageRelease):
+            obj = obj.sourcepackagerelease
+        if isinstance(obj, DistributionSourcePackageRelease):
             obj = obj.sourcepackagerelease
         if not (isinstance(obj, ProductRelease)
                 or isinstance(obj, SourcePackageRelease)):
@@ -781,7 +771,7 @@ def put_manifest(url, manifest):
 
         sequence = 0
         sequence_map = {}
-        patch_on_map = []
+        parent_map = []
 
         obj.manifest = Manifest(uuid=commands.getoutput('uuidgen'))
         try:
@@ -822,7 +812,7 @@ def put_manifest(url, manifest):
                                       path=entry.path,
                                       branchID=None,
                                       changesetID=None,
-                                      patchon=None,
+                                      parent=None,
                                       dirname=entry.dirname)
             if entry.hint is not None:
                 obj_entry.hint = hint_map[entry.hint]
@@ -873,21 +863,21 @@ def put_manifest(url, manifest):
 
                 obj_entry.changeset = changeset
 
-            # Keep track of sequence numbers and patchon settings
+            # Keep track of sequence numbers and parent settings
             sequence_map[entry] = sequence
-            if hasattr(entry, "patch_on") and entry.patch_on is not None:
-                patch_on_map.append((entry.patch_on, obj_entry))
+            if entry.parent is not None:
+                parent_map.append((entry.parent, obj_entry))
 
-        # Map patch_on to sequence numbers
-        for patch_on, obj_entry in patch_on_map:
-            if patch_on not in sequence_map:
+        # Map parent to sequence numbers
+        for parent, obj_entry in parent_map:
+            if parent not in sequence_map:
                 raise LaunchpadError(
                         "Manifest entry parent not in sequence: '%s'" % (
                             obj_entry.path,
                             )
                         )
 
-            obj_entry.patchon = sequence_map[patch_on]
+            obj_entry.parent = sequence_map[parent]
 
         success = True
     finally:

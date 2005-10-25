@@ -1,7 +1,7 @@
 Edit a bug task's severity as user Foo Bar.
 
   >>> print http(r"""
-  ... POST /distros/debian/+sources/mozilla-firefox/+bug/2/+editstatus HTTP/1.1
+  ... POST /distros/debian/+source/mozilla-firefox/+bug/2/+editstatus HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1358
@@ -54,7 +54,7 @@ Edit a bug task's severity as user Foo Bar.
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  Location: http://.../distros/debian/+sources/mozilla-firefox/+bug/2
+  Location: http://.../distros/debian/+source/mozilla-firefox/+bug/2
   <BLANKLINE>
   ...
 

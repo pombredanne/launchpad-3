@@ -73,7 +73,8 @@ from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission, Navigation, stepto, stepthrough, smartquote)
+    enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
+    redirection)
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -82,6 +83,8 @@ _ = MessageIDFactory('launchpad')
 class PersonNavigation(Navigation, CalendarTraversalMixin):
 
     usedfor = IPerson
+
+    redirection("+bugs", "+assignedbugs")
 
     def breadcrumb(self):
         return self.context.displayname
@@ -142,6 +145,9 @@ class PersonFacets(StandardLaunchpadFacets):
 
     usedfor = IPerson
 
+    enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
+                   'translations', 'calendar']
+
     def overview(self):
         target = ''
         text = 'Overview'
@@ -164,8 +170,7 @@ class PersonFacets(StandardLaunchpadFacets):
         text = 'Support'
         summary = (
             'Support requests that %s is involved with' %
-            self.context.browsername
-        )
+            self.context.browsername)
         return Link(target, text, summary)
 
     def specifications(self):
@@ -173,8 +178,7 @@ class PersonFacets(StandardLaunchpadFacets):
         text = 'Specifications'
         summary = (
             'Feature specifications that %s is involved with' %
-            self.context.browsername
-        )
+            self.context.browsername)
         return Link(target, text, summary)
 
     def bounties(self):
@@ -182,7 +186,7 @@ class PersonFacets(StandardLaunchpadFacets):
         text = 'Bounties'
         summary = (
             'Bounty offers that %s is involved with' % self.context.browsername
-        )
+            )
         return Link(target, text, summary)
 
     def code(self):
@@ -196,8 +200,7 @@ class PersonFacets(StandardLaunchpadFacets):
         text = 'Translations'
         summary = (
             'Software that %s is involved in translating' %
-            self.context.browsername
-        )
+            self.context.browsername)
         return Link(target, text, summary)
 
     def calendar(self):
@@ -205,8 +208,7 @@ class PersonFacets(StandardLaunchpadFacets):
         text = 'Calendar'
         summary = (
             u'%s\N{right single quotation mark}s scheduled events' %
-            self.context.browsername
-        )
+            self.context.browsername)
         # only link to the calendar if it has been created
         enabled = ICalendarOwner(self.context).calendar is not None
         return Link(target, text, summary, enabled=enabled)
@@ -396,8 +398,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Team Hierarchy'
         summary = (
             'Which teams are members of %s, and which teams %s is a member of'
-            % (self.context.browsername, self.context.browsername)
-        )
+            % (self.context.browsername, self.context.browsername))
         return Link(target, text, summary, icon='people')
 
     @enabled_with_permission('launchpad.Edit')
@@ -406,8 +407,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Edit Contact Address'
         summary = (
             'The address Launchpad uses to contact %s' %
-            self.context.browsername
-        )
+            self.context.browsername)
         return Link(target, text, summary, icon='mail')
 
     def joinleave(self):
@@ -575,11 +575,6 @@ class PersonView:
             self.context.subscribedBounties or
             self.context.claimedBounties)
 
-    def redirectToAssignedBugs(self):
-        """Redirect to the +assignedbugs report."""
-        self.request.response.redirect(
-            canonical_url(self.context) + "/+assignedbugs")
-
     def activeMembersCount(self):
         return len(self.context.activemembers)
 
@@ -607,7 +602,8 @@ class PersonView:
             'members of this team.')
 
         description = tm.status.description
-        if tm.status == TeamMembershipStatus.DEACTIVATED and tm.reviewercomment:
+        if (tm.status == TeamMembershipStatus.DEACTIVATED and
+            tm.reviewercomment):
             description += ("The reason for the deactivation is: '%s'"
                             % tm.reviewercomment)
         return description
@@ -626,7 +622,8 @@ class PersonView:
         asked to join this team, if he already asked and the subscription
         status is DECLINED.
         """
-        if self.context.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+        if (self.context.subscriptionpolicy ==
+            TeamSubscriptionPolicy.RESTRICTED):
             return False
 
         tm = self._getMembershipForUser()
@@ -943,15 +940,24 @@ class PersonView:
         result, key = gpghandler.retrieveKey(fingerprint)
 
         if not result:
-            # use the content ok 'key' for debug proposes
+            # use the content of 'key' for debug proposes; place it in a
+            # blockquote because it often comes out empty.
             return (
-                "Launchpad could not import GPG key, the reason was:"
-                "<code>%s</code>."
-                "Check if you published it correctly in the global key ring "
-                "(using <kbd>gpg --send-keys KEY</kbd>) and that you add "
-                "entered the fingerprint correctly (as produced by <kbd>"
-                "gpg --fingerprint YOU</kdb>). Try later or cancel your "
-                "request." % (key))
+                """Launchpad could not import your GPG key.
+                <ul>
+                  <li>Did you enter your complete fingerprint correctly,
+                  as produced by <kbd>gpg --fingerprint</kdb>?</li>
+                  <li>Have you published your key to a public key
+                  server, using <kbd>gpg --send-keys</kbd>?</li>
+                  <li>If you have just published your key to the
+                  keyserver, note that the keys take a while to be
+                  synchronized to our internal keyserver.<br>Please wait at
+                  least 30 minutes before attempting to import your
+                  key.</li>
+                </ul>
+                <p>
+                <blockquote>%s</blockquote>
+                Try again later or cancel your request.""" % key)
 
         self._validateGPG(key)
 
@@ -1213,7 +1219,8 @@ class PersonEditEmailsView:
     def unvalidatedAndGuessedEmails(self):
         """Return a Set containing all unvalidated and guessed emails."""
         emailset = sets.Set()
-        emailset = emailset.union([e.email for e in self.context.guessedemails])
+        emailset = emailset.union(
+            [e.email for e in self.context.guessedemails])
         emailset = emailset.union([e for e in self.context.unvalidatedemails])
         return emailset
 
@@ -1367,9 +1374,9 @@ class PersonEditEmailsView:
         email = self.request.form.get("VALIDATED_SELECTED")
         if email is None:
             self.message = (
-                    "To set your contact address you have to choose an address "
-                    "from the list of confirmed addresses and click on Set as "
-                    "Contact Address.")
+                "To set your contact address you have to choose an address "
+                "from the list of confirmed addresses and click on Set as "
+                "Contact Address.")
             return
         elif isinstance(email, list):
             self.message = (
@@ -1431,7 +1438,8 @@ class RequestPeopleMergeView(AddView):
         token = logintokenset.new(user, login, email.email,
                                   LoginTokenType.ACCOUNTMERGE)
         dupename = dupeaccount.name
-        sendMergeRequestEmail(token, dupename, self.request.getApplicationURL())
+        sendMergeRequestEmail(
+            token, dupename, self.request.getApplicationURL())
         self._nextURL = './+mergerequest-sent?dupe=%d' % dupeaccount.id
 
 

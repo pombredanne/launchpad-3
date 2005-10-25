@@ -11,6 +11,9 @@
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
+
+  <h1><span tal:replace="context/title"/> Builds</h1>
+
   <div tal:replace="structure context/@@+builds-list"/>    
 </div>
 

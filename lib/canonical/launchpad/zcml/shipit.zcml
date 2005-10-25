@@ -72,6 +72,13 @@
         <allow interface="canonical.launchpad.interfaces.IShipItApplication" />
     </securedutility>
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        name="robots.txt"
+        template="../templates/robotstxt.pt"
+        permission="zope.Public"
+        />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IShipItApplication"
         name="+index" />

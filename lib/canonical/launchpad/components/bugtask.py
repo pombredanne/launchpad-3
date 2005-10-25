@@ -15,7 +15,7 @@ from zope.interface import implements, directlyProvides, directlyProvidedBy
 
 from canonical.launchpad.interfaces import (
     IBugTaskDelta, IMaintainershipSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, IDistroSourcePackageSet,
+    IDistroBugTask, IDistroReleaseBugTask, 
     INullBugTask)
 from canonical.lp.dbschema import BugTaskStatus
 
@@ -127,14 +127,13 @@ class BugTaskMixin:
             return self.product
         elif IDistroBugTask.providedBy(self):
             if self.sourcepackagename:
-                return getUtility(IDistroSourcePackageSet).getPackage(
-                    distribution=self.distribution,
-                    sourcepackagename=self.sourcepackagename)
+                return self.distribution.getSourcePackage(
+                    self.sourcepackagename)
             else:
                 return self.distribution
         elif IDistroReleaseBugTask.providedBy(self):
             if self.sourcepackagename:
-                return self.distrorelease.getSourcePackageByName(
+                return self.distrorelease.getSourcePackage(
                     self.sourcepackagename)
             else:
                 return self.distrorelease

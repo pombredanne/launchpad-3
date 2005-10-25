@@ -13,7 +13,7 @@ View bugs on Mozilla Firefox as the no-privs user:
 Note that the no-privs user doesn't have the permissions to see bug #7.
 
   >>> print http(r"""
-  ... GET /products/firefox/+bug/7 HTTP/1.1
+  ... GET /products/firefox/+bug/8 HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)

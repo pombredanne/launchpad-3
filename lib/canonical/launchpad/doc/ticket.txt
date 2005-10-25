@@ -34,8 +34,9 @@ Create a ticket:
 
 See all the tickets:
 
-    >>> [(ticket.id, ticket.title) for ticket in firefox.tickets]
-    [(6L, u'Firefox ticket'),
+    >>> [(ticket.id, ticket.title) for ticket in firefox.tickets()]
+    [(8L, u'Firefox ticket'),
+     (6, u"Newly installed plug-in doesn't seem to be used"),
      (4, u'Firefox loses focus and gets stuck'),
      (2, u'Problem showing the SVG demo on W3C site'),
      (1, u'Firefox cannot render Bank Site')]
@@ -72,8 +73,9 @@ Create a ticket:
 
 See all the tickets:
 
-    >>> [(ticket.id, ticket.title) for ticket in ubuntu.tickets]
-    [(7L, u'Ubuntu ticket'),
+    >>> [(ticket.id, ticket.title) for ticket in ubuntu.tickets()]
+    [(9L, u'Ubuntu ticket'),
+     (7, u'Slow system'),
      (5, u'Installation failed'),
      (3, u'Firefox is slow and consumes too much RAM')]
 
@@ -99,7 +101,7 @@ and attributes, but the tickets associated with a source package wont'
 have the source package as their target. Instead the source package's
 distribution will be the target.
 
-    >>> firefox_package = ubuntu.currentrelease.getSourcePackageByName(
+    >>> firefox_package = ubuntu.currentrelease.getSourcePackage(
     ...     'mozilla-firefox')
     >>> verifyObject(ITicketTarget, firefox_package)
     True
@@ -114,8 +116,8 @@ Create a ticket:
 
 See all the tickets:
 
-    >>> [(ticket.id, ticket.title) for ticket in firefox_package.tickets]
-    [(8L, u'Ubuntu Firefox ticket'),
+    >>> [(ticket.id, ticket.title) for ticket in firefox_package.tickets()]
+    [(10L, u'Ubuntu Firefox ticket'),
      (3, u'Firefox is slow and consumes too much RAM')]
 
 Get an existing ticket:

@@ -56,34 +56,53 @@
             name="+index"
             facet="overview"
             template="../templates/distribution-index.pt"
-            lp:url="/distros/$Distribution.name/" />
+            lp:url="/distros/$Distribution.name/"
+            />
+        <browser:page
+            name="+search"
+            facet="overview"
+            template="../templates/distribution-search.pt"
+            lp:url="/distros/$Distribution.name/+search"
+            />
+        <browser:page
+            name="+allpackages"
+            facet="overview"
+            template="../templates/distribution-allpackages.pt"
+            lp:url="/distros/$Distribution.name/+allpackages"
+            />
         <browser:page
             name="+bounties"
             facet="bounties"
             template="../templates/related-bounties.pt"
-            lp:url="/distros/$Distribution.name/+bounties" />
+            lp:url="/distros/$Distribution.name/+bounties"
+            />
         <browser:page
             name="+members"
             facet="overview"
             template="../templates/distribution-members.pt"
-            lp:url="/distros/$Distribution.name/+members" />
+            lp:url="/distros/$Distribution.name/+members"
+            />
         <browser:page
             name="+cve"
             facet="bugs"
             template="../templates/distribution-cvereport.pt"
-            lp:url="/distros/$Distribution.name/+cve" />
+            lp:url="/distros/$Distribution.name/+cve"
+            />
         <browser:page
             name="+translations"
             facet="translations"
-            template="../templates/distribution-translations.pt" />
+            template="../templates/distribution-translations.pt"
+            />
         <browser:page
             name="+builds"
             template="../templates/distribution-builds.pt"
-            lp:url="/distros/$distribution/+builds"/>
+            lp:url="/distros/$distribution/+builds"
+            />
         <browser:page
             name="+builds-list"
             template="../templates/builds-list.pt"
-            lp:url="/distros/$distribution/+builds-list"/>
+            lp:url="/distros/$distribution/+builds-list"
+            />
     </browser:pages>
     
     <browser:pages
@@ -128,7 +147,7 @@
     </browser:pages>
 
     <browser:addform
-        name="+add"
+        name="+addrelease"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IDistroRelease"
         label="Create a New Distribution Release in Soyuz"
@@ -298,16 +317,6 @@
         facet="overview"
         class="canonical.launchpad.browser.DistributionSetView">
     </browser:pages>
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IDistributionSet"
-        permission="zope.Public"
-            class="canonical.launchpad.browser.DistributionSetSearchView"
-            facet="overview"
-            template="../templates/distribution-search.pt"
-            lp:url="Soyuz/distros/+search"
-            name="+search"
-        />
 
     <browser:addform
         name="+add"

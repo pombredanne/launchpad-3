@@ -14,7 +14,8 @@ from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.interfaces import (
         IProduct, IDistribution, IDistroRelease, IPersonSet,
         ISourcePackage, IBugEmailCommand, IBugEditEmailCommand, IBugSet,
-        ILaunchBag, IBugTaskSet, BugTaskSearchParams, IBugTarget, IMessageSet)
+        ILaunchBag, IBugTaskSet, BugTaskSearchParams, IBugTarget,
+        IMessageSet, IDistributionSourcePackage)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
@@ -318,10 +319,10 @@ class AffectsEmailCommand(EditEmailCommand):
             return bugtaskset.createTask(bug, user, distribution=bug_target)
         elif IDistroRelease.providedBy(bug_target):
             return bugtaskset.createTask(bug, user, distrorelease=bug_target)
-        elif ISourcePackage.providedBy(bug_target):
+        elif IDistributionSourcePackage.providedBy(bug_target):
             return bugtaskset.createTask(
                 bug, user, distribution=bug_target.distribution,
-                sourcepackagename=bug_target)
+                sourcepackagename=bug_target.sourcepackagename)
         else:
             assert False, "Not a valid bug target: %r" % bug_target
 

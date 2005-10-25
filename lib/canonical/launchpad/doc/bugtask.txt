@@ -143,14 +143,14 @@ The "target" of an IBugTask is one of the following things:
 
   * a distribution sourcepackage
 
-    >>> from canonical.launchpad.database.sourcepackage import DistroSourcePackage
-    >>> from canonical.launchpad.interfaces import IDistroSourcePackage
+    >>> from canonical.launchpad.database.distributionsourcepackage import DistributionSourcePackage
+    >>> from canonical.launchpad.interfaces import IDistributionSourcePackage
     >>> distro_sp_task = bugtaskset.get(4)
-    >>> expected_target = DistroSourcePackage(
-    ...     distribution=distro_sp_task.distribution,
-    ...     sourcepackagename=distro_sp_task.sourcepackagename)
+    >>> expected_target = DistributionSourcePackage(
+    ...     distro_sp_task.distribution,
+    ...     distro_sp_task.sourcepackagename)
     >>> got_target = distro_sp_task.target
-    >>> IDistroSourcePackage.providedBy(distro_sp_task.target)
+    >>> IDistributionSourcePackage.providedBy(distro_sp_task.target)
     True
     >>> got_target.distribution == expected_target.distribution
     True
@@ -334,7 +334,7 @@ It's also possible to iterate over all the bug tasks:
 
     >>> bugtasks = [bugtask for bugtasks in bugtaskset]
     >>> len(bugtasks)
-    17
+    18
 
 Bug Task Maintainers
 --------------------

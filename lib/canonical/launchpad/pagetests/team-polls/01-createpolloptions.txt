@@ -13,10 +13,7 @@
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...
-            Create a new option for poll
-            &#8220;Debian Project Leader Election 2080&#8221;
-  ...
+  ...Add a Poll Option...
 
 
   >>> print http(r"""

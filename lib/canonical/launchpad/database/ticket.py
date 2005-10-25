@@ -3,15 +3,14 @@
 __metaclass__ = type
 __all__ = ['Ticket', 'TicketSet']
 
-import datetime
 from email.Utils import make_msgid
 
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, MultipleJoin, RelatedJoin)
+    ForeignKey, StringCol, MultipleJoin, RelatedJoin)
 
-from canonical.launchpad.interfaces import ITicket, ITicketSet, NotFoundError
+from canonical.launchpad.interfaces import ITicket, ITicketSet
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -249,3 +248,6 @@ class TicketSet:
         return Ticket(title=title, description=description, owner=owner,
             product=product, distribution=distribution)
 
+    def getAnsweredTickets(self):
+        """See ITicketSet."""
+        return Ticket.selectBy(status=TicketStatus.ANSWERED)

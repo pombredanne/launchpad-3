@@ -90,13 +90,9 @@
             name="+index"
             lp:url="+builds/$name/+index" />
         <browser:page
-            template="../templates/builder-abort.pt"
-            name="+abort"
-            lp:url="+builds/$name/+abort" />
-        <browser:page
-            template="../templates/builder-stop.pt"
-            name="+stop"
-            lp:url="+builds/$name/+stop" />
+            template="../templates/builder-cancel.pt"
+            name="+cancel"
+            lp:url="+builds/$name/+cancel" />
     </browser:pages>
 
     <browser:pages
@@ -113,10 +109,33 @@
         for="canonical.launchpad.interfaces.IBuilder"
         schema="canonical.launchpad.interfaces.IBuilder"
         label="Edit Builder Details:"
-        fields="name title description processor url trusted owner"
+        fields="name title description processor url trusted manual owner"
         permission="launchpad.Edit"
         template="../templates/builder-edit.pt"
-	lp:url="+builds/$name/+edit">
+        lp:url="+builds/$name/+edit">
     </browser:editform>
+
+    <browser:editform
+        name="+mode"
+        for="canonical.launchpad.interfaces.IBuilder"
+        schema="canonical.launchpad.interfaces.IBuilder"
+        label="Change Builder Mode:"
+        fields="manual"
+        permission="launchpad.Edit"
+        template="../templates/builder-mode.pt"
+        lp:url="+builds/$name/+mode">
+    </browser:editform>
+
+    <!-- BuildQueue -->
+    <content class="canonical.launchpad.database.BuildQueue">
+       <allow interface="canonical.launchpad.interfaces.IBuildQueue"/>
+    </content>
+
+    <!-- BuildQueueSet -->
+    <securedutility
+        class="canonical.launchpad.database.BuildQueueSet"
+        provides="canonical.launchpad.interfaces.IBuildQueueSet">
+        <allow interface="canonical.launchpad.interfaces.IBuildQueueSet" />
+    </securedutility>
 
 </configure>

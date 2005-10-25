@@ -1,0 +1,68 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/distroarchrelease/distrorelease/@@+portlet-details" />
+  <div tal:replace="structure context/distroarchrelease/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div
+    tal:condition="context/binarypackagerelease/depends"
+    tal:replace="structure context/binarypackagerelease/@@+portlet-depends" />
+  <div
+    tal:condition="context/binarypackagerelease/replaces"
+    tal:replace="structure context/binarypackagerelease/@@+portlet-replaces" />
+  <div
+    tal:condition="context/binarypackagerelease/provides"
+    tal:replace="structure context/binarypackagerelease/@@+portlet-provides" />
+  <div
+    tal:condition="context/binarypackagerelease/recommends"
+    tal:replace="structure context/binarypackagerelease/@@+portlet-recommends" />
+  <div
+    tal:condition="context/binarypackagerelease/suggests"
+    tal:replace="structure context/binarypackagerelease/@@+portlet-suggests" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1 tal:content="context/summary">Summary Goes Here</h1>
+
+  <div class="highlighted" style="font-size: 80%;">
+    <p tal:replace="structure context/description/fmt:text-to-html">
+      Package Description
+    </p>
+  </div>
+
+  <h2>Source package</h2>
+
+  <ul>
+    <li class="packages">
+      <a tal:define="spackage context/distributionsourcepackagerelease"
+         tal:content="spackage/title"
+         tal:attributes="href spackage/fmt:url">
+         SOURCEPACKAGE</a>
+    </li>
+  </ul>
+
+  <h2>File download</h2>
+
+  <ul class="packages" tal:condition="context/files">
+    <li tal:repeat="file context/files">
+      <a tal:content="file/url/filename"
+         tal:attributes="href file/url/fileurl" />
+    </li>
+    <li class="alert" tal:condition="not: context/files">
+      <i>No files for this binary package.</i>
+    </li>
+  </ul>
+
+
+</div>
+</body>
+</html>

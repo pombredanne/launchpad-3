@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import (
     IDistributionSet, IPersonSet, ISourcePackageNameSet, IPOTemplateSet,
     IPOTemplateNameSet, IBinaryPackageNameSet, IPOFileSet, LanguageNotFound,
     IPOFile, IPOTemplate)
-from canonical.sourcerer.deb.version import Version
+from sourcerer.deb.version import Version
 from canonical.database.constants import UTC_NOW
 
 class URLOpenerError(Exception):

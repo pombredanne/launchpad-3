@@ -9,11 +9,24 @@ from sqlobject import (
     RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey, MultipleJoin)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
-from canonical.launchpad.database.bug import BugSet
+
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.binarypackagename import (
+    BinaryPackageName)
+from canonical.launchpad.database.binarypackagerelease import (
+    BinaryPackageRelease)
+from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.distributionbounty import DistributionBounty
+from canonical.launchpad.database.distributionsourcepackage import (
+    DistributionSourcePackage)
+from canonical.launchpad.database.distributionsourcepackagecache import (
+    DistributionSourcePackageCache)
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.database.sourcepackagename import (
+    SourcePackageName)
+from canonical.launchpad.database.sourcepackagerelease import (
+    SourcePackageRelease)
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.ticket import Ticket
@@ -24,8 +37,10 @@ from canonical.launchpad.database.build import Build
 from canonical.lp.dbschema import (
     EnumCol, BugTaskStatus, DistributionReleaseStatus, TranslationPermission)
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, IDistroPackageFinder, IHasBuildRecords,
-    NotFoundError)
+    IDistribution, IDistributionSet, IDistroPackageFinder, NotFoundError,
+    IHasBuildRecords, ISourcePackageName)
+
+from canonical.launchpad.validators.name import valid_name
 
 
 class Distribution(SQLBase):
@@ -48,6 +63,9 @@ class Distribution(SQLBase):
         notNull=True, schema=TranslationPermission,
         default=TranslationPermission.OPEN)
     lucilleconfig = StringCol(notNull=False, default=None)
+    uploadsender = StringCol(notNull=False, default=None)
+    uploadadmin = StringCol(notNull=False, default=None)
+
     releases = MultipleJoin('DistroRelease', joinColumn='distribution',
                             orderBy=['version', '-id'])
     bounties = RelatedJoin(
@@ -57,14 +75,10 @@ class Distribution(SQLBase):
     milestones = MultipleJoin('Milestone', joinColumn='distribution')
     specifications = MultipleJoin('Specification', joinColumn='distribution',
         orderBy=['-datecreated', 'id'])
-    tickets = MultipleJoin('Ticket', joinColumn='distribution',
-        orderBy=['-datecreated', 'id'])
-
-    uploadsender = StringCol(notNull=False, default=None)
-    uploadadmin = StringCol(notNull=False, default=None)
-
     uploaders = MultipleJoin('DistroComponentUploader',
-                             joinColumn='distribution')
+        joinColumn='distribution')
+    source_package_caches = MultipleJoin('DistributionSourcePackageCache',
+        joinColumn='distribution')
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
@@ -142,7 +156,6 @@ class Distribution(SQLBase):
     def bugCounter(self):
         counts = []
 
-        clauseTables = ["VSourcePackageInDistro"]
         severities = [
             BugTaskStatus.NEW,
             BugTaskStatus.ACCEPTED,
@@ -154,7 +167,7 @@ class Distribution(SQLBase):
 
         for severity in severities:
             query = query % (quote(self.id), severity)
-            count = BugTask.select(query, clauseTables=clauseTables).count()
+            count = BugTask.select(query).count()
             counts.append(count)
 
         return counts
@@ -177,10 +190,6 @@ class Distribution(SQLBase):
             distributionID = self.id,
             releasestatus = DistributionReleaseStatus.DEVELOPMENT)
 
-    def getSourcePackage(self, name):
-        """See IDistribution."""
-        return SourcePackage(name, self.currentrelease)
-
     def getMilestone(self, name):
         """See IDistribution."""
         return Milestone.selectOne("""
@@ -188,9 +197,28 @@ class Distribution(SQLBase):
             name = %s
             """ % sqlvalues(self.id, name))
 
+    def getSourcePackage(self, name):
+        """See IDistribution."""
+        if ISourcePackageName.providedBy(name):
+            sourcepackagename = name
+        else:
+            try:
+                sourcepackagename = SourcePackageName.byName(name)
+            except SQLObjectNotFound:
+                return None
+        return DistributionSourcePackage(self, sourcepackagename)
+
     def getSpecification(self, name):
         """See ISpecificationTarget."""
         return Specification.selectOneBy(distributionID=self.id, name=name)
+
+    def tickets(self, quantity=None):
+        """See ITicketTarget."""
+        return Ticket.select("""
+            distribution = %s
+            """ % sqlvalues(self.id),
+            orderBy='-datecreated',
+            limit=quantity)
 
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""
@@ -258,7 +286,7 @@ class Distribution(SQLBase):
         raise NotFoundError(filename)
 
 
-    def getWorkedBuildRecords(self, status=None, limit=10):
+    def getBuildRecords(self, status=None, limit=10):
         """See IHasBuildRecords"""
         # find out the distroarchreleases in question
         ids_list = []
@@ -284,6 +312,178 @@ class Distribution(SQLBase):
         return Build.select(
             "distroarchrelease IN (%s) AND %s" % (arch_ids, status_clause), 
             limit=limit, orderBy="-datebuilt")
+
+    def removeOldCacheItems(self):
+        """See IDistribution."""
+
+        # get the set of source package names to deal with
+        spns = set(SourcePackageName.select("""
+            SourcePackagePublishing.distrorelease =
+                DistroRelease.id AND
+            DistroRelease.distribution = %s AND
+            SourcePackagePublishing.sourcepackagerelease =
+                SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename =
+                SourcePackageName.id
+            """ % sqlvalues(self.id),
+            distinct=True,
+            clauseTables=['SourcePackagePublishing', 'DistroRelease',
+                'SourcePackageRelease']))
+
+        # remove the cache entries for packages we no longer publish
+        for cache in self.source_package_caches:
+            if cache.sourcepackagename not in spns:
+                cache.destroySelf()
+        
+    def updateCompleteSourcePackageCache(self, ztm=None):
+        """See IDistribution."""
+
+        # get the set of source package names to deal with
+        spns = list(SourcePackageName.select("""
+            SourcePackagePublishing.distrorelease =
+                DistroRelease.id AND
+            DistroRelease.distribution = %s AND
+            SourcePackagePublishing.sourcepackagerelease =
+                SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename =
+                SourcePackageName.id
+            """ % sqlvalues(self.id),
+            distinct=True,
+            clauseTables=['SourcePackagePublishing', 'DistroRelease',
+                'SourcePackageRelease']))
+
+        # now update, committing every 50 packages
+        counter = 0
+        for spn in spns:
+            self.updateSourcePackageCache(spn)
+            counter += 1
+            if counter > 49:
+                counter = 0
+                if ztm is not None:
+                    ztm.commit()
+
+    def updateSourcePackageCache(self, sourcepackagename):
+        """See IDistribution."""
+
+        # get the set of published sourcepackage releases
+        sprs = list(SourcePackageRelease.select("""
+            SourcePackageRelease.sourcepackagename = %s AND
+            SourcePackageRelease.id =
+                SourcePackagePublishing.sourcepackagerelease AND
+            SourcePackagePublishing.distrorelease = 
+                DistroRelease.id AND
+            DistroRelease.distribution = %s
+            """ % sqlvalues(sourcepackagename.id, self.id),
+            orderBy='id',
+            clauseTables=['SourcePackagePublishing', 'DistroRelease'],
+            distinct=True))
+        if len(sprs) == 0:
+            return
+
+        # find or create the cache entry
+        cache = DistributionSourcePackageCache.selectOne("""
+            distribution = %s AND
+            sourcepackagename = %s
+            """ % sqlvalues(self.id, sourcepackagename.id))
+        if cache is None:
+            cache = DistributionSourcePackageCache(
+                distribution=self,
+                sourcepackagename=sourcepackagename)
+
+        # make sure the name is correct
+        cache.name = sourcepackagename.name
+
+        # get the sets of binary package names, summaries, descriptions
+        binpkgnames = set()
+        binpkgsummaries = set()
+        binpkgdescriptions = set()
+        for spr in sprs:
+            binpkgs = BinaryPackageRelease.select("""
+                BinaryPackageRelease.build = Build.id AND
+                Build.sourcepackagerelease = %s
+                """ % sqlvalues(spr.id),
+                clauseTables=['Build'])
+            for binpkg in binpkgs:
+                binpkgnames.add(binpkg.name)
+                binpkgsummaries.add(binpkg.summary)
+                binpkgdescriptions.add(binpkg.description)
+
+        # and update the caches
+        cache.binpkgnames = ' '.join(sorted(binpkgnames))
+        cache.binpkgsummaries = ' '.join(sorted(binpkgsummaries))
+        cache.binpkgdescriptions = ' '.join(sorted(binpkgdescriptions))
+
+    def searchSourcePackages(self, text):
+        """See IDistribution."""
+        dspcaches = DistributionSourcePackageCache.select("""
+            distribution = %s AND
+            fti @@ ftq(%s)
+            """ % sqlvalues(self.id, text),
+            selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
+            orderBy=['-rank'],
+            distinct=True)
+        return [DistributionSourcePackage(
+            distribution=self,
+            sourcepackagename=dspc.sourcepackagename) for dspc in dspcaches]
+
+    def getPackageNames(self, pkgname):
+        """See IDistribution"""
+
+        # we should only ever get a pkgname as a string
+        assert isinstance(pkgname, str), "Only ever call this with a string"
+
+        # clean it up and make sure it's a valid package name
+        pkgname = pkgname.strip().lower()
+        if not valid_name(pkgname):
+            raise ValueError('Invalid package name: %s' % pkgname)
+
+        # first, we try assuming it's a binary package. let's try and find
+        # a binarypackagename for it
+        binarypackagename = BinaryPackageName.selectOneBy(name=pkgname)
+        if binarypackagename is None:
+            # maybe it's a sourcepackagename?
+            sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
+            if sourcepackagename is not None:
+                # it's definitely only a sourcepackagename. let's make sure it
+                # is published in the current distro release
+                publishing = SourcePackagePublishing.select('''
+                    SourcePackagePublishing.distrorelease = %s AND
+                    SourcePackagePublishing.sourcepackagerelease =
+                        SourcePackageRelease.id AND
+                    SourcePackageRelease.sourcepackagename = %s
+                    ''' % sqlvalues(self.currentrelease.id,
+                        sourcepackagename.id),
+                    clauseTables=['SourcePackageRelease'],
+                    distinct=True).count()
+                if publishing == 0:
+                    # yes, it's a sourcepackage, but we don't know about it in
+                    # this distro
+                    raise ValueError('Unpublished source package: %s' % pkgname)
+                return (sourcepackagename, None)
+            # it's neither a sourcepackage, nor a binary package name
+            raise ValueError('Unknown package: %s' % pkgname)
+
+        # ok, so we have a binarypackage with that name. let's see if it's
+        # published, and what it's sourcepackagename is
+        publishings = PublishedPackage.selectBy(
+            binarypackagename=binarypackagename.name,
+            distrorelease=self.currentrelease.id,
+            orderBy=['id'])
+        if publishings.count() == 0:
+            # ok, we have a binary package name, but it's not published in the
+            # target distro release. let's see if it's published anywhere
+            publishings = PublishedPackage.selectBy(
+                binarypackagename=binarypackagename.name,
+                orderBy=['id'])
+            if publishings.count() == 0:
+                # no publishing records anywhere for this beast, sadly
+                raise ValueError('Unpublished binary package: %s' % pkgname)
+        # PublishedPackageView uses the actual text names
+        for p in publishings:
+            sourcepackagenametxt = p.sourcepackagename
+            break
+        sourcepackagename = SourcePackageName.byName(sourcepackagenametxt)
+        return (sourcepackagename, binarypackagename)
 
 
 class DistributionSet:

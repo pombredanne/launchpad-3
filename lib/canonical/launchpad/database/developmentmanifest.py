@@ -28,8 +28,8 @@ class DevelopmentManifest(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     manifest = ForeignKey(dbName='manifest', foreignKey='Manifest',
         notNull=True)
-    distribution = ForeignKey(dbName='distribution',
-        foreignKey='Distribution', notNull=True)
+    distrorelease = ForeignKey(dbName='distrorelease',
+        foreignKey='DistroRelease', notNull=True)
     sourcepackagename = ForeignKey(dbName='sourcepackagename',
         foreignKey='SourcePackageName', notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)

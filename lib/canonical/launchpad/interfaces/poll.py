@@ -90,7 +90,7 @@ class IPoll(Interface):
 
     def newOption(name, shortname=None, active=True):
         """Create a new PollOption for this poll.
-        
+
         If shortname is None it'll be the same as name.
         """
 

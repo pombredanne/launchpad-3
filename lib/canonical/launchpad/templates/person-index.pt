@@ -13,12 +13,13 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/@@+portlet-emails" />
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-emails" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-calendar" />
+  <div tal:replace="structure context/@@+portlet-calendar" />
+  <div tal:replace="structure context/@@+portlet-latesttickets" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -42,6 +43,7 @@
        replace="structure context/homepage_content/fmt:text-to-html">
        The home page content goes here.
     </tal:homepage>
+    <br style="clear: both" />
   </div>
 
 
@@ -105,15 +107,18 @@
   <tal:block condition="context/isTeam">
     <h2>Team members</h2>
     <p>
-      These people are members of
-      <span tal:replace="context/browsername">Ubuntu Members</span>.
+      There are <span tal:replace="context/active_member_count">15</span>
+      direct members of the 
+      "<span tal:replace="context/browsername">Ubuntu Members</span>" team.
     </p>
     <ul>
       <tal:block repeat="membership context/activememberships">
         <li tal:condition="not: membership/person/isTeam">
           <a tal:content="membership/person/browsername"
              tal:attributes="href membership/person/fmt:url">Joe Soap</a>
-            (<span tal:replace="membership/statusname">Admin</span>)
+          <tal:is_admin condition="membership/is_admin">
+            (Admin)
+          </tal:is_admin>
         </li>
       </tal:block>
     </ul>
@@ -137,7 +142,8 @@
       <tal:block condition="subteams">
         <p>
           These teams are members of
-          &#8220;<span tal:replace="context/browsername"/>&#8221;:
+          &#8220;<span tal:replace="context/browsername"/>&#8221; (so the
+          members of these teams are effectively also members of this one):
         </p>
         <ul>
           <li tal:repeat="team subteams">

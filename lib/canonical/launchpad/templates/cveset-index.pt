@@ -15,7 +15,7 @@
     <table>
       <tr>
         <td>
-          <input name="text" size="45" tal:attributes="value view/text" />
+          <input name="text" size="35" tal:attributes="value view/text" />
           <input tal:condition="view/text" type="submit"
               value="Search Again" />
           <input tal:condition="not: view/text" type="submit"

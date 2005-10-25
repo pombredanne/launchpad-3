@@ -2,7 +2,7 @@
 
 __metaclass__ = type
 __all__ = ['DistroReleaseQueue', 'DistroReleaseQueueBuild',
-           'DistroReleaseQueueSource']
+           'DistroReleaseQueueSource', 'DistroReleaseQueueCustom']
 
 from zope.interface import implements
 
@@ -10,11 +10,13 @@ from sqlobject import ForeignKey, MultipleJoin
 
 from canonical.database.sqlbase import SQLBase
 
-from canonical.lp.dbschema import EnumCol
-from canonical.lp.dbschema import DistroReleaseQueueStatus
+from canonical.lp.dbschema import (
+    EnumCol, DistroReleaseQueueStatus, DistroReleaseQueueCustomFormat,
+    PackagePublishingPocket)
 
 from canonical.launchpad.interfaces import (
-    IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource)
+    IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource,
+    IDistroReleaseQueueCustom)
 
 
 class DistroReleaseQueue(SQLBase):
@@ -27,12 +29,35 @@ class DistroReleaseQueue(SQLBase):
     distrorelease = ForeignKey(dbName="distrorelease",
                                foreignKey='DistroRelease')
 
+    pocket = EnumCol(dbName='pocket', unique=False, default=None, notNull=True,
+                     schema=PackagePublishingPocket)
+
+
     # Join this table to the DistroReleaseQueueBuild and the
     # DistroReleaseQueueSource objects which are related.
     sources = MultipleJoin('DistroReleaseQueueSource',
                            joinColumn='distroreleasequeue')
     builds = MultipleJoin('DistroReleaseQueueBuild',
                           joinColumn='distroreleasequeue')
+    # Also the custom files associated with the build.
+    customfiles = MultipleJoin('DistroReleaseQueueCustom',
+                               joinColumn='distroreleasequeue')
+
+    def addSource(self, spr):
+        """See IDistroReleaseQueue."""
+        return DistroReleaseQueueSource(distroreleasequeue=self.id,
+                                        sourcepackagerelease=spr.id)
+
+    def addBuild(self, build):
+        """See IDistroReleaseQueue."""
+        return DistroReleaseQueueBuild(distroreleasequeue=self.id,
+                                       build=build.id)
+
+    def addCustom(self, library_file, custom_type):
+        """See IDistroReleaseQueue."""
+        return DistroReleaseQueueCustom(distroreleasequeue=self.id,
+                                        libraryfilealias=library_file.id,
+                                        customformat=custom_type)
 
 
 class DistroReleaseQueueBuild(SQLBase):
@@ -61,4 +86,20 @@ class DistroReleaseQueueSource(SQLBase):
         foreignKey='SourcePackageRelease'
         )
 
-    
+
+class DistroReleaseQueueCustom(SQLBase):
+    """A Queue item's related custom format uploads."""
+    implements(IDistroReleaseQueueCustom)
+
+    distroreleasequeue = ForeignKey(
+        dbName='distroreleasequeue',
+        foreignKey='DistroReleaseQueue'
+        )
+
+    customformat = EnumCol(dbName='customformat', unique=False,
+                           default=None, notNull=True,
+                           schema=DistroReleaseQueueCustomFormat)
+
+    libraryfilealias = ForeignKey(dbName='libraryfilealias',
+                                  foreignKey="LibraryFileAlias",
+                                  notNull=True)

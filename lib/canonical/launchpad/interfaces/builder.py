@@ -71,7 +71,13 @@ class IBuilder(IHasOwner):
 
     trusted = Bool(title=_('Trusted'), required=True,
                    description=_('Whether not the builder is trusted to '
-                                'build packages under security embargo.')
+                                 'build packages under security embargo.')
+                   )
+
+    manual = Bool(title=_('Manual Mode'), required=False,
+                   description=_('Whether not the builder is MANUAL MODE. '
+                                 'Auto Build System does not dispach jobs '
+                                 'automatically for slaves in that state')
                    )
 
     builderok = Attribute("Whether or not the builder is ok")
@@ -118,6 +124,9 @@ class IBuilderSet(Interface):
     def getBuilders():
         """Return all configured builders."""
 
+    def getBuild(id):
+        """Return a specific build by ID."""
+
 
 class IBuildQueue(Interface):
     """A launchpad Auto Build queue entry"""
@@ -135,6 +144,7 @@ class IBuildQueue(Interface):
     name = Attribute("SourcePackageRelease name")
     version = Attribute("SourcePackageRelease version")
     files = Attribute("SourcePackageRelease files")
+    builddependsindep = Attribute("SourcePackageRelease builddependsindep")
     buildduration = Attribute("The duration of the build in progress")
 
     def destroySelf():

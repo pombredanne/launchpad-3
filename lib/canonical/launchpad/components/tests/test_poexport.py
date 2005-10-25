@@ -9,6 +9,16 @@ from datetime import datetime
 from canonical.launchpad.components.poexport import export_rows
 from canonical.launchpad.helpers import test_diff
 
+class TestPOTemplate:
+    """Pretend to be a potemplate for testing purposes."""
+
+    def __init__(self, has_plural_message=False):
+        self.has_plural_message = has_plural_message
+
+    def hasPluralMessage(self):
+        return self.has_plural_message
+
+
 class TestRow:
     """Pretend to be a database row for testing purposes."""
 
@@ -26,6 +36,7 @@ class TestRow:
             'sourcecomment': '',
             'filereferences': '',
             'activesubmission': 65,
+            'popluralforms': 2,
         }
         self.columns.update(kw)
 
@@ -69,10 +80,10 @@ class BasicExportTest(ExportTest):
     """Test exporting various basic cases."""
 
     def runTest(self):
-        prototype1 = TestRow(potemplate=1, language='es')
+        prototype1 = TestRow(potemplate=TestPOTemplate(), language='es')
 
         prototype2 = TestRow(
-            potemplate=1,
+            potemplate=TestPOTemplate(has_plural_message=True),
             language='cy',
             poheader=(prototype1.poheader +
                 'Plural-Forms: nplurals=2; plural=(n!=1)\n'))
@@ -122,8 +133,7 @@ class BasicExportTest(ExportTest):
 
         expected_pofiles.append([
             'msgid ""',
-            'msgstr ""',
-            '"Content-Type: text/plain; charset=UTF-8\\n"',
+            'msgstr "Content-Type: text/plain; charset=UTF-8\\n"',
             '',
             'msgid "ding"',
             'msgstr "es-DING"',
@@ -176,14 +186,14 @@ class EncodingExportTest(ExportTest):
 
         prototype1 = TestRow(language='ja', potsequence=1, posequence=1,
             msgidpluralform=0, translationpluralform=0, msgid="Japanese",
-            translation=nihongo_unicode)
+            translation=nihongo_unicode, potemplate=TestPOTemplate())
 
         rows = [
-            prototype1.clone(potemplate=1,
+            prototype1.clone(potemplate=TestPOTemplate(),
                 poheader='Content-Type: text/plain; charset=UTF-8\n'),
-            prototype1.clone(potemplate=2,
+            prototype1.clone(potemplate=TestPOTemplate(),
                 poheader='Content-Type: text/plain; charset=Shift-JIS\n'),
-            prototype1.clone(potemplate=3,
+            prototype1.clone(potemplate=TestPOTemplate(),
                 poheader='Content-Type: text/plain; charset=EUC-JP\n'),
         ]
 
@@ -191,8 +201,7 @@ class EncodingExportTest(ExportTest):
 
         expected_pofiles.append([
             'msgid ""',
-            'msgstr ""',
-            '"Content-Type: text/plain; charset=UTF-8\\n"',
+            'msgstr "Content-Type: text/plain; charset=UTF-8\\n"',
             '',
             'msgid "Japanese"',
             'msgstr "\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e"',
@@ -200,8 +209,7 @@ class EncodingExportTest(ExportTest):
 
         expected_pofiles.append([
             'msgid ""',
-            'msgstr ""',
-            '"Content-Type: text/plain; charset=Shift-JIS\\n"',
+            'msgstr "Content-Type: text/plain; charset=Shift-JIS\\n"',
             '',
             'msgid "Japanese"',
             'msgstr "\x93\xfa\x96\x7b\x8c\xea"',
@@ -209,8 +217,7 @@ class EncodingExportTest(ExportTest):
 
         expected_pofiles.append([
             'msgid ""',
-            'msgstr ""',
-            '"Content-Type: text/plain; charset=EUC-JP\\n"',
+            'msgstr "Content-Type: text/plain; charset=EUC-JP\\n"',
             '',
             'msgid "Japanese"',
             'msgstr "\xc6\xfc\xcb\xdc\xb8\xec"',
@@ -225,8 +232,9 @@ class IncompletePluralMessageTest(ExportTest):
 
     def runTest(self):
         prototype = TestRow(
-            potemplate=1,
+            potemplate=TestPOTemplate(has_plural_message=True),
             language='es',
+            popluralforms=3,
             poheader=(
                 'Content-Type: text/plain; charset=UTF-8\n'
                 'Plural-Forms: nplurals=3; plural=(n==0)?0:(n==1)?1:2\n'))
@@ -234,7 +242,7 @@ class IncompletePluralMessageTest(ExportTest):
         rows = [
             prototype.clone(potsequence=1, posequence=1, msgidpluralform=0,
                 translationpluralform=0, msgid="1 dead horse",
-                translation=u"ning\u00fan caballos muertos"),
+                translation=u"ning\u00fan caballo muerto"),
             prototype.clone(potsequence=1, posequence=1, msgidpluralform=1,
                 translationpluralform=0, msgid="%d dead horses",
                 translation="no tengo caballos muertos"),
@@ -251,7 +259,7 @@ class IncompletePluralMessageTest(ExportTest):
             '',
             'msgid "1 dead horse"',
             'msgid_plural "%d dead horses"',
-            'msgstr[0] "ning\xc3\xban caballos muertos"',
+            'msgstr[0] "ning\xc3\xban caballo muerto"',
             'msgstr[1] ""',
             'msgstr[2] "%d caballos muertos"'
         ]]
@@ -263,7 +271,7 @@ class InactiveTranslationTest(ExportTest):
 
     def runTest(self):
         prototype = TestRow(
-            potemplate=1,
+            potemplate=TestPOTemplate(),
             language='es',
             msgidpluralform=0,
             translationpluralform=0)
@@ -279,8 +287,7 @@ class InactiveTranslationTest(ExportTest):
 
         expected_pofiles = [[
             'msgid ""',
-            'msgstr ""',
-            '"Content-Type: text/plain; charset=UTF-8\\n"',
+            'msgstr "Content-Type: text/plain; charset=UTF-8\\n"',
             '',
             'msgid "one"',
             'msgstr "uno"',
@@ -318,11 +325,12 @@ class HeaderUpdateTest(ExportTest):
         mock_pofile = Mock(
             latestsubmission=mock_submission)
 
-        # The existing header has both fields that should be preserved and
-        # fields that need updating.
+        # The existing header has both fields that should be preserved,
+        # fields that need updating and the plural form entry that should not
+        # be exported.
 
         test_row = TestRow(
-            potemplate=1,
+            potemplate=TestPOTemplate(),
             potsequence=1,
             posequence=1,
             language='es',
@@ -336,7 +344,8 @@ class HeaderUpdateTest(ExportTest):
                 'Content-Type: text/plain; charset=UTF-8\n'
                 'Last-Translator: Aleister Crowley <crowley@golden-dawn.org>\n'
                 'PO-Revision-Date: 1947-12-01 20:21+0100\n'
-                'Language-Team: Spanish <es@li.org>\n'))
+                'Language-Team: Spanish <es@li.org>\n'
+                'Plural-Forms: nplurals=2; plural=(n!=1)\n'))
 
         expected_pofiles = [[
             'msgid ""',
@@ -360,7 +369,7 @@ class DomainHeaderUpdateTest(ExportTest):
 
     def runTest(self):
         test_row = TestRow(
-            potemplate=1,
+            potemplate=TestPOTemplate(),
             potsequence=1,
             posequence=1,
             language='es',
