@@ -133,3 +133,66 @@ Get a non-existing ticket, or a ticket for another target:
 
     >>> firefox_package.getTicket(5) is None
     True
+
+
+ITicket
+-------
+
+Now we take a look at a ticket and see what we can do with it.
+Sample Person was the one who filed the ticket, so he can close the
+ticket if he thinks it's not relevant anymore:
+
+    >>> from canonical.lp.dbschema import TicketStatus
+    >>> firefox_ticket.status = TicketStatus.CLOSED
+
+He can also reopen it:
+
+    >>> firefox_ticket.status = TicketStatus.OPEN
+
+Now let's log in as another, non admin, to show that anyone can edit a
+ticket. First of all the title and description don't say much about the
+problem, so let's ask Sample Person to clarify.
+
+    >>> login('no-priv@canonical.com')
+    >>> no_priv = getUtility(ILaunchBag).user
+    >>> comment = firefox_ticket.newMessage(
+    ...     no_priv, firefox_ticket.followup_subject,
+    ...     'Could you please describe what the problem is?')
+
+We also assign the ticket to ourselves to show that we're working on
+the issue.
+
+    >>> firefox_ticket.assignee = no_priv
+
+Sample Person replies:
+
+    >>> login('test@canonical.com')
+    >>> sample_person = getUtility(ILaunchBag).user
+    >>> comment = firefox_ticket.newMessage(
+    ...     sample_person, firefox_ticket.followup_subject,
+    ...     'When I start Firefox, all I get is a blank page. I want to '
+    ...     'have a search page at start-up?')
+
+Now it's clear what the problem is, so let's edit the title and
+description to describe the problem:
+
+    >>> login('no-priv@canonical.com')
+    >>> firefox_ticket.title = 'No home page is set.'
+    >>> firefox_ticket.description = (
+    ...     'When Firefox is started, an empty page is shown. I want a '
+    ...     'search page to be shown.')
+
+Let's help Sample Person with his problem by providing an answer:
+
+    >>> comment = firefox_ticket.newMessage(
+    ...     no_priv, firefox_ticket.followup_subject,
+    ...     "Go to 'http://www.google.com', enter the preferences "
+    ...     "dialog, and choose 'Use Current Page'.")
+    >>> firefox_ticket.status = TicketStatus.ANSWERED
+
+Sample Person is happy with the answer, so he closes the ticket:
+
+    >>> login('test@canonical.com')
+    >>> comment = firefox_ticket.newMessage(
+    ...     sample_person, firefox_ticket.followup_subject, 'Thanks!')
+    >>> firefox_ticket.status = TicketStatus.CLOSED
