@@ -94,3 +94,4 @@ from canonical.launchpad.database.poexportrequest import *
 from canonical.launchpad.database.distrocomponentuploader import *
 from canonical.launchpad.database.revision import *
 from canonical.launchpad.database.revisionnumber import *
+from canonical.launchpad.database.revisionparent import *
